@@ -10,6 +10,9 @@ services:
 
   - type: redis
     name: our_gruuv-redis
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Allow Render services (default, modify as needed)
 
   - type: worker
     name: our_gruuv-worker
@@ -19,3 +22,6 @@ services:
     envVars:
       - key: RAILS_MASTER_KEY
         sync: false
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Allow Render services (default, modify as needed)
