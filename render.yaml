@@ -8,11 +8,12 @@ services:
       - key: RAILS_MASTER_KEY
         sync: false
 
-  - type: redis
-    name: our_gruuv-redis
+  - type: key_value
+    name: our_gruuv-valkey
+    plan: free  # Valkey is Redis-compatible and free on Render
     ipAllowList:
       - source: 0.0.0.0/0
-        description: Allow Render services (default, modify as needed)
+        description: Allow Render services
 
   - type: worker
     name: our_gruuv-worker
