@@ -7,8 +7,8 @@ services:
     envVars:
       - key: RAILS_MASTER_KEY
         sync: false
-      - key: REDIS_URL
-        value: redis://red-d1bni8p5pdvs73e2aqrg:6379
+      # - key: REDIS_URL
+      #   value: redis://red-d1bni8p5pdvs73e2aqrg:6379
         
   - type: worker
     name: our_gruuv-worker
@@ -18,6 +18,6 @@ services:
     envVars:
       - key: RAILS_MASTER_KEY
         sync: false
-      - key: REDIS_URL
-        value: redis://red-d1bni8p5pdvs73e2aqrg:6379
+      # - key: REDIS_URL
+      #   value: redis://red-d1bni8p5pdvs73e2aqrg:6379
 
