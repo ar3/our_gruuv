@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: our_gruuv-web
+    env: ruby
+    buildCommand: bundle install && bundle exec rake db:migrate
+    startCommand: bundle exec puma -C config/puma.rb
+    envVars:
+      - key: RAILS_MASTER_KEY
+        sync: false
+
+  - type: redis
+    name: our_gruuv-redis
+
+  - type: worker
+    name: our_gruuv-worker
+    env: ruby
+    buildCommand: bundle install
+    startCommand: bundle exec sidekiq
+    envVars:
+      - key: RAILS_MASTER_KEY
+        sync: false
