@@ -1,2 +1,22 @@
 <h1>Healthcheck</h1>
-<p>People in DB: <%= @person_count %></p>
+
+<h2>Environment</h2>
+<p>Rails Environment: <strong><%= @rails_env %></strong></p>
+
+<h2>Database Status</h2>
+<p>Status: <strong><%= @db_status %></strong></p>
+<p>People in DB: <strong><%= @person_count %></strong></p>
+<% if @db_error %>
+  <p>Database Error: <strong style="color: red;"><%= @db_error %></strong></p>
+<% end %>
+
+<h2>Environment Variables (Keys Only)</h2>
+<% if @env_vars.any? %>
+  <ul>
+    <% @env_vars.each do |var| %>
+      <li><%= var %></li>
+    <% end %>
+  </ul>
+<% else %>
+  <p>No relevant environment variables found</p>
+<% end %>
