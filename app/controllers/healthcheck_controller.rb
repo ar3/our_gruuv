@@ -2,7 +2,8 @@ class HealthcheckController < ApplicationController
   def index
     @rails_env = Rails.env
     # @env_vars = ENV.keys.select { |k| k.start_with?('RAILS_', 'DATABASE_', 'RAILWAY_') }.sort
-    @env_vars = ENV.keys.sort
+    @env_vars = ENV.keys.map { |k| "#{k} :: #{ENV[k].size}" }.sort
+    # @env_vars = ENV.keys.sort
     
     begin
       @person_count = Person.count
