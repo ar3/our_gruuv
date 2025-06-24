@@ -1,0 +1,27 @@
+%h1 Healthcheck
+
+%h2 Environment
+%p
+  Rails Environment: 
+  %strong= @rails_env
+
+%h2 Database Status
+%p
+  Status: 
+  %strong= @db_status
+%p
+  People in DB: 
+  %strong= @person_count
+- if @db_error
+  %p
+    Database Error: 
+    %strong{style: "color: red;"}= @db_error
+
+%h2 Environment Variables (Names and Character Counts)
+- if @env_vars.any?
+  %ul
+    - @env_vars.each do |var|
+      %li
+        =var
+- else
+  %p No relevant environment variables found 
