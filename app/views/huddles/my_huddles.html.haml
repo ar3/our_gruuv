@@ -8,36 +8,7 @@
       - if @huddles.any?
         .row
           - @huddles.each do |huddle|
-            .col-md-6.col-lg-4.mb-3
-              .card.h-100
-                .card-body
-                  %h5.card-title= huddle.display_name
-                  %p.card-text
-                    %strong Organization:
-                    = huddle.organization.display_name
-                  %p.card-text
-                    %small.text-muted
-                      Started: #{huddle.started_at.strftime('%B %d, %Y at %I:%M %p')}
-                  
-                  - participant = huddle.huddle_participants.find_by(person: @current_person)
-                  - if participant
-                    %p.card-text
-                      %strong Your Role:
-                      %span.badge.bg-secondary= participant.role.titleize
-                  
-                  - if huddle.nat_20_score
-                    %p.card-text
-                      %strong Nat 20 Score:
-                      %span.badge.bg-success= huddle.nat_20_score
-                  
-                  %p.card-text
-                    %strong Participation:
-                    %span.badge.bg-info= "#{huddle.participation_rate}%"
-                  
-                  .mt-auto
-                    .btn-group.w-100
-                      = link_to "View Huddle", huddle_path(huddle), class: "btn btn-outline-primary btn-sm"
-                      = link_to "Summary", summary_huddle_path(huddle), class: "btn btn-outline-info btn-sm"
+            = render 'huddle_card', huddle: huddle
       - else
         .text-center.py-5
           %h3.text-muted No huddles yet
