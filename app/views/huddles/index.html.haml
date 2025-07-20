@@ -1,0 +1,34 @@
+.container.mt-4
+  .row
+    .col-12
+      %h1.mb-4 Nat 20 Huddles
+      %p.lead Help your team find their groove with structured feedback and continuous improvement.
+      
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h2 Active Huddles
+        = link_to "Start New Huddle", new_huddle_path, class: "btn btn-primary"
+      
+      - if @huddles.any?
+        .row
+          - @huddles.each do |huddle|
+            .col-md-6.col-lg-4.mb-3
+              .card.h-100
+                .card-body
+                  %h5.card-title= huddle.display_name
+                  %p.card-text
+                    %strong Organization:
+                    = huddle.organization.display_name
+                  %p.card-text
+                    %small.text-muted
+                      Started: #{huddle.started_at.strftime('%B %d, %Y at %I:%M %p')}
+                  - if huddle.nat_20_score
+                    %p.card-text
+                      %strong Nat 20 Score:
+                      %span.badge.bg-success= huddle.nat_20_score
+                  .mt-auto
+                    = link_to "Join Huddle", huddle_path(huddle), class: "btn btn-outline-primary btn-sm"
+      - else
+        .text-center.py-5
+          %h3.text-muted No active huddles
+          %p.mb-4 Be the first to start a Nat 20 Huddle!
+          = link_to "Start Your First Huddle", new_huddle_path, class: "btn btn-primary btn-lg"

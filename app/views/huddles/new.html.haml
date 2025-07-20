@@ -1,0 +1,48 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-md-8
+      .card
+        .card-header
+          %h2.mb-0 Start a Nat 20 Huddle
+        .card-body
+          %p.lead.mb-4
+            Help your team find their groove! Start a huddle to begin collecting structured feedback for continuous improvement.
+          
+          = form_with model: @huddle, local: true, class: "needs-validation" do |form|
+            .row
+              .col-md-6
+                .mb-3
+                  = form.label :company_name, "Company Name", class: "form-label"
+                  = form.text_field :company_name, class: "form-control", required: true, placeholder: "e.g., Acme Corp"
+                  .form-text Your company or organization name
+              
+              .col-md-6
+                .mb-3
+                  = form.label :team_name, "Team Name (Optional)", class: "form-label"
+                  = form.text_field :team_name, class: "form-control", placeholder: "e.g., Engineering Team"
+                  .form-text Your specific team or squad name
+              
+              .col-12
+                .mb-3
+                  = form.label :huddle_alias, "Huddle Alias (Optional)", class: "form-label"
+                  = form.text_field :huddle_alias, class: "form-control", placeholder: "e.g., Sprint Planning"
+                  .form-text A friendly name for this specific huddle
+            
+            %hr.my-4
+            
+            %h4 Your Information
+            .row
+              .col-md-6
+                .mb-3
+                  = form.label :name, "Your Name", class: "form-label"
+                  = form.text_field :name, class: "form-control", required: true, placeholder: "e.g., John Doe"
+              
+              .col-md-6
+                .mb-3
+                  = form.label :email, "Your Email", class: "form-label"
+                  = form.email_field :email, class: "form-control", required: true, placeholder: "e.g., john@example.com"
+                  .form-text We'll use this to identify you in the huddle
+            
+            .d-grid.gap-2.d-md-flex.justify-content-md-end
+              = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary me-md-2"
+              = form.submit "Start Huddle", class: "btn btn-primary"

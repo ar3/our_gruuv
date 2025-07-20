@@ -1,0 +1,83 @@
+.container.mt-4
+  .row
+    .col-12
+      %h1.mb-3= @huddle.display_name
+      
+      - if @huddle.department_head
+        .alert.alert-info
+          %strong Department Head:
+          = @huddle.department_head
+      - else
+        .alert.alert-warning
+          %strong Note:
+          No department head has been defined yet. You can still submit feedback, and once a manager is set, they will have access to your feedback.
+      
+      .row.mt-4
+        .col-md-4
+          .card.h-100
+            .card-header
+              %h5.mb-0 Begin Huddle
+            .card-body
+              %p.card-text Coming soon - tools to help you start and structure your huddle effectively.
+              .text-center
+                %span.badge.bg-secondary Coming Soon
+            .card-footer
+              %small.text-muted This section will include huddle templates, agendas, and facilitation tools.
+        
+        .col-md-4
+          .card.h-100
+            .card-header
+              %h5.mb-0 Collaborate in Huddle
+            .card-body
+              %p.card-text Coming soon - real-time collaboration tools for your huddle.
+              .text-center
+                %span.badge.bg-secondary Coming Soon
+            .card-footer
+              %small.text-muted This section will include shared notes, action items, and real-time updates.
+        
+        .col-md-4
+          .card.h-100
+            .card-header
+              %h5.mb-0 Continuously Improve Huddle
+            .card-body
+              %p.card-text Submit your Nat 20 feedback to help improve future huddles.
+              .text-center
+                = link_to "Continuously Improve Together", feedback_huddle_path(@huddle), class: "btn btn-success"
+            .card-footer
+              %small.text-muted Rate your huddle experience and provide feedback for continuous improvement.
+      
+      .row.mt-4
+        .col-12
+          .card
+            .card-header
+              %h5.mb-0 Huddle Details
+            .card-body
+              .row
+                .col-md-6
+                  %p
+                    %strong Organization:
+                    = @huddle.organization.display_name
+                  %p
+                    %strong Started:
+                    = @huddle.started_at.strftime('%B %d, %Y at %I:%M %p')
+                  %p
+                    %strong Status:
+                    - if @huddle.closed?
+                      %span.badge.bg-secondary Closed
+                    - else
+                      %span.badge.bg-success Active
+                
+                .col-md-6
+                  %p
+                    %strong Participants:
+                    = @huddle.participants.count
+                  %p
+                    %strong Feedback Submitted:
+                    = @huddle.huddle_feedbacks.count
+                  - if @huddle.nat_20_score
+                    %p
+                      %strong Current Nat 20 Score:
+                      %span.badge.bg-primary= @huddle.nat_20_score
+      
+      .mt-4
+        = link_to "← Back to All Huddles", huddles_path, class: "btn btn-outline-secondary"
