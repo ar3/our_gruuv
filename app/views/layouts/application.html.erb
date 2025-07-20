@@ -18,11 +18,57 @@
     <link rel="apple-touch-icon" href="/icon.png">
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
-    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
   <body>
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+      <% if notice %>
+        <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000">
+          <div class="d-flex">
+            <div class="toast-body">
+              <i class="bi bi-check-circle me-2"></i>
+              <%= notice %>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>
+      <% end %>
+      
+      <% if alert %>
+        <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000">
+          <div class="d-flex">
+            <div class="toast-body">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              <%= alert %>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <div class="container">
+        <%= link_to "Our Gruuv", root_path, class: "navbar-brand" %>
+        
+        <div class="navbar-nav ms-auto">
+          <% if current_person %>
+            <div class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <%= current_person.full_name %>
+              </a>
+              <ul class="dropdown-menu">
+                <li><%= button_to "Logout", logout_path, method: :delete, class: "dropdown-item", form: { style: "display: inline;" } %></li>
+              </ul>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </nav>
+    
     <%= yield %>
   </body>
 </html>

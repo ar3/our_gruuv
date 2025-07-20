@@ -116,7 +116,7 @@ RSpec.describe Person, type: :model do
     end
   end
 
-  describe '#combined_name' do
+  describe '#full_name' do
     it 'combines name parts into full name' do
       person = Person.new(
         first_name: 'John',
@@ -125,17 +125,17 @@ RSpec.describe Person, type: :model do
         suffix: 'Jr.'
       )
       
-      expect(person.combined_name).to eq('John A Doe Jr.')
+      expect(person.full_name).to eq('John A Doe Jr.')
     end
 
     it 'handles missing parts gracefully' do
       person = Person.new(first_name: 'John', last_name: 'Doe')
-      expect(person.combined_name).to eq('John Doe')
+      expect(person.full_name).to eq('John Doe')
     end
 
     it 'returns empty string when no name parts' do
       person = Person.new
-      expect(person.combined_name).to eq('')
+      expect(person.full_name).to eq('')
     end
   end
 
@@ -164,6 +164,67 @@ RSpec.describe Person, type: :model do
       )
       
       expect(person).to be_valid
+    end
+  end
+
+  describe 'name updates' do
+    it 'updates name when person already exists with different name' do
+      # Create a person with initial name
+      existing_person = Person.create!(
+        email: 'john@example.com',
+        full_name: 'John Smith'
+      )
+      
+      # Simulate finding them again with a different name
+      found_person = Person.find_or_create_by!(email: 'john@example.com') do |p|
+        p.full_name = 'John Doe'
+      end
+      
+      # Update the name if different
+      if found_person.full_name != 'John Doe'
+        found_person.update!(full_name: 'John Doe')
+      end
+      
+      expect(found_person.id).to eq(existing_person.id)
+      expect(found_person.full_name).to eq('John Doe')
+      expect(found_person.first_name).to eq('John')
+      expect(found_person.last_name).to eq('Doe')
+    end
+
+    it 'does not update name when person already exists with same name' do
+      # Create a person with initial name
+      existing_person = Person.create!(
+        email: 'jane@example.com',
+        full_name: 'Jane Doe'
+      )
+      
+      # Simulate finding them again with the same name
+      found_person = Person.find_or_create_by!(email: 'jane@example.com') do |p|
+        p.full_name = 'Jane Doe'
+      end
+      
+      # Update the name if different
+      if found_person.full_name != 'Jane Doe'
+        found_person.update!(full_name: 'Jane Doe')
+      end
+      
+      expect(found_person.id).to eq(existing_person.id)
+      expect(found_person.full_name).to eq('Jane Doe')
+      expect(found_person.first_name).to eq('Jane')
+      expect(found_person.last_name).to eq('Doe')
+    end
+
+    it 'creates new person when email does not exist' do
+      expect {
+        Person.find_or_create_by!(email: 'new@example.com') do |p|
+          p.full_name = 'New Person'
+        end
+      }.to change(Person, :count).by(1)
+      
+      person = Person.find_by(email: 'new@example.com')
+      expect(person.full_name).to eq('New Person')
+      expect(person.first_name).to eq('New')
+      expect(person.last_name).to eq('Person')
     end
   end
 end 

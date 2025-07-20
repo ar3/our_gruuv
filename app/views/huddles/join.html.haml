@@ -1,0 +1,87 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-6
+      .card
+        .card-header.bg-success.text-white
+          %h3.mb-0
+            %i.bi.bi-people-fill.me-2
+            Join Huddle
+          %p.mb-0.mt-2= "Join #{@huddle.display_name}"
+        
+        .card-body
+          - current_participant = @huddle.huddle_participants.find_by(person: @current_person) if @current_person
+          
+          - if @current_person && current_participant
+            / State 3: Already logged in and associated with huddle
+            .alert.alert-success
+              %i.bi.bi-check-circle.me-2
+              %strong Welcome back, #{@current_person.full_name}!
+              %br
+              %small You're already a member of this huddle. Please verify your role.
+            
+            = form_with url: join_huddle_huddle_path(@huddle), method: :post, local: true do |form|
+              .mb-3.field-readonly
+                = form.label :name, "Your name", class: "form-label"
+                = form.text_field :name, value: @current_person.full_name, readonly: true, class: "form-control"
+              
+              .mb-3.field-readonly
+                = form.label :email, "Your email", class: "form-label"
+                = form.email_field :email, value: @current_person.email, readonly: true, class: "form-control"
+              
+              .mb-3
+                = form.label :role, "Your Role in This Huddle", class: "form-label"
+                = form.select :role, role_options_for_select(current_participant.role), {}, { class: "form-select", required: true }
+              
+              .d-grid.gap-2.d-md-flex.justify-content-md-end
+                = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary me-md-2"
+                = form.submit "Update Role", class: "btn btn-success btn-lg"
+          
+          - elsif @current_person
+            / State 2: Logged in but not associated with huddle
+            .alert.alert-info
+              %i.bi.bi-person-check.me-2
+              %strong Welcome, #{@current_person.full_name}!
+              %br
+              %small You're logged in. Please confirm your information and select your role.
+            
+            = form_with url: join_huddle_huddle_path(@huddle), method: :post, local: true do |form|
+              .mb-3.field-readonly
+                = form.label :name, "Your name", class: "form-label"
+                = form.text_field :name, value: @current_person.full_name, readonly: true, class: "form-control"
+              
+              .mb-3.field-readonly
+                = form.label :email, "Your email", class: "form-label"
+                = form.email_field :email, value: @current_person.email, readonly: true, class: "form-control"
+              
+              .mb-3
+                = form.label :role, "What role will you play in this huddle?", class: "form-label"
+                = form.select :role, role_options_for_select, { class: "form-select", required: true }
+              
+              .d-grid.gap-2.d-md-flex.justify-content-md-end
+                = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary me-md-2"
+                = form.submit "Join Huddle", class: "btn btn-success btn-lg"
+          
+          - else
+            / State 1: Not logged in
+            .alert.alert-info
+              %i.bi.bi-person-plus.me-2
+              %strong Welcome!
+              %br
+              %small Please provide your information to join this huddle and submit feedback.
+            
+            = form_with url: join_huddle_huddle_path(@huddle), method: :post, local: true do |form|
+              .mb-3
+                = form.label :name, "Your name", class: "form-label"
+                = form.text_field :name, class: "form-control", placeholder: "Enter your full name", required: true
+              
+              .mb-3
+                = form.label :email, "Your email", class: "form-label"
+                = form.email_field :email, class: "form-control", placeholder: "Enter your email address", required: true
+              
+              .mb-3
+                = form.label :role, "What role will you play in this huddle?", class: "form-label"
+                = form.select :role, role_options_for_select, { class: "form-select", required: true }
+              
+              .d-grid.gap-2.d-md-flex.justify-content-md-end
+                = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary me-md-2"
+                = form.submit "Join Huddle", class: "btn btn-success btn-lg" 

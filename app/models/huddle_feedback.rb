@@ -31,6 +31,6 @@ class HuddleFeedback < ApplicationRecord
   end
   
   def display_name
-    anonymous ? 'Anonymous' : person.name
+    anonymous ? 'Anonymous' : person.full_name
   end
 end 

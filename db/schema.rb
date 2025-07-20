@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_19_231524) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_20_162144) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -30,6 +30,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_19_231524) do
     t.boolean "anonymous"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["huddle_id", "person_id"], name: "index_huddle_feedbacks_on_huddle_and_person_unique", unique: true
     t.index ["huddle_id"], name: "index_huddle_feedbacks_on_huddle_id"
     t.index ["person_id"], name: "index_huddle_feedbacks_on_person_id"
   end
@@ -40,6 +41,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_19_231524) do
     t.string "role"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["huddle_id", "person_id"], name: "index_huddle_participants_on_huddle_and_person_unique", unique: true
     t.index ["huddle_id"], name: "index_huddle_participants_on_huddle_id"
     t.index ["person_id"], name: "index_huddle_participants_on_person_id"
   end

@@ -7,10 +7,12 @@ class Huddle < ApplicationRecord
   
   # Validations
   validates :started_at, presence: true
-  validate :unique_organization_per_day
+  validate :unique_organization_per_day_with_alias
   
   # Scopes
-  scope :active, -> { where('started_at >= ?', 1.day.ago) }
+  scope :active, -> { 
+    where('started_at >= ?', Date.current.beginning_of_day)
+  }
   scope :recent, -> { order(started_at: :desc) }
   
   # Instance methods
@@ -50,18 +52,32 @@ class Huddle < ApplicationRecord
   
   private
   
-  def unique_organization_per_day
+  def unique_organization_per_day_with_alias
     return unless organization_id && started_at
     
-    # Check for existing huddles on the same date (not time range)
-    existing_huddle = Huddle.where(
+    # Build the query for existing huddles
+    query = Huddle.where(
       organization_id: organization_id
     ).where(
       "DATE(started_at) = DATE(?)", started_at
-    ).where.not(id: id).first
+    ).where.not(id: id)
+    
+    # If this huddle has an alias, check for exact alias match
+    if huddle_alias.present?
+      query = query.where(huddle_alias: huddle_alias)
+    else
+      # If no alias, check for huddles without aliases
+      query = query.where(huddle_alias: [nil, ''])
+    end
+    
+    existing_huddle = query.first
     
     if existing_huddle
-      errors.add(:base, "A huddle for this organization already exists today")
+      if huddle_alias.present?
+        errors.add(:base, "A huddle with alias '#{huddle_alias}' already exists for this organization today")
+      else
+        errors.add(:base, "A huddle for this organization already exists today")
+      end
       errors.add(:existing_huddle_id, existing_huddle.id)
     end
   end

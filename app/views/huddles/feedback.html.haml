@@ -1,0 +1,149 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-8
+      .card
+        .card-header.bg-primary.text-white
+          %h3.mb-0
+            %i.bi.bi-star-fill.me-2
+            Nat 20 Huddle Feedback
+          %p.mb-0.mt-2= "Share your thoughts on #{@huddle.display_name}"
+        
+        .card-body
+          = form_with url: submit_feedback_huddle_path(@huddle), method: :post, local: true do |form|
+            .row
+              .col-12
+                .alert.alert-info
+                  %strong Your feedback helps us improve future huddles!
+                  %br
+                  %small Please rate each aspect of your huddle experience.
+            
+            .row.mb-4
+              .col-12
+                %h5.text-primary
+                  %i.bi.bi-person-circle.me-2
+                  Your Role: #{HuddleConstants::ROLE_LABELS[@existing_participant.role]}
+                
+                .mb-3
+                  .form-check
+                    = form.check_box :anonymous, class: "form-check-input"
+                    = form.label :anonymous, "Submit feedback anonymously", class: "form-check-label"
+                  %small.text-muted.d-block
+                    Check this if you prefer to submit feedback without revealing your identity.
+            
+            .row.mb-4
+              .col-12
+                %h5.text-primary
+                  %i.bi.bi-star.me-2
+                  Nat 20 Rating System
+                  %small.text-muted.ms-2 (Rate your agreement with each statement)
+                
+                .row
+                  .col-md-12
+                    .mb-5.mt-5
+                      .d-flex.align-items-center.mb-2
+                        = form.label :informed_rating, "I am more informed (about how we are pursuing our goals) than I was before the huddle", class: "form-label fw-bold mb-0 me-2"
+                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "If you felt maximally informed before, and you still feel that way, put strongly agree here."}
+                      .rating-slider-container
+                        .d-flex.justify-content-between.mb-2
+                          %small.text-muted Strongly Disagree
+                          %small.text-muted Strongly Agree
+                        .form-range.mb-2{data: {bs_min: "0", bs_max: "5", bs_step: "1"}}
+                          = form.range_field :informed_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
+                        .d-flex.justify-content-between
+                          - 0.upto(5) do |rating|
+                            %small.text-muted{class: rating == 5 ? "fw-bold text-primary" : ""}= rating
+
+                  .col-md-12
+                    .mb-5.mt-5
+                      .d-flex.align-items-center.mb-2
+                        = form.label :connected_rating, "I am more connected & supported (to/by my teammates I'm standing shoulder to shoulder with as we pursue these goals) than I was before the huddle", class: "form-label fw-bold mb-0 me-2"
+                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "If you felt maximally connected before, and you still feel that way, put strongly agree here."}
+                      .rating-slider-container
+                        .d-flex.justify-content-between.mb-2
+                          %small.text-muted Strongly Disagree
+                          %small.text-muted Strongly Agree
+                        .form-range.mb-2{data: {bs_min: "0", bs_max: "5", bs_step: "1"}}
+                          = form.range_field :connected_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
+                        .d-flex.justify-content-between
+                          - 0.upto(5) do |rating|
+                            %small.text-muted{class: rating == 5 ? "fw-bold text-primary" : ""}= rating
+                  
+                  .col-md-12
+                    .mb-5.mt-5
+                      .d-flex.align-items-center.mb-2
+                        = form.label :goals_rating, "This huddle helped us in pursuit of our goals", class: "form-label fw-bold mb-0 me-2"
+                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "Huddles are one of the most powerful and most expensive tactics we can take. Therefore it is vital that when we do them, they are helping us achieve our goals in some major way."}
+                      .rating-slider-container
+                        .d-flex.justify-content-between.mb-2
+                          %small.text-muted Strongly Disagree
+                          %small.text-muted Strongly Agree
+                        .form-range.mb-2{data: {bs_min: "0", bs_max: "5", bs_step: "1"}}
+                          = form.range_field :goals_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
+                        .d-flex.justify-content-between
+                          - 0.upto(5) do |rating|
+                            %small.text-muted{class: rating == 5 ? "fw-bold text-primary" : ""}= rating
+                    
+                  .col-md-12
+                    .mb-5.mt-5
+                      .d-flex.align-items-center.mb-2
+                        = form.label :valuable_rating, "If I could have seen what this meeting was before going, and I had a choice... it was so valuable, that I'd still attend", class: "form-label fw-bold mb-0 me-2"
+                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "You know the saying 'This meeting could have been an email'... We must combat this at all costs. Our time and energy is precious, let's aim to not waste it."}
+                      .rating-slider-container
+                        .d-flex.justify-content-between.mb-2
+                          %small.text-muted Strongly Disagree
+                          %small.text-muted Strongly Agree
+                        .form-range.mb-2{data: {bs_min: "0", bs_max: "5", bs_step: "1"}}
+                          = form.range_field :valuable_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
+                        .d-flex.justify-content-between
+                          - 0.upto(5) do |rating|
+                            %small.text-muted{class: rating == 5 ? "fw-bold text-primary" : ""}= rating
+            
+            .row.mb-4
+              .col-12
+                .alert.alert-success.text-center
+                  %h6.mb-2
+                    %i.bi.bi-check-circle.me-2
+                    You're all set!
+                  %p.mb-0
+                    You can submit your feedback now, or continue below to share more details about your experience.
+                  .mt-3
+                    = form.submit "Submit Feedback Now", class: "btn btn-outline-success me-2"
+                    %small.text-muted or continue below for detailed feedback
+            
+            .row.mb-4
+              .col-12
+                %h5.text-primary
+                  %i.bi.bi-chat-text.me-2
+                  Detailed Feedback (Optional)
+                  %small.text-muted.ms-2 - Share the "why" behind your ratings
+                
+                .mb-3
+                  = form.label :appreciation, "What went well in this huddle?", class: "form-label"
+                  = form.text_area :appreciation, class: "form-control", rows: 3, placeholder: "Share what worked well and what you appreciated..."
+                
+                .mb-3
+                  = form.label :change_suggestion, "What could be improved?", class: "form-label"
+                  = form.text_area :change_suggestion, class: "form-control", rows: 3, placeholder: "Share suggestions for improvement..."
+            
+            .row.mb-4
+              .col-12
+                %h5.text-primary
+                  %i.bi.bi-shield.me-2
+                  Private Feedback (Optional)
+                
+                .mb-3
+                  = form.label :private_department_head, "Private feedback for department head:", class: "form-label"
+                  = form.text_area :private_department_head, class: "form-control", rows: 2, placeholder: "Any private feedback for the department head..."
+                
+                .mb-3
+                  = form.label :private_facilitator, "Private feedback for facilitator:", class: "form-label"
+                  = form.text_area :private_facilitator, class: "form-control", rows: 2, placeholder: "Any private feedback for the facilitator..."
+            
+            .row
+              .col-12
+                .d-grid.gap-2.d-md-flex.justify-content-md-end
+                  = link_to "Cancel", @huddle, class: "btn btn-outline-secondary me-md-2"
+                  = form.submit "Submit Complete Feedback", class: "btn btn-success btn-lg"
+                  %small.text-muted.mt-2.d-block
+                    %i.bi.bi-shield-check.me-1
+                    Your feedback helps improve future huddles and achieve Nat 20 scores! 

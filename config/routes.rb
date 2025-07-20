@@ -8,8 +8,13 @@ Rails.application.routes.draw do
     member do
       get :feedback
       post :submit_feedback
+      get :join
+      post :join_huddle
     end
   end
+  
+  # Session management
+  delete '/logout', to: 'application#logout', as: :logout
   
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

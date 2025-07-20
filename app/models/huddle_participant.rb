@@ -3,36 +3,28 @@ class HuddleParticipant < ApplicationRecord
   belongs_to :huddle
   belongs_to :person
   
-  # Validations
-  validates :role, presence: true
-  validates :person_id, uniqueness: { scope: :huddle_id }
-  
   # Constants
-  ROLES = %w[facilitator scribe active passive].freeze
+  ROLES = HuddleConstants::ROLES
+  ROLE_LABELS = HuddleConstants::ROLE_LABELS
   
   # Validations
-  validates :role, inclusion: { in: ROLES }
+  validates :role, presence: true, inclusion: { in: ROLES }
+  validates :person_id, uniqueness: { scope: :huddle_id }
   
   # Scopes
   scope :facilitators, -> { where(role: 'facilitator') }
-  scope :scribes, -> { where(role: 'scribe') }
   scope :active_participants, -> { where(role: 'active') }
-  scope :passive_participants, -> { where(role: 'passive') }
   
   # Instance methods
+  def role_label
+    ROLE_LABELS[role] || role.titleize
+  end
+  
   def facilitator?
     role == 'facilitator'
   end
   
-  def scribe?
-    role == 'scribe'
-  end
-  
-  def active?
+  def active_participant?
     role == 'active'
-  end
-  
-  def passive?
-    role == 'passive'
   end
 end 

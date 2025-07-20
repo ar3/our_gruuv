@@ -12,45 +12,14 @@
           %strong Note:
           No department head has been defined yet. You can still submit feedback, and once a manager is set, they will have access to your feedback.
       
-      .row.mt-4
-        .col-md-4
-          .card.h-100
-            .card-header
-              %h5.mb-0 Begin Huddle
-            .card-body
-              %p.card-text Coming soon - tools to help you start and structure your huddle effectively.
-              .text-center
-                %span.badge.bg-secondary Coming Soon
-            .card-footer
-              %small.text-muted This section will include huddle templates, agendas, and facilitation tools.
-        
-        .col-md-4
-          .card.h-100
-            .card-header
-              %h5.mb-0 Collaborate in Huddle
-            .card-body
-              %p.card-text Coming soon - real-time collaboration tools for your huddle.
-              .text-center
-                %span.badge.bg-secondary Coming Soon
-            .card-footer
-              %small.text-muted This section will include shared notes, action items, and real-time updates.
-        
-        .col-md-4
-          .card.h-100
-            .card-header
-              %h5.mb-0 Continuously Improve Huddle
-            .card-body
-              %p.card-text Submit your Nat 20 feedback to help improve future huddles.
-              .text-center
-                = link_to "Continuously Improve Together", feedback_huddle_path(@huddle), class: "btn btn-success"
-            .card-footer
-              %small.text-muted Rate your huddle experience and provide feedback for continuous improvement.
-      
+      / Huddle Details at the top - with distinct styling
       .row.mt-4
         .col-12
-          .card
-            .card-header
-              %h5.mb-0 Huddle Details
+          .card.border-primary
+            .card-header.bg-primary.text-white
+              %h5.mb-0
+                %i.bi.bi-info-circle.me-2
+                Huddle Details
             .card-body
               .row
                 .col-md-6
@@ -60,6 +29,10 @@
                   %p
                     %strong Started:
                     = @huddle.started_at.strftime('%B %d, %Y at %I:%M %p')
+                  %p
+                    %strong Expires:
+                    = @huddle.started_at.end_of_day.strftime('%B %d, %Y at %I:%M %p')
+                    %small.text-muted.ms-2 (End of day)
                   %p
                     %strong Status:
                     - if @huddle.closed?
@@ -78,6 +51,80 @@
                     %p
                       %strong Current Nat 20 Score:
                       %span.badge.bg-primary= @huddle.nat_20_score
+                  - if current_person
+                    - participant = @huddle.huddle_participants.find_by(person: current_person)
+                    - if participant
+                      %hr
+                      %p
+                        %strong You are:
+                        = current_person.full_name
+                      %p
+                        %strong Your role:
+                        %span.badge.bg-info= HuddleConstants::ROLE_LABELS[participant.role]
+      
+      / Visual separator
+      .row.mt-5
+        .col-12
+          .text-center
+            %h4.text-muted
+              %i.bi.bi-arrow-down.me-2
+              Huddle Workflow
+              %i.bi.bi-arrow-down.ms-2
+      
+      / Chronological workflow sections - stacked vertically with distinct styling
+      .row.mt-4
+        .col-12
+          .card.border-success
+            .card-header.bg-success.text-white
+              %h5.mb-0
+                %i.bi.bi-play-circle.me-2
+                Step 1: Begin Huddle
+            .card-body
+              %p.card-text.mb-3 Coming soon - tools to help you start and structure your huddle effectively.
+              .text-center
+                %span.badge.bg-secondary Coming Soon
+              %small.text-muted.mt-2.d-block This is the time to get the huddle started off right. To stay grounded, it is good to state the mission, vision, and values to get us kicked off. Then let's remember that we are humans, so lets learn a little about each other. Now for the headlines, reflect on TODOs, and maybe your team reviews things like scorecards or goal progress. Whatever is needed to ensure everyone here is on the same page.
+      
+      .row.mt-3
+        .col-12
+          .card.border-info
+            .card-header.bg-info.text-white
+              %h5.mb-0
+                %i.bi.bi-people.me-2
+                Step 2: Collaborate in Huddle
+            .card-body
+              %p.card-text.mb-3 Coming soon - real-time collaboration tools for your huddle.
+              .text-center
+                %span.badge.bg-secondary Coming Soon
+              %small.text-muted.mt-2.d-block Here is where the magic happens. The most important things to discuss, decide, and collaborate on should live here. We focus on "good" issues and we are effective because we use the Diverge<=>Converge technique flawlessly! ONWARD... TOGETHER!!!
+      
+      .row.mt-3
+        .col-12
+          - if @existing_feedback
+            .card.border-success
+              .card-header.bg-success.text-white
+                %h5.mb-0
+                  %i.bi.bi-trophy.me-2
+                  Step 3: Continuous Improvement - Complete! 🎉
+              .card-body.text-center
+                .mb-3
+                  %i.bi.bi-check-circle.text-success{style: "font-size: 3rem;"}
+                %h6.text-success.mb-3 You've helped your team continuously improve!
+                %p.card-text.mb-3 Thank you for taking the time to provide feedback. Your insights help make future huddles even better.
+                .mt-3
+                  = link_to "Update Your Feedback", "#", class: "btn btn-outline-success", onclick: "alert('This functionality is coming soon!'); return false;"
+                %small.text-muted.mt-2.d-block You can update your feedback later if needed.
+          - else
+            .card.border-warning
+              .card-header.bg-warning.text-dark
+                %h5.mb-0
+                  %i.bi.bi-star.me-2
+                  Step 3: Continuously Improve
+              .card-body
+                %p.card-text.mb-3 Submit your Nat 20 feedback to help improve future huddles.
+                .text-center
+                  = link_to "Continuously Improve Together", feedback_huddle_path(@huddle), class: "btn btn-success"
+                %small.text-muted.mt-2.d-block Rate your huddle experience and provide feedback for continuous improvement.
       
       .mt-4
         = link_to "← Back to All Huddles", huddles_path, class: "btn btn-outline-secondary"

@@ -5,32 +5,37 @@ class Person < ApplicationRecord
   has_many :huddle_feedbacks, dependent: :destroy
   
   # Validations
-  validates :unique_textable_phone_number, uniqueness: true
+  validates :unique_textable_phone_number, uniqueness: true, allow_blank: true
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   
-  # Virtual attribute for full name
-  attr_accessor :full_name
+  # Virtual attribute for full name - getter and setter methods
+  def full_name
+    parts = [first_name, middle_name, last_name, suffix].compact
+    parts.join(' ')
+  end
+  
+  def full_name=(value)
+    @full_name = value
+    parse_full_name
+  end
   
   # Callbacks
   before_validation :parse_full_name
   
   # Instance methods
-  def combined_name
-    parts = [first_name, middle_name, last_name, suffix].compact
-    parts.join(' ')
-  end
+  
   
   def display_name
-    combined_name.present? ? combined_name : email
+    full_name.present? ? full_name : email
   end
   
   private
   
   def parse_full_name
-    return unless full_name.present?
+    return unless @full_name.present?
     
     # Split the name into parts
-    name_parts = full_name.strip.split(/\s+/)
+    name_parts = @full_name.strip.split(/\s+/)
     
     case name_parts.length
     when 1

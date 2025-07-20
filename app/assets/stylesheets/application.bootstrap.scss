@@ -1,2 +1,68 @@
 @import 'bootstrap/scss/bootstrap';
 @import 'bootstrap-icons/font/bootstrap-icons';
+
+
+// Custom styles for readonly fields
+.form-control[readonly],
+.form-select[readonly] {
+  background-color: #e9ecef !important;
+  border-color: #ced4da !important;
+  color: #495057 !important;
+  cursor: not-allowed;
+  
+  &:focus {
+    background-color: #e9ecef !important;
+    border-color: #ced4da !important;
+    box-shadow: none !important;
+    color: #495057 !important;
+  }
+  
+  &::placeholder {
+    color: #6c757d !important;
+  }
+}
+
+// Visual styling for readonly field containers
+.field-readonly {
+  // Additional styling can be added here if needed
+}
+
+// Custom styles for rating sliders
+.rating-slider-container {
+  .form-range {
+    &::-webkit-slider-thumb {
+      background: linear-gradient(45deg, #dc3545, #fd7e14, #ffc107, #28a745, #007bff);
+      border: 2px solid #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease;
+      
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+    
+    &::-moz-range-thumb {
+      background: linear-gradient(45deg, #dc3545, #fd7e14, #ffc107, #28a745, #007bff);
+      border: 2px solid #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease;
+      
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+    
+    &::-webkit-slider-track {
+      background: linear-gradient(to right, #dc3545 0%, #fd7e14 16.67%, #ffc107 33.33%, #28a745 50%, #17a2b8 66.67%, #007bff 83.33%, #6f42c1 100%);
+      height: 8px;
+      border-radius: 4px;
+    }
+    
+    &::-moz-range-track {
+      background: linear-gradient(to right, #dc3545 0%, #fd7e14 16.67%, #ffc107 33.33%, #28a745 50%, #17a2b8 66.67%, #007bff 83.33%, #6f42c1 100%);
+      height: 8px;
+      border-radius: 4px;
+      border: none;
+    }
+  }
+}
