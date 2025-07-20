@@ -1,0 +1,17 @@
+#!/bin/bash -e
+
+# Enable jemalloc for reduced memory usage and latency.
+if [ -z "${LD_PRELOAD+x}" ]; then
+    LD_PRELOAD=$(find /usr/lib -name libjemalloc.so.2 -print -quit)
+    export LD_PRELOAD
+fi
+
+# Always run migrations on Railway
+echo "Running database migrations..."
+./bin/rails db:migrate
+
+# Start the Rails server
+echo "Starting Rails server..."
+# Use PORT environment variable if set, otherwise default to 3000
+PORT=${PORT:-3000}
+exec ./bin/rails server -b 0.0.0.0 -p $PORT 
