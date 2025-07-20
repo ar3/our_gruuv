@@ -2,6 +2,8 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
   
+  layout :determine_layout
+  
   def logout
     session.clear
     redirect_to root_path, notice: 'You have been logged out successfully!'
@@ -10,6 +12,10 @@ class ApplicationController < ActionController::Base
   helper_method :current_person
   
   private
+  
+  def determine_layout
+    current_person ? 'authenticated' : 'application'
+  end
   
   def current_person
     @current_person ||= Person.find(session[:current_person_id]) if session[:current_person_id]

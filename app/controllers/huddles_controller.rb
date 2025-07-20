@@ -1,14 +1,40 @@
 class HuddlesController < ApplicationController
-  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle]
+  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :summary]
 
   def index
     @huddles = Huddle.active.recent.includes(:organization)
+  end
+
+  def my_huddles
+    @current_person = current_person
+    
+    if @current_person
+      @huddles = Huddle.participated_by(@current_person).recent.includes(:organization)
+    else
+      redirect_to huddles_path, alert: "Please log in to view your huddles"
+    end
   end
 
   def show
     # Check if current user has already submitted feedback
     if current_person
       @existing_feedback = @huddle.huddle_feedbacks.find_by(person: current_person)
+    end
+  end
+
+  def summary
+    # Check if user is a participant
+    @current_person = current_person
+    
+    unless @current_person
+      redirect_to join_huddle_path(@huddle), alert: "Please join the huddle to view the summary"
+      return
+    end
+    
+    @existing_participant = @current_person.huddle_participants.find_by(huddle: @huddle)
+    unless @existing_participant
+      redirect_to join_huddle_path(@huddle), alert: "Please join the huddle to view the summary"
+      return
     end
   end
 

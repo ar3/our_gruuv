@@ -10,8 +10,12 @@ Rails.application.routes.draw do
       post :submit_feedback
       get :join
       post :join_huddle
+      get :summary
     end
   end
+  
+  # Past huddles for participants
+  get '/my-huddles', to: 'huddles#my_huddles', as: :my_huddles
   
   # Session management
   delete '/logout', to: 'application#logout', as: :logout

@@ -1,4 +1,4 @@
-.container.mt-4
+.container
   .row
     .col-12
       %h1.mb-3= @huddle.display_name
@@ -127,4 +127,7 @@
                 %small.text-muted.mt-2.d-block Rate your huddle experience and provide feedback for continuous improvement.
       
       .mt-4
-        = link_to "← Back to All Huddles", huddles_path, class: "btn btn-outline-secondary"
+        .d-flex.justify-content-between
+          = link_to "← Back to All Huddles", huddles_path, class: "btn btn-outline-secondary"
+          - if current_person && @huddle.huddle_participants.find_by(person: current_person)
+            = link_to "View Summary", summary_huddle_path(@huddle), class: "btn btn-outline-info"

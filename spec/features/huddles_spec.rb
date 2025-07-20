@@ -50,6 +50,111 @@ RSpec.feature 'Huddles', type: :feature do
     expect(page).not_to have_content('yesterday-huddle')
   end
 
+  scenario 'viewing my huddles when logged in' do
+    person = Person.create!(full_name: 'Alice Johnson', email: 'alice@example.com')
+    
+    # Create huddles where person participated
+    huddle1 = Huddle.create!(organization: team, started_at: 1.day.ago, huddle_alias: 'yesterday-huddle')
+    huddle1.huddle_participants.create!(person: person, role: 'facilitator')
+    
+    huddle2 = Huddle.create!(organization: team, started_at: 2.days.ago, huddle_alias: 'older-huddle')
+    huddle2.huddle_participants.create!(person: person, role: 'active')
+    
+    # Simulate being logged in
+    page.set_rack_session(current_person_id: person.id)
+    
+    visit my_huddles_path
+    
+    expect(page).to have_content('My Huddles')
+    expect(page).to have_content('yesterday-huddle')
+    expect(page).to have_content('older-huddle')
+    expect(page).to have_content('Facilitator')
+    expect(page).to have_content('Active')
+  end
+
+  scenario 'viewing my huddles when not logged in redirects to huddles' do
+    visit my_huddles_path
+    
+    expect(page).to have_content('Please log in to view your huddles')
+    expect(current_path).to eq(huddles_path)
+  end
+
+  scenario 'viewing huddle summary as participant' do
+    person = Person.create!(full_name: 'Bob Wilson', email: 'bob@example.com')
+    huddle.huddle_participants.create!(person: person, role: 'facilitator')
+    
+    # Add some feedback
+    huddle.huddle_feedbacks.create!(
+      person: person,
+      informed_rating: 4,
+      connected_rating: 5,
+      goals_rating: 4,
+      valuable_rating: 5,
+      appreciation: 'Great collaboration!',
+      change_suggestion: 'More time for Q&A'
+    )
+    
+    # Simulate being logged in
+    page.set_rack_session(current_person_id: person.id)
+    
+    visit summary_huddle_path(huddle)
+    
+    expect(page).to have_content('Huddle Summary')
+    expect(page).to have_content('Test Company - Test Team')
+    expect(page).to have_content('4.0') # Average rating
+    expect(page).to have_content('Great collaboration!')
+    expect(page).to have_content('More time for Q&A')
+    expect(page).to have_content('100%') # Participation rate
+  end
+
+  scenario 'viewing huddle summary when not logged in redirects to join' do
+    visit summary_huddle_path(huddle)
+    
+    expect(page).to have_content('Please join the huddle to view the summary')
+    expect(current_path).to eq(join_huddle_path(huddle))
+  end
+
+  scenario 'viewing huddle summary when not a participant redirects to join' do
+    person = Person.create!(full_name: 'Charlie Brown', email: 'charlie@example.com')
+    
+    # Simulate being logged in but not a participant
+    page.set_rack_session(current_person_id: person.id)
+    
+    visit summary_huddle_path(huddle)
+    
+    expect(page).to have_content('Please join the huddle to view the summary')
+    expect(current_path).to eq(join_huddle_path(huddle))
+  end
+
+  scenario 'huddle summary shows insights and participation data' do
+    person1 = Person.create!(full_name: 'Alice Johnson', email: 'alice@example.com')
+    person2 = Person.create!(full_name: 'Bob Wilson', email: 'bob@example.com')
+    
+    huddle.huddle_participants.create!(person: person1, role: 'facilitator')
+    huddle.huddle_participants.create!(person: person2, role: 'active')
+    
+    # Only one person submits feedback
+    huddle.huddle_feedbacks.create!(
+      person: person1,
+      informed_rating: 3,
+      connected_rating: 4,
+      goals_rating: 3,
+      valuable_rating: 4,
+      appreciation: 'Good discussion',
+      change_suggestion: 'Need more time'
+    )
+    
+    # Simulate being logged in
+    page.set_rack_session(current_person_id: person1.id)
+    
+    visit summary_huddle_path(huddle)
+    
+    expect(page).to have_content('50%') # Participation rate (1 out of 2)
+    expect(page).to have_content('Good discussion')
+    expect(page).to have_content('Need more time')
+    expect(page).to have_content('50%') # Participation rate (1 out of 2)
+  end
+
   scenario 'creating a new huddle when not logged in' do
     visit new_huddle_path
     
@@ -197,8 +302,8 @@ RSpec.feature 'Huddles', type: :feature do
     # Should show user dropdown in navbar
     expect(page).to have_selector('.navbar', text: 'David Lee')
     
-    # Click logout
-    find('.dropdown-toggle').click
+    # Click logout - find the user dropdown specifically
+    find('.navbar-nav:last-child .dropdown-toggle').click
     click_button 'Logout'
     
     expect(page).to have_content('You have been logged out successfully')

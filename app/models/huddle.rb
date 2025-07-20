@@ -14,6 +14,9 @@ class Huddle < ApplicationRecord
     where('started_at >= ?', Date.current.beginning_of_day)
   }
   scope :recent, -> { order(started_at: :desc) }
+  scope :participated_by, ->(person) {
+    joins(:huddle_participants).where(huddle_participants: { person: person })
+  }
   
   # Instance methods
   def display_name
@@ -48,6 +51,49 @@ class Huddle < ApplicationRecord
   
   def feedback_anonymous?
     huddle_feedbacks.any?(&:anonymous)
+  end
+
+  def participation_rate
+    return 0 if huddle_participants.empty?
+    (huddle_feedbacks.count.to_f / huddle_participants.count * 100).round(0)
+  end
+
+  def average_rating_by_category
+    return {} if huddle_feedbacks.empty?
+    
+    {
+      informed: huddle_feedbacks.average(:informed_rating).round(1),
+      connected: huddle_feedbacks.average(:connected_rating).round(1),
+      goals: huddle_feedbacks.average(:goals_rating).round(1),
+      valuable: huddle_feedbacks.average(:valuable_rating).round(1)
+    }
+  end
+
+  def feedback_insights
+    return [] if huddle_feedbacks.empty?
+    
+    insights = []
+    
+    # Check for common themes in appreciation
+    appreciations = huddle_feedbacks.where.not(appreciation: [nil, '']).pluck(:appreciation)
+    if appreciations.any?
+      insights << "Participants shared #{appreciations.count} positive feedback items"
+    end
+    
+    # Check for improvement suggestions
+    suggestions = huddle_feedbacks.where.not(change_suggestion: [nil, '']).pluck(:change_suggestion)
+    if suggestions.any?
+      insights << "Participants provided #{suggestions.count} improvement suggestions"
+    end
+    
+    # Check participation rate
+    if participation_rate < 50
+      insights << "Low participation rate (#{participation_rate}%) - consider follow-up"
+    elsif participation_rate >= 80
+      insights << "High participation rate (#{participation_rate}%) - great engagement!"
+    end
+    
+    insights
   end
   
   private
