@@ -3,7 +3,7 @@
   %head
     %meta{charset: "UTF-8"}
     %meta{name: "viewport", content: "width=device-width, initial-scale=1.0"}
-    %title Our Gruuv - Modern Solutions
+    %title Our Gruuv - Team Flow State
     :css
       * {
         margin: 0;
@@ -211,19 +211,18 @@
       }
 
   %body
-    / Header
-    %header.header
-      %nav.nav.container
-        .logo Our Gruuv
-        %ul.nav-links
-          %li
-            %a{href: huddles_path} Nat 20 Huddles
-          %li
-            %a{href: "#solutions"} Solutions
-          %li
-            %a{href: "#about"} About
-          %li
-            %a{href: "#contact"} Contact
+    - if current_person.nil?
+      / Header
+      %header.header
+        %nav.nav.container
+          .logo Our Gruuv
+          %ul.nav-links
+            %li
+              %a{href: "#solutions"} Solutions
+            %li
+              %a{href: "#about"} About
+            %li
+              %a{href: "#contact"} Contact
 
     / Hero Section
     %section.hero
@@ -241,7 +240,7 @@
           / Job Category 1
           .job-category
             .category-header
-              %h3.category-title Understand
+              %h3.category-title Align
               %p.category-subtitle [Category description and value proposition]
             .solutions-grid
               .solution-card
@@ -257,7 +256,24 @@
           / Job Category 2
           .job-category
             .category-header
-              %h3.category-title Win
+              %h3.category-title Meet
+              %p.category-subtitle [Category description and value proposition]
+            .solutions-grid
+              .solution-card
+                %a{href: huddles_path}
+                  %h4.solution-title Huddle
+                %p.solution-description [Tagline and brief description of this specific solution]
+              .solution-card
+                %h4.solution-title Diverge <=> Converge
+                %p.solution-description [Tagline and brief description of this specific solution]
+              .solution-card
+                %h4.solution-title Nat 20
+                %p.solution-description [Tagline and brief description of this specific solution]
+
+          / Job Category 3
+          .job-category
+            .category-header
+              %h3.category-title Transform
               %p.category-subtitle [Category description and value proposition]
             .solutions-grid
               .solution-card
@@ -268,22 +284,6 @@
                 %p.solution-description [Tagline and brief description of this specific solution]
               .solution-card
                 %h4.solution-title Forest of Trust
-                %p.solution-description [Tagline and brief description of this specific solution]
-
-          / Job Category 3
-          .job-category
-            .category-header
-              %h3.category-title Together
-              %p.category-subtitle [Category description and value proposition]
-            .solutions-grid
-              .solution-card
-                %h4.solution-title Huddle
-                %p.solution-description [Tagline and brief description of this specific solution]
-              .solution-card
-                %h4.solution-title Diverge <=> Converge
-                %p.solution-description [Tagline and brief description of this specific solution]
-              .solution-card
-                %h4.solution-title Nat 20
                 %p.solution-description [Tagline and brief description of this specific solution]
 
     / Footer

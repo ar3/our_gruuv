@@ -1,0 +1,55 @@
+!!!
+%html
+  %head
+    %title= content_for(:title) || "Our Gruuv"
+    %meta{name: "viewport", content: "width=device-width,initial-scale=1"}
+    %meta{name: "apple-mobile-web-app-capable", content: "yes"}
+    %meta{name: "mobile-web-app-capable", content: "yes"}
+    = csrf_meta_tags
+    = csp_meta_tag
+
+    = yield :head
+
+    / Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!)
+    / = tag.link rel: "manifest", href: pwa_manifest_path(format: :json)
+
+    %link{rel: "icon", href: "/icon.png", type: "image/png"}
+    %link{rel: "icon", href: "/icon.svg", type: "image/svg+xml"}
+    %link{rel: "apple-touch-icon", href: "/icon.png"}
+
+    / Includes all stylesheet files in app/assets/stylesheets
+    = stylesheet_link_tag "application", "data-turbo-track": "reload"
+    = javascript_importmap_tags
+
+  %body
+    / Toast Container
+    .toast-container.position-fixed.top-0.end-0.p-3{style: "z-index: 1055;"}
+      - if notice
+        .toast.align-items-center.text-white.bg-success.border-0{role: "alert", "aria-live": "assertive", "aria-atomic": "true", "data-bs-autohide": "true", "data-bs-delay": "5000"}
+          .d-flex
+            .toast-body
+              %i.bi.bi-check-circle.me-2
+              = notice
+            %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
+      
+      - if alert
+        .toast.align-items-center.text-white.bg-danger.border-0{role: "alert", "aria-live": "assertive", "aria-atomic": "true", "data-bs-autohide": "true", "data-bs-delay": "5000"}
+          .d-flex
+            .toast-body
+              %i.bi.bi-exclamation-triangle.me-2
+              = alert
+            %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
+    
+    %nav.navbar.navbar-expand-lg.navbar-light.bg-light
+      .container
+        = link_to "Our Gruuv", root_path, class: "navbar-brand"
+        
+        .navbar-nav.ms-auto
+          - if current_person
+            .nav-item.dropdown
+              %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                = current_person.full_name
+              %ul.dropdown-menu
+                %li= button_to "Logout", logout_path, method: :delete, class: "dropdown-item", form: { style: "display: inline;" }
+    
+    = yield 

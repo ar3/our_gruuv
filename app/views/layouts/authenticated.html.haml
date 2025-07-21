@@ -1,0 +1,71 @@
+!!!
+%html
+  %head
+    %title= content_for(:title) || "Our Gruuv"
+    %meta{name: "viewport", content: "width=device-width,initial-scale=1"}
+    %meta{name: "apple-mobile-web-app-capable", content: "yes"}
+    %meta{name: "mobile-web-app-capable", content: "yes"}
+    = csrf_meta_tags
+    = csp_meta_tag
+
+    = yield :head
+
+    %link{rel: "icon", href: "/icon.png", type: "image/png"}
+    %link{rel: "icon", href: "/icon.svg", type: "image/svg+xml"}
+    %link{rel: "apple-touch-icon", href: "/icon.png"}
+
+    = stylesheet_link_tag "application", "data-turbo-track": "reload"
+    = javascript_importmap_tags
+
+  %body
+    / Toast Container
+    .toast-container.position-fixed.top-0.end-0.p-3{style: "z-index: 1055;"}
+      - if notice
+        .toast.align-items-center.text-white.bg-success.border-0{role: "alert", "aria-live": "assertive", "aria-atomic": "true", "data-bs-autohide": "true", "data-bs-delay": "5000"}
+          .d-flex
+            .toast-body
+              %i.bi.bi-check-circle.me-2
+              = notice
+            %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
+      
+      - if alert
+        .toast.align-items-center.text-white.bg-danger.border-0{role: "alert", "aria-live": "assertive", "aria-atomic": "true", "data-bs-autohide": "true", "data-bs-delay": "5000"}
+          .d-flex
+            .toast-body
+              %i.bi.bi-exclamation-triangle.me-2
+              = alert
+            %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
+    
+    / Main Navigation
+    %nav.navbar.navbar-expand-lg.navbar-dark.bg-primary
+      .container
+        = link_to "Our Gruuv", root_path, class: "navbar-brand fw-bold"
+        
+        %button.navbar-toggler{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#navbarMain", "aria-controls": "navbarMain", "aria-expanded": "false", "aria-label": "Toggle navigation"}
+          %span.navbar-toggler-icon
+        
+        .collapse.navbar-collapse#navbarMain
+          %ul.navbar-nav.me-auto
+            %li.nav-item
+              = link_to "Align", "#", class: "nav-link", onclick: "alert('Coming soon!'); return false;"
+            %li.nav-item.dropdown
+              %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                Meet
+              %ul.dropdown-menu
+                %li= link_to "Today's Huddles", huddles_path, class: "dropdown-item"
+                %li= link_to "My Huddles", my_huddles_path, class: "dropdown-item"
+            %li.nav-item
+              = link_to "Transform", "#", class: "nav-link", onclick: "alert('Coming soon!'); return false;"
+          
+          %ul.navbar-nav
+            - if current_person
+              %li.nav-item.dropdown
+                %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                  %i.bi.bi-person-circle.me-1
+                  = current_person.full_name
+                %ul.dropdown-menu.dropdown-menu-end
+                  %li= button_to "Logout", logout_path, method: :delete, class: "dropdown-item", form: { style: "display: inline;" }
+    
+    / Page Content
+    %main.py-4
+      = yield 
