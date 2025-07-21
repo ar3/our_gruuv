@@ -113,6 +113,35 @@
             .row.mb-4
               .col-12
                 %h5.text-primary
+                  %i.bi.bi-people.me-2
+                  Conflict Styles
+                  %small.text-muted.ms-2 - Understanding how we handle disagreements
+                
+                .alert.alert-info
+                  %strong Understanding Conflict Styles:
+                  %br
+                  %small Conflict styles are based on two dimensions: assertiveness (how much you focus on your own concerns) and cooperativeness (how much you focus on others' concerns).
+                
+                .row
+                  .col-md-6
+                    .mb-3
+                      = form.label :personal_conflict_style, "How did YOU think you showed up during conflicts or disagreements in this huddle?", class: "form-label fw-bold"
+                      %small.text-muted.d-block.mb-2
+                        In this huddle,
+                        %b I WAS:
+                      = form.select :personal_conflict_style, options_for_select(HuddleConstants::CONFLICT_STYLES.map { |style| ["#{style} - #{HuddleConstants::CONFLICT_STYLE_DESCRIPTIONS[style]}", style] }), { prompt: 'Select your personal conflict style...' }, { class: 'form-select' }
+                  
+                  .col-md-6
+                    .mb-3
+                      = form.label :team_conflict_style, "How did you think the TEAM showed up during conflicts or disagreements?", class: "form-label fw-bold"
+                      %small.text-muted.d-block.mb-2
+                        In this huddle,
+                        %b WE WERE:
+                      = form.select :team_conflict_style, options_for_select(HuddleConstants::CONFLICT_STYLES.map { |style| ["#{style} - #{HuddleConstants::CONFLICT_STYLE_DESCRIPTIONS[style]}", style] }), { prompt: 'Select the team\'s conflict style...' }, { class: 'form-select' }
+            
+            .row.mb-4
+              .col-12
+                %h5.text-primary
                   %i.bi.bi-chat-text.me-2
                   Detailed Feedback (Optional)
                   %small.text-muted.ms-2 - Share the "why" behind your ratings
@@ -131,12 +160,36 @@
                   %i.bi.bi-shield.me-2
                   Private Feedback (Optional)
                 
+                - dept_head = @huddle.department_head
+                - facilitators = @huddle.facilitators
+                - dept_head_name = dept_head&.display_name || 'Department Head'
+                - facilitator_names = facilitators.map { |p| p.person.display_name }
+                
                 .mb-3
-                  = form.label :private_department_head, "Private feedback for department head:", class: "form-label"
+                  - if dept_head
+                    = form.label :private_department_head, "Private feedback for #{dept_head_name}:", class: "form-label"
+                    %small.text-muted.d-block.mb-2
+                      %i.bi.bi-eye.me-1
+                      Only #{dept_head_name} will see this feedback
+                  - else
+                    = form.label :private_department_head, "Private feedback for department head:", class: "form-label"
+                    %small.text-muted.d-block.mb-2
+                      %i.bi.bi-eye-slash.me-1
+                      No one will see this until a department head is assigned
                   = form.text_area :private_department_head, class: "form-control", rows: 2, placeholder: "Any private feedback for the department head..."
                 
                 .mb-3
-                  = form.label :private_facilitator, "Private feedback for facilitator:", class: "form-label"
+                  - if facilitators.any?
+                    - facilitator_list = facilitator_names.join(', ')
+                    = form.label :private_facilitator, "Private feedback for facilitator#{facilitators.count > 1 ? 's' : ''}:", class: "form-label"
+                    %small.text-muted.d-block.mb-2
+                      %i.bi.bi-eye.me-1
+                      Only #{facilitator_list} will see this feedback
+                  - else
+                    = form.label :private_facilitator, "Private feedback for facilitator:", class: "form-label"
+                    %small.text-muted.d-block.mb-2
+                      %i.bi.bi-eye-slash.me-1
+                      No one will see this until a facilitator is assigned
                   = form.text_area :private_facilitator, class: "form-control", rows: 2, placeholder: "Any private feedback for the facilitator..."
             
             .row

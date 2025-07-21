@@ -1,0 +1,60 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-8
+      .card
+        .card-header.bg-primary.text-white
+          %h3.mb-0
+            %i.bi.bi-pencil-square.me-2
+            Edit Profile
+        
+        .card-body
+          = form_with model: @person, url: profile_path, method: :patch, local: true do |form|
+            - if @person.errors.any?
+              .alert.alert-danger
+                %h5 Please fix the following errors:
+                %ul.mb-0
+                  - @person.errors.full_messages.each do |message|
+                    %li= message
+            .row
+              .col-md-6
+                .mb-3
+                  = form.label :first_name, "First Name", class: "form-label"
+                  = form.text_field :first_name, class: "form-control", required: true
+              
+              .col-md-6
+                .mb-3
+                  = form.label :last_name, "Last Name", class: "form-label"
+                  = form.text_field :last_name, class: "form-control", required: true
+            
+            .row
+              .col-md-6
+                .mb-3
+                  = form.label :middle_name, "Middle Name", class: "form-label"
+                  = form.text_field :middle_name, class: "form-control"
+              
+              .col-md-6
+                .mb-3
+                  = form.label :suffix, "Suffix (Jr., Sr., etc.)", class: "form-label"
+                  = form.text_field :suffix, class: "form-control"
+            
+            .mb-3
+              = form.label :email, "Email", class: "form-label"
+              = form.email_field :email, class: "form-control", required: true
+              %small.form-text.text-muted This is your login email and cannot be changed
+            
+            .mb-3
+              = form.label :unique_textable_phone_number, "Phone Number", class: "form-label"
+              = form.telephone_field :unique_textable_phone_number, class: "form-control", placeholder: "+1234567890"
+              %small.form-text.text-muted Optional - for SMS notifications (future feature)
+            
+            .mb-3
+              = form.label :timezone, "Timezone", class: "form-label"
+              = form.select :timezone, available_timezones, { selected: @person.timezone, prompt: 'Select your timezone' }, { class: "form-select" }
+              %small.form-text.text-muted This helps us show times in your local timezone
+              - if @person.errors[:timezone].any?
+                .invalid-feedback.d-block
+                  = @person.errors[:timezone].join(', ')
+            
+            .d-grid.gap-2.d-md-flex.justify-content-md-end
+              = link_to "Cancel", profile_path, class: "btn btn-outline-secondary me-md-2"
+              = form.submit "Update Profile", class: "btn btn-primary" 

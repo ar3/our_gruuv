@@ -50,7 +50,7 @@
               = link_to "Align", "#", class: "nav-link", onclick: "alert('Coming soon!'); return false;"
             %li.nav-item.dropdown
               %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
-                Meet
+                Collaborate
               %ul.dropdown-menu
                 %li= link_to "Today's Huddles", huddles_path, class: "dropdown-item"
                 %li= link_to "My Huddles", my_huddles_path, class: "dropdown-item"
@@ -64,6 +64,9 @@
                   %i.bi.bi-person-circle.me-1
                   = current_person.full_name
                 %ul.dropdown-menu.dropdown-menu-end
+                  %li= link_to "My Profile", profile_path, class: "dropdown-item"
+                  %li
+                    %hr.dropdown-divider
                   %li= button_to "Logout", logout_path, method: :delete, class: "dropdown-item", form: { style: "display: inline;" }
     
     / Page Content

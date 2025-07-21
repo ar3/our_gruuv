@@ -1,0 +1,43 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-8
+      .card
+        .card-header.bg-primary.text-white
+          %h3.mb-0
+            %i.bi.bi-person-circle.me-2
+            My Profile
+        
+        .card-body
+          .row
+            .col-md-6
+              %h5.text-primary Personal Information
+              %p
+                %strong Name:
+                = @person.full_name
+              %p
+                %strong Email:
+                = @person.email
+              - if @person.unique_textable_phone_number.present?
+                %p
+                  %strong Phone:
+                  = @person.unique_textable_phone_number
+              %p
+                %strong Timezone:
+                = @person.timezone.present? ? @person.timezone : 'Not set (using UTC)'
+            
+            .col-md-6
+              %h5.text-primary Account Statistics
+              %p
+                %strong Huddles Participated:
+                = @person.huddles.count
+              %p
+                %strong Feedback Submitted:
+                = @person.huddle_feedbacks.count
+              %p
+                %strong Member Since:
+                = @person.created_at.strftime('%B %d, %Y')
+          
+          .mt-4
+            = link_to edit_profile_path, class: "btn btn-primary" do
+              %i.bi.bi-pencil.me-2
+              Edit Profile 

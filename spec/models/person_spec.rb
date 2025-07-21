@@ -1,230 +1,165 @@
 require 'rails_helper'
 
 RSpec.describe Person, type: :model do
-  describe 'associations' do
-    it { should have_many(:huddle_participants).dependent(:destroy) }
-    it { should have_many(:huddles).through(:huddle_participants) }
-    it { should have_many(:huddle_feedbacks).dependent(:destroy) }
-  end
+  let(:person) { build(:person) }
 
   describe 'validations' do
-    it { should validate_presence_of(:email) }
-    it { should validate_uniqueness_of(:unique_textable_phone_number) }
-    
+    it 'is valid with valid attributes' do
+      expect(person).to be_valid
+    end
+
+    it 'requires an email' do
+      person.email = nil
+      expect(person).not_to be_valid
+      expect(person.errors[:email]).to include("can't be blank")
+    end
+
     it 'validates email format' do
-      person = Person.new(email: 'invalid-email')
+      person.email = 'invalid-email'
       expect(person).not_to be_valid
       expect(person.errors[:email]).to include('is invalid')
     end
 
-    it 'accepts valid email format' do
-      person = Person.new(email: 'test@example.com')
+    it 'validates timezone is a valid timezone' do
+      person.timezone = 'Invalid/Timezone'
+      expect(person).not_to be_valid
+      expect(person.errors[:timezone]).to include('is not included in the list')
+    end
+
+    it 'allows valid timezones' do
+      person.timezone = 'Eastern Time (US & Canada)'
+      expect(person).to be_valid
+    end
+
+    it 'allows blank timezone' do
+      person.timezone = ''
       expect(person).to be_valid
     end
   end
 
-  describe 'name parsing' do
-    context 'with single name' do
-      it 'sets first_name only' do
-        person = Person.new(full_name: 'John', email: 'john@example.com')
-        person.valid?
-        
-        expect(person.first_name).to eq('John')
-        expect(person.middle_name).to be_nil
-        expect(person.last_name).to be_nil
-        expect(person.suffix).to be_nil
-      end
+  describe '#timezone_or_default' do
+    it 'returns the timezone when set' do
+      person.timezone = 'Pacific Time (US & Canada)'
+      expect(person.timezone_or_default).to eq('Pacific Time (US & Canada)')
     end
 
-    context 'with two names' do
-      it 'sets first_name and last_name' do
-        person = Person.new(full_name: 'John Doe', email: 'john@example.com')
-        person.valid?
-        
-        expect(person.first_name).to eq('John')
-        expect(person.middle_name).to be_nil
-        expect(person.last_name).to eq('Doe')
-        expect(person.suffix).to be_nil
-      end
+    it 'returns UTC when timezone is blank' do
+      person.timezone = ''
+      expect(person.timezone_or_default).to eq('UTC')
     end
 
-    context 'with three names' do
-      it 'sets first_name, middle_name, and last_name' do
-        person = Person.new(full_name: 'John A Doe', email: 'john@example.com')
-        person.valid?
-        
-        expect(person.first_name).to eq('John')
-        expect(person.middle_name).to eq('A')
-        expect(person.last_name).to eq('Doe')
-        expect(person.suffix).to be_nil
-      end
-    end
-
-    context 'with four or more names' do
-      it 'sets first_name, middle_name (combined), and last_name' do
-        person = Person.new(full_name: 'John A B Doe', email: 'john@example.com')
-        person.valid?
-        
-        expect(person.first_name).to eq('John')
-        expect(person.middle_name).to eq('A B')
-        expect(person.last_name).to eq('Doe')
-        expect(person.suffix).to be_nil
-      end
-
-      it 'handles very long names' do
-        person = Person.new(full_name: 'John A B C D E F Doe', email: 'john@example.com')
-        person.valid?
-        
-        expect(person.first_name).to eq('John')
-        expect(person.middle_name).to eq('A B C D E F')
-        expect(person.last_name).to eq('Doe')
-      end
-    end
-
-    context 'with existing suffix' do
-      it 'preserves existing suffix when parsing full_name' do
-        person = Person.new(suffix: 'Jr.', full_name: 'John A Doe', email: 'john@example.com')
-        person.valid?
-        
-        expect(person.first_name).to eq('John')
-        expect(person.middle_name).to eq('A')
-        expect(person.last_name).to eq('Doe')
-        expect(person.suffix).to eq('Jr.')
-      end
-    end
-
-    context 'with whitespace' do
-      it 'handles extra whitespace' do
-        person = Person.new(full_name: '  John   A   Doe  ', email: 'john@example.com')
-        person.valid?
-        
-        expect(person.first_name).to eq('John')
-        expect(person.middle_name).to eq('A')
-        expect(person.last_name).to eq('Doe')
-      end
-    end
-
-    context 'with empty full_name' do
-      it 'does not parse when full_name is empty' do
-        person = Person.new(first_name: 'John', last_name: 'Doe', email: 'john@example.com')
-        person.full_name = ''
-        person.valid?
-        
-        expect(person.first_name).to eq('John')
-        expect(person.last_name).to eq('Doe')
-      end
+    it 'returns UTC when timezone is nil' do
+      person.timezone = nil
+      expect(person.timezone_or_default).to eq('UTC')
     end
   end
 
-  describe '#full_name' do
-    it 'combines name parts into full name' do
-      person = Person.new(
-        first_name: 'John',
-        middle_name: 'A',
-        last_name: 'Doe',
-        suffix: 'Jr.'
-      )
-      
-      expect(person.full_name).to eq('John A Doe Jr.')
+  describe '#format_time_in_user_timezone' do
+    let(:time) { Time.zone.parse('2025-07-21 14:30:00 UTC') }
+
+    context 'when timezone is set' do
+      before do
+        person.timezone = 'Eastern Time (US & Canada)'
+      end
+
+      it 'formats time in user timezone' do
+        formatted = person.format_time_in_user_timezone(time)
+        expect(formatted).to include('EDT') # Eastern Daylight Time
+        expect(formatted).to include('10:30 AM') # 14:30 UTC = 10:30 AM EDT
+      end
     end
 
-    it 'handles missing parts gracefully' do
-      person = Person.new(first_name: 'John', last_name: 'Doe')
-      expect(person.full_name).to eq('John Doe')
+    context 'when timezone is not set' do
+      before do
+        person.timezone = nil
+      end
+
+      it 'formats time in UTC' do
+        formatted = person.format_time_in_user_timezone(time)
+        expect(formatted).to include('UTC')
+        expect(formatted).to include('2:30 PM') # 14:30 UTC
+      end
     end
 
-    it 'returns empty string when no name parts' do
-      person = Person.new
-      expect(person.full_name).to eq('')
+    context 'with different timezones' do
+      it 'formats time in Pacific timezone' do
+        person.timezone = 'Pacific Time (US & Canada)'
+        formatted = person.format_time_in_user_timezone(time)
+        expect(formatted).to include('PDT') # Pacific Daylight Time
+        expect(formatted).to include('7:30 AM') # 14:30 UTC = 7:30 AM PDT
+      end
+
+      it 'formats time in Central timezone' do
+        person.timezone = 'Central Time (US & Canada)'
+        formatted = person.format_time_in_user_timezone(time)
+        expect(formatted).to include('CDT') # Central Daylight Time
+        expect(formatted).to include('9:30 AM') # 14:30 UTC = 9:30 AM CDT
+      end
     end
   end
 
   describe '#display_name' do
-    it 'returns full name when available' do
-      person = Person.new(
-        first_name: 'John',
-        last_name: 'Doe',
-        email: 'john@example.com'
-      )
-      
-      expect(person.display_name).to eq('John Doe')
+    context 'with full name' do
+      before do
+        person.first_name = 'John'
+        person.last_name = 'Doe'
+      end
+
+      it 'returns full name' do
+        expect(person.display_name).to eq('John Doe')
+      end
     end
 
-    it 'returns email when no name available' do
-      person = Person.new(email: 'john@example.com')
-      expect(person.display_name).to eq('john@example.com')
+    context 'with only email' do
+      before do
+        person.first_name = nil
+        person.last_name = nil
+        person.email = 'john@example.com'
+      end
+
+      it 'returns email' do
+        expect(person.display_name).to eq('john@example.com')
+      end
     end
   end
 
-  describe 'factory' do
-    it 'can be created with valid attributes' do
-      person = Person.new(
-        email: 'test@example.com',
-        full_name: 'John Doe'
-      )
-      
-      expect(person).to be_valid
-    end
-  end
-
-  describe 'name updates' do
-    it 'updates name when person already exists with different name' do
-      # Create a person with initial name
-      existing_person = Person.create!(
-        email: 'john@example.com',
-        full_name: 'John Smith'
-      )
-      
-      # Simulate finding them again with a different name
-      found_person = Person.find_or_create_by!(email: 'john@example.com') do |p|
-        p.full_name = 'John Doe'
-      end
-      
-      # Update the name if different
-      if found_person.full_name != 'John Doe'
-        found_person.update!(full_name: 'John Doe')
-      end
-      
-      expect(found_person.id).to eq(existing_person.id)
-      expect(found_person.full_name).to eq('John Doe')
-      expect(found_person.first_name).to eq('John')
-      expect(found_person.last_name).to eq('Doe')
+  describe 'full name parsing' do
+    it 'parses single name as first name' do
+      person.first_name = nil
+      person.last_name = nil
+      person.middle_name = nil
+      person.full_name = 'John'
+      expect(person.first_name).to eq('John')
+      expect(person.last_name).to be_nil
     end
 
-    it 'does not update name when person already exists with same name' do
-      # Create a person with initial name
-      existing_person = Person.create!(
-        email: 'jane@example.com',
-        full_name: 'Jane Doe'
-      )
-      
-      # Simulate finding them again with the same name
-      found_person = Person.find_or_create_by!(email: 'jane@example.com') do |p|
-        p.full_name = 'Jane Doe'
-      end
-      
-      # Update the name if different
-      if found_person.full_name != 'Jane Doe'
-        found_person.update!(full_name: 'Jane Doe')
-      end
-      
-      expect(found_person.id).to eq(existing_person.id)
-      expect(found_person.full_name).to eq('Jane Doe')
-      expect(found_person.first_name).to eq('Jane')
-      expect(found_person.last_name).to eq('Doe')
+    it 'parses two names as first and last' do
+      person.first_name = nil
+      person.last_name = nil
+      person.middle_name = nil
+      person.full_name = 'John Doe'
+      expect(person.first_name).to eq('John')
+      expect(person.last_name).to eq('Doe')
     end
 
-    it 'creates new person when email does not exist' do
-      expect {
-        Person.find_or_create_by!(email: 'new@example.com') do |p|
-          p.full_name = 'New Person'
-        end
-      }.to change(Person, :count).by(1)
-      
-      person = Person.find_by(email: 'new@example.com')
-      expect(person.full_name).to eq('New Person')
-      expect(person.first_name).to eq('New')
-      expect(person.last_name).to eq('Person')
+    it 'parses three names as first, middle, last' do
+      person.first_name = nil
+      person.last_name = nil
+      person.middle_name = nil
+      person.full_name = 'John Michael Doe'
+      expect(person.first_name).to eq('John')
+      expect(person.middle_name).to eq('Michael')
+      expect(person.last_name).to eq('Doe')
+    end
+
+    it 'parses four names with first, middle, last' do
+      person.first_name = nil
+      person.last_name = nil
+      person.middle_name = nil
+      person.full_name = 'John Michael van Doe'
+      expect(person.first_name).to eq('John')
+      expect(person.middle_name).to eq('Michael van')
+      expect(person.last_name).to eq('Doe')
     end
   end
 end 

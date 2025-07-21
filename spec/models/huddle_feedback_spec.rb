@@ -115,12 +115,36 @@ RSpec.describe HuddleFeedback, type: :model do
       feedback2 = HuddleFeedback.new(valid_attributes.merge(huddle: huddle2))
       expect(feedback2).to be_valid
     end
+
+    it 'validates conflict styles are from allowed list' do
+      feedback = HuddleFeedback.new(valid_attributes.merge(
+        personal_conflict_style: 'Collaborative',
+        team_conflict_style: 'Compromising'
+      ))
+      expect(feedback).to be_valid
+    end
+
+    it 'allows blank conflict styles' do
+      feedback = HuddleFeedback.new(valid_attributes.merge(
+        personal_conflict_style: '',
+        team_conflict_style: nil
+      ))
+      expect(feedback).to be_valid
+    end
+
+    it 'rejects invalid conflict styles' do
+      feedback = HuddleFeedback.new(valid_attributes.merge(
+        personal_conflict_style: 'Invalid Style'
+      ))
+      expect(feedback).not_to be_valid
+      expect(feedback.errors[:personal_conflict_style]).to include('is not included in the list')
+    end
   end
 
   describe 'constants' do
     it 'defines CONFLICT_STYLES constant' do
       expect(HuddleFeedback::CONFLICT_STYLES).to be_an(Array)
-      expect(HuddleFeedback::CONFLICT_STYLES).to include('Collaborative', 'Competing', 'Compromising', 'Accommodating', 'Avoiding', 'Other')
+      expect(HuddleFeedback::CONFLICT_STYLES).to include('Collaborative', 'Competing', 'Compromising', 'Accommodating', 'Avoiding')
     end
   end
 

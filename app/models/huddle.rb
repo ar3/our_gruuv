@@ -20,7 +20,7 @@ class Huddle < ApplicationRecord
   
   # Instance methods
   def display_name
-    base_name = "#{organization.display_name} - #{started_at.strftime('%B %d, %Y')}"
+    base_name = "#{organization.name} - #{started_at.strftime('%B %d, %Y')}"
     huddle_alias.present? ? "#{base_name} - #{huddle_alias}" : base_name
   end
   
@@ -36,6 +36,19 @@ class Huddle < ApplicationRecord
   
   def department_head
     organization.department_head
+  end
+  
+  def facilitators
+    huddle_participants.facilitators.includes(:person)
+  end
+  
+  def department_head_name
+    dept_head = department_head
+    dept_head&.display_name || 'Department Head'
+  end
+  
+  def facilitator_names
+    facilitators.map { |p| p.person.display_name }
   end
   
   def nat_20_score
@@ -85,7 +98,7 @@ class Huddle < ApplicationRecord
     if suggestions.any?
       insights << "Participants provided #{suggestions.count} improvement suggestions"
     end
-    
+
     # Check participation rate
     if participation_rate < 50
       insights << "Low participation rate (#{participation_rate}%) - consider follow-up"
@@ -94,6 +107,30 @@ class Huddle < ApplicationRecord
     end
     
     insights
+  end
+
+  def team_conflict_style_distribution
+    return {} if huddle_feedbacks.empty?
+    
+    styles = huddle_feedbacks.where.not(team_conflict_style: [nil, '']).pluck(:team_conflict_style)
+    styles.tally
+  end
+
+  def personal_conflict_style_distribution
+    return {} if huddle_feedbacks.empty?
+    
+    styles = huddle_feedbacks.where.not(personal_conflict_style: [nil, '']).pluck(:personal_conflict_style)
+    styles.tally
+  end
+
+  def all_conflict_styles
+    [
+      'Collaborative',
+      'Competing', 
+      'Compromising',
+      'Accommodating',
+      'Avoiding'
+    ]
   end
   
   private

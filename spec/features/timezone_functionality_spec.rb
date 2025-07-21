@@ -1,0 +1,141 @@
+require 'rails_helper'
+
+RSpec.feature 'Timezone Functionality', type: :feature, js: true do
+  let(:organization) { create(:organization, name: 'Test Org') }
+  let(:huddle) { create(:huddle, organization: organization, started_at: Time.current) }
+
+  scenario 'User timezone is automatically detected when joining huddle' do
+    visit join_huddle_path(huddle)
+    
+    # Fill in the form (timezone will be auto-detected by JavaScript or server fallback)
+    fill_in 'Your name', with: 'John Doe'
+    fill_in 'Your email', with: 'john@example.com'
+    select 'Active Participant', from: 'What role will you play in this huddle?'
+    
+    click_button 'Join Huddle'
+    
+    # Should redirect to huddle page
+    expect(page).to have_current_path(huddle_path(huddle))
+    expect(page).to have_content('Welcome to the huddle!')
+    
+    # Check that the person was created with a timezone (JavaScript or server fallback)
+    person = Person.find_by(email: 'john@example.com')
+    expect(person.timezone).to be_present
+  end
+
+  scenario 'Times are displayed in user timezone on huddle cards' do
+    # Create a huddle that's definitely active today
+    today_huddle = create(:huddle, organization: organization, started_at: Time.current)
+    
+    # Create a person with timezone
+    person = create(:person, 
+      first_name: 'John', 
+      last_name: 'Doe', 
+      email: 'john@example.com',
+      timezone: 'Eastern Time (US & Canada)'
+    )
+    
+    # Set up session
+    page.set_rack_session(current_person_id: person.id)
+    
+    visit huddles_path
+    
+    # The time should be displayed in Eastern Time (EDT)
+    # Check for EDT timezone indicator
+    expect(page).to have_content('EDT')
+  end
+
+  scenario 'Times are displayed in UTC when user has no timezone' do
+    # Create a huddle that's definitely active today
+    today_huddle = create(:huddle, organization: organization, started_at: Time.current)
+    
+    # Create a person without timezone
+    person = create(:person, 
+      first_name: 'Jane', 
+      last_name: 'Smith', 
+      email: 'jane@example.com',
+      timezone: nil
+    )
+    
+    # Set up session
+    page.set_rack_session(current_person_id: person.id)
+    
+    visit huddles_path
+    
+    # The time should be displayed in UTC
+    expect(page).to have_content('UTC')
+  end
+
+  scenario 'Timezone is automatically detected when joining huddle' do
+    visit join_huddle_path(huddle)
+    
+    # Fill in the form (timezone will be auto-detected by JavaScript or server fallback)
+    fill_in 'Your name', with: 'Bob Wilson'
+    fill_in 'Your email', with: 'bob@example.com'
+    select 'Active Participant', from: 'What role will you play in this huddle?'
+    
+    click_button 'Join Huddle'
+    
+    # Should redirect to huddle page
+    expect(page).to have_current_path(huddle_path(huddle))
+    expect(page).to have_content('Welcome to the huddle!')
+    
+    # Check that the person was created with a timezone (JavaScript or server fallback)
+    person = Person.find_by(email: 'bob@example.com')
+    expect(person.timezone).to be_present
+  end
+
+  scenario 'User can update timezone when rejoining' do
+    # Create a person without timezone
+    person = create(:person, 
+      first_name: 'Alice', 
+      last_name: 'Johnson', 
+      email: 'alice@example.com',
+      timezone: nil
+    )
+    
+    # Set up session
+    page.set_rack_session(current_person_id: person.id)
+    
+    visit join_huddle_path(huddle)
+    
+    # Should see the logged-in state
+    expect(page).to have_content('Welcome, Alice Johnson!')
+    expect(page).to have_content('You\'re logged in. Please confirm your information and select your role.')
+    
+    # The timezone field should not be visible for logged-in users
+    expect(page).not_to have_field('Your timezone')
+    
+    # Join the huddle
+    select 'Active Participant', from: 'What role will you play in this huddle?'
+    click_button 'Join Huddle'
+    
+    # Should redirect to huddle page
+    expect(page).to have_current_path(huddle_path(huddle))
+    
+    # The person should still have no timezone (since it wasn't updated)
+    person.reload
+    expect(person.timezone).to be_nil
+  end
+
+  scenario 'Server-side timezone fallback works when JavaScript is disabled', js: false do
+    visit join_huddle_path(huddle)
+    
+    # Fill in the form without JavaScript timezone detection
+    fill_in 'Your name', with: 'Server User'
+    fill_in 'Your email', with: 'server@example.com'
+    select 'Active Participant', from: 'What role will you play in this huddle?'
+    
+    click_button 'Join Huddle'
+    
+    # Should redirect to huddle page
+    expect(page).to have_current_path(huddle_path(huddle))
+    expect(page).to have_content('Welcome to the huddle!')
+    
+    # Check that the person was created with a server-side detected timezone
+    person = Person.find_by(email: 'server@example.com')
+    expect(person.timezone).to be_present
+    # Should be UTC or a locale-based timezone
+    expect(['UTC', 'Eastern Time (US & Canada)', 'Central Time (US & Canada)', 'Pacific Time (US & Canada)']).to include(person.timezone)
+  end
+end 

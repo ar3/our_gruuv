@@ -16,14 +16,17 @@
             - else
               .col-md-6.col-lg-4.mb-3
                 .card.h-100
-                  .card-body
+                  .card-body.position-relative
+                    .position-absolute.top-0.end-0.p-2
+                      %button.btn.btn-link.btn-sm.text-muted.share-huddle-btn{data: {huddle_id: huddle.id, join_url: join_huddle_url(huddle)}, title: "Share this huddle"}
+                        %i.bi.bi-link-45deg
                     %h5.card-title= huddle.display_name
                     %p.card-text
                       %strong Organization:
                       = huddle.organization.display_name
                     %p.card-text
                       %small.text-muted
-                        Started: #{huddle.started_at.strftime('%B %d, %Y at %I:%M %p')}
+                        Started: #{format_time_in_user_timezone(huddle.started_at)}
                     - if huddle.nat_20_score
                       %p.card-text
                         %strong Nat 20 Score:

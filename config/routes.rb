@@ -17,6 +17,11 @@ Rails.application.routes.draw do
   # Past huddles for participants
   get '/my-huddles', to: 'huddles#my_huddles', as: :my_huddles
   
+  # Profile management
+  get '/profile', to: 'people#show', as: :profile
+  get '/profile/edit', to: 'people#edit', as: :edit_profile
+  patch '/profile', to: 'people#update', as: :update_profile
+  
   # Session management
   delete '/logout', to: 'application#logout', as: :logout
   

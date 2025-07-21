@@ -1,10 +1,10 @@
+- policy = policy(@huddle)
 .container.mt-4
   .row
     .col-12
       .d-flex.justify-content-between.align-items-center.mb-4
         %h1 Huddle Summary
         = link_to "← Back to Huddle", huddle_path(@huddle), class: "btn btn-outline-secondary"
-      
       .card.mb-4
         .card-header
           %h2.mb-0= @huddle.display_name
@@ -13,10 +13,10 @@
             .col-md-6
               %p
                 %strong Organization:
-                = @huddle.organization.display_name
+                = @huddle.organization.name
               %p
                 %strong Started:
-                = @huddle.started_at.strftime('%B %d, %Y at %I:%M %p')
+                = format_time_in_user_timezone(@huddle.started_at)
               %p
                 %strong Status:
                 - if @huddle.closed?
@@ -33,85 +33,330 @@
               %p
                 %strong Participation Rate:
                 %span.badge.bg-info= "#{@huddle.participation_rate}%"
-      
-      - if @huddle.huddle_feedbacks.any?
-        .row
-          .col-md-6
-            .card.mb-4
-              .card-header
-                %h3.mb-0 Average Ratings
-              .card-body
-                - ratings = @huddle.average_rating_by_category
-                - if ratings.any?
-                  .row
-                    .col-6
-                      %p
-                        %strong Informed:
-                        %span.badge.bg-primary= ratings[:informed]
-                      %p
-                        %strong Connected:
-                        %span.badge.bg-success= ratings[:connected]
-                    .col-6
-                      %p
-                        %strong Goals:
-                        %span.badge.bg-warning= ratings[:goals]
-                      %p
-                        %strong Valuable:
-                        %span.badge.bg-info= ratings[:valuable]
-                  
-                  .mt-3
-                    %h4 Overall Score
-                    %h2.text-center.text-primary= @huddle.nat_20_score
-                    %p.text-center.text-muted Nat 20 Score
-                - else
-                  %p.text-muted No ratings available
-          
-          .col-md-6
-            .card.mb-4
-              .card-header
-                %h3.mb-0 Insights
-              .card-body
-                - insights = @huddle.feedback_insights
-                - if insights.any?
-                  %ul.list-unstyled
-                    - insights.each do |insight|
-                      %li.mb-2
-                        %i.bi.bi-lightbulb.me-2
-                        = insight
-                - else
-                  %p.text-muted No insights available yet
-        
-        .row
-          .col-12
-            .card.mb-4
-              .card-header
-                %h3.mb-0 Feedback Highlights
-              .card-body
-                - appreciations = @huddle.huddle_feedbacks.where.not(appreciation: [nil, '']).limit(3)
-                - if appreciations.any?
-                  %h5 What went well:
-                  - appreciations.each do |feedback|
-                    .alert.alert-success
-                      %i.bi.bi-heart.me-2
-                      = feedback.appreciation
-                
-                - suggestions = @huddle.huddle_feedbacks.where.not(change_suggestion: [nil, '']).limit(3)
-                - if suggestions.any?
-                  %h5.mt-3 Improvement suggestions:
-                  - suggestions.each do |feedback|
-                    .alert.alert-warning
-                      %i.bi.bi-lightbulb.me-2
-                      = feedback.change_suggestion
-                
-                - if appreciations.empty? && suggestions.empty?
-                  %p.text-muted No detailed feedback available yet
-      - else
+
+  - if @huddle.huddle_feedbacks.any?
+    .row
+      .col-md-6
         .card.mb-4
-          .card-body.text-center
-            %h3.text-muted No feedback submitted yet
-            %p.mb-4 This huddle summary will populate once participants submit feedback.
-            = link_to "Submit Feedback", feedback_huddle_path(@huddle), class: "btn btn-primary"
+          .card-header
+            %h3.mb-0 Average Ratings
+          .card-body
+            - ratings = @huddle.average_rating_by_category
+            - if ratings.any?
+              .row
+                .col-6
+                  %p
+                    %strong Informed:
+                    %span.badge.bg-primary= ratings[:informed]
+                  %p
+                    %strong Connected:
+                    %span.badge.bg-success= ratings[:connected]
+                .col-6
+                  %p
+                    %strong Goals:
+                    %span.badge.bg-warning= ratings[:goals]
+                  %p
+                    %strong Valuable:
+                    %span.badge.bg-info= ratings[:valuable]
+              .mt-3
+                %h4 Overall Score
+                %h2.text-center.text-primary= @huddle.nat_20_score
+                %p.text-center.text-muted Nat 20 Score
+            - else
+              %p.text-muted No ratings available
+      .col-md-6
+        .card.mb-4
+          .card-header
+            %h3.mb-0 Insights
+          .card-body
+            - insights = @huddle.feedback_insights
+            - if insights.any?
+              %ul.list-unstyled
+                - insights.each do |insight|
+                  %li.mb-2
+                    %i.bi.bi-lightbulb.me-2
+                    = insight
+            - else
+              %p.text-muted No insights available yet
+            
+
+    .row
+      .col-12
+        .card.mb-4
+          .card-header
+            %h3.mb-0 Feedback Highlights
+          .card-body
+            - appreciations = @huddle.huddle_feedbacks.where.not(appreciation: [nil, '']).limit(3)
+            - if appreciations.any?
+              %h5 What went well:
+              - appreciations.each do |feedback|
+                .alert.alert-success
+                  %i.bi.bi-heart.me-2
+                  = feedback.appreciation
+            - suggestions = @huddle.huddle_feedbacks.where.not(change_suggestion: [nil, '']).limit(3)
+            - if suggestions.any?
+              %h5.mt-3 Improvement suggestions:
+              - suggestions.each do |feedback|
+                .alert.alert-warning
+                  %i.bi.bi-lightbulb.me-2
+                  = feedback.change_suggestion
+            - if appreciations.empty? && suggestions.empty?
+              %p.text-muted No detailed feedback available yet
       
-      .d-flex.justify-content-between
-        = link_to "← Back to Huddle", huddle_path(@huddle), class: "btn btn-outline-secondary"
-        = link_to "View All My Huddles", my_huddles_path, class: "btn btn-outline-primary" 
+      / Conflict Styles Analysis
+      - team_conflict_styles = @huddle.team_conflict_style_distribution
+      - personal_conflict_styles = @huddle.personal_conflict_style_distribution
+      .row
+        .col-12
+          .card.mb-4
+            .card-header
+              %h3.mb-0
+                %i.bi.bi-graph-up.me-2
+                Conflict Style Analysis
+            .card-body
+              .row
+                .col-md-6
+                  %h5.mb-3 Team Conflict Styles
+                  - if team_conflict_styles.any?
+                    - total_team = team_conflict_styles.values.sum
+                    - team_conflict_styles.each do |style, count|
+                      - percentage = (count.to_f / total_team * 100).round(1)
+                      .mb-3
+                        .d-flex.justify-content-between.align-items-center.mb-1
+                          %strong= style
+                          %span
+                            %span.badge.bg-info.me-1= count
+                            %small.text-muted (#{percentage}%)
+                        .progress{style: "height: 6px;"}
+                          .progress-bar.bg-info{style: "width: #{percentage}%"}
+                  - else
+                    .text-muted.text-center.py-4
+                      %i.bi.bi-people.bi-2x.mb-2
+                      %p.mb-0 No team conflict style data yet
+                      %small Submit feedback to see team conflict style distribution
+                    / Show all possible styles with zero counts
+                    - @huddle.all_conflict_styles.each do |style|
+                      .mb-2
+                        .d-flex.justify-content-between.align-items-center.mb-1
+                          %span.text-muted= style
+                          %span
+                            %span.badge.bg-light.text-muted.me-1 0
+                            %small.text-muted (0%)
+                        .progress{style: "height: 6px;"}
+                          .progress-bar.bg-light{style: "width: 0%"}
+                .col-md-6
+                  %h5.mb-3 Personal Conflict Styles
+                  - if personal_conflict_styles.any?
+                    - total_personal = personal_conflict_styles.values.sum
+                    - personal_conflict_styles.each do |style, count|
+                      - percentage = (count.to_f / total_personal * 100).round(1)
+                      .mb-3
+                        .d-flex.justify-content-between.align-items-center.mb-1
+                          %strong= style
+                          %span
+                            %span.badge.bg-success.me-1= count
+                            %small.text-muted (#{percentage}%)
+                        .progress{style: "height: 6px;"}
+                          .progress-bar.bg-success{style: "width: #{percentage}%"}
+                  - else
+                    .text-muted.text-center.py-4
+                      %i.bi.bi-person.bi-2x.mb-2
+                      %p.mb-0 No personal conflict style data yet
+                      %small Submit feedback to see personal conflict style distribution
+                    / Show all possible styles with zero counts
+                    - @huddle.all_conflict_styles.each do |style|
+                      .mb-2
+                        .d-flex.justify-content-between.align-items-center.mb-1
+                          %span.text-muted= style
+                          %span
+                            %span.badge.bg-light.text-muted.me-1 0
+                            %small.text-muted (0%)
+                        .progress{style: "height: 6px;"}
+                          .progress-bar.bg-light{style: "width: 0%"}
+  - else
+    .card.mb-4
+      .card-body.text-center
+        %h3.text-muted No feedback submitted yet
+        %p.mb-4 This huddle summary will populate once participants submit feedback.
+        = link_to "Submit Feedback", feedback_huddle_path(@huddle), class: "btn btn-primary"
+
+  - if policy.view_individual_responses?
+    .row
+      .col-12
+        .alert.alert-warning.mt-4
+          %strong Facilitator Only:
+          This section is visible to facilitators and department head.
+    .row
+      .col-12
+        .card.mb-4
+          .card-header
+            %h3.mb-0 All Participants & Feedback
+          .card-body
+            .table-responsive
+              %table.table.table-striped.table-hover
+                %thead.table-dark
+                  %tr
+                    %th Participant
+                    %th Role
+                    %th Status
+                    %th Informed
+                    %th Connected
+                    %th Goals
+                    %th Valuable
+                    %th Total Score
+                    %th Appreciation
+                    %th Change Suggestion
+                    %th Personal Conflict Style
+                    %th Team Conflict Style
+                    %th Private Feedback
+                %tbody
+                  - @huddle.huddle_participants.includes(:person).each do |participant|
+                    - feedback = @huddle.huddle_feedbacks.find_by(person: participant.person)
+                    %tr{class: feedback ? '' : 'table-secondary', 
+                        style: "cursor: pointer;", 
+                        onclick: "showParticipantDetails('#{participant.person.full_name}', '#{participant.role_label}', '#{feedback ? 'Submitted' : 'Pending'}', #{feedback&.informed_rating || 'null'}, #{feedback&.connected_rating || 'null'}, #{feedback&.goals_rating || 'null'}, #{feedback&.valuable_rating || 'null'}, #{feedback&.nat_20_score || 'null'}, '#{feedback&.personal_conflict_style || ''}', '#{feedback&.team_conflict_style || ''}', '#{feedback&.appreciation&.gsub("'", "\\'") || ''}', '#{feedback&.change_suggestion&.gsub("'", "\\'") || ''}', '#{feedback&.private_department_head&.gsub("'", "\\'") || ''}', '#{feedback&.private_facilitator&.gsub("'", "\\'") || ''}')"}
+                      %td
+                        %strong= participant.person.full_name
+                      %td
+                        %small= participant.role_label || 'Participant'
+                      %td
+                        - if feedback
+                          %span.badge.bg-success Submitted
+                        - else
+                          %span.badge.bg-warning Pending
+                      %td.text-center
+                        - if feedback
+                          %span.badge.bg-primary= feedback.informed_rating
+                        - else
+                          %span.text-muted —
+                      %td.text-center
+                        - if feedback
+                          %span.badge.bg-success= feedback.connected_rating
+                        - else
+                          %span.text-muted —
+                      %td.text-center
+                        - if feedback
+                          %span.badge.bg-warning= feedback.goals_rating
+                        - else
+                          %span.text-muted —
+                      %td.text-center
+                        - if feedback
+                          %span.badge.bg-info= feedback.valuable_rating
+                        - else
+                          %span.text-muted —
+                      %td.text-center
+                        - if feedback
+                          %strong= feedback.nat_20_score
+                        - else
+                          %span.text-muted —
+                      %td
+                        - if feedback&.appreciation.present?
+                          %span.badge.bg-success Yes
+                        - elsif feedback
+                          %span.badge.bg-secondary No
+                        - else
+                          %span.text-muted —
+                      %td
+                        - if feedback&.change_suggestion.present?
+                          %span.badge.bg-warning Yes
+                        - elsif feedback
+                          %span.badge.bg-secondary No
+                        - else
+                          %span.text-muted —
+                      %td
+                        - if feedback&.personal_conflict_style.present?
+                          %small= feedback.personal_conflict_style
+                        - elsif feedback
+                          %small.text-muted Not specified
+                        - else
+                          %span.text-muted —
+                      %td
+                        - if feedback&.team_conflict_style.present?
+                          %small= feedback.team_conflict_style
+                        - elsif feedback
+                          %small.text-muted Not specified
+                        - else
+                          %span.text-muted —
+                      %td
+                        - if feedback&.has_private_feedback?
+                          %span.badge.bg-secondary Private
+                        - elsif feedback
+                          %small.text-muted None
+                        - else
+                          %span.text-muted —
+
+  .d-flex.justify-content-between
+    = link_to "← Back to Huddle", huddle_path(@huddle), class: "btn btn-outline-secondary"
+    = link_to "View All My Huddles", my_huddles_path, class: "btn btn-outline-primary"
+    
+    :javascript
+      function showParticipantDetails(name, role, status, informed, connected, goals, valuable, total, personalConflict, teamConflict, appreciation, changeSuggestion, privateDeptHead, privateFacilitator) {
+        // Populate modal fields
+        document.getElementById('modalParticipantName').textContent = name;
+        document.getElementById('modalParticipantRole').textContent = role;
+        document.getElementById('modalParticipantStatus').textContent = status;
+        
+        // Ratings
+        document.getElementById('modalInformedRating').textContent = informed !== null ? informed : '—';
+        document.getElementById('modalConnectedRating').textContent = connected !== null ? connected : '—';
+        document.getElementById('modalGoalsRating').textContent = goals !== null ? goals : '—';
+        document.getElementById('modalValuableRating').textContent = valuable !== null ? valuable : '—';
+        document.getElementById('modalTotalScore').textContent = total !== null ? total : '—';
+        
+        // Conflict styles
+        const personalConflictDiv = document.getElementById('modalPersonalConflict');
+        if (personalConflict) {
+          personalConflictDiv.innerHTML = '<strong>' + personalConflict + '</strong><br><small class="text-muted">' + 
+            (personalConflict === 'Collaborative' ? 'High assertiveness, high cooperativeness - Seeks win-win solutions' :
+              personalConflict === 'Competing' ? 'High assertiveness, low cooperativeness - Pursues own concerns at others\' expense' :
+              personalConflict === 'Compromising' ? 'Medium assertiveness, medium cooperativeness - Seeks middle ground' :
+              personalConflict === 'Accommodating' ? 'Low assertiveness, high cooperativeness - Yields to others\' concerns' :
+              personalConflict === 'Avoiding' ? 'Low assertiveness, low cooperativeness - Withdraws from conflict' : '') + '</small>';
+        } else {
+          personalConflictDiv.textContent = 'Not specified';
+        }
+        
+        const teamConflictDiv = document.getElementById('modalTeamConflict');
+        if (teamConflict) {
+          teamConflictDiv.innerHTML = '<strong>' + teamConflict + '</strong><br><small class="text-muted">' + 
+            (teamConflict === 'Collaborative' ? 'High assertiveness, high cooperativeness - Seeks win-win solutions' :
+              teamConflict === 'Competing' ? 'High assertiveness, low cooperativeness - Pursues own concerns at others\' expense' :
+              teamConflict === 'Compromising' ? 'Medium assertiveness, medium cooperativeness - Seeks middle ground' :
+              teamConflict === 'Accommodating' ? 'Low assertiveness, high cooperativeness - Yields to others\' concerns' :
+              teamConflict === 'Avoiding' ? 'Low assertiveness, low cooperativeness - Withdraws from conflict' : '') + '</small>';
+        } else {
+          teamConflictDiv.textContent = 'Not specified';
+        }
+        
+        // Feedback
+        const appreciationDiv = document.getElementById('modalAppreciation');
+        if (appreciation) {
+          appreciationDiv.innerHTML = '<div class="alert alert-success"><i class="bi bi-heart me-2"></i>' + appreciation + '</div>';
+        } else {
+          appreciationDiv.innerHTML = '<p class="text-muted">No appreciation shared</p>';
+        }
+        
+        const changeSuggestionDiv = document.getElementById('modalChangeSuggestion');
+        if (changeSuggestion) {
+          changeSuggestionDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-lightbulb me-2"></i>' + changeSuggestion + '</div>';
+        } else {
+          changeSuggestionDiv.innerHTML = '<p class="text-muted">No suggestions shared</p>';
+        }
+        
+        const privateFeedbackDiv = document.getElementById('modalPrivateFeedback');
+        let privateContent = '';
+        if (privateDeptHead) {
+          privateContent += '<div class="alert alert-info"><strong>For Department Head:</strong><br>' + privateDeptHead + '</div>';
+        }
+        if (privateFacilitator) {
+          privateContent += '<div class="alert alert-info"><strong>For Facilitator:</strong><br>' + privateFacilitator + '</div>';
+        }
+        if (!privateContent) {
+          privateContent = '<p class="text-muted">No private feedback</p>';
+        }
+        privateFeedbackDiv.innerHTML = privateContent;
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('participantDetailModal'));
+        modal.show();
+      } 

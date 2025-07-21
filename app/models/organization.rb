@@ -35,4 +35,12 @@ class Organization < ApplicationRecord
     # For now, we'll implement this when we add the manager concept
     nil
   end
+  
+  def display_name
+    if parent
+      "#{parent.display_name} > #{name}"
+    else
+      name
+    end
+  end
 end 

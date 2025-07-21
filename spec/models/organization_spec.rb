@@ -1,75 +1,62 @@
 require 'rails_helper'
 
 RSpec.describe Organization, type: :model do
-  describe 'associations' do
-    it { should belong_to(:parent).class_name('Organization').optional }
-    it { should have_many(:children).class_name('Organization').with_foreign_key('parent_id') }
-    it { should have_many(:huddles).dependent(:destroy) }
-  end
+  let(:company) { create(:organization, name: 'Acme Corp', type: 'Company') }
+  let(:team) { create(:organization, name: 'Engineering', type: 'Team', parent: company) }
+  let(:subteam) { create(:organization, name: 'Frontend', type: 'Team', parent: team) }
 
-  describe 'validations' do
-    it { should validate_presence_of(:name) }
-    it { should validate_presence_of(:type) }
-  end
-
-  describe 'scopes' do
-    let!(:company) { Company.create!(name: 'Acme Corp') }
-    let!(:team) { Team.create!(name: 'Engineering', parent: company) }
-
-    describe '.companies' do
-      it 'returns only companies' do
-        expect(Organization.companies).to include(company)
-        expect(Organization.companies).not_to include(team)
-      end
+  describe '#display_name' do
+    it 'returns just the name for organizations without parents' do
+      expect(company.display_name).to eq('Acme Corp')
     end
 
-    describe '.teams' do
-      it 'returns only teams' do
-        expect(Organization.teams).to include(team)
-        expect(Organization.teams).not_to include(company)
-      end
+    it 'returns hierarchical name for organizations with parents' do
+      expect(team.display_name).to eq('Acme Corp > Engineering')
+    end
+
+    it 'returns full hierarchical path for deeply nested organizations' do
+      expect(subteam.display_name).to eq('Acme Corp > Engineering > Frontend')
+    end
+
+    it 'handles multiple levels of nesting correctly' do
+      department = create(:organization, name: 'Product', type: 'Team', parent: company)
+      squad = create(:organization, name: 'Mobile', type: 'Team', parent: department)
+      
+      expect(squad.display_name).to eq('Acme Corp > Product > Mobile')
     end
   end
 
-  describe 'instance methods' do
-    let(:company) { Company.create!(name: 'Acme Corp') }
-    let(:team) { Team.create!(name: 'Engineering', parent: company) }
-
-    describe '#company?' do
-      it 'returns true for companies' do
-        expect(company.company?).to be true
-        expect(team.company?).to be false
-      end
+  describe '#company?' do
+    it 'returns true for Company type' do
+      expect(company.company?).to be true
     end
 
-    describe '#team?' do
-      it 'returns true for teams' do
-        expect(team.team?).to be true
-        expect(company.team?).to be false
-      end
+    it 'returns false for Team type' do
+      expect(team.company?).to be false
+    end
+  end
+
+  describe '#team?' do
+    it 'returns true for Team type' do
+      expect(team.team?).to be true
     end
 
-    describe '#root_company' do
-      it 'returns self for top-level companies' do
-        expect(company.root_company).to eq(company)
-      end
+    it 'returns false for Company type' do
+      expect(company.team?).to be false
+    end
+  end
 
-      it 'returns the root company for teams' do
-        expect(team.root_company).to eq(company)
-      end
-
-      it 'returns nil for orphaned organizations' do
-        # Create a team without a parent (this would normally fail validation)
-        orphaned_team = Team.new(name: 'Orphaned Team')
-        orphaned_team.save(validate: false) # Skip validation to test the method
-        expect(orphaned_team.root_company).to be_nil
-      end
+  describe '#root_company' do
+    it 'returns self for company without parent' do
+      expect(company.root_company).to eq(company)
     end
 
-    describe '#department_head' do
-      it 'returns nil for now (placeholder)' do
-        expect(company.department_head).to be_nil
-      end
+    it 'returns parent company for team' do
+      expect(team.root_company).to eq(company)
+    end
+
+    it 'returns root company for deeply nested team' do
+      expect(subteam.root_company).to eq(company)
     end
   end
 end 

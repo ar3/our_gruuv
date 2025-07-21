@@ -84,4 +84,22 @@
               
               .d-grid.gap-2.d-md-flex.justify-content-md-end
                 = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary me-md-2"
-                = form.submit "Join Huddle", class: "btn btn-success btn-lg" 
+                = form.submit "Join Huddle", class: "btn btn-success btn-lg"
+              
+              :javascript
+                document.addEventListener('DOMContentLoaded', function() {
+                  // Auto-detect timezone and add it to the form
+                  try {
+                    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    if (timezone) {
+                      const timezoneInput = document.createElement('input');
+                      timezoneInput.type = 'hidden';
+                      timezoneInput.name = 'timezone';
+                      timezoneInput.value = timezone;
+                      document.querySelector('form').appendChild(timezoneInput);
+                    }
+                  } catch (e) {
+                    // If JavaScript timezone detection fails, we'll use server-side fallback
+                    console.log('Timezone detection failed, using server fallback');
+                  }
+                }); 

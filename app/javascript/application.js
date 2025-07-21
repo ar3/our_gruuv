@@ -60,12 +60,117 @@ function initializeToasts() {
   }
 }
 
+// Initialize share huddle functionality
+function initializeShareHuddle() {
+  console.log('Initializing share huddle functionality...')
+  const shareButtons = document.querySelectorAll('.share-huddle-btn')
+  console.log('Found share buttons:', shareButtons.length)
+  
+  shareButtons.forEach(button => {
+    button.addEventListener('click', async (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      
+      const joinUrl = button.dataset.joinUrl
+      console.log('Copying URL to clipboard:', joinUrl)
+      
+      try {
+        await navigator.clipboard.writeText(joinUrl)
+        console.log('URL copied to clipboard successfully')
+        
+        // Show success feedback
+        const originalIcon = button.innerHTML
+        button.innerHTML = '<i class="bi bi-check"></i>'
+        button.classList.remove('text-muted')
+        button.classList.add('text-success')
+        
+        // Reset after 2 seconds
+        setTimeout(() => {
+          button.innerHTML = '<i class="bi bi-link-45deg"></i>'
+          button.classList.remove('text-success')
+          button.classList.add('text-muted')
+        }, 2000)
+        
+        // Show toast notification
+        showToast('Huddle link copied to clipboard!', 'success')
+      } catch (err) {
+        console.error('Failed to copy URL to clipboard:', err)
+        
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea')
+        textArea.value = joinUrl
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+        
+        // Show success feedback
+        const originalIcon = button.innerHTML
+        button.innerHTML = '<i class="bi bi-check"></i>'
+        button.classList.remove('text-muted')
+        button.classList.add('text-success')
+        
+        setTimeout(() => {
+          button.innerHTML = '<i class="bi bi-link-45deg"></i>'
+          button.classList.remove('text-success')
+          button.classList.add('text-muted')
+        }, 2000)
+        
+        showToast('Huddle link copied to clipboard!', 'success')
+      }
+    })
+  })
+}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+  const toastContainer = document.getElementById('toast-container') || createToastContainer()
+  
+  const toastHtml = `
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <strong class="me-auto">${type === 'success' ? 'Success' : 'Info'}</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        ${message}
+      </div>
+    </div>
+  `
+  
+  toastContainer.insertAdjacentHTML('beforeend', toastHtml)
+  
+  const toastElement = toastContainer.lastElementChild
+  const toast = new bootstrap.Toast(toastElement, {
+    autohide: true,
+    delay: 3000
+  })
+  toast.show()
+  
+  // Remove toast element after it's hidden
+  toastElement.addEventListener('hidden.bs.toast', () => {
+    toastElement.remove()
+  })
+}
+
+// Create toast container if it doesn't exist
+function createToastContainer() {
+  const container = document.createElement('div')
+  container.id = 'toast-container'
+  container.className = 'toast-container position-fixed top-0 end-0 p-3'
+  container.style.zIndex = '1055'
+  document.body.appendChild(container)
+  return container
+}
+
 // Try multiple events to ensure tooltips and toasts are initialized
 document.addEventListener('turbo:load', () => {
   initializeTooltips()
   initializeToasts()
+  initializeShareHuddle()
 })
 document.addEventListener('DOMContentLoaded', () => {
   initializeTooltips()
   initializeToasts()
+  initializeShareHuddle()
 })

@@ -16,6 +16,7 @@ class HuddlesController < ApplicationController
   end
 
   def show
+    authorize @huddle
     # Check if current user has already submitted feedback
     if current_person
       @existing_feedback = @huddle.huddle_feedbacks.find_by(person: current_person)
@@ -23,19 +24,11 @@ class HuddlesController < ApplicationController
   end
 
   def summary
+    authorize @huddle, :summary?
     # Check if user is a participant
     @current_person = current_person
     
-    unless @current_person
-      redirect_to join_huddle_path(@huddle), alert: "Please join the huddle to view the summary"
-      return
-    end
-    
     @existing_participant = @current_person.huddle_participants.find_by(huddle: @huddle)
-    unless @existing_participant
-      redirect_to join_huddle_path(@huddle), alert: "Please join the huddle to view the summary"
-      return
-    end
   end
 
   def new
@@ -56,6 +49,8 @@ class HuddlesController < ApplicationController
       started_at: Time.current,
       huddle_alias: huddle_params[:huddle_alias]
     )
+    
+    authorize @huddle
     
     if @huddle.save
       # Add the creator as a participant (default to facilitator)
@@ -94,6 +89,7 @@ class HuddlesController < ApplicationController
   end
 
   def join
+    authorize @huddle, :join?
     # Set current person from session
     @current_person = current_person
     
@@ -102,6 +98,7 @@ class HuddlesController < ApplicationController
   end
 
   def join_huddle
+    authorize @huddle, :join_huddle?
     # Get the person - either from session or create from params
     person = get_or_create_person_from_session_or_params(:join)
     
@@ -127,39 +124,21 @@ class HuddlesController < ApplicationController
   end
 
   def feedback
+    authorize @huddle, :feedback?
     # Get current person from session
     @current_person = current_person
     
-    # Redirect if not logged in
-    unless @current_person
-      redirect_to join_huddle_path(@huddle), alert: "Please join the huddle before submitting feedback"
-      return
-    end
-    
     # Check if user is a participant
     @existing_participant = @current_person.huddle_participants.find_by(huddle: @huddle)
-    unless @existing_participant
-      redirect_to join_huddle_path(@huddle), alert: "Please join the huddle before submitting feedback"
-      return
-    end
   end
 
   def submit_feedback
+    authorize @huddle, :submit_feedback?
     # Get the current person from session
     @current_person = current_person
     
-    # Redirect if not logged in
-    unless @current_person
-      redirect_to join_huddle_path(@huddle), alert: "Please join the huddle before submitting feedback"
-      return
-    end
-    
     # Check if user is a participant
     @existing_participant = @current_person.huddle_participants.find_by(huddle: @huddle)
-    unless @existing_participant
-      redirect_to join_huddle_path(@huddle), alert: "Please join the huddle before submitting feedback"
-      return
-    end
     
     # Create the feedback
     @feedback = @huddle.huddle_feedbacks.build(
@@ -168,6 +147,8 @@ class HuddlesController < ApplicationController
       connected_rating: feedback_params[:connected_rating],
       goals_rating: feedback_params[:goals_rating],
       valuable_rating: feedback_params[:valuable_rating],
+      personal_conflict_style: feedback_params[:personal_conflict_style],
+      team_conflict_style: feedback_params[:team_conflict_style],
       appreciation: feedback_params[:appreciation],
       change_suggestion: feedback_params[:change_suggestion],
       private_department_head: feedback_params[:private_department_head],
@@ -219,11 +200,12 @@ class HuddlesController < ApplicationController
   # These methods are now abstracted to ApplicationController
 
   def join_params
-    params.permit(:name, :email, :role)
+    params.permit(:name, :email, :timezone, :role)
   end
 
   def feedback_params
     params.permit(:informed_rating, :connected_rating, :goals_rating, :valuable_rating, 
+                  :personal_conflict_style, :team_conflict_style,
                   :appreciation, :change_suggestion, :private_department_head, :private_facilitator, :anonymous)
   end
 end

@@ -223,4 +223,74 @@ RSpec.describe Huddle, type: :model do
       end
     end
   end
+
+  describe 'conflict style distributions' do
+    let(:organization) { create(:organization, name: 'Test Org') }
+    let(:huddle) { create(:huddle, organization: organization) }
+    let(:person1) { create(:person, first_name: 'John', last_name: 'Doe') }
+    let(:person2) { create(:person, first_name: 'Jane', last_name: 'Smith') }
+    let(:person3) { create(:person, first_name: 'Bob', last_name: 'Johnson') }
+
+    before do
+      create(:huddle_participant, huddle: huddle, person: person1)
+      create(:huddle_participant, huddle: huddle, person: person2)
+      create(:huddle_participant, huddle: huddle, person: person3)
+    end
+
+    describe '#team_conflict_style_distribution' do
+      it 'returns empty hash when no feedback' do
+        expect(huddle.team_conflict_style_distribution).to eq({})
+      end
+
+      it 'returns distribution of team conflict styles' do
+        create(:huddle_feedback, huddle: huddle, person: person1, team_conflict_style: 'Collaborative')
+        create(:huddle_feedback, huddle: huddle, person: person2, team_conflict_style: 'Collaborative')
+        create(:huddle_feedback, huddle: huddle, person: person3, team_conflict_style: 'Competing')
+
+        expect(huddle.team_conflict_style_distribution).to eq({
+          'Collaborative' => 2,
+          'Competing' => 1
+        })
+      end
+
+      it 'excludes nil and empty values' do
+        create(:huddle_feedback, huddle: huddle, person: person1, team_conflict_style: 'Collaborative')
+        create(:huddle_feedback, huddle: huddle, person: person2, team_conflict_style: nil)
+        create(:huddle_feedback, huddle: huddle, person: person3, team_conflict_style: '')
+
+        expect(huddle.team_conflict_style_distribution).to eq({
+          'Collaborative' => 1
+        })
+      end
+    end
+
+    describe '#personal_conflict_style_distribution' do
+      it 'returns empty hash when no feedback' do
+        expect(huddle.personal_conflict_style_distribution).to eq({})
+      end
+
+      it 'returns distribution of personal conflict styles' do
+        create(:huddle_feedback, huddle: huddle, person: person1, personal_conflict_style: 'Compromising')
+        create(:huddle_feedback, huddle: huddle, person: person2, personal_conflict_style: 'Accommodating')
+        create(:huddle_feedback, huddle: huddle, person: person3, personal_conflict_style: 'Compromising')
+
+        expect(huddle.personal_conflict_style_distribution).to eq({
+          'Compromising' => 2,
+          'Accommodating' => 1
+        })
+      end
+    end
+
+    describe '#all_conflict_styles' do
+      it 'returns all possible conflict styles' do
+        expect(huddle.all_conflict_styles).to eq([
+          'Collaborative',
+          'Competing',
+          'Compromising',
+          'Accommodating',
+          'Avoiding'
+        ])
+      end
+    end
+  end
 end 

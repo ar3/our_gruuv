@@ -7,11 +7,11 @@ class HuddleFeedback < ApplicationRecord
   validates :informed_rating, :connected_rating, :goals_rating, :valuable_rating,
             presence: true, inclusion: { in: 0..5 }
   validates :personal_conflict_style, :team_conflict_style,
-            inclusion: { in: %w[Collaborative Competing Compromising Accommodating Avoiding Other], allow_blank: true }
+            inclusion: { in: %w[Collaborative Competing Compromising Accommodating Avoiding], allow_blank: true }
   validates :person_id, uniqueness: { scope: :huddle_id }
   
   # Constants
-  CONFLICT_STYLES = %w[Collaborative Competing Compromising Accommodating Avoiding Other].freeze
+  CONFLICT_STYLES = %w[Collaborative Competing Compromising Accommodating Avoiding].freeze
   
   # Scopes
   scope :anonymous, -> { where(anonymous: true) }

@@ -3,15 +3,6 @@
     .col-12
       %h1.mb-3= @huddle.display_name
       
-      - if @huddle.department_head
-        .alert.alert-info
-          %strong Department Head:
-          = @huddle.department_head
-      - else
-        .alert.alert-warning
-          %strong Note:
-          No department head has been defined yet. You can still submit feedback, and once a manager is set, they will have access to your feedback.
-      
       / Huddle Details at the top - with distinct styling
       .row.mt-4
         .col-12
@@ -28,10 +19,10 @@
                     = @huddle.organization.display_name
                   %p
                     %strong Started:
-                    = @huddle.started_at.strftime('%B %d, %Y at %I:%M %p')
+                    = format_time_in_user_timezone(@huddle.started_at)
                   %p
                     %strong Expires:
-                    = @huddle.started_at.end_of_day.strftime('%B %d, %Y at %I:%M %p')
+                    = format_time_in_user_timezone(@huddle.started_at.end_of_day)
                     %small.text-muted.ms-2 (End of day)
                   %p
                     %strong Status:
