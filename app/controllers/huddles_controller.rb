@@ -192,7 +192,7 @@ class HuddlesController < ApplicationController
   # Remove this method since it's already defined in ApplicationController
 
   def huddle_params
-    params.require(:huddle).permit(:company_name, :team_name, :huddle_alias, :name, :email)
+    params.require(:huddle).permit(:company_name, :team_name, :huddle_alias, :slack_channel, :name, :email)
   end
 
   def find_or_create_organization

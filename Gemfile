@@ -80,3 +80,9 @@ gem "rails-controller-testing", "~> 1.0", group: :test
 gem "rack_session_access", "~> 0.2", group: :test
 gem "pundit", "~> 2.5"
 gem "draper", "~> 4.0"
+
+# Slack API integration
+gem "slack-ruby-client", "~> 2.0"
+
+# Environment variables
+gem "dotenv-rails", "~> 3.1"

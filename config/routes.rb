@@ -25,6 +25,14 @@ Rails.application.routes.draw do
   # Session management
   delete '/logout', to: 'application#logout', as: :logout
   
+  # Slack integration routes
+  namespace :slack do
+    get :test_connection
+    get :list_channels
+    post :post_test_message
+    get :configuration_status
+  end
+  
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
