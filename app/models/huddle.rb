@@ -19,11 +19,18 @@ class Huddle < ApplicationRecord
   }
   
   # Instance methods
-  def display_name
-    base_name = "#{organization.display_name} - #{started_at.strftime('%B %d, %Y')}"
-    huddle_alias.present? ? "#{base_name} - #{huddle_alias}" : base_name
+  def huddle_display_day
+    started_at.strftime('%B %d, %Y')
+  end
+
+  def display_name_without_organization
+    huddle_alias.present? ? "#{huddle_display_day} - #{huddle_alias}" : huddle_display_day
   end
   
+  def display_name
+    "#{organization.display_name} - #{display_name_without_organization}"
+  end
+
   def slug
     "#{organization.name.parameterize}_#{started_at.strftime('%Y-%m-%d')}"
   end
@@ -32,6 +39,8 @@ class Huddle < ApplicationRecord
     # Huddle closes 24 hours after it was started
     expires_at < Time.current
   end
+
+
   
   def department_head
     organization.department_head

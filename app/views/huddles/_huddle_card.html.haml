@@ -1,34 +1,35 @@
+- participant = current_person.present? && huddle.huddle_participants.find_by(person: current_person)
 .col-md-6.col-lg-4.mb-3
   .card.h-100
     .card-body.position-relative
       .position-absolute.top-0.end-0.p-2
         %button.btn.btn-link.btn-sm.text-muted.share-huddle-btn{data: {huddle_id: huddle.id, join_url: join_huddle_url(huddle)}, title: "Share this huddle"}
           %i.bi.bi-link-45deg
-      %h5.card-title= huddle.display_name
+      %h5.card-title{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "Started at #{format_time_in_user_timezone(huddle.started_at)}"}
+        = huddle.display_name_without_organization
       %p.card-text
-        %strong Organization:
+        %strong
+          Team:
         = huddle.organization.display_name
-      %p.card-text
-        %small.text-muted
-          Started: #{format_time_in_user_timezone(huddle.started_at)}
-          - if current_person
-            - participant = huddle.huddle_participants.find_by(person: current_person)
-            - if participant
-              %span.badge.bg-secondary.ms-2= participant.role.titleize
-      
+        - if participant
+          %span.badge.bg-secondary.ms-2= participant.role.titleize
       .row
         .col-6
-          - if huddle.nat_20_score
-            %p.card-text
-              %strong Nat 20 Score:
+          %p.card-text
+            %strong Nat 20 Score:
+            - if huddle.nat_20_score
               %span.badge.bg-success= huddle.nat_20_score
+            - else
+              %span.badge.bg-secondary --
         .col-6
           %p.card-text
-            %strong Gave Feedback:
+            %strong Feedback:
             %span.badge.bg-info= "#{huddle.huddle_feedbacks.count} of #{huddle.huddle_participants.count}"
       
       .mt-3
-        .btn-group.w-100
-          = link_to "View Huddle", huddle_path(huddle), class: "btn btn-outline-primary btn-sm"
-          - if current_person && huddle.huddle_participants.find_by(person: current_person)
-            = link_to "Summary", summary_huddle_path(huddle), class: "btn btn-outline-info btn-sm" 
+        - if participant
+          .btn-group.w-100
+            = link_to "View Huddle", huddle_path(huddle), class: "btn btn-outline-primary btn-sm"
+            = link_to "Summary", summary_huddle_path(huddle), class: "btn btn-outline-info btn-sm"
+        - else
+          = link_to "Join Huddle", join_huddle_path(huddle), class: "btn btn-outline-primary btn-sm w-100" 

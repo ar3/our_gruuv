@@ -44,7 +44,7 @@ RSpec.describe 'huddles/summary', type: :view do
   end
 
   before do
-    assign(:huddle, huddle)
+    assign(:huddle, huddle.decorate)
   end
 
   context 'as a participant' do

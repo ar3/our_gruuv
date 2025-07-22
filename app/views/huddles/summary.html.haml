@@ -10,29 +10,21 @@
           %h2.mb-0= @huddle.display_name
         .card-body
           .row
-            .col-md-6
+            .col-md-4.col-sm-12
               %p
                 %strong Organization:
-                = @huddle.organization.name
+                = @huddle.organization.display_name
+            .col-md-4.col-sm-12
               %p
-                %strong Started:
-                = format_time_in_user_timezone(@huddle.started_at)
-              %p
-                %strong Status:
+                %strong{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "started at #format_time_in_user_timezone(@huddle.started_at)"} Status:
                 - if @huddle.closed?
-                  %span.badge.bg-secondary Closed
+                  %span.badge.bg-secondary= @huddle.status_with_time
                 - else
-                  %span.badge.bg-success Active
-            .col-md-6
+                  %span.badge.bg-success= @huddle.status_with_time
+            .col-md-4.col-sm-12
               %p
                 %strong Participants:
-                = @huddle.huddle_participants.count
-              %p
-                %strong Feedback Submitted:
-                = @huddle.huddle_feedbacks.count
-              %p
-                %strong Participation Rate:
-                %span.badge.bg-info= "#{@huddle.participation_rate}%"
+                = "#{@huddle.huddle_feedbacks.count} of #{@huddle.huddle_participants.count} participants submitted feedback"
 
   - if @huddle.huddle_feedbacks.any?
     .row

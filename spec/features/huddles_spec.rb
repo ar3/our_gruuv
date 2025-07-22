@@ -150,10 +150,9 @@ RSpec.feature 'Huddles', type: :feature do
     
     visit summary_huddle_path(huddle)
     
-    expect(page).to have_content('50%') # Participation rate (1 out of 2)
+    expect(page).to have_content('1 of 2 participants submitted feedback')
     expect(page).to have_content('Good discussion')
     expect(page).to have_content('Need more time')
-    expect(page).to have_content('50%') # Participation rate (1 out of 2)
   end
 
   scenario 'creating a new huddle when not logged in' do

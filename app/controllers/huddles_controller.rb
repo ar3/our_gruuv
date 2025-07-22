@@ -29,6 +29,7 @@ class HuddlesController < ApplicationController
     @current_person = current_person
     
     @existing_participant = @current_person.huddle_participants.find_by(huddle: @huddle)
+    @huddle = @huddle.decorate
   end
 
   def new

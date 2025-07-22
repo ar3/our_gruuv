@@ -12,15 +12,24 @@ RSpec.describe 'huddles/_huddle_card', type: :view do
   end
 
   it 'displays the huddle name' do
-    expect(rendered).to have_content(huddle.display_name)
+    expect(rendered).to have_content(huddle.display_name_without_organization)
   end
 
   it 'displays the organization name' do
     expect(rendered).to have_content(organization.display_name)
   end
 
-  it 'displays the start time' do
-    expect(rendered).to have_content(huddle.started_at.strftime('%B %d, %Y at %I:%M %p UTC'))
+  it 'shows team label for participants' do
+    expect(rendered).to have_content('Team:')
+  end
+
+  it 'has view huddle and summary links for participants' do
+    expect(rendered).to have_link('View Huddle', href: huddle_path(huddle))
+    expect(rendered).to have_link('Summary', href: summary_huddle_path(huddle))
+  end
+
+  it 'displays the start time in tooltip' do
+    expect(rendered).to have_css("h5[title*='Started at']")
   end
 
   it 'displays the participant role' do
@@ -46,14 +55,6 @@ RSpec.describe 'huddles/_huddle_card', type: :view do
     expect(rendered).to have_css('.position-absolute.top-0.end-0')
   end
 
-  it 'has view huddle link' do
-    expect(rendered).to have_link('View Huddle', href: huddle_path(huddle))
-  end
-
-  it 'has summary link for participants' do
-    expect(rendered).to have_link('Summary', href: summary_huddle_path(huddle))
-  end
-
   it 'displays nat 20 score if available' do
     create(:huddle_feedback, huddle: huddle, person: person, informed_rating: 4, connected_rating: 5, goals_rating: 4, valuable_rating: 5)
     render partial: 'huddles/huddle_card', locals: { huddle: huddle, current_person: person }
@@ -65,4 +66,6 @@ RSpec.describe 'huddles/_huddle_card', type: :view do
     render partial: 'huddles/huddle_card', locals: { huddle: huddle, current_person: person }
     expect(rendered).to have_content('1 of 1')
   end
+
+
 end 

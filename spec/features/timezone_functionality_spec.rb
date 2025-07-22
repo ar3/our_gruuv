@@ -40,9 +40,9 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
     
     visit huddles_path
     
-    # The time should be displayed in Eastern Time (EDT)
-    # Check for EDT timezone indicator
-    expect(page).to have_content('EDT')
+    # The time should be displayed in Eastern Time (EDT) in the tooltip
+    # Check for EDT timezone indicator in the tooltip
+    expect(page).to have_css("h5[title*='EDT']")
   end
 
   scenario 'Times are displayed in UTC when user has no timezone' do
@@ -62,8 +62,8 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
     
     visit huddles_path
     
-    # The time should be displayed in UTC
-    expect(page).to have_content('UTC')
+    # The time should be displayed in UTC in the tooltip
+    expect(page).to have_css("h5[title*='UTC']")
   end
 
   scenario 'Timezone is automatically detected when joining huddle' do
