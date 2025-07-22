@@ -20,6 +20,68 @@ class ApplicationController < ActionController::Base
     current_person
   end
   
+  # Helper method to capture errors in Sentry with context
+  def capture_error_in_sentry(error, context = {})
+    Sentry.capture_exception(error) do |event|
+      # Add controller context if available
+      if respond_to?(:controller_name) && respond_to?(:action_name)
+        event.set_context('controller', {
+          controller: controller_name,
+          action: action_name
+        })
+        
+        # Add params if available and filtered
+        if respond_to?(:params) && params.respond_to?(:except)
+          filtered_params = params.except(:controller, :action, :password, :password_confirmation)
+          # Convert ActionController::Parameters to Hash for Sentry
+          params_hash = filtered_params.respond_to?(:to_unsafe_h) ? filtered_params.to_unsafe_h : filtered_params
+          event.set_context('params', params_hash)
+        end
+      end
+      
+      # Add custom context
+      context.each do |key, value|
+        # Sentry expects context values to be hashes or simple values
+        if value.is_a?(Hash)
+          event.set_context(key.to_s, value)
+        else
+          event.set_context(key.to_s, { value: value.to_s })
+        end
+      end
+      
+      # Add user context if available
+      if respond_to?(:current_person) && current_person
+        event.set_user(
+          id: current_person.id,
+          email: current_person.email,
+          name: current_person.display_name
+        )
+      end
+    end
+  end
+  
+  def handle_standard_error(exception)
+    # Capture the error in Sentry
+    capture_error_in_sentry(exception, {
+      method: 'global_error_handler',
+      controller: controller_name,
+      action: action_name
+    })
+    
+    # Log the error
+    Rails.logger.error "🚨 GLOBAL_ERROR_HANDLER: #{exception.class} - #{exception.message}"
+    Rails.logger.error "🚨 GLOBAL_ERROR_HANDLER: Backtrace: #{exception.backtrace.first(10).join("\n")}"
+    
+    # In development, re-raise the exception to see the full error page
+    if Rails.env.development?
+      raise exception
+    else
+      # In production, show a generic error page
+      flash[:error] = "An unexpected error occurred. Please try again."
+      redirect_back(fallback_location: root_path)
+    end
+  end
+  
   private
   
   def user_not_authorized
@@ -34,6 +96,8 @@ class ApplicationController < ActionController::Base
     flash[:alert] = "You are not authorized to perform this action."
     redirect_back(fallback_location: root_path)
   end
+  
+
 
   # Override Pundit's authorize method to capture context for custom redirects
   def authorize(record, query = nil, policy_class: nil)
@@ -78,11 +142,21 @@ class ApplicationController < ActionController::Base
       find_or_create_person_from_params(params_key)
     end
   rescue ActiveRecord::RecordNotFound => e
+    capture_error_in_sentry(e, {
+      method: 'get_or_create_person_from_session_or_params',
+      session_person_id: session[:current_person_id],
+      params_key: params_key
+    })
     Rails.logger.error "🔍 GET_OR_CREATE_PERSON: Person not found in session: #{session[:current_person_id]}"
     Rails.logger.error "🔍 GET_OR_CREATE_PERSON: Clearing session and creating from params"
     session.delete(:current_person_id)
     find_or_create_person_from_params(params_key)
   rescue => e
+    capture_error_in_sentry(e, {
+      method: 'get_or_create_person_from_session_or_params',
+      session_person_id: session[:current_person_id],
+      params_key: params_key
+    })
     Rails.logger.error "🔍 GET_OR_CREATE_PERSON: Error creating person from params: #{e.class} - #{e.message}"
     Rails.logger.error "🔍 GET_OR_CREATE_PERSON: Backtrace: #{e.backtrace.first(5).join("\n")}"
     raise e
@@ -104,13 +178,25 @@ class ApplicationController < ActionController::Base
     
     # Validate required fields
     if email.blank?
+      error = ActiveRecord::RecordInvalid.new(Person.new)
+      capture_error_in_sentry(error, {
+        method: 'find_or_create_person_from_params',
+        params_key: params_key,
+        validation_error: 'email_blank'
+      })
       Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Email is blank!"
-      raise ActiveRecord::RecordInvalid.new(Person.new), "Email is required"
+      raise error, "Email is required"
     end
     
     if name.blank?
+      error = ActiveRecord::RecordInvalid.new(Person.new)
+      capture_error_in_sentry(error, {
+        method: 'find_or_create_person_from_params',
+        params_key: params_key,
+        validation_error: 'name_blank'
+      })
       Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Name is blank!"
-      raise ActiveRecord::RecordInvalid.new(Person.new), "Name is required"
+      raise error, "Name is required"
     end
     
     # If no timezone provided, try to detect from request
@@ -131,10 +217,19 @@ class ApplicationController < ActionController::Base
     
     person
   rescue ActiveRecord::RecordInvalid => e
+    capture_error_in_sentry(e, {
+      method: 'find_or_create_person_from_params',
+      params_key: params_key,
+      validation_errors: e.record.errors.full_messages
+    })
     Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: RecordInvalid error: #{e.message}"
     Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Errors: #{e.record.errors.full_messages}"
     raise e
   rescue => e
+    capture_error_in_sentry(e, {
+      method: 'find_or_create_person_from_params',
+      params_key: params_key
+    })
     Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Unexpected error: #{e.class} - #{e.message}"
     Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Backtrace: #{e.backtrace.first(5).join("\n")}"
     raise e

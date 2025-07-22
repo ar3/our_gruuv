@@ -8,6 +8,10 @@ class HealthcheckController < ApplicationController
       @db_status = "Connected"
       @db_error = nil
     rescue => e
+      capture_error_in_sentry(e, {
+        method: 'healthcheck_database',
+        component: 'database_connection'
+      })
       @person_count = "ERROR"
       @db_status = "Failed"
       @db_error = "#{e.class}: #{e.message}"

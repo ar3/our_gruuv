@@ -171,24 +171,19 @@
         %p.mb-4 This huddle summary will populate once participants submit feedback.
         = link_to "Submit Feedback", feedback_huddle_path(@huddle), class: "btn btn-primary"
 
-  - if policy.view_individual_responses?
-    .row
-      .col-12
-        .alert.alert-warning.mt-4
-          %strong Facilitator Only:
-          This section is visible to facilitators and department head.
-    .row
-      .col-12
-        .card.mb-4
-          .card-header
-            %h3.mb-0 All Participants & Feedback
-          .card-body
-            .table-responsive
-              %table.table.table-striped.table-hover
-                %thead.table-dark
-                  %tr
-                    %th Participant
-                    %th Role
+  .row
+    .col-12
+      .card.mb-4
+        .card-header
+          %h3.mb-0 All Participants & Feedback
+        .card-body
+          .table-responsive
+            %table.table.table-striped.table-hover
+              %thead.table-dark
+                %tr
+                  %th Participant
+                  %th Role
+                  - if policy.view_individual_responses?
                     %th Status
                     %th Informed
                     %th Connected
@@ -200,16 +195,22 @@
                     %th Personal Conflict Style
                     %th Team Conflict Style
                     %th Private Feedback
-                %tbody
-                  - @huddle.huddle_participants.includes(:person).each do |participant|
-                    - feedback = @huddle.huddle_feedbacks.find_by(person: participant.person)
-                    %tr{class: feedback ? '' : 'table-secondary', 
-                        style: "cursor: pointer;", 
-                        onclick: "showParticipantDetails('#{participant.person.full_name}', '#{participant.role_label}', '#{feedback ? 'Submitted' : 'Pending'}', #{feedback&.informed_rating || 'null'}, #{feedback&.connected_rating || 'null'}, #{feedback&.goals_rating || 'null'}, #{feedback&.valuable_rating || 'null'}, #{feedback&.nat_20_score || 'null'}, '#{feedback&.personal_conflict_style || ''}', '#{feedback&.team_conflict_style || ''}', '#{feedback&.appreciation&.gsub("'", "\\'") || ''}', '#{feedback&.change_suggestion&.gsub("'", "\\'") || ''}', '#{feedback&.private_department_head&.gsub("'", "\\'") || ''}', '#{feedback&.private_facilitator&.gsub("'", "\\'") || ''}')"}
-                      %td
-                        %strong= participant.person.full_name
-                      %td
-                        %small= participant.role_label || 'Participant'
+                  - else
+                    %th
+                      %i.bi.bi-eye-slash.me-2
+              %tbody
+                - @huddle.huddle_participants.includes(:person).each do |participant|
+                  - feedback = @huddle.huddle_feedbacks.find_by(person: participant.person)
+                  %tr{class: feedback ? '' : 'table-secondary', 
+                      style: "cursor: pointer;", 
+                      onclick: policy.view_individual_responses? ?
+                        "showParticipantDetails('#{participant.person.full_name}', '#{participant.role_label}', '#{feedback ? 'Submitted' : 'Pending'}', #{feedback&.informed_rating || 'null'}, #{feedback&.connected_rating || 'null'}, #{feedback&.goals_rating || 'null'}, #{feedback&.valuable_rating || 'null'}, #{feedback&.nat_20_score || 'null'}, '#{feedback&.personal_conflict_style || ''}', '#{feedback&.team_conflict_style || ''}', '#{feedback&.appreciation&.gsub("'", "\\'") || ''}', '#{feedback&.change_suggestion&.gsub("'", "\\'") || ''}', '#{feedback&.private_department_head&.gsub("'", "\\'") || ''}', '#{feedback&.private_facilitator&.gsub("'", "\\'") || ''}')" : nil
+                    }
+                    %td
+                      %strong= participant.person.full_name
+                    %td
+                      %small= participant.role_label || 'Participant'
+                    - if policy.view_individual_responses?
                       %td
                         - if feedback
                           = status_badge('submitted')
@@ -275,6 +276,10 @@
                           %small.text-muted None
                         - else
                           %span.text-muted —
+                    - else
+                      %td
+                        %i.bi.bi-eye-slash.me-2
+                        Only visible to facilitators and/or department head
 
   .d-flex.justify-content-between
     = link_to "← Back to Huddle", huddle_path(@huddle), class: "btn btn-outline-secondary"

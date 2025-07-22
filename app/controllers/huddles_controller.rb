@@ -130,10 +130,19 @@ class HuddlesController < ApplicationController
       redirect_to @huddle, notice: "Welcome to the huddle!"
     end
   rescue ActiveRecord::RecordInvalid => e
+    capture_error_in_sentry(e, {
+      method: 'join_huddle',
+      huddle_id: @huddle.id,
+      validation_errors: e.record.errors.full_messages
+    })
     Rails.logger.error "🎯 JOIN_HUDDLE: RecordInvalid error: #{e.message}"
     Rails.logger.error "🎯 JOIN_HUDDLE: Errors: #{e.record.errors.full_messages}"
     render :join, status: :unprocessable_entity
   rescue => e
+    capture_error_in_sentry(e, {
+      method: 'join_huddle',
+      huddle_id: @huddle.id
+    })
     Rails.logger.error "🎯 JOIN_HUDDLE: Unexpected error: #{e.class} - #{e.message}"
     Rails.logger.error "🎯 JOIN_HUDDLE: Backtrace: #{e.backtrace.first(5).join("\n")}"
     raise e
@@ -178,6 +187,11 @@ class HuddlesController < ApplicationController
       render :feedback, status: :unprocessable_entity
     end
   rescue ActiveRecord::RecordInvalid => e
+    capture_error_in_sentry(e, {
+      method: 'submit_feedback',
+      huddle_id: @huddle.id,
+      validation_errors: e.record.errors.full_messages
+    })
     @feedback = @huddle.huddle_feedbacks.build(feedback_params)
     @feedback.errors.merge!(e.record.errors)
     render :feedback, status: :unprocessable_entity
@@ -187,6 +201,12 @@ class HuddlesController < ApplicationController
 
   def set_huddle
     @huddle = Huddle.find(params[:id])
+  rescue ActiveRecord::RecordNotFound => e
+    capture_error_in_sentry(e, {
+      method: 'set_huddle',
+      huddle_id: params[:id]
+    })
+    raise e
   end
 
   # Remove this method since it's already defined in ApplicationController
@@ -200,7 +220,14 @@ class HuddlesController < ApplicationController
     team_name = huddle_params[:team_name]
     
     # Guard against empty company name
-    raise ActiveRecord::RecordInvalid.new(Company.new) if company_name.blank?
+    if company_name.blank?
+      error = ActiveRecord::RecordInvalid.new(Company.new)
+      capture_error_in_sentry(error, {
+        method: 'find_or_create_organization',
+        validation_error: 'company_name_blank'
+      })
+      raise error
+    end
     
     # Find or create the company
     company = Company.find_or_create_by!(name: company_name)
@@ -211,6 +238,13 @@ class HuddlesController < ApplicationController
     else
       company
     end
+  rescue => e
+    capture_error_in_sentry(e, {
+      method: 'find_or_create_organization',
+      company_name: company_name,
+      team_name: team_name
+    })
+    raise e
   end
 
   # These methods are now abstracted to ApplicationController

@@ -15,8 +15,19 @@ class PeopleController < ApplicationController
     if @person.update(person_params)
       redirect_to profile_path, notice: 'Profile updated successfully!'
     else
+      capture_error_in_sentry(ActiveRecord::RecordInvalid.new(@person), {
+        method: 'update_profile',
+        person_id: @person.id,
+        validation_errors: @person.errors.full_messages
+      })
       render :edit, status: :unprocessable_entity
     end
+  rescue => e
+    capture_error_in_sentry(e, {
+      method: 'update_profile',
+      person_id: @person&.id
+    })
+    raise e
   end
 
   private
