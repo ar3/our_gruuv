@@ -1,24 +1,31 @@
 class SlackService
   include SlackConstants
   
-  def initialize
-    @client = SLACK_CLIENT
+  def initialize(organization = nil)
+    @organization = organization
+    @client = create_client
   end
   
   # Post a message to a Slack channel
-  def post_message(channel: DEFAULT_HUDDLE_CHANNEL, text: nil, blocks: nil, **options)
+  def post_message(channel: nil, text: nil, blocks: nil, **options)
     return false unless slack_configured?
     
+    # Use organization-specific defaults if available
+    config = @organization&.slack_config
+    default_channel = channel || config&.default_channel || DEFAULT_HUDDLE_CHANNEL
+    bot_username = config&.bot_username || BOT_USERNAME
+    bot_emoji = config&.bot_emoji || BOT_EMOJI
+    
     message_params = {
-      channel: channel,
-      username: BOT_USERNAME,
-      icon_emoji: BOT_EMOJI
+      channel: default_channel,
+      username: bot_username,
+      icon_emoji: bot_emoji
     }.merge(options)
     
     message_params[:text] = text if text.present?
     message_params[:blocks] = blocks if blocks.present?
     
-    Rails.logger.info "Slack: Posting message to #{channel}"
+    Rails.logger.info "Slack: Posting message to #{default_channel}"
     
     begin
       response = @client.chat_postMessage(message_params)
@@ -72,8 +79,9 @@ class SlackService
     # Format the message
     text = template % message_data
     
-    # Post to the huddle's specific channel or default
-    channel = huddle.slack_channel || DEFAULT_HUDDLE_CHANNEL
+    # Post to the huddle's specific channel or organization default
+    config = @organization&.slack_config
+    channel = huddle.slack_channel || config&.default_channel || DEFAULT_HUDDLE_CHANNEL
     
     post_message(channel: channel, text: text)
   end
@@ -133,7 +141,17 @@ class SlackService
   
   private
   
+  def create_client
+    if @organization&.slack_configured?
+      config = @organization.slack_config
+      Slack::Web::Client.new(token: config.bot_token)
+    else
+      # Fallback to environment variable for backward compatibility
+      ENV['SLACK_BOT_TOKEN'].present? ? SLACK_CLIENT : nil
+    end
+  end
+  
   def slack_configured?
-    ENV['SLACK_BOT_TOKEN'].present?
+    @organization&.slack_configured? || ENV['SLACK_BOT_TOKEN'].present?
   end
 end 

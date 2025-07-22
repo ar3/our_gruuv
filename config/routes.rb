@@ -26,11 +26,19 @@ Rails.application.routes.draw do
   delete '/logout', to: 'application#logout', as: :logout
   
   # Slack integration routes
+  get '/slack', to: 'slack#index'
   namespace :slack do
     get :test_connection
     get :list_channels
     post :post_test_message
     get :configuration_status
+    
+    # OAuth routes
+    namespace :oauth do
+      get :authorize
+      get :callback
+      delete :uninstall
+    end
   end
   
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

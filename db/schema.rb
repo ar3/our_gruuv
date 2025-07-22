@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_22_113554) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_22_220905) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -80,10 +80,27 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_22_113554) do
     t.index ["unique_textable_phone_number"], name: "index_people_on_unique_textable_phone_number", unique: true
   end
 
+  create_table "slack_configurations", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "workspace_id", null: false
+    t.string "workspace_name", null: false
+    t.string "bot_token", null: false
+    t.string "default_channel", default: "#general"
+    t.string "bot_username", default: "Huddle Bot"
+    t.string "bot_emoji", default: ":huddle:"
+    t.datetime "installed_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["bot_token"], name: "index_slack_configurations_on_bot_token", unique: true
+    t.index ["organization_id"], name: "index_slack_configurations_on_organization_id"
+    t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true
+  end
+
   add_foreign_key "huddle_feedbacks", "huddles"
   add_foreign_key "huddle_feedbacks", "people"
   add_foreign_key "huddle_participants", "huddles"
   add_foreign_key "huddle_participants", "people"
   add_foreign_key "huddles", "organizations"
   add_foreign_key "organizations", "organizations", column: "parent_id"
+  add_foreign_key "slack_configurations", "organizations"
 end

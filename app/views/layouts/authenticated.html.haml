@@ -62,6 +62,9 @@
               %ul.dropdown-menu
                 %li= link_to "Today's Huddles", huddles_path, class: "dropdown-item"
                 %li= link_to "My Huddles", my_huddles_path, class: "dropdown-item"
+                %li
+                  %hr.dropdown-divider
+                %li= link_to "Slack Integration", slack_index_path, class: "dropdown-item"
             %li.nav-item
               = link_to "Transform", "#", class: "nav-link", onclick: "alert('Coming soon!'); return false;"
           

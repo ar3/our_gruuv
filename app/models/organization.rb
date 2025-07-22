@@ -6,6 +6,7 @@ class Organization < ApplicationRecord
   belongs_to :parent, class_name: 'Organization', optional: true
   has_many :children, class_name: 'Organization', foreign_key: 'parent_id'
   has_many :huddles, dependent: :destroy
+  has_one :slack_configuration, dependent: :destroy
   
   # Validations
   validates :name, presence: true
@@ -42,5 +43,13 @@ class Organization < ApplicationRecord
     else
       name
     end
+  end
+  
+  def slack_configured?
+    slack_configuration&.configured?
+  end
+  
+  def slack_config
+    slack_configuration || root_company&.slack_configuration
   end
 end 

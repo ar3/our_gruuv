@@ -56,7 +56,8 @@ class HuddlesController < ApplicationController
       organization: organization,
       started_at: Time.current,
       expires_at: 24.hours.from_now,
-      huddle_alias: huddle_params[:huddle_alias]
+      huddle_alias: huddle_params[:huddle_alias],
+      slack_channel: huddle_params[:slack_channel]
     )
     
     authorize @huddle
@@ -70,6 +71,9 @@ class HuddlesController < ApplicationController
       
       # Store only the person ID in session
       session[:current_person_id] = person.id
+      
+      # Send Slack notification for huddle creation
+      SlackNotificationJob.perform_later(@huddle.id, :huddle_created, creator_name: person.display_name)
       
       redirect_to @huddle, notice: 'Huddle created successfully!'
     else
@@ -173,6 +177,9 @@ class HuddlesController < ApplicationController
     )
     
     if @feedback.save
+      # Send Slack notification for feedback submission
+      SlackNotificationJob.perform_later(@huddle.id, :feedback_requested)
+      
       redirect_to @huddle, notice: 'Thank you for your feedback!'
     else
       render :feedback, status: :unprocessable_entity

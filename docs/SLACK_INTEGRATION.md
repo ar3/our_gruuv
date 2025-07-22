@@ -1,8 +1,47 @@
-# Slack Integration
+# Slack Integration Documentation
 
-This document outlines the Slack integration setup and usage for Our Gruuv.
+## Overview
+
+Our Gruuv includes a comprehensive Slack integration that allows teams to receive notifications about huddle activities directly in their Slack channels.
+
+## Features
+
+### Automatic Notifications
+- **Huddle Created**: Notifies when a new huddle is created
+- **Feedback Submitted**: Notifies when participants submit feedback
+- **Customizable Channels**: Each huddle can specify its own Slack channel
+
+### Testing & Configuration
+- **Connection Testing**: Verify your Slack bot authentication
+- **Channel Listing**: View all available channels
+- **Test Messages**: Send test messages to verify posting works
+- **Configuration Dashboard**: Web interface for managing Slack settings
 
 ## Setup
+
+### Development Testing Setup
+
+For testing the OAuth flow locally, you'll need ngrok to expose your local server to the internet:
+
+1. **Install ngrok** (if not already installed):
+   ```bash
+   brew install ngrok
+   ```
+
+2. **Start your Rails server**:
+   ```bash
+   bin/dev
+   ```
+
+3. **Run the setup script**:
+   ```bash
+   script/setup_slack_oauth_testing.sh
+   ```
+
+4. **Load environment variables**:
+   ```bash
+   source script/load_slack_env.sh
+   ```
 
 ### 1. Create a Slack App
 
@@ -11,33 +50,41 @@ This document outlines the Slack integration setup and usage for Our Gruuv.
 3. Name your app (e.g., "Our Gruuv Huddle Bot")
 4. Select your workspace
 
-### 2. Configure Bot Token Scopes
+### 2. Configure Bot Permissions
 
-In your Slack app settings, add the following OAuth scopes:
+Add the following OAuth scopes to your Slack app:
 
 **Bot Token Scopes:**
 - `chat:write` - Post messages to channels
-- `chat:write.public` - Post to public channels
-- `channels:read` - View basic channel info
-- `users:read` - View basic user info
-- `users:read.email` - View user email addresses
+- `channels:read` - View public channels
+- `groups:read` - View private channels
+- `users:read` - Read user information
 
-### 3. Install the App
+### 3. Configure OAuth Settings
+
+1. Go to "OAuth & Permissions" in your app settings
+2. Set the Redirect URL to your ngrok URL + `/slack/oauth/callback`
+   - Example: `https://abc123.ngrok.io/slack/oauth/callback`
+3. Copy the Client ID and Client Secret
+
+### 4. Install the App
 
 1. Go to "OAuth & Permissions" in your app settings
 2. Click "Install to Workspace"
-3. Authorize the app
-4. Copy the "Bot User OAuth Token" (starts with `xoxb-`)
+3. Copy the "Bot User OAuth Token" (starts with `xoxb-`)
 
-### 4. Environment Variables
+### 5. Environment Variables
 
-Add the following environment variables:
+For development testing, the setup script will create a `.env.slack_oauth` file. For production, set these environment variables:
 
 ```bash
-# Required
-SLACK_BOT_TOKEN=xoxb-your-bot-token-here
+# OAuth App Configuration (Required for OAuth flow)
+SLACK_CLIENT_ID=your_slack_client_id_here
+SLACK_CLIENT_SECRET=your_slack_client_secret_here
+SLACK_REDIRECT_URI=https://yourdomain.com/slack/oauth/callback
 
-# Optional (with defaults)
+# Fallback Global Configuration (Optional)
+SLACK_BOT_TOKEN=xoxb-your-bot-token-here
 SLACK_DEFAULT_CHANNEL=#general
 SLACK_BOT_USERNAME=Huddle Bot
 SLACK_BOT_EMOJI=:huddle:
@@ -45,49 +92,88 @@ SLACK_BOT_EMOJI=:huddle:
 
 ## Usage
 
-### Testing the Integration
+### Web Dashboard
 
-Use the following endpoints to test your Slack integration:
-
-- `GET /slack/configuration_status` - Check if Slack is configured
-- `GET /slack/test_connection` - Test connection to Slack
-- `GET /slack/list_channels` - List available channels
-- `POST /slack/post_test_message` - Post a test message
-
-### Huddle Notifications
-
-When creating a huddle, you can specify a Slack channel where notifications will be posted. If no channel is specified, the default channel will be used.
-
-### Message Templates
-
-The following notification types are available:
-
-- `huddle_created` - When a new huddle is created
-- `huddle_started` - When a huddle is starting
-- `huddle_reminder` - Reminder before huddle starts
-- `feedback_requested` - When feedback is requested
-- `huddle_completed` - When a huddle is completed
-
-## Integration Points
+Access the Slack integration dashboard at `/slack` to:
+- Test your connection
+- List available channels
+- Send test messages
+- View configuration status
 
 ### Huddle Creation
 
-When a huddle is created, you can specify a Slack channel in the form. This channel will be used for all notifications related to that huddle.
+When creating a huddle, you can optionally specify a Slack channel:
+- Leave blank to use the default channel
+- Use format: `#channel-name` or `@username` for DMs
 
 ### Automatic Notifications
 
-The system can automatically post notifications for:
-- Huddle creation
-- Huddle start reminders
-- Feedback requests
-- Huddle completion with results
+The system automatically sends notifications for:
 
-## Security
+1. **Huddle Created** (`:huddle_created`)
+   ```
+   🎯 New huddle created: *Acme Corp > Engineering - January 15, 2024* by John Doe
+   ```
 
-- Bot tokens are stored as environment variables
-- The bot only has the minimum required permissions
-- All API calls are logged for debugging
-- Error handling prevents sensitive information leakage
+2. **Feedback Submitted** (`:feedback_requested`)
+   ```
+   📝 Feedback requested for *Acme Corp > Engineering - January 15, 2024* - 75% participation
+   ```
+
+3. **Huddle Completed** (`:huddle_completed`)
+   ```
+   ✅ Huddle completed: *Acme Corp > Engineering - January 15, 2024* - Nat 20 Score: 4.2
+   ```
+
+## API Endpoints
+
+### GET `/slack`
+- **Purpose**: Slack integration dashboard
+- **Authentication**: None required
+- **Response**: HTML dashboard page
+
+### GET `/slack/test_connection`
+- **Purpose**: Test Slack bot authentication
+- **Authentication**: Requires `SLACK_BOT_TOKEN`
+- **Response**: JSON with connection status
+
+### GET `/slack/list_channels`
+- **Purpose**: List all accessible channels
+- **Authentication**: Requires `SLACK_BOT_TOKEN`
+- **Response**: JSON with channel list
+
+### POST `/slack/post_test_message`
+- **Purpose**: Send a test message
+- **Authentication**: Requires `SLACK_BOT_TOKEN`
+- **Parameters**: `channel`, `message` (optional)
+- **Response**: JSON with message status
+
+### GET `/slack/configuration_status`
+- **Purpose**: Get current configuration status
+- **Authentication**: None required
+- **Response**: JSON with configuration details
+
+## Message Templates
+
+Messages use Ruby string interpolation with the following variables:
+
+- `%{huddle_name}` - Full huddle display name
+- `%{creator_name}` - Name of huddle creator
+- `%{participation_rate}` - Percentage of participants who submitted feedback
+- `%{nat_20_score}` - Average Nat 20 score
+- `%{time_until_start}` - Time until huddle starts (for reminders)
+
+## Background Jobs
+
+Slack notifications are sent asynchronously using `SlackNotificationJob`:
+
+```ruby
+# Send huddle created notification
+SlackNotificationJob.perform_later(huddle.id, :huddle_created, creator_name: 'John Doe')
+
+# Send feedback notification
+SlackNotificationJob.perform_later(huddle.id, :feedback_requested)
+```
 
 ## Troubleshooting
 
@@ -100,21 +186,47 @@ The system can automatically post notifications for:
 2. **"Failed to connect to Slack"**
    - Check if the bot token is valid
    - Verify the app is installed in your workspace
-   - Check if the required scopes are granted
+   - Ensure the bot has the required permissions
 
-3. **"Failed to post message"**
-   - Ensure the bot is invited to the target channel
-   - Check if the channel name is correct (include `#` for public channels)
-   - Verify the bot has `chat:write` permission
+3. **"Failed to post test message"**
+   - Check if the bot is invited to the target channel
+   - Verify the channel name format (include `#` for public channels)
+   - Ensure the bot has `chat:write` permission
+
+4. **Messages not appearing**
+   - Check the Rails logs for error messages
+   - Verify the background job queue is running
+   - Ensure the Slack service is properly configured
 
 ### Debugging
 
-Enable debug logging by setting the Rails environment to development. The Slack service will log all API calls and responses.
+Enable detailed logging by checking Rails logs:
+
+```bash
+tail -f log/development.log | grep "Slack:"
+```
+
+### Testing Locally
+
+1. Set up your environment variables
+2. Start the Rails server: `bin/dev`
+3. Visit `/slack` to access the dashboard
+4. Use the test functions to verify your setup
+
+## Security Considerations
+
+- Bot tokens should be kept secure and never committed to version control
+- Use environment variables for all sensitive configuration
+- The bot only has the permissions you explicitly grant it
+- Consider using private channels for sensitive huddle discussions
 
 ## Future Enhancements
 
+Potential improvements for the Slack integration:
+
 - Interactive message buttons for quick actions
-- Slash commands for creating huddles
-- User authentication via Slack OAuth
-- Real-time message updates
-- Channel-specific settings per organization 
+- Slash commands for creating huddles directly from Slack
+- Rich message formatting with attachments
+- Custom notification schedules
+- Integration with Slack user profiles
+- Support for workspace-specific configurations 
