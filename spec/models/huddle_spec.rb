@@ -41,11 +41,11 @@ RSpec.describe Huddle, type: :model do
   end
 
   describe 'scopes' do
-    let!(:old_huddle) { Huddle.create!(organization: team, started_at: 2.days.ago) }
+    let!(:old_huddle) { Huddle.create!(organization: team, started_at: 25.hours.ago, expires_at: 1.hour.ago) }
     let!(:recent_huddle) { Huddle.create!(organization: team, started_at: 1.hour.ago) }
 
     describe '.active' do
-      it 'returns huddles from the last day' do
+      it 'returns huddles that expire in the future' do
         expect(Huddle.active).to include(recent_huddle)
         expect(Huddle.active).not_to include(old_huddle)
       end
@@ -62,7 +62,7 @@ RSpec.describe Huddle, type: :model do
   describe '#display_name' do
     context 'without alias' do
       it 'returns organization name and date' do
-        expect(huddle.display_name).to include('Acme Corp - Engineering')
+        expect(huddle.display_name).to include('Acme Corp > Engineering')
         expect(huddle.display_name).to include(Time.current.strftime('%B %d, %Y'))
       end
     end
@@ -107,13 +107,13 @@ RSpec.describe Huddle, type: :model do
       end
     end
 
-    context 'with feedback from yesterday' do
-      let(:yesterday_huddle) { Huddle.create!(organization: team, started_at: 2.days.ago) }
+    context 'with feedback from expired huddle' do
+      let(:expired_huddle) { Huddle.create!(organization: team, started_at: 25.hours.ago, expires_at: 1.hour.ago) }
 
       before do
         person = Person.create!(email: 'test@example.com', full_name: 'Test User', unique_textable_phone_number: '+12345678902')
         HuddleFeedback.create!(
-          huddle: yesterday_huddle,
+          huddle: expired_huddle,
           person: person,
           informed_rating: 5,
           connected_rating: 5,
@@ -123,7 +123,7 @@ RSpec.describe Huddle, type: :model do
       end
 
       it 'returns true' do
-        expect(yesterday_huddle.closed?).to be true
+        expect(expired_huddle.closed?).to be true
       end
     end
   end

@@ -11,7 +11,7 @@ class Huddle < ApplicationRecord
   
   # Scopes
   scope :active, -> { 
-    where('started_at >= ?', Date.current.beginning_of_day)
+    where('expires_at > ?', Time.current)
   }
   scope :recent, -> { order(started_at: :desc) }
   scope :participated_by, ->(person) {
@@ -20,7 +20,7 @@ class Huddle < ApplicationRecord
   
   # Instance methods
   def display_name
-    base_name = "#{organization.name} - #{started_at.strftime('%B %d, %Y')}"
+    base_name = "#{organization.display_name} - #{started_at.strftime('%B %d, %Y')}"
     huddle_alias.present? ? "#{base_name} - #{huddle_alias}" : base_name
   end
   
@@ -29,9 +29,8 @@ class Huddle < ApplicationRecord
   end
   
   def closed?
-    # Huddle closes at the end of the day UTC after first feedback is submitted
-    return false if huddle_feedbacks.empty?
-    started_at.to_date < Date.current
+    # Huddle closes 24 hours after it was started
+    expires_at < Time.current
   end
   
   def department_head

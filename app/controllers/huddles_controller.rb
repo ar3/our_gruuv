@@ -47,6 +47,7 @@ class HuddlesController < ApplicationController
     @huddle = Huddle.new(
       organization: organization,
       started_at: Time.current,
+      expires_at: 24.hours.from_now,
       huddle_alias: huddle_params[:huddle_alias]
     )
     

@@ -26,7 +26,7 @@ RSpec.feature 'Huddles', type: :feature do
     expect(page).to have_link('Start New Huddle')
   end
 
-  scenario 'index shows only today\'s huddles' do
+  scenario 'index shows only active huddles' do
     # Create a huddle for today
     today_huddle = Huddle.create!(
       organization: team,
@@ -34,11 +34,12 @@ RSpec.feature 'Huddles', type: :feature do
       huddle_alias: 'today-huddle'
     )
     
-    # Create a huddle for yesterday
-    yesterday_huddle = Huddle.create!(
+    # Create a huddle that's expired (25 hours ago, expires 1 hour ago)
+    expired_huddle = Huddle.create!(
       organization: team,
-      started_at: 1.day.ago,
-      huddle_alias: 'yesterday-huddle'
+      started_at: 25.hours.ago,
+      expires_at: 1.hour.ago,
+      huddle_alias: 'expired-huddle'
     )
     
     visit huddles_path
@@ -46,8 +47,8 @@ RSpec.feature 'Huddles', type: :feature do
     # Should show today's huddle
     expect(page).to have_content('today-huddle')
     
-    # Should not show yesterday's huddle
-    expect(page).not_to have_content('yesterday-huddle')
+    # Should not show expired huddle
+    expect(page).not_to have_content('expired-huddle')
   end
 
   scenario 'viewing my huddles when logged in' do
@@ -100,7 +101,7 @@ RSpec.feature 'Huddles', type: :feature do
     visit summary_huddle_path(huddle)
     
     expect(page).to have_content('Huddle Summary')
-    expect(page).to have_content('Test Company - Test Team')
+    expect(page).to have_content('Test Company > Test Team')
     expect(page).to have_content('4.0') # Average rating
     expect(page).to have_content('Great collaboration!')
     expect(page).to have_content('More time for Q&A')
@@ -110,7 +111,7 @@ RSpec.feature 'Huddles', type: :feature do
   scenario 'viewing huddle summary when not logged in redirects to join' do
     visit summary_huddle_path(huddle)
     
-    expect(page).to have_content('Please join the huddle to view the summary')
+    expect(page).to have_content('Please join the huddle before accessing this page')
     expect(current_path).to eq(join_huddle_path(huddle))
   end
 
@@ -122,7 +123,7 @@ RSpec.feature 'Huddles', type: :feature do
     
     visit summary_huddle_path(huddle)
     
-    expect(page).to have_content('Please join the huddle to view the summary')
+    expect(page).to have_content('Please join the huddle before accessing this page')
     expect(current_path).to eq(join_huddle_path(huddle))
   end
 
@@ -167,7 +168,7 @@ RSpec.feature 'Huddles', type: :feature do
     click_button 'Start Huddle'
     
     expect(page).to have_content('Huddle created successfully!')
-    expect(page).to have_content('New Company - New Team')
+    expect(page).to have_content('New Company > New Team')
     expect(page).to have_content('John Doe')
   end
 
@@ -191,7 +192,7 @@ RSpec.feature 'Huddles', type: :feature do
     click_button 'Start Huddle'
     
     expect(page).to have_content('Huddle created successfully!')
-    expect(page).to have_content('New Company - New Team')
+    expect(page).to have_content('New Company > New Team')
     expect(page).to have_content('Jane Smith')
   end
 
@@ -259,7 +260,7 @@ RSpec.feature 'Huddles', type: :feature do
     
     # Should redirect to join page
     expect(page).to have_content("Join #{huddle.display_name}")
-    expect(page).to have_content('Please join the huddle before submitting feedback')
+    expect(page).to have_content('Please join the huddle before accessing this page')
   end
 
   scenario 'submitting feedback when logged in' do
@@ -317,7 +318,7 @@ RSpec.feature 'Huddles', type: :feature do
     visit huddle_path(huddle)
     
     expect(page).to have_content(huddle.display_name)
-    expect(page).to have_content('Test Company - Test Team')
+    expect(page).to have_content('Test Company > Test Team')
     expect(page).to have_content('Participants: 1')
     expect(page).to have_content('Feedback Submitted: 0')
     expect(page).to have_link('Continuously Improve Together')
