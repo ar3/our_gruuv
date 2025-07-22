@@ -12,19 +12,19 @@
           Team:
         = huddle.organization.display_name
         - if participant
-          %span.badge.bg-secondary.ms-2= participant.role.titleize
+          = content_tag :span, participant.role.titleize, class: "badge bg-secondary ms-2"
       .row
         .col-6
           %p.card-text
             %strong Nat 20 Score:
             - if huddle.nat_20_score
-              %span.badge.bg-success= huddle.nat_20_score
+              = nat_20_badge(huddle.nat_20_score)
             - else
-              %span.badge.bg-secondary --
+              %span.badge.bg-light.text-muted --
         .col-6
           %p.card-text
             %strong Feedback:
-            %span.badge.bg-info= "#{huddle.huddle_feedbacks.count} of #{huddle.huddle_participants.count}"
+            = feedback_participation_badge(huddle.huddle_feedbacks.count, huddle.huddle_participants.count)
       
       .mt-3
         - if participant

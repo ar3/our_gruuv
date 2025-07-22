@@ -121,14 +121,36 @@ class Huddle < ApplicationRecord
     return {} if huddle_feedbacks.empty?
     
     styles = huddle_feedbacks.where.not(team_conflict_style: [nil, '']).pluck(:team_conflict_style)
-    styles.tally
+    distribution = styles.tally
+    
+    # Sort by the desired order: Collaborative first, Avoiding last
+    # Only include styles that actually appear in the feedback
+    sorted_distribution = {}
+    all_conflict_styles.each do |style|
+      if distribution[style] && distribution[style] > 0
+        sorted_distribution[style] = distribution[style]
+      end
+    end
+    
+    sorted_distribution
   end
 
   def personal_conflict_style_distribution
     return {} if huddle_feedbacks.empty?
     
     styles = huddle_feedbacks.where.not(personal_conflict_style: [nil, '']).pluck(:personal_conflict_style)
-    styles.tally
+    distribution = styles.tally
+    
+    # Sort by the desired order: Collaborative first, Avoiding last
+    # Only include styles that actually appear in the feedback
+    sorted_distribution = {}
+    all_conflict_styles.each do |style|
+      if distribution[style] && distribution[style] > 0
+        sorted_distribution[style] = distribution[style]
+      end
+    end
+    
+    sorted_distribution
   end
 
   def all_conflict_styles

@@ -17,10 +17,7 @@
             .col-md-4.col-sm-12
               %p
                 %strong{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "started at #format_time_in_user_timezone(@huddle.started_at)"} Status:
-                - if @huddle.closed?
-                  %span.badge.bg-secondary= @huddle.status_with_time
-                - else
-                  %span.badge.bg-success= @huddle.status_with_time
+                = status_badge(@huddle.closed? ? 'inactive' : 'active', @huddle.status_with_time)
             .col-md-4.col-sm-12
               %p
                 %strong Participants:
@@ -39,20 +36,20 @@
                 .col-6
                   %p
                     %strong Informed:
-                    %span.badge.bg-primary= ratings[:informed]
+                    = rating_badge(ratings[:informed])
                   %p
                     %strong Connected:
-                    %span.badge.bg-success= ratings[:connected]
+                    = rating_badge(ratings[:connected])
                 .col-6
                   %p
                     %strong Goals:
-                    %span.badge.bg-warning= ratings[:goals]
+                    = rating_badge(ratings[:goals])
                   %p
                     %strong Valuable:
-                    %span.badge.bg-info= ratings[:valuable]
+                    = rating_badge(ratings[:valuable])
               .mt-3
                 %h4 Overall Score
-                %h2.text-center.text-primary= @huddle.nat_20_score
+                %h2.text-center{class: text_class(nat_20_color(@huddle.nat_20_score))}= @huddle.nat_20_score
                 %p.text-center.text-muted Nat 20 Score
             - else
               %p.text-muted No ratings available
@@ -113,14 +110,15 @@
                     - total_team = team_conflict_styles.values.sum
                     - team_conflict_styles.each do |style, count|
                       - percentage = (count.to_f / total_team * 100).round(1)
+                      - color = conflict_style_color(style)
                       .mb-3
                         .d-flex.justify-content-between.align-items-center.mb-1
                           %strong= style
                           %span
-                            %span.badge.bg-info.me-1= count
+                            = content_tag :span, count, class: "badge bg-#{color} me-1"
                             %small.text-muted (#{percentage}%)
                         .progress{style: "height: 6px;"}
-                          .progress-bar.bg-info{style: "width: #{percentage}%"}
+                          .progress-bar{class: "bg-#{color}", style: "width: #{percentage}%"}
                   - else
                     .text-muted.text-center.py-4
                       %i.bi.bi-people.bi-2x.mb-2
@@ -142,14 +140,15 @@
                     - total_personal = personal_conflict_styles.values.sum
                     - personal_conflict_styles.each do |style, count|
                       - percentage = (count.to_f / total_personal * 100).round(1)
+                      - color = conflict_style_color(style)
                       .mb-3
                         .d-flex.justify-content-between.align-items-center.mb-1
                           %strong= style
                           %span
-                            %span.badge.bg-success.me-1= count
+                            = content_tag :span, count, class: "badge bg-#{color} me-1"
                             %small.text-muted (#{percentage}%)
                         .progress{style: "height: 6px;"}
-                          .progress-bar.bg-success{style: "width: #{percentage}%"}
+                          .progress-bar{class: "bg-#{color}", style: "width: #{percentage}%"}
                   - else
                     .text-muted.text-center.py-4
                       %i.bi.bi-person.bi-2x.mb-2
@@ -213,65 +212,65 @@
                         %small= participant.role_label || 'Participant'
                       %td
                         - if feedback
-                          %span.badge.bg-success Submitted
+                          = status_badge('submitted')
                         - else
-                          %span.badge.bg-warning Pending
+                          = status_badge('pending')
                       %td.text-center
                         - if feedback
-                          %span.badge.bg-primary= feedback.informed_rating
-                        - else
-                          %span.text-muted —
-                      %td.text-center
-                        - if feedback
-                          %span.badge.bg-success= feedback.connected_rating
+                          = rating_badge(feedback.informed_rating)
                         - else
                           %span.text-muted —
                       %td.text-center
                         - if feedback
-                          %span.badge.bg-warning= feedback.goals_rating
+                          = rating_badge(feedback.connected_rating)
                         - else
                           %span.text-muted —
                       %td.text-center
                         - if feedback
-                          %span.badge.bg-info= feedback.valuable_rating
+                          = rating_badge(feedback.goals_rating)
                         - else
                           %span.text-muted —
                       %td.text-center
                         - if feedback
-                          %strong= feedback.nat_20_score
+                          = rating_badge(feedback.valuable_rating)
+                        - else
+                          %span.text-muted —
+                      %td.text-center
+                        - if feedback
+                          = nat_20_badge(feedback.nat_20_score)
                         - else
                           %span.text-muted —
                       %td
                         - if feedback&.appreciation.present?
-                          %span.badge.bg-success Yes
+                          = feedback_badge('appreciation', 'Yes')
                         - elsif feedback
                           %span.badge.bg-secondary No
                         - else
                           %span.text-muted —
                       %td
                         - if feedback&.change_suggestion.present?
-                          %span.badge.bg-warning Yes
+                          = feedback_badge('suggestion', 'Yes')
                         - elsif feedback
                           %span.badge.bg-secondary No
                         - else
                           %span.text-muted —
                       %td
                         - if feedback&.personal_conflict_style.present?
-                          %small= feedback.personal_conflict_style
+                          = conflict_style_badge(feedback.personal_conflict_style)
                         - elsif feedback
                           %small.text-muted Not specified
                         - else
                           %span.text-muted —
                       %td
                         - if feedback&.team_conflict_style.present?
-                          %small= feedback.team_conflict_style
+                          = conflict_style_badge(feedback.team_conflict_style)
                         - elsif feedback
                           %small.text-muted Not specified
                         - else
                           %span.text-muted —
                       %td
                         - if feedback&.has_private_feedback?
-                          %span.badge.bg-secondary Private
+                          = feedback_badge('private', 'Private')
                         - elsif feedback
                           %small.text-muted None
                         - else

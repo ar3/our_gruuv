@@ -50,7 +50,24 @@ class ApplicationController < ActionController::Base
   end
   
   def current_person
-    @current_person ||= Person.find(session[:current_person_id]) if session[:current_person_id]
+    return @current_person if defined?(@current_person)
+    
+    if session[:current_person_id]
+      begin
+        @current_person = Person.find(session[:current_person_id])
+      rescue ActiveRecord::RecordNotFound
+        # Clear the invalid session
+        session.delete(:current_person_id)
+        @current_person = nil
+        
+        # Show error message
+        flash[:error] = "Your session has expired or is invalid. Please log in again."
+      end
+    else
+      @current_person = nil
+    end
+    
+    @current_person
   end
 
   # Get person from session or create from params
@@ -60,6 +77,15 @@ class ApplicationController < ActionController::Base
     else
       find_or_create_person_from_params(params_key)
     end
+  rescue ActiveRecord::RecordNotFound => e
+    Rails.logger.error "🔍 GET_OR_CREATE_PERSON: Person not found in session: #{session[:current_person_id]}"
+    Rails.logger.error "🔍 GET_OR_CREATE_PERSON: Clearing session and creating from params"
+    session.delete(:current_person_id)
+    find_or_create_person_from_params(params_key)
+  rescue => e
+    Rails.logger.error "🔍 GET_OR_CREATE_PERSON: Error creating person from params: #{e.class} - #{e.message}"
+    Rails.logger.error "🔍 GET_OR_CREATE_PERSON: Backtrace: #{e.backtrace.first(5).join("\n")}"
+    raise e
   end
 
   # Find or create person from specific params
@@ -74,6 +100,17 @@ class ApplicationController < ActionController::Base
       email = params_obj[:email]
       name = params_obj[:name]
       timezone = params_obj[:timezone]
+    end
+    
+    # Validate required fields
+    if email.blank?
+      Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Email is blank!"
+      raise ActiveRecord::RecordInvalid.new(Person.new), "Email is required"
+    end
+    
+    if name.blank?
+      Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Name is blank!"
+      raise ActiveRecord::RecordInvalid.new(Person.new), "Name is required"
     end
     
     # If no timezone provided, try to detect from request
@@ -93,6 +130,14 @@ class ApplicationController < ActionController::Base
     person.update!(updates) if updates.any?
     
     person
+  rescue ActiveRecord::RecordInvalid => e
+    Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: RecordInvalid error: #{e.message}"
+    Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Errors: #{e.record.errors.full_messages}"
+    raise e
+  rescue => e
+    Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Unexpected error: #{e.class} - #{e.message}"
+    Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Backtrace: #{e.backtrace.first(5).join("\n")}"
+    raise e
   end
 
   # Try to detect timezone from request headers

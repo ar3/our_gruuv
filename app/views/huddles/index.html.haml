@@ -9,9 +9,12 @@
         = link_to "Start New Huddle", new_huddle_path, class: "btn btn-primary"
       
       - if @huddles.any?
-        .row
-          - @huddles.each do |huddle|
-            = render 'huddle_card', huddle: huddle
+        - @huddles_by_organization.each do |company, huddles|
+          .mb-4
+            %h3.text-primary.mb-3= company&.name || 'Unknown Organization'
+            .row
+              - huddles.each do |huddle|
+                = render 'huddle_card', huddle: huddle
       - else
         .text-center.py-5
           %h3.text-muted No huddles today

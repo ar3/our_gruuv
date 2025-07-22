@@ -314,6 +314,9 @@ RSpec.feature 'Huddles', type: :feature do
     person = Person.create!(full_name: 'Eve Wilson', email: 'eve@example.com')
     huddle.huddle_participants.create!(person: person, role: 'facilitator')
     
+    # Set up session for the person
+    page.set_rack_session(current_person_id: person.id)
+    
     visit huddle_path(huddle)
     
     expect(page).to have_content(huddle.display_name)

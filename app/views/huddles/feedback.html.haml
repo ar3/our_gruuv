@@ -51,7 +51,7 @@
                           = form.range_field :informed_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
                         .d-flex.justify-content-between
                           - 0.upto(5) do |rating|
-                            %small.text-muted{class: rating == 5 ? "fw-bold text-primary" : ""}= rating
+                            %small.text-muted{class: rating == 5 ? "fw-bold #{text_class(rating_color(rating))}" : ""}= rating
 
                   .col-md-12
                     .mb-5.mt-5
@@ -66,7 +66,7 @@
                           = form.range_field :connected_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
                         .d-flex.justify-content-between
                           - 0.upto(5) do |rating|
-                            %small.text-muted{class: rating == 5 ? "fw-bold text-primary" : ""}= rating
+                            %small.text-muted{class: rating == 5 ? "fw-bold #{text_class(rating_color(rating))}" : ""}= rating
                   
                   .col-md-12
                     .mb-5.mt-5
@@ -81,7 +81,7 @@
                           = form.range_field :goals_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
                         .d-flex.justify-content-between
                           - 0.upto(5) do |rating|
-                            %small.text-muted{class: rating == 5 ? "fw-bold text-primary" : ""}= rating
+                            %small.text-muted{class: rating == 5 ? "fw-bold #{text_class(rating_color(rating))}" : ""}= rating
                     
                   .col-md-12
                     .mb-5.mt-5
@@ -96,7 +96,7 @@
                           = form.range_field :valuable_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
                         .d-flex.justify-content-between
                           - 0.upto(5) do |rating|
-                            %small.text-muted{class: rating == 5 ? "fw-bold text-primary" : ""}= rating
+                            %small.text-muted{class: rating == 5 ? "fw-bold #{text_class(rating_color(rating))}" : ""}= rating
             
             .row.mb-4
               .col-12

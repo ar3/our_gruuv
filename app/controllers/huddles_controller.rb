@@ -3,6 +3,7 @@ class HuddlesController < ApplicationController
 
   def index
     @huddles = Huddle.active.recent.includes(:organization)
+    @huddles_by_organization = @huddles.group_by { |huddle| huddle.organization.root_company }.sort_by { |company, _| company&.name || '' }
   end
 
   def my_huddles
@@ -10,6 +11,7 @@ class HuddlesController < ApplicationController
     
     if @current_person
       @huddles = Huddle.participated_by(@current_person).recent.includes(:organization)
+      @huddles_by_organization = @huddles.group_by { |huddle| huddle.organization.root_company }.sort_by { |company, _| company&.name || '' }
     else
       redirect_to huddles_path, alert: "Please log in to view your huddles"
     end
@@ -17,10 +19,15 @@ class HuddlesController < ApplicationController
 
   def show
     authorize @huddle
-    # Check if current user has already submitted feedback
-    if current_person
-      @existing_feedback = @huddle.huddle_feedbacks.find_by(person: current_person)
+    
+    # If user is not logged in, redirect to join page
+    unless current_person
+      redirect_to join_huddle_path(@huddle)
+      return
     end
+    
+    # Check if current user has already submitted feedback
+    @existing_feedback = @huddle.huddle_feedbacks.find_by(person: current_person)
   end
 
   def summary
@@ -101,6 +108,7 @@ class HuddlesController < ApplicationController
 
   def join_huddle
     authorize @huddle, :join_huddle?
+    
     # Get the person - either from session or create from params
     person = get_or_create_person_from_session_or_params(:join)
     
@@ -122,7 +130,13 @@ class HuddlesController < ApplicationController
       redirect_to @huddle, notice: "Welcome to the huddle!"
     end
   rescue ActiveRecord::RecordInvalid => e
+    Rails.logger.error "🎯 JOIN_HUDDLE: RecordInvalid error: #{e.message}"
+    Rails.logger.error "🎯 JOIN_HUDDLE: Errors: #{e.record.errors.full_messages}"
     render :join, status: :unprocessable_entity
+  rescue => e
+    Rails.logger.error "🎯 JOIN_HUDDLE: Unexpected error: #{e.class} - #{e.message}"
+    Rails.logger.error "🎯 JOIN_HUDDLE: Backtrace: #{e.backtrace.first(5).join("\n")}"
+    raise e
   end
 
   def feedback
@@ -202,7 +216,7 @@ class HuddlesController < ApplicationController
   # These methods are now abstracted to ApplicationController
 
   def join_params
-    params.permit(:name, :email, :timezone, :role)
+    params.permit(:name, :email, :timezone, :role, :authenticity_token, :commit, :id)
   end
 
   def feedback_params

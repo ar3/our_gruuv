@@ -22,11 +22,21 @@
   }
 }
 
-// Visual styling for readonly field containers
-.field-readonly {
-  // Additional styling can be added here if needed
+.badge.bg-success-subtle {
+  color: darkgreen;
 }
-
+.badge.bg-warning-subtle {
+  color: darkorange;
+}
+.badge.bg-light {
+  color: rgb(53, 53, 53);
+}
+.badge.bg-danger-subtle {
+  color: darkred;
+}
+.badge.bg-warning {
+  color: darkslategray;
+}
 // Custom styles for rating sliders
 .rating-slider-container {
   .form-range {
