@@ -20,9 +20,9 @@ RSpec.describe ApplicationController, type: :controller do
   end
 
   describe '#detect_timezone_from_request' do
-    it 'returns UTC when no Accept-Language header' do
+    it 'returns Eastern Time when no Accept-Language header' do
       get :test_detect_timezone
-      expect(response.body).to eq('UTC')
+      expect(response.body).to eq('Eastern Time (US & Canada)')
     end
 
     it 'maps en-US locale to Eastern Time' do
@@ -49,10 +49,10 @@ RSpec.describe ApplicationController, type: :controller do
       expect(response.body).to eq('Eastern Time (US & Canada)')
     end
 
-    it 'returns UTC for unknown locale' do
+    it 'returns Eastern Time for unknown locale' do
       request.headers['Accept-Language'] = 'xx-XX'
       get :test_detect_timezone
-      expect(response.body).to eq('UTC')
+      expect(response.body).to eq('Eastern Time (US & Canada)')
     end
   end
 

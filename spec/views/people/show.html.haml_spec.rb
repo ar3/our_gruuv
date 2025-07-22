@@ -34,9 +34,9 @@ RSpec.describe 'people/show', type: :view do
   context 'when person has no timezone' do
     let(:person) { create(:person, timezone: nil) }
 
-    it 'shows timezone not set message' do
-      expect(rendered).to have_content('Not set (using UTC)')
-    end
+      it 'shows timezone not set message' do
+    expect(rendered).to have_content('Not set (using Eastern Time)')
+  end
   end
 
   context 'when person has phone number' do

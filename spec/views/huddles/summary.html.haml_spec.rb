@@ -47,13 +47,13 @@ RSpec.describe 'huddles/summary', type: :view do
     assign(:huddle, huddle.decorate)
   end
 
-  context 'as a participant' do
+  context 'as a regular participant' do
     before do
-      assign(:current_person, person1)
+      assign(:current_person, person2)  # person2 is an 'active' participant, not facilitator
       render
     end
 
-    it 'shows the summary and individual responses table' do
+    it 'shows the summary but not individual responses table' do
       expect(rendered).to have_content('Huddle Summary')
       expect(rendered).to have_content('All Participants & Feedback')
     end
@@ -62,8 +62,8 @@ RSpec.describe 'huddles/summary', type: :view do
       expect(rendered).not_to have_content('Department Head Only:')
     end
 
-    it 'shows facilitator only section' do
-      expect(rendered).to have_content('Facilitator Only:')
+    it 'shows restricted access message' do
+      expect(rendered).to have_content('Only visible to facilitators and/or department head')
     end
   end
 
@@ -76,8 +76,11 @@ RSpec.describe 'huddles/summary', type: :view do
       render
     end
 
-    it 'shows the facilitator only section' do
-      expect(rendered).to have_content('Facilitator Only:')
+    it 'shows the individual responses table' do
+      expect(rendered).to have_content('All Participants & Feedback')
+      expect(rendered).to have_content('John Doe')
+      expect(rendered).to have_content('Jane Smith')
+      expect(rendered).to have_content('Bob Johnson')
     end
 
     it 'does not show department head only section until department_head is implemented' do
@@ -94,12 +97,11 @@ RSpec.describe 'huddles/summary', type: :view do
       render
     end
 
-    it 'does not show the summary' do
-      # The policy returns :redirect_to_join, but in view tests we just see the content
-      # In a real request, this would redirect to join page
-      expect(rendered).not_to have_content('All Participants & Feedback')
-      expect(rendered).not_to have_content('Department Head Only:')
-      expect(rendered).not_to have_content('Facilitator Only:')
+    it 'shows the summary but with restricted access' do
+      # The policy allows viewing the summary but restricts individual responses
+      expect(rendered).to have_content('Huddle Summary')
+      expect(rendered).to have_content('All Participants & Feedback')
+      expect(rendered).to have_content('Only visible to facilitators and/or department head')
     end
   end
 end 

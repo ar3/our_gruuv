@@ -164,75 +164,82 @@ class ApplicationController < ActionController::Base
 
   # Find or create person from specific params
   def find_or_create_person_from_params(params_key = :huddle)
-    # For join params, they're at the top level, not nested
-    if params_key == :join
-      email = params[:email]
-      name = params[:name]
-      timezone = params[:timezone]
-    else
-      params_obj = params[params_key]
-      email = params_obj[:email]
-      name = params_obj[:name]
-      timezone = params_obj[:timezone]
-    end
-    
-    # Validate required fields
-    if email.blank?
-      error = ActiveRecord::RecordInvalid.new(Person.new)
-      capture_error_in_sentry(error, {
+    begin
+      # For join params, they're at the top level, not nested
+      if params_key == :join
+        email = params[:email]
+        name = params[:name]
+        timezone = params[:timezone]
+      else
+        params_obj = params[params_key]
+        email = params_obj[:email]
+        name = params_obj[:name]
+        timezone = params_obj[:timezone]
+      end
+      
+      # Validate required fields
+      if email.blank?
+        error = ActiveRecord::RecordInvalid.new(Person.new)
+        capture_error_in_sentry(error, {
+          method: 'find_or_create_person_from_params',
+          params_key: params_key,
+          validation_error: 'email_blank'
+        })
+        Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Email is blank!"
+        raise error, "Email is required"
+      end
+      
+      if name.blank?
+        error = ActiveRecord::RecordInvalid.new(Person.new)
+        capture_error_in_sentry(error, {
+          method: 'find_or_create_person_from_params',
+          params_key: params_key,
+          validation_error: 'name_blank'
+        })
+        Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Name is blank!"
+        raise error, "Name is required"
+      end
+      
+      # If no timezone provided, try to detect from request
+      timezone ||= detect_timezone_from_request
+      
+      # Find or create the person
+      person = Person.find_or_create_by!(email: email) do |p|
+        p.full_name = name
+        p.safe_timezone = timezone if timezone.present?
+      end
+      
+      # Update the name and timezone if they changed
+      updates = {}
+      updates[:full_name] = name if person.full_name != name
+      
+      # Use safe timezone assignment for updates
+      if timezone.present? && person.timezone != timezone
+        person.safe_timezone = timezone
+        updates[:timezone] = person.timezone
+      end
+      
+      person.update!(updates) if updates.any?
+      
+      person
+    rescue ActiveRecord::RecordInvalid => e
+      capture_error_in_sentry(e, {
         method: 'find_or_create_person_from_params',
         params_key: params_key,
-        validation_error: 'email_blank'
+        validation_errors: e.record.errors.full_messages
       })
-      Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Email is blank!"
-      raise error, "Email is required"
-    end
-    
-    if name.blank?
-      error = ActiveRecord::RecordInvalid.new(Person.new)
-      capture_error_in_sentry(error, {
+      Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: RecordInvalid error: #{e.message}"
+      Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Errors: #{e.record.errors.full_messages}"
+      raise e
+    rescue => e
+      capture_error_in_sentry(e, {
         method: 'find_or_create_person_from_params',
-        params_key: params_key,
-        validation_error: 'name_blank'
+        params_key: params_key
       })
-      Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Name is blank!"
-      raise error, "Name is required"
+      Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Unexpected error: #{e.class} - #{e.message}"
+      Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Backtrace: #{e.backtrace.first(5).join("\n")}"
+      raise e
     end
-    
-    # If no timezone provided, try to detect from request
-    timezone ||= detect_timezone_from_request
-    
-    # Find or create the person
-    person = Person.find_or_create_by!(email: email) do |p|
-      p.full_name = name
-      p.timezone = timezone if timezone.present?
-    end
-    
-    # Update the name and timezone if they changed
-    updates = {}
-    updates[:full_name] = name if person.full_name != name
-    updates[:timezone] = timezone if timezone.present? && person.timezone != timezone
-    
-    person.update!(updates) if updates.any?
-    
-    person
-  rescue ActiveRecord::RecordInvalid => e
-    capture_error_in_sentry(e, {
-      method: 'find_or_create_person_from_params',
-      params_key: params_key,
-      validation_errors: e.record.errors.full_messages
-    })
-    Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: RecordInvalid error: #{e.message}"
-    Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Errors: #{e.record.errors.full_messages}"
-    raise e
-  rescue => e
-    capture_error_in_sentry(e, {
-      method: 'find_or_create_person_from_params',
-      params_key: params_key
-    })
-    Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Unexpected error: #{e.class} - #{e.message}"
-    Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Backtrace: #{e.backtrace.first(5).join("\n")}"
-    raise e
   end
 
   # Try to detect timezone from request headers
@@ -243,11 +250,11 @@ class ApplicationController < ActionController::Base
       # Extract locale and try to map to timezone
       locale = accept_language.split(',').first&.strip
       timezone = map_locale_to_timezone(locale)
-      return timezone if timezone
+      return timezone if timezone && ActiveSupport::TimeZone.all.map(&:name).include?(timezone)
     end
     
-    # Fallback to UTC
-    'UTC'
+    # Fallback to Eastern Time
+    'Eastern Time (US & Canada)'
   end
 
   # Map common locales to timezones

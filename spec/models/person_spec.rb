@@ -43,14 +43,14 @@ RSpec.describe Person, type: :model do
       expect(person.timezone_or_default).to eq('Pacific Time (US & Canada)')
     end
 
-    it 'returns UTC when timezone is blank' do
+    it 'returns Eastern Time when timezone is blank' do
       person.timezone = ''
-      expect(person.timezone_or_default).to eq('UTC')
+      expect(person.timezone_or_default).to eq('Eastern Time (US & Canada)')
     end
 
-    it 'returns UTC when timezone is nil' do
+    it 'returns Eastern Time when timezone is nil' do
       person.timezone = nil
-      expect(person.timezone_or_default).to eq('UTC')
+      expect(person.timezone_or_default).to eq('Eastern Time (US & Canada)')
     end
   end
 
@@ -74,10 +74,10 @@ RSpec.describe Person, type: :model do
         person.timezone = nil
       end
 
-      it 'formats time in UTC' do
+      it 'formats time in Eastern Time' do
         formatted = person.format_time_in_user_timezone(time)
-        expect(formatted).to include('UTC')
-        expect(formatted).to include('2:30 PM') # 14:30 UTC
+        expect(formatted).to include('EDT') # Eastern Daylight Time
+        expect(formatted).to include('10:30 AM') # 14:30 UTC = 10:30 AM EDT
       end
     end
 
