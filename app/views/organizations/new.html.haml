@@ -1,0 +1,30 @@
+.container
+  .row.justify-content-center
+    .col-md-8
+      .card
+        .card-header
+          %h3.mb-0 New Organization
+        .card-body
+          = form_with model: @organization, url: organizations_path, local: true do |form|
+            - if @organization.errors.any?
+              .alert.alert-danger
+                %h5= "#{pluralize(@organization.errors.count, "error")} prohibited this organization from being saved:"
+                %ul.mb-0
+                  - @organization.errors.full_messages.each do |message|
+                    %li= message
+            
+            .mb-3
+              = form.label :name, class: "form-label"
+              = form.text_field :name, class: "form-control", required: true
+            
+            .mb-3
+              = form.label :type, "Organization Type", class: "form-label"
+              = form.select :type, options_for_select([['Company', 'Company'], ['Team', 'Team']], @organization.type), { prompt: 'Select organization type' }, { class: "form-select", required: true }
+            
+            .mb-3
+              = form.label :parent_id, "Parent Organization (optional)", class: "form-label"
+              = form.select :parent_id, options_from_collection_for_select(Organization.companies, :id, :name, @organization.parent_id), { prompt: 'Select parent organization (leave blank for top-level)' }, { class: "form-select" }
+            
+            .d-flex.justify-content-between
+              = link_to "Cancel", organizations_path, class: "btn btn-secondary"
+              = form.submit "Create Organization", class: "btn btn-primary"

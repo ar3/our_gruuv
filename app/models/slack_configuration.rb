@@ -23,6 +23,18 @@ class SlackConfiguration < ApplicationRecord
     "#{workspace_name} (#{workspace_id})"
   end
   
+  def default_channel_or_general
+    default_channel.presence || '#bot-test'
+  end
+  
+  def bot_username_or_default
+    bot_username.presence || 'OurGruuv Bot'
+  end
+  
+  def bot_emoji_or_default
+    bot_emoji.presence || ':sparkles:'
+  end
+  
   # TODO: Add encryption for bot_token when Active Record encryption is configured
   # encrypts :bot_token
 end

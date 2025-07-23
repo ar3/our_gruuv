@@ -1,0 +1,110 @@
+.container
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1.mb-0 Organizations
+        = link_to new_organization_path, class: "btn btn-primary" do
+          %i.bi.bi-plus-circle.me-2
+          New Organization
+      
+      - if @current_organization
+        .alert.alert-info
+          %strong Current Context:
+          = @current_organization.display_name
+          - if @current_organization.slack_configured?
+            %span.badge.bg-success.ms-2 Slack Connected
+          - else
+            %span.badge.bg-secondary.ms-2 No Slack
+      
+      .row
+        .col-12
+          .card
+            .card-header
+              %h5.mb-0 All Organizations
+            .card-body
+              - if @organizations.any?
+                .table-responsive
+                  %table.table.table-hover
+                    %thead
+                      %tr
+                        %th Type
+                        %th Name
+                        %th Hierarchy
+                        %th Slack Status
+                        %th Actions
+                    %tbody
+                      - @organizations.each do |organization|
+                        %tr{class: organization == @current_organization ? "table-primary" : ""}
+                          %td
+                            %span.badge{class: organization.company? ? "bg-primary" : "bg-secondary"}
+                              = organization.type
+                          %td
+                            %strong= organization.name
+                          %td
+                            = organization.display_name
+                          %td
+                            - if organization.slack_configured?
+                              %span.badge.bg-success
+                                %i.bi.bi-check-circle.me-1
+                                Connected
+                            - else
+                              %span.badge.bg-secondary
+                                %i.bi.bi-x-circle.me-1
+                                Not Connected
+                          %td
+                            .btn-group.btn-group-sm{role: "group"}
+                              - if organization == @current_organization
+                                %span.badge.bg-primary.me-2 Current
+                              - else
+                                = button_to switch_organization_path(organization), method: :patch, class: "btn btn-outline-primary", form: { style: "display: inline;" } do
+                                  %i.bi.bi-arrow-right-circle.me-1
+                                  Switch
+                              = link_to edit_organization_path(organization), class: "btn btn-outline-secondary" do
+                                %i.bi.bi-pencil
+                              = link_to organization_slack_path(organization), class: "btn btn-outline-info" do
+                                %i.bi.bi-slack
+                              = link_to organization_path(organization), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to delete this organization?" } do
+                                %i.bi.bi-trash
+              - else
+                .text-center.py-4
+                  %p.text-muted No organizations found.
+                  = link_to "Create your first organization", new_organization_path, class: "btn btn-primary"
+      
+      - if @current_organization
+        .row.mt-4
+          .col-12
+            .card
+              .card-header.d-flex.justify-content-between.align-items-center
+                %h5.mb-0 Huddle Instructions for #{@current_organization.display_name}
+                = link_to new_organization_huddle_instruction_path(@current_organization), class: "btn btn-primary btn-sm" do
+                  %i.bi.bi-plus-circle.me-1
+                  New Instruction
+              .card-body
+                - if @current_organization.huddle_instructions.any?
+                  .table-responsive
+                    %table.table.table-sm
+                      %thead
+                        %tr
+                          %th Alias
+                          %th Default Slack Channel
+                          %th Huddles
+                          %th Actions
+                      %tbody
+                        - @current_organization.huddle_instructions.each do |instruction|
+                          %tr
+                            %td
+                              %strong= instruction.display_name
+                            %td
+                              %code= instruction.slack_channel_or_organization_default
+                            %td
+                              %span.badge.bg-secondary= instruction.huddles.count
+                            %td
+                              .btn-group.btn-group-sm{role: "group"}
+                                = link_to edit_organization_huddle_instruction_path(@current_organization, instruction), class: "btn btn-outline-secondary btn-sm" do
+                                  %i.bi.bi-pencil
+                                = link_to organization_huddle_instruction_path(@current_organization, instruction), method: :delete, class: "btn btn-outline-danger btn-sm", data: { confirm: "Are you sure? This will affect all huddles using this instruction." } do
+                                  %i.bi.bi-trash
+                - else
+                  .text-center.py-3
+                    %p.text-muted No huddle instructions found.
+                    %small.text-muted Huddle instructions will be created automatically when you create huddles.

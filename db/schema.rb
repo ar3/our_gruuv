@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_22_220905) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_23_014546) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -35,6 +35,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_22_220905) do
     t.index ["person_id"], name: "index_huddle_feedbacks_on_person_id"
   end
 
+  create_table "huddle_instructions", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "instruction_alias"
+    t.string "slack_channel"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "instruction_alias"], name: "index_huddle_instructions_on_org_and_instruction_alias", unique: true
+    t.index ["organization_id"], name: "index_huddle_instructions_on_organization_id"
+  end
+
   create_table "huddle_participants", force: :cascade do |t|
     t.bigint "huddle_id", null: false
     t.bigint "person_id", null: false
@@ -53,8 +63,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_22_220905) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "expires_at", default: -> { "(CURRENT_TIMESTAMP + 'PT24H'::interval)" }, null: false
-    t.string "slack_channel"
+    t.bigint "huddle_instruction_id"
     t.index ["expires_at"], name: "index_huddles_on_expires_at"
+    t.index ["huddle_instruction_id"], name: "index_huddles_on_huddle_instruction_id"
     t.index ["organization_id"], name: "index_huddles_on_organization_id"
   end
 
@@ -77,6 +88,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_22_220905) do
     t.datetime "updated_at", null: false
     t.string "email"
     t.string "timezone"
+    t.integer "current_organization_id"
+    t.index ["current_organization_id"], name: "index_people_on_current_organization_id"
     t.index ["unique_textable_phone_number"], name: "index_people_on_unique_textable_phone_number", unique: true
   end
 
@@ -98,9 +111,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_22_220905) do
 
   add_foreign_key "huddle_feedbacks", "huddles"
   add_foreign_key "huddle_feedbacks", "people"
+  add_foreign_key "huddle_instructions", "organizations"
   add_foreign_key "huddle_participants", "huddles"
   add_foreign_key "huddle_participants", "people"
+  add_foreign_key "huddles", "huddle_instructions"
   add_foreign_key "huddles", "organizations"
   add_foreign_key "organizations", "organizations", column: "parent_id"
+  add_foreign_key "people", "organizations", column: "current_organization_id"
   add_foreign_key "slack_configurations", "organizations"
 end

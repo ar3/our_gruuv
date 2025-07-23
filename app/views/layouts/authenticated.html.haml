@@ -64,9 +64,36 @@
                 %li= link_to "My Huddles", my_huddles_path, class: "dropdown-item"
                 %li
                   %hr.dropdown-divider
-                %li= link_to "Slack Integration", slack_index_path, class: "dropdown-item"
+
             %li.nav-item
               = link_to "Transform", "#", class: "nav-link", onclick: "alert('Coming soon!'); return false;"
+          
+          %ul.navbar-nav.me-auto
+            - if current_organization
+              %li.nav-item.dropdown
+                %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                  %i.bi.bi-building.me-1
+                  = current_organization.name
+                  - if current_organization.team?
+                    %small.text-muted.ms-1= "(#{current_organization.parent&.name})"
+                %ul.dropdown-menu
+                  %li.dropdown-header
+                    %small.text-muted Current Organization
+                  %li
+                    %hr.dropdown-divider
+                  - current_person.available_organizations.each do |org|
+                    - if org == current_organization
+                      %li
+                        %span.dropdown-item.text-primary
+                          %i.bi.bi-check-circle.me-2
+                          = org.display_name
+                    - else
+                      %li
+                        = button_to switch_organization_path(org), method: :patch, class: "dropdown-item", form: { style: "display: inline;" } do
+                          = org.display_name
+                  %li
+                    %hr.dropdown-divider
+                  %li= link_to "Manage Organizations", organizations_path, class: "dropdown-item"
           
           %ul.navbar-nav
             - if current_person

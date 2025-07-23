@@ -3,6 +3,7 @@ class Person < ApplicationRecord
   has_many :huddle_participants, dependent: :destroy
   has_many :huddles, through: :huddle_participants
   has_many :huddle_feedbacks, dependent: :destroy
+  belongs_to :current_organization, class_name: 'Organization', optional: true
   
   # Validations
   validates :unique_textable_phone_number, uniqueness: true, allow_blank: true
@@ -35,6 +36,19 @@ class Person < ApplicationRecord
     return time.strftime('%B %d, %Y at %I:%M %p %Z') unless timezone.present?
     
     time.in_time_zone(timezone).strftime('%B %d, %Y at %I:%M %p %Z')
+  end
+  
+  # Organization context methods
+  def current_organization_or_default
+    current_organization || Organization.companies.first
+  end
+  
+  def switch_to_organization(organization)
+    update!(current_organization: organization)
+  end
+  
+  def available_organizations
+    Organization.all.order(:type, :name)
   end
   
   private

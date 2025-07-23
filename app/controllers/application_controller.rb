@@ -12,6 +12,7 @@ class ApplicationController < ActionController::Base
   end
   
   helper_method :current_person
+  helper_method :current_organization
   
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
   
@@ -68,6 +69,11 @@ class ApplicationController < ActionController::Base
     end
     
     @current_person
+  end
+
+  def current_organization
+    return nil unless current_person
+    current_person.current_organization_or_default
   end
 
   # Get person from session or create from params

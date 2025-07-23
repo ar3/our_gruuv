@@ -12,9 +12,9 @@ class SlackService
     
     # Use organization-specific defaults if available
     config = @organization&.slack_config
-    default_channel = channel || config&.default_channel || DEFAULT_HUDDLE_CHANNEL
-    bot_username = config&.bot_username || BOT_USERNAME
-    bot_emoji = config&.bot_emoji || BOT_EMOJI
+    default_channel = channel || config&.default_channel_or_general
+    bot_username = config&.bot_username_or_default
+    bot_emoji = config&.bot_emoji_or_default
     
     message_params = {
       channel: default_channel,
@@ -79,9 +79,8 @@ class SlackService
     # Format the message
     text = template % message_data
     
-    # Post to the huddle's specific channel or organization default
-    config = @organization&.slack_config
-    channel = huddle.slack_channel || config&.default_channel || DEFAULT_HUDDLE_CHANNEL
+    # Post to the huddle's instruction channel or organization default
+    channel = huddle.slack_channel
     
     post_message(channel: channel, text: text)
   end
@@ -136,6 +135,25 @@ class SlackService
     rescue Slack::Web::Api::Errors::SlackError => e
       Rails.logger.error "Slack: Connection test failed - #{e.message}"
       false
+    end
+  end
+  
+  # Post a test message to the default channel
+  def post_test_message(message)
+    return { success: false, error: "Slack not configured" } unless slack_configured?
+    
+    begin
+      response = post_message(text: message)
+      if response
+        Rails.logger.info "Slack: Test message posted successfully"
+        { success: true, message: "Test message sent successfully" }
+      else
+        Rails.logger.error "Slack: Failed to post test message"
+        { success: false, error: "Failed to post test message" }
+      end
+    rescue => e
+      Rails.logger.error "Slack: Error posting test message - #{e.message}"
+      { success: false, error: e.message }
     end
   end
   

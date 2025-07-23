@@ -51,13 +51,16 @@ class HuddlesController < ApplicationController
     # Get the person - either from session or create from params
     person = get_or_create_person_from_session_or_params
     
+    # Find or create huddle instruction
+    huddle_instruction = find_or_create_huddle_instruction(organization, huddle_params[:huddle_alias])
+    
     # Create the huddle
     @huddle = Huddle.new(
       organization: organization,
+      huddle_instruction: huddle_instruction,
       started_at: Time.current,
       expires_at: 24.hours.from_now,
-      huddle_alias: huddle_params[:huddle_alias],
-      slack_channel: huddle_params[:slack_channel]
+      huddle_alias: huddle_params[:huddle_alias]
     )
     
     authorize @huddle
@@ -199,7 +202,7 @@ class HuddlesController < ApplicationController
   # Remove this method since it's already defined in ApplicationController
 
   def huddle_params
-    params.require(:huddle).permit(:company_name, :team_name, :huddle_alias, :slack_channel, :name, :email)
+    params.require(:huddle).permit(:company_name, :team_name, :huddle_alias, :name, :email)
   end
 
   def find_or_create_organization
@@ -228,7 +231,22 @@ class HuddlesController < ApplicationController
 
   def feedback_params
     params.permit(:informed_rating, :connected_rating, :goals_rating, :valuable_rating, 
-                  :personal_conflict_style, :team_conflict_style,
-                  :appreciation, :change_suggestion, :private_department_head, :private_facilitator, :anonymous)
+                  :appreciation, :change_suggestion, :team_conflict_style, :personal_conflict_style, 
+                  :anonymous, :authenticity_token, :commit)
+  end
+  
+  def find_or_create_huddle_instruction(organization, alias_name)
+    # Find existing instruction for this organization/alias combination
+    instruction = organization.huddle_instructions.find_by(instruction_alias: alias_name)
+    
+    # If not found, create a new one
+    unless instruction
+      instruction = organization.huddle_instructions.create!(
+        instruction_alias: alias_name,
+        slack_channel: nil # Will use organization default
+      )
+    end
+    
+    instruction
   end
 end

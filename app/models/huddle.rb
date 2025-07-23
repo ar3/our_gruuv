@@ -1,6 +1,7 @@
 class Huddle < ApplicationRecord
   # Associations
   belongs_to :organization
+  belongs_to :huddle_instruction, optional: true
   has_many :huddle_participants, dependent: :destroy
   has_many :participants, through: :huddle_participants, source: :person
   has_many :huddle_feedbacks, dependent: :destroy
@@ -38,6 +39,10 @@ class Huddle < ApplicationRecord
   def closed?
     # Huddle closes 24 hours after it was started
     expires_at < Time.current
+  end
+  
+  def slack_channel
+    huddle_instruction&.slack_channel_or_organization_default
   end
 
 

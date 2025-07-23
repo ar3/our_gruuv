@@ -1,0 +1,63 @@
+.container
+  .row.justify-content-center
+    .col-md-8
+      .card
+        .card-header
+          %h3.mb-0 Edit Organization
+        .card-body
+          = form_with model: @organization, url: organization_path(@organization), local: true do |form|
+            - if @organization.errors.any?
+              .alert.alert-danger
+                %h5= "#{pluralize(@organization.errors.count, "error")} prohibited this organization from being saved:"
+                %ul.mb-0
+                  - @organization.errors.full_messages.each do |message|
+                    %li= message
+            
+            .mb-3
+              = form.label :name, class: "form-label"
+              = form.text_field :name, class: "form-control", required: true
+            
+            .mb-3
+              = form.label :type, "Organization Type", class: "form-label"
+              = form.select :type, options_for_select([['Company', 'Company'], ['Team', 'Team']], @organization.type), { prompt: 'Select organization type' }, { class: "form-select", required: true }
+            
+            .mb-3
+              = form.label :parent_id, "Parent Organization (optional)", class: "form-label"
+              = form.select :parent_id, options_from_collection_for_select(Organization.companies.where.not(id: @organization.id), :id, :name, @organization.parent_id), { prompt: 'Select parent organization (leave blank for top-level)' }, { class: "form-select" }
+            
+            .d-flex.justify-content-between
+              = link_to "Cancel", organizations_path, class: "btn btn-secondary"
+              = form.submit "Update Organization", class: "btn btn-primary"
+          
+          %hr.mt-4
+          
+          .row
+            .col-12
+              %h5.mb-3
+                %i.bi.bi-slack.me-2
+                Slack Integration
+              
+              - if @organization.slack_configured?
+                .alert.alert-success
+                  %strong
+                    %i.bi.bi-check-circle.me-2
+                    Slack Connected
+                  %p.mb-2
+                    Workspace: #{@organization.slack_configuration.workspace_name}
+                  .d-flex.gap-2
+                    = link_to organization_slack_path(@organization), class: "btn btn-outline-primary btn-sm" do
+                      %i.bi.bi-gear.me-1
+                      Manage Slack
+                    = link_to organization_slack_path(@organization), class: "btn btn-outline-secondary btn-sm" do
+                      %i.bi.bi-wifi.me-1
+                      Test Connection
+              - else
+                .alert.alert-warning
+                  %strong
+                    %i.bi.bi-exclamation-triangle.me-2
+                    Slack Not Connected
+                  %p.mb-2
+                    Connect Slack to enable automated huddle notifications.
+                  = link_to oauth_authorize_organization_slack_path(@organization), class: "btn btn-primary btn-sm" do
+                    %i.bi.bi-slack.me-1
+                    Connect Slack

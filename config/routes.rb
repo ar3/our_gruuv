@@ -3,6 +3,31 @@ Rails.application.routes.draw do
   get "healthcheck/index"
   get "/healthcheck", to: "healthcheck#index"
   
+  # Organizations routes
+  resources :organizations do
+    member do
+      patch :switch
+    end
+    
+    resources :huddle_instructions, except: [:show]
+    
+    # Slack integration nested under organizations
+    resource :slack, only: [:show], module: :organizations, controller: 'slack' do
+      collection do
+        get :test_connection
+        get :list_channels
+        post :post_test_message
+        get :configuration_status
+        patch :update_configuration
+        
+        # OAuth routes
+        get 'oauth/authorize', to: 'slack/oauth#authorize'
+        get 'oauth/callback', to: 'slack/oauth#callback'
+        delete 'oauth/uninstall', to: 'slack/oauth#uninstall'
+      end
+    end
+  end
+  
   # Huddles routes
   resources :huddles, only: [:index, :show, :new, :create] do
     member do
@@ -24,22 +49,6 @@ Rails.application.routes.draw do
   
   # Session management
   delete '/logout', to: 'application#logout', as: :logout
-  
-  # Slack integration routes
-  get '/slack', to: 'slack#index'
-  namespace :slack do
-    get :test_connection
-    get :list_channels
-    post :post_test_message
-    get :configuration_status
-    
-    # OAuth routes
-    namespace :oauth do
-      get :authorize
-      get :callback
-      delete :uninstall
-    end
-  end
   
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
