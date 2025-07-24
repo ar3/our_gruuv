@@ -8,7 +8,7 @@ class Person < ApplicationRecord
   # Validations
   validates :unique_textable_phone_number, uniqueness: true, allow_blank: true
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
-  # validates :timezone, inclusion: { in: ActiveSupport::TimeZone.all.map(&:name) }, allow_blank: true
+  validate :ensure_valid_timezone
   
   # Virtual attribute for full name - getter and setter methods
   def full_name
@@ -33,9 +33,8 @@ class Person < ApplicationRecord
   end
   
   def format_time_in_user_timezone(time)
-    return time.strftime('%B %d, %Y at %I:%M %p %Z') unless timezone.present?
-    
-    time.in_time_zone(timezone).strftime('%B %d, %Y at %I:%M %p %Z')
+    timezone_name = timezone_or_default
+    time.in_time_zone(timezone_name).strftime('%B %d, %Y at %I:%M %p %Z')
   end
   
   # Organization context methods
@@ -52,6 +51,14 @@ class Person < ApplicationRecord
   end
   
   private
+  
+  def ensure_valid_timezone
+    return if timezone.blank?
+    
+    unless TimezoneService.valid_timezone?(timezone)
+      self.timezone = TimezoneService::DEFAULT_TIMEZONE
+    end
+  end
   
   def parse_full_name
     return unless @full_name.present?

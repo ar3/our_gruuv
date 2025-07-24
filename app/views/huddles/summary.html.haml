@@ -227,11 +227,11 @@
                                       bs_placement: "top", 
                                       bs_title: "#{participant.person.full_name}'s Ratings",
                                       bs_content: "<ul class='list-unstyled mb-0'><li><strong>Informed:</strong> #{feedback.informed_rating}/5</li><li><strong>Connected:</strong> #{feedback.connected_rating}/5</li><li><strong>Goals:</strong> #{feedback.goals_rating}/5</li><li><strong>Valuable:</strong> #{feedback.valuable_rating}/5</li><li><strong>Personal Conflict:</strong> #{feedback.personal_conflict_style || 'Not specified'}</li><li><strong>Team Conflict:</strong> #{feedback.team_conflict_style || 'Not specified'}</li></ul>"}}
-                            = "#{rating_score} / 20"
+                            = nat_20_badge(rating_score)
                         - else
-                          = "#{rating_score} / 20"
+                          = nat_20_badge(rating_score)
                       - else
-                        %span.text-muted Pending
+                        %span.text-muted --
                     %td
                       - if is_facilitator
                         - if has_facilitator_note
@@ -247,9 +247,9 @@
                                                       bs_title: "Private Note for Department Head", 
                                                       bs_content: feedback.private_department_head}}
                         - elsif feedback
-                          %i.bi.bi-eye-slash.text-muted
+                          %i.bi.bi-eye-slash.text-muted 
                         - else
-                          %span.text-muted —
+                          %i.bi.bi-eye-slash.text-muted 
                       - else
                         %i.bi.bi-eye-slash.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "No visibility"}
 

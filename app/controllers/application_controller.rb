@@ -117,7 +117,7 @@ class ApplicationController < ActionController::Base
     person = Person.find_or_create_by!(email: email)
     
     # If no timezone provided, try to detect from request
-    timezone ||= TimezoneService.detect_timezone_from_request(request)
+    timezone ||= TimezoneService.detect_from_request(request)
     
     # Use provided name or auto-generate from email
     maybe_new_name = name.presence || email.split('@').first.gsub('.', ' ').titleize

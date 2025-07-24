@@ -1,0 +1,80 @@
+.container.mt-4
+  .row
+    .col-12
+      %h1 Slack Integration Dashboard
+      
+      .card
+        .card-body
+          %h5.card-title Configuration Status
+          #configuration-status
+            %p Loading configuration status...
+          
+          %hr
+          
+          %h5.card-title Test Connection
+          %button.btn.btn-primary#test-connection Test Connection
+          
+          %hr
+          
+          %h5.card-title List Channels
+          %button.btn.btn-secondary#list-channels List Channels
+          #channels-list.mt-3
+          
+          %hr
+          
+          %h5.card-title Send Test Message
+          %button.btn.btn-success#send-test-message Send Test Message
+          #test-message-result.mt-3
+
+:javascript
+  document.addEventListener('DOMContentLoaded', function() {
+    // Load configuration status
+    fetch('/slack/configuration_status')
+      .then(response => response.json())
+      .then(data => {
+        const statusDiv = document.getElementById('configuration-status');
+        if (data.configured) {
+          statusDiv.innerHTML = '<p class="text-success">✓ Configured for ' + data.organization + '</p>';
+        } else {
+          statusDiv.innerHTML = '<p class="text-warning">⚠ Not configured</p>';
+        }
+      });
+    
+    // Test connection
+    document.getElementById('test-connection').addEventListener('click', function() {
+      fetch('/slack/test_connection')
+        .then(response => response.json())
+        .then(data => {
+          alert('Connection test result: ' + JSON.stringify(data));
+        });
+    });
+    
+    // List channels
+    document.getElementById('list-channels').addEventListener('click', function() {
+      fetch('/slack/list_channels')
+        .then(response => response.json())
+        .then(data => {
+          const channelsDiv = document.getElementById('channels-list');
+          if (data.error) {
+            channelsDiv.innerHTML = '<p class="text-danger">' + data.error + '</p>';
+          } else {
+            const channelsList = data.map(function(channel) { return '<li>#' + channel.name + '</li>'; }).join('');
+            channelsDiv.innerHTML = '<ul>' + channelsList + '</ul>';
+          }
+        });
+    });
+    
+    // Send test message
+    document.getElementById('send-test-message').addEventListener('click', function() {
+      fetch('/slack/post_test_message', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+          const resultDiv = document.getElementById('test-message-result');
+          if (data.error) {
+            resultDiv.innerHTML = '<p class="text-danger">' + data.error + '</p>';
+          } else {
+            resultDiv.innerHTML = '<p class="text-success">✓ Test message sent successfully!</p>';
+          }
+        });
+    });
+  }); 

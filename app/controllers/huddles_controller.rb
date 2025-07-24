@@ -51,17 +51,22 @@ class HuddlesController < ApplicationController
     # Get the person - either from session or create from params
     person = get_or_create_person_from_session_or_params
     
-    # Find or create huddle playbook
-    huddle_playbook = find_or_create_huddle_instruction(organization, huddle_params[:huddle_alias])
-    
-    # Create the huddle
+    # Create the huddle first to set the virtual attribute
     @huddle = Huddle.new(
       organization: organization,
-      huddle_playbook: huddle_playbook,
       started_at: Time.current,
       expires_at: 24.hours.from_now,
       huddle_alias: huddle_params[:huddle_alias]
     )
+    
+    # Set the virtual slack_channel attribute
+    @huddle.slack_channel = huddle_params[:slack_channel]
+    
+    # Find or create huddle playbook with the channel
+    huddle_playbook = find_or_create_huddle_instruction(organization, huddle_params[:huddle_alias], @huddle.slack_channel_to_set)
+    
+    # Assign the playbook to the huddle
+    @huddle.huddle_playbook = huddle_playbook
     
     authorize @huddle
     
@@ -225,7 +230,7 @@ class HuddlesController < ApplicationController
   # Remove this method since it's already defined in ApplicationController
 
   def huddle_params
-    params.require(:huddle).permit(:company_name, :team_name, :huddle_alias, :name, :email)
+    params.require(:huddle).permit(:company_name, :team_name, :huddle_alias, :name, :email, :slack_channel)
   end
 
   def find_or_create_organization
@@ -258,7 +263,7 @@ class HuddlesController < ApplicationController
                   :private_department_head, :private_facilitator, :anonymous, :authenticity_token, :commit)
   end
   
-  def find_or_create_huddle_instruction(organization, alias_name)
+  def find_or_create_huddle_instruction(organization, alias_name, slack_channel = nil)
     # Find existing playbook for this organization/alias combination
     playbook = organization.huddle_playbooks.find_by(instruction_alias: alias_name)
     
@@ -266,7 +271,7 @@ class HuddlesController < ApplicationController
     unless playbook
       playbook = organization.huddle_playbooks.create!(
         instruction_alias: alias_name,
-        slack_channel: nil # Will use organization default
+        slack_channel: slack_channel # Use provided channel or nil for organization default
       )
     end
     

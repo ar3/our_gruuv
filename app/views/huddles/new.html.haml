@@ -16,6 +16,11 @@
               %small You're logged in. Your information will be used to create the huddle.
           
           = form_with model: @huddle, local: true, class: "needs-validation" do |form|
+            - if @huddle.errors.any?
+              .alert.alert-danger
+                %ul
+                  - @huddle.errors.full_messages.each do |msg|
+                    %li= msg
             .row
               .col-md-6
                 .mb-3

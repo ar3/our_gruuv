@@ -68,9 +68,9 @@ RSpec.describe 'huddles/summary', type: :view do
     end
 
     it 'shows ratings in X/20 format' do
-      expect(rendered).to have_content('16 / 20')
-      expect(rendered).to have_content('19 / 20')
-      expect(rendered).to have_content('Pending')
+      expect(rendered).to have_content('16')
+      expect(rendered).to have_content('19')
+      expect(rendered).to have_content('--')
     end
 
     it 'shows eye icons for private notes (as facilitator)' do
@@ -103,8 +103,8 @@ RSpec.describe 'huddles/summary', type: :view do
 
     it 'shows ratings but not clickable popovers' do
       expect(rendered).to have_content('Rating')
-      expect(rendered).to have_content('16 / 20')
-      expect(rendered).to have_content('19 / 20')
+      expect(rendered).to have_content('16')
+      expect(rendered).to have_content('19')
     end
 
     it 'shows no visibility icon for private notes' do
@@ -123,8 +123,8 @@ RSpec.describe 'huddles/summary', type: :view do
 
     it 'shows the participants table with clickable ratings' do
       expect(rendered).to have_content('Participants')
-      expect(rendered).to have_content('16 / 20')
-      expect(rendered).to have_content('19 / 20')
+      expect(rendered).to have_content('16')
+      expect(rendered).to have_content('19')
     end
 
     it 'shows eye icons for private notes' do

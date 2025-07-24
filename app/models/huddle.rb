@@ -45,6 +45,16 @@ class Huddle < ApplicationRecord
     huddle_playbook&.slack_channel_or_organization_default
   end
 
+  def slack_channel=(channel)
+    # This is a virtual attribute for setting the channel on the playbook
+    # It will be used during huddle creation to set the playbook's channel
+    @slack_channel_to_set = channel
+  end
+
+  def slack_channel_to_set
+    @slack_channel_to_set
+  end
+
   def slack_configured?
     organization.slack_configuration.present?
   end
