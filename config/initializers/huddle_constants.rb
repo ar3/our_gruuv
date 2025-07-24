@@ -67,8 +67,8 @@ module HuddleConstants
   NAT_20_COLORS = {
     0.0..9.9 => 'danger',     # Critical issues, needs immediate attention
     10.0..12.9 => 'warning',   # Significant room for improvement
-    13.0..15.9 => 'warning-subtle',     # Average performance
-    16.0..19.9 => 'success-subtle',  # Good performance
+    13.0..16.4 => 'warning-subtle',     # Average performance
+    16.5..19.9 => 'success-subtle',  # Good performance
     20.0..20.0 => 'success'       # Perfect score - exceptional performance
   }.freeze
 

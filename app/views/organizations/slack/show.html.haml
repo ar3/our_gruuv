@@ -3,9 +3,13 @@
     .col-12
       .d-flex.justify-content-between.align-items-center.mb-4
         %h1.mb-0 Slack Integration
-        %span.badge.bg-primary.fs-6
-          %i.bi.bi-building.me-1
-          = @organization.display_name
+        .d-flex.align-items-center
+          %span.badge.bg-primary.fs-6.me-3
+            %i.bi.bi-building.me-1
+            = @organization.display_name
+          = link_to organization_path(@organization), class: "btn btn-outline-secondary" do
+            %i.bi.bi-arrow-left.me-2
+            Back to Organization
       
       .row
         .col-md-8

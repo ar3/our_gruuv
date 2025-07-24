@@ -8,19 +8,23 @@ class OrganizationsController < ApplicationController
   end
   
   def show
-    # For now, just redirect to index since we're showing all orgs there
-    redirect_to organizations_path
+    # Show the organization details page
   end
   
   def new
     @organization = Organization.new
+    @organization.parent_id = params[:parent_id] if params[:parent_id].present?
   end
   
   def create
     @organization = Organization.new(organization_params)
     
     if @organization.save
-      redirect_to organizations_path, notice: 'Organization was successfully created.'
+      if @organization.parent.present?
+        redirect_to organization_path(@organization.parent), notice: 'Child organization was successfully created.'
+      else
+        redirect_to organizations_path, notice: 'Organization was successfully created.'
+      end
     else
       render :new, status: :unprocessable_entity
     end

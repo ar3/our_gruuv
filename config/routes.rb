@@ -9,7 +9,7 @@ Rails.application.routes.draw do
       patch :switch
     end
     
-    resources :huddle_instructions, except: [:show]
+    resources :huddle_playbooks, except: [:show], module: :organizations
     
     # Slack integration nested under organizations
     resource :slack, only: [:show], module: :organizations, controller: 'slack' do

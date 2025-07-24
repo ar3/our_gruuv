@@ -2,9 +2,19 @@
   .row.justify-content-center
     .col-md-8
       .card
-        .card-header
+        .card-header.d-flex.justify-content-between.align-items-center
           %h3.mb-0 New Organization
+          - if @organization.parent.present?
+            = link_to organization_path(@organization.parent), class: "btn btn-outline-secondary btn-sm" do
+              %i.bi.bi-arrow-left.me-2
+              Back to Parent
         .card-body
+          - if @organization.parent.present?
+            .alert.alert-info.mb-3
+              %i.bi.bi-info-circle.me-2
+              Creating a child organization under 
+              %strong= @organization.parent.display_name
+          
           = form_with model: @organization, url: organizations_path, local: true do |form|
             - if @organization.errors.any?
               .alert.alert-danger

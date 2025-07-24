@@ -1,60 +1,75 @@
 require 'rails_helper'
 
 RSpec.describe "Organizations", type: :request do
+  let(:person) { create(:person) }
+
+  before do
+    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
+  end
+
   describe "GET /index" do
     it "returns http success" do
-      get "/organizations/index"
+      get organizations_path
       expect(response).to have_http_status(:success)
     end
   end
 
   describe "GET /show" do
+    let(:organization) { create(:organization) }
+
     it "returns http success" do
-      get "/organizations/show"
+      get organization_path(organization)
       expect(response).to have_http_status(:success)
     end
   end
 
   describe "GET /new" do
     it "returns http success" do
-      get "/organizations/new"
+      get new_organization_path
       expect(response).to have_http_status(:success)
     end
   end
 
-  describe "GET /create" do
+  describe "POST /create" do
     it "returns http success" do
-      get "/organizations/create"
-      expect(response).to have_http_status(:success)
+      post organizations_path, params: { organization: { name: "Test Org", type: "Company" } }
+      expect(response).to have_http_status(:redirect)
     end
   end
 
   describe "GET /edit" do
+    let(:organization) { create(:organization) }
+
     it "returns http success" do
-      get "/organizations/edit"
+      get edit_organization_path(organization)
       expect(response).to have_http_status(:success)
     end
   end
 
-  describe "GET /update" do
+  describe "PATCH /update" do
+    let(:organization) { create(:organization) }
+
     it "returns http success" do
-      get "/organizations/update"
-      expect(response).to have_http_status(:success)
+      patch organization_path(organization), params: { organization: { name: "Updated Org" } }
+      expect(response).to have_http_status(:redirect)
     end
   end
 
-  describe "GET /destroy" do
+  describe "DELETE /destroy" do
+    let(:organization) { create(:organization) }
+
     it "returns http success" do
-      get "/organizations/destroy"
-      expect(response).to have_http_status(:success)
+      delete organization_path(organization)
+      expect(response).to have_http_status(:redirect)
     end
   end
 
-  describe "GET /switch" do
+  describe "PATCH /switch" do
+    let(:organization) { create(:organization) }
+
     it "returns http success" do
-      get "/organizations/switch"
-      expect(response).to have_http_status(:success)
+      patch switch_organization_path(organization)
+      expect(response).to have_http_status(:redirect)
     end
   end
-
 end

@@ -5,8 +5,18 @@
       %p.lead Help your team find their groove with structured feedback and continuous improvement.
       
       .d-flex.justify-content-between.align-items-center.mb-4
-        %h2 Today's Huddles
-        = link_to "Start New Huddle", new_huddle_path, class: "btn btn-primary"
+        %div
+          %h2 Today's Huddles
+          - if @filtered_organization
+            %small.text-muted
+              Filtered by: #{@filtered_organization.display_name}
+              - if @filtered_instruction_alias
+                %br
+                Instruction: #{@filtered_instruction_alias}
+        .btn-group{role: "group"}
+          = link_to "Start New Huddle", new_huddle_path, class: "btn btn-primary"
+          - if @filtered_organization
+            = link_to "Clear Filters", huddles_path, class: "btn btn-outline-secondary"
       
       - if @huddles.any?
         - @huddles_by_organization.each do |company, huddles|

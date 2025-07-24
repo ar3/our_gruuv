@@ -120,7 +120,7 @@ class ApplicationController < ActionController::Base
     end
     
     # If no timezone provided, try to detect from request
-    timezone ||= detect_timezone_from_request
+    timezone ||= TimezoneService.detect_timezone_from_request(request)
     
     # Find or create the person
     person = Person.find_or_create_by!(email: email) do |p|
@@ -145,45 +145,5 @@ class ApplicationController < ActionController::Base
     Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Backtrace: #{e.backtrace.first(5).join("\n")}"
     raise e
   end
-
-  # Try to detect timezone from request headers
-  def detect_timezone_from_request
-    # Try to get timezone from Accept-Language header (limited but available)
-    accept_language = request.headers['Accept-Language']
-    if accept_language
-      # Extract locale and try to map to timezone
-      locale = accept_language.split(',').first&.strip
-      timezone = map_locale_to_timezone(locale)
-      return timezone if timezone
-    end
-    
-    # Fallback to UTC
-    'UTC'
-  end
-
-  # Map common locales to timezones
-  def map_locale_to_timezone(locale)
-    return nil unless locale
-    
-    # Common locale to timezone mappings
-    mappings = {
-      'en-US' => 'Eastern Time (US & Canada)',
-      'en-CA' => 'Eastern Time (US & Canada)',
-      'en-GB' => 'London',
-      'en-AU' => 'Sydney',
-      'en-NZ' => 'Wellington',
-      'fr-CA' => 'Eastern Time (US & Canada)',
-      'fr-FR' => 'Paris',
-      'de-DE' => 'Berlin',
-      'es-ES' => 'Madrid',
-      'es-MX' => 'Central Time (US & Canada)',
-      'pt-BR' => 'Brasilia',
-      'ja-JP' => 'Tokyo',
-      'ko-KR' => 'Seoul',
-      'zh-CN' => 'Beijing',
-      'zh-TW' => 'Taipei'
-    }
-    
-    mappings[locale] || mappings[locale.split('-').first]
-  end
+  
 end

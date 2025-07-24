@@ -6,7 +6,7 @@ class Organization < ApplicationRecord
   belongs_to :parent, class_name: 'Organization', optional: true
   has_many :children, class_name: 'Organization', foreign_key: 'parent_id'
   has_many :huddles, dependent: :destroy
-  has_many :huddle_instructions, dependent: :destroy
+  has_many :huddle_playbooks, dependent: :destroy
   has_one :slack_configuration, dependent: :destroy
   
   # Validations
