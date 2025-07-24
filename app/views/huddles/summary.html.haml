@@ -1,4 +1,6 @@
 - policy = policy(@huddle)
+- current_participant = @huddle.huddle_participants.find_by(person: @current_person)
+- is_facilitator = current_participant&.facilitator? || @huddle.organization&.department_head == @current_person
 .container.mt-4
   .row
     .col-12
@@ -171,116 +173,92 @@
         %p.mb-4 This huddle summary will populate once participants submit feedback.
         = link_to "Submit Feedback", feedback_huddle_path(@huddle), class: "btn btn-primary"
 
-  - if policy.view_individual_responses?
-    .row
-      .col-12
-        .alert.alert-warning.mt-4
-          %strong Facilitator Only:
-          This section is visible to facilitators and department head.
-    .row
-      .col-12
-        .card.mb-4
-          .card-header
-            %h3.mb-0 All Participants & Feedback
-          .card-body
-            .table-responsive
-              %table.table.table-striped.table-hover
-                %thead.table-dark
-                  %tr
-                    %th Participant
-                    %th Role
-                    %th Status
-                    %th Informed
-                    %th Connected
-                    %th Goals
-                    %th Valuable
-                    %th Total Score
-                    %th Appreciation
-                    %th Change Suggestion
-                    %th Personal Conflict Style
-                    %th Team Conflict Style
-                    %th Private Feedback
-                %tbody
-                  - @huddle.huddle_participants.includes(:person).each do |participant|
-                    - feedback = @huddle.huddle_feedbacks.find_by(person: participant.person)
-                    %tr{class: feedback ? '' : 'table-secondary', 
-                        style: "cursor: pointer;", 
-                        onclick: "showParticipantDetails('#{participant.person.full_name}', '#{participant.role_label}', '#{feedback ? 'Submitted' : 'Pending'}', #{feedback&.informed_rating || 'null'}, #{feedback&.connected_rating || 'null'}, #{feedback&.goals_rating || 'null'}, #{feedback&.valuable_rating || 'null'}, #{feedback&.nat_20_score || 'null'}, '#{feedback&.personal_conflict_style || ''}', '#{feedback&.team_conflict_style || ''}', '#{feedback&.appreciation&.gsub("'", "\\'") || ''}', '#{feedback&.change_suggestion&.gsub("'", "\\'") || ''}', '#{feedback&.private_department_head&.gsub("'", "\\'") || ''}', '#{feedback&.private_facilitator&.gsub("'", "\\'") || ''}')"}
-                      %td
-                        %strong= participant.person.full_name
-                      %td
-                        %small= participant.role_label || 'Participant'
-                      %td
-                        - if feedback
-                          = status_badge('submitted')
+  / Participants Table - Visible to all participants
+  .row
+    .col-12
+      .card.mb-4
+        .card-header
+          %h3.mb-0 Participants
+          - if is_facilitator
+            %small.text-muted Facilitators can see detailed ratings and private notes
+        .card-body
+          .table-responsive
+            %table.table.table-striped.table-hover
+              %thead.table-dark
+                %tr
+                  %th Participant
+                  %th Rating
+                  %th Private Notes
+              %tbody
+                - @huddle.huddle_participants.includes(:person).each do |participant|
+                  - feedback = @huddle.huddle_feedbacks.find_by(person: participant.person)
+                  - has_facilitator_note = feedback&.private_facilitator.present?
+                  - has_dept_head_note = feedback&.private_department_head.present?
+                  - rating_score = feedback ? feedback.nat_20_score : nil
+                  %tr{class: feedback ? '' : 'table-secondary'}
+                    %td
+                      %strong= participant.person.full_name
+                      %br
+                      %small.text-muted= participant.role_label || 'Participant'
+                    %td
+                      - if feedback
+                        - if is_facilitator
+                          %span{class: "rating-display", 
+                               style: "cursor: pointer;", 
+                               data: {bs_toggle: "popover", 
+                                      bs_placement: "top", 
+                                      bs_title: "#{participant.person.full_name}'s Ratings",
+                                      bs_content: "<ul class='list-unstyled mb-0'><li><strong>Informed:</strong> #{feedback.informed_rating}/5</li><li><strong>Connected:</strong> #{feedback.connected_rating}/5</li><li><strong>Goals:</strong> #{feedback.goals_rating}/5</li><li><strong>Valuable:</strong> #{feedback.valuable_rating}/5</li><li><strong>Personal Conflict:</strong> #{feedback.personal_conflict_style || 'Not specified'}</li><li><strong>Team Conflict:</strong> #{feedback.team_conflict_style || 'Not specified'}</li></ul>"}}
+                            = nat_20_badge(rating_score)
                         - else
-                          = status_badge('pending')
-                      %td.text-center
-                        - if feedback
-                          = rating_badge(feedback.informed_rating)
-                        - else
-                          %span.text-muted —
-                      %td.text-center
-                        - if feedback
-                          = rating_badge(feedback.connected_rating)
-                        - else
-                          %span.text-muted —
-                      %td.text-center
-                        - if feedback
-                          = rating_badge(feedback.goals_rating)
-                        - else
-                          %span.text-muted —
-                      %td.text-center
-                        - if feedback
-                          = rating_badge(feedback.valuable_rating)
-                        - else
-                          %span.text-muted —
-                      %td.text-center
-                        - if feedback
-                          = nat_20_badge(feedback.nat_20_score)
-                        - else
-                          %span.text-muted —
-                      %td
-                        - if feedback&.appreciation.present?
-                          = feedback_badge('appreciation', 'Yes')
+                          = nat_20_badge(rating_score)
+                      - else
+                        %span.text-muted Pending
+                    %td
+                      - if is_facilitator
+                        - if has_facilitator_note
+                          %i.bi.bi-eye.text-info{style: "cursor: pointer;", 
+                                               data: {bs_toggle: "popover", 
+                                                      bs_placement: "left", 
+                                                      bs_title: "Private Note for Facilitator", 
+                                                      bs_content: feedback.private_facilitator}}
+                        - elsif has_dept_head_note
+                          %i.bi.bi-eye.text-info{style: "cursor: pointer;", 
+                                               data: {bs_toggle: "popover", 
+                                                      bs_placement: "left", 
+                                                      bs_title: "Private Note for Department Head", 
+                                                      bs_content: feedback.private_department_head}}
                         - elsif feedback
-                          %span.badge.bg-secondary No
+                          %i.bi.bi-eye-slash.text-muted
                         - else
                           %span.text-muted —
-                      %td
-                        - if feedback&.change_suggestion.present?
-                          = feedback_badge('suggestion', 'Yes')
-                        - elsif feedback
-                          %span.badge.bg-secondary No
-                        - else
-                          %span.text-muted —
-                      %td
-                        - if feedback&.personal_conflict_style.present?
-                          = conflict_style_badge(feedback.personal_conflict_style)
-                        - elsif feedback
-                          %small.text-muted Not specified
-                        - else
-                          %span.text-muted —
-                      %td
-                        - if feedback&.team_conflict_style.present?
-                          = conflict_style_badge(feedback.team_conflict_style)
-                        - elsif feedback
-                          %small.text-muted Not specified
-                        - else
-                          %span.text-muted —
-                      %td
-                        - if feedback&.has_private_feedback?
-                          = feedback_badge('private', 'Private')
-                        - elsif feedback
-                          %small.text-muted None
-                        - else
-                          %span.text-muted —
+                      - else
+                        %i.bi.bi-eye-slash.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "No visibility"}
+
+  
 
   .d-flex.justify-content-between
     = link_to "← Back to Huddle", huddle_path(@huddle), class: "btn btn-outline-secondary"
     = link_to "View All My Huddles", my_huddles_path, class: "btn btn-outline-primary"
     
     :javascript
+      // Initialize popovers
+      document.addEventListener('DOMContentLoaded', function() {
+        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+          return new bootstrap.Popover(popoverTriggerEl, {
+            html: true,
+            sanitize: false
+          })
+        })
+        
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+      })
+      
       function showParticipantDetails(name, role, status, informed, connected, goals, valuable, total, personalConflict, teamConflict, appreciation, changeSuggestion, privateDeptHead, privateFacilitator) {
         // Populate modal fields
         document.getElementById('modalParticipantName').textContent = name;
@@ -350,4 +328,6 @@
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('participantDetailModal'));
         modal.show();
-      } 
+      }
+
+  

@@ -24,6 +24,7 @@ RSpec.describe 'huddles/summary', type: :view do
            change_suggestion: 'More time for Q&A',
            personal_conflict_style: 'Collaborative',
            team_conflict_style: 'Compromising',
+           private_facilitator: 'Private note for facilitator',
            anonymous: false)
   end
 
@@ -53,17 +54,61 @@ RSpec.describe 'huddles/summary', type: :view do
       render
     end
 
-    it 'shows the summary and individual responses table' do
+    it 'shows the participants table' do
+      expect(rendered).to have_content('Participants')
+      expect(rendered).to have_content('John Doe')
+      expect(rendered).to have_content('Jane Smith')
+      expect(rendered).to have_content('Bob Johnson')
+    end
+
+    it 'shows participant roles as captions' do
+      expect(rendered).to have_content('Facilitator')
+      expect(rendered).to have_content('Active Participant')
+      expect(rendered).to have_content('Observer')
+    end
+
+    it 'shows ratings in X/20 format' do
+      expect(rendered).to have_content('16 / 20')
+      expect(rendered).to have_content('19 / 20')
+      expect(rendered).to have_content('Pending')
+    end
+
+    it 'shows eye icons for private notes (as facilitator)' do
+      expect(rendered).to have_css('.bi-eye.text-info')
+    end
+
+    it 'shows the summary content' do
       expect(rendered).to have_content('Huddle Summary')
-      expect(rendered).to have_content('All Participants & Feedback')
+      expect(rendered).to have_content('Average Ratings')
+      expect(rendered).to have_content('Feedback Highlights')
     end
 
     it 'does not show department head only section' do
       expect(rendered).not_to have_content('Department Head Only:')
     end
+  end
 
-    it 'shows facilitator only section' do
-      expect(rendered).to have_content('Facilitator Only:')
+  context 'as a regular participant (non-facilitator)' do
+    before do
+      assign(:current_person, person2)
+      render
+    end
+
+    it 'shows the participants table' do
+      expect(rendered).to have_content('Participants')
+      expect(rendered).to have_content('John Doe')
+      expect(rendered).to have_content('Jane Smith')
+      expect(rendered).to have_content('Bob Johnson')
+    end
+
+    it 'shows ratings but not clickable popovers' do
+      expect(rendered).to have_content('Rating')
+      expect(rendered).to have_content('16 / 20')
+      expect(rendered).to have_content('19 / 20')
+    end
+
+    it 'shows no visibility icon for private notes' do
+      expect(rendered).to have_css('.bi-eye-slash.text-muted')
     end
   end
 
@@ -76,8 +121,14 @@ RSpec.describe 'huddles/summary', type: :view do
       render
     end
 
-    it 'shows the facilitator only section' do
-      expect(rendered).to have_content('Facilitator Only:')
+    it 'shows the participants table with clickable ratings' do
+      expect(rendered).to have_content('Participants')
+      expect(rendered).to have_content('16 / 20')
+      expect(rendered).to have_content('19 / 20')
+    end
+
+    it 'shows eye icons for private notes' do
+      expect(rendered).to have_css('.bi-eye.text-info')
     end
 
     it 'does not show department head only section until department_head is implemented' do
@@ -94,12 +145,11 @@ RSpec.describe 'huddles/summary', type: :view do
       render
     end
 
-    it 'does not show the summary' do
-      # The policy returns :redirect_to_join, but in view tests we just see the content
+    it 'shows the summary content (view tests render content regardless of policy)' do
+      # In view tests, the content is rendered even for non-participants
       # In a real request, this would redirect to join page
-      expect(rendered).not_to have_content('All Participants & Feedback')
-      expect(rendered).not_to have_content('Department Head Only:')
-      expect(rendered).not_to have_content('Facilitator Only:')
+      expect(rendered).to have_content('Huddle Summary')
+      expect(rendered).to have_content('Participants')
     end
   end
 end 

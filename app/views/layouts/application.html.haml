@@ -61,3 +61,61 @@
                 %li= button_to "Logout", logout_path, method: :delete, class: "dropdown-item", form: { style: "display: inline;" }
     
     = yield 
+    
+    / Participant Detail Modal
+    .modal.fade#participantDetailModal{tabindex: "-1", "aria-labelledby": "participantDetailModalLabel", "aria-hidden": "true"}
+      .modal-dialog.modal-lg
+        .modal-content
+          .modal-header
+            %h5.modal-title#participantDetailModalLabel Participant Details
+            %button.btn-close{type: "button", "data-bs-dismiss": "modal", "aria-label": "Close"}
+          .modal-body
+            .row
+              .col-md-6
+                %p
+                  %strong Name:
+                  %span#modalParticipantName
+                %p
+                  %strong Role:
+                  %span#modalParticipantRole
+                %p
+                  %strong Status:
+                  %span#modalParticipantStatus
+              .col-md-6
+                %h6 Ratings
+                %p
+                  %strong Informed:
+                  %span#modalInformedRating
+                %p
+                  %strong Connected:
+                  %span#modalConnectedRating
+                %p
+                  %strong Goals:
+                  %span#modalGoalsRating
+                %p
+                  %strong Valuable:
+                  %span#modalValuableRating
+                %p
+                  %strong Total Score:
+                  %span#modalTotalScore
+            .row.mt-3
+              .col-md-6
+                %h6 Personal Conflict Style
+                %div#modalPersonalConflict
+              .col-md-6
+                %h6 Team Conflict Style
+                %div#modalTeamConflict
+            .row.mt-3
+              .col-12
+                %h6 Appreciation
+                %div#modalAppreciation
+            .row.mt-3
+              .col-12
+                %h6 Change Suggestion
+                %div#modalChangeSuggestion
+            .row.mt-3
+              .col-12
+                %h6 Private Feedback
+                %div#modalPrivateFeedback
+          .modal-footer
+            %button.btn.btn-secondary{type: "button", "data-bs-dismiss": "modal"} Close 

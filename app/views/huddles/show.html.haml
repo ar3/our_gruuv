@@ -1,7 +1,9 @@
 .container
   .row
     .col-12
-      %h1.mb-3= @huddle.display_name
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1.mb-0= @huddle.display_name
+        = link_to "← Back to Huddles", huddles_path, class: "btn btn-outline-secondary"
       
       / Huddle Details at the top - with distinct styling
       .row.mt-4
