@@ -1,0 +1,43 @@
+.container
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1.mb-0 Huddle Playbooks
+        = link_to new_organization_huddle_playbook_path(@organization), class: "btn btn-primary" do
+          %i.bi.bi-plus-circle.me-2
+          New Playbook
+      
+      .card
+        .card-header
+          %h5.mb-0 Playbooks for #{@organization.display_name}
+        .card-body
+          - if @huddle_playbooks.any?
+            .table-responsive
+              %table.table.table-hover
+                %thead
+                  %tr
+                    %th Playbook Name
+                    %th Slack Channel
+                    %th Huddles
+                    %th Actions
+                %tbody
+                  - @huddle_playbooks.each do |playbook|
+                    %tr
+                      %td
+                        %strong= playbook.display_name
+                      %td
+                        %code= playbook.slack_channel_or_organization_default
+                      %td
+                        %span.badge.bg-secondary= playbook.huddles.count
+                      %td
+                        .btn-group.btn-group-sm{role: "group"}
+                          = link_to new_huddle_path(huddle_playbook_id: playbook.id), class: "btn btn-outline-primary" do
+                            %i.bi.bi-plus-circle
+                          = link_to edit_organization_huddle_playbook_path(@organization, playbook), class: "btn btn-outline-secondary" do
+                            %i.bi.bi-pencil
+                          = link_to organization_huddle_playbook_path(@organization, playbook), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure? This will affect all huddles using this playbook." } do
+                            %i.bi.bi-trash
+          - else
+            .text-center.py-4
+              %p.text-muted No huddle playbooks found.
+              = link_to "Create your first playbook", new_organization_huddle_playbook_path(@organization), class: "btn btn-primary"
