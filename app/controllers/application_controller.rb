@@ -103,6 +103,7 @@ class ApplicationController < ActionController::Base
     else
       params_obj = params[params_key]
       email = params_obj[:email]
+      name = params_obj[:name]
       timezone = params_obj[:timezone]
     end
     
@@ -118,10 +119,12 @@ class ApplicationController < ActionController::Base
     # If no timezone provided, try to detect from request
     timezone ||= TimezoneService.detect_timezone_from_request(request)
     
-    maybe_new_name = email.split('@').first.titleize
+    # Use provided name or auto-generate from email
+    maybe_new_name = name.presence || email.split('@').first.gsub('.', ' ').titleize
+    
     # Update the name and timezone if they changed
     updates = {}
-    updates[:full_name] = person.full_name = maybe_new_name if person.full_name.blank?
+    updates[:full_name] = maybe_new_name if person.full_name.blank? || (name.present? && person.full_name != name)
     updates[:timezone] = timezone if timezone.present? && person.timezone.blank?
     
     person.update!(updates) if updates.any?

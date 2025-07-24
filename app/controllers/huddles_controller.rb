@@ -51,13 +51,13 @@ class HuddlesController < ApplicationController
     # Get the person - either from session or create from params
     person = get_or_create_person_from_session_or_params
     
-    # Find or create huddle instruction
-    huddle_instruction = find_or_create_huddle_instruction(organization, huddle_params[:huddle_alias])
+    # Find or create huddle playbook
+    huddle_playbook = find_or_create_huddle_instruction(organization, huddle_params[:huddle_alias])
     
     # Create the huddle
     @huddle = Huddle.new(
       organization: organization,
-      huddle_instruction: huddle_instruction,
+      huddle_playbook: huddle_playbook,
       started_at: Time.current,
       expires_at: 24.hours.from_now,
       huddle_alias: huddle_params[:huddle_alias]
@@ -259,17 +259,17 @@ class HuddlesController < ApplicationController
   end
   
   def find_or_create_huddle_instruction(organization, alias_name)
-    # Find existing instruction for this organization/alias combination
-    instruction = organization.huddle_instructions.find_by(instruction_alias: alias_name)
+    # Find existing playbook for this organization/alias combination
+    playbook = organization.huddle_playbooks.find_by(instruction_alias: alias_name)
     
     # If not found, create a new one
-    unless instruction
-      instruction = organization.huddle_instructions.create!(
+    unless playbook
+      playbook = organization.huddle_playbooks.create!(
         instruction_alias: alias_name,
         slack_channel: nil # Will use organization default
       )
     end
     
-    instruction
+    playbook
   end
 end

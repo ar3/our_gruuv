@@ -168,7 +168,7 @@ RSpec.feature 'Huddles', type: :feature do
     
     expect(page).to have_content('Huddle created successfully!')
     expect(page).to have_content('New Company > New Team')
-    expect(page).to have_content('John Doe')
+    expect(page).to have_content('John') # Auto-generated from email
   end
 
   scenario 'creating a new huddle when already logged in' do
@@ -198,20 +198,19 @@ RSpec.feature 'Huddles', type: :feature do
   scenario 'joining an existing huddle when not logged in' do
     visit join_huddle_path(huddle)
     
-    # Should show the join form asking for name, email, and role
+    # Should show the join form asking for email and role (name auto-generated)
     expect(page).to have_content("Join #{huddle.display_name}")
-    expect(page).to have_field('name')
     expect(page).to have_field('email')
     expect(page).to have_select('role')
+    expect(page).to have_content('Your name will be auto-generated from your email')
     
-    fill_in 'Your name', with: 'Jane Smith'
     fill_in 'Your email', with: 'jane@example.com'
     select 'Active Participant', from: 'What role will you play in this huddle?'
     
     click_button 'Join Huddle'
     
     expect(page).to have_content('Welcome to the huddle!')
-    expect(page).to have_content('Jane Smith')
+    expect(page).to have_content('Jane') # Auto-generated name from email
   end
 
   scenario 'joining an existing huddle when already logged in' do
@@ -376,27 +375,26 @@ RSpec.feature 'Huddles', type: :feature do
   scenario 'updates existing person name when joining with different name' do
     # Create a person with initial name
     existing_person = Person.create!(
-      email: 'john@example.com',
+      email: 'john.doe@example.com',
       full_name: 'John Smith'
     )
     
     visit join_huddle_path(huddle)
     
-    # Join with a different name
-    fill_in 'Your name', with: 'John Doe'
-    fill_in 'Your email', with: 'john@example.com'
+    # Join with email (name should NOT be auto-generated since person already has a name)
+    fill_in 'Your email', with: 'john.doe@example.com'
     select 'Active Participant', from: 'What role will you play in this huddle?'
     
     click_button 'Join Huddle'
     
     expect(page).to have_content('Welcome to the huddle!')
-    expect(page).to have_content('John Doe')
+    expect(page).to have_content('John Smith') # Original name should be preserved
     
-    # Verify the person's name was updated in the database
+    # Verify the person's name was NOT updated in the database
     existing_person.reload
-    expect(existing_person.full_name).to eq('John Doe')
+    expect(existing_person.full_name).to eq('John Smith') # Should remain unchanged
     expect(existing_person.first_name).to eq('John')
-    expect(existing_person.last_name).to eq('Doe')
+    expect(existing_person.last_name).to eq('Smith')
   end
 
   scenario 'updates existing person name when creating huddle with different name' do
@@ -408,7 +406,7 @@ RSpec.feature 'Huddles', type: :feature do
     
     visit new_huddle_path
     
-    # Create huddle with a different name
+    # Create huddle with a different name (should use the name from the form, not auto-generate)
     fill_in 'Company name', with: 'New Company'
     fill_in 'Team name', with: 'New Team'
     fill_in 'Your name', with: 'Jane Doe'
@@ -418,9 +416,9 @@ RSpec.feature 'Huddles', type: :feature do
     click_button 'Start Huddle'
     
     expect(page).to have_content('Huddle created successfully!')
-    expect(page).to have_content('Jane Doe')
+    expect(page).to have_content('Jane Doe') # Should use the name from the form
     
-    # Verify the person's name was updated in the database
+    # Verify the person's name was updated in the database (form name takes precedence)
     existing_person.reload
     expect(existing_person.full_name).to eq('Jane Doe')
     expect(existing_person.first_name).to eq('Jane')

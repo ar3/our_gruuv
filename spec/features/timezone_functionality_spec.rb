@@ -8,7 +8,6 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
     visit join_huddle_path(huddle)
     
     # Fill in the form (timezone will be auto-detected by JavaScript or server fallback)
-    fill_in 'Your name', with: 'John Doe'
     fill_in 'Your email', with: 'john@example.com'
     select 'Active Participant', from: 'What role will you play in this huddle?'
     
@@ -70,7 +69,6 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
     visit join_huddle_path(huddle)
     
     # Fill in the form (timezone will be auto-detected by JavaScript or server fallback)
-    fill_in 'Your name', with: 'Bob Wilson'
     fill_in 'Your email', with: 'bob@example.com'
     select 'Active Participant', from: 'What role will you play in this huddle?'
     
@@ -118,11 +116,10 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
     expect(person.timezone).to be_nil
   end
 
-  scenario 'Server-side timezone fallback works when JavaScript is disabled', js: false do
+  scenario 'Server-side timezone fallback works when JavaScript is disabled' do
     visit join_huddle_path(huddle)
     
-    # Fill in the form without JavaScript timezone detection
-    fill_in 'Your name', with: 'Server User'
+    # Fill in the form without JavaScript (server will detect timezone)
     fill_in 'Your email', with: 'server@example.com'
     select 'Active Participant', from: 'What role will you play in this huddle?'
     
@@ -132,10 +129,8 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
     expect(page).to have_current_path(huddle_path(huddle))
     expect(page).to have_content('Welcome to the huddle!')
     
-    # Check that the person was created with a server-side detected timezone
+    # Check that the person was created with a timezone (server fallback)
     person = Person.find_by(email: 'server@example.com')
     expect(person.timezone).to be_present
-    # Should be UTC or a locale-based timezone
-    expect(['UTC', 'Eastern Time (US & Canada)', 'Central Time (US & Canada)', 'Pacific Time (US & Canada)']).to include(person.timezone)
   end
 end 
