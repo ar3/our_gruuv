@@ -249,7 +249,7 @@ class HuddlesController < ApplicationController
   # These methods are now abstracted to ApplicationController
 
   def join_params
-    params.permit(:name, :email, :timezone, :role, :authenticity_token, :commit, :id)
+    params.permit(:email, :timezone, :role, :authenticity_token, :commit, :id)
   end
 
   def feedback_params

@@ -18,14 +18,14 @@ RSpec.describe 'huddles/join', type: :view do
   end
 
   context 'when user is not logged in' do
-    it 'renders the join form with name, email, and role fields' do
+    it 'renders the join form with email and role fields' do
       render
 
       expect(rendered).to have_content("Join #{huddle.display_name}")
-      expect(rendered).to have_field('name')
       expect(rendered).to have_field('email')
       expect(rendered).to have_select('role')
       expect(rendered).to have_button('Join Huddle')
+      expect(rendered).to have_content('Your name will be auto-generated from your email')
     end
 
     it 'includes role options from constants' do

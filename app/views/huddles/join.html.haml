@@ -67,13 +67,9 @@
               %i.bi.bi-person-plus.me-2
               %strong Welcome!
               %br
-              %small Please provide your information to join this huddle and submit feedback.
+              %small Please provide your email to join this huddle and submit feedback. Your name will be auto-generated from your email.
             
             = form_with url: join_huddle_huddle_path(@huddle), method: :post, local: true do |form|
-              .mb-3
-                = form.label :name, "Your name", class: "form-label"
-                = form.text_field :name, class: "form-control", placeholder: "Enter your full name", required: true
-              
               .mb-3
                 = form.label :email, "Your email", class: "form-label"
                 = form.email_field :email, class: "form-control", placeholder: "Enter your email address", required: true

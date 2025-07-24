@@ -99,12 +99,10 @@ class ApplicationController < ActionController::Base
     # For join params, they're at the top level, not nested
     if params_key == :join
       email = params[:email]
-      name = params[:name]
       timezone = params[:timezone]
     else
       params_obj = params[params_key]
       email = params_obj[:email]
-      name = params_obj[:name]
       timezone = params_obj[:timezone]
     end
     
@@ -114,24 +112,17 @@ class ApplicationController < ActionController::Base
       raise ActiveRecord::RecordInvalid.new(Person.new), "Email is required"
     end
     
-    if name.blank?
-      Rails.logger.error "👤 FIND_OR_CREATE_PERSON_FROM_PARAMS: Name is blank!"
-      raise ActiveRecord::RecordInvalid.new(Person.new), "Name is required"
-    end
+    # Find or create the person
+    person = Person.find_or_create_by!(email: email)
     
     # If no timezone provided, try to detect from request
     timezone ||= TimezoneService.detect_timezone_from_request(request)
     
-    # Find or create the person
-    person = Person.find_or_create_by!(email: email) do |p|
-      p.full_name = name
-      p.timezone = timezone if timezone.present?
-    end
-    
+    maybe_new_name = email.split('@').first.titleize
     # Update the name and timezone if they changed
     updates = {}
-    updates[:full_name] = name if person.full_name != name
-    updates[:timezone] = timezone if timezone.present? && person.timezone != timezone
+    updates[:full_name] = person.full_name = maybe_new_name if person.full_name.blank?
+    updates[:timezone] = timezone if timezone.present? && person.timezone.blank?
     
     person.update!(updates) if updates.any?
     
