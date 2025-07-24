@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_23_114429) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_24_140417) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -64,6 +64,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_23_114429) do
     t.datetime "updated_at", null: false
     t.datetime "expires_at", default: -> { "(CURRENT_TIMESTAMP + 'PT24H'::interval)" }, null: false
     t.bigint "huddle_playbook_id"
+    t.string "announcement_message_id"
+    t.string "summary_message_id"
     t.index ["expires_at"], name: "index_huddles_on_expires_at"
     t.index ["huddle_playbook_id"], name: "index_huddles_on_huddle_playbook_id"
     t.index ["organization_id"], name: "index_huddles_on_organization_id"

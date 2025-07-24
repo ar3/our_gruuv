@@ -181,7 +181,12 @@ class HuddlesController < ApplicationController
     
     if @feedback.save
       # Send Slack notification for feedback submission
-      SlackNotificationJob.perform_later(@huddle.id, :feedback_requested)
+      SlackNotificationJob.perform_now(@huddle.id, :feedback_requested)
+      
+      # Update Slack summary if it exists
+      if @huddle.has_slack_announcement?
+        SlackNotificationJob.perform_now(@huddle.id, :post_summary)
+      end
       
       redirect_to @huddle, notice: 'Thank you for your feedback!'
     else
@@ -191,6 +196,24 @@ class HuddlesController < ApplicationController
     @feedback = @huddle.huddle_feedbacks.build(feedback_params)
     @feedback.errors.merge!(e.record.errors)
     render :feedback, status: :unprocessable_entity
+  end
+
+  def post_summary_to_slack
+    authorize @huddle, :summary?
+    
+    unless @huddle.slack_configured?
+      redirect_to summary_huddle_path(@huddle), alert: 'Slack is not configured for this organization.'
+      return
+    end
+    
+    begin
+      # Post or update the summary in Slack
+      SlackNotificationJob.perform_now(@huddle.id, :post_summary)
+      
+      redirect_to summary_huddle_path(@huddle), notice: 'Huddle summary posted to Slack successfully!'
+    rescue => e
+      redirect_to summary_huddle_path(@huddle), alert: "Failed to post to Slack: #{e.message}"
+    end
   end
 
   private
@@ -232,7 +255,7 @@ class HuddlesController < ApplicationController
   def feedback_params
     params.permit(:informed_rating, :connected_rating, :goals_rating, :valuable_rating, 
                   :appreciation, :change_suggestion, :team_conflict_style, :personal_conflict_style, 
-                  :anonymous, :authenticity_token, :commit)
+                  :private_department_head, :private_facilitator, :anonymous, :authenticity_token, :commit)
   end
   
   def find_or_create_huddle_instruction(organization, alias_name)

@@ -7,6 +7,24 @@
       .d-flex.justify-content-between.align-items-center.mb-4
         %h1 Huddle Summary
         = link_to "← Back to Huddle", huddle_path(@huddle), class: "btn btn-outline-secondary"
+      
+      / Slack Integration Button
+      - if is_facilitator
+        .d-flex.justify-content-end.mb-3
+          - if @huddle.slack_configured?
+            = button_to "Post Summary to Slack", post_summary_to_slack_huddle_path(@huddle), 
+                method: :post, 
+                class: "btn btn-success",
+                data: { confirm: "Post the current huddle summary to Slack?" }
+          - else
+            %button.btn.btn-outline-secondary{type: "button", 
+                data: {bs_toggle: "popover", 
+                       bs_placement: "left", 
+                       bs_title: "Slack Not Configured", 
+                       bs_content: "An admin needs to configure Slack for this organization. #{link_to 'Configure Slack', organizations_path, class: 'btn btn-sm btn-primary mt-2'}"}}
+              %i.bi.bi-slack.me-2
+              Post Summary to Slack
+      
       .card.mb-4
         .card-header
           %h2.mb-0= @huddle.display_name
@@ -209,9 +227,9 @@
                                       bs_placement: "top", 
                                       bs_title: "#{participant.person.full_name}'s Ratings",
                                       bs_content: "<ul class='list-unstyled mb-0'><li><strong>Informed:</strong> #{feedback.informed_rating}/5</li><li><strong>Connected:</strong> #{feedback.connected_rating}/5</li><li><strong>Goals:</strong> #{feedback.goals_rating}/5</li><li><strong>Valuable:</strong> #{feedback.valuable_rating}/5</li><li><strong>Personal Conflict:</strong> #{feedback.personal_conflict_style || 'Not specified'}</li><li><strong>Team Conflict:</strong> #{feedback.team_conflict_style || 'Not specified'}</li></ul>"}}
-                            = nat_20_badge(rating_score)
+                            = "#{rating_score} / 20"
                         - else
-                          = nat_20_badge(rating_score)
+                          = "#{rating_score} / 20"
                       - else
                         %span.text-muted Pending
                     %td

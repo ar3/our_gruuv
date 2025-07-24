@@ -36,6 +36,7 @@ Rails.application.routes.draw do
       get :join
       post :join_huddle
       get :summary
+      post :post_summary_to_slack
     end
   end
   

@@ -45,6 +45,22 @@ class Huddle < ApplicationRecord
     huddle_instruction&.slack_channel_or_organization_default
   end
 
+  def slack_configured?
+    organization.slack_configuration.present?
+  end
+
+  def slack_configuration
+    organization.slack_configuration
+  end
+
+  def has_slack_announcement?
+    announcement_message_id.present?
+  end
+
+  def has_slack_summary?
+    summary_message_id.present?
+  end
+
 
   
   def department_head
