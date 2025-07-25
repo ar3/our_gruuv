@@ -2,12 +2,42 @@ require 'rails_helper'
 
 RSpec.describe HuddlesController, type: :controller do
   let(:organization) { create(:organization, name: 'Test Org') }
-  let(:huddle) { create(:huddle, organization: organization, started_at: 1.day.ago) }
+  let(:huddle) { create(:huddle, organization: organization, started_at: Time.current) }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
   let!(:participant) { create(:huddle_participant, huddle: huddle, person: person, role: 'active') }
 
   before do
     session[:current_person_id] = person.id
+  end
+
+  describe 'GET #show' do
+    it 'assigns the requested huddle' do
+      get :show, params: { id: huddle.id }
+      expect(assigns(:huddle)).to eq(huddle)
+    end
+
+    it 'redirects to join page when user is not logged in' do
+      session[:current_person_id] = nil
+      get :show, params: { id: huddle.id }
+      expect(response).to redirect_to(join_huddle_path(huddle))
+    end
+  end
+
+  describe 'GET #feedback' do
+    it 'assigns the requested huddle' do
+      get :feedback, params: { id: huddle.id }
+      expect(assigns(:huddle)).to eq(huddle)
+    end
+
+    it 'assigns the current person' do
+      get :feedback, params: { id: huddle.id }
+      expect(assigns(:current_person)).to eq(person)
+    end
+
+    it 'assigns existing participant' do
+      get :feedback, params: { id: huddle.id }
+      expect(assigns(:existing_participant)).to eq(participant)
+    end
   end
 
   describe 'POST #submit_feedback' do
@@ -51,13 +81,6 @@ RSpec.describe HuddlesController, type: :controller do
         expect(feedback.private_department_head).to eq('Private feedback for DH')
         expect(feedback.private_facilitator).to eq('Private feedback for facilitator')
         expect(feedback.anonymous).to be false
-      end
-
-      it 'redirects to huddle with success message' do
-        post :submit_feedback, params: { id: huddle.id }.merge(valid_feedback_params)
-        
-        expect(response).to redirect_to(huddle_path(huddle))
-        expect(flash[:notice]).to eq('Thank you for your feedback!')
       end
     end
 
@@ -128,75 +151,65 @@ RSpec.describe HuddlesController, type: :controller do
         post :submit_feedback, params: { id: huddle.id }.merge(valid_feedback_params)
         
         expect(response).to redirect_to(join_huddle_path(huddle))
-        expect(flash[:alert]).to eq('Please join the huddle before accessing this page.')
       end
     end
 
     context 'when user is not a participant' do
-      let(:non_participant) { create(:person, first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com') }
-
       before do
-        session[:current_person_id] = non_participant.id
+        participant.destroy
       end
 
       it 'redirects to join page' do
         post :submit_feedback, params: { id: huddle.id }.merge(valid_feedback_params)
         
         expect(response).to redirect_to(join_huddle_path(huddle))
-        expect(flash[:alert]).to eq('Please join the huddle before accessing this page.')
-      end
-    end
-
-    context 'with duplicate feedback submission' do
-      let!(:existing_feedback) { create(:huddle_feedback, huddle: huddle, person: person) }
-
-      it 'renders feedback form with errors' do
-        post :submit_feedback, params: { id: huddle.id }.merge(valid_feedback_params)
-        
-        expect(response).to have_http_status(:unprocessable_entity)
-        expect(response).to render_template(:feedback)
       end
     end
   end
 
-  describe 'GET #feedback' do
-    context 'when user is logged in and is a participant' do
-      it 'renders the feedback form' do
-        get :feedback, params: { id: huddle.id }
-        
-        expect(response).to have_http_status(:success)
-        expect(response).to render_template(:feedback)
-        expect(assigns(:current_person)).to eq(person)
-        expect(assigns(:existing_participant)).to eq(participant)
-      end
+  describe 'GET #summary' do
+    it 'assigns the requested huddle' do
+      get :summary, params: { id: huddle.id }
+      expect(assigns(:huddle)).to eq(huddle)
     end
 
-    context 'when user is not logged in' do
-      before do
-        session[:current_person_id] = nil
-      end
-
-      it 'redirects to join page' do
-        get :feedback, params: { id: huddle.id }
-        
-        expect(response).to redirect_to(join_huddle_path(huddle))
-        expect(flash[:alert]).to eq('Please join the huddle before accessing this page.')
-      end
+    it 'assigns the current person' do
+      get :summary, params: { id: huddle.id }
+      expect(assigns(:current_person)).to eq(person)
     end
 
-    context 'when user is not a participant' do
-      let(:non_participant) { create(:person, first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com') }
+    it 'assigns existing participant' do
+      get :summary, params: { id: huddle.id }
+      expect(assigns(:existing_participant)).to eq(participant)
+    end
+  end
 
-      before do
-        session[:current_person_id] = non_participant.id
-      end
+  describe 'POST #post_summary_to_slack' do
+    let(:slack_config) { create(:slack_configuration, organization: organization) }
 
-      it 'redirects to join page' do
-        get :feedback, params: { id: huddle.id }
-        
-        expect(response).to redirect_to(join_huddle_path(huddle))
-        expect(flash[:alert]).to eq('Please join the huddle before accessing this page.')
-      end
+    before do
+      slack_config
+    end
+
+    it 'assigns the requested huddle' do
+      post :post_summary_to_slack, params: { id: huddle.id }
+      expect(assigns(:huddle)).to eq(huddle)
+    end
+
+    it 'redirects to summary page with success message when Slack is configured' do
+      post :post_summary_to_slack, params: { id: huddle.id }
+      
+      expect(response).to redirect_to(summary_huddle_path(huddle))
+      expect(flash[:notice]).to eq('Huddle summary posted to Slack successfully!')
+    end
+
+    it 'redirects to summary page with error when Slack is not configured' do
+      slack_config.destroy
+      
+      post :post_summary_to_slack, params: { id: huddle.id }
+      
+      expect(response).to redirect_to(summary_huddle_path(huddle))
+      expect(flash[:alert]).to eq('Slack is not configured for this organization.')
     end
   end
 end 

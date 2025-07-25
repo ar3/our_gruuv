@@ -89,7 +89,7 @@ module ApplicationHelper
 
   def format_time_in_user_timezone(time, user = nil)
     user ||= current_person if respond_to?(:current_person)
-    return time.strftime('%B %d, %Y at %I:%M %p %Z') unless user&.timezone.present?
+    return time.strftime('%B %d, %Y at %I:%M %p UTC') unless user&.timezone.present?
     
     time.in_time_zone(user.timezone).strftime('%B %d, %Y at %I:%M %p %Z')
   end

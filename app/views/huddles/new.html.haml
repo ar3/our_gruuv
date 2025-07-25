@@ -43,10 +43,21 @@
 
             .row
               .col-md-8
-                .mb-3
-                  = form.label :company_name, "Company name", class: "form-label"
-                  = form.text_field :company_name, class: "form-control", required: true, placeholder: "e.g., Acme Corp"
-                  .form-text Your company or organization name
+                .mb-3{ data: { controller: "company-selection" } }
+                  = form.label :company_selection, "Company", class: "form-label"
+                  = form.select :company_selection, 
+                    options_for_select([["Select a company...", ""]] + Company.order(:name).pluck(:name, :name) + [["+ Create new company", "new"]]), 
+                    {}, 
+                    { class: "form-select", data: { company_selection_target: "select", action: "change->company-selection#toggleNewCompany" } }
+                  .form-text Select an existing company or create a new one
+                  
+                  .mt-3.d-none{ data: { company_selection_target: "newCompanyField" } }
+                    = form.label :new_company_name, "New company name", class: "form-label"
+                    = form.text_field :new_company_name, 
+                      class: "form-control", 
+                      placeholder: "e.g., Acme Corp",
+                      data: { company_selection_target: "newCompanyInput" }
+                    .form-text Enter the name for your new company
               .col-md-4
                 .mb-3
                   .alert.alert-success.h-100

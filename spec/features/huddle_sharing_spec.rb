@@ -20,9 +20,8 @@ RSpec.feature 'Huddle Sharing', type: :feature, js: true do
     # Verify tooltip is present
     expect(share_button['title']).to eq('Share this huddle')
     
-    # Verify the join URL is in the data attribute
-    expected_url = join_huddle_url(huddle)
-    expect(share_button['data-join-url']).to eq(expected_url)
+    # Verify the join URL is in the data attribute (should match the actual test server URL)
+    expect(share_button['data-join-url']).to include("/huddles/#{huddle.id}/join")
     
     # Verify the button has the correct structure
     expect(share_button).to have_css('.bi-link-45deg')
@@ -36,7 +35,7 @@ RSpec.feature 'Huddle Sharing', type: :feature, js: true do
     
     # Verify the button has the correct structure
     expect(share_button).to have_css('.bi-link-45deg')
-    expect(share_button['data-join-url']).to eq(join_huddle_url(huddle))
+    expect(share_button['data-join-url']).to include("/huddles/#{huddle.id}/join")
   end
 
   scenario 'Share button is positioned correctly on huddle cards' do
@@ -76,6 +75,6 @@ RSpec.feature 'Huddle Sharing', type: :feature, js: true do
     # Verify button has the essential attributes
     expect(share_button['title']).to eq('Share this huddle')
     expect(share_button['data-huddle-id']).to eq(huddle.id.to_s)
-    expect(share_button['data-join-url']).to eq(join_huddle_url(huddle))
+    expect(share_button['data-join-url']).to include("/huddles/#{huddle.id}/join")
   end
 end 

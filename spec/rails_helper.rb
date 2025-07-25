@@ -11,6 +11,17 @@ require 'rspec/rails'
 require 'rack_session_access/capybara'
 require 'factory_bot_rails'
 require 'pundit/rspec'
+
+# Configure Capybara
+require 'capybara/rspec'
+require 'selenium-webdriver'
+
+Capybara.register_driver :selenium_chrome do |app|
+  Capybara::Selenium::Driver.new(app, browser: :chrome, options: Selenium::WebDriver::Chrome::Options.new(args: %w[headless disable-gpu no-sandbox disable-dev-shm-usage]))
+end
+
+Capybara.javascript_driver = :selenium_chrome
+Capybara.default_max_wait_time = 5
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
@@ -75,6 +86,15 @@ RSpec.configure do |config|
   
   # Include FactoryBot methods
   config.include FactoryBot::Syntax::Methods
+  
+  # Configure Capybara for JavaScript tests
+  config.before(:each, js: true) do
+    Capybara.current_driver = Capybara.javascript_driver
+  end
+
+  config.after(:each, js: true) do
+    Capybara.use_default_driver
+  end
 end
 
 # Configure shoulda-matchers

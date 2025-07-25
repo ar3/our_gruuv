@@ -163,7 +163,8 @@ RSpec.feature 'Huddles', type: :feature do
   scenario 'creating a new huddle when not logged in' do
     visit new_huddle_path
     
-    fill_in 'Company name', with: 'New Company'
+    select '+ Create new company', from: 'Company'
+    fill_in 'New company name', with: 'New Company'
     fill_in 'Team name', with: 'New Team'
     fill_in 'Your email', with: 'john@example.com'
     
@@ -186,7 +187,8 @@ RSpec.feature 'Huddles', type: :feature do
     expect(page).to have_content('Welcome, Jane Smith!')
     expect(page).to have_field('email', readonly: true, with: 'jane@example.com')
     
-    fill_in 'Company name', with: 'New Company'
+    select '+ Create new company', from: 'Company'
+    fill_in 'New company name', with: 'New Company'
     fill_in 'Team name', with: 'New Team'
     
     click_button 'Start Huddle'
@@ -335,7 +337,8 @@ RSpec.feature 'Huddles', type: :feature do
     
     visit new_huddle_path
     
-    fill_in 'Company name', with: 'Test Company'
+    select '+ Create new company', from: 'Company'
+    fill_in 'New company name', with: 'Test Company'
     fill_in 'Team name', with: 'Test Team'
     fill_in 'Your email', with: 'frank@example.com'
     
@@ -383,7 +386,8 @@ RSpec.feature 'Huddles', type: :feature do
     visit new_huddle_path
     
     # Create huddle (name will be auto-generated from email)
-    fill_in 'Company name', with: 'New Company'
+    select '+ Create new company', from: 'Company'
+    fill_in 'New company name', with: 'New Company'
     fill_in 'Team name', with: 'New Team'
     fill_in 'Your email', with: 'jane@example.com'
     

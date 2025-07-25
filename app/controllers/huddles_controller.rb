@@ -1,5 +1,5 @@
 class HuddlesController < ApplicationController
-  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :summary]
+  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :summary, :post_summary_to_slack]
 
   def index
     @huddles = Huddle.active.recent.includes(:organization)
@@ -84,7 +84,7 @@ class HuddlesController < ApplicationController
       render :new, status: :unprocessable_entity
     end
   rescue ActiveRecord::RecordInvalid => e
-    @huddle = Huddle.new(huddle_params.except(:company_name, :team_name, :name, :email))
+    @huddle = Huddle.new(huddle_params.except(:company_selection, :new_company_name, :team_name, :email))
     @huddle.errors.merge!(e.record.errors)
     render :new, status: :unprocessable_entity
   end
@@ -210,15 +210,27 @@ class HuddlesController < ApplicationController
   # Remove this method since it's already defined in ApplicationController
 
   def huddle_params
-    params.require(:huddle).permit(:company_name, :team_name, :email)
+    params.require(:huddle).permit(:company_selection, :new_company_name, :team_name, :email)
   end
 
   def find_or_create_organization
-    company_name = huddle_params[:company_name]
+    company_selection = huddle_params[:company_selection]
+    new_company_name = huddle_params[:new_company_name]
     team_name = huddle_params[:team_name]
     
+    # Determine the company name
+    company_name = if company_selection == 'new'
+      new_company_name
+    else
+      company_selection
+    end
+    
     # Guard against empty company name
-    raise ActiveRecord::RecordInvalid.new(Company.new) if company_name.blank?
+    if company_name.blank?
+      company = Company.new
+      company.errors.add(:name, "can't be blank")
+      raise ActiveRecord::RecordInvalid.new(company)
+    end
     
     # Find or create the company
     company = Company.find_or_create_by!(name: company_name)
