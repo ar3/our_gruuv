@@ -27,6 +27,31 @@ function initializeTooltips() {
   }
 }
 
+// Initialize Bootstrap popovers
+function initializePopovers() {
+  console.log('Initializing popovers...')
+  const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+  console.log('Found popover elements:', popoverTriggerList.length)
+  
+  if (bootstrap.Popover) {
+    console.log('Found bootstrap.Popover')
+    const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl, {
+      html: true,
+      sanitize: false
+    }))
+    console.log('Initialized popovers:', popoverList.length)
+  } else if (window.bootstrap && window.bootstrap.Popover) {
+    console.log('Found window.bootstrap.Popover')
+    const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new window.bootstrap.Popover(popoverTriggerEl, {
+      html: true,
+      sanitize: false
+    }))
+    console.log('Initialized popovers:', popoverList.length)
+  } else {
+    console.log('Popover not found in bootstrap object')
+  }
+}
+
 // Initialize Bootstrap toasts
 function initializeToasts() {
   console.log('Initializing toasts...')
@@ -166,11 +191,13 @@ function createToastContainer() {
 // Try multiple events to ensure tooltips and toasts are initialized
 document.addEventListener('turbo:load', () => {
   initializeTooltips()
+  initializePopovers()
   initializeToasts()
   initializeShareHuddle()
 })
 document.addEventListener('DOMContentLoaded', () => {
   initializeTooltips()
+  initializePopovers()
   initializeToasts()
   initializeShareHuddle()
 })
