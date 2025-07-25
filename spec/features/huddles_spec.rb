@@ -165,7 +165,7 @@ RSpec.feature 'Huddles', type: :feature do
     
     select '+ Create new company', from: 'Company'
     fill_in 'New company name', with: 'New Company'
-    fill_in 'Team name', with: 'New Team'
+    fill_in 'New team name', with: 'New Team'
     fill_in 'Your email', with: 'john@example.com'
     
     click_button 'Start Huddle'
@@ -189,7 +189,7 @@ RSpec.feature 'Huddles', type: :feature do
     
     select '+ Create new company', from: 'Company'
     fill_in 'New company name', with: 'New Company'
-    fill_in 'Team name', with: 'New Team'
+    fill_in 'New team name', with: 'New Team'
     
     click_button 'Start Huddle'
     
@@ -339,7 +339,7 @@ RSpec.feature 'Huddles', type: :feature do
     
     select '+ Create new company', from: 'Company'
     fill_in 'New company name', with: 'Test Company'
-    fill_in 'Team name', with: 'Test Team'
+    fill_in 'New team name', with: 'Test Team'
     fill_in 'Your email', with: 'frank@example.com'
     
     click_button 'Start Huddle'
@@ -388,7 +388,7 @@ RSpec.feature 'Huddles', type: :feature do
     # Create huddle (name will be auto-generated from email)
     select '+ Create new company', from: 'Company'
     fill_in 'New company name', with: 'New Company'
-    fill_in 'Team name', with: 'New Team'
+    fill_in 'New team name', with: 'New Team'
     fill_in 'Your email', with: 'jane@example.com'
     
     click_button 'Start Huddle'

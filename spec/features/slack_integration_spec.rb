@@ -55,8 +55,8 @@ RSpec.describe 'Slack Integration', type: :feature do
       visit new_huddle_path
       
       select '+ Create new company', from: 'Company'
-    fill_in 'New company name', with: 'Test Company'
-      fill_in 'Team name', with: 'Test Team'
+      fill_in 'New company name', with: 'Test Company'
+      fill_in 'New team name', with: 'Test Team'
       fill_in 'Your email', with: 'john@example.com'
       
       click_button 'Start Huddle'
@@ -75,8 +75,8 @@ RSpec.describe 'Slack Integration', type: :feature do
       visit new_huddle_path
       
       select '+ Create new company', from: 'Company'
-    fill_in 'New company name', with: 'Test Company No Slack'
-      fill_in 'Team name', with: 'Test Team No Slack'
+      fill_in 'New company name', with: 'Test Company No Slack'
+      fill_in 'New team name', with: 'Test Team No Slack'
       # Do not fill in 'Your email' since it is readonly when current_person is present
       
       click_button 'Start Huddle'

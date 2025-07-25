@@ -3,7 +3,10 @@ Rails.application.routes.draw do
   get "healthcheck/index"
   get "/healthcheck", to: "healthcheck#index"
   
-
+  # API routes
+  namespace :api do
+    post 'companies/teams', to: 'companies#teams'
+  end
   
   # Organizations routes
   resources :organizations do

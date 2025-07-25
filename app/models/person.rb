@@ -50,6 +50,18 @@ class Person < ApplicationRecord
     Organization.all.order(:type, :name)
   end
   
+  def last_huddle
+    huddles.recent.first
+  end
+  
+  def last_huddle_company
+    last_huddle&.organization&.root_company
+  end
+  
+  def last_huddle_team
+    last_huddle&.organization&.team? ? last_huddle.organization : nil
+  end
+  
   private
   
   def ensure_valid_timezone

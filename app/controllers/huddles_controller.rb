@@ -42,6 +42,19 @@ class HuddlesController < ApplicationController
   def new
     @huddle = Huddle.new
     @current_person = current_person
+    
+    # Pre-populate with last company and team if user has participated in huddles
+    if @current_person
+      last_company = @current_person.last_huddle_company
+      last_team = @current_person.last_huddle_team
+      
+      if last_company
+        @initial_company_selection = last_company.name
+        if last_team
+          @initial_team_selection = last_team.name
+        end
+      end
+    end
   end
 
   def create
@@ -210,12 +223,14 @@ class HuddlesController < ApplicationController
   # Remove this method since it's already defined in ApplicationController
 
   def huddle_params
-    params.require(:huddle).permit(:company_selection, :new_company_name, :team_name, :email)
+    params.require(:huddle).permit(:company_selection, :new_company_name, :team_selection, :new_team_name, :team_name, :email)
   end
 
   def find_or_create_organization
     company_selection = huddle_params[:company_selection]
     new_company_name = huddle_params[:new_company_name]
+    team_selection = huddle_params[:team_selection]
+    new_team_name = huddle_params[:new_team_name]
     team_name = huddle_params[:team_name]
     
     # Determine the company name
@@ -235,9 +250,25 @@ class HuddlesController < ApplicationController
     # Find or create the company
     company = Company.find_or_create_by!(name: company_name)
     
-    if team_name.present?
+    # Determine the team name
+    final_team_name = if company_selection == 'new'
+      # If creating a new company, use the new team name
+      new_team_name
+    elsif team_selection == 'new'
+      # If existing company but new team selected
+      new_team_name
+    elsif team_selection.present?
+      # If existing company and existing team selected
+      team_selection
+    else
+      # Fallback to old parameter
+      team_name
+    end
+    
+    if final_team_name.present?
       # Find or create the team under this company
-      Team.find_or_create_by!(name: team_name, parent: company)
+      # If team with exact name exists, use it; otherwise create new one
+      Team.find_or_create_by!(name: final_team_name, parent: company)
     else
       company
     end
