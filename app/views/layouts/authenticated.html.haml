@@ -64,7 +64,8 @@
                 %li= link_to "My Huddles", my_huddles_path, class: "dropdown-item"
                 %li
                   %hr.dropdown-divider
-                %li= link_to "Slack Integration", slack_index_path, class: "dropdown-item"
+                - if current_organization
+                  %li= link_to "Slack Integration", organization_slack_path(current_organization), class: "dropdown-item"
 
             %li.nav-item
               = link_to "Transform", "#", class: "nav-link", onclick: "alert('Coming soon!'); return false;"

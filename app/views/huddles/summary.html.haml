@@ -9,21 +9,21 @@
         = link_to "← Back to Huddle", huddle_path(@huddle), class: "btn btn-outline-secondary"
       
       / Slack Integration Button
-      - if is_facilitator
-        .d-flex.justify-content-end.mb-3
-          - if @huddle.slack_configured?
-            = button_to "Post Summary to Slack", post_summary_to_slack_huddle_path(@huddle), 
-                method: :post, 
-                class: "btn btn-success",
-                data: { confirm: "Post the current huddle summary to Slack?" }
-          - else
-            %button.btn.btn-outline-secondary{type: "button", 
-                data: {bs_toggle: "popover", 
-                       bs_placement: "left", 
-                       bs_title: "Slack Not Configured", 
-                       bs_content: "An admin needs to configure Slack for this organization. #{link_to 'Configure Slack', organizations_path, class: 'btn btn-sm btn-primary mt-2'}"}}
-              %i.bi.bi-slack.me-2
-              Post Summary to Slack
+      
+      .d-flex.justify-content-end.mb-3
+        - if @huddle.slack_configured?
+          = button_to "Post Summary to Slack", post_summary_to_slack_huddle_path(@huddle), 
+              method: :post, 
+              class: "btn btn-success",
+              data: { confirm: "Post the current huddle summary to Slack?" }
+        - else
+          %button.btn.btn-outline-secondary{type: "button", 
+              data: {bs_toggle: "popover", 
+                      bs_placement: "left", 
+                      bs_title: "Slack Not Configured", 
+                      bs_content: "An admin needs to configure Slack for this organization. #{link_to 'Configure Slack', organizations_path, class: 'btn btn-sm btn-primary mt-2'}"}}
+            %i.bi.bi-slack.me-2
+            Post Summary to Slack
       
       .card.mb-4
         .card-header

@@ -3,15 +3,7 @@ Rails.application.routes.draw do
   get "healthcheck/index"
   get "/healthcheck", to: "healthcheck#index"
   
-  # Slack integration routes
-  resources :slack, only: [:index, :show], controller: 'slack' do
-    collection do
-      get :test_connection
-      get :list_channels
-      post :post_test_message
-      get :configuration_status
-    end
-  end
+
   
   # Organizations routes
   resources :organizations do

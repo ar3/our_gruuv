@@ -29,23 +29,21 @@ RSpec.describe 'Slack Integration', type: :feature do
       # Set up session
       page.set_rack_session(current_person_id: person.id)
       
-      visit slack_index_path
+      visit organization_slack_path(team)
       
-      expect(page).to have_content('Slack Integration Dashboard')
-      expect(page).to have_content('Configuration Status')
-      expect(page).to have_content('Test Connection')
-      expect(page).to have_content('List Channels')
-      expect(page).to have_content('Send Test Message')
+      expect(page).to have_content('Slack Configuration')
+      expect(page).to have_content('Slack Not Connected')
+      expect(page).to have_content('Install Slack for Test Company > Test Team')
     end
 
     it 'shows configuration status' do
       # Set up session
       page.set_rack_session(current_person_id: person.id)
       
-      visit slack_index_path
+      visit organization_slack_path(team)
       
       # Wait for JavaScript to load configuration status
-      expect(page).to have_content('Configuration Status')
+      expect(page).to have_content('Slack Not Connected')
     end
   end
 
@@ -157,7 +155,7 @@ RSpec.describe 'Slack Integration', type: :feature do
       # Click on Slack Integration
       click_link 'Slack Integration'
       
-      expect(page).to have_content('Slack Integration Dashboard')
+      expect(page).to have_content('Slack Configuration')
     end
   end
 end 
