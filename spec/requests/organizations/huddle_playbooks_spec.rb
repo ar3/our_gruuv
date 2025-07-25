@@ -24,7 +24,7 @@ RSpec.describe "Organizations::HuddlePlaybooks", type: :request do
 
   describe "POST /create" do
     it "returns http success" do
-      post organization_huddle_playbooks_path(organization), params: { huddle_playbook: { instruction_alias: "Sprint Planning" } }
+      post organization_huddle_playbooks_path(organization), params: { huddle_playbook: { special_session_name: "Sprint Planning" } }
       expect(response).to have_http_status(:redirect)
     end
   end
@@ -42,7 +42,7 @@ RSpec.describe "Organizations::HuddlePlaybooks", type: :request do
     let(:huddle_playbook) { create(:huddle_playbook, organization: organization) }
 
     it "returns http success" do
-      patch organization_huddle_playbook_path(organization, huddle_playbook), params: { huddle_playbook: { instruction_alias: "Updated Planning" } }
+      patch organization_huddle_playbook_path(organization, huddle_playbook), params: { huddle_playbook: { special_session_name: "Updated Planning" } }
       expect(response).to have_http_status(:redirect)
     end
   end

@@ -56,19 +56,15 @@ RSpec.describe 'Slack Integration', type: :feature do
       
       fill_in 'Company name', with: 'Test Company'
       fill_in 'Team name', with: 'Test Team'
-      fill_in 'Huddle alias (optional)', with: 'Daily Standup'
-      fill_in 'Slack channel (optional)', with: '#team-huddles'
-      fill_in 'Your name', with: 'John Doe'
       fill_in 'Your email', with: 'john@example.com'
       
       click_button 'Start Huddle'
       
       expect(page).to have_content('Huddle created successfully!')
       
-      # Verify the huddle was created with the Slack channel
+      # Verify the huddle was created with the default Slack channel
       huddle = Huddle.last
-      expect(huddle.slack_channel).to eq('#team-huddles')
-      expect(huddle.huddle_alias).to eq('Daily Standup')
+      expect(huddle.slack_channel).to eq('#general')
     end
 
     it 'creates a huddle without Slack channel and uses default' do
@@ -79,8 +75,7 @@ RSpec.describe 'Slack Integration', type: :feature do
       
       fill_in 'Company name', with: 'Test Company No Slack'
       fill_in 'Team name', with: 'Test Team No Slack'
-      fill_in 'Huddle alias (optional)', with: 'No Slack Alias'
-      # Do not fill in 'Your name' or 'Your email' since they are readonly when current_person is present
+      # Do not fill in 'Your email' since it is readonly when current_person is present
       
       click_button 'Start Huddle'
       

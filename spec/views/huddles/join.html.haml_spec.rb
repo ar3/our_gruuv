@@ -7,7 +7,7 @@ RSpec.describe 'huddles/join', type: :view do
     Huddle.create!(
       organization: team,
       started_at: Time.current,
-      huddle_alias: 'test-huddle'
+      huddle_playbook: create(:huddle_playbook, organization: team, special_session_name: 'test-huddle')
     )
   end
 

@@ -9,23 +9,22 @@ RSpec.describe HuddlePlaybook, type: :model do
       expect(huddle_playbook).to be_valid
     end
 
-    it 'requires instruction_alias' do
-      huddle_playbook.instruction_alias = nil
-      expect(huddle_playbook).not_to be_valid
-      expect(huddle_playbook.errors[:instruction_alias]).to include("can't be blank")
+    it 'allows blank special_session_name' do
+      huddle_playbook.special_session_name = nil
+      expect(huddle_playbook).to be_valid
     end
 
-    it 'requires unique instruction_alias per organization' do
-      create(:huddle_playbook, organization: organization, instruction_alias: 'Sprint Planning')
-      duplicate = build(:huddle_playbook, organization: organization, instruction_alias: 'Sprint Planning')
+    it 'requires unique special_session_name per organization' do
+      create(:huddle_playbook, organization: organization, special_session_name: 'Sprint Planning')
+      duplicate = build(:huddle_playbook, organization: organization, special_session_name: 'Sprint Planning')
       expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:instruction_alias]).to include('has already been taken')
+      expect(duplicate.errors[:special_session_name]).to include('has already been taken')
     end
 
-    it 'allows same instruction_alias for different organizations' do
+    it 'allows same special_session_name for different organizations' do
       other_organization = create(:organization)
-      create(:huddle_playbook, organization: organization, instruction_alias: 'Sprint Planning')
-      duplicate = build(:huddle_playbook, organization: other_organization, instruction_alias: 'Sprint Planning')
+      create(:huddle_playbook, organization: organization, special_session_name: 'Sprint Planning')
+      duplicate = build(:huddle_playbook, organization: other_organization, special_session_name: 'Sprint Planning')
       expect(duplicate).to be_valid
     end
 
@@ -57,13 +56,13 @@ RSpec.describe HuddlePlaybook, type: :model do
   end
 
   describe '#display_name' do
-    it 'returns titleized instruction_alias when present' do
-      huddle_playbook.instruction_alias = 'sprint planning'
+    it 'returns titleized special_session_name when present' do
+      huddle_playbook.special_session_name = 'sprint planning'
       expect(huddle_playbook.display_name).to eq('Sprint Planning')
     end
 
-    it 'returns default name when instruction_alias is blank' do
-      huddle_playbook.instruction_alias = ''
+    it 'returns default name when special_session_name is blank' do
+      huddle_playbook.special_session_name = ''
       expect(huddle_playbook.display_name).to eq('Unnamed Playbook')
     end
   end

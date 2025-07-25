@@ -2,11 +2,11 @@ class HuddlePlaybook < ApplicationRecord
   belongs_to :organization
   has_many :huddles, dependent: :nullify
   
-  validates :instruction_alias, presence: true, uniqueness: { scope: :organization_id }
+  validates :special_session_name, uniqueness: { scope: :organization_id }, allow_blank: true
   validates :slack_channel, format: { with: /\A#[a-zA-Z0-9_-]+\z/, message: "must be a valid Slack channel (e.g., #general)" }, allow_blank: true
   
   def display_name
-    instruction_alias.present? ? instruction_alias.titleize : "Unnamed Playbook"
+    special_session_name.present? ? special_session_name.titleize : "Unnamed Playbook"
   end
   
   def slack_channel_or_organization_default

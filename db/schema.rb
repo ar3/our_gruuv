@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_24_140417) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_25_111918) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -48,18 +48,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_24_140417) do
 
   create_table "huddle_playbooks", force: :cascade do |t|
     t.bigint "organization_id", null: false
-    t.string "instruction_alias"
+    t.string "special_session_name"
     t.string "slack_channel"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["organization_id", "instruction_alias"], name: "index_huddle_instructions_on_org_and_instruction_alias", unique: true
+    t.index ["organization_id", "special_session_name"], name: "index_huddle_playbooks_on_org_and_special_session_name", unique: true
     t.index ["organization_id"], name: "index_huddle_playbooks_on_organization_id"
   end
 
   create_table "huddles", force: :cascade do |t|
     t.bigint "organization_id", null: false
     t.datetime "started_at"
-    t.string "huddle_alias"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "expires_at", default: -> { "(CURRENT_TIMESTAMP + 'PT24H'::interval)" }, null: false

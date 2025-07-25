@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Huddle, type: :model do
   let(:company) { Company.create!(name: 'Acme Corp') }
   let(:team) { Team.create!(name: 'Engineering', parent: company) }
-  let(:huddle) { Huddle.create!(organization: team, started_at: Time.current) }
+  let(:huddle) { create(:huddle, organization: team, started_at: Time.current) }
 
   describe 'associations' do
     it { should belong_to(:organization) }
@@ -23,14 +23,56 @@ RSpec.describe Huddle, type: :model do
         expect(huddle).to be_valid
       end
       
-      it 'prevents duplicate huddles for the same organization on the same day' do
+      it 'allows multiple huddles for the same organization on the same day' do
         # Ensure the existing huddle exists
         expect(huddle).to be_persisted
         
         duplicate_huddle = Huddle.new(organization: team, started_at: Time.current)
+        expect(duplicate_huddle).to be_valid
+      end
+
+      it 'prevents duplicate huddles with the same playbook within 24 hours' do
+        # Ensure the existing huddle exists and has a playbook
+        expect(huddle).to be_persisted
+        expect(huddle.huddle_playbook).to be_present
+        
+        # Try to create another huddle with the same playbook within 24 hours
+        duplicate_huddle = Huddle.new(
+          organization: team, 
+          started_at: Time.current + 12.hours, # Within 24 hours
+          huddle_playbook: huddle.huddle_playbook
+        )
         expect(duplicate_huddle).not_to be_valid
-        expect(duplicate_huddle.errors[:base]).to include('A huddle for this organization already exists today')
-        expect(duplicate_huddle.errors[:existing_huddle_id]).to include(huddle.id)
+        expect(duplicate_huddle.errors[:base]).to include('A huddle with this playbook already exists within 24 hours')
+      end
+
+      it 'allows huddles with the same playbook after 24 hours' do
+        # Ensure the existing huddle exists
+        expect(huddle).to be_persisted
+        
+        # Try to create another huddle with the same playbook after 24 hours
+        future_huddle = Huddle.new(
+          organization: team, 
+          started_at: Time.current + 25.hours, # After 24 hours
+          huddle_playbook: huddle.huddle_playbook
+        )
+        expect(future_huddle).to be_valid
+      end
+
+      it 'allows huddles with different playbooks within 24 hours' do
+        # Ensure the existing huddle exists
+        expect(huddle).to be_persisted
+        
+        # Create a different playbook
+        different_playbook = create(:huddle_playbook, organization: team, special_session_name: 'Different Session')
+        
+        # Try to create another huddle with a different playbook within 24 hours
+        different_huddle = Huddle.new(
+          organization: team, 
+          started_at: Time.current + 12.hours, # Within 24 hours
+          huddle_playbook: different_playbook
+        )
+        expect(different_huddle).to be_valid
       end
       
       it 'allows huddles for the same organization on different days' do
@@ -68,7 +110,10 @@ RSpec.describe Huddle, type: :model do
     end
 
     context 'with alias' do
-      let(:huddle_with_alias) { Huddle.create!(organization: team, started_at: Time.current, huddle_alias: 'Sprint Planning') }
+      let(:huddle_with_alias) do
+        playbook = create(:huddle_playbook, organization: team, special_session_name: 'Sprint Planning')
+        Huddle.create!(organization: team, started_at: Time.current, huddle_playbook: playbook)
+      end
 
       it 'includes the alias in the display name' do
         expect(huddle_with_alias.display_name).to include('Sprint Planning')

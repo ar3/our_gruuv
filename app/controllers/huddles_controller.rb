@@ -51,19 +51,15 @@ class HuddlesController < ApplicationController
     # Get the person - either from session or create from params
     person = get_or_create_person_from_session_or_params
     
-    # Create the huddle first to set the virtual attribute
+    # Create the huddle
     @huddle = Huddle.new(
       organization: organization,
       started_at: Time.current,
-      expires_at: 24.hours.from_now,
-      huddle_alias: huddle_params[:huddle_alias]
+      expires_at: 24.hours.from_now
     )
     
-    # Set the virtual slack_channel attribute
-    @huddle.slack_channel = huddle_params[:slack_channel]
-    
-    # Find or create huddle playbook with the channel
-    huddle_playbook = find_or_create_huddle_instruction(organization, huddle_params[:huddle_alias], @huddle.slack_channel_to_set)
+    # Find or create default huddle playbook
+    huddle_playbook = find_or_create_huddle_instruction(organization)
     
     # Assign the playbook to the huddle
     @huddle.huddle_playbook = huddle_playbook
@@ -85,23 +81,7 @@ class HuddlesController < ApplicationController
       
       redirect_to @huddle, notice: 'Huddle created successfully!'
     else
-      # Check if this is a duplicate huddle error
-      if @huddle.errors[:existing_huddle_id].any?
-        existing_huddle_id = @huddle.errors[:existing_huddle_id].first
-        existing_huddle = Huddle.find(existing_huddle_id)
-        
-        # Add the person as a participant to the existing huddle
-        existing_huddle.huddle_participants.find_or_create_by!(person: person) do |participant|
-          participant.role = 'active' # Default role for joiners
-        end
-        
-        # Store only the person ID in session
-        session[:current_person_id] = person.id
-        
-        redirect_to existing_huddle, notice: "You've joined the existing huddle for today!"
-      else
-        render :new, status: :unprocessable_entity
-      end
+      render :new, status: :unprocessable_entity
     end
   rescue ActiveRecord::RecordInvalid => e
     @huddle = Huddle.new(huddle_params.except(:company_name, :team_name, :name, :email))
@@ -230,7 +210,7 @@ class HuddlesController < ApplicationController
   # Remove this method since it's already defined in ApplicationController
 
   def huddle_params
-    params.require(:huddle).permit(:company_name, :team_name, :huddle_alias, :name, :email, :slack_channel)
+    params.require(:huddle).permit(:company_name, :team_name, :email)
   end
 
   def find_or_create_organization
@@ -263,15 +243,15 @@ class HuddlesController < ApplicationController
                   :private_department_head, :private_facilitator, :anonymous, :authenticity_token, :commit)
   end
   
-  def find_or_create_huddle_instruction(organization, alias_name, slack_channel = nil)
-    # Find existing playbook for this organization/alias combination
-    playbook = organization.huddle_playbooks.find_by(instruction_alias: alias_name)
+  def find_or_create_huddle_instruction(organization)
+    # Find existing default playbook for this organization
+    playbook = organization.huddle_playbooks.find_by(special_session_name: nil)
     
-    # If not found, create a new one
+    # If not found, create a new default one
     unless playbook
       playbook = organization.huddle_playbooks.create!(
-        instruction_alias: alias_name,
-        slack_channel: slack_channel # Use provided channel or nil for organization default
+        special_session_name: nil,
+        slack_channel: nil # Use organization default
       )
     end
     

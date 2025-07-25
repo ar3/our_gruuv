@@ -4,7 +4,7 @@ class Organizations::HuddlePlaybooksController < ApplicationController
   before_action :set_huddle_playbook, only: [:edit, :update, :destroy]
   
   def index
-    @huddle_playbooks = @organization.huddle_playbooks.order(:instruction_alias)
+    @huddle_playbooks = @organization.huddle_playbooks.order(:special_session_name)
   end
   
   def new
@@ -48,7 +48,7 @@ class Organizations::HuddlePlaybooksController < ApplicationController
   end
   
   def huddle_playbook_params
-    params.require(:huddle_playbook).permit(:instruction_alias, :slack_channel)
+          params.require(:huddle_playbook).permit(:special_session_name, :slack_channel)
   end
   
   def require_authentication

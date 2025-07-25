@@ -4,10 +4,11 @@ RSpec.feature 'Huddles', type: :feature do
   let(:company) { Company.create!(name: 'Test Company') }
   let(:team) { Team.create!(name: 'Test Team', parent: company) }
   let(:huddle) do
+    playbook = create(:huddle_playbook, organization: team, special_session_name: 'test-huddle')
     Huddle.create!(
       organization: team,
       started_at: Time.current,
-      huddle_alias: 'test-huddle'
+      huddle_playbook: playbook
     )
   end
 
@@ -28,18 +29,20 @@ RSpec.feature 'Huddles', type: :feature do
 
   scenario 'index shows only active huddles' do
     # Create a huddle for today
+    today_playbook = create(:huddle_playbook, organization: team, special_session_name: 'today-huddle')
     today_huddle = Huddle.create!(
       organization: team,
       started_at: Time.current,
-      huddle_alias: 'today-huddle'
+      huddle_playbook: today_playbook
     )
     
     # Create a huddle that's expired (25 hours ago, expires 1 hour ago)
+    expired_playbook = create(:huddle_playbook, organization: team, special_session_name: 'expired-huddle')
     expired_huddle = Huddle.create!(
       organization: team,
       started_at: 25.hours.ago,
       expires_at: 1.hour.ago,
-      huddle_alias: 'expired-huddle'
+      huddle_playbook: expired_playbook
     )
     
     visit huddles_path
@@ -55,10 +58,12 @@ RSpec.feature 'Huddles', type: :feature do
     person = Person.create!(full_name: 'Alice Johnson', email: 'alice@example.com')
     
     # Create huddles where person participated
-    huddle1 = Huddle.create!(organization: team, started_at: 1.day.ago, huddle_alias: 'yesterday-huddle')
+    playbook1 = create(:huddle_playbook, organization: team, special_session_name: 'yesterday-huddle')
+    huddle1 = Huddle.create!(organization: team, started_at: 1.day.ago, huddle_playbook: playbook1)
     huddle1.huddle_participants.create!(person: person, role: 'facilitator')
     
-    huddle2 = Huddle.create!(organization: team, started_at: 2.days.ago, huddle_alias: 'older-huddle')
+    playbook2 = create(:huddle_playbook, organization: team, special_session_name: 'older-huddle')
+    huddle2 = Huddle.create!(organization: team, started_at: 2.days.ago, huddle_playbook: playbook2)
     huddle2.huddle_participants.create!(person: person, role: 'active')
     
     # Simulate being logged in
@@ -160,9 +165,7 @@ RSpec.feature 'Huddles', type: :feature do
     
     fill_in 'Company name', with: 'New Company'
     fill_in 'Team name', with: 'New Team'
-    fill_in 'Your name', with: 'John Doe'
     fill_in 'Your email', with: 'john@example.com'
-    fill_in 'Huddle alias (optional)', with: 'new-huddle'
     
     click_button 'Start Huddle'
     
@@ -179,14 +182,12 @@ RSpec.feature 'Huddles', type: :feature do
     
     visit new_huddle_path
     
-    # Should show logged in state with readonly name/email fields
+    # Should show logged in state with readonly email field
     expect(page).to have_content('Welcome, Jane Smith!')
-    expect(page).to have_field('name', readonly: true, with: 'Jane Smith')
     expect(page).to have_field('email', readonly: true, with: 'jane@example.com')
     
     fill_in 'Company name', with: 'New Company'
     fill_in 'Team name', with: 'New Team'
-    fill_in 'Huddle alias (optional)', with: 'new-huddle'
     
     click_button 'Start Huddle'
     
@@ -325,52 +326,27 @@ RSpec.feature 'Huddles', type: :feature do
     expect(page).to have_link('Continuously Improve Together')
   end
 
-  scenario 'duplicate huddle prevention with same alias' do
-    # Create a huddle for today with an alias
+  scenario 'allows multiple huddles for same organization' do
+    # Create a huddle for today
     existing_huddle = Huddle.create!(
       organization: team,
-      started_at: Time.current,
-      huddle_alias: 'existing-huddle'
+      started_at: Time.current
     )
     
     visit new_huddle_path
     
     fill_in 'Company name', with: 'Test Company'
     fill_in 'Team name', with: 'Test Team'
-    fill_in 'Huddle alias (optional)', with: 'existing-huddle'
-    fill_in 'Your name', with: 'Frank Miller'
-    fill_in 'Your email', with: 'frank@example.com'
-    
-    click_button 'Start Huddle'
-    
-    # Should redirect to existing huddle
-    expect(page).to have_content('You\'ve joined the existing huddle for today!')
-    expect(current_path).to eq(huddle_path(existing_huddle))
-  end
-
-  scenario 'allows different aliases for same organization and day' do
-    # Create a huddle for today with an alias
-    existing_huddle = Huddle.create!(
-      organization: team,
-      started_at: Time.current,
-      huddle_alias: 'morning-huddle'
-    )
-    
-    visit new_huddle_path
-    
-    fill_in 'Company name', with: 'Test Company'
-    fill_in 'Team name', with: 'Test Team'
-    fill_in 'Huddle alias (optional)', with: 'afternoon-huddle'
-    fill_in 'Your name', with: 'Frank Miller'
     fill_in 'Your email', with: 'frank@example.com'
     
     click_button 'Start Huddle'
     
     # Should create a new huddle
     expect(page).to have_content('Huddle created successfully!')
-    expect(page).to have_content('afternoon-huddle')
     expect(current_path).not_to eq(huddle_path(existing_huddle))
   end
+
+
 
   scenario 'updates existing person name when joining with different name' do
     # Create a person with initial name
@@ -397,7 +373,7 @@ RSpec.feature 'Huddles', type: :feature do
     expect(existing_person.last_name).to eq('Smith')
   end
 
-  scenario 'updates existing person name when creating huddle with different name' do
+  scenario 'preserves existing person name when creating huddle' do
     # Create a person with initial name
     existing_person = Person.create!(
       email: 'jane@example.com',
@@ -406,22 +382,20 @@ RSpec.feature 'Huddles', type: :feature do
     
     visit new_huddle_path
     
-    # Create huddle with a different name (should use the name from the form, not auto-generate)
+    # Create huddle (name will be auto-generated from email)
     fill_in 'Company name', with: 'New Company'
     fill_in 'Team name', with: 'New Team'
-    fill_in 'Your name', with: 'Jane Doe'
     fill_in 'Your email', with: 'jane@example.com'
-    fill_in 'Huddle alias (optional)', with: 'name-update-test'
     
     click_button 'Start Huddle'
     
     expect(page).to have_content('Huddle created successfully!')
-    expect(page).to have_content('Jane Doe') # Should use the name from the form
+    expect(page).to have_content('Jane') # Auto-generated from email
     
-    # Verify the person's name was updated in the database (form name takes precedence)
+    # Verify the person's name was NOT updated in the database (no name field in form)
     existing_person.reload
-    expect(existing_person.full_name).to eq('Jane Doe')
+    expect(existing_person.full_name).to eq('Jane Smith') # Should remain unchanged
     expect(existing_person.first_name).to eq('Jane')
-    expect(existing_person.last_name).to eq('Doe')
+    expect(existing_person.last_name).to eq('Smith')
   end
 end 

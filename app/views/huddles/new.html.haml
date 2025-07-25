@@ -34,32 +34,12 @@
                   = form.text_field :team_name, class: "form-control", placeholder: "e.g., Engineering Team"
                   .form-text Your specific team or squad name
               
-              .col-md-6
-                .mb-3
-                  = form.label :huddle_alias, "Huddle alias (optional)", class: "form-label"
-                  = form.text_field :huddle_alias, class: "form-control", placeholder: "e.g., Sprint Planning"
-                  .form-text A friendly name for this specific huddle
-              
-              .col-md-6
-                .mb-3
-                  = form.label :slack_channel, "Slack channel (optional)", class: "form-label"
-                  = form.text_field :slack_channel, class: "form-control", placeholder: "e.g., #team-huddles"
-                  .form-text Channel where huddle notifications will be posted
+
             
             %hr.my-4
             
             %h4 Your Information
             .row
-              .col-md-6
-                .mb-3{ class: @current_person.present? ? 'field-readonly' : '' }
-                  = form.label :name, "Your name", class: "form-label"
-                  = form.text_field :name, 
-                    value: @current_person&.full_name, 
-                    readonly: @current_person.present?, 
-                    class: "form-control", 
-                    required: true, 
-                    placeholder: "e.g., John Doe"
-              
               .col-md-6
                 .mb-3{ class: @current_person.present? ? 'field-readonly' : '' }
                   = form.label :email, "Your email", class: "form-label"

@@ -8,7 +8,8 @@ class Huddle < ApplicationRecord
   
   # Validations
   validates :started_at, presence: true
-  validate :unique_organization_per_day_with_alias
+  validate :unique_playbook_per_day
+
   
   # Scopes
   scope :active, -> { 
@@ -25,7 +26,8 @@ class Huddle < ApplicationRecord
   end
 
   def display_name_without_organization
-    huddle_alias.present? ? "#{huddle_display_day} - #{huddle_alias}" : huddle_display_day
+    playbook_alias = huddle_playbook&.special_session_name
+    playbook_alias.present? ? "#{huddle_display_day} - #{playbook_alias}" : huddle_display_day
   end
   
   def display_name
@@ -194,35 +196,22 @@ class Huddle < ApplicationRecord
     ]
   end
   
-  private
+    private
   
-  def unique_organization_per_day_with_alias
-    return unless organization_id && started_at
+  def unique_playbook_per_day
+    return unless huddle_playbook_id && started_at
     
-    # Build the query for existing huddles
-    query = Huddle.where(
-      organization_id: organization_id
+    # Check for existing huddles with the same playbook within 24 hours
+    existing_huddle = Huddle.where(
+      huddle_playbook_id: huddle_playbook_id
     ).where(
-      "DATE(started_at) = DATE(?)", started_at
-    ).where.not(id: id)
-    
-    # If this huddle has an alias, check for exact alias match
-    if huddle_alias.present?
-      query = query.where(huddle_alias: huddle_alias)
-    else
-      # If no alias, check for huddles without aliases
-      query = query.where(huddle_alias: [nil, ''])
-    end
-    
-    existing_huddle = query.first
+      "started_at BETWEEN ? AND ?", 
+      started_at - 24.hours, 
+      started_at + 24.hours
+    ).where.not(id: id).first
     
     if existing_huddle
-      if huddle_alias.present?
-        errors.add(:base, "A huddle with alias '#{huddle_alias}' already exists for this organization today")
-      else
-        errors.add(:base, "A huddle for this organization already exists today")
-      end
-      errors.add(:existing_huddle_id, existing_huddle.id)
+      errors.add(:base, "A huddle with this playbook already exists within 24 hours")
     end
   end
 end 
