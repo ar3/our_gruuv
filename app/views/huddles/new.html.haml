@@ -22,25 +22,7 @@
                   - @huddle.errors.full_messages.each do |msg|
                     %li= msg
             .row
-              .col-md-6
-                .mb-3
-                  = form.label :company_name, "Company name", class: "form-label"
-                  = form.text_field :company_name, class: "form-control", required: true, placeholder: "e.g., Acme Corp"
-                  .form-text Your company or organization name
-              
-              .col-md-6
-                .mb-3
-                  = form.label :team_name, "Team name", class: "form-label"
-                  = form.text_field :team_name, class: "form-control", placeholder: "e.g., Engineering Team"
-                  .form-text Your specific team or squad name
-              
-
-            
-            %hr.my-4
-            
-            %h4 Your Information
-            .row
-              .col-md-6
+              .col-md-8
                 .mb-3{ class: @current_person.present? ? 'field-readonly' : '' }
                   = form.label :email, "Your email", class: "form-label"
                   = form.email_field :email, 
@@ -50,6 +32,40 @@
                     required: true, 
                     placeholder: "e.g., john@example.com"
                   .form-text We'll use this to identify you in the huddle
+              .col-md-4
+                .mb-3
+                  .alert.alert-info.h-100
+                    %h6.mb-2 Coming Soon
+                    %small
+                      %strong SSO Integration:
+                      %br
+                      Google, Slack, Asana, and/or Jira single sign-on for seamless team access.
+
+            .row
+              .col-md-8
+                .mb-3
+                  = form.label :company_name, "Company name", class: "form-label"
+                  = form.text_field :company_name, class: "form-control", required: true, placeholder: "e.g., Acme Corp"
+                  .form-text Your company or organization name
+              .col-md-4
+                .mb-3
+                  .alert.alert-success.h-100
+                    %h6.mb-2 Always Free
+                    %small
+                      There will always be a free version where you can use the Nat20 huddle system.
+
+            .row
+              .col-md-8
+                .mb-3
+                  = form.label :team_name, "Team name", class: "form-label"
+                  = form.text_field :team_name, class: "form-control", placeholder: "e.g., Engineering Team"
+                  .form-text Your specific team or squad name
+              .col-md-4
+                .mb-3
+                  .alert.alert-primary.h-100
+                    %h6.mb-2 For Any Team
+                    %small
+                      Continuous Improvement is fueled by actionable feedback... empower your team today.
             
             .d-grid.gap-2.d-md-flex.justify-content-md-end
               = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary me-md-2"
