@@ -21,7 +21,7 @@
               data: {bs_toggle: "popover", 
                       bs_placement: "left", 
                       bs_title: "Slack Not Configured", 
-                      bs_content: "An admin needs to configure Slack for this organization. #{link_to 'Configure Slack', organizations_path, class: 'btn btn-sm btn-primary mt-2'}"}}
+                      bs_content: "An admin needs to configure Slack for this organization. #{link_to 'Configure Slack', organization_slack_path(@huddle.organization), class: 'btn btn-sm btn-primary mt-2'}"}}
             %i.bi.bi-slack.me-2
             Post Summary to Slack
       

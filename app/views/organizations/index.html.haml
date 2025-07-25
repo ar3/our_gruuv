@@ -125,7 +125,7 @@
                                     = link_to new_huddle_path(huddle_playbook_id: playbook.id), class: "btn btn-outline-primary btn-sm" do
                                       %i.bi.bi-plus-circle
                                     - if playbook.huddles.any?
-                                      = link_to huddles_path(organization_id: organization.id, instruction_alias: playbook.instruction_alias), class: "btn btn-outline-info btn-sm" do
+                                      = link_to huddles_path(organization_id: organization.id, instruction_alias: playbook.special_session_name), class: "btn btn-outline-info btn-sm" do
                                         %i.bi.bi-list
                                     = link_to edit_organization_huddle_playbook_path(organization, playbook), class: "btn btn-outline-secondary btn-sm" do
                                       %i.bi.bi-pencil
