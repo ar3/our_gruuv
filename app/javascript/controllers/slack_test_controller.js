@@ -2,15 +2,19 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["messageInput"]
-  static values = { organizationId: Number }
+  static values = { organizationId: String }
+
+
 
   testConnection(event) {
     const button = event.currentTarget
     const resultDiv = document.getElementById('connectionResult')
     
+    const orgId = this.organizationId || this.element.dataset.slackTestOrganizationIdValue
+    
     this.setButtonLoading(button, 'Testing...', 'bi-wifi')
     
-    fetch(`/organizations/${this.organizationId}/slack/test_connection`)
+    fetch(`/organizations/${orgId}/slack/test_connection`)
       .then(response => response.json())
       .then(data => {
         if (data.success) {
@@ -31,9 +35,11 @@ export default class extends Controller {
     const button = event.currentTarget
     const resultDiv = document.getElementById('channelsResult')
     
+    const orgId = this.organizationId || this.element.dataset.slackTestOrganizationIdValue
+    
     this.setButtonLoading(button, 'Loading...', 'bi-list')
     
-    fetch(`/organizations/${this.organizationId}/slack/list_channels`)
+    fetch(`/organizations/${orgId}/slack/list_channels`)
       .then(response => response.json())
       .then(data => {
         if (data.success && data.channels) {
@@ -64,9 +70,11 @@ export default class extends Controller {
       return
     }
     
+    const orgId = this.organizationId || this.element.dataset.slackTestOrganizationIdValue
+    
     this.setButtonLoading(button, 'Sending...', 'bi-send')
     
-    fetch(`/organizations/${this.organizationId}/slack/post_test_message`, {
+    fetch(`/organizations/${orgId}/slack/post_test_message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
