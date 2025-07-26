@@ -99,9 +99,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_26_001343) do
     t.string "workspace_id", null: false
     t.string "workspace_name", null: false
     t.string "bot_token", null: false
-    t.string "default_channel", default: "#general"
-    t.string "bot_username", default: "Huddle Bot"
-    t.string "bot_emoji", default: ":huddle:"
+    t.string "default_channel", default: "#bot-test"
+    t.string "bot_username", default: "OG"
+    t.string "bot_emoji", default: ":handshake:"
     t.datetime "installed_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

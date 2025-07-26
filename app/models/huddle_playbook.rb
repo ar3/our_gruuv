@@ -9,7 +9,12 @@ class HuddlePlaybook < ApplicationRecord
     special_session_name.present? ? special_session_name.titleize : "Unnamed Playbook"
   end
   
-  def slack_channel_or_organization_default
-    slack_channel.presence || organization.slack_configuration&.default_channel_or_general || "#bot-test"
+  def slack_configuration
+    organization.calculated_slack_config
   end
+
+  def slack_channel_or_organization_default
+    slack_channel.presence || slack_configuration&.default_channel_or_general || "#bot-test"
+  end
+
 end

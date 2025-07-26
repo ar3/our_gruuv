@@ -36,7 +36,7 @@ class HuddlesController < ApplicationController
     @current_person = current_person
     
     @existing_participant = @current_person.huddle_participants.find_by(huddle: @huddle)
-    @huddle = @huddle.decorate
+    @huddle = @huddle
   end
 
   def new
@@ -196,6 +196,18 @@ class HuddlesController < ApplicationController
     render :feedback, status: :unprocessable_entity
   end
 
+  def slack_notification_preview
+    authorize @huddle, :summary?
+    
+    unless @huddle.slack_configured?
+      render json: { error: 'Slack is not configured for this organization.' }, status: :unprocessable_entity
+      return
+    end
+    
+    preview = SlackService.new(@huddle.organization).generate_notification_preview(@huddle)
+    render json: preview
+  end
+
   def post_summary_to_slack
     authorize @huddle, :summary?
     
@@ -217,7 +229,7 @@ class HuddlesController < ApplicationController
   private
 
   def set_huddle
-    @huddle = Huddle.find(params[:id])
+    @huddle = Huddle.find(params[:id]).decorate
   end
 
   # Remove this method since it's already defined in ApplicationController

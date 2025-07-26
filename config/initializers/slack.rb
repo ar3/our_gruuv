@@ -19,7 +19,7 @@ module SlackConstants
   BOT_USERNAME = ENV['SLACK_BOT_USERNAME'] || 'Huddle Bot'
   
   # Bot emoji for messages
-  BOT_EMOJI = ENV['SLACK_BOT_EMOJI'] || ':huddle:'
+  BOT_EMOJI = ENV['SLACK_BOT_EMOJI'] || ':sparkles:'
   
   # Message templates
   MESSAGE_TEMPLATES = {

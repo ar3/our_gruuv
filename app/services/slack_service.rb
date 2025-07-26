@@ -245,6 +245,15 @@ class SlackService
     @organization&.slack_configured? || ENV['SLACK_BOT_TOKEN'].present?
   end
 
+  def generate_notification_preview(huddle)
+    {
+      main_announcement: build_summary_blocks(huddle, is_thread: false),
+      detailed_summary: build_summary_blocks(huddle, is_thread: true),
+      channel: huddle.slack_channel,
+      organization_name: huddle.organization.display_name
+    }
+  end
+
   def build_summary_blocks(huddle, is_thread: false)
     if is_thread
       # Detailed summary for thread

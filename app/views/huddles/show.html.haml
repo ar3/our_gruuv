@@ -8,38 +8,53 @@
       / Huddle Details at the top - with distinct styling
       .row.mt-4
         .col-12
-          .card.border-primary
-            .card-header.bg-primary.text-white
-              %h5.mb-0
-                %i.bi.bi-info-circle.me-2
-                Huddle Details
+
+          .card.mb-4
+            .card-header
+              %h2.mb-0= @huddle.display_name
             .card-body
               .row
-                .col-md-6
+                .col-md-4.col-sm-12
                   %p
                     %strong Organization:
                     = @huddle.organization.display_name
+                .col-md-4.col-sm-12
                   %p
-                    %strong Started:
-                    = format_time_in_user_timezone(@huddle.started_at)
-                  %p
-                    %strong Expires:
-                    = format_time_in_user_timezone(@huddle.started_at.end_of_day)
-                    %small.text-muted.ms-2 (End of day)
-                  %p
-                    %strong Status:
-                    - if @huddle.closed?
-                      %span.badge.bg-secondary Closed
-                    - else
-                      %span.badge.bg-success Active
-                
-                .col-md-6
+                    %strong{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "started at #format_time_in_user_timezone(@huddle.started_at)"} Status:
+                    = status_badge(@huddle.closed? ? 'inactive' : 'active', @huddle.status_with_time)
+                .col-md-4.col-sm-12
                   %p
                     %strong Participants:
-                    = @huddle.participants.count
-                  %p
-                    %strong Feedback Submitted:
-                    = @huddle.huddle_feedbacks.count
+                    = "#{@huddle.huddle_feedbacks.count} of #{@huddle.huddle_participants.count} participants submitted feedback"
+              .row 
+                .col-sm-12
+                  %hr/
+              .row 
+                .col-md-6.col-sm-12
+                  .d-flex.align-items-center.gap-2.mb-3
+                    - if @huddle.slack_configured?
+                      = link_to "Let Slack folks know the huddle has started", post_summary_to_slack_huddle_path(@huddle), method: :post, class: "btn btn-success btn-sm", data: { confirm: "Send huddle summary to Slack?" }
+                    - else
+                      %button.btn.btn-outline-secondary{type: "button", 
+                          data: {bs_toggle: "popover", 
+                                  bs_placement: "left", 
+                                  bs_title: "Slack Not Configured", 
+                                  bs_content: "An admin needs to configure Slack for this organization. #{link_to 'Configure Slack', organization_slack_path(@huddle.organization), class: 'btn btn-sm btn-primary mt-2'}"}}
+                        %i.bi.bi-slack.me-2
+                        Let Slack folks know the huddle has started
+
+                  
+                  .accordion#slackPreviewAccordion{data: {controller: "slack-notification", slack_notification_huddle_id_value: @huddle.id}}
+                    .accordion-item
+                      .accordion-header#slackPreviewHeader
+                        %button.accordion-button.collapsed{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#slackPreviewContent", "aria-expanded": "false", "aria-controls": "slackPreviewContent"}
+                          %i.bi.bi-eye.me-2
+                          Preview Slack Message
+                      .accordion-collapse.collapse#slackPreviewContent{"aria-labelledby": "slackPreviewHeader", "data-bs-parent": "#slackPreviewAccordion"}
+                        .accordion-body
+                          .slack-preview-content
+                            %p.text-muted Loading preview...
+                .col-md-6.col-sm-12
                   - if @huddle.nat_20_score
                     %p
                       %strong Current Nat 20 Score:
@@ -60,6 +75,7 @@
                       - raise "Participant not found for #{current_person.full_name} in huddle #{@huddle.id}"
                   - else
                     - raise "Current person not found in huddle #{@huddle.id}"
+
 
       / Visual separator
       .row.mt-5

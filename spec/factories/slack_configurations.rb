@@ -6,7 +6,7 @@ FactoryBot.define do
     bot_token { "xoxb-#{SecureRandom.hex(32)}" }
     default_channel { "#general" }
     bot_username { "Huddle Bot" }
-    bot_emoji { ":huddle:" }
+    bot_emoji { ":sparkles:" }
     installed_at { Time.current }
   end
 end 

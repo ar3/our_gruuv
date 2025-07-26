@@ -28,7 +28,7 @@ class SlackConfiguration < ApplicationRecord
   end
   
   def bot_username_or_default
-    bot_username.presence || 'OurGruuv Bot'
+    bot_username.presence || 'OG'
   end
   
   def bot_emoji_or_default

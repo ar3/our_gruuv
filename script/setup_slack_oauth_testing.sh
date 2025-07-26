@@ -67,8 +67,8 @@ SLACK_REDIRECT_URI=$NGROK_URL/slack/oauth/callback
 # Optional: Fallback global configuration
 SLACK_BOT_TOKEN=xoxb-your_bot_token_here
 SLACK_DEFAULT_CHANNEL=#bot-test
-SLACK_BOT_USERNAME=Gruuv Bot
-SLACK_BOT_EMOJI=:handshake:
+SLACK_BOT_USERNAME=OG
+SLACK_BOT_EMOJI=:sparkles:
 EOF
 
 echo ""

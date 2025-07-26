@@ -323,8 +323,7 @@ RSpec.feature 'Huddles', type: :feature do
     
     expect(page).to have_content(huddle.display_name)
     expect(page).to have_content('Test Company > Test Team')
-    expect(page).to have_content('Participants: 1')
-    expect(page).to have_content('Feedback Submitted: 0')
+    expect(page).to have_content('Participants: 0 of 1 participants submitted feedback')
     expect(page).to have_link('Continuously Improve Together')
   end
 

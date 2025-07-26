@@ -68,7 +68,7 @@ RSpec.describe HuddlePlaybook, type: :model do
   end
 
   describe '#slack_channel_or_organization_default' do
-    let(:slack_config) { instance_double('SlackConfiguration', default_channel_or_general: '#general') }
+    let(:slack_config) { instance_double('SlackConfiguration', default_channel_or_general: '#bot-test') }
 
     before do
       allow(organization).to receive(:slack_configuration).and_return(slack_config)
@@ -81,13 +81,13 @@ RSpec.describe HuddlePlaybook, type: :model do
 
     it 'returns organization default when slack_channel is blank' do
       huddle_playbook.slack_channel = ''
-      expect(huddle_playbook.slack_channel_or_organization_default).to eq('#general')
+      expect(huddle_playbook.slack_channel_or_organization_default).to eq('#bot-test')
     end
 
-    it 'returns #general when organization has no slack configuration' do
+    it 'returns #bot-test when organization has no slack configuration' do
       huddle_playbook.slack_channel = ''
       allow(organization).to receive(:slack_configuration).and_return(nil)
-      expect(huddle_playbook.slack_channel_or_organization_default).to eq('#general')
+      expect(huddle_playbook.slack_channel_or_organization_default).to eq('#bot-test')
     end
   end
 end

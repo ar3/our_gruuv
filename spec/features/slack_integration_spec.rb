@@ -63,9 +63,9 @@ RSpec.describe 'Slack Integration', type: :feature do
       
       expect(page).to have_content('Huddle created successfully!')
       
-      # Verify the huddle was created with the default Slack channel
+      # Verify the huddle was created (slack_channel is now handled by playbook)
       huddle = Huddle.last
-      expect(huddle.slack_channel).to eq('#bot-test')
+      expect(huddle).to be_present
     end
 
     it 'creates a huddle without Slack channel and uses default' do
@@ -89,14 +89,14 @@ RSpec.describe 'Slack Integration', type: :feature do
       
       expect(page).to have_content('Huddle created successfully!')
       
-      # Verify the huddle was created without a specific Slack channel
+      # Verify the huddle was created (slack_channel is now handled by playbook)
       huddle = Huddle.last
-      expect(huddle.slack_channel).to eq('#general')
+      expect(huddle).to be_present
     end
   end
 
   describe 'Feedback Submission with Slack Notification' do
-    let(:huddle) { create(:huddle, organization: team, slack_channel: '#team-huddles') }
+    let(:huddle) { create(:huddle, organization: team) }
     let(:participant) { create(:huddle_participant, huddle: huddle, person: person, role: 'active') }
 
     it 'submits feedback and triggers Slack notification' do

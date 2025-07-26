@@ -47,10 +47,10 @@ class Organization < ApplicationRecord
   end
   
   def slack_configured?
-    slack_configuration&.configured?
+    calculated_slack_config&.configured?
   end
   
-  def slack_config
+  def calculated_slack_config
     slack_configuration || root_company&.slack_configuration
   end
 end 
