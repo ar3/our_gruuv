@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_25_111918) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_26_001343) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -105,6 +105,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_25_111918) do
     t.datetime "installed_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "bot_user_id"
+    t.string "workspace_url"
     t.index ["bot_token"], name: "index_slack_configurations_on_bot_token", unique: true
     t.index ["organization_id"], name: "index_slack_configurations_on_organization_id"
     t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true

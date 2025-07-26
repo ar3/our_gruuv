@@ -84,5 +84,8 @@ gem "draper", "~> 4.0"
 # Slack API integration
 gem "slack-ruby-client", "~> 2.0"
 
+# HTTP client for API requests
+gem "http", "~> 5.0"
+
 # Environment variables
 gem "dotenv-rails", "~> 3.1"

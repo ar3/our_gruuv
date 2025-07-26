@@ -1,34 +1,28 @@
 class Organizations::Slack::OauthController < ApplicationController
   before_action :require_authentication
-  before_action :set_organization
+  before_action :set_organization, except: [:callback]
+  before_action :set_organization_from_state, only: [:callback]
   
   def authorize
     # Generate OAuth URL for this specific organization
     client_id = ENV['SLACK_CLIENT_ID']
-    redirect_uri = organization_slack_oauth_callback_url(@organization)
-    scope = 'identify,bot,commands,channels:read,channels:history,emoji:read,reactions:read,users:read,channels:write,chat:write:bot,reactions:write,reminders:write'    
+    redirect_uri = slack_oauth_callback_url
+    scope = 'app_mentions:read,channels:history,channels:join,channels:read,chat:write,chat:write.customize,chat:write.public,commands,emoji:read,groups:history,groups:read,im:history,im:read,im:write,links:read,links:write,mpim:history,mpim:read,mpim:write,reactions:read,reactions:write,team:read,usergroups:read,usergroups:write,users.profile:read,users:read,users:read.email,users:write'    
     state = @organization.id.to_s # Use organization ID as state
     
     oauth_url = "https://slack.com/oauth/v2/authorize?client_id=#{client_id}&scope=#{scope}&redirect_uri=#{redirect_uri}&state=#{state}"
     
-    redirect_to oauth_url
+    redirect_to oauth_url, allow_other_host: true
   end
   
   def callback
     code = params[:code]
-    state = params[:state]
-    
-    # Verify state matches organization ID
-    unless state == @organization.id.to_s
-      redirect_to organization_slack_path(@organization), alert: 'Invalid OAuth state'
-      return
-    end
     
     begin
       # Exchange code for access token
       client_id = ENV['SLACK_CLIENT_ID']
       client_secret = ENV['SLACK_CLIENT_SECRET']
-      redirect_uri = organization_slack_oauth_callback_url(@organization)
+      redirect_uri = slack_oauth_callback_url
       
       response = HTTP.post('https://slack.com/api/oauth.v2.access', form: {
         client_id: client_id,
@@ -47,7 +41,8 @@ class Organizations::Slack::OauthController < ApplicationController
           workspace_id: data['team']['id'],
           workspace_name: data['team']['name'],
           workspace_url: "https://#{data['team']['domain']}.slack.com",
-          bot_user_id: data['bot_user_id']
+          bot_user_id: data['bot_user_id'],
+          installed_at: Time.current
         )
         
         redirect_to organization_slack_path(@organization), notice: "Slack successfully connected to #{@organization.display_name}!"
@@ -73,6 +68,17 @@ class Organizations::Slack::OauthController < ApplicationController
   
   def set_organization
     @organization = Organization.find(params[:organization_id])
+  end
+  
+  def set_organization_from_state
+    state = params[:state]
+    if state.present?
+      @organization = Organization.find(state)
+    else
+      redirect_to root_path, alert: 'Invalid OAuth callback: missing state parameter'
+    end
+  rescue ActiveRecord::RecordNotFound
+    redirect_to root_path, alert: 'Invalid OAuth callback: organization not found'
   end
   
   def require_authentication

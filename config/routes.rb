@@ -8,6 +8,9 @@ Rails.application.routes.draw do
     post 'companies/teams', to: 'companies#teams'
   end
   
+  # Slack OAuth callback (fixed URL for Slack)
+  get 'slack/oauth/callback', to: 'organizations/slack/oauth#callback'
+  
   # Organizations routes
   resources :organizations do
     member do

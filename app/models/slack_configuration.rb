@@ -16,7 +16,7 @@ class SlackConfiguration < ApplicationRecord
   end
   
   def workspace_url
-    "https://#{workspace_name}.slack.com"
+    self[:workspace_url].presence || "https://#{workspace_name}.slack.com"
   end
   
   def display_name
