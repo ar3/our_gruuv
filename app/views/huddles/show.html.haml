@@ -33,7 +33,14 @@
                 .col-md-6.col-sm-12
                   .d-flex.align-items-center.gap-2.mb-3
                     - if @huddle.slack_configured?
-                      = link_to "Let Slack folks know the huddle has started", post_summary_to_slack_huddle_path(@huddle), method: :post, class: "btn btn-success btn-sm", data: { confirm: "Send huddle summary to Slack?" }
+                      - if @huddle.has_slack_announcement?
+                        .d-flex.align-items-center.gap-2
+                          %i.bi.bi-check-circle.text-success
+                          %span.text-success Slack announcement posted
+                          - if @huddle.slack_announcement_url
+                            = link_to "View in Slack", @huddle.slack_announcement_url, target: "_blank", class: "btn btn-outline-success btn-sm"
+                      - else
+                        = button_to "Let Slack folks know the huddle has started", post_start_announcement_to_slack_huddle_path(@huddle), method: :post, class: "btn btn-success btn-sm", data: { confirm: "Send huddle start announcement to Slack?" }
                     - else
                       %button.btn.btn-outline-secondary{type: "button", 
                           data: {bs_toggle: "popover", 
@@ -43,17 +50,17 @@
                         %i.bi.bi-slack.me-2
                         Let Slack folks know the huddle has started
 
-                  
-                  .accordion#slackPreviewAccordion{data: {controller: "slack-notification", slack_notification_huddle_id_value: @huddle.id}}
-                    .accordion-item
-                      .accordion-header#slackPreviewHeader
-                        %button.accordion-button.collapsed{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#slackPreviewContent", "aria-expanded": "false", "aria-controls": "slackPreviewContent"}
-                          %i.bi.bi-eye.me-2
-                          Preview Slack Message
-                      .accordion-collapse.collapse#slackPreviewContent{"aria-labelledby": "slackPreviewHeader", "data-bs-parent": "#slackPreviewAccordion"}
-                        .accordion-body
-                          .slack-preview-content
-                            %p.text-muted Loading preview...
+                  - if !@huddle.has_slack_announcement?
+                    .accordion#slackPreviewAccordion{data: {controller: "slack-notification", slack_notification_huddle_id_value: @huddle.id}}
+                      .accordion-item
+                        .accordion-header#slackPreviewHeader
+                          %button.accordion-button.collapsed{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#slackPreviewContent", "aria-expanded": "false", "aria-controls": "slackPreviewContent"}
+                            %i.bi.bi-eye.me-2
+                            Preview Slack Message
+                        .accordion-collapse.collapse#slackPreviewContent{"aria-labelledby": "slackPreviewHeader", "data-bs-parent": "#slackPreviewAccordion"}
+                          .accordion-body
+                            .slack-preview-content
+                              %p.text-muted Loading preview...
                 .col-md-6.col-sm-12
                   - if @huddle.nat_20_score
                     %p

@@ -338,4 +338,93 @@ RSpec.describe Huddle, type: :model do
       end
     end
   end
+
+  describe '#slack_announcement_url' do
+    let(:company) { Company.create!(name: 'Acme Corp') }
+    let(:team) { Team.create!(name: 'Engineering', parent: company) }
+    let(:huddle) { create(:huddle, organization: team) }
+    let(:slack_config) { create(:slack_configuration, organization: company, workspace_name: 'Acme Corporation', workspace_subdomain: 'acmecorp') }
+
+    before do
+      slack_config
+    end
+
+    context 'when huddle has no announcement' do
+      it 'returns nil' do
+        expect(huddle.slack_announcement_url).to be_nil
+      end
+    end
+
+    context 'when huddle has announcement but no channel' do
+      let(:playbook) { create(:huddle_playbook, organization: team, slack_channel: nil) }
+
+      before do
+        huddle.update(announcement_message_id: '1234567890.123456')
+        huddle.update(huddle_playbook: playbook)
+      end
+
+      it 'returns URL with default channel' do
+        # Since slack_channel_or_organization_default has a fallback, it will always return a value
+        expect(huddle.slack_announcement_url).to be_present
+        expect(huddle.slack_announcement_url).to include('acmecorp.slack.com')
+        expect(huddle.slack_announcement_url).to include('p1234567890123456')
+      end
+    end
+
+    context 'when huddle has announcement and channel' do
+      let(:playbook) { create(:huddle_playbook, organization: team, slack_channel: '#general') }
+
+      before do
+        huddle.update(announcement_message_id: '1234567890.123456')
+        huddle.update(huddle_playbook: playbook)
+      end
+
+      it 'returns the correct Slack URL' do
+        expected_url = 'https://acmecorp.slack.com/archives/general/p1234567890123456'
+        expect(huddle.slack_announcement_url).to eq(expected_url)
+      end
+
+      it 'handles channel names with #' do
+        playbook.update(slack_channel: '#engineering')
+        expected_url = 'https://acmecorp.slack.com/archives/engineering/p1234567890123456'
+        expect(huddle.slack_announcement_url).to eq(expected_url)
+      end
+
+      it 'handles channel names without #' do
+        playbook.update(slack_channel: 'engineering')
+        expected_url = 'https://acmecorp.slack.com/archives/engineering/p1234567890123456'
+        expect(huddle.slack_announcement_url).to eq(expected_url)
+      end
+    end
+
+    context 'when workspace_subdomain is not set' do
+      let(:playbook) { create(:huddle_playbook, organization: team, slack_channel: '#general') }
+
+      before do
+        slack_config.update(workspace_subdomain: nil)
+        huddle.update(announcement_message_id: '1234567890.123456')
+        huddle.update(huddle_playbook: playbook)
+      end
+
+      it 'returns nil when workspace_subdomain is missing' do
+        expect(huddle.slack_announcement_url).to be_nil
+      end
+    end
+
+    context 'when workspace_url is set explicitly' do
+      let(:playbook) { create(:huddle_playbook, organization: team, slack_channel: '#general') }
+
+      before do
+        slack_config.update(workspace_url: 'https://custom-workspace.slack.com')
+        huddle.update(announcement_message_id: '1234567890.123456')
+        huddle.update(huddle_playbook: playbook)
+      end
+
+      it 'uses the explicit workspace_url' do
+        expected_url = 'https://custom-workspace.slack.com/archives/general/p1234567890123456'
+        expect(huddle.slack_announcement_url).to eq(expected_url)
+      end
+    end
+
+  end
 end 

@@ -63,6 +63,16 @@ class Huddle < ApplicationRecord
     summary_message_id.present?
   end
 
+  def slack_announcement_url
+    return nil unless has_slack_announcement?
+    
+    SlackService.slack_announcement_url(
+      slack_configuration: slack_configuration,
+      channel_name: slack_channel,
+      message_id: announcement_message_id
+    )
+  end
+
 
   
   def department_head

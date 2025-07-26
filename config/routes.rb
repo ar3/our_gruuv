@@ -46,6 +46,7 @@ Rails.application.routes.draw do
       get :summary
       get :slack_notification_preview
       post :post_summary_to_slack
+      post :post_start_announcement_to_slack
     end
   end
   

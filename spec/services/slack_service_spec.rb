@@ -84,4 +84,63 @@ RSpec.describe SlackService, type: :service do
       expect(message).to include('John Doe')
     end
   end
+
+  describe '.slack_announcement_url' do
+    let(:slack_config) { create(:slack_configuration, workspace_subdomain: 'test-workspace') }
+
+    it 'returns nil when workspace_subdomain is missing' do
+      slack_config.update(workspace_subdomain: nil)
+      result = SlackService.slack_announcement_url(
+        slack_configuration: slack_config,
+        channel_name: '#general',
+        message_id: '1234567890.123456'
+      )
+      expect(result).to be_nil
+    end
+
+    it 'returns nil when channel_name is missing' do
+      result = SlackService.slack_announcement_url(
+        slack_configuration: slack_config,
+        channel_name: nil,
+        message_id: '1234567890.123456'
+      )
+      expect(result).to be_nil
+    end
+
+    it 'returns nil when message_id is missing' do
+      result = SlackService.slack_announcement_url(
+        slack_configuration: slack_config,
+        channel_name: '#general',
+        message_id: nil
+      )
+      expect(result).to be_nil
+    end
+
+    it 'returns correct URL when all parameters are present' do
+      result = SlackService.slack_announcement_url(
+        slack_configuration: slack_config,
+        channel_name: '#general',
+        message_id: '1234567890.123456'
+      )
+      expected_url = 'https://test-workspace.slack.com/archives/general/p1234567890123456'
+      expect(result).to eq(expected_url)
+    end
+
+    it 'handles channel names with and without #' do
+      result_with_hash = SlackService.slack_announcement_url(
+        slack_configuration: slack_config,
+        channel_name: '#engineering',
+        message_id: '1234567890.123456'
+      )
+      result_without_hash = SlackService.slack_announcement_url(
+        slack_configuration: slack_config,
+        channel_name: 'engineering',
+        message_id: '1234567890.123456'
+      )
+      
+      expected_url = 'https://test-workspace.slack.com/archives/engineering/p1234567890123456'
+      expect(result_with_hash).to eq(expected_url)
+      expect(result_without_hash).to eq(expected_url)
+    end
+  end
 end 

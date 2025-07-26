@@ -47,7 +47,7 @@ RSpec.describe SlackConfiguration, type: :model do
     
     describe '#workspace_url' do
       it 'returns the correct Slack workspace URL' do
-        expect(slack_config.workspace_url).to eq("https://#{slack_config.workspace_name}.slack.com")
+        expect(slack_config.workspace_url).to eq("https://#{slack_config.workspace_subdomain}.slack.com")
       end
     end
     

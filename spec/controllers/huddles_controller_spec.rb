@@ -212,4 +212,48 @@ RSpec.describe HuddlesController, type: :controller do
       expect(flash[:alert]).to eq('Slack is not configured for this organization.')
     end
   end
+
+  describe 'POST #post_start_announcement_to_slack' do
+    let(:slack_config) { create(:slack_configuration, organization: organization) }
+    let(:slack_service) { instance_double(SlackService) }
+
+    before do
+      slack_config
+      allow(SlackService).to receive(:new).and_return(slack_service)
+    end
+
+    it 'assigns the requested huddle' do
+      allow(slack_service).to receive(:post_huddle_start_announcement).and_return(true)
+      
+      post :post_start_announcement_to_slack, params: { id: huddle.id }
+      expect(assigns(:huddle)).to eq(huddle)
+    end
+
+    it 'redirects to huddle page with success message when Slack is configured' do
+      allow(slack_service).to receive(:post_huddle_start_announcement).and_return(true)
+      
+      post :post_start_announcement_to_slack, params: { id: huddle.id }
+      
+      expect(response).to redirect_to(huddle_path(huddle))
+      expect(flash[:notice]).to eq('Huddle start announcement posted to Slack successfully!')
+    end
+
+    it 'redirects to huddle page with error when Slack is not configured' do
+      slack_config.destroy
+      
+      post :post_start_announcement_to_slack, params: { id: huddle.id }
+      
+      expect(response).to redirect_to(huddle_path(huddle))
+      expect(flash[:alert]).to eq('Slack is not configured for this organization.')
+    end
+
+    it 'redirects to huddle page with error when Slack service fails' do
+      allow(slack_service).to receive(:post_huddle_start_announcement).and_return(false)
+      
+      post :post_start_announcement_to_slack, params: { id: huddle.id }
+      
+      expect(response).to redirect_to(huddle_path(huddle))
+      expect(flash[:alert]).to eq('Failed to post huddle start announcement to Slack.')
+    end
+  end
 end 

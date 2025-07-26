@@ -1,6 +1,15 @@
 class SlackService
   include SlackConstants
   
+  def self.slack_announcement_url(
+    slack_configuration:,
+    channel_name:,
+    message_id:
+  )
+    return nil unless slack_configuration.present? && channel_name.present? && message_id.present?
+    "#{slack_configuration.workspace_url}/archives/#{channel_name}/p#{message_id.gsub('.', '')}"
+  end
+
   def initialize(organization = nil)
     @organization = organization
     @client = create_client
@@ -11,7 +20,7 @@ class SlackService
     return false unless slack_configured?
     
     # Use organization-specific defaults if available
-    config = @organization&.slack_config
+    config = @organization&.calculated_slack_config
     default_channel = channel || config&.default_channel_or_general
     bot_username = config&.bot_username_or_default
     bot_emoji = config&.bot_emoji_or_default
@@ -88,6 +97,29 @@ class SlackService
       
       post_message(channel: channel, text: text)
     end
+  end
+
+  # Post huddle start announcement to Slack
+  def post_huddle_start_announcement(huddle)
+    return false unless huddle.present?
+    
+    channel = huddle.slack_channel
+    return false unless channel.present?
+    
+    # Create the start announcement blocks
+    blocks = build_start_announcement_blocks(huddle)
+    
+    # Post the announcement
+    result = post_message(
+      channel: channel,
+      blocks: blocks
+    )
+    
+    if result
+      huddle.update(announcement_message_id: result['ts'])
+    end
+    
+    result
   end
 
   # Post or update huddle summary in Slack
@@ -228,12 +260,27 @@ class SlackService
       { success: false, error: e.message }
     end
   end
+
+  def self.slack_announcement_url(slack_configuration:, channel_name:, message_id:)
+    return nil unless slack_configuration&.workspace_subdomain.present? && channel_name.present? && message_id.present?
+    
+    # Get the workspace URL - this will be nil if we don't have the proper subdomain
+    workspace_url = slack_configuration.workspace_url
+    return nil unless workspace_url.present?
+    
+    # Extract channel name (remove the # if present)
+    clean_channel_name = channel_name.gsub('#', '')
+    
+    # Build Slack message URL with proper workspace subdomain
+    # Format: https://workspace.slack.com/archives/CHANNEL_ID/p1234567890.123456
+    "#{workspace_url}/archives/#{clean_channel_name}/p#{message_id.gsub('.', '')}"
+  end
   
   private
   
   def create_client
     if @organization&.slack_configured?
-      config = @organization.slack_config
+      config = @organization.calculated_slack_config
       Slack::Web::Client.new(token: config.bot_token)
     else
       # Fallback to environment variable for backward compatibility
@@ -252,6 +299,35 @@ class SlackService
       channel: huddle.slack_channel,
       organization_name: huddle.organization.display_name
     }
+  end
+
+  def build_start_announcement_blocks(huddle)
+    [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: "🚀 #{huddle.display_name} - Starting Now!",
+          emoji: true
+        }
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: "The huddle is starting! Join in to participate in today's collaborative session."
+        }
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: "👥 #{huddle.huddle_participants.count} participants • Facilitated by #{huddle.facilitator_names.join(', ')}"
+          }
+        ]
+      }
+    ]
   end
 
   def build_summary_blocks(huddle, is_thread: false)

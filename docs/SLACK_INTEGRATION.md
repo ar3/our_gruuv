@@ -110,19 +110,25 @@ When creating a huddle, you can optionally specify a Slack channel:
 
 The system automatically sends notifications for:
 
-1. **Huddle Created** (`:huddle_created`)
-   ```
-   🎯 New huddle created: *Acme Corp > Engineering - January 15, 2024* by John Doe
-   ```
-
-2. **Feedback Submitted** (`:feedback_requested`)
+1. **Feedback Submitted** (`:feedback_requested`)
    ```
    📝 Feedback requested for *Acme Corp > Engineering - January 15, 2024* - 75% participation
    ```
 
-3. **Huddle Completed** (`:huddle_completed`)
+2. **Huddle Completed** (`:huddle_completed`)
    ```
    ✅ Huddle completed: *Acme Corp > Engineering - January 15, 2024* - Nat 20 Score: 4.2
+   ```
+
+### Manual Notifications
+
+The system supports manual notifications that can be triggered by users:
+
+1. **Huddle Start Announcement** (triggered by clicking "Let Slack folks know the huddle has started")
+   ```
+   🚀 Acme Corp > Engineering - January 15, 2024 - Starting Now!
+   The huddle is starting! Join in to participate in today's collaborative session.
+   👥 5 participants • Facilitated by John Doe
    ```
 
 ## API Endpoints
@@ -168,11 +174,12 @@ Messages use Ruby string interpolation with the following variables:
 Slack notifications are sent asynchronously using `SlackNotificationJob`:
 
 ```ruby
-# Send huddle created notification
-SlackNotificationJob.perform_later(huddle.id, :huddle_created, creator_name: 'John Doe')
-
 # Send feedback notification
-SlackNotificationJob.perform_later(huddle.id, :feedback_requested)
+SlackNotificationJob.perform_now(huddle.id, :feedback_requested)
+
+# Send huddle start announcement (manual trigger)
+slack_service = SlackService.new(huddle.organization)
+slack_service.post_huddle_start_announcement(huddle)
 ```
 
 ## Troubleshooting

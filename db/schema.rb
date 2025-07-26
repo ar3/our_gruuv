@@ -10,9 +10,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_26_001343) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_26_151932) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "debug_responses", force: :cascade do |t|
+    t.jsonb "request"
+    t.jsonb "response"
+    t.string "responseable_type", null: false
+    t.bigint "responseable_id", null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["responseable_type", "responseable_id"], name: "index_debug_responses_on_responseable"
+  end
 
   create_table "huddle_feedbacks", force: :cascade do |t|
     t.bigint "huddle_id", null: false
@@ -99,14 +110,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_26_001343) do
     t.string "workspace_id", null: false
     t.string "workspace_name", null: false
     t.string "bot_token", null: false
-    t.string "default_channel", default: "#bot-test"
-    t.string "bot_username", default: "OG"
-    t.string "bot_emoji", default: ":handshake:"
+    t.string "default_channel", default: "#general"
+    t.string "bot_username", default: "Huddle Bot"
+    t.string "bot_emoji", default: ":huddle:"
     t.datetime "installed_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "bot_user_id"
     t.string "workspace_url"
+    t.string "workspace_subdomain"
     t.index ["bot_token"], name: "index_slack_configurations_on_bot_token", unique: true
     t.index ["organization_id"], name: "index_slack_configurations_on_organization_id"
     t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true

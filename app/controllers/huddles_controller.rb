@@ -1,5 +1,5 @@
 class HuddlesController < ApplicationController
-  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :summary, :post_summary_to_slack]
+  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :summary, :post_summary_to_slack, :post_start_announcement_to_slack]
 
   def index
     @huddles = Huddle.active.recent.includes(:organization)
@@ -88,9 +88,6 @@ class HuddlesController < ApplicationController
       
       # Store only the person ID in session
       session[:current_person_id] = person.id
-      
-      # Send Slack notification for huddle creation
-      SlackNotificationJob.perform_later(@huddle.id, :huddle_created, creator_name: person.display_name)
       
       redirect_to @huddle, notice: 'Huddle created successfully!'
     else
@@ -223,6 +220,29 @@ class HuddlesController < ApplicationController
       redirect_to summary_huddle_path(@huddle), notice: 'Huddle summary posted to Slack successfully!'
     rescue => e
       redirect_to summary_huddle_path(@huddle), alert: "Failed to post to Slack: #{e.message}"
+    end
+  end
+
+  def post_start_announcement_to_slack
+    authorize @huddle, :summary?
+    
+    unless @huddle.slack_configured?
+      redirect_to huddle_path(@huddle), alert: 'Slack is not configured for this organization.'
+      return
+    end
+    
+    begin
+      # Post the start announcement to Slack
+      slack_service = SlackService.new(@huddle.organization)
+      result = slack_service.post_huddle_start_announcement(@huddle)
+      
+      if result
+        redirect_to huddle_path(@huddle), notice: 'Huddle start announcement posted to Slack successfully!'
+      else
+        redirect_to huddle_path(@huddle), alert: 'Failed to post huddle start announcement to Slack.'
+      end
+    rescue => e
+      redirect_to huddle_path(@huddle), alert: "Failed to post to Slack: #{e.message}"
     end
   end
 

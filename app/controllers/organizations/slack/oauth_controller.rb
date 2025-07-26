@@ -36,14 +36,58 @@ class Organizations::Slack::OauthController < ApplicationController
       if data['ok']
         # Create or update Slack configuration for this organization
         config = @organization.slack_configuration || @organization.build_slack_configuration
+        
         config.update!(
           bot_token: data['access_token'],
           workspace_id: data['team']['id'],
           workspace_name: data['team']['name'],
-          workspace_url: "https://#{data['team']['domain']}.slack.com",
+          workspace_subdomain: nil, # We'll get this from team.info API call
+          workspace_url: nil, # We'll set this after getting the subdomain
           bot_user_id: data['bot_user_id'],
           installed_at: Time.current
         )
+        
+        # Store the full OAuth response for debugging (after config is saved)
+        DebugResponse.create!(
+          responseable: config,
+          request: {
+            client_id: client_id,
+            code: code,
+            redirect_uri: redirect_uri
+          },
+          response: data,
+          notes: "Slack OAuth v2 access response"
+        )
+        
+        # Get workspace subdomain using team.info API
+        begin
+          client = Slack::Web::Client.new(token: data['access_token'])
+          team_info = client.team_info
+          
+          if team_info['ok'] && team_info['team']['domain']
+            config.update!(
+              workspace_subdomain: team_info['team']['domain'],
+              workspace_url: "https://#{team_info['team']['domain']}.slack.com"
+            )
+            
+            # Store the team.info response for debugging
+            DebugResponse.create!(
+              responseable: config,
+              request: { method: 'team.info' },
+              response: team_info,
+              notes: "Slack team.info API response"
+            )
+          end
+        rescue => e
+          Rails.logger.error "Failed to get team info: #{e.message}"
+          # Store the error for debugging
+          DebugResponse.create!(
+            responseable: config,
+            request: { method: 'team.info' },
+            response: { error: e.message, backtrace: e.backtrace.first(5) },
+            notes: "Slack team.info API error"
+          )
+        end
         
         redirect_to organization_slack_path(@organization), notice: "Slack successfully connected to #{@organization.display_name}!"
       else
