@@ -77,6 +77,8 @@ class SlackService
     case notification_type
     when :post_summary
       post_huddle_summary(huddle)
+    when :post_feedback_in_thread
+      post_feedback_in_thread(huddle, options[:feedback_id])
     else
       template = MESSAGE_TEMPLATES[notification_type]
       return false unless template.present?
@@ -187,6 +189,27 @@ class SlackService
       
       result
     end
+  end
+
+  # Post individual feedback in the announcement thread
+  def post_feedback_in_thread(huddle, feedback_id)
+    return false unless huddle.present? && huddle.has_slack_announcement?
+    
+    feedback = huddle.huddle_feedbacks.find_by(id: feedback_id)
+    return false unless feedback.present?
+    
+    channel = huddle.slack_channel
+    return false unless channel.present?
+    
+    # Create feedback message blocks
+    blocks = build_feedback_blocks(feedback)
+    
+    # Post in the announcement thread
+    post_message(
+      channel: channel,
+      thread_ts: huddle.announcement_message_id,
+      blocks: blocks
+    )
   end
   
   # Get channel information
@@ -399,4 +422,68 @@ class SlackService
       ]
     end
   end
-end 
+
+  def build_feedback_blocks(feedback)
+    [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: "💬 *New Feedback from #{feedback.display_name}*"
+        }
+      },
+      {
+        type: "section",
+        fields: [
+          {
+            type: "mrkdwn",
+            text: "*Nat 20 Score:* #{feedback.nat_20_score}/20"
+          },
+          {
+            type: "mrkdwn",
+            text: "*Ratings:* I:#{feedback.informed_rating} C:#{feedback.connected_rating} G:#{feedback.goals_rating} V:#{feedback.valuable_rating}"
+          }
+        ]
+      }
+    ].tap do |blocks|
+      # Add appreciation if present
+      if feedback.appreciation.present?
+        blocks << {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "*Appreciation:* #{feedback.appreciation}"
+          }
+        }
+      end
+
+      # Add change suggestion if present
+      if feedback.change_suggestion.present?
+        blocks << {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "*Change Suggestion:* #{feedback.change_suggestion}"
+          }
+        }
+      end
+
+      # Add conflict styles if present
+      if feedback.personal_conflict_style.present? || feedback.team_conflict_style.present?
+        conflict_text = []
+        conflict_text << "Personal: #{feedback.personal_conflict_style}" if feedback.personal_conflict_style.present?
+        conflict_text << "Team: #{feedback.team_conflict_style}" if feedback.team_conflict_style.present?
+        
+        blocks << {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "*Conflict Styles:* #{conflict_text.join(' • ')}"
+          }
+        }
+      end
+    end
+  end
+end
+
+ 

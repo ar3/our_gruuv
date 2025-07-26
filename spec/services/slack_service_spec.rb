@@ -56,6 +56,13 @@ RSpec.describe SlackService, type: :service do
         result = slack_service.post_huddle_notification(huddle, :unknown_type)
         expect(result).to be false
       end
+
+      it 'calls post_feedback_in_thread for post_feedback_in_thread type' do
+        allow(slack_service).to receive(:post_feedback_in_thread).and_return(true)
+        result = slack_service.post_huddle_notification(huddle, :post_feedback_in_thread, feedback_id: 123)
+        expect(slack_service).to have_received(:post_feedback_in_thread).with(huddle, 123)
+        expect(result).to be true
+      end
     end
     
     context 'when huddle is not present' do
@@ -84,6 +91,45 @@ RSpec.describe SlackService, type: :service do
       expect(message).to include('John Doe')
     end
   end
+
+  describe '#post_feedback_in_thread' do
+    let(:feedback) { create(:huddle_feedback) }
+    
+    before do
+      allow(huddle).to receive(:has_slack_announcement?).and_return(true)
+      allow(huddle).to receive(:announcement_message_id).and_return('1234567890.123456')
+      allow(huddle).to receive(:slack_channel).and_return('#test-channel')
+      allow(huddle.huddle_feedbacks).to receive(:find_by).with(id: feedback.id).and_return(feedback)
+      allow(slack_service).to receive(:post_message).and_return({ 'ok' => true })
+    end
+
+    it 'posts feedback in thread when announcement exists' do
+      result = slack_service.post_feedback_in_thread(huddle, feedback.id)
+      
+      expect(slack_service).to have_received(:post_message).with(
+        channel: '#test-channel',
+        thread_ts: '1234567890.123456',
+        blocks: kind_of(Array)
+      )
+      expect(result).to eq({ 'ok' => true })
+    end
+
+    it 'returns false when huddle has no announcement' do
+      allow(huddle).to receive(:has_slack_announcement?).and_return(false)
+      
+      result = slack_service.post_feedback_in_thread(huddle, feedback.id)
+      expect(result).to be false
+    end
+
+    it 'returns false when feedback not found' do
+      allow(huddle.huddle_feedbacks).to receive(:find_by).with(id: feedback.id).and_return(nil)
+      
+      result = slack_service.post_feedback_in_thread(huddle, feedback.id)
+      expect(result).to be false
+    end
+  end
+
+
 
   describe '.slack_announcement_url' do
     let(:slack_config) { create(:slack_configuration, workspace_subdomain: 'test-workspace') }

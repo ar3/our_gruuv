@@ -175,8 +175,13 @@ class HuddlesController < ApplicationController
     )
     
     if @feedback.save
-      # Send Slack notification for feedback submission
-      SlackNotificationJob.perform_now(@huddle.id, :feedback_requested)
+      # Post individual feedback in Slack thread if announcement exists
+      if @huddle.has_slack_announcement?
+        SlackNotificationJob.perform_now(@huddle.id, :post_feedback_in_thread, feedback_id: @feedback.id)
+      else
+        # Send general feedback notification if no announcement
+        SlackNotificationJob.perform_now(@huddle.id, :feedback_requested)
+      end
       
       # Update Slack summary if it exists
       if @huddle.has_slack_announcement?
