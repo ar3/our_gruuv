@@ -5,9 +5,9 @@ class CreateSlackConfigurations < ActiveRecord::Migration[8.0]
       t.string :workspace_id, null: false
       t.string :workspace_name, null: false
       t.string :bot_token, null: false
-      t.string :default_channel, default: '#general'
-      t.string :bot_username, default: 'Huddle Bot'
-      t.string :bot_emoji, default: ':huddle:'
+      t.string :default_channel, default: '#bot-test'
+      t.string :bot_username, default: 'Gruuv Bot'
+      t.string :bot_emoji, default: ':handshake:'
       t.datetime :installed_at, null: false
 
       t.timestamps

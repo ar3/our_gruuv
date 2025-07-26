@@ -8,7 +8,11 @@ class OrganizationsController < ApplicationController
   end
   
   def show
-    # Show the organization details page
+    # Load teams if this is a company
+    @teams = @organization.children.teams.includes(:huddle_playbooks) if @organization.company?
+    
+    # Load playbooks for this organization
+    @playbooks = @organization.huddle_playbooks.includes(:huddles)
   end
   
   def new

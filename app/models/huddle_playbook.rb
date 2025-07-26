@@ -10,6 +10,6 @@ class HuddlePlaybook < ApplicationRecord
   end
   
   def slack_channel_or_organization_default
-    slack_channel.presence || organization.slack_configuration&.default_channel_or_general || "#general"
+    slack_channel.presence || organization.slack_configuration&.default_channel_or_general || "#bot-test"
   end
 end

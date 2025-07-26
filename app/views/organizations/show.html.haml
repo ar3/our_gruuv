@@ -1,2 +1,175 @@
-%h1 Organizations#show
-%p Find me in app/views/organizations/show.html.haml
+.container.mt-4
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1.mb-0= @organization.display_name
+        .d-flex.align-items-center
+          %span.badge.bg-primary.fs-6.me-3
+            %i.bi.bi-building.me-1
+            = @organization.type.underscore.humanize
+          = link_to organizations_path, class: "btn btn-outline-secondary" do
+            %i.bi.bi-arrow-left.me-2
+            Back to Organizations
+      
+      .row
+        .col-md-8
+          .card.mb-4
+            .card-header
+              %h5.mb-0
+                %i.bi.bi-info-circle.me-2
+                Organization Details
+            .card-body
+              .row
+                .col-md-6
+                  %p
+                    %strong Name:
+                    = @organization.name
+                  %p
+                    %strong Type:
+                    = @organization.type.underscore.humanize
+                  - if @organization.parent
+                    %p
+                      %strong Parent:
+                      = link_to @organization.parent.name, organization_path(@organization.parent)
+                .col-md-6
+                  %p
+                    %strong Created:
+                    = @organization.created_at.strftime("%B %d, %Y")
+                  %p
+                    %strong Total Huddles:
+                    = @organization.huddles.count
+                  %p
+                    %strong Total Playbooks:
+                    = @organization.huddle_playbooks.count
+          
+          - if @organization.company? && @teams.any?
+            .card.mb-4
+              .card-header.d-flex.justify-content-between.align-items-center
+                %h5.mb-0
+                  %i.bi.bi-people.me-2
+                  Teams
+                = link_to new_organization_path(parent_id: @organization.id), class: "btn btn-primary btn-sm" do
+                  %i.bi.bi-plus.me-1
+                  Add Team
+              .card-body
+                .table-responsive
+                  %table.table.table-hover
+                    %thead
+                      %tr
+                        %th Team Name
+                        %th Playbooks
+                        %th Huddles
+                        %th Actions
+                    %tbody
+                      - @teams.each do |team|
+                        %tr
+                          %td
+                            = link_to team.name, organization_path(team), class: "text-decoration-none"
+                          %td
+                            %span.badge.bg-info= team.huddle_playbooks.count
+                          %td
+                            %span.badge.bg-secondary= team.huddles.count
+                          %td
+                            .btn-group.btn-group-sm
+                              = link_to organization_path(team), class: "btn btn-outline-primary" do
+                                %i.bi.bi-eye
+                              = link_to edit_organization_path(team), class: "btn btn-outline-secondary" do
+                                %i.bi.bi-pencil
+          
+          .card
+            .card-header.d-flex.justify-content-between.align-items-center
+              %h5.mb-0
+                %i.bi.bi-journal-text.me-2
+                Huddle Playbooks
+              = link_to new_organization_huddle_playbook_path(@organization), class: "btn btn-primary btn-sm" do
+                %i.bi.bi-plus.me-1
+                Add Playbook
+            .card-body
+              - if @playbooks.any?
+                .table-responsive
+                  %table.table.table-hover
+                    %thead
+                      %tr
+                        %th Playbook Name
+                        %th Special Session
+                        %th Slack Channel
+                        %th Huddles
+                        %th Actions
+                    %tbody
+                      - @playbooks.each do |playbook|
+                        %tr
+                          %td
+                            %strong= playbook.display_name
+                          %td
+                            - if playbook.special_session_name.present?
+                              %span.badge.bg-warning= playbook.special_session_name
+                            - else
+                              %span.text-muted None
+                          %td
+                            - if playbook.slack_channel.present?
+                              %code= playbook.slack_channel
+                            - else
+                              %span.text-muted Default
+                          %td
+                            %span.badge.bg-success= playbook.huddles.count
+                          %td
+                            .btn-group.btn-group-sm
+                              = link_to edit_organization_huddle_playbook_path(@organization, playbook), class: "btn btn-outline-primary" do
+                                %i.bi.bi-pencil
+                              = link_to organization_huddle_playbook_path(@organization, playbook), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to delete this playbook?" } do
+                                %i.bi.bi-trash
+              - else
+                .text-center.py-4
+                  %p.text-muted No playbooks yet
+                  = link_to new_organization_huddle_playbook_path(@organization), class: "btn btn-primary" do
+                    %i.bi.bi-plus.me-1
+                    Create Your First Playbook
+        
+        .col-md-4
+          .card.mb-4
+            .card-header
+              %h5.mb-0 Quick Actions
+            .card-body
+              .d-grid.gap-2
+                = link_to new_huddle_path, class: "btn btn-success" do
+                  %i.bi.bi-plus-circle.me-2
+                  Start New Huddle
+                = link_to huddles_path(organization_id: @organization.id), class: "btn btn-outline-primary" do
+                  %i.bi.bi-list.me-2
+                  View All Huddles
+                - if @organization.company?
+                  - if @organization.slack_configured?
+                    = link_to organization_slack_path(@organization), class: "btn btn-outline-info" do
+                      %i.bi.bi-slack.me-2
+                      Slack Settings
+                  - else
+                    = link_to oauth_authorize_organization_slack_path(@organization), class: "btn btn-outline-warning" do
+                      %i.bi.bi-slack.me-2
+                      Connect Slack
+                - elsif @organization.team?
+                  - root_company = @organization.root_company
+                  - if root_company&.slack_configured?
+                    .alert.alert-info.alert-sm
+                      %i.bi.bi-slack.me-2
+                      Slack configured for #{root_company.name}
+                  - else
+                    .alert.alert-warning.alert-sm
+                      %i.bi.bi-exclamation-triangle.me-2
+                      Slack not configured for #{root_company&.name || 'parent company'}
+          
+          .card
+            .card-header
+              %h5.mb-0 Organization Stats
+            .card-body
+              .row.text-center
+                .col-6
+                  .h4.text-primary= @organization.huddles.count
+                  %small.text-muted Total Huddles
+                .col-6
+                  .h4.text-success= @organization.huddle_playbooks.count
+                  %small.text-muted Playbooks
+              - if @organization.company?
+                .row.text-center.mt-3
+                  .col-12
+                    .h4.text-info= @teams&.count || 0
+                    %small.text-muted Teams

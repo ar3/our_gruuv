@@ -65,7 +65,7 @@ RSpec.describe 'Slack Integration', type: :feature do
       
       # Verify the huddle was created with the default Slack channel
       huddle = Huddle.last
-      expect(huddle.slack_channel).to eq('#general')
+      expect(huddle.slack_channel).to eq('#bot-test')
     end
 
     it 'creates a huddle without Slack channel and uses default' do
