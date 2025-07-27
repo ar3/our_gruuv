@@ -47,6 +47,7 @@ Rails.application.routes.draw do
 
       
       post :post_start_announcement_to_slack
+      get :notifications_debug
     end
   end
   

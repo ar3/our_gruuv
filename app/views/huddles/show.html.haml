@@ -29,15 +29,14 @@
     .col-md-3.col-lg-2.d-none.d-md-block
       .position-sticky{style: "top: 2rem;"}
         .card
-          .card-header.bg-primary.text-white
+          .card-header
             %h5.mb-0
               %i.bi.bi-compass.me-2
-              S.E.E.20 Huddle
+              S.E.E. 20 Huddle
           .card-body.p-0
             %nav.nav.flex-column#huddleNav
               %a.nav-link{href: "#intro", data: {section: "intro"}}
                 %i.bi.bi-house.me-2
-                Intro
               %a.nav-link{href: "#sync", data: {section: "sync"}}
                 %i.bi.bi-arrow-repeat.me-2
                 Sync
@@ -90,7 +89,10 @@
                         %i.bi.bi-check-circle.text-success
                         %span.text-success Slack announcement posted
                         - if @huddle.slack_announcement_url
-                          = link_to "View in Slack", @huddle.slack_announcement_url, target: "_blank", class: "btn btn-outline-success btn-sm"
+                          .d-flex.align-items-center.gap-2
+                            = link_to "View in Slack", @huddle.slack_announcement_url, target: "_blank", class: "btn btn-outline-success btn-sm"
+                            = link_to notifications_debug_huddle_path(@huddle), class: "btn btn-outline-info btn-sm", title: "View notifications debug" do
+                              %i.bi.bi-search
                     - else
                       = button_to "Let Slack folks know the huddle has started", post_start_announcement_to_slack_huddle_path(@huddle), method: :post, class: "btn btn-success btn-sm", data: { confirm: "Send huddle start announcement to Slack?" }
                   - else

@@ -1,0 +1,55 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-10
+      .card
+        .card-header.bg-info.text-white
+          %h3.mb-0
+            %i.bi.bi-search.me-2
+            Huddle Notifications Debug
+          %p.mb-0.mt-2= "Debug information for #{@huddle.display_name}"
+        
+        .card-body
+          .d-flex.justify-content-between.align-items-center.mb-4
+            = link_to "← Back to Huddle", huddle_path(@huddle), class: "btn btn-outline-secondary"
+            %span.badge.bg-secondary= "#{@notifications.count} notifications"
+          
+          - if @notifications.any?
+            .table-responsive
+              %table.table.table-striped
+                %thead.table-dark
+                  %tr
+                    %th Type
+                    %th Status
+                    %th Created At
+                    %th Updated At
+                    %th Message ID
+                    %th Actions
+                %tbody
+                  - @notifications.each do |notification|
+                    %tr
+                      %td
+                        %span.badge{class: notification_type_badge_class(notification.notification_type)}
+                          = notification.notification_type.humanize
+                      %td
+                        %span.badge{class: status_badge_class(notification.status)}
+                          = notification.status.humanize
+                      %td
+                        %small= format_time_in_user_timezone(notification.created_at)
+                      %td
+                        %small= format_time_in_user_timezone(notification.updated_at)
+                      %td
+                        - if notification.message_id.present?
+                          %code= notification.message_id
+                        - else
+                          %span.text-muted --
+                      %td
+                        - if notification.slack_url.present?
+                          = link_to notification.slack_url, target: "_blank", class: "btn btn-outline-primary btn-sm" do
+                            %i.bi.bi-slack.me-1
+                            View
+                        - else
+                          %span.text-muted No URL
+          - else
+            .text-center.py-5
+              %h4.text-muted No notifications found
+              %p.mb-0 This huddle doesn't have any Slack notifications yet. 

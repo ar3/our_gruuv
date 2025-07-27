@@ -210,4 +210,20 @@ RSpec.describe HuddlesController, type: :controller do
       expect(flash[:alert]).to eq('Failed to post to Slack: Slack error')
     end
   end
+
+  describe 'GET #notifications_debug' do
+    it 'assigns the requested huddle' do
+      get :notifications_debug, params: { id: huddle.id }
+      expect(assigns(:huddle)).to eq(huddle)
+    end
+
+    it 'assigns notifications ordered by created_at desc' do
+      notification1 = create(:notification, notifiable: huddle, notification_type: 'huddle_announcement', created_at: 1.hour.ago)
+      notification2 = create(:notification, notifiable: huddle, notification_type: 'huddle_summary', created_at: 2.hours.ago)
+      
+      get :notifications_debug, params: { id: huddle.id }
+      
+      expect(assigns(:notifications)).to eq([notification1, notification2])
+    end
+  end
 end 

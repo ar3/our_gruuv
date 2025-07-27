@@ -98,6 +98,35 @@ module ApplicationHelper
     ActiveSupport::TimeZone.all.map { |tz| [tz.name, tz.name] }
   end
 
+  # Notification debug helper methods
+  def notification_type_badge_class(notification_type)
+    case notification_type
+    when 'huddle_announcement'
+      'bg-primary'
+    when 'huddle_summary'
+      'bg-info'
+    when 'huddle_feedback'
+      'bg-success'
+    when 'test'
+      'bg-warning'
+    else
+      'bg-secondary'
+    end
+  end
+
+  def status_badge_class(status)
+    case status
+    when 'preparing_to_send'
+      'bg-warning'
+    when 'sent_successfully'
+      'bg-success'
+    when 'send_failed'
+      'bg-danger'
+    else
+      'bg-secondary'
+    end
+  end
+
   # Make policy available in views
   def policy(record)
     user = current_person if respond_to?(:current_person)

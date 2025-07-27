@@ -1,6 +1,9 @@
 @import 'bootstrap/scss/bootstrap';
 @import 'bootstrap-icons/font/bootstrap-icons';
 
+.hide {
+  display: none;
+}
 
 // Custom styles for readonly fields
 .form-control[readonly],

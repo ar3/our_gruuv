@@ -1,5 +1,5 @@
 class HuddlesController < ApplicationController
-  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :post_start_announcement_to_slack]
+  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :post_start_announcement_to_slack, :notifications_debug]
 
   def index
     @huddles = Huddle.active.recent.includes(:organization).decorate
@@ -152,6 +152,9 @@ class HuddlesController < ApplicationController
     
     # Check if user is a participant
     @existing_participant = @current_person.huddle_participants.find_by(huddle: @huddle)
+    
+    # Check if user has already submitted feedback
+    @existing_feedback = @huddle.huddle_feedbacks.find_by(person: @current_person)
   end
 
   def submit_feedback
@@ -162,30 +165,59 @@ class HuddlesController < ApplicationController
     # Check if user is a participant
     @existing_participant = @current_person.huddle_participants.find_by(huddle: @huddle)
     
-    # Create the feedback
-    @feedback = @huddle.huddle_feedbacks.build(
-      person: @current_person,
-      informed_rating: feedback_params[:informed_rating],
-      connected_rating: feedback_params[:connected_rating],
-      goals_rating: feedback_params[:goals_rating],
-      valuable_rating: feedback_params[:valuable_rating],
-      personal_conflict_style: feedback_params[:personal_conflict_style],
-      team_conflict_style: feedback_params[:team_conflict_style],
-      appreciation: feedback_params[:appreciation],
-      change_suggestion: feedback_params[:change_suggestion],
-      private_department_head: feedback_params[:private_department_head],
-      private_facilitator: feedback_params[:private_facilitator],
-      anonymous: feedback_params[:anonymous] == '1'
-    )
+    # Check if user has already submitted feedback
+    @existing_feedback = @huddle.huddle_feedbacks.find_by(person: @current_person)
     
-    if @feedback.save
-      # Update summary and post feedback
-      Huddles::PostSummaryJob.perform_now(@huddle.id)
-      Huddles::PostFeedbackJob.perform_now(@huddle.id, @feedback.id)
-      
-      redirect_to @huddle, notice: 'Thank you for your feedback!'
+    if @existing_feedback
+      # Update existing feedback
+      if @existing_feedback.update(
+        informed_rating: feedback_params[:informed_rating],
+        connected_rating: feedback_params[:connected_rating],
+        goals_rating: feedback_params[:goals_rating],
+        valuable_rating: feedback_params[:valuable_rating],
+        personal_conflict_style: feedback_params[:personal_conflict_style],
+        team_conflict_style: feedback_params[:team_conflict_style],
+        appreciation: feedback_params[:appreciation],
+        change_suggestion: feedback_params[:change_suggestion],
+        private_department_head: feedback_params[:private_department_head],
+        private_facilitator: feedback_params[:private_facilitator],
+        anonymous: feedback_params[:anonymous] == '1'
+      )
+        # Update announcement and summary (but don't post new feedback notification)
+        Huddles::PostAnnouncementJob.perform_now(@huddle.id)
+        Huddles::PostSummaryJob.perform_now(@huddle.id)
+        
+        redirect_to @huddle, notice: 'Your feedback has been updated!'
+      else
+        @feedback = @existing_feedback
+        render :feedback, status: :unprocessable_entity
+      end
     else
-      render :feedback, status: :unprocessable_entity
+      # Create new feedback
+      @feedback = @huddle.huddle_feedbacks.build(
+        person: @current_person,
+        informed_rating: feedback_params[:informed_rating],
+        connected_rating: feedback_params[:connected_rating],
+        goals_rating: feedback_params[:goals_rating],
+        valuable_rating: feedback_params[:valuable_rating],
+        personal_conflict_style: feedback_params[:personal_conflict_style],
+        team_conflict_style: feedback_params[:team_conflict_style],
+        appreciation: feedback_params[:appreciation],
+        change_suggestion: feedback_params[:change_suggestion],
+        private_department_head: feedback_params[:private_department_head],
+        private_facilitator: feedback_params[:private_facilitator],
+        anonymous: feedback_params[:anonymous] == '1'
+      )
+      
+      if @feedback.save
+        # Update summary and post feedback
+        Huddles::PostSummaryJob.perform_now(@huddle.id)
+        Huddles::PostFeedbackJob.perform_now(@huddle.id, @feedback.id)
+        
+        redirect_to @huddle, notice: 'Thank you for your feedback!'
+      else
+        render :feedback, status: :unprocessable_entity
+      end
     end
   rescue ActiveRecord::RecordInvalid => e
     @feedback = @huddle.huddle_feedbacks.build(feedback_params)
@@ -213,6 +245,11 @@ class HuddlesController < ApplicationController
     rescue => e
       redirect_to huddle_path(@huddle), alert: "Failed to post to Slack: #{e.message}"
     end
+  end
+
+  def notifications_debug
+    authorize @huddle, :show?
+    @notifications = @huddle.notifications.order(created_at: :desc)
   end
 
   private

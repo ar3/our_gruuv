@@ -15,7 +15,7 @@
                 .alert.alert-info
                   %strong Your feedback helps us improve future huddles!
                   %br
-                  %small Please rate each aspect of your huddle experience.
+                  %small Please rate each aspect of your huddle experience. REMEMBER: We are rating the entire team / all of us, not just the facilitator.
             
             .row.mb-4
               .col-12
@@ -23,9 +23,9 @@
                   %i.bi.bi-person-circle.me-2
                   Your Role: #{HuddleConstants::ROLE_LABELS[@existing_participant.role]}
                 
-                .mb-3
+                .mb-3.hide
                   .form-check
-                    = form.check_box :anonymous, class: "form-check-input"
+                    = form.check_box :anonymous, class: "form-check-input", checked: @existing_feedback&.anonymous
                     = form.label :anonymous, "Submit feedback anonymously", class: "form-check-label"
                   %small.text-muted.d-block
                     Check this if you prefer to submit feedback without revealing your identity.
@@ -48,7 +48,7 @@
                           %small.text-muted Strongly Disagree
                           %small.text-muted Strongly Agree
                         .form-range.mb-2{data: {bs_min: "0", bs_max: "5", bs_step: "1"}}
-                          = form.range_field :informed_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
+                          = form.range_field :informed_rating, min: 0, max: 5, step: 1, value: @existing_feedback&.informed_rating || 5, class: "form-range", required: true
                         .d-flex.justify-content-between
                           - 0.upto(5) do |rating|
                             %small.text-muted{class: rating == 5 ? "fw-bold #{text_class(rating_color(rating))}" : ""}= rating
@@ -63,7 +63,7 @@
                           %small.text-muted Strongly Disagree
                           %small.text-muted Strongly Agree
                         .form-range.mb-2{data: {bs_min: "0", bs_max: "5", bs_step: "1"}}
-                          = form.range_field :connected_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
+                          = form.range_field :connected_rating, min: 0, max: 5, step: 1, value: @existing_feedback&.connected_rating || 5, class: "form-range", required: true
                         .d-flex.justify-content-between
                           - 0.upto(5) do |rating|
                             %small.text-muted{class: rating == 5 ? "fw-bold #{text_class(rating_color(rating))}" : ""}= rating
@@ -78,7 +78,7 @@
                           %small.text-muted Strongly Disagree
                           %small.text-muted Strongly Agree
                         .form-range.mb-2{data: {bs_min: "0", bs_max: "5", bs_step: "1"}}
-                          = form.range_field :goals_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
+                          = form.range_field :goals_rating, min: 0, max: 5, step: 1, value: @existing_feedback&.goals_rating || 5, class: "form-range", required: true
                         .d-flex.justify-content-between
                           - 0.upto(5) do |rating|
                             %small.text-muted{class: rating == 5 ? "fw-bold #{text_class(rating_color(rating))}" : ""}= rating
@@ -93,7 +93,7 @@
                           %small.text-muted Strongly Disagree
                           %small.text-muted Strongly Agree
                         .form-range.mb-2{data: {bs_min: "0", bs_max: "5", bs_step: "1"}}
-                          = form.range_field :valuable_rating, min: 0, max: 5, step: 1, value: 5, class: "form-range", required: true
+                          = form.range_field :valuable_rating, min: 0, max: 5, step: 1, value: @existing_feedback&.valuable_rating || 5, class: "form-range", required: true
                         .d-flex.justify-content-between
                           - 0.upto(5) do |rating|
                             %small.text-muted{class: rating == 5 ? "fw-bold #{text_class(rating_color(rating))}" : ""}= rating
@@ -107,7 +107,7 @@
                   %p.mb-0
                     You can submit your feedback now, or continue below to share more details about your experience.
                   .mt-3
-                    = form.submit "Submit Feedback Now", class: "btn btn-outline-success me-2"
+                    = form.submit @existing_feedback ? "Update Feedback Now" : "Submit Feedback Now", class: "btn btn-outline-success me-2"
                     %small.text-muted or continue below for detailed feedback
             
             .row.mb-4
@@ -129,7 +129,7 @@
                       %small.text-muted.d-block.mb-2
                         In this huddle,
                         %b I WAS:
-                      = form.select :personal_conflict_style, options_for_select(HuddleConstants::CONFLICT_STYLES.map { |style| ["#{style} - #{HuddleConstants::CONFLICT_STYLE_DESCRIPTIONS[style]}", style] }), { prompt: 'Select your personal conflict style...' }, { class: 'form-select' }
+                      = form.select :personal_conflict_style, options_for_select(HuddleConstants::CONFLICT_STYLES.map { |style| ["#{style} - #{HuddleConstants::CONFLICT_STYLE_DESCRIPTIONS[style]}", style] }, selected: @existing_feedback&.personal_conflict_style), { prompt: 'Select your personal conflict style...' }, { class: 'form-select' }
                   
                   .col-md-6
                     .mb-3
@@ -137,7 +137,7 @@
                       %small.text-muted.d-block.mb-2
                         In this huddle,
                         %b WE WERE:
-                      = form.select :team_conflict_style, options_for_select(HuddleConstants::CONFLICT_STYLES.map { |style| ["#{style} - #{HuddleConstants::CONFLICT_STYLE_DESCRIPTIONS[style]}", style] }), { prompt: 'Select the team\'s conflict style...' }, { class: 'form-select' }
+                      = form.select :team_conflict_style, options_for_select(HuddleConstants::CONFLICT_STYLES.map { |style| ["#{style} - #{HuddleConstants::CONFLICT_STYLE_DESCRIPTIONS[style]}", style] }, selected: @existing_feedback&.team_conflict_style), { prompt: 'Select the team\'s conflict style...' }, { class: 'form-select' }
             
             .row.mb-4
               .col-12
@@ -196,7 +196,7 @@
               .col-12
                 .d-grid.gap-2.d-md-flex.justify-content-md-end
                   = link_to "Cancel", @huddle, class: "btn btn-outline-secondary me-md-2"
-                  = form.submit "Submit Complete Feedback", class: "btn btn-success btn-lg"
+                  = form.submit @existing_feedback ? "Update Complete Feedback" : "Submit Complete Feedback", class: "btn btn-success btn-lg"
                   %small.text-muted.mt-2.d-block
                     %i.bi.bi-shield-check.me-1
                     Your feedback helps improve future huddles and achieve Nat 20 scores! 
