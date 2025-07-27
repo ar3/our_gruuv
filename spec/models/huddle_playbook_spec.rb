@@ -63,7 +63,7 @@ RSpec.describe HuddlePlaybook, type: :model do
 
     it 'returns default name when special_session_name is blank' do
       huddle_playbook.special_session_name = ''
-      expect(huddle_playbook.display_name).to eq('Unnamed Playbook')
+      expect(huddle_playbook.display_name).to eq('Base Team Playbook')
     end
   end
 

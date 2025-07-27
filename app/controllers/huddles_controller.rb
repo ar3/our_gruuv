@@ -2,7 +2,7 @@ class HuddlesController < ApplicationController
   before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :post_start_announcement_to_slack]
 
   def index
-    @huddles = Huddle.active.recent.includes(:organization)
+    @huddles = Huddle.active.recent.includes(:organization).decorate
     @huddles_by_organization = @huddles.group_by { |huddle| huddle.organization.root_company }.sort_by { |company, _| company&.name || '' }
   end
 
@@ -220,8 +220,6 @@ class HuddlesController < ApplicationController
   def set_huddle
     @huddle = Huddle.find(params[:id]).decorate
   end
-
-  # Remove this method since it's already defined in ApplicationController
 
   def huddle_params
     params.require(:huddle).permit(:company_selection, :new_company_name, :team_selection, :new_team_name, :team_name, :email)

@@ -12,8 +12,11 @@
         %strong
           Team:
         = huddle.organization.display_name
+      %p.card-text
         - if participant
           = content_tag :span, participant.role.titleize, class: "badge bg-secondary ms-2"
+        &nbsp;
+
       .row
         .col-6
           %p.card-text
@@ -35,7 +38,7 @@
               - if huddle.slack_announcement_url
                 = link_to huddle.slack_announcement_url, target: "_blank", class: "btn btn-outline-success btn-sm", title: "View Slack Thread" do
                   %i.bi.bi-slack.me-1
-                  Slack
+                  Slack 🧵
           - else
             .btn-group.w-100
               = link_to "View Huddle", huddle_path(huddle), class: "btn btn-outline-primary btn-sm"

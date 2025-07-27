@@ -71,7 +71,7 @@
               .col-md-4.col-sm-12
                 %p
                   %strong Organization:
-                  = @huddle.organization.display_name
+                  = link_to @huddle.organization.display_name, organization_path(@huddle.organization), class: "text-decoration-none"
               .col-md-4.col-sm-12
                 %p
                   %strong{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "started at #{format_time_in_user_timezone(@huddle.started_at)}"} Status:

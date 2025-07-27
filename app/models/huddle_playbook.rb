@@ -6,7 +6,7 @@ class HuddlePlaybook < ApplicationRecord
   validates :slack_channel, format: { with: /\A#[a-zA-Z0-9_-]+\z/, message: "must be a valid Slack channel (e.g., #general)" }, allow_blank: true
   
   def display_name
-    special_session_name.present? ? special_session_name.titleize : "Unnamed Playbook"
+    special_session_name.present? ? special_session_name.titleize : "Base Team Playbook"
   end
   
   def slack_configuration
