@@ -22,7 +22,7 @@ RSpec.feature 'Huddles', type: :feature do
   scenario 'visiting the huddles index' do
     visit huddles_path
     
-    expect(page).to have_content('Nat 20 Huddles')
+    expect(page).to have_content('S.E.E. 20 Huddles')
     expect(page).to have_content("Today's Huddles")
     expect(page).to have_link('Start New Huddle')
   end

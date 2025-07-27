@@ -22,3 +22,7 @@ Things you may want to cover:
 * Deployment instructions
 
 * ...
+
+`http --url=crappie-saved-absolutely.ngrok-free.app 3000`
+`bin/dev`
+`git push origin main && railway up`

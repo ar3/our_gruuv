@@ -134,8 +134,8 @@ RSpec.describe 'huddles/feedback', type: :view do
 
   describe 'form submission' do
     it 'has submit buttons' do
-      expect(rendered).to have_button('Submit Feedback Now')
-      expect(rendered).to have_button('Submit Complete Feedback')
+      expect(rendered).to have_button('Update Feedback Now')
+      expect(rendered).to have_button('Update Complete Feedback')
     end
 
     it 'has cancel link' do
