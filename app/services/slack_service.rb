@@ -39,9 +39,17 @@ class SlackService
     begin
       response = @client.chat_postMessage(message_params)
       Rails.logger.info "Slack: Message posted successfully - #{response['ts']}"
+      
+      # Store the response in debug_responses
+      store_slack_response('chat_postMessage', message_params, response)
+      
       response
     rescue Slack::Web::Api::Errors::SlackError => e
       Rails.logger.error "Slack: Error posting message - #{e.message}"
+      
+      # Store the error in debug_responses
+      store_slack_response('chat_postMessage', message_params, { error: e.message, backtrace: e.backtrace.first(5) })
+      
       false
     end
   end
@@ -63,9 +71,17 @@ class SlackService
     begin
       response = @client.chat_update(message_params)
       Rails.logger.info "Slack: Message updated successfully"
+      
+      # Store the response in debug_responses
+      store_slack_response('chat_update', message_params, response)
+      
       response
     rescue Slack::Web::Api::Errors::SlackError => e
       Rails.logger.error "Slack: Error updating message - #{e.message}"
+      
+      # Store the error in debug_responses
+      store_slack_response('chat_update', message_params, { error: e.message, backtrace: e.backtrace.first(5) })
+      
       false
     end
   end
@@ -97,7 +113,9 @@ class SlackService
       # Post to the huddle's instruction channel or organization default
       channel = huddle.slack_channel
       
-      post_message(channel: channel, text: text)
+      post_message(
+        channel: channel, 
+        text: text)
     end
   end
 
@@ -218,9 +236,17 @@ class SlackService
     
     begin
       response = @client.conversations_info(channel: channel_id)
+      
+      # Store the response in debug_responses
+      store_slack_response('conversations_info', { channel: channel_id }, response)
+      
       response['channel']
     rescue Slack::Web::Api::Errors::SlackError => e
       Rails.logger.error "Slack: Error getting channel info - #{e.message}"
+      
+      # Store the error in debug_responses
+      store_slack_response('conversations_info', { channel: channel_id }, { error: e.message, backtrace: e.backtrace.first(5) })
+      
       false
     end
   end
@@ -231,9 +257,17 @@ class SlackService
     
     begin
       response = @client.conversations_list(types: 'public_channel,private_channel')
+      
+      # Store the response in debug_responses
+      store_slack_response('conversations_list', { types: 'public_channel,private_channel' }, response)
+      
       response['channels']
     rescue Slack::Web::Api::Errors::SlackError => e
       Rails.logger.error "Slack: Error listing channels - #{e.message}"
+      
+      # Store the error in debug_responses
+      store_slack_response('conversations_list', { types: 'public_channel,private_channel' }, { error: e.message, backtrace: e.backtrace.first(5) })
+      
       []
     end
   end
@@ -244,9 +278,17 @@ class SlackService
     
     begin
       response = @client.users_info(user: user_id)
+      
+      # Store the response in debug_responses
+      store_slack_response('users_info', { user: user_id }, response)
+      
       response['user']
     rescue Slack::Web::Api::Errors::SlackError => e
       Rails.logger.error "Slack: Error getting user info - #{e.message}"
+      
+      # Store the error in debug_responses
+      store_slack_response('users_info', { user: user_id }, { error: e.message, backtrace: e.backtrace.first(5) })
+      
       false
     end
   end
@@ -258,9 +300,17 @@ class SlackService
     begin
       response = @client.auth_test
       Rails.logger.info "Slack: Connection test successful - #{response['team']} (#{response['team_id']})"
+      
+      # Store the response in debug_responses
+      store_slack_response('auth_test', {}, response)
+      
       response
     rescue Slack::Web::Api::Errors::SlackError => e
       Rails.logger.error "Slack: Connection test failed - #{e.message}"
+      
+      # Store the error in debug_responses
+      store_slack_response('auth_test', {}, { error: e.message, backtrace: e.backtrace.first(5) })
+      
       false
     end
   end
@@ -297,6 +347,24 @@ class SlackService
     # Build Slack message URL with proper workspace subdomain
     # Format: https://workspace.slack.com/archives/CHANNEL_ID/p1234567890.123456
     "#{workspace_url}/archives/#{clean_channel_name}/p#{message_id.gsub('.', '')}"
+  end
+
+  def store_slack_response(method, request_params, response_data)
+    return unless @organization&.slack_configuration.present?
+    
+    begin
+      DebugResponse.create!(
+        responseable: @organization.slack_configuration,
+        request: {
+          method: method,
+          params: request_params
+        },
+        response: response_data,
+        notes: "Slack API #{method} response"
+      )
+    rescue => e
+      Rails.logger.error "Failed to store Slack response in debug_responses: #{e.message}"
+    end
   end
   
   private
