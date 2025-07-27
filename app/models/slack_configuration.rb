@@ -16,8 +16,10 @@ class SlackConfiguration < ApplicationRecord
   end
   
   def workspace_url
-    return @workspace_url if @workspace_url.present?
-    return @workspace_url = "https://#{workspace_subdomain}.slack.com" if workspace_subdomain.present?
+    # Return explicitly set workspace_url if present
+    return self[:workspace_url] if self[:workspace_url].present?
+    # Otherwise construct from subdomain
+    return "https://#{workspace_subdomain}.slack.com" if workspace_subdomain.present?
     nil 
   end
 

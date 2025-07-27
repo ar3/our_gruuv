@@ -1,14 +1,7 @@
 class SlackService
   include SlackConstants
   
-  def self.slack_announcement_url(
-    slack_configuration:,
-    channel_name:,
-    message_id:
-  )
-    return nil unless slack_configuration.present? && channel_name.present? && message_id.present?
-    "#{slack_configuration.workspace_url}/archives/#{channel_name}/p#{message_id.gsub('.', '')}"
-  end
+
 
   def initialize(organization = nil)
     @organization = organization
@@ -126,17 +119,27 @@ class SlackService
     channel = huddle.slack_channel
     return false unless channel.present?
     
-    # Create the start announcement blocks
-    blocks = build_start_announcement_blocks(huddle)
+    # Create notification record
+    notification = huddle.notifications.create!(
+      notification_type: 'huddle_announcement',
+      status: 'preparing_to_send',
+      metadata: { channel: channel },
+      message: build_start_announcement_blocks(huddle)
+    )
     
     # Post the announcement
     result = post_message(
       channel: channel,
-      blocks: blocks
+      blocks: notification.message
     )
     
     if result
-      huddle.update(announcement_message_id: result['ts'])
+      notification.update!(
+        status: 'sent_successfully',
+        message_id: result['ts']
+      )
+    else
+      notification.update!(status: 'send_failed')
     end
     
     result
@@ -149,60 +152,62 @@ class SlackService
     channel = huddle.slack_channel
     return false unless channel.present?
     
-    # Create the summary blocks
-    blocks = build_summary_blocks(huddle)
+    # Check if huddle has an announcement notification
+    announcement_notification = huddle.slack_announcement_notification
     
-    if huddle.has_slack_announcement?
-      # Update existing announcement
+    if announcement_notification.nil?
+      # Create announcement first
+      post_huddle_start_announcement(huddle)
+      announcement_notification = huddle.slack_announcement_notification
+    end
+    
+    # Check if summary already exists
+    existing_summary = huddle.notifications.summaries.successful.first
+    
+    if existing_summary
+      # Update existing summary
+      existing_summary.update!(
+        status: 'preparing_to_send',
+        message: build_summary_blocks(huddle, is_thread: true)
+      )
+      
       result = update_message(
         channel: channel,
-        ts: huddle.announcement_message_id,
-        blocks: blocks
+        ts: existing_summary.message_id,
+        blocks: existing_summary.message
       )
       
       if result
-        # Update the summary in the thread
-        if huddle.has_slack_summary?
-          update_message(
-            channel: channel,
-            ts: huddle.summary_message_id,
-            blocks: build_summary_blocks(huddle, is_thread: true)
-          )
-        else
-          # Create new summary in thread
-          thread_result = post_message(
-            channel: channel,
-            thread_ts: huddle.announcement_message_id,
-            blocks: build_summary_blocks(huddle, is_thread: true)
-          )
-          
-          if thread_result
-            huddle.update(summary_message_id: thread_result['ts'])
-          end
-        end
+        existing_summary.update!(status: 'sent_successfully')
+      else
+        existing_summary.update!(status: 'send_failed')
       end
       
       result
     else
-      # Create new announcement with summary
+      # Create new summary notification
+      summary_notification = huddle.notifications.create!(
+        notification_type: 'huddle_summary',
+        main_thread: announcement_notification,
+        status: 'preparing_to_send',
+        metadata: { channel: channel },
+        message: build_summary_blocks(huddle, is_thread: true)
+      )
+      
+      # Post summary in thread
       result = post_message(
         channel: channel,
-        blocks: blocks
+        thread_ts: announcement_notification.message_id,
+        blocks: summary_notification.message
       )
       
       if result
-        huddle.update(announcement_message_id: result['ts'])
-        
-        # Post summary in thread
-        thread_result = post_message(
-          channel: channel,
-          thread_ts: result['ts'],
-          blocks: build_summary_blocks(huddle, is_thread: true)
+        summary_notification.update!(
+          status: 'sent_successfully',
+          message_id: result['ts']
         )
-        
-        if thread_result
-          huddle.update(summary_message_id: thread_result['ts'])
-        end
+      else
+        summary_notification.update!(status: 'send_failed')
       end
       
       result
@@ -211,7 +216,7 @@ class SlackService
 
   # Post individual feedback in the announcement thread
   def post_feedback_in_thread(huddle, feedback_id)
-    return false unless huddle.present? && huddle.has_slack_announcement?
+    return false unless huddle.present?
     
     feedback = huddle.huddle_feedbacks.find_by(id: feedback_id)
     return false unless feedback.present?
@@ -219,15 +224,42 @@ class SlackService
     channel = huddle.slack_channel
     return false unless channel.present?
     
-    # Create feedback message blocks
-    blocks = build_feedback_blocks(feedback)
+    # Check if huddle has an announcement notification
+    announcement_notification = huddle.slack_announcement_notification
+    
+    if announcement_notification.nil?
+      # Create announcement and summary first
+      post_huddle_start_announcement(huddle)
+      post_huddle_summary(huddle)
+      announcement_notification = huddle.slack_announcement_notification
+    end
+    
+    # Create feedback notification record
+    feedback_notification = huddle.notifications.create!(
+      notification_type: 'huddle_feedback',
+      main_thread: announcement_notification,
+      status: 'preparing_to_send',
+      metadata: { channel: channel },
+      message: build_feedback_blocks(feedback)
+    )
     
     # Post in the announcement thread
-    post_message(
+    result = post_message(
       channel: channel,
-      thread_ts: huddle.announcement_message_id,
-      blocks: blocks
+      thread_ts: announcement_notification.message_id,
+      blocks: feedback_notification.message
     )
+    
+    if result
+      feedback_notification.update!(
+        status: 'sent_successfully',
+        message_id: result['ts']
+      )
+    else
+      feedback_notification.update!(status: 'send_failed')
+    end
+    
+    result
   end
   
   # Get channel information
@@ -334,20 +366,7 @@ class SlackService
     end
   end
 
-  def self.slack_announcement_url(slack_configuration:, channel_name:, message_id:)
-    return nil unless slack_configuration&.workspace_subdomain.present? && channel_name.present? && message_id.present?
-    
-    # Get the workspace URL - this will be nil if we don't have the proper subdomain
-    workspace_url = slack_configuration.workspace_url
-    return nil unless workspace_url.present?
-    
-    # Extract channel name (remove the # if present)
-    clean_channel_name = channel_name.gsub('#', '')
-    
-    # Build Slack message URL with proper workspace subdomain
-    # Format: https://workspace.slack.com/archives/CHANNEL_ID/p1234567890.123456
-    "#{workspace_url}/archives/#{clean_channel_name}/p#{message_id.gsub('.', '')}"
-  end
+
 
   def store_slack_response(method, request_params, response_data)
     return unless @organization&.slack_configuration.present?

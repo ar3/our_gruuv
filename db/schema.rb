@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_26_151932) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_27_033726) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -74,11 +74,26 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_26_151932) do
     t.datetime "updated_at", null: false
     t.datetime "expires_at", default: -> { "(CURRENT_TIMESTAMP + 'PT24H'::interval)" }, null: false
     t.bigint "huddle_playbook_id"
-    t.string "announcement_message_id"
-    t.string "summary_message_id"
     t.index ["expires_at"], name: "index_huddles_on_expires_at"
     t.index ["huddle_playbook_id"], name: "index_huddles_on_huddle_playbook_id"
     t.index ["organization_id"], name: "index_huddles_on_organization_id"
+  end
+
+  create_table "notifications", force: :cascade do |t|
+    t.string "notifiable_type", null: false
+    t.bigint "notifiable_id", null: false
+    t.bigint "main_thread_id"
+    t.bigint "original_message_id"
+    t.string "notification_type"
+    t.string "message_id"
+    t.string "status"
+    t.jsonb "metadata"
+    t.jsonb "message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["main_thread_id"], name: "index_notifications_on_main_thread_id"
+    t.index ["notifiable_type", "notifiable_id"], name: "index_notifications_on_notifiable"
+    t.index ["original_message_id"], name: "index_notifications_on_original_message_id"
   end
 
   create_table "organizations", force: :cascade do |t|
@@ -131,6 +146,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_26_151932) do
   add_foreign_key "huddle_playbooks", "organizations"
   add_foreign_key "huddles", "huddle_playbooks"
   add_foreign_key "huddles", "organizations"
+  add_foreign_key "notifications", "notifications", column: "main_thread_id"
+  add_foreign_key "notifications", "notifications", column: "original_message_id"
   add_foreign_key "organizations", "organizations", column: "parent_id"
   add_foreign_key "people", "organizations", column: "current_organization_id"
   add_foreign_key "slack_configurations", "organizations"

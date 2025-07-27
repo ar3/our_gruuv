@@ -5,6 +5,7 @@ class Huddle < ApplicationRecord
   has_many :huddle_participants, dependent: :destroy
   has_many :participants, through: :huddle_participants, source: :person
   has_many :huddle_feedbacks, dependent: :destroy
+  has_many :notifications, as: :notifiable, dependent: :destroy
   
   # Validations
   validates :started_at, presence: true
@@ -56,21 +57,20 @@ class Huddle < ApplicationRecord
   end
 
   def has_slack_announcement?
-    announcement_message_id.present?
+    notifications.announcements.successful.exists?
   end
 
   def has_slack_summary?
-    summary_message_id.present?
+    notifications.summaries.successful.exists?
   end
 
   def slack_announcement_url
-    return nil unless has_slack_announcement?
-    
-    SlackService.slack_announcement_url(
-      slack_configuration: slack_configuration,
-      channel_name: slack_channel,
-      message_id: announcement_message_id
-    )
+    announcement = notifications.announcements.successful.first
+    announcement&.slack_url
+  end
+
+  def slack_announcement_notification
+    notifications.announcements.successful.first
   end
 
 

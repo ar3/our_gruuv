@@ -94,13 +94,15 @@ RSpec.describe SlackService, type: :service do
 
   describe '#post_feedback_in_thread' do
     let(:feedback) { create(:huddle_feedback) }
+    let(:announcement_notification) { create(:notification, notifiable: huddle, notification_type: 'huddle_announcement', status: 'sent_successfully', message_id: '1234567890.123456', metadata: { channel: 'test-channel' }) }
     
     before do
-      allow(huddle).to receive(:has_slack_announcement?).and_return(true)
-      allow(huddle).to receive(:announcement_message_id).and_return('1234567890.123456')
+      allow(huddle).to receive(:slack_announcement_notification).and_return(announcement_notification)
       allow(huddle).to receive(:slack_channel).and_return('#test-channel')
       allow(huddle.huddle_feedbacks).to receive(:find_by).with(id: feedback.id).and_return(feedback)
       allow(slack_service).to receive(:post_message).and_return({ 'ok' => true })
+      allow(slack_service).to receive(:post_huddle_start_announcement).and_return({ 'ok' => true })
+      allow(slack_service).to receive(:post_huddle_summary).and_return({ 'ok' => true })
     end
 
     it 'posts feedback in thread when announcement exists' do
@@ -114,11 +116,14 @@ RSpec.describe SlackService, type: :service do
       expect(result).to eq({ 'ok' => true })
     end
 
-    it 'returns false when huddle has no announcement' do
-      allow(huddle).to receive(:has_slack_announcement?).and_return(false)
+    it 'creates announcement and summary when none exist' do
+      allow(huddle).to receive(:slack_announcement_notification).and_return(nil, announcement_notification)
       
       result = slack_service.post_feedback_in_thread(huddle, feedback.id)
-      expect(result).to be false
+      
+      expect(slack_service).to have_received(:post_huddle_start_announcement).with(huddle)
+      expect(slack_service).to have_received(:post_huddle_summary).with(huddle)
+      expect(result).to eq({ 'ok' => true })
     end
 
     it 'returns false when feedback not found' do
@@ -131,62 +136,5 @@ RSpec.describe SlackService, type: :service do
 
 
 
-  describe '.slack_announcement_url' do
-    let(:slack_config) { create(:slack_configuration, workspace_subdomain: 'test-workspace') }
 
-    it 'returns nil when workspace_subdomain is missing' do
-      slack_config.update(workspace_subdomain: nil)
-      result = SlackService.slack_announcement_url(
-        slack_configuration: slack_config,
-        channel_name: '#general',
-        message_id: '1234567890.123456'
-      )
-      expect(result).to be_nil
-    end
-
-    it 'returns nil when channel_name is missing' do
-      result = SlackService.slack_announcement_url(
-        slack_configuration: slack_config,
-        channel_name: nil,
-        message_id: '1234567890.123456'
-      )
-      expect(result).to be_nil
-    end
-
-    it 'returns nil when message_id is missing' do
-      result = SlackService.slack_announcement_url(
-        slack_configuration: slack_config,
-        channel_name: '#general',
-        message_id: nil
-      )
-      expect(result).to be_nil
-    end
-
-    it 'returns correct URL when all parameters are present' do
-      result = SlackService.slack_announcement_url(
-        slack_configuration: slack_config,
-        channel_name: '#general',
-        message_id: '1234567890.123456'
-      )
-      expected_url = 'https://test-workspace.slack.com/archives/general/p1234567890123456'
-      expect(result).to eq(expected_url)
-    end
-
-    it 'handles channel names with and without #' do
-      result_with_hash = SlackService.slack_announcement_url(
-        slack_configuration: slack_config,
-        channel_name: '#engineering',
-        message_id: '1234567890.123456'
-      )
-      result_without_hash = SlackService.slack_announcement_url(
-        slack_configuration: slack_config,
-        channel_name: 'engineering',
-        message_id: '1234567890.123456'
-      )
-      
-      expected_url = 'https://test-workspace.slack.com/archives/engineering/p1234567890123456'
-      expect(result_with_hash).to eq(expected_url)
-      expect(result_without_hash).to eq(expected_url)
-    end
-  end
 end 

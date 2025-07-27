@@ -359,8 +359,13 @@ RSpec.describe Huddle, type: :model do
       let(:playbook) { create(:huddle_playbook, organization: team, slack_channel: nil) }
 
       before do
-        huddle.update(announcement_message_id: '1234567890.123456')
         huddle.update(huddle_playbook: playbook)
+        huddle.notifications.create!(
+          notification_type: 'huddle_announcement',
+          status: 'sent_successfully',
+          message_id: '1234567890.123456',
+          metadata: { channel: 'general' }
+        )
       end
 
       it 'returns URL with default channel' do
@@ -375,8 +380,13 @@ RSpec.describe Huddle, type: :model do
       let(:playbook) { create(:huddle_playbook, organization: team, slack_channel: '#general') }
 
       before do
-        huddle.update(announcement_message_id: '1234567890.123456')
         huddle.update(huddle_playbook: playbook)
+        huddle.notifications.create!(
+          notification_type: 'huddle_announcement',
+          status: 'sent_successfully',
+          message_id: '1234567890.123456',
+          metadata: { channel: 'general' }
+        )
       end
 
       it 'returns the correct Slack URL' do
@@ -385,13 +395,13 @@ RSpec.describe Huddle, type: :model do
       end
 
       it 'handles channel names with #' do
-        playbook.update(slack_channel: '#engineering')
+        huddle.notifications.announcements.first.update!(metadata: { channel: 'engineering' })
         expected_url = 'https://acmecorp.slack.com/archives/engineering/p1234567890123456'
         expect(huddle.slack_announcement_url).to eq(expected_url)
       end
 
       it 'handles channel names without #' do
-        playbook.update(slack_channel: 'engineering')
+        huddle.notifications.announcements.first.update!(metadata: { channel: 'engineering' })
         expected_url = 'https://acmecorp.slack.com/archives/engineering/p1234567890123456'
         expect(huddle.slack_announcement_url).to eq(expected_url)
       end
@@ -402,8 +412,13 @@ RSpec.describe Huddle, type: :model do
 
       before do
         slack_config.update(workspace_subdomain: nil)
-        huddle.update(announcement_message_id: '1234567890.123456')
         huddle.update(huddle_playbook: playbook)
+        huddle.notifications.create!(
+          notification_type: 'huddle_announcement',
+          status: 'sent_successfully',
+          message_id: '1234567890.123456',
+          metadata: { channel: 'general' }
+        )
       end
 
       it 'returns nil when workspace_subdomain is missing' do
@@ -416,8 +431,13 @@ RSpec.describe Huddle, type: :model do
 
       before do
         slack_config.update(workspace_url: 'https://custom-workspace.slack.com')
-        huddle.update(announcement_message_id: '1234567890.123456')
         huddle.update(huddle_playbook: playbook)
+        huddle.notifications.create!(
+          notification_type: 'huddle_announcement',
+          status: 'sent_successfully',
+          message_id: '1234567890.123456',
+          metadata: { channel: 'general' }
+        )
       end
 
       it 'uses the explicit workspace_url' do
