@@ -46,7 +46,7 @@ class Huddles::PostAnnouncementJob < ApplicationJob
   private
 
   def build_announcement_fallback_text(huddle)
-    join_url = Rails.application.routes.url_helpers.join_huddle_url(huddle)
+    join_url = generate_join_url(huddle)
     case determine_announcement_state(huddle)
     when :single_participant
       "🚀 #{huddle.display_name} - Starting Now! The huddle is starting! Join in to participate in today's collaborative session. 👥 #{huddle.huddle_participants.count} participants • Facilitated by #{huddle.facilitator_names.join(', ')} • Join: #{join_url}"
@@ -58,7 +58,7 @@ class Huddles::PostAnnouncementJob < ApplicationJob
   end
 
   def build_announcement_blocks(huddle)
-    join_url = Rails.application.routes.url_helpers.join_huddle_url(huddle)
+    join_url = generate_join_url(huddle)
     case determine_announcement_state(huddle)
     when :single_participant
       [
@@ -200,5 +200,19 @@ class Huddles::PostAnnouncementJob < ApplicationJob
     else
       :waiting_for_feedback
     end
+  end
+
+  def generate_join_url(huddle)
+    # Try to get the host from Rails configuration
+    host = Rails.application.config.action_mailer.default_url_options&.dig(:host) ||
+           ENV['RAILS_HOST'] ||
+           'localhost:3000'
+    
+    # Generate the URL with the host
+    Rails.application.routes.url_helpers.join_huddle_url(huddle, host: host)
+  rescue => e
+    # Fallback to just the path if URL generation fails
+    Rails.logger.warn "Failed to generate full URL for huddle #{huddle.id}: #{e.message}"
+    Rails.application.routes.url_helpers.join_huddle_path(huddle)
   end
 end 

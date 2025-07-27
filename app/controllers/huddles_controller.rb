@@ -211,6 +211,7 @@ class HuddlesController < ApplicationController
       
       if @feedback.save
         # Update summary and post feedback
+        Huddles::PostAnnouncementJob.perform_now(@huddle.id)
         Huddles::PostSummaryJob.perform_now(@huddle.id)
         Huddles::PostFeedbackJob.perform_now(@huddle.id, @feedback.id)
         
