@@ -5,7 +5,8 @@ FactoryBot.define do
     status { 'sent_successfully' }
     message_id { '1234567890.123456' }
     metadata { { channel: 'general' } }
-    message { [{ type: 'section', text: { type: 'mrkdwn', text: 'Test message' } }] }
+    rich_message { [{ type: 'section', text: { type: 'mrkdwn', text: 'Test message' } }] }
+    fallback_text { 'Test message' }
     
     trait :huddle_announcement do
       notification_type { 'huddle_announcement' }

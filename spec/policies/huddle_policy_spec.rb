@@ -94,19 +94,7 @@ RSpec.describe HuddlePolicy, type: :policy do
     end
   end
 
-  permissions :summary? do
-    it "allows participants to view summary" do
-      expect(subject).to permit(participant, huddle)
-    end
 
-    it "allows facilitators to view summary" do
-      expect(subject).to permit(facilitator, huddle)
-    end
-
-    it "denies non-participants from viewing summary" do
-      expect(subject).not_to permit(person, huddle)
-    end
-  end
 
   describe "scope" do
     let(:organization2) { create(:organization, name: 'Test Org 2') }

@@ -6,7 +6,7 @@ class Notification < ApplicationRecord
   has_many :thread_replies, class_name: 'Notification', foreign_key: 'main_thread_id'
   has_many :message_edits, class_name: 'Notification', foreign_key: 'original_message_id'
   
-  validates :notification_type, inclusion: { in: %w[huddle_announcement huddle_summary huddle_feedback], allow_nil: true }
+  validates :notification_type, inclusion: { in: %w[huddle_announcement huddle_summary huddle_feedback test], allow_nil: true }
   validates :status, inclusion: { in: %w[preparing_to_send sent_successfully send_failed], allow_nil: true }
   
   scope :announcements, -> { where(notification_type: 'huddle_announcement') }

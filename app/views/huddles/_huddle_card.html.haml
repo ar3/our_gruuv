@@ -1,4 +1,5 @@
 - participant = current_person.present? && huddle.huddle_participants.find_by(person: current_person)
+- existing_feedback = current_person.present? && huddle.huddle_feedbacks.find_by(person: current_person)
 .col-md-6.col-lg-4.mb-3
   .card.h-100
     .card-body.position-relative
@@ -28,8 +29,16 @@
       
       .mt-3
         - if participant
-          .btn-group.w-100
-            = link_to "View Huddle", huddle_path(huddle), class: "btn btn-outline-primary btn-sm"
-            = link_to "Summary", summary_huddle_path(huddle), class: "btn btn-outline-info btn-sm"
+          - if existing_feedback
+            .btn-group.w-100
+              = link_to "View Huddle", huddle_path(huddle), class: "btn btn-outline-primary btn-sm"
+              - if huddle.slack_announcement_url
+                = link_to huddle.slack_announcement_url, target: "_blank", class: "btn btn-outline-success btn-sm", title: "View Slack Thread" do
+                  %i.bi.bi-slack.me-1
+                  Slack
+          - else
+            .btn-group.w-100
+              = link_to "View Huddle", huddle_path(huddle), class: "btn btn-outline-primary btn-sm"
+              = link_to "Submit Feedback", feedback_huddle_path(huddle), class: "btn btn-success btn-sm"
         - else
           = link_to "Join Huddle", join_huddle_path(huddle), class: "btn btn-outline-primary btn-sm w-100" 

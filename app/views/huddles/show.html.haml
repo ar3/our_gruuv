@@ -1,274 +1,627 @@
-.container
+:css
+  .nav-link.active {
+    background-color: #0d6efd !important;
+    color: white !important;
+    border-radius: 0.375rem;
+  }
+  
+  .nav-link:hover {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+  }
+  
+  .nav-link {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  section {
+    scroll-margin-top: 2rem;
+  }
+  
+  .card-header h3 small {
+    font-size: 0.875rem;
+    font-weight: normal;
+  }
+
+.container-fluid
   .row
-    .col-12
-      .d-flex.justify-content-between.align-items-center.mb-4
-        %h1.mb-0= @huddle.display_name
-        = link_to "← Back to Huddles", huddles_path, class: "btn btn-outline-secondary"
-      
-      / Huddle Details at the top - with distinct styling
-      .row.mt-4
-        .col-12
-
-          .card.mb-4
-            .card-header
-              %h2.mb-0= @huddle.display_name
-            .card-body
-              .row
-                .col-md-4.col-sm-12
-                  %p
-                    %strong Organization:
-                    = @huddle.organization.display_name
-                .col-md-4.col-sm-12
-                  %p
-                    %strong{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "started at #format_time_in_user_timezone(@huddle.started_at)"} Status:
-                    = status_badge(@huddle.closed? ? 'inactive' : 'active', @huddle.status_with_time)
-                .col-md-4.col-sm-12
-                  %p
-                    %strong Participants:
-                    = "#{@huddle.huddle_feedbacks.count} of #{@huddle.huddle_participants.count} participants submitted feedback"
-              .row 
-                .col-sm-12
-                  %hr/
-              .row 
-                .col-md-6.col-sm-12
-                  .d-flex.align-items-center.gap-2.mb-3
-                    - if @huddle.slack_configured?
-                      - if @huddle.has_slack_announcement?
-                        .d-flex.align-items-center.gap-2
-                          %i.bi.bi-check-circle.text-success
-                          %span.text-success Slack announcement posted
-                          - if @huddle.slack_announcement_url
-                            = link_to "View in Slack", @huddle.slack_announcement_url, target: "_blank", class: "btn btn-outline-success btn-sm"
-                      - else
-                        = button_to "Let Slack folks know the huddle has started", post_start_announcement_to_slack_huddle_path(@huddle), method: :post, class: "btn btn-success btn-sm", data: { confirm: "Send huddle start announcement to Slack?" }
-                    - else
-                      %button.btn.btn-outline-secondary{type: "button", 
-                          data: {bs_toggle: "popover", 
-                                  bs_placement: "left", 
-                                  bs_title: "Slack Not Configured", 
-                                  bs_content: "An admin needs to configure Slack for this organization. #{link_to 'Configure Slack', organization_slack_path(@huddle.organization), class: 'btn btn-sm btn-primary mt-2'}"}}
-                        %i.bi.bi-slack.me-2
-                        Let Slack folks know the huddle has started
-
-                  - if !@huddle.has_slack_announcement?
-                    .accordion#slackPreviewAccordion{data: {controller: "slack-notification", slack_notification_huddle_id_value: @huddle.id}}
-                      .accordion-item
-                        .accordion-header#slackPreviewHeader
-                          %button.accordion-button.collapsed{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#slackPreviewContent", "aria-expanded": "false", "aria-controls": "slackPreviewContent"}
-                            %i.bi.bi-eye.me-2
-                            Preview Slack Message
-                        .accordion-collapse.collapse#slackPreviewContent{"aria-labelledby": "slackPreviewHeader", "data-bs-parent": "#slackPreviewAccordion"}
-                          .accordion-body
-                            .slack-preview-content
-                              %p.text-muted Loading preview...
-                .col-md-6.col-sm-12
-                  - if @huddle.nat_20_score
-                    %p
-                      %strong Current Nat 20 Score:
-                      = nat_20_badge(@huddle.nat_20_score)
-                  - if current_person
-                    - participant = @huddle.huddle_participants.find_by(person: current_person)
-                    - if participant
-                      %hr
-                      %p
-                        =" #{current_person.full_name} is a #{HuddleConstants::ROLE_LABELS[participant.role]} in this huddle."
-                      
-                      .mt-2
-                        - if @existing_feedback
-                          = link_to "View Feedback Summary", summary_huddle_path(@huddle), class: "btn btn-outline-info btn-sm"
-                        - else
-                          = link_to "Submit Feedback", feedback_huddle_path(@huddle), class: "btn btn-success btn-sm"
-                    - elsif current_person
-                      - raise "Participant not found for #{current_person.full_name} in huddle #{@huddle.id}"
-                  - else
-                    - raise "Current person not found in huddle #{@huddle.id}"
-
-
-      / Visual separator
-      .row.mt-5
-        .col-12
-          .text-center
-            %h4.text-muted
-              %i.bi.bi-arrow-down.me-2
-              Huddle Workflow
-              %i.bi.bi-arrow-down.ms-2
-      
-      / Chronological workflow sections - stacked vertically with distinct styling
-      .row.mt-4
-        .col-12
-          .card.border-success
-            .card-header.bg-success.text-white
-              %h5.mb-0
+    / Left Navigation
+    .col-md-3.col-lg-2.d-none.d-md-block
+      .position-sticky{style: "top: 2rem;"}
+        .card
+          .card-header.bg-primary.text-white
+            %h5.mb-0
+              %i.bi.bi-compass.me-2
+              S.E.E.20 Huddle
+          .card-body.p-0
+            %nav.nav.flex-column#huddleNav
+              %a.nav-link{href: "#intro", data: {section: "intro"}}
+                %i.bi.bi-house.me-2
+                Intro
+              %a.nav-link{href: "#sync", data: {section: "sync"}}
+                %i.bi.bi-arrow-repeat.me-2
+                Sync
+                %small.text-muted.d-block.ms-4 "Are we aligned and informed?"
+              %a.nav-link{href: "#execute", data: {section: "execute"}}
                 %i.bi.bi-play-circle.me-2
-                Step 1: Begin Huddle
-            .card-body
-              %p.card-text.mb-3 Coming soon - tools to help you start and structure your huddle effectively.
-              .text-center
-                %span.badge.bg-secondary Coming Soon
+                Execute
+                %small.text-muted.d-block.ms-4 "Did we focus and make progress?"
+              %a.nav-link{href: "#evolve", data: {section: "evolve"}}
+                %i.bi.bi-graph-up.me-2
+                Evolve
+                %small.text-muted.d-block.ms-4 "Did we learn something? Get better?"
+
+    / Main Content
+    .col-md-9.col-lg-10
+      / Intro Section
+      %section#intro.mb-5
+        .d-flex.justify-content-between.align-items-center.mb-4
+          %h1.mb-0
+            %i.bi.bi-house.me-2
+            = @huddle.display_name
+          = link_to "← Back to Huddles", huddles_path, class: "btn btn-outline-secondary"
+        
+        .card.mb-4
+          .card-header.bg-primary.text-white
+            %h2.mb-0
+              %i.bi.bi-info-circle.me-2
+              Huddle Overview
+          .card-body
+            .row
+              .col-md-4.col-sm-12
+                %p
+                  %strong Organization:
+                  = @huddle.organization.display_name
+              .col-md-4.col-sm-12
+                %p
+                  %strong{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "started at #{format_time_in_user_timezone(@huddle.started_at)}"} Status:
+                  = status_badge(@huddle.closed? ? 'inactive' : 'active', @huddle.status_with_time)
+              .col-md-4.col-sm-12
+                %p
+                  %strong Participants:
+                  = "#{@huddle.huddle_feedbacks.count} of #{@huddle.huddle_participants.count} participants submitted feedback"
+            
+            .row.mt-3
+              .col-md-6.col-sm-12
+                .d-flex.align-items-center.gap-2.mb-3
+                  - if @huddle.slack_configured?
+                    - if @huddle.has_slack_announcement?
+                      .d-flex.align-items-center.gap-2
+                        %i.bi.bi-check-circle.text-success
+                        %span.text-success Slack announcement posted
+                        - if @huddle.slack_announcement_url
+                          = link_to "View in Slack", @huddle.slack_announcement_url, target: "_blank", class: "btn btn-outline-success btn-sm"
+                    - else
+                      = button_to "Let Slack folks know the huddle has started", post_start_announcement_to_slack_huddle_path(@huddle), method: :post, class: "btn btn-success btn-sm", data: { confirm: "Send huddle start announcement to Slack?" }
+                  - else
+                    %button.btn.btn-outline-secondary{type: "button", 
+                        data: {bs_toggle: "popover", 
+                                bs_placement: "left", 
+                                bs_title: "Slack Not Configured", 
+                                bs_content: "An admin needs to configure Slack for this organization. #{link_to 'Configure Slack', organization_slack_path(@huddle.organization), class: 'btn btn-sm btn-primary mt-2'}"}}
+                      %i.bi.bi-slack.me-2
+                      Let Slack folks know the huddle has started
+
+              .col-md-6.col-sm-12
+                - if @huddle.nat_20_score
+                  %p
+                    %strong Current Nat 20 Score:
+                    = nat_20_badge(@huddle.nat_20_score)
+                - if current_person
+                  - participant = @huddle.huddle_participants.find_by(person: current_person)
+                  - if participant
+                    %hr
+                    %p
+                      =" #{current_person.full_name} is a #{HuddleConstants::ROLE_LABELS[participant.role]} in this huddle."
+                    
+                    .mt-2
+                      - if @existing_feedback
+                        = link_to "Update Feedback", feedback_huddle_path(@huddle), class: "btn btn-outline-info btn-sm"
+                      - else
+                        = link_to "Submit Feedback", feedback_huddle_path(@huddle), class: "btn btn-success btn-sm"
+
+
+      / Sync Section
+      %section#sync.mb-5
+        .card.border-success
+          .card-header.bg-success.text-white
+            %h3.mb-0
+              %i.bi.bi-arrow-repeat.me-2
+              Sync
+              %small.text-white-50.ms-2 "Are we aligned and informed?"
+          .card-body
+            %p.card-text.mb-3 Coming soon - tools to help you start and structure your huddle effectively.
+            .text-center
+              %span.badge.bg-secondary Coming Soon
+            
+            .mt-4
+              %h6.text-success.mb-3
+                %i.bi.bi-list-check.me-2
+                Huddle Opening Checklist
               
-              .mt-4
-                %h6.text-primary.mb-3
-                  %i.bi.bi-list-check.me-2
-                  Huddle Opening Checklist
+              .list-group.list-group-flush
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-1-circle.text-success.me-3.mt-1
+                  .flex-grow-1
+                    %strong Mission, Vision, Values!
+                    %br
+                    %small.text-muted Stay grounded by stating your team's core purpose and principles
                 
-                .list-group.list-group-flush
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-1-circle.text-primary.me-3.mt-1
-                    .flex-grow-1
-                      %strong Mission, Vision, Values!
-                      %br
-                      %small.text-muted Stay grounded by stating your team's core purpose and principles
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-2-circle.text-primary.me-3.mt-1
-                    .flex-grow-1
-                      %strong Something good, business and/or professional since we last met
-                      %br
-                      %small.text-muted Celebrate wins and positive developments
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-3-circle.text-primary.me-3.mt-1
-                    .flex-grow-1
-                      %strong Let's review what we relied on each other for last week aka TODOs
-                      %br
-                      %small.text-muted Check in on commitments and dependencies
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-4-circle.text-primary.me-3.mt-1
-                    .flex-grow-1
-                      %strong Let's review any headlines to make sure we are all informed
-                      %br
-                      %small.text-muted Ensure everyone has the latest context and updates
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-5-circle.text-primary.me-3.mt-1
-                    .flex-grow-1
-                      %strong Let's review our OKR3s and set confidence in hitting them, together
-                      %br
-                      %small.text-muted Assess progress and align on objectives and key results
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-6-circle.text-primary.me-3.mt-1
-                    .flex-grow-1
-                      %strong Let's take a step back and review the overall success signals for our team
-                      %br
-                      %small.text-muted Evaluate team health and performance indicators
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-7-circle.text-primary.me-3.mt-1
-                    .flex-grow-1
-                      %strong Ok, before we begin to vote for opportunities to pursue, do we all agree that we understand the items in the opportunity list, and that this represents the absolute most important topics for us to discuss as a team
-                      %br
-                      %small.text-muted Ensure alignment on priorities before diving into discussion
-              
-              %small.text-muted.mt-3.d-block This structured opening ensures everyone is grounded, informed, and aligned before diving into the collaborative work ahead.
-      
-      .row.mt-3
-        .col-12
-          .card.border-info
-            .card-header.bg-info.text-white
-              %h5.mb-0
-                %i.bi.bi-people.me-2
-                Step 2: Collaborate in Huddle
-            .card-body
-              %p.card-text.mb-3 Coming soon - real-time collaboration tools for your huddle.
-              .text-center
-                %span.badge.bg-secondary Coming Soon
-              
-              .mt-4
-                %h6.text-info.mb-3
-                  %i.bi.bi-lightbulb.me-2
-                  Collaboration Framework
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-2-circle.text-success.me-3.mt-1
+                  .flex-grow-1
+                    %strong Something good, business and/or professional since we last met
+                    %br
+                    %small.text-muted Celebrate wins and positive developments
                 
-                .list-group.list-group-flush
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-1-circle.text-info.me-3.mt-1
-                    .flex-grow-1
-                      %strong All opportunities/issues must be 'Good' opportunities/issues, meaning...
-                      %br
-                      %small.text-muted Focus on constructive, actionable items that move the team forward
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-2-circle.text-info.me-3.mt-1
-                    .flex-grow-1
-                      %strong Let's make sure we know why we are talking about this by having the observation/context that led to this being on the list
-                      %br
-                      %small.text-muted Establish shared understanding of the problem or opportunity
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-3-circle.text-info.me-3.mt-1
-                    .flex-grow-1
-                      %strong Now let's be clear about our intentions: Detoxify a Judgement, Solve a clearly defined and observable issue, Have a freeform time-boxed discussion
-                      %br
-                      %small.text-muted Set clear expectations for the type of conversation we're having
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-4-circle.text-info.me-3.mt-1
-                    .flex-grow-1
-                      %strong Let's get a bit more specific about what constitutes this opportunity truly being solved... a likert we can all agree to, or some other way to measure 'done'
-                      %br
-                      %small.text-muted Define success criteria and measurable outcomes
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-5-circle.text-info.me-3.mt-1
-                    .flex-grow-1
-                      %strong The greatest teams can disagree and commit... who is the decider/are the deciders on this?
-                      %br
-                      %small.text-muted Clarify decision-making authority and accountability
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-6-circle.text-info.me-3.mt-1
-                    .flex-grow-1
-                      %strong Now we are all aiming at the same thing and have the same context, let's Diverge (NO BAD IDEAS)
-                      %br
-                      %small.text-muted Generate creative solutions without judgment or criticism
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-7-circle.text-info.me-3.mt-1
-                    .flex-grow-1
-                      %strong Now that everyone should feel heard, let's go around the room and place our chips (all-in, this-and-that-both-now, this-then-that-later, this-or-that-undecided, just-not-that)
-                      %br
-                      %small.text-muted Use structured voting to gauge team preferences and priorities
-                  
-                  .list-group-item.d-flex.align-items-start
-                    %i.bi.bi-8-circle.text-info.me-3.mt-1
-                    .flex-grow-1
-                      %strong Ok, time for the decider(s) to decide, and set TODOs for the next steps and followup/feedback loop
-                      %br
-                      %small.text-muted Make the final decision and establish clear next steps and accountability
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-3-circle.text-success.me-3.mt-1
+                  .flex-grow-1
+                    %strong Let's review what we relied on each other for last week aka TODOs
+                    %br
+                    %small.text-muted Check in on commitments and dependencies
+                
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-4-circle.text-success.me-3.mt-1
+                  .flex-grow-1
+                    %strong Let's review any headlines to make sure we are all informed
+                    %br
+                    %small.text-muted Ensure everyone has the latest context and updates
+                
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-5-circle.text-success.me-3.mt-1
+                  .flex-grow-1
+                    %strong Let's review our OKR3s and set confidence in hitting them, together
+                    %br
+                    %small.text-muted Assess progress and align on objectives and key results
+                
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-6-circle.text-success.me-3.mt-1
+                  .flex-grow-1
+                    %strong Let's take a step back and review the overall success signals for our team
+                    %br
+                    %small.text-muted Evaluate team health and performance indicators
+                
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-7-circle.text-success.me-3.mt-1
+                  .flex-grow-1
+                    %strong Ok, before we begin to vote for opportunities to pursue, do we all agree that we understand the items in the opportunity list, and that this represents the absolute most important topics for us to discuss as a team
+                    %br
+                    %small.text-muted Ensure alignment on priorities before diving into discussion
+            
+            %small.text-muted.mt-3.d-block This structured opening ensures everyone is grounded, informed, and aligned before diving into the collaborative work ahead.
+
+      / Execute Section
+      %section#execute.mb-5
+        .card.border-info
+          .card-header.bg-info.text-white
+            %h3.mb-0
+              %i.bi.bi-play-circle.me-2
+              Execute
+              %small.text-white-50.ms-2 "Did we focus and make progress?"
+          .card-body
+            %p.card-text.mb-3 Coming soon - real-time collaboration tools for your huddle.
+            .text-center
+              %span.badge.bg-secondary Coming Soon
+            
+            .mt-4
+              %h6.text-info.mb-3
+                %i.bi.bi-lightbulb.me-2
+                Collaboration Framework
               
-              %small.text-muted.mt-3.d-block This structured approach ensures effective collaboration through the Diverge<=>Converge technique, leading to better decisions and stronger team commitment.
-      
-      .row.mt-3
-        .col-12
-          - if @existing_feedback
-            .card.border-success
-              .card-header.bg-success.text-white
-                %h5.mb-0
-                  %i.bi.bi-trophy.me-2
-                  Step 3: Continuous Improvement - Complete! 🎉
-              .card-body.text-center
-                .mb-3
-                  %i.bi.bi-check-circle.text-success{style: "font-size: 3rem;"}
-                %h6.text-success.mb-3 You've helped your team continuously improve!
-                %p.card-text.mb-3 Thank you for taking the time to provide feedback. Your insights help make future huddles even better.
-                .mt-3
-                  = link_to "Update Your Feedback", "#", class: "btn btn-outline-success", onclick: "alert('This functionality is coming soon!'); return false;"
-                %small.text-muted.mt-2.d-block You can update your feedback later if needed.
-          - else
-            .card.border-warning
-              .card-header.bg-warning.text-dark
-                %h5.mb-0
-                  %i.bi.bi-star.me-2
-                  Step 3: Continuously Improve
-              .card-body
-                %p.card-text.mb-3 Submit your Nat 20 feedback to help improve future huddles.
+              .list-group.list-group-flush
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-1-circle.text-info.me-3.mt-1
+                  .flex-grow-1
+                    %strong All opportunities/issues must be 'Good' opportunities/issues, meaning...
+                    %br
+                    %small.text-muted Focus on constructive, actionable items that move the team forward
+                
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-2-circle.text-info.me-3.mt-1
+                  .flex-grow-1
+                    %strong Let's make sure we know why we are talking about this by having the observation/context that led to this being on the list
+                    %br
+                    %small.text-muted Establish shared understanding of the problem or opportunity
+                
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-3-circle.text-info.me-3.mt-1
+                  .flex-grow-1
+                    %strong Now let's be clear about our intentions: Detoxify a Judgement, Solve a clearly defined and observable issue, Have a freeform time-boxed discussion
+                    %br
+                    %small.text-muted Set clear expectations for the type of conversation we're having
+                
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-4-circle.text-info.me-3.mt-1
+                  .flex-grow-1
+                    %strong Let's get a bit more specific about what constitutes this opportunity truly being solved... a likert we can all agree to, or some other way to measure 'done'
+                    %br
+                    %small.text-muted Define success criteria and measurable outcomes
+                
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-5-circle.text-info.me-3.mt-1
+                  .flex-grow-1
+                    %strong The greatest teams can disagree and commit... who is the decider/are the deciders on this?
+                    %br
+                    %small.text-muted Clarify decision-making authority and accountability
+                
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-6-circle.text-info.me-3.mt-1
+                  .flex-grow-1
+                    %strong Now we are all aiming at the same thing and have the same context, let's Diverge (NO BAD IDEAS)
+                    %br
+                    %small.text-muted Generate creative solutions without judgment or criticism
+                
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-7-circle.text-info.me-3.mt-1
+                  .flex-grow-1
+                    %strong Now that everyone should feel heard, let's go around the room and place our chips (all-in, this-and-that-both-now, this-then-that-later, this-or-that-undecided, just-not-that)
+                    %br
+                    %small.text-muted Use structured voting to gauge team preferences and priorities
+                
+                .list-group-item.d-flex.align-items-start
+                  %i.bi.bi-8-circle.text-info.me-3.mt-1
+                  .flex-grow-1
+                    %strong Ok, time for the decider(s) to decide, and set TODOs for the next steps and followup/feedback loop
+                    %br
+                    %small.text-muted Make the final decision and establish clear next steps and accountability
+            
+            %small.text-muted.mt-3.d-block This structured approach ensures effective collaboration through the Diverge<=>Converge technique, leading to better decisions and stronger team commitment.
+
+      / Evolve Section
+      %section#evolve.mb-5
+        .card.border-warning
+          .card-header.bg-warning.text-dark
+            %h3.mb-0
+              %i.bi.bi-graph-up.me-2
+              Evolve
+              %small.text-dark-50.ms-2 "Did we learn something? Get better?"
+          .card-body
+            - if @existing_feedback
+              - if @huddle.huddle_feedbacks.any?
+                .row
+                  .col-md-6
+                    .card.mb-4
+                      .card-header
+                        %h4.mb-0 Average Ratings
+                      .card-body
+                        - ratings = @huddle.average_rating_by_category
+                        - if ratings.any?
+                          .row
+                            .col-6
+                              %p
+                                %strong Informed:
+                                = rating_badge(ratings[:informed])
+                              %p
+                                %strong Connected:
+                                = rating_badge(ratings[:connected])
+                            .col-6
+                              %p
+                                %strong Goals:
+                                = rating_badge(ratings[:goals])
+                              %p
+                                %strong Valuable:
+                                = rating_badge(ratings[:valuable])
+                          .mt-3
+                            %h4 Overall Score
+                            %h2.text-center{class: text_class(nat_20_color(@huddle.nat_20_score))}= @huddle.nat_20_score
+                            %p.text-center.text-muted Nat 20 Score
+                        - else
+                          %p.text-muted No ratings available
+                  .col-md-6
+                    .card.mb-4
+                      .card-header
+                        %h4.mb-0 Insights
+                      .card-body
+                        - insights = @huddle.feedback_insights
+                        - if insights.any?
+                          %ul.list-unstyled
+                            - insights.each do |insight|
+                              %li.mb-2
+                                %i.bi.bi-lightbulb.me-2
+                                = insight
+                        - else
+                          %p.text-muted No insights available yet
+
+                .row
+                  .col-12
+                    .card.mb-4
+                      .card-header
+                        %h4.mb-0 Feedback Highlights
+                      .card-body
+                        - appreciations = @huddle.huddle_feedbacks.where.not(appreciation: [nil, '']).limit(3)
+                        - if appreciations.any?
+                          %h5 What went well:
+                          - appreciations.each do |feedback|
+                            .alert.alert-success
+                              %i.bi.bi-heart.me-2
+                              = feedback.appreciation
+                        - suggestions = @huddle.huddle_feedbacks.where.not(change_suggestion: [nil, '']).limit(3)
+                        - if suggestions.any?
+                          %h5.mt-3 Improvement suggestions:
+                          - suggestions.each do |feedback|
+                            .alert.alert-warning
+                              %i.bi.bi-lightbulb.me-2
+                              = feedback.change_suggestion
+                        - if appreciations.empty? && suggestions.empty?
+                          %p.text-muted No detailed feedback available yet
+                
+                / Conflict Styles Analysis
+                - team_conflict_styles = @huddle.team_conflict_style_distribution
+                - personal_conflict_styles = @huddle.personal_conflict_style_distribution
+                .row
+                  .col-12
+                    .card.mb-4
+                      .card-header
+                        %h4.mb-0
+                          %i.bi.bi-graph-up.me-2
+                          Conflict Style Analysis
+                      .card-body
+                        .row
+                          .col-md-6
+                            %h5.mb-3 Team Conflict Styles
+                            - if team_conflict_styles.any?
+                              - total_team = team_conflict_styles.values.sum
+                              - team_conflict_styles.each do |style, count|
+                                - percentage = (count.to_f / total_team * 100).round(1)
+                                - color = conflict_style_color(style)
+                                .mb-3
+                                  .d-flex.justify-content-between.align-items-center.mb-1
+                                    %strong= style
+                                    %span
+                                      = content_tag :span, count, class: "badge bg-#{color} me-1"
+                                      %small.text-muted (#{percentage}%)
+                                  .progress{style: "height: 6px;"}
+                                    .progress-bar{class: "bg-#{color}", style: "width: #{percentage}%"}
+                            - else
+                              .text-muted.text-center.py-4
+                                %i.bi.bi-people.bi-2x.mb-2
+                                %p.mb-0 No team conflict style data yet
+                                %small Submit feedback to see team conflict style distribution
+                              / Show all possible styles with zero counts
+                              - @huddle.all_conflict_styles.each do |style|
+                                .mb-2
+                                  .d-flex.justify-content-between.align-items-center.mb-1
+                                    %span.text-muted= style
+                                    %span
+                                      %span.badge.bg-light.text-muted.me-1 0
+                                      %small.text-muted (0%)
+                                  .progress{style: "height: 6px;"}
+                                    .progress-bar.bg-light{style: "width: 0%"}
+                          .col-md-6
+                            %h5.mb-3 Personal Conflict Styles
+                            - if personal_conflict_styles.any?
+                              - total_personal = personal_conflict_styles.values.sum
+                              - personal_conflict_styles.each do |style, count|
+                                - percentage = (count.to_f / total_personal * 100).round(1)
+                                - color = conflict_style_color(style)
+                                .mb-3
+                                  .d-flex.justify-content-between.align-items-center.mb-1
+                                    %strong= style
+                                    %span
+                                      = content_tag :span, count, class: "badge bg-#{color} me-1"
+                                      %small.text-muted (#{percentage}%)
+                                  .progress{style: "height: 6px;"}
+                                    .progress-bar{class: "bg-#{color}", style: "width: #{percentage}%"}
+                            - else
+                              .text-muted.text-center.py-4
+                                %i.bi.bi-person.bi-2x.mb-2
+                                %p.mb-0 No personal conflict style data yet
+                                %small Submit feedback to see personal conflict style distribution
+                              / Show all possible styles with zero counts
+                              - @huddle.all_conflict_styles.each do |style|
+                                .mb-2
+                                  .d-flex.justify-content-between.align-items-center.mb-1
+                                    %span.text-muted= style
+                                    %span
+                                      %span.badge.bg-light.text-muted.me-1 0
+                                      %small.text-muted (0%)
+                                  .progress{style: "height: 6px;"}
+                                    .progress-bar.bg-light{style: "width: 0%"}
+                
+                / Participants Table - Visible to all participants
+                .row
+                  .col-12
+                    .card.mb-4
+                      .card-header
+                        %h4.mb-0 Participants
+                        - if @is_facilitator
+                          %small.text-muted Facilitators can see detailed ratings and private notes
+                      .card-body
+                        .table-responsive
+                          %table.table.table-striped.table-hover
+                            %thead.table-dark
+                              %tr
+                                %th Participant
+                                %th Rating
+                                %th Private Notes
+                            %tbody
+                              - @huddle.huddle_participants.includes(:person).each do |participant|
+                                - feedback = @huddle.huddle_feedbacks.find_by(person: participant.person)
+                                - has_facilitator_note = feedback&.private_facilitator.present?
+                                - has_dept_head_note = feedback&.private_department_head.present?
+                                - rating_score = feedback ? feedback.nat_20_score : nil
+                                %tr{class: feedback ? '' : 'table-secondary'}
+                                  %td
+                                    %strong= participant.person.full_name
+                                    %br
+                                    %small.text-muted= participant.role_label || 'Participant'
+                                  %td
+                                    - if feedback
+                                      - if @is_facilitator
+                                        %span{class: "rating-display", 
+                                             style: "cursor: pointer;", 
+                                             data: {bs_toggle: "popover", 
+                                                    bs_placement: "top", 
+                                                    bs_title: "#{participant.person.full_name}'s Ratings",
+                                                    bs_content: "<ul class='list-unstyled mb-0'><li><strong>Informed:</strong> #{feedback.informed_rating}/5</li><li><strong>Connected:</strong> #{feedback.connected_rating}/5</li><li><strong>Goals:</strong> #{feedback.goals_rating}/5</li><li><strong>Valuable:</strong> #{feedback.valuable_rating}/5</li><li><strong>Personal Conflict:</strong> #{feedback.personal_conflict_style || 'Not specified'}</li><li><strong>Team Conflict:</strong> #{feedback.team_conflict_style || 'Not specified'}</li></ul>"}}
+                                          = nat_20_badge(rating_score)
+                                      - else
+                                        = nat_20_badge(rating_score)
+                                    - else
+                                      %span.text-muted --
+                                  %td
+                                    - if @is_facilitator
+                                      - if has_facilitator_note
+                                        %i.bi.bi-eye.text-info{style: "cursor: pointer;", 
+                                                         data: {bs_toggle: "popover", 
+                                                                bs_placement: "left", 
+                                                                bs_title: "Private Note for Facilitator", 
+                                                                bs_content: feedback.private_facilitator}}
+                                      - elsif has_dept_head_note
+                                        %i.bi.bi-eye.text-info{style: "cursor: pointer;", 
+                                                         data: {bs_toggle: "popover", 
+                                                                bs_placement: "left", 
+                                                                bs_title: "Private Note for Department Head", 
+                                                                bs_content: feedback.private_department_head}}
+                                      - elsif feedback
+                                        %i.bi.bi-eye-slash.text-muted 
+                                      - else
+                                        %i.bi.bi-eye-slash.text-muted 
+                                    - else
+                                      %i.bi.bi-eye-slash.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "No visibility"}
+              - else
                 .text-center
-                  = link_to "Continuously Improve Together", feedback_huddle_path(@huddle), class: "btn btn-success"
-                %small.text-muted.mt-2.d-block Rate your huddle experience and provide feedback for continuous improvement.
-      
+                  .card.border-success
+                    .card-header.bg-success.text-white
+                      %h4.mb-0
+                        %i.bi.bi-trophy.me-2
+                        Continuous Improvement - Complete! 🎉
+                    .card-body
+                      .mb-3
+                        %i.bi.bi-check-circle.text-success{style: "font-size: 3rem;"}
+                      %h5.text-success.mb-3 You've helped your team continuously improve!
+                      %p.card-text.mb-3 Thank you for taking the time to provide feedback. Your insights help make future huddles even better.
+                      .mt-3
+                        = link_to "Update Your Feedback", feedback_huddle_path(@huddle), class: "btn btn-outline-success"
+                      %small.text-muted.mt-2.d-block You can update your feedback later if needed.
+            - else
+              .text-center
+                %h4.mb-0
+                  %i.bi.bi-lock.me-2
+                  Feedback Required
+                .mb-3
+                  %i.bi.bi-shield-lock.text-warning{style: "font-size: 3rem;"}
+                %p.card-text.mb-3 To ensure fairness and encourage participation, you need to submit your own feedback before viewing the team's insights and ratings.
+                .mt-3
+                  = link_to "Submit Your Feedback", feedback_huddle_path(@huddle), class: "btn btn-warning btn-lg"
+                %small.text-muted.mt-2.d-block This helps create a culture of mutual feedback and continuous improvement.
+
+      / Footer
       .mt-4
         .d-flex.justify-content-between
           = link_to "← Back to All Huddles", huddles_path, class: "btn btn-outline-secondary"
           - if current_person && @huddle.huddle_participants.find_by(person: current_person)
-            = link_to "View Summary", summary_huddle_path(@huddle), class: "btn btn-outline-info"
+            = link_to "View All My Huddles", my_huddles_path, class: "btn btn-outline-primary"
+
+:javascript
+  console.log('Huddle show page JavaScript starting...');
+  
+  function initializeHuddleNavigation() {
+    console.log('Initializing huddle navigation...');
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    console.log('Found tooltip elements:', tooltipTriggerList.length);
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Initialize popovers
+    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+    console.log('Found popover elements:', popoverTriggerList.length);
+    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+      return new bootstrap.Popover(popoverTriggerEl)
+    })
+    
+    // Navigation highlighting
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('#huddleNav .nav-link');
+    console.log('Found sections:', sections.length);
+    console.log('Found nav links:', navLinks.length);
+    
+    function updateActiveNavLink() {
+      console.log('Updating active nav link...');
+      let current = '';
+      const scrollPosition = window.pageYOffset + 100; // Add offset for better detection
+      console.log('Scroll position:', scrollPosition);
+      
+      // Re-query sections each time to ensure we have the latest DOM state
+      const currentSections = document.querySelectorAll('section[id]');
+      console.log('Current sections found:', currentSections.length);
+      
+      currentSections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.clientHeight;
+        const sectionBottom = sectionTop + sectionHeight;
+        console.log('Section:', section.id, 'Top:', sectionTop, 'Height:', sectionHeight, 'Bottom:', sectionBottom);
+        
+        // Check if current scroll position is within this section
+        if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+          current = section.getAttribute('id');
+          console.log('Current section set to:', current);
+        }
+      });
+      
+      // If we're at the very top, default to intro
+      if (scrollPosition < 200) {
+        current = 'intro';
+        console.log('At top, defaulting to intro');
+      }
+      
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+          console.log('Activated nav link:', link.getAttribute('href'));
+        }
+      });
+    }
+    
+    // Debounce the scroll event for better performance
+    let scrollTimeout;
+    function debouncedUpdateActiveNavLink() {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(updateActiveNavLink, 10);
+    }
+    
+    window.addEventListener('scroll', debouncedUpdateActiveNavLink);
+    window.addEventListener('resize', debouncedUpdateActiveNavLink);
+    
+    // Initialize navigation after page is fully loaded
+    console.log('Calling initial updateActiveNavLink...');
+    updateActiveNavLink();
+    
+    // Smooth scrolling for navigation links
+    navLinks.forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href');
+        const targetSection = document.querySelector(targetId);
+        if (targetSection) {
+          targetSection.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+          
+          // Update active state after scrolling
+          setTimeout(updateActiveNavLink, 500);
+        }
+      });
+    });
+  }
+  
+  // Try multiple event listeners to ensure it runs
+  if (document.readyState === 'loading') {
+    console.log('Document still loading, adding DOMContentLoaded listener');
+    document.addEventListener('DOMContentLoaded', initializeHuddleNavigation);
+  } else {
+    console.log('Document already loaded, initializing immediately');
+    initializeHuddleNavigation();
+  }
+  
+  console.log('Adding load event listener as backup');
+  window.addEventListener('load', function() {
+    console.log('Window load event fired');
+    initializeHuddleNavigation();
+  });

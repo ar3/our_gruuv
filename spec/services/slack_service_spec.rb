@@ -1,140 +1,229 @@
 require 'rails_helper'
 
-RSpec.describe SlackService, type: :service do
-  let(:slack_service) { SlackService.new }
-  let(:huddle) { create(:huddle) }
-  
+RSpec.describe SlackService do
+  let(:organization) { create(:organization, :company) }
+  let(:slack_service) { SlackService.new(organization) }
+  let(:slack_config) { create(:slack_configuration, organization: organization) }
+
+  before do
+    slack_config
+  end
+
   describe '#slack_configured?' do
     context 'when SLACK_BOT_TOKEN is set' do
       before do
-        @original_token = ENV['SLACK_BOT_TOKEN']
-        ENV['SLACK_BOT_TOKEN'] = 'xoxb-test-token'
+        allow(ENV).to receive(:[]).with('SLACK_BOT_TOKEN').and_return('xoxb-test-token')
       end
-      
-      after do
-        ENV['SLACK_BOT_TOKEN'] = @original_token
-      end
-      
+
       it 'returns true' do
-        expect(slack_service.send(:slack_configured?)).to be true
+        expect(slack_service.slack_configured?).to be true
       end
     end
-    
+
     context 'when SLACK_BOT_TOKEN is not set' do
       before do
-        @original_token = ENV['SLACK_BOT_TOKEN']
-        ENV['SLACK_BOT_TOKEN'] = nil
-      end
-      
-      after do
-        ENV['SLACK_BOT_TOKEN'] = @original_token
-      end
-      
-      it 'returns false' do
-        expect(slack_service.send(:slack_configured?)).to be false
-      end
-    end
-  end
-  
-  describe '#post_huddle_notification' do
-    context 'when huddle is present' do
-      before do
-        allow(huddle).to receive(:display_name).and_return('Test Huddle')
-        allow(huddle).to receive(:facilitator_names).and_return(['John Doe'])
-        allow(huddle).to receive(:participation_rate).and_return(75)
-        allow(huddle).to receive(:nat_20_score).and_return(15.5)
-        allow(huddle).to receive(:slack_channel).and_return('#test-channel')
-      end
-      
-      it 'returns false when Slack is not configured' do
-        allow(slack_service).to receive(:slack_configured?).and_return(false)
-        result = slack_service.post_huddle_notification(huddle, :huddle_created)
-        expect(result).to be false
-      end
-      
-      it 'returns false for unknown notification type' do
-        result = slack_service.post_huddle_notification(huddle, :unknown_type)
-        expect(result).to be false
+        allow(ENV).to receive(:[]).with('SLACK_BOT_TOKEN').and_return(nil)
+        allow(organization).to receive(:slack_configured?).and_return(false)
       end
 
-      it 'calls post_feedback_in_thread for post_feedback_in_thread type' do
-        allow(slack_service).to receive(:post_feedback_in_thread).and_return(true)
-        result = slack_service.post_huddle_notification(huddle, :post_feedback_in_thread, feedback_id: 123)
-        expect(slack_service).to have_received(:post_feedback_in_thread).with(huddle, 123)
-        expect(result).to be true
-      end
-    end
-    
-    context 'when huddle is not present' do
       it 'returns false' do
-        result = slack_service.post_huddle_notification(nil, :huddle_created)
-        expect(result).to be false
+        expect(slack_service.slack_configured?).to be false
       end
-    end
-  end
-  
-  describe 'message templates' do
-    it 'has the expected notification types' do
-      expected_types = [:huddle_created, :huddle_started, :huddle_reminder, :feedback_requested, :huddle_completed]
-      expected_types.each do |type|
-        expect(SlackConstants::MESSAGE_TEMPLATES[type]).to be_present
-      end
-    end
-    
-    it 'formats huddle_created message correctly' do
-      template = SlackConstants::MESSAGE_TEMPLATES[:huddle_created]
-      message = template % {
-        huddle_name: 'Test Huddle',
-        creator_name: 'John Doe'
-      }
-      expect(message).to include('Test Huddle')
-      expect(message).to include('John Doe')
     end
   end
 
-  describe '#post_feedback_in_thread' do
-    let(:feedback) { create(:huddle_feedback) }
-    let(:announcement_notification) { create(:notification, notifiable: huddle, notification_type: 'huddle_announcement', status: 'sent_successfully', message_id: '1234567890.123456', metadata: { channel: 'test-channel' }) }
-    
+  describe '#post_message' do
+    let(:notification) { create(:notification, notifiable: organization, metadata: { channel: 'test-channel' }, rich_message: [{ type: 'section', text: { type: 'mrkdwn', text: 'Test message' } }], fallback_text: 'Test message') }
+    let(:mock_client) { instance_double(Slack::Web::Client) }
+
     before do
-      allow(huddle).to receive(:slack_announcement_notification).and_return(announcement_notification)
-      allow(huddle).to receive(:slack_channel).and_return('#test-channel')
-      allow(huddle.huddle_feedbacks).to receive(:find_by).with(id: feedback.id).and_return(feedback)
-      allow(slack_service).to receive(:post_message).and_return({ 'ok' => true })
-      allow(slack_service).to receive(:post_huddle_start_announcement).and_return({ 'ok' => true })
-      allow(slack_service).to receive(:post_huddle_summary).and_return({ 'ok' => true })
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
     end
 
-    it 'posts feedback in thread when announcement exists' do
-      result = slack_service.post_feedback_in_thread(huddle, feedback.id)
-      
-      expect(slack_service).to have_received(:post_message).with(
-        channel: '#test-channel',
-        thread_ts: '1234567890.123456',
-        blocks: kind_of(Array)
-      )
-      expect(result).to eq({ 'ok' => true })
+    context 'when notification exists and Slack is configured' do
+      before do
+        allow(mock_client).to receive(:chat_postMessage).and_return({ 'ok' => true, 'ts' => '1234567890.123456' })
+      end
+
+      it 'posts message and updates notification status' do
+        result = slack_service.post_message(notification.id)
+        
+        expect(mock_client).to have_received(:chat_postMessage).with(
+          hash_including(
+            channel: 'test-channel',
+            text: 'Test message',
+            blocks: notification.rich_message
+          )
+        )
+        expect(result).to eq({ 'ok' => true, 'ts' => '1234567890.123456' })
+        expect(notification.reload.status).to eq('sent_successfully')
+        expect(notification.reload.message_id).to eq('1234567890.123456')
+      end
     end
 
-    it 'creates announcement and summary when none exist' do
-      allow(huddle).to receive(:slack_announcement_notification).and_return(nil, announcement_notification)
-      
-      result = slack_service.post_feedback_in_thread(huddle, feedback.id)
-      
-      expect(slack_service).to have_received(:post_huddle_start_announcement).with(huddle)
-      expect(slack_service).to have_received(:post_huddle_summary).with(huddle)
-      expect(result).to eq({ 'ok' => true })
+    context 'when notification has main_thread' do
+      let(:main_thread) { create(:notification, notifiable: organization, message_id: '1234567890.123456') }
+      let(:threaded_notification) { create(:notification, notifiable: organization, main_thread: main_thread, metadata: { channel: 'test-channel' }, rich_message: [{ type: 'section', text: { type: 'mrkdwn', text: 'Thread reply' } }], fallback_text: 'Thread reply') }
+
+      before do
+        allow(mock_client).to receive(:chat_postMessage).and_return({ 'ok' => true, 'ts' => '1234567890.123457' })
+      end
+
+      it 'posts message in thread' do
+        result = slack_service.post_message(threaded_notification.id)
+        
+        expect(mock_client).to have_received(:chat_postMessage).with(
+          hash_including(
+            channel: 'test-channel',
+            thread_ts: '1234567890.123456',
+            text: 'Thread reply',
+            blocks: threaded_notification.rich_message
+          )
+        )
+        expect(result).to eq({ 'ok' => true, 'ts' => '1234567890.123457' })
+      end
     end
 
-    it 'returns false when feedback not found' do
-      allow(huddle.huddle_feedbacks).to receive(:find_by).with(id: feedback.id).and_return(nil)
-      
-      result = slack_service.post_feedback_in_thread(huddle, feedback.id)
-      expect(result).to be false
+    context 'when Slack API fails' do
+      before do
+        allow(mock_client).to receive(:chat_postMessage).and_raise(Slack::Web::Api::Errors::SlackError.new('API Error'))
+      end
+
+      it 'updates notification status to failed' do
+        result = slack_service.post_message(notification.id)
+        
+        expect(result).to be false
+        expect(notification.reload.status).to eq('send_failed')
+      end
+    end
+
+    context 'when notification does not exist' do
+      it 'returns false' do
+        result = slack_service.post_message(999999)
+        expect(result).to be false
+      end
+    end
+  end
+
+  describe '#update_message' do
+    let(:original_notification) { create(:notification, notifiable: organization, message_id: '1234567890.123456') }
+    let(:update_notification) { create(:notification, notifiable: organization, original_message: original_notification, metadata: { channel: 'test-channel' }, rich_message: [{ type: 'section', text: { type: 'mrkdwn', text: 'Updated message' } }], fallback_text: 'Updated message') }
+    let(:mock_client) { instance_double(Slack::Web::Client) }
+
+    before do
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
+    end
+
+    context 'when notification exists and Slack is configured' do
+      before do
+        allow(mock_client).to receive(:chat_update).and_return({ 'ok' => true })
+      end
+
+      it 'updates message and updates notification status' do
+        result = slack_service.update_message(update_notification.id)
+        
+        expect(mock_client).to have_received(:chat_update).with(
+          hash_including(
+            channel: 'test-channel',
+            ts: '1234567890.123456',
+            text: 'Updated message',
+            blocks: update_notification.rich_message
+          )
+        )
+        expect(result).to eq({ 'ok' => true })
+        expect(update_notification.reload.status).to eq('sent_successfully')
+        expect(update_notification.reload.message_id).to eq('1234567890.123456')
+      end
+    end
+
+    context 'when Slack API fails' do
+      before do
+        allow(mock_client).to receive(:chat_update).and_raise(Slack::Web::Api::Errors::SlackError.new('API Error'))
+      end
+
+      it 'updates notification status to failed' do
+        result = slack_service.update_message(update_notification.id)
+        
+        expect(result).to be false
+        expect(update_notification.reload.status).to eq('send_failed')
+      end
+    end
+
+    context 'when notification does not exist' do
+      it 'returns false' do
+        result = slack_service.update_message(999999)
+        expect(result).to be false
+      end
+    end
+
+    context 'when original message does not exist' do
+      let(:update_notification) { create(:notification, notifiable: organization, original_message: nil, metadata: { channel: 'test-channel' }, rich_message: [{ type: 'section', text: { type: 'mrkdwn', text: 'Updated message' } }], fallback_text: 'Updated message') }
+
+      it 'returns false' do
+        result = slack_service.update_message(update_notification.id)
+        expect(result).to be false
+      end
+    end
+  end
+
+  describe '#test_connection' do
+    let(:mock_client) { instance_double(Slack::Web::Client) }
+
+    before do
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
+    end
+
+    context 'when connection is successful' do
+      before do
+        allow(mock_client).to receive(:auth_test).and_return({ 'ok' => true, 'team' => 'Test Team', 'team_id' => 'T123456' })
+      end
+
+      it 'returns the response' do
+        result = slack_service.test_connection
+        expect(result).to eq({ 'ok' => true, 'team' => 'Test Team', 'team_id' => 'T123456' })
+      end
+    end
+
+    context 'when connection fails' do
+      before do
+        allow(mock_client).to receive(:auth_test).and_raise(Slack::Web::Api::Errors::SlackError.new('Auth failed'))
+      end
+
+      it 'returns false' do
+        result = slack_service.test_connection
+        expect(result).to be false
+      end
     end
   end
 
 
 
+  describe '#post_test_message' do
+    let(:mock_client) { instance_double(Slack::Web::Client) }
 
+    before do
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
+      allow(mock_client).to receive(:chat_postMessage).and_return({ 'ok' => true, 'ts' => '1234567890.123456' })
+    end
+
+    context 'when Slack is configured' do
+      it 'posts test message successfully' do
+        result = slack_service.post_test_message('Test message')
+        expect(result[:success]).to be true
+        expect(result[:message]).to eq('Test message sent successfully')
+      end
+    end
+
+    context 'when Slack is not configured' do
+      before do
+        allow(slack_service).to receive(:slack_configured?).and_return(false)
+      end
+
+      it 'returns error message' do
+        result = slack_service.post_test_message('Test message')
+        expect(result[:success]).to be false
+        expect(result[:error]).to eq('Slack not configured')
+      end
+    end
+  end
 end 

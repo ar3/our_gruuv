@@ -103,20 +103,21 @@ RSpec.feature 'Huddles', type: :feature do
     # Simulate being logged in
     page.set_rack_session(current_person_id: person.id)
     
-    visit summary_huddle_path(huddle)
+    visit huddle_path(huddle)
     
-    expect(page).to have_content('Huddle Summary')
+    expect(page).to have_content('Evolve')
     expect(page).to have_content('Test Company > Test Team')
     expect(page).to have_content('4.0') # Average rating
     expect(page).to have_content('Great collaboration!')
     expect(page).to have_content('More time for Q&A')
-    expect(page).to have_content('100%') # Participation rate
+    expect(page).to have_content('1 of 1 participants submitted feedback')
   end
 
   scenario 'viewing huddle summary when not logged in redirects to join' do
-    visit summary_huddle_path(huddle)
+    visit huddle_path(huddle)
     
-    expect(page).to have_content('Please join the huddle before accessing this page')
+    expect(page).to have_content('Join Huddle')
+    expect(page).to have_content('Please provide your email to join this huddle')
     expect(current_path).to eq(join_huddle_path(huddle))
   end
 
@@ -126,9 +127,10 @@ RSpec.feature 'Huddles', type: :feature do
     # Simulate being logged in but not a participant
     page.set_rack_session(current_person_id: person.id)
     
-    visit summary_huddle_path(huddle)
+    visit huddle_path(huddle)
     
-    expect(page).to have_content('Please join the huddle before accessing this page')
+    expect(page).to have_content('Join Huddle')
+    expect(page).to have_content('Welcome, Charlie Brown!')
     expect(current_path).to eq(join_huddle_path(huddle))
   end
 
@@ -153,7 +155,7 @@ RSpec.feature 'Huddles', type: :feature do
     # Simulate being logged in
     page.set_rack_session(current_person_id: person1.id)
     
-    visit summary_huddle_path(huddle)
+    visit huddle_path(huddle)
     
     expect(page).to have_content('1 of 2 participants submitted feedback')
     expect(page).to have_content('Good discussion')
@@ -324,7 +326,7 @@ RSpec.feature 'Huddles', type: :feature do
     expect(page).to have_content(huddle.display_name)
     expect(page).to have_content('Test Company > Test Team')
     expect(page).to have_content('Participants: 0 of 1 participants submitted feedback')
-    expect(page).to have_link('Continuously Improve Together')
+    expect(page).to have_link('Submit Your Feedback')
   end
 
   scenario 'allows multiple huddles for same organization' do

@@ -33,10 +33,7 @@ class HuddlePolicy < ApplicationPolicy
     true
   end
 
-  def summary?
-    return false unless user_participant.present?
-    true
-  end
+
 
   # Only department head or facilitators can view the individual responses table
   def view_individual_responses?

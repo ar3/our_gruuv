@@ -1,5 +1,5 @@
 class HuddlesController < ApplicationController
-  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :summary, :post_summary_to_slack, :post_start_announcement_to_slack]
+  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :post_start_announcement_to_slack]
 
   def index
     @huddles = Huddle.active.recent.includes(:organization)
@@ -26,18 +26,22 @@ class HuddlesController < ApplicationController
       return
     end
     
+    # Check if user is a participant, if not redirect to join page
+    @existing_participant = current_person.huddle_participants.find_by(huddle: @huddle)
+    unless @existing_participant
+      redirect_to join_huddle_path(@huddle)
+      return
+    end
+    
     # Check if current user has already submitted feedback
     @existing_feedback = @huddle.huddle_feedbacks.find_by(person: current_person)
+    
+    # Set up variables for the Evolve section
+    @current_person = current_person
+    @is_facilitator = @existing_participant&.facilitator? || @huddle.organization&.department_head == @current_person
   end
 
-  def summary
-    authorize @huddle, :summary?
-    # Check if user is a participant
-    @current_person = current_person
-    
-    @existing_participant = @current_person.huddle_participants.find_by(huddle: @huddle)
-    @huddle = @huddle
-  end
+
 
   def new
     @huddle = Huddle.new
@@ -175,15 +179,9 @@ class HuddlesController < ApplicationController
     )
     
     if @feedback.save
-      # Post individual feedback in Slack thread if announcement exists
-      if !@huddle.has_slack_announcement?
-        SlackNotificationJob.perform_now(@huddle.id, :post_summary)
-      end
-      
-      SlackNotificationJob.perform_now(@huddle.id, :post_feedback_in_thread, feedback_id: @feedback.id)
-      
-      # Update Slack summary if it exists
-      SlackNotificationJob.perform_now(@huddle.id, :post_summary)
+      # Update summary and post feedback
+      Huddles::PostSummaryJob.perform_now(@huddle.id)
+      Huddles::PostFeedbackJob.perform_now(@huddle.id, @feedback.id)
       
       redirect_to @huddle, notice: 'Thank you for your feedback!'
     else
@@ -195,38 +193,12 @@ class HuddlesController < ApplicationController
     render :feedback, status: :unprocessable_entity
   end
 
-  def slack_notification_preview
-    authorize @huddle, :summary?
-    
-    unless @huddle.slack_configured?
-      render json: { error: 'Slack is not configured for this organization.' }, status: :unprocessable_entity
-      return
-    end
-    
-    preview = SlackService.new(@huddle.organization).generate_notification_preview(@huddle)
-    render json: preview
-  end
 
-  def post_summary_to_slack
-    authorize @huddle, :summary?
-    
-    unless @huddle.slack_configured?
-      redirect_to summary_huddle_path(@huddle), alert: 'Slack is not configured for this organization.'
-      return
-    end
-    
-    begin
-      # Post or update the summary in Slack
-      SlackNotificationJob.perform_now(@huddle.id, :post_summary)
-      
-      redirect_to summary_huddle_path(@huddle), notice: 'Huddle summary posted to Slack successfully!'
-    rescue => e
-      redirect_to summary_huddle_path(@huddle), alert: "Failed to post to Slack: #{e.message}"
-    end
-  end
+
+
 
   def post_start_announcement_to_slack
-    authorize @huddle, :summary?
+    authorize @huddle, :show?
     
     unless @huddle.slack_configured?
       redirect_to huddle_path(@huddle), alert: 'Slack is not configured for this organization.'
@@ -234,15 +206,10 @@ class HuddlesController < ApplicationController
     end
     
     begin
-      # Post the start announcement to Slack
-      slack_service = SlackService.new(@huddle.organization)
-      result = slack_service.post_huddle_start_announcement(@huddle)
+      # Post the start announcement to Slack using the job
+      Huddles::PostAnnouncementJob.perform_now(@huddle.id)
       
-      if result
-        redirect_to huddle_path(@huddle), notice: 'Huddle start announcement posted to Slack successfully!'
-      else
-        redirect_to huddle_path(@huddle), alert: 'Failed to post huddle start announcement to Slack.'
-      end
+      redirect_to huddle_path(@huddle), notice: 'Huddle start announcement posted to Slack successfully!'
     rescue => e
       redirect_to huddle_path(@huddle), alert: "Failed to post to Slack: #{e.message}"
     end

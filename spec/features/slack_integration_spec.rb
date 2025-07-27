@@ -7,7 +7,6 @@ RSpec.describe 'Slack Integration', type: :feature do
 
   before do
     # Mock Slack service to avoid actual API calls
-    allow_any_instance_of(SlackService).to receive(:post_huddle_notification).and_return(true)
     allow_any_instance_of(SlackService).to receive(:test_connection).and_return({
       'team' => 'Test Team',
       'team_id' => 'T123456',
@@ -22,6 +21,11 @@ RSpec.describe 'Slack Integration', type: :feature do
       'ts' => '1234567890.123456',
       'channel' => '#general'
     })
+    
+    # Mock the new jobs
+    allow(Huddles::PostAnnouncementJob).to receive(:perform_now)
+    allow(Huddles::PostSummaryJob).to receive(:perform_now)
+    allow(Huddles::PostFeedbackJob).to receive(:perform_now)
   end
 
   describe 'Slack Dashboard' do

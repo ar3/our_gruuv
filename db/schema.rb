@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_27_033726) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_27_143341) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -88,9 +88,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_27_033726) do
     t.string "message_id"
     t.string "status"
     t.jsonb "metadata"
-    t.jsonb "message"
+    t.jsonb "rich_message"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "fallback_text"
     t.index ["main_thread_id"], name: "index_notifications_on_main_thread_id"
     t.index ["notifiable_type", "notifiable_id"], name: "index_notifications_on_notifiable"
     t.index ["original_message_id"], name: "index_notifications_on_original_message_id"

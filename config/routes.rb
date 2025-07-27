@@ -43,9 +43,9 @@ Rails.application.routes.draw do
       post :submit_feedback
       get :join
       post :join_huddle
-      get :summary
-      get :slack_notification_preview
-      post :post_summary_to_slack
+
+
+      
       post :post_start_announcement_to_slack
     end
   end

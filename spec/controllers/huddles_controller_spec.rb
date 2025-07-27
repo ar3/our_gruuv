@@ -2,6 +2,7 @@ require 'rails_helper'
 
 RSpec.describe HuddlesController, type: :controller do
   let(:organization) { create(:organization, name: 'Test Org') }
+  let!(:slack_config) { create(:slack_configuration, organization: organization) }
   let(:huddle) { create(:huddle, organization: organization, started_at: Time.current) }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
   let!(:participant) { create(:huddle_participant, huddle: huddle, person: person, role: 'active') }
@@ -167,71 +168,24 @@ RSpec.describe HuddlesController, type: :controller do
     end
   end
 
-  describe 'GET #summary' do
-    it 'assigns the requested huddle' do
-      get :summary, params: { id: huddle.id }
-      expect(assigns(:huddle)).to eq(huddle)
-    end
 
-    it 'assigns the current person' do
-      get :summary, params: { id: huddle.id }
-      expect(assigns(:current_person)).to eq(person)
-    end
 
-    it 'assigns existing participant' do
-      get :summary, params: { id: huddle.id }
-      expect(assigns(:existing_participant)).to eq(participant)
-    end
-  end
 
-  describe 'POST #post_summary_to_slack' do
-    let(:slack_config) { create(:slack_configuration, organization: organization) }
-
-    before do
-      slack_config
-    end
-
-    it 'assigns the requested huddle' do
-      post :post_summary_to_slack, params: { id: huddle.id }
-      expect(assigns(:huddle)).to eq(huddle)
-    end
-
-    it 'redirects to summary page with success message when Slack is configured' do
-      post :post_summary_to_slack, params: { id: huddle.id }
-      
-      expect(response).to redirect_to(summary_huddle_path(huddle))
-      expect(flash[:notice]).to eq('Huddle summary posted to Slack successfully!')
-    end
-
-    it 'redirects to summary page with error when Slack is not configured' do
-      slack_config.destroy
-      
-      post :post_summary_to_slack, params: { id: huddle.id }
-      
-      expect(response).to redirect_to(summary_huddle_path(huddle))
-      expect(flash[:alert]).to eq('Slack is not configured for this organization.')
-    end
-  end
 
   describe 'POST #post_start_announcement_to_slack' do
     let(:slack_config) { create(:slack_configuration, organization: organization) }
-    let(:slack_service) { instance_double(SlackService) }
 
     before do
       slack_config
-      allow(SlackService).to receive(:new).and_return(slack_service)
+      allow(Huddles::PostAnnouncementJob).to receive(:perform_now)
     end
 
     it 'assigns the requested huddle' do
-      allow(slack_service).to receive(:post_huddle_start_announcement).and_return(true)
-      
       post :post_start_announcement_to_slack, params: { id: huddle.id }
       expect(assigns(:huddle)).to eq(huddle)
     end
 
     it 'redirects to huddle page with success message when Slack is configured' do
-      allow(slack_service).to receive(:post_huddle_start_announcement).and_return(true)
-      
       post :post_start_announcement_to_slack, params: { id: huddle.id }
       
       expect(response).to redirect_to(huddle_path(huddle))
@@ -248,12 +202,12 @@ RSpec.describe HuddlesController, type: :controller do
     end
 
     it 'redirects to huddle page with error when Slack service fails' do
-      allow(slack_service).to receive(:post_huddle_start_announcement).and_return(false)
+      allow(Huddles::PostAnnouncementJob).to receive(:perform_now).and_raise(StandardError.new('Slack error'))
       
       post :post_start_announcement_to_slack, params: { id: huddle.id }
       
       expect(response).to redirect_to(huddle_path(huddle))
-      expect(flash[:alert]).to eq('Failed to post huddle start announcement to Slack.')
+      expect(flash[:alert]).to eq('Failed to post to Slack: Slack error')
     end
   end
 end 
