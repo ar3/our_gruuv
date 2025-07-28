@@ -10,9 +10,28 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_27_143341) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_28_114837) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "assignment_outcomes", force: :cascade do |t|
+    t.text "description"
+    t.bigint "assignment_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assignment_id"], name: "index_assignment_outcomes_on_assignment_id"
+  end
+
+  create_table "assignments", force: :cascade do |t|
+    t.string "title"
+    t.text "tagline"
+    t.text "required_activities"
+    t.text "handbook"
+    t.bigint "company_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_assignments_on_company_id"
+  end
 
   create_table "debug_responses", force: :cascade do |t|
     t.jsonb "request"
@@ -140,6 +159,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_27_143341) do
     t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true
   end
 
+  add_foreign_key "assignment_outcomes", "assignments"
+  add_foreign_key "assignments", "organizations", column: "company_id"
   add_foreign_key "huddle_feedbacks", "huddles"
   add_foreign_key "huddle_feedbacks", "people"
   add_foreign_key "huddle_participants", "huddles"

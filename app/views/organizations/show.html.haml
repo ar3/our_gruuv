@@ -76,6 +76,47 @@
                               = link_to edit_organization_path(team), class: "btn btn-outline-secondary" do
                                 %i.bi.bi-pencil
           
+          - if @organization.company?
+            .card.mb-4
+              .card-header.d-flex.justify-content-between.align-items-center
+                %h5.mb-0
+                  %i.bi.bi-briefcase.me-2
+                  Assignments
+                = link_to new_assignment_path(company_id: @organization.id), class: "btn btn-primary btn-sm" do
+                  %i.bi.bi-plus.me-1
+                  Add Assignment
+              .card-body
+                - if @organization.assignments.any?
+                  .table-responsive
+                    %table.table.table-hover
+                      %thead
+                        %tr
+                          %th Assignment
+                          %th Tagline
+                          %th Outcomes
+                          %th Actions
+                      %tbody
+                        - @organization.assignments.ordered.each do |assignment|
+                          %tr
+                            %td
+                              %strong= link_to assignment.title, assignment_path(assignment), class: "text-decoration-none"
+                            %td
+                              %small.text-muted= truncate(assignment.tagline, length: 60)
+                            %td
+                              %span.badge.bg-info= assignment.assignment_outcomes.count
+                            %td
+                              .btn-group.btn-group-sm
+                                = link_to assignment_path(assignment), class: "btn btn-outline-primary" do
+                                  %i.bi.bi-eye
+                                = link_to edit_assignment_path(assignment), class: "btn btn-outline-secondary" do
+                                  %i.bi.bi-pencil
+                - else
+                  .text-center.py-4
+                    %p.text-muted No assignments yet
+                    = link_to new_assignment_path(company_id: @organization.id), class: "btn btn-primary" do
+                      %i.bi.bi-plus.me-1
+                      Create Your First Assignment
+          
           .card
             .card-header.d-flex.justify-content-between.align-items-center
               %h5.mb-0

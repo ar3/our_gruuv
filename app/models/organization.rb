@@ -7,6 +7,7 @@ class Organization < ApplicationRecord
   has_many :children, class_name: 'Organization', foreign_key: 'parent_id'
   has_many :huddles, dependent: :destroy
   has_many :huddle_playbooks, dependent: :destroy
+  has_many :assignments, foreign_key: 'company_id', dependent: :destroy
   has_one :slack_configuration, dependent: :destroy
   
   # Validations
@@ -16,6 +17,7 @@ class Organization < ApplicationRecord
   # Scopes
   scope :companies, -> { where(type: 'Company') }
   scope :teams, -> { where(type: 'Team') }
+  scope :ordered, -> { order(:name) }
   
   # Instance methods
   def company?
