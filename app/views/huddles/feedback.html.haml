@@ -148,11 +148,11 @@
                 
                 .mb-3
                   = form.label :appreciation, "What went well in this huddle?", class: "form-label"
-                  = form.text_area :appreciation, class: "form-control", rows: 3, placeholder: "Share what worked well and what you appreciated..."
+                  = form.text_area :appreciation, value: @existing_feedback&.appreciation, class: "form-control", rows: 3, placeholder: "Share what worked well and what you appreciated..."
                 
                 .mb-3
                   = form.label :change_suggestion, "What could be improved?", class: "form-label"
-                  = form.text_area :change_suggestion, class: "form-control", rows: 3, placeholder: "Share suggestions for improvement..."
+                  = form.text_area :change_suggestion, value: @existing_feedback&.change_suggestion, class: "form-control", rows: 3, placeholder: "Share suggestions for improvement..."
             
             .row.mb-4
               .col-12
@@ -176,7 +176,7 @@
                     %small.text-muted.d-block.mb-2
                       %i.bi.bi-eye-slash.me-1
                       No one will see this until a department head is assigned
-                  = form.text_area :private_department_head, class: "form-control", rows: 2, placeholder: "Any private feedback for the department head..."
+                  = form.text_area :private_department_head, value: @existing_feedback&.private_department_head, class: "form-control", rows: 2, placeholder: "Any private feedback for the department head..."
                 
                 .mb-3
                   - if facilitators.any?
@@ -190,7 +190,7 @@
                     %small.text-muted.d-block.mb-2
                       %i.bi.bi-eye-slash.me-1
                       No one will see this until a facilitator is assigned
-                  = form.text_area :private_facilitator, class: "form-control", rows: 2, placeholder: "Any private feedback for the facilitator..."
+                  = form.text_area :private_facilitator, value: @existing_feedback&.private_facilitator, class: "form-control", rows: 2, placeholder: "Any private feedback for the facilitator..."
             
             .row
               .col-12
