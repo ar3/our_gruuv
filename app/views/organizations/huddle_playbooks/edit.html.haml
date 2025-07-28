@@ -17,8 +17,8 @@
                     %li= message
             
             .mb-3
-              = form.label :instruction_alias, "Playbook Name", class: "form-label"
-              = form.text_field :instruction_alias, class: "form-control", required: true, placeholder: "e.g., Sprint Planning"
+              = form.label :special_session_name, "Playbook Name)", class: "form-label"
+              = form.text_field :special_session_name, class: "form-control", required: false, placeholder: "e.g., Sprint Planning (leave blank for it to be the base #{@organization.display_name} playbook)"
               .form-text A friendly name for this huddle playbook
             
             .mb-3

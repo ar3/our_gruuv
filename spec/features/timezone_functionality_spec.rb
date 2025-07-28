@@ -61,7 +61,8 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
     visit huddles_path
     
     # The time should be displayed in Eastern Time in the tooltip
-    expect(page).to have_css("h5[title*='EDT']")
+    # Check for EDT timezone indicator in the tooltip (Bootstrap moves title to data-bs-original-title)
+    expect(page).to have_css("h5[data-bs-original-title*='EDT']")
   end
 
   scenario 'Timezone is automatically detected when joining huddle' do

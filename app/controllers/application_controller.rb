@@ -195,6 +195,15 @@ class ApplicationController < ActionController::Base
         raise error, "Email is required"
       end
       
+      # Auto-generate name from email if not provided and person doesn't exist
+      if name.blank?
+        existing_person = Person.find_by(email: email)
+        if existing_person&.full_name.present?
+          name = existing_person.full_name
+        else
+          name = email.split('@').first.gsub('.', ' ').titleize
+        end
+      end
       
       # If no timezone provided, try to detect from request
       timezone ||= detect_timezone_from_request
