@@ -37,7 +37,7 @@
                 %i.bi.bi-slack.me-2
                 Slack Integration
               
-              - if @organization.slack_configured?
+              - if @organization.slack_configured? && @organization.slack_configuration.present?
                 .alert.alert-success
                   %strong
                     %i.bi.bi-check-circle.me-2
