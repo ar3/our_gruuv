@@ -9,6 +9,7 @@ class Person < ApplicationRecord
   validates :unique_textable_phone_number, uniqueness: true, allow_blank: true
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validate :ensure_valid_timezone
+
   
   # Virtual attribute for full name - getter and setter methods
   def full_name
@@ -37,6 +38,28 @@ class Person < ApplicationRecord
     time.in_time_zone(timezone_name).strftime('%B %d, %Y at %I:%M %p %Z')
   end
   
+  # Safely set timezone with validation
+  def safe_timezone=(value)
+    if value.blank?
+      self.timezone = nil
+    elsif ActiveSupport::TimeZone.all.map(&:name).include?(value)
+      self.timezone = value
+    else
+      Rails.logger.warn "Invalid timezone attempted: #{value}, setting to Eastern Time"
+      self.timezone = 'Eastern Time (US & Canada)'
+    end
+  end
+  
+  def format_time_in_user_timezone(time)
+    return time.in_time_zone('Eastern Time (US & Canada)').strftime('%B %d, %Y at %I:%M %p %Z') unless timezone.present?
+    
+    time.in_time_zone(timezone).strftime('%B %d, %Y at %I:%M %p %Z')
+  end
+  
+
+
+
+
   # Organization context methods
   def current_organization_or_default
     current_organization || Organization.companies.first

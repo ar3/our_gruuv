@@ -43,7 +43,7 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
     expect(page).to have_css("h5[data-bs-original-title*='EDT']")
   end
 
-  scenario 'Times are displayed in UTC when user has no timezone' do
+  scenario 'Times are displayed in Eastern Time when user has no timezone' do
     # Create a huddle that's definitely active today
     today_huddle = create(:huddle, organization: organization, started_at: Time.current)
     
@@ -60,8 +60,8 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
     
     visit huddles_path
     
-    # The time should be displayed in UTC in the tooltip (Bootstrap moves title to data-bs-original-title)
-    expect(page).to have_css("h5[data-bs-original-title*='UTC']")
+    # The time should be displayed in Eastern Time in the tooltip
+    expect(page).to have_css("h5[title*='EDT']")
   end
 
   scenario 'Timezone is automatically detected when joining huddle' do
@@ -129,5 +129,7 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
     # Check that the person was created with a timezone (server fallback)
     person = Person.find_by(email: 'server@example.com')
     expect(person.timezone).to be_present
+    # Should be Eastern Time or a locale-based timezone
+    expect(['Eastern Time (US & Canada)', 'Central Time (US & Canada)', 'Pacific Time (US & Canada)', 'London', 'Paris']).to include(person.timezone)
   end
 end 

@@ -23,7 +23,7 @@
                   = @person.unique_textable_phone_number
               %p
                 %strong Timezone:
-                = @person.timezone.present? ? @person.timezone : 'Not set (using UTC)'
+                = @person.timezone.present? ? @person.timezone : 'Not set (using Eastern Time)'
             
             .col-md-6
               %h5.text-primary Account Statistics

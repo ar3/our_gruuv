@@ -16,18 +16,18 @@ RSpec.describe ApplicationHelper, type: :helper do
     context 'when user has no timezone' do
       let(:person) { build(:person, timezone: nil) }
 
-      it 'formats time in UTC' do
+      it 'formats time in Eastern Time' do
         formatted = helper.format_time_in_user_timezone(time, person)
-        expect(formatted).to include('UTC')
-        expect(formatted).to include('2:30 PM') # 14:30 UTC
+        expect(formatted).to include('EDT') # Eastern Daylight Time
+        expect(formatted).to include('10:30 AM') # 14:30 UTC = 10:30 AM EDT
       end
     end
 
     context 'when no user provided and current_person not available' do
-      it 'formats time in UTC' do
+      it 'formats time in Eastern Time' do
         formatted = helper.format_time_in_user_timezone(time)
-        expect(formatted).to include('UTC')
-        expect(formatted).to include('2:30 PM') # 14:30 UTC
+        expect(formatted).to include('EDT') # Eastern Daylight Time
+        expect(formatted).to include('10:30 AM') # 14:30 UTC = 10:30 AM EDT
       end
     end
 

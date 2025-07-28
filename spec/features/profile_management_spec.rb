@@ -59,7 +59,7 @@ RSpec.feature 'Profile Management', type: :feature, js: true do
     person.update!(timezone: nil)
     visit profile_path
     
-    expect(page).to have_content('Not set (using UTC)')
+    expect(page).to have_content('Not set (using Eastern Time)')
   end
 
   scenario 'Profile shows phone number when set' do
