@@ -279,7 +279,7 @@
               Evolve
               %small.text-dark-50.ms-2 "Did we learn something? Get better?"
           .card-body
-            - if @existing_feedback
+            - if @existing_feedback || params[:override] == 'true'
               - if @huddle.huddle_feedbacks.any?
                 .row
                   .col-md-6
