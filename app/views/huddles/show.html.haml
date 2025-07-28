@@ -82,7 +82,7 @@
             
             .row.mt-3
               .col-md-6.col-sm-12
-                .d-flex.align-items-center.gap-2.mb-3
+                .d-flex.align-items-left.gap-2.mb-3.align-items-left.flex-column
                   - if @huddle.slack_configured?
                     - if @huddle.has_slack_announcement?
                       .d-flex.align-items-center.gap-2
@@ -95,14 +95,14 @@
                               %i.bi.bi-search
                     - else
                       = button_to "Let Slack folks know the huddle has started", post_start_announcement_to_slack_huddle_path(@huddle), method: :post, class: "btn btn-success btn-sm", data: { confirm: "Send huddle start announcement to Slack?" }
+                    %p.small.text-muted.d-block.mt-1
+                      %i.bi.bi-slack.me-1
+                      Notifications will be sent to ##{@huddle.organization.slack_configuration&.channel_name || 'general'}
                   - else
-                    %button.btn.btn-outline-secondary{type: "button", 
-                        data: {bs_toggle: "popover", 
-                                bs_placement: "left", 
-                                bs_title: "Slack Not Configured", 
-                                bs_content: "An admin needs to configure Slack for this organization. #{link_to 'Configure Slack', organization_slack_path(@huddle.organization), class: 'btn btn-sm btn-primary mt-2'}"}}
+                    %p.text-muted.mb-2
                       %i.bi.bi-slack.me-2
-                      Let Slack folks know the huddle has started
+                      Slack is not installed for this organization. 
+                      = link_to "Install it now", organization_slack_path(@huddle.organization.root_company), class: "text-decoration-none"
 
               .col-md-6.col-sm-12
                 - if @huddle.nat_20_score
@@ -279,7 +279,7 @@
               Evolve
               %small.text-dark-50.ms-2 "Did we learn something? Get better?"
           .card-body
-            - if @existing_feedback || params[:override] == 'true'
+            - if @existing_feedback || params[:override] == 'tru'
               - if @huddle.huddle_feedbacks.any?
                 .row
                   .col-md-6
