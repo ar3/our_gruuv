@@ -17,6 +17,20 @@
     Database Error: 
     %strong{style: "color: red;"}= @db_error
 
+%h2 Rails URL Configuration
+%p
+  Action Mailer Default URL Options: 
+  %strong= @action_mailer_url_options.inspect
+%p
+  Action Controller Default URL Options: 
+  %strong= @action_controller_url_options.inspect
+%p
+  Test URL Generated: 
+  %strong{class: @url_generation_works ? "text-success" : "text-danger"}= @test_url_generated
+%p
+  URL Generation Works: 
+  %strong{class: @url_generation_works ? "text-success" : "text-danger"}= @url_generation_works ? "YES" : "NO"
+
 %h2 Environment Variables (Names and Character Counts)
 - if @env_vars.any?
   %ul
