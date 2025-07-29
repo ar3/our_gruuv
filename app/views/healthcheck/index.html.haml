@@ -30,6 +30,12 @@
 %p
   URL Generation Works: 
   %strong{class: @url_generation_works ? "text-success" : "text-danger"}= @url_generation_works ? "YES" : "NO"
+%p
+  Routes Loaded: 
+  %strong= @routes_loaded
+%p
+  Routes Count: 
+  %strong= @routes_count
 
 %h2 Environment Variables (Names and Character Counts)
 - if @env_vars.any?

@@ -40,8 +40,15 @@ Rails.application.configure do
   # Set host to be used by links generated in mailer templates and URL helpers.
   default_url_options = { 
     host: ENV.fetch('RAILS_HOST', 'localhost'),
-    port: ENV.fetch('RAILS_PORT', 3000).to_i
+    protocol: ENV.fetch('RAILS_ACTION_MAILER_DEFAULT_URL_PROTOCOL', 'http')
   }
+  
+  # Only add port if it's not the default for the protocol
+  port = ENV.fetch('RAILS_PORT', 3000).to_i
+  if (default_url_options[:protocol] == 'https' && port != 443) || 
+     (default_url_options[:protocol] == 'http' && port != 80)
+    default_url_options[:port] = port
+  end
   
   config.action_mailer.default_url_options = default_url_options
   config.action_controller.default_url_options = default_url_options

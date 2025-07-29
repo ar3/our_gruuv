@@ -7,6 +7,10 @@ class HealthcheckController < ApplicationController
     @action_mailer_url_options = Rails.application.config.action_mailer.default_url_options
     @action_controller_url_options = Rails.application.config.action_controller.default_url_options
     
+    # Debug: Check if routes are loaded
+    @routes_loaded = Rails.application.routes.routes.any?
+    @routes_count = Rails.application.routes.routes.count
+    
     # Test URL generation
     begin
       test_url = Rails.application.routes.url_helpers.root_url
