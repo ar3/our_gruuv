@@ -73,6 +73,10 @@ class Person < ApplicationRecord
     Organization.all.order(:type, :name)
   end
   
+  def available_companies
+    Organization.companies.order(:type, :name)
+  end
+  
   def last_huddle
     huddles.recent.first
   end

@@ -97,7 +97,7 @@
                       = button_to "Let Slack folks know the huddle has started", post_start_announcement_to_slack_huddle_path(@huddle), method: :post, class: "btn btn-success btn-sm", data: { confirm: "Send huddle start announcement to Slack?" }
                     %p.small.text-muted.d-block.mt-1
                       %i.bi.bi-slack.me-1
-                      Notifications will be sent to ##{@huddle.organization.slack_configuration&.channel_name || 'general'}
+                      ="Notifications will be sent to #{@huddle&.slack_channel}"
                   - else
                     %p.text-muted.mb-2
                       %i.bi.bi-slack.me-2
