@@ -26,6 +26,18 @@
                       %small.text-muted
                         %i.bi.bi-list-check.me-1
                         #{assignment.assignment_outcomes.count} outcomes
+                    - outcome_types = assignment.assignment_outcomes.group(:outcome_type).count
+                    - if outcome_types.any?
+                      %p.card-text
+                        %small.text-muted
+                          - outcome_types.each do |type, count|
+                            %span.badge.me-1{class: type == 'sentiment' ? 'bg-warning' : 'bg-info'}
+                              = "#{type.titleize}: #{count}"
+                  - else
+                    %p.card-text
+                      %small.text-muted
+                        %i.bi.bi-exclamation-triangle.me-1
+                        No outcomes defined
                   - if assignment.published_source_url.present? || assignment.draft_source_url.present?
                     %p.card-text
                       %small.text-muted

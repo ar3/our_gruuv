@@ -93,3 +93,6 @@ gem "http", "~> 5.0"
 
 # Environment variables
 gem "dotenv-rails", "~> 3.1"
+
+# Markdown rendering
+gem "redcarpet", "~> 3.6"

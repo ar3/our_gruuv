@@ -16,5 +16,13 @@ FactoryBot.define do
         create_list(:assignment_outcome, 3, assignment: assignment)
       end
     end
+    
+    trait :with_mixed_outcomes do
+      after(:create) do |assignment|
+        create(:assignment_outcome, :quantitative, assignment: assignment)
+        create(:assignment_outcome, :sentiment, assignment: assignment)
+        create(:assignment_outcome, :quantitative, assignment: assignment)
+      end
+    end
   end
 end 

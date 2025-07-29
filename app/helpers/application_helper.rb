@@ -133,4 +133,26 @@ module ApplicationHelper
     user ||= @current_person if defined?(@current_person)
     Pundit.policy(user, record)
   end
+
+  # Markdown rendering helper
+  def render_markdown(text)
+    return '' if text.blank?
+    
+    markdown = Redcarpet::Markdown.new(
+      Redcarpet::Render::HTML,
+      autolink: true,
+      tables: true,
+      fenced_code_blocks: true,
+      strikethrough: true,
+      superscript: true,
+      underline: true,
+      highlight: true,
+      quote: true,
+      footnotes: true
+    )
+    
+    # Render markdown and then convert remaining newlines to <br/> tags
+    rendered = markdown.render(text)
+    rendered.gsub(/\n/, '<br/>').html_safe
+  end
 end

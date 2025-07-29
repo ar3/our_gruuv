@@ -103,7 +103,16 @@
                             %td
                               %small.text-muted= truncate(assignment.tagline, length: 60)
                             %td
-                              %span.badge.bg-info= assignment.assignment_outcomes.count
+                              - if assignment.assignment_outcomes.any?
+                                %span.badge.bg-info= assignment.assignment_outcomes.count
+                                - outcome_types = assignment.assignment_outcomes.group(:outcome_type).count
+                                - outcome_types.each do |type, count|
+                                  %span.badge.ms-1{class: type == 'sentiment' ? 'bg-warning' : 'bg-info'}
+                                    = "#{type}: #{count}"
+                              - else
+                                %span.badge.bg-warning
+                                  %i.bi.bi-exclamation-triangle
+                                  No outcomes
                             %td
                               - if assignment.published_source_url.present? || assignment.draft_source_url.present?
                                 %span.badge.bg-success.me-1

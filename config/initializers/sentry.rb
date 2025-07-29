@@ -56,5 +56,6 @@ Sentry.init do |config|
   config.enable_tracing = true
   
   # Configure the logger
-  config.logger = Rails.logger
+  # config.logger = Rails.logger
+  config.sdk_logger = Rails.logger
 end 

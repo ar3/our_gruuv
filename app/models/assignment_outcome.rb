@@ -5,6 +5,10 @@ class AssignmentOutcome < ApplicationRecord
   # Validations
   validates :description, presence: true
   validates :assignment, presence: true
+  validates :outcome_type, inclusion: { in: %w[quantitative sentiment], allow_blank: false }
+  
+  # Constants
+  TYPES = %w[quantitative sentiment].freeze
   
   # Scopes
   scope :ordered, -> { order(:created_at) }

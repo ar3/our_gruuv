@@ -15,61 +15,10 @@
         
         .card-body
           = form_with model: @assignment, local: true do |form|
-            - if @assignment.errors.any?
-              .alert.alert-danger
-                %h5= "#{pluralize(@assignment.errors.count, "error")} prohibited this assignment from being saved:"
-                %ul.mb-0
-                  - @assignment.errors.full_messages.each do |message|
-                    %li= message
+            = render 'form', form: form
             
-            .row
-              .col-md-6
-                .mb-3
-                  = form.label :title, class: "form-label"
-                  = form.text_field :title, class: "form-control", required: true, placeholder: "e.g., Product Manager"
-                  %small.form-text.text-muted A noun that conveys what you can be relied upon for
-              
-              .col-md-6
-                .mb-3
-                  = form.label :company_id, "Company", class: "form-label"
-                  = form.select :company_id, 
-                    options_from_collection_for_select(@companies, :id, :name, @assignment.company_id), 
-                    { prompt: 'Select a company' }, 
-                    { class: "form-select", required: true }
-            
-            .mb-3
-              = form.label :tagline, class: "form-label"
-              = form.text_area :tagline, class: "form-control", rows: 3, required: true, 
-                placeholder: "An inspiring summary of how the world is different when we are taking on this Assignment well"
-              %small.form-text.text-muted How the world is different when this assignment is done well
-            
-            .mb-3
-              = form.label :required_activities, "Required Activities", class: "form-label"
-              = form.text_area :required_activities, class: "form-control", rows: 4,
-                placeholder: "• Activity 1&#10;• Activity 2&#10;• Activity 3"
-              %small.form-text.text-muted Only put absolutely required activities here
-            
-            .mb-3
-              = form.label :handbook, class: "form-label"
-              = form.text_area :handbook, class: "form-control", rows: 4,
-                placeholder: "Suggestions and guidance for those taking on this assignment..."
-              %small.form-text.text-muted Suggestions and guidance for those taking on this assignment
-            
-            .row
-              .col-md-6
-                .mb-3
-                  = form.label :published_source_url, "Published Source URL", class: "form-label"
-                  = form.url_field :published_source_url, class: "form-control", 
-                    placeholder: "https://docs.google.com/document/d/..."
-                  %small.form-text.text-muted URL to the published version of this assignment
-              
-              .col-md-6
-                .mb-3
-                  = form.label :draft_source_url, "Draft Source URL", class: "form-label"
-                  = form.url_field :draft_source_url, class: "form-control", 
-                    placeholder: "https://docs.google.com/document/d/..."
-                  %small.form-text.text-muted URL to the draft version of this assignment
-            
+
             .d-flex.justify-content-between
               = link_to "Cancel", assignment_path(@assignment), class: "btn btn-secondary"
               = form.submit "Update Assignment", class: "btn btn-primary"
+            

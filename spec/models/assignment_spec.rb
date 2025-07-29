@@ -76,4 +76,69 @@ RSpec.describe Assignment, type: :model do
       expect(assignment_with_urls.draft_source_url).to be_present
     end
   end
+
+  describe '#create_outcomes_from_textarea' do
+    it 'creates outcomes from textarea input' do
+      text = "Increase customer satisfaction by 20%\nReduce response time to under 2 hours\nTeam agrees: We communicate clearly"
+      
+      assignment.create_outcomes_from_textarea(text)
+      
+      expect(assignment.assignment_outcomes.count).to eq(3)
+      expect(assignment.assignment_outcomes.pluck(:description)).to include(
+        'Increase customer satisfaction by 20%',
+        'Reduce response time to under 2 hours',
+        'Team agrees: We communicate clearly'
+      )
+    end
+
+    it 'sets quantitative type by default' do
+      text = "Increase customer satisfaction by 20%"
+      assignment.create_outcomes_from_textarea(text)
+      
+      outcome = assignment.assignment_outcomes.first
+      expect(outcome.outcome_type).to eq('quantitative')
+    end
+
+    it 'sets sentiment type when contains agree:' do
+      text = "Team agrees: We communicate clearly"
+      assignment.create_outcomes_from_textarea(text)
+      
+      outcome = assignment.assignment_outcomes.first
+      expect(outcome.outcome_type).to eq('sentiment')
+    end
+
+    it 'sets sentiment type when contains agrees:' do
+      text = "Team agrees: We work efficiently"
+      assignment.create_outcomes_from_textarea(text)
+      
+      outcome = assignment.assignment_outcomes.first
+      expect(outcome.outcome_type).to eq('sentiment')
+    end
+
+    it 'handles case insensitive detection' do
+      text = "Team AGREES: We communicate clearly"
+      assignment.create_outcomes_from_textarea(text)
+      
+      outcome = assignment.assignment_outcomes.first
+      expect(outcome.outcome_type).to eq('sentiment')
+    end
+
+    it 'ignores empty lines and whitespace' do
+      text = "  \nIncrease customer satisfaction\n  \n\nReduce response time\n"
+      assignment.create_outcomes_from_textarea(text)
+      
+      expect(assignment.assignment_outcomes.count).to eq(2)
+      expect(assignment.assignment_outcomes.pluck(:description)).to include(
+        'Increase customer satisfaction',
+        'Reduce response time'
+      )
+    end
+
+    it 'does nothing with blank text' do
+      assignment.create_outcomes_from_textarea("")
+      assignment.create_outcomes_from_textarea(nil)
+      
+      expect(assignment.assignment_outcomes.count).to eq(0)
+    end
+  end
 end

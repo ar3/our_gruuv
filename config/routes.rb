@@ -1,6 +1,8 @@
 Rails.application.routes.draw do
   # Assignments routes
   resources :assignments
+  
+
   root "pages#home"
   get "healthcheck/index"
   get "/healthcheck", to: "healthcheck#index"

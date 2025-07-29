@@ -25,29 +25,27 @@
         .card-body
           .row
             .col-md-8
-              %h5.mb-3
+              %h5.mb-2
                 %i.bi.bi-building.me-2
                 Company
               %p= @assignment.company_name
               
               - if @assignment.required_activities.present?
-                %h5.mb-3
+                %h5.mb-2
                   %i.bi.bi-list-task.me-2
                   Required Activities
-                .card.bg-light
-                  .card-body
-                    = simple_format(@assignment.required_activities)
+                .markdown-content.markdown-content--bordered
+                  = render_markdown(@assignment.required_activities)
               
               - if @assignment.handbook.present?
-                %h5.mb-3
+                %h5.mb-2.mt-3
                   %i.bi.bi-book.me-2
                   Handbook
-                .card.bg-light
-                  .card-body
-                    = simple_format(@assignment.handbook)
+                .markdown-content.markdown-content--bordered
+                  = render_markdown(@assignment.handbook)
               
               - if @assignment.published_source_url.present? || @assignment.draft_source_url.present?
-                %h5.mb-3
+                %h5.mb-2.mt-3
                   %i.bi.bi-link-45deg.me-2
                   Source Documents
                 - if @assignment.published_source_url.present?
@@ -69,8 +67,15 @@
                 - @assignment.assignment_outcomes.ordered.each do |outcome|
                   .card.mb-2
                     .card-body.py-2
-                      %p.mb-0= outcome.description
+                      .d-flex.justify-content-between.align-items-start
+                        .flex-grow-1
+                          %p.mb-0= outcome.description
+                        %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
+                          = outcome.outcome_type.titleize
               - else
-                .text-muted
-                  %p.mb-0 No outcomes defined yet.
-                  %small Add outcomes to clarify what success looks like.
+                .alert.alert-warning
+                  %h6.mb-2
+                    %i.bi.bi-exclamation-triangle.me-2
+                    No Outcomes Defined
+                  %p.mb-2 Outcomes help clarify what success looks like for this assignment.
+                  = link_to "Add Outcomes", edit_assignment_path(@assignment), class: "btn btn-warning btn-sm"
