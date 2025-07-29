@@ -203,13 +203,8 @@ class Huddles::PostAnnouncementJob < ApplicationJob
   end
 
   def generate_join_url(huddle)
-    # Try to get the host from Rails configuration
-    host = Rails.application.config.action_mailer.default_url_options&.dig(:host) ||
-           ENV['RAILS_HOST'] ||
-           'localhost:3000'
-    
-    # Generate the URL with the host
-    Rails.application.routes.url_helpers.join_huddle_url(huddle, host: host)
+    # Use Rails' built-in URL generation with configured default options
+    Rails.application.routes.url_helpers.join_huddle_url(huddle)
   rescue => e
     # Fallback to just the path if URL generation fails
     Rails.logger.warn "Failed to generate full URL for huddle #{huddle.id}: #{e.message}"
