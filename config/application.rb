@@ -23,5 +23,13 @@ module OurGruuv
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+    
+    # Set default URL options for the application
+    config.after_initialize do
+      Rails.application.routes.default_url_options = {
+        host: ENV.fetch('RAILS_HOST', 'localhost'),
+        protocol: ENV.fetch('RAILS_ACTION_MAILER_DEFAULT_URL_PROTOCOL', 'http')
+      }
+    end
   end
 end

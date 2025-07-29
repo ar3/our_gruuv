@@ -25,11 +25,29 @@
   Action Controller Default URL Options: 
   %strong= @action_controller_url_options.inspect
 %p
+  URL Options Debug: 
+  %strong= @url_options_debug
+%p
+  ENV RAILS_HOST: 
+  %strong= @env_host
+%p
+  ENV RAILS_ACTION_MAILER_DEFAULT_URL_PROTOCOL: 
+  %strong= @env_protocol
+%p
   Test URL Generated: 
   %strong{class: @url_generation_works ? "text-success" : "text-danger"}= @test_url_generated
 %p
   URL Generation Works: 
   %strong{class: @url_generation_works ? "text-success" : "text-danger"}= @url_generation_works ? "YES" : "NO"
+%p
+  Join Huddle URL: 
+  - begin
+    - if Huddle.last.present?
+      %strong= Rails.application.routes.url_helpers.join_huddle_url(Huddle.last)
+    - else
+      %strong No Huddle found
+  - rescue => e
+    %strong{style: "color: red;"}= "ERROR: #{e.message}"
 %p
   Routes Loaded: 
   %strong= @routes_loaded
