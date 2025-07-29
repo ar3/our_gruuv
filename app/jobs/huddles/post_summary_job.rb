@@ -55,6 +55,10 @@ class Huddles::PostSummaryJob < ApplicationJob
 
   private
 
+  def feedback_huddle_url(huddle)
+    Rails.application.routes.url_helpers.feedback_huddle_url(huddle)
+  end
+
   def build_summary_fallback_text(huddle)
     "📊 Huddle Summary - Participation: #{huddle.huddle_feedbacks.count}/#{huddle.huddle_participants.count} participants • Nat 20 Score: #{huddle.nat_20_score || 'N/A'} • Average Ratings: Informed: #{huddle.average_rating_by_category[:informed] || 'N/A'}/5, Connected: #{huddle.average_rating_by_category[:connected] || 'N/A'}/5, Goals: #{huddle.average_rating_by_category[:goals] || 'N/A'}/5, Valuable: #{huddle.average_rating_by_category[:valuable] || 'N/A'}/5 • Insights: #{huddle.feedback_insights.first(2).join(', ') || 'No insights yet'}"
   end
@@ -62,7 +66,7 @@ class Huddles::PostSummaryJob < ApplicationJob
   def build_summary_blocks(huddle, is_thread: false)
     if is_thread
       # Detailed summary for thread
-      [
+      blocks = [
         {
           type: "header",
           text: {
@@ -98,9 +102,22 @@ class Huddles::PostSummaryJob < ApplicationJob
           ]
         }
       ]
+      
+      # Add feedback link if at least one person has submitted feedback
+      if huddle.huddle_feedbacks.any?
+        blocks << {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "💬 *Want to contribute?* <#{feedback_huddle_url(huddle)}|Submit your feedback>"
+          }
+        }
+      end
+      
+      blocks
     else
       # Main announcement
-      [
+      blocks = [
         {
           type: "header",
           text: {
@@ -126,6 +143,19 @@ class Huddles::PostSummaryJob < ApplicationJob
           ]
         }
       ]
+      
+      # Add feedback link if at least one person has submitted feedback
+      if huddle.huddle_feedbacks.any?
+        blocks << {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "💬 *Want to contribute?* <#{feedback_huddle_url(huddle)}|Submit your feedback>"
+          }
+        }
+      end
+      
+      blocks
     end
   end
 end 
