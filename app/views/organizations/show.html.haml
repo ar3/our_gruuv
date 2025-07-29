@@ -105,6 +105,10 @@
                             %td
                               %span.badge.bg-info= assignment.assignment_outcomes.count
                             %td
+                              - if assignment.published_source_url.present? || assignment.draft_source_url.present?
+                                %span.badge.bg-success.me-1
+                                  %i.bi.bi-link-45deg
+                            %td
                               .btn-group.btn-group-sm
                                 = link_to assignment_path(assignment), class: "btn btn-outline-primary" do
                                   %i.bi.bi-eye

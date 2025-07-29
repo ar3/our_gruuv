@@ -7,6 +7,8 @@ class Assignment < ApplicationRecord
   validates :title, presence: true
   validates :tagline, presence: true
   validates :company, presence: true
+  validates :published_source_url, format: { with: URI::regexp(%w[http https]), message: "must be a valid URL" }, allow_blank: true
+  validates :draft_source_url, format: { with: URI::regexp(%w[http https]), message: "must be a valid URL" }, allow_blank: true
   
   # Scopes
   scope :ordered, -> { order(:title) }

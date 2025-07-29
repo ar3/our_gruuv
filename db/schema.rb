@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_28_114837) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_29_102612) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -30,6 +30,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_28_114837) do
     t.bigint "company_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "published_source_url"
+    t.string "draft_source_url"
     t.index ["company_id"], name: "index_assignments_on_company_id"
   end
 
@@ -145,9 +147,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_28_114837) do
     t.string "workspace_id", null: false
     t.string "workspace_name", null: false
     t.string "bot_token", null: false
-    t.string "default_channel", default: "#bot-test"
-    t.string "bot_username", default: "OG"
-    t.string "bot_emoji", default: ":sparkles:"
+    t.string "default_channel", default: "#general"
+    t.string "bot_username", default: "Huddle Bot"
+    t.string "bot_emoji", default: ":huddle:"
     t.datetime "installed_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

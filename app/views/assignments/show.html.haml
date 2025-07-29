@@ -45,6 +45,21 @@
                 .card.bg-light
                   .card-body
                     = simple_format(@assignment.handbook)
+              
+              - if @assignment.published_source_url.present? || @assignment.draft_source_url.present?
+                %h5.mb-3
+                  %i.bi.bi-link-45deg.me-2
+                  Source Documents
+                - if @assignment.published_source_url.present?
+                  .mb-2
+                    = link_to @assignment.published_source_url, target: "_blank", class: "btn btn-outline-primary btn-sm" do
+                      %i.bi.bi-file-earmark-text.me-1
+                      Published Version
+                - if @assignment.draft_source_url.present?
+                  .mb-2
+                    = link_to @assignment.draft_source_url, target: "_blank", class: "btn btn-outline-secondary btn-sm" do
+                      %i.bi.bi-file-earmark-text.me-1
+                      Draft Version
             
             .col-md-4
               %h5.mb-3

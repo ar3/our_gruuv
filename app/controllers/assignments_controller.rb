@@ -51,6 +51,6 @@ class AssignmentsController < ApplicationController
   end
 
   def assignment_params
-    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook, :company_id)
+    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook, :company_id, :published_source_url, :draft_source_url)
   end
 end

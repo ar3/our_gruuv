@@ -26,6 +26,11 @@
                       %small.text-muted
                         %i.bi.bi-list-check.me-1
                         #{assignment.assignment_outcomes.count} outcomes
+                  - if assignment.published_source_url.present? || assignment.draft_source_url.present?
+                    %p.card-text
+                      %small.text-muted
+                        %i.bi.bi-link-45deg.me-1
+                        Source documents available
                 .card-footer.bg-transparent
                   .d-flex.justify-content-between
                     = link_to "View", assignment_path(assignment), class: "btn btn-outline-primary btn-sm"
