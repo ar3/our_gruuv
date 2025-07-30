@@ -138,6 +138,9 @@ module ApplicationHelper
   def render_markdown(text)
     return '' if text.blank?
     
+    # Trim whitespace to avoid extra newlines
+    text = text.strip
+    
     markdown = Redcarpet::Markdown.new(
       Redcarpet::Render::HTML,
       autolink: true,
@@ -153,6 +156,6 @@ module ApplicationHelper
     
     # Render markdown and then convert remaining newlines to <br/> tags
     rendered = markdown.render(text)
-    rendered.gsub(/\n/, '<br/>').html_safe
+    rendered.gsub(/\n/, '<br/>').gsub(/<br\/>$/, '').html_safe
   end
 end
