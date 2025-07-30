@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_30_033154) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_30_035716) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -143,6 +143,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_033154) do
     t.index ["unique_textable_phone_number"], name: "index_people_on_unique_textable_phone_number", unique: true
   end
 
+  create_table "position_levels", force: :cascade do |t|
+    t.bigint "position_major_level_id", null: false
+    t.string "level", null: false
+    t.text "ideal_assignment_goal_types"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["position_major_level_id", "level"], name: "index_position_levels_on_position_major_level_id_and_level", unique: true
+    t.index ["position_major_level_id"], name: "index_position_levels_on_position_major_level_id"
+  end
+
   create_table "position_major_levels", force: :cascade do |t|
     t.string "description"
     t.integer "major_level", null: false
@@ -184,5 +194,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_033154) do
   add_foreign_key "notifications", "notifications", column: "original_message_id"
   add_foreign_key "organizations", "organizations", column: "parent_id"
   add_foreign_key "people", "organizations", column: "current_organization_id"
+  add_foreign_key "position_levels", "position_major_levels"
   add_foreign_key "slack_configurations", "organizations"
 end
