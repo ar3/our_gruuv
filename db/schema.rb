@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_29_111339) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_30_033154) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -141,6 +141,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_29_111339) do
     t.integer "current_organization_id"
     t.index ["current_organization_id"], name: "index_people_on_current_organization_id"
     t.index ["unique_textable_phone_number"], name: "index_people_on_unique_textable_phone_number", unique: true
+  end
+
+  create_table "position_major_levels", force: :cascade do |t|
+    t.string "description"
+    t.integer "major_level", null: false
+    t.string "set_name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["set_name", "major_level"], name: "index_position_major_levels_on_set_name_and_major_level", unique: true
   end
 
   create_table "slack_configurations", force: :cascade do |t|

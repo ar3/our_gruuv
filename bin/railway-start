@@ -10,6 +10,10 @@ fi
 echo "Running database migrations..."
 ./bin/rails db:migrate
 
+# Run seeds to populate initial data
+echo "Running database seeds..."
+./bin/rails db:seed
+
 # Start the Rails server
 echo "Starting Rails server..."
 # Use PORT environment variable if set, otherwise default to 3000
