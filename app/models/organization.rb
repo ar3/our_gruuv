@@ -17,6 +17,7 @@ class Organization < ApplicationRecord
   # Scopes
   scope :companies, -> { where(type: 'Company') }
   scope :teams, -> { where(type: 'Team') }
+  scope :departments, -> { where(type: 'Department') }
   scope :ordered, -> { order(:name) }
   
   # Instance methods
@@ -26,6 +27,10 @@ class Organization < ApplicationRecord
   
   def team?
     type == 'Team'
+  end
+  
+  def department?
+    type == 'Department'
   end
   
   def root_company

@@ -1,0 +1,61 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-8
+      .d-flex.justify-content-between.align-items-center.mb-4
+        = link_to "javascript:history.back()", class: "btn btn-outline-secondary" do
+          %i.bi.bi-arrow-left.me-1
+          Back
+        %h2.mb-0
+          %i.bi.bi-plus-circle.me-2
+          New Position Type
+      
+      .card
+        .card-header
+          %h5.mb-0 Create New Position Type
+        .card-body
+          = form_with model: @position_type, local: true do |form|
+            - if @position_type.errors.any?
+              .alert.alert-danger
+                %h5= "#{pluralize(@position_type.errors.count, "error")} prohibited this position type from being saved:"
+                %ul.mb-0
+                  - @position_type.errors.full_messages.each do |message|
+                    %li= message
+            
+            .row
+              .col-md-6
+                .mb-3
+                  = form.label :position_major_level_id, "Major Level", class: "form-label"
+                  = form.select :position_major_level_id, 
+                    options_from_collection_for_select(PositionMajorLevel.all, :id, :to_s, @position_type.position_major_level_id), 
+                    { prompt: 'Select a major level' }, 
+                    { class: "form-select", required: true }
+                  %small.form-text.text-muted Choose the major level for this position type
+              
+              .col-md-6
+                .mb-3
+                  = form.label :external_title, "External Title", class: "form-label"
+                  = form.text_field :external_title, class: "form-control", required: true,
+                    placeholder: "e.g., Software Engineer, Product Manager"
+                  %small.form-text.text-muted The title used in external systems
+            
+            .row
+              .col-md-12
+                .mb-3
+                  = form.label :alternative_titles, "Alternative Titles", class: "form-label"
+                  = form.text_area :alternative_titles, class: "form-control", rows: 3,
+                    placeholder: "Other titles this position might be known as..."
+                  %small.form-text.text-muted Optional alternative titles for this position type
+            
+            .row
+              .col-md-12
+                .mb-3
+                  = form.label :position_summary, "Position Summary", class: "form-label"
+                  = form.text_area :position_summary, class: "form-control", rows: 4,
+                    placeholder: "Brief description of this position type's responsibilities..."
+                  %small.form-text.text-muted A summary of what this position type entails
+            
+            .row
+              .col-md-12
+                .d-flex.justify-content-between
+                  = link_to "Cancel", "javascript:history.back()", class: "btn btn-outline-secondary"
+                  = form.submit "Create Position Type", class: "btn btn-primary"

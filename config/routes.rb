@@ -1,6 +1,16 @@
 Rails.application.routes.draw do
+  get "positions/index"
+  get "positions/show"
+  get "positions/new"
+  get "positions/edit"
   # Assignments routes
   resources :assignments
+  resources :positions do
+    collection do
+      get :position_levels
+    end
+  end
+  resources :position_types
   
 
   root "pages#home"

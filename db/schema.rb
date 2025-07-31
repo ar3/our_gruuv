@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_31_035257) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_31_050123) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -154,6 +154,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_31_035257) do
     t.index ["unique_textable_phone_number"], name: "index_people_on_unique_textable_phone_number", unique: true
   end
 
+  create_table "position_assignments", force: :cascade do |t|
+    t.bigint "position_id", null: false
+    t.bigint "assignment_id", null: false
+    t.string "assignment_type", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assignment_id"], name: "index_position_assignments_on_assignment_id"
+    t.index ["assignment_type"], name: "index_position_assignments_on_assignment_type"
+    t.index ["position_id", "assignment_id"], name: "index_position_assignments_on_position_and_assignment_unique", unique: true
+    t.index ["position_id"], name: "index_position_assignments_on_position_id"
+  end
+
   create_table "position_levels", force: :cascade do |t|
     t.bigint "position_major_level_id", null: false
     t.string "level", null: false
@@ -171,6 +183,30 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_31_035257) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["set_name", "major_level"], name: "index_position_major_levels_on_set_name_and_major_level", unique: true
+  end
+
+  create_table "position_types", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "position_major_level_id", null: false
+    t.string "external_title", null: false
+    t.text "alternative_titles"
+    t.text "position_summary"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "position_major_level_id", "external_title"], name: "index_position_types_on_org_level_title_unique", unique: true
+    t.index ["organization_id"], name: "index_position_types_on_organization_id"
+    t.index ["position_major_level_id"], name: "index_position_types_on_position_major_level_id"
+  end
+
+  create_table "positions", force: :cascade do |t|
+    t.bigint "position_type_id", null: false
+    t.bigint "position_level_id", null: false
+    t.text "position_summary"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["position_level_id"], name: "index_positions_on_position_level_id"
+    t.index ["position_type_id", "position_level_id"], name: "index_positions_on_type_and_level_unique", unique: true
+    t.index ["position_type_id"], name: "index_positions_on_position_type_id"
   end
 
   create_table "slack_configurations", force: :cascade do |t|
@@ -205,6 +241,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_31_035257) do
   add_foreign_key "notifications", "notifications", column: "original_message_id"
   add_foreign_key "organizations", "organizations", column: "parent_id"
   add_foreign_key "people", "organizations", column: "current_organization_id"
+  add_foreign_key "position_assignments", "assignments"
+  add_foreign_key "position_assignments", "positions"
   add_foreign_key "position_levels", "position_major_levels"
+  add_foreign_key "position_types", "organizations"
+  add_foreign_key "position_types", "position_major_levels"
+  add_foreign_key "positions", "position_levels"
+  add_foreign_key "positions", "position_types"
   add_foreign_key "slack_configurations", "organizations"
 end
