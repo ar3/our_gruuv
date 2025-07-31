@@ -38,21 +38,33 @@
 .row
   .col-md-6
     .mb-3
-      = form.label :required_assignment_ids, "Required Assignments", class: "form-label"
-      = form.select :required_assignment_ids, 
-        options_from_collection_for_select(@assignments, :id, :title, @position.required_assignments.map(&:assignment_id)), 
-        { prompt: 'Select required assignments' }, 
-        { class: "form-select", multiple: true, size: 6 }
-      %small.form-text.text-muted Assignments that must be completed for this position
+      = form.label :required_assignments, "Required Assignments", class: "form-label"
+      .border.rounded.p-3.bg-light
+        .mb-2#required-tags
+          - @position.required_assignments.each do |pa|
+            .badge.bg-primary.me-2.mb-2.d-inline-flex.align-items-center
+              = pa.assignment.title
+              %button.btn-close.btn-close-white.ms-2.btn-sm{"data-assignment-id" => pa.assignment_id, "data-type" => "required", :type => "button"}
+        = form.select :new_required_assignment_id, 
+          options_from_collection_for_select(@assignments.reject { |a| @position.required_assignments.map(&:assignment_id).include?(a.id) }, :id, :title), 
+          { prompt: 'Add required assignment' }, 
+          { class: "form-select", id: "required-assignment-select" }
+        %small.form-text.text-muted Assignments that must be completed for this position
   
   .col-md-6
     .mb-3
-      = form.label :suggested_assignment_ids, "Suggested Assignments", class: "form-label"
-      = form.select :suggested_assignment_ids, 
-        options_from_collection_for_select(@assignments, :id, :title, @position.suggested_assignments.map(&:assignment_id)), 
-        { prompt: 'Select suggested assignments' }, 
-        { class: "form-select", multiple: true, size: 6 }
-      %small.form-text.text-muted Optional assignments that would be beneficial for this position
+      = form.label :suggested_assignments, "Suggested Assignments", class: "form-label"
+      .border.rounded.p-3.bg-light
+        .mb-2#suggested-tags
+          - @position.suggested_assignments.each do |pa|
+            .badge.bg-info.me-2.mb-2.d-inline-flex.align-items-center
+              = pa.assignment.title
+              %button.btn-close.btn-close-white.ms-2.btn-sm{"data-assignment-id" => pa.assignment_id, "data-type" => "suggested", :type => "button"}
+        = form.select :new_suggested_assignment_id, 
+          options_from_collection_for_select(@assignments.reject { |a| @position.suggested_assignments.map(&:assignment_id).include?(a.id) }, :id, :title), 
+          { prompt: 'Add suggested assignment' }, 
+          { class: "form-select", id: "suggested-assignment-select" }
+        %small.form-text.text-muted Optional assignments that would be beneficial for this position
 
 .row
   .col-md-6
@@ -102,4 +114,76 @@
         }
       });
     }
+
+    // Assignment tag functionality
+    const requiredSelect = document.getElementById('required-assignment-select');
+    const suggestedSelect = document.getElementById('suggested-assignment-select');
+    const requiredTags = document.getElementById('required-tags');
+    const suggestedTags = document.getElementById('suggested-tags');
+
+    function addAssignmentTag(select, tagsContainer, type) {
+      const assignmentId = select.value;
+      const assignmentTitle = select.options[select.selectedIndex].text;
+      
+      if (assignmentId && assignmentTitle !== 'Add required assignment' && assignmentTitle !== 'Add suggested assignment') {
+        const tag = document.createElement('div');
+        tag.className = `badge ${type === 'required' ? 'bg-primary' : 'bg-info'} me-2 mb-2 d-inline-flex align-items-center`;
+        tag.innerHTML = `
+          ${assignmentTitle}
+          <button class="btn-close btn-close-white ms-2 btn-sm" data-assignment-id="${assignmentId}" data-type="${type}" type="button"></button>
+        `;
+        tagsContainer.appendChild(tag);
+        
+        // Remove from select options
+        select.remove(select.selectedIndex);
+        select.selectedIndex = 0;
+        
+        // Add hidden input for form submission
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = `position[${type}_assignment_ids][]`;
+        hiddenInput.value = assignmentId;
+        select.parentNode.appendChild(hiddenInput);
+      }
+    }
+
+    function removeAssignmentTag(button) {
+      const assignmentId = button.getAttribute('data-assignment-id');
+      const type = button.getAttribute('data-type');
+      const tag = button.closest('.badge');
+      
+      // Add back to select options
+      const select = type === 'required' ? requiredSelect : suggestedSelect;
+      const option = document.createElement('option');
+      option.value = assignmentId;
+      option.textContent = tag.textContent.trim();
+      select.appendChild(option);
+      
+      // Remove hidden input
+      const hiddenInputs = select.parentNode.querySelectorAll(`input[name="position[${type}_assignment_ids][]"]`);
+      hiddenInputs.forEach(input => {
+        if (input.value === assignmentId) {
+          input.remove();
+        }
+      });
+      
+      // Remove tag
+      tag.remove();
+    }
+
+    // Event listeners
+    if (requiredSelect) {
+      requiredSelect.addEventListener('change', () => addAssignmentTag(requiredSelect, requiredTags, 'required'));
+    }
+    
+    if (suggestedSelect) {
+      suggestedSelect.addEventListener('change', () => addAssignmentTag(suggestedSelect, suggestedTags, 'suggested'));
+    }
+
+    // Remove tag event delegation
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('btn-close')) {
+        removeAssignmentTag(e.target);
+      }
+    });
   }); 

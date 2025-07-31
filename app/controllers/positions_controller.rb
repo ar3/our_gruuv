@@ -93,15 +93,28 @@ class PositionsController < ApplicationController
 
   def update_assignments(position)
     position.position_assignments.destroy_all
-    if params[:required_assignment_ids]
-      params[:required_assignment_ids].each do |aid|
+    
+    # Handle required assignments
+    if params[:position][:required_assignment_ids]
+      params[:position][:required_assignment_ids].each do |aid|
         position.position_assignments.create!(assignment_id: aid, assignment_type: 'required')
       end
     end
-    if params[:suggested_assignment_ids]
-      params[:suggested_assignment_ids].each do |aid|
+    
+    # Handle suggested assignments
+    if params[:position][:suggested_assignment_ids]
+      params[:position][:suggested_assignment_ids].each do |aid|
         position.position_assignments.create!(assignment_id: aid, assignment_type: 'suggested')
       end
+    end
+    
+    # Handle new assignments added via dropdown
+    if params[:position][:new_required_assignment_id].present?
+      position.position_assignments.create!(assignment_id: params[:position][:new_required_assignment_id], assignment_type: 'required')
+    end
+    
+    if params[:position][:new_suggested_assignment_id].present?
+      position.position_assignments.create!(assignment_id: params[:position][:new_suggested_assignment_id], assignment_type: 'suggested')
     end
   end
 
