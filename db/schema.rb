@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_30_035716) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_31_035257) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -31,8 +31,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_035716) do
     t.bigint "company_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "published_source_url"
-    t.string "draft_source_url"
     t.index ["company_id"], name: "index_assignments_on_company_id"
   end
 
@@ -45,6 +43,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_035716) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["responseable_type", "responseable_id"], name: "index_debug_responses_on_responseable"
+  end
+
+  create_table "external_references", force: :cascade do |t|
+    t.string "referable_type", null: false
+    t.bigint "referable_id", null: false
+    t.string "url"
+    t.jsonb "source_data"
+    t.datetime "last_synced_at"
+    t.string "reference_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["referable_type", "referable_id", "reference_type"], name: "index_external_references_on_referable_and_type"
+    t.index ["referable_type", "referable_id"], name: "index_external_references_on_referable"
   end
 
   create_table "huddle_feedbacks", force: :cascade do |t|

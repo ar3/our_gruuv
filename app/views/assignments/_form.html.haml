@@ -99,6 +99,7 @@
     .mb-3
       = form.label :published_source_url, "Published Source URL", class: "form-label"
       = form.url_field :published_source_url, class: "form-control", 
+        value: @assignment.published_url,
         placeholder: "https://docs.google.com/document/d/..."
       %small.form-text.text-muted URL to the published version of this assignment
   
@@ -106,5 +107,6 @@
     .mb-3
       = form.label :draft_source_url, "Draft Source URL", class: "form-label"
       = form.url_field :draft_source_url, class: "form-control", 
+        value: @assignment.draft_url,
         placeholder: "https://docs.google.com/document/d/..."
       %small.form-text.text-muted URL to the draft version of this assignment 

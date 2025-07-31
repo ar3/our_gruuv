@@ -2,7 +2,7 @@ class AssignmentsController < ApplicationController
   before_action :set_assignment, only: [:show, :edit, :update, :destroy]
 
   def index
-    @assignments = Assignment.includes(:company, :assignment_outcomes).ordered
+    @assignments = Assignment.includes(:company, :assignment_outcomes, :published_external_reference, :draft_external_reference).ordered
   end
 
   def show
@@ -19,6 +19,9 @@ class AssignmentsController < ApplicationController
     @companies = Organization.companies.ordered
 
     if @assignment.save
+      # Create external references if URLs provided
+      create_external_references(@assignment, params[:assignment])
+      
       # Create outcomes from textarea if provided
       if params[:assignment][:outcomes_textarea].present?
         @assignment.create_outcomes_from_textarea(params[:assignment][:outcomes_textarea])
@@ -40,6 +43,9 @@ class AssignmentsController < ApplicationController
     @companies = Organization.companies.ordered
     
     if @assignment.update(assignment_params)
+      # Update external references
+      update_external_references(@assignment, params[:assignment])
+      
       # Handle existing outcomes updates and deletions
       handle_existing_outcomes(params)
       
@@ -66,7 +72,47 @@ class AssignmentsController < ApplicationController
   end
 
   def assignment_params
-    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook, :company_id, :published_source_url, :draft_source_url)
+    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook, :company_id)
+  end
+
+  def create_external_references(assignment, params)
+    if params[:published_source_url].present?
+      assignment.create_published_external_reference!(
+        url: params[:published_source_url],
+        reference_type: 'published'
+      )
+    end
+    
+    if params[:draft_source_url].present?
+      assignment.create_draft_external_reference!(
+        url: params[:draft_source_url],
+        reference_type: 'draft'
+      )
+    end
+  end
+
+  def update_external_references(assignment, params)
+    # Update or create published reference
+    if params[:published_source_url].present?
+      if assignment.published_external_reference
+        assignment.published_external_reference.update!(url: params[:published_source_url])
+      else
+        assignment.create_published_external_reference!(url: params[:published_source_url], reference_type: 'published')
+      end
+    elsif assignment.published_external_reference
+      assignment.published_external_reference.destroy
+    end
+    
+    # Update or create draft reference
+    if params[:draft_source_url].present?
+      if assignment.draft_external_reference
+        assignment.draft_external_reference.update!(url: params[:draft_source_url])
+      else
+        assignment.create_draft_external_reference!(url: params[:draft_source_url], reference_type: 'draft')
+      end
+    elsif assignment.draft_external_reference
+      assignment.draft_external_reference.destroy
+    end
   end
 
   def handle_existing_outcomes(params)

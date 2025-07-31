@@ -59,18 +59,18 @@
                 .markdown-content.markdown-content--bordered
                   = render_markdown(@assignment.required_activities)
 
-              - if @assignment.published_source_url.present? || @assignment.draft_source_url.present?
+              - if @assignment.published_url.present? || @assignment.draft_url.present?
                 %h5.mb-2.mt-3
                   %i.bi.bi-link-45deg.me-2
                   Source Documents
-                - if @assignment.published_source_url.present?
+                - if @assignment.published_url.present?
                   .mb-2
-                    = link_to @assignment.published_source_url, target: "_blank", class: "btn btn-outline-primary btn-sm" do
+                    = link_to @assignment.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm" do
                       %i.bi.bi-file-earmark-text.me-1
                       Published Version
-                - if @assignment.draft_source_url.present?
+                - if @assignment.draft_url.present?
                   .mb-2
-                    = link_to @assignment.draft_source_url, target: "_blank", class: "btn btn-outline-secondary btn-sm" do
+                    = link_to @assignment.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm" do
                       %i.bi.bi-file-earmark-text.me-1
                       Draft Version
             .col-sm-12

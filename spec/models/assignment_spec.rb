@@ -23,26 +23,6 @@ RSpec.describe Assignment, type: :model do
       assignment.company = nil
       expect(assignment).not_to be_valid
     end
-
-    describe 'URL validations' do
-      it 'accepts valid URLs' do
-        assignment.published_source_url = 'https://docs.google.com/document/d/example'
-        assignment.draft_source_url = 'https://docs.google.com/document/d/draft'
-        expect(assignment).to be_valid
-      end
-
-      it 'rejects invalid URLs' do
-        assignment.published_source_url = 'not-a-url'
-        expect(assignment).not_to be_valid
-        expect(assignment.errors[:published_source_url]).to include('must be a valid URL')
-      end
-
-      it 'allows blank URLs' do
-        assignment.published_source_url = ''
-        assignment.draft_source_url = nil
-        expect(assignment).to be_valid
-      end
-    end
   end
 
   describe 'associations' do
@@ -52,6 +32,14 @@ RSpec.describe Assignment, type: :model do
 
     it 'has many assignment outcomes' do
       expect(assignment.assignment_outcomes).to be_empty
+    end
+
+    it 'has one published external reference' do
+      expect(assignment.published_external_reference).to be_nil
+    end
+
+    it 'has one draft external reference' do
+      expect(assignment.draft_external_reference).to be_nil
     end
   end
 
@@ -65,15 +53,32 @@ RSpec.describe Assignment, type: :model do
     end
   end
 
-  describe 'source URLs' do
+  describe 'external references' do
     let(:assignment_with_urls) { create(:assignment, :with_source_urls, company: company) }
 
-    it 'can have published source URL' do
-      expect(assignment_with_urls.published_source_url).to be_present
+    it 'can have published external reference' do
+      expect(assignment_with_urls.published_external_reference).to be_present
+      expect(assignment_with_urls.published_external_reference.reference_type).to eq('published')
     end
 
-    it 'can have draft source URL' do
-      expect(assignment_with_urls.draft_source_url).to be_present
+    it 'can have draft external reference' do
+      expect(assignment_with_urls.draft_external_reference).to be_present
+      expect(assignment_with_urls.draft_external_reference.reference_type).to eq('draft')
+    end
+
+    it 'returns published URL' do
+      expect(assignment_with_urls.published_url).to eq("https://docs.google.com/document/d/published-example")
+    end
+
+    it 'returns draft URL' do
+      expect(assignment_with_urls.draft_url).to eq("https://docs.google.com/document/d/draft-example")
+    end
+
+    it 'returns nil for missing references' do
+      expect(assignment.published_external_reference).to be_nil
+      expect(assignment.draft_external_reference).to be_nil
+      expect(assignment.published_url).to be_nil
+      expect(assignment.draft_url).to be_nil
     end
   end
 

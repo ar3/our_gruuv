@@ -2,13 +2,15 @@ class Assignment < ApplicationRecord
   # Associations
   belongs_to :company, class_name: 'Organization'
   has_many :assignment_outcomes, dependent: :destroy
+  has_one :published_external_reference, -> { where(reference_type: 'published') }, 
+          class_name: 'ExternalReference', as: :referable, dependent: :destroy
+  has_one :draft_external_reference, -> { where(reference_type: 'draft') }, 
+          class_name: 'ExternalReference', as: :referable, dependent: :destroy
   
   # Validations
   validates :title, presence: true
   validates :tagline, presence: true
   validates :company, presence: true
-  validates :published_source_url, format: { with: URI::regexp(%w[http https]), message: "must be a valid URL" }, allow_blank: true
-  validates :draft_source_url, format: { with: URI::regexp(%w[http https]), message: "must be a valid URL" }, allow_blank: true
   
   # Virtual attribute for outcomes textarea
   attr_accessor :outcomes_textarea
@@ -23,6 +25,15 @@ class Assignment < ApplicationRecord
   
   def company_name
     company&.display_name
+  end
+  
+  # External reference convenience methods
+  def published_url
+    published_external_reference&.url
+  end
+  
+  def draft_url
+    draft_external_reference&.url
   end
   
   def create_outcomes_from_textarea(text)

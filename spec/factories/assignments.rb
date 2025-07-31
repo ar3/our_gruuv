@@ -7,8 +7,10 @@ FactoryBot.define do
     association :company, factory: :organization
     
     trait :with_source_urls do
-      published_source_url { "https://docs.google.com/document/d/published-example" }
-      draft_source_url { "https://docs.google.com/document/d/draft-example" }
+      after(:create) do |assignment|
+        create(:external_reference, referable: assignment, reference_type: 'published', url: "https://docs.google.com/document/d/published-example")
+        create(:external_reference, referable: assignment, reference_type: 'draft', url: "https://docs.google.com/document/d/draft-example")
+      end
     end
     
     trait :with_outcomes do
