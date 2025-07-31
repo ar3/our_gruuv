@@ -33,7 +33,7 @@
               %h5.mb-2
                 %i.bi.bi-tag.me-2
                 Position Type
-              %p= @position.position_type.external_title
+              %p= link_to @position.position_type.external_title, position_type_path(@position.position_type), class: "text-decoration-none"
             
               %h5.mb-2
                 %i.bi.bi-star.me-2

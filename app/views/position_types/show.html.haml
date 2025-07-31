@@ -1,0 +1,79 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-10
+      .d-flex.justify-content-between.align-items-center.mb-4
+        = link_to position_types_path, class: "btn btn-outline-secondary" do
+          %i.bi.bi-arrow-left.me-1
+          Back to Position Types
+        .dropdown
+          %button.btn.btn-outline-secondary.dropdown-toggle{"data-bs-toggle" => "dropdown", :type => "button"}
+            %i.bi.bi-three-dots
+          %ul.dropdown-menu
+            %li
+              = link_to "Edit", edit_position_type_path(@position_type), class: "dropdown-item"
+            %li
+              = link_to "Delete", position_type_path(@position_type), 
+                method: :delete, 
+                data: { confirm: "Are you sure?" }, 
+                class: "dropdown-item text-danger"
+      
+      .card
+        .card-header.bg-primary.text-white
+          %h3.mb-0= @position_type.external_title
+          %p.mb-0.text-light= @position_type.position_summary
+        
+        .card-body
+          .row
+            .col-md-8.col-sm-12
+              %h5.mb-2
+                %i.bi.bi-building.me-2
+                Organization
+              %p= link_to @position_type.organization.display_name, organization_path(@position_type.organization), class: "text-decoration-none"
+            
+              %h5.mb-2
+                %i.bi.bi-star.me-2
+                Major Level
+              %p= @position_type.position_major_level.to_s
+            
+              - if @position_type.alternative_titles.present?
+                %h5.mb-2
+                  %i.bi.bi-tags.me-2
+                  Alternative Titles
+                %p= @position_type.alternative_titles
+            
+              - if @position_type.position_summary.present?
+                %h5.mb-2
+                  %i.bi.bi-file-text.me-2
+                  Summary
+                %p= @position_type.position_summary
+
+            .col-md-4.col-sm-12
+              - if @position_type.positions.any?
+                %h5.mb-2
+                  %i.bi.bi-briefcase.me-2
+                  Positions
+                - @position_type.positions.each do |position|
+                  .mb-2
+                    = link_to position.display_name, position_path(position), class: "text-decoration-none"
+              - else
+                .alert.alert-info
+                  %h6.mb-2
+                    %i.bi.bi-info-circle.me-2
+                    No Positions Yet
+                  %p.mb-2 This position type has no associated positions.
+                  = link_to "Create Position", new_position_path, class: "btn btn-info btn-sm"
+              
+              - if @position_type.published_url.present? || @position_type.draft_url.present?
+                %h5.mb-2.mt-3
+                  %i.bi.bi-link-45deg.me-2
+                  External References
+                - if @position_type.published_url.present?
+                  .mb-2
+                    = link_to @position_type.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm" do
+                      %i.bi.bi-file-earmark-text.me-1
+                      Published Version
+                - if @position_type.draft_url.present?
+                  .mb-2
+                    = link_to @position_type.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm" do
+                      %i.bi.bi-file-earmark-text.me-1
+                      Draft Version 
