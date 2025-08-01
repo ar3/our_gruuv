@@ -27,7 +27,7 @@ graph TD
     I --> J[Assignment Outcome]
     I --> K[External Reference]
     
-    L[Person] --> M[Position Assignment]
+    L[Person] --> H[Position Assignment]
     
     style A fill:#e1f5fe
     style I fill:#f3e5f5
