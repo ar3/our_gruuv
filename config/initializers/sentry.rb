@@ -55,7 +55,43 @@ Sentry.init do |config|
   # Configure performance monitoring
   config.enable_tracing = true
   
-  # Configure the logger
-  # config.logger = Rails.logger
+  # Configure the logger to capture Rails.logger.error messages
   config.sdk_logger = Rails.logger
-end 
+end
+
+# Create a custom logger that sends error messages to Sentry
+class SentryLogger < ActiveSupport::Logger::SimpleFormatter
+  def call(severity, timestamp, progname, msg)
+    if severity == 'ERROR'
+      Sentry.capture_message(msg, level: :error)
+    end
+    super
+  end
+  
+  # Add missing methods that Rails expects
+  def push_tags(*tags)
+    # No-op for SentryLogger, but return an array for Rails compatibility
+    []
+  end
+  
+  def pop_tags
+    # No-op for SentryLogger, but return an array for Rails compatibility
+    []
+  end
+  
+  def clear_tags!
+    # No-op for SentryLogger
+  end
+  
+  def current_tags
+    []
+  end
+  
+  def tagged(*tags)
+    # No-op for SentryLogger, but return self for Rails compatibility
+    self
+  end
+end
+
+# Configure Rails logger to use our custom formatter
+Rails.logger.formatter = SentryLogger.new 

@@ -10,7 +10,11 @@ Rails.application.routes.draw do
       get :position_levels
     end
   end
-  resources :position_types
+  resources :position_types do
+    member do
+      post :clone_positions
+    end
+  end
   
 
   root "pages#home"

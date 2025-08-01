@@ -16,6 +16,12 @@ class PositionsController < ApplicationController
 
   def new
     @position = Position.new
+    if params[:position_type_id]
+      @position.position_type_id = params[:position_type_id]
+      # Pre-populate position levels based on the selected position type
+      position_type = PositionType.find(params[:position_type_id])
+      @position_levels = position_type.position_major_level.position_levels
+    end
   end
 
   def edit

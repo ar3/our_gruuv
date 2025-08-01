@@ -76,4 +76,60 @@
                   .mb-2
                     = link_to @position_type.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm" do
                       %i.bi.bi-file-earmark-text.me-1
-                      Draft Version 
+                      Draft Version
+
+      - if @position_type.positions.any?
+        - available_levels = @position_type.position_major_level.position_levels
+        - existing_level_ids = @position_type.positions.map(&:position_level_id)
+        - missing_levels = available_levels.reject { |level| existing_level_ids.include?(level.id) }
+        
+        - if missing_levels.any?
+          .card.mt-4
+            .card-header.bg-warning.text-dark
+              %h5.mb-0
+                %i.bi.bi-exclamation-triangle.me-2
+                Missing Positions
+            .card-body
+              %p.mb-3 This position type should have positions for all levels within the #{@position_type.position_major_level.set_name} major level.
+              
+              .row
+                .col-md-6
+                  %h6.text-success
+                    %i.bi.bi-check-circle.me-2
+                    Created Positions (#{@position_type.positions.count}/#{available_levels.count})
+                  - @position_type.positions.each do |position|
+                    .mb-1
+                      %i.bi.bi-check.me-2
+                      = position.position_level.level_name
+                
+                .col-md-6
+                  %h6.text-warning
+                    %i.bi.bi-exclamation-triangle.me-2
+                    Missing Positions (#{missing_levels.count})
+                  - missing_levels.each do |level|
+                    .mb-1
+                      %i.bi.bi-dash.me-2
+                      = level.level_name
+              
+              .mt-3
+                - if @position_type.positions.any?
+                  %p.mb-3 You can clone an existing position to create the missing ones with the same assignments and settings.
+                  = form_with url: clone_positions_position_type_path(@position_type), method: :post, local: true do |form|
+                    .row
+                      .col-md-6
+                        = form.label :source_position_id, "Clone from position:", class: "form-label"
+                        = form.select :source_position_id, 
+                          options_from_collection_for_select(@position_type.positions, :id, :display_name), 
+                          { prompt: 'Select a position to clone from' }, 
+                          { class: "form-select", required: true }
+                      .col-md-6
+                        = form.label :target_level_ids, "Create for levels:", class: "form-label"
+                        = form.select :target_level_ids, 
+                          options_from_collection_for_select(missing_levels, :id, :level_name), 
+                          { prompt: 'Select levels to create' }, 
+                          { class: "form-select", required: true, multiple: true }
+                    .mt-3
+                      = form.submit "Clone Positions", class: "btn btn-warning"
+                - else
+                  %p.mb-3 Create the first position manually, then you can clone it for the remaining levels.
+                  = link_to "Create First Position", new_position_path(position_type_id: @position_type.id), class: "btn btn-primary" 
