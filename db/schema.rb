@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_31_050123) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_162418) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -96,7 +96,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_31_050123) do
     t.string "slack_channel"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["organization_id", "special_session_name"], name: "index_huddle_playbooks_on_org_and_special_session_name", unique: true
+    t.index ["organization_id", "special_session_name"], name: "index_huddle_playbooks_on_org_and_special_session_name_unique", unique: true
     t.index ["organization_id"], name: "index_huddle_playbooks_on_organization_id"
   end
 
@@ -160,6 +160,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_31_050123) do
     t.string "assignment_type", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "min_estimated_energy"
+    t.integer "max_estimated_energy"
     t.index ["assignment_id"], name: "index_position_assignments_on_assignment_id"
     t.index ["assignment_type"], name: "index_position_assignments_on_assignment_type"
     t.index ["position_id", "assignment_id"], name: "index_position_assignments_on_position_and_assignment_unique", unique: true

@@ -15,9 +15,9 @@ class SlackService
     begin
       notification = Notification.find(notification_id)
     rescue ActiveRecord::RecordNotFound
-      return false
+      return { success: false, error: "Notification #{notification_id} not found" }
     end
-    return false unless notification.present?
+    return { success: false, error: "Notification is nil" } unless notification.present?
     
     # Extract message data from notification
     channel = notification.metadata['channel']
@@ -25,7 +25,7 @@ class SlackService
     rich_message = notification.rich_message
     fallback_text = notification.fallback_text
     
-    return false unless slack_configured? && channel.present?
+    return { success: false, error: "Slack not configured or channel missing" } unless slack_configured? && channel.present?
     
     # Use organization-specific defaults if available
     
@@ -60,7 +60,7 @@ class SlackService
       # Store the response in debug_responses
       store_slack_response('chat_postMessage', message_params, response)
       
-      response
+      { success: true, message_id: response['ts'], channel: channel, response: response }
     rescue Slack::Web::Api::Errors::SlackError => e
       Rails.logger.error "Slack: Error posting message - #{e.message}"
       
@@ -70,7 +70,11 @@ class SlackService
       # Store the error in debug_responses
       store_slack_response('chat_postMessage', message_params, { error: e.message, backtrace: e.backtrace.first(5) })
       
-      false
+      { success: false, error: e.message, channel: channel }
+    rescue => e
+      Rails.logger.error "Slack: Unexpected error posting message - #{e.message}"
+      notification.update!(status: 'send_failed')
+      { success: false, error: "Unexpected error: #{e.message}", channel: channel }
     end
   end
   
@@ -79,20 +83,20 @@ class SlackService
     begin
       notification = Notification.find(notification_id)
     rescue ActiveRecord::RecordNotFound
-      return false
+      return { success: false, error: "Notification #{notification_id} not found" }
     end
-    return false unless notification.present?
+    return { success: false, error: "Notification is nil" } unless notification.present?
     
     # Get the original message to update
     original_notification = notification.original_message
-    return false unless original_notification.present? && original_notification.message_id.present?
+    return { success: false, error: "Original message not found" } unless original_notification.present? && original_notification.message_id.present?
     
     # Extract message data from notification
     channel = notification.metadata['channel']
     rich_message = notification.rich_message
     fallback_text = notification.fallback_text
     
-    return false unless slack_configured? && channel.present?
+    return { success: false, error: "Slack not configured or channel missing" } unless slack_configured? && channel.present?
     
     message_params = {
       channel: channel,
@@ -116,7 +120,7 @@ class SlackService
       # Store the response in debug_responses
       store_slack_response('chat_update', message_params, response)
       
-      response
+      { success: true, message_id: original_notification.message_id, channel: channel, response: response }
     rescue Slack::Web::Api::Errors::SlackError => e
       Rails.logger.error "Slack: Error updating message - #{e.message}"
       
@@ -126,7 +130,11 @@ class SlackService
       # Store the error in debug_responses
       store_slack_response('chat_update', message_params, { error: e.message, backtrace: e.backtrace.first(5) })
       
-      false
+      { success: false, error: e.message, channel: channel }
+    rescue => e
+      Rails.logger.error "Slack: Unexpected error updating message - #{e.message}"
+      notification.update!(status: 'send_failed')
+      { success: false, error: "Unexpected error: #{e.message}", channel: channel }
     end
   end
   
@@ -233,12 +241,12 @@ class SlackService
     
     begin
       response = post_message(test_notification.id)
-      if response
+      if response[:success]
         Rails.logger.info "Slack: Test message posted successfully"
         { success: true, message: "Test message sent successfully" }
       else
-        Rails.logger.error "Slack: Failed to post test message"
-        { success: false, error: "Failed to post test message" }
+        Rails.logger.error "Slack: Failed to post test message - #{response[:error]}"
+        { success: false, error: "Failed to post test message: #{response[:error]}" }
       end
     rescue => e
       Rails.logger.error "Slack: Error posting test message - #{e.message}"

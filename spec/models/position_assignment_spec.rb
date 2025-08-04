@@ -44,6 +44,67 @@ RSpec.describe PositionAssignment, type: :model do
       expect(position_assignment).not_to be_valid
     end
 
+    describe 'energy metadata' do
+      it 'accepts valid min_estimated_energy' do
+        position_assignment.min_estimated_energy = 25
+        expect(position_assignment).to be_valid
+      end
+
+      it 'accepts valid max_estimated_energy' do
+        position_assignment.max_estimated_energy = 75
+        expect(position_assignment).to be_valid
+      end
+
+      it 'rejects min_estimated_energy greater than 100' do
+        position_assignment.min_estimated_energy = 101
+        expect(position_assignment).not_to be_valid
+        expect(position_assignment.errors[:min_estimated_energy]).to include('must be less than or equal to 100')
+      end
+
+      it 'rejects max_estimated_energy greater than 100' do
+        position_assignment.max_estimated_energy = 101
+        expect(position_assignment).not_to be_valid
+        expect(position_assignment.errors[:max_estimated_energy]).to include('must be less than or equal to 100')
+      end
+
+      it 'rejects negative min_estimated_energy' do
+        position_assignment.min_estimated_energy = -1
+        expect(position_assignment).not_to be_valid
+        expect(position_assignment.errors[:min_estimated_energy]).to include('must be greater than 0')
+      end
+
+      it 'rejects negative max_estimated_energy' do
+        position_assignment.max_estimated_energy = -1
+        expect(position_assignment).not_to be_valid
+        expect(position_assignment.errors[:max_estimated_energy]).to include('must be greater than 0')
+      end
+
+      it 'accepts equal min and max energy values' do
+        position_assignment.min_estimated_energy = 50
+        position_assignment.max_estimated_energy = 50
+        expect(position_assignment).to be_valid
+      end
+
+      it 'rejects max_estimated_energy less than min_estimated_energy' do
+        position_assignment.min_estimated_energy = 75
+        position_assignment.max_estimated_energy = 50
+        expect(position_assignment).not_to be_valid
+        expect(position_assignment.errors[:max_estimated_energy]).to include('must be greater than minimum energy')
+      end
+
+      it 'accepts valid energy range' do
+        position_assignment.min_estimated_energy = 25
+        position_assignment.max_estimated_energy = 75
+        expect(position_assignment).to be_valid
+      end
+
+      it 'allows nil values' do
+        position_assignment.min_estimated_energy = nil
+        position_assignment.max_estimated_energy = nil
+        expect(position_assignment).to be_valid
+      end
+    end
+
     describe 'uniqueness' do
       it 'prevents duplicate position and assignment combination' do
         create(:position_assignment, position: position, assignment: assignment)
@@ -103,6 +164,32 @@ RSpec.describe PositionAssignment, type: :model do
     it 'returns display name for suggested type' do
       suggested = create(:position_assignment, :suggested, position: position, assignment: assignment)
       expect(suggested.display_name).to eq("#{assignment.title} (suggested)")
+    end
+
+    describe 'energy_range_display' do
+      it 'displays range when both min and max are present' do
+        position_assignment.min_estimated_energy = 25
+        position_assignment.max_estimated_energy = 75
+        expect(position_assignment.energy_range_display).to eq('25%-75% of effort')
+      end
+
+      it 'displays min only when only min is present' do
+        position_assignment.min_estimated_energy = 30
+        position_assignment.max_estimated_energy = nil
+        expect(position_assignment.energy_range_display).to eq('30%+ of effort')
+      end
+
+      it 'displays max only when only max is present' do
+        position_assignment.min_estimated_energy = nil
+        position_assignment.max_estimated_energy = 60
+        expect(position_assignment.energy_range_display).to eq('Up to 60% of effort')
+      end
+
+      it 'displays no estimate when neither is present' do
+        position_assignment.min_estimated_energy = nil
+        position_assignment.max_estimated_energy = nil
+        expect(position_assignment.energy_range_display).to eq('No effort estimate')
+      end
     end
   end
 end 

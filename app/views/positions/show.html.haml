@@ -53,14 +53,16 @@
                   Assignments
                 - if @position.required_assignments.any?
                   %h6.text-primary Required Assignments (#{@position.required_assignments_count})
-                  - @position.required_assignments.each do |pa|
-                    .mb-2
-                      = link_to pa.assignment.title, assignment_path(pa.assignment), class: "text-decoration-none"
+                  %ul
+                    - @position.required_assignments.each do |pa|
+                      %li
+                        = link_to pa.decorate.display_title, assignment_path(pa.assignment), class: "text-decoration-none"
                 - if @position.suggested_assignments.any?
                   %h6.text-info.mt-3 Suggested Assignments (#{@position.suggested_assignments_count})
-                  - @position.suggested_assignments.each do |pa|
-                    .mb-2
-                      = link_to pa.assignment.title, assignment_path(pa.assignment), class: "text-decoration-none"
+                  %ul
+                    - @position.suggested_assignments.each do |pa|
+                      %li
+                        = link_to pa.decorate.display_title, assignment_path(pa.assignment), class: "text-decoration-none"
               - else
                 .alert.alert-warning
                   %h6.mb-2

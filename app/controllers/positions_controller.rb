@@ -12,6 +12,7 @@ class PositionsController < ApplicationController
   end
 
   def show
+    @position = @position.decorate
   end
 
   def new
@@ -100,21 +101,37 @@ class PositionsController < ApplicationController
   def update_assignments(position)
     position.position_assignments.destroy_all
     
-    # Handle required assignments
+    # Handle required assignments with energy metadata
     if params[:position][:required_assignment_ids]
-      params[:position][:required_assignment_ids].each do |aid|
-        position.position_assignments.create!(assignment_id: aid, assignment_type: 'required')
+      params[:position][:required_assignment_ids].each_with_index do |aid, index|
+        min_energy = params[:position][:required_assignment_min_energy]&.[](index)&.presence
+        max_energy = params[:position][:required_assignment_max_energy]&.[](index)&.presence
+        
+        position.position_assignments.create!(
+          assignment_id: aid, 
+          assignment_type: 'required',
+          min_estimated_energy: min_energy,
+          max_estimated_energy: max_energy
+        )
       end
     end
     
-    # Handle suggested assignments
+    # Handle suggested assignments with energy metadata
     if params[:position][:suggested_assignment_ids]
-      params[:position][:suggested_assignment_ids].each do |aid|
-        position.position_assignments.create!(assignment_id: aid, assignment_type: 'suggested')
+      params[:position][:suggested_assignment_ids].each_with_index do |aid, index|
+        min_energy = params[:position][:suggested_assignment_min_energy]&.[](index)&.presence
+        max_energy = params[:position][:suggested_assignment_max_energy]&.[](index)&.presence
+        
+        position.position_assignments.create!(
+          assignment_id: aid, 
+          assignment_type: 'suggested',
+          min_estimated_energy: min_energy,
+          max_estimated_energy: max_energy
+        )
       end
     end
     
-    # Handle new assignments added via dropdown
+    # Handle new assignments added via dropdown (legacy support)
     if params[:position][:new_required_assignment_id].present?
       position.position_assignments.create!(assignment_id: params[:position][:new_required_assignment_id], assignment_type: 'required')
     end

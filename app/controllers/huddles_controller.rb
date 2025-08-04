@@ -76,7 +76,7 @@ class HuddlesController < ApplicationController
     )
     
     # Find or create default huddle playbook
-    huddle_playbook = find_or_create_huddle_instruction(organization)
+    huddle_playbook = find_or_create_huddle_playbook(organization)
     
     # Assign the playbook to the huddle
     @huddle.huddle_playbook = huddle_playbook
@@ -353,14 +353,14 @@ class HuddlesController < ApplicationController
                   :private_department_head, :private_facilitator, :anonymous, :authenticity_token, :commit)
   end
   
-  def find_or_create_huddle_instruction(organization)
-    # Find existing default playbook for this organization
-    playbook = organization.huddle_playbooks.find_by(special_session_name: nil)
+  def find_or_create_huddle_playbook(organization)
+    # Find existing default playbook for this organization (empty string)
+    playbook = organization.huddle_playbooks.find_by(special_session_name: '')
     
     # If not found, create a new default one
     unless playbook
       playbook = organization.huddle_playbooks.create!(
-        special_session_name: nil,
+        special_session_name: '',
         slack_channel: nil # Use organization default
       )
     end

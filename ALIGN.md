@@ -9,29 +9,31 @@ Align helps organizations structure their work by defining positions, roles, and
 ## Core Domain Objects
 
 ```mermaid
-graph TD
-    A[Organization] --> B[Company]
-    A --> C[Team]
-    A --> D[Department]
+flowchart TD
+    A[Organization:Company] --> B[Organization:Department]
+    B --> C[Organization:Team]
     
-    B --> E[Position Type]
-    C --> E
-    D --> E
+    A --> D[Position Type]
     
-    E --> F[Position Level]
-    E --> G[Position]
+    D --> E[Position Level]
+    D --> F[Position]
+    E --> F
     
-    G --> H[Position Assignment]
-    H --> I[Assignment]
+    F --> G[Position Assignment]
+    G --> H[Assignment]
+    G --> J[External Reference]
+
+    H --> I[Assignment Outcome]
+
     
-    I --> J[Assignment Outcome]
-    I --> K[External Reference]
-    
-    L[Person] --> H[Position Assignment]
+    K[Person] --> L[Person Assignment]
+    G --> L
     
     style A fill:#e1f5fe
-    style I fill:#f3e5f5
-    style J fill:#fff3e0
+    style K fill:#e1f5fe
+    style L fill:#f3e5f5
+    style F fill:#fff3e0
+    style H fill:#fff3e0
 ```
 
 ### Organization Hierarchy

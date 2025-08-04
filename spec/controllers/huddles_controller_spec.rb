@@ -326,4 +326,65 @@ RSpec.describe HuddlesController, type: :controller do
       expect(assigns(:notifications)).to eq([notification1, notification2])
     end
   end
+
+  describe '#find_or_create_huddle_playbook' do
+    let(:organization) { create(:organization) }
+
+    context 'when no playbook exists' do
+      it 'creates a new playbook with empty string special_session_name' do
+        expect {
+          controller.send(:find_or_create_huddle_playbook, organization)
+        }.to change(HuddlePlaybook, :count).by(1)
+        
+        playbook = HuddlePlaybook.last
+        expect(playbook.organization_id).to eq(organization.id)
+        expect(playbook.special_session_name).to eq('')
+      end
+    end
+
+    context 'when playbook with empty string special_session_name exists' do
+      let!(:existing_playbook) { create(:huddle_playbook, organization: organization, special_session_name: '') }
+
+      it 'returns the existing playbook' do
+        result = controller.send(:find_or_create_huddle_playbook, organization)
+        expect(result).to eq(existing_playbook)
+      end
+
+      it 'does not create a new playbook' do
+        expect {
+          controller.send(:find_or_create_huddle_playbook, organization)
+        }.not_to change(HuddlePlaybook, :count)
+      end
+    end
+
+    context 'when playbook with nil special_session_name exists' do
+      let!(:existing_playbook) { create(:huddle_playbook, organization: organization, special_session_name: nil) }
+
+      it 'returns the existing playbook' do
+        result = controller.send(:find_or_create_huddle_playbook, organization)
+        expect(result).to eq(existing_playbook)
+      end
+
+      it 'does not create a new playbook' do
+        expect {
+          controller.send(:find_or_create_huddle_playbook, organization)
+        }.not_to change(HuddlePlaybook, :count)
+      end
+    end
+
+    context 'when playbook with whitespace-only special_session_name exists' do
+      let!(:existing_playbook) { create(:huddle_playbook, organization: organization, special_session_name: '   ') }
+
+      it 'returns the existing playbook' do
+        result = controller.send(:find_or_create_huddle_playbook, organization)
+        expect(result).to eq(existing_playbook)
+      end
+
+      it 'does not create a new playbook' do
+        expect {
+          controller.send(:find_or_create_huddle_playbook, organization)
+        }.not_to change(HuddlePlaybook, :count)
+      end
+    end
+  end
 end 

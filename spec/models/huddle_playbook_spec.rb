@@ -14,11 +14,39 @@ RSpec.describe HuddlePlaybook, type: :model do
       expect(huddle_playbook).to be_valid
     end
 
+    it 'normalizes empty string special_session_name to empty string' do
+      huddle_playbook.special_session_name = ''
+      huddle_playbook.valid?
+      expect(huddle_playbook.special_session_name).to eq('')
+    end
+
+    it 'normalizes nil special_session_name to empty string' do
+      huddle_playbook.special_session_name = nil
+      huddle_playbook.valid?
+      expect(huddle_playbook.special_session_name).to eq('')
+    end
+
+    it 'normalizes whitespace-only special_session_name to empty string' do
+      huddle_playbook.special_session_name = '   '
+      huddle_playbook.valid?
+      expect(huddle_playbook.special_session_name).to eq('')
+    end
+
     it 'requires unique special_session_name per organization' do
       create(:huddle_playbook, organization: organization, special_session_name: 'Sprint Planning')
       duplicate = build(:huddle_playbook, organization: organization, special_session_name: 'Sprint Planning')
-      expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:special_session_name]).to include('has already been taken')
+      
+      # Should fail due to database constraint, not Rails validation
+      expect { duplicate.save! }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
+    it 'treats nil and empty string as the same for uniqueness' do
+      create(:huddle_playbook, organization: organization, special_session_name: '')
+      duplicate = build(:huddle_playbook, organization: organization, special_session_name: nil)
+      duplicate.valid? # Trigger normalization
+      
+      # Should fail due to database constraint, not Rails validation
+      expect { duplicate.save! }.to raise_error(ActiveRecord::RecordNotUnique)
     end
 
     it 'allows same special_session_name for different organizations' do

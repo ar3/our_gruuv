@@ -55,7 +55,12 @@ RSpec.describe SlackService do
             blocks: notification.rich_message
           )
         )
-        expect(result).to eq({ 'ok' => true, 'ts' => '1234567890.123456' })
+        expect(result).to eq({ 
+          success: true, 
+          message_id: '1234567890.123456', 
+          channel: 'test-channel', 
+          response: { 'ok' => true, 'ts' => '1234567890.123456' } 
+        })
         expect(notification.reload.status).to eq('sent_successfully')
         expect(notification.reload.message_id).to eq('1234567890.123456')
       end
@@ -80,7 +85,12 @@ RSpec.describe SlackService do
             blocks: threaded_notification.rich_message
           )
         )
-        expect(result).to eq({ 'ok' => true, 'ts' => '1234567890.123457' })
+        expect(result).to eq({ 
+          success: true, 
+          message_id: '1234567890.123457', 
+          channel: 'test-channel', 
+          response: { 'ok' => true, 'ts' => '1234567890.123457' } 
+        })
       end
     end
 
@@ -92,15 +102,15 @@ RSpec.describe SlackService do
       it 'updates notification status to failed' do
         result = slack_service.post_message(notification.id)
         
-        expect(result).to be false
+        expect(result).to eq({ success: false, error: 'API Error', channel: 'test-channel' })
         expect(notification.reload.status).to eq('send_failed')
       end
     end
 
     context 'when notification does not exist' do
-      it 'returns false' do
+      it 'returns error hash' do
         result = slack_service.post_message(999999)
-        expect(result).to be false
+        expect(result).to eq({ success: false, error: 'Notification 999999 not found' })
       end
     end
   end
@@ -130,7 +140,12 @@ RSpec.describe SlackService do
             blocks: update_notification.rich_message
           )
         )
-        expect(result).to eq({ 'ok' => true })
+        expect(result).to eq({ 
+          success: true, 
+          message_id: '1234567890.123456', 
+          channel: 'test-channel', 
+          response: { 'ok' => true } 
+        })
         expect(update_notification.reload.status).to eq('sent_successfully')
         expect(update_notification.reload.message_id).to eq('1234567890.123456')
       end
@@ -144,24 +159,24 @@ RSpec.describe SlackService do
       it 'updates notification status to failed' do
         result = slack_service.update_message(update_notification.id)
         
-        expect(result).to be false
+        expect(result).to eq({ success: false, error: 'API Error', channel: 'test-channel' })
         expect(update_notification.reload.status).to eq('send_failed')
       end
     end
 
     context 'when notification does not exist' do
-      it 'returns false' do
+      it 'returns error hash' do
         result = slack_service.update_message(999999)
-        expect(result).to be false
+        expect(result).to eq({ success: false, error: 'Notification 999999 not found' })
       end
     end
 
     context 'when original message does not exist' do
       let(:update_notification) { create(:notification, notifiable: organization, original_message: nil, metadata: { channel: 'test-channel' }, rich_message: [{ type: 'section', text: { type: 'mrkdwn', text: 'Updated message' } }], fallback_text: 'Updated message') }
 
-      it 'returns false' do
+      it 'returns error hash' do
         result = slack_service.update_message(update_notification.id)
-        expect(result).to be false
+        expect(result).to eq({ success: false, error: 'Original message not found' })
       end
     end
   end

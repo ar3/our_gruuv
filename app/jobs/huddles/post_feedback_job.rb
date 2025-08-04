@@ -7,8 +7,9 @@ class Huddles::PostFeedbackJob < ApplicationJob
     
     # Check if Slack is configured for this organization
     unless huddle.slack_configured?
+      result = { success: false, error: "Slack not configured for organization #{huddle.organization.id}" }
       Rails.logger.info "Slack not configured for organization #{huddle.organization.id}, skipping feedback"
-      return
+      return result
     end
     
     # Ensure announcement exists first (this will also create summary if needed)
@@ -32,8 +33,25 @@ class Huddles::PostFeedbackJob < ApplicationJob
       fallback_text: build_feedback_fallback_text(feedback)
     )
     
+    Rails.logger.info "Posting feedback for huddle #{huddle.id}, feedback #{feedback_id}"
+    
     # Post new message in thread
-    SlackService.new(huddle.organization).post_message(feedback_notification.id)
+    result = SlackService.new(huddle.organization).post_message(feedback_notification.id)
+    
+    if result[:success]
+      { success: true, action: 'posted_feedback', huddle_id: huddle.id, feedback_id: feedback_id, notification_id: feedback_notification.id, message_id: result[:message_id] }
+    else
+      { success: false, action: 'post_feedback_failed', huddle_id: huddle.id, feedback_id: feedback_id, notification_id: feedback_notification.id, error: result[:error] }
+    end
+  rescue ActiveRecord::RecordNotFound => e
+    error_msg = "Record not found: #{e.message}"
+    Rails.logger.error error_msg
+    { success: false, error: error_msg }
+  rescue => e
+    error_msg = "Unexpected error in PostFeedbackJob: #{e.message}"
+    Rails.logger.error error_msg
+    Rails.logger.error e.backtrace.first(5).join("\n")
+    { success: false, error: error_msg }
   end
 
   private

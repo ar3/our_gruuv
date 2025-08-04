@@ -6,8 +6,9 @@ class Huddles::PostAnnouncementJob < ApplicationJob
     
     # Check if Slack is configured for this organization
     unless huddle.slack_configured?
+      result = { success: false, error: "Slack not configured for organization #{huddle.organization.id}" }
       Rails.logger.info "Slack not configured for organization #{huddle.organization.id}, skipping announcement"
-      return
+      return result
     end
     
     # Check if announcement already exists
@@ -25,8 +26,16 @@ class Huddles::PostAnnouncementJob < ApplicationJob
         fallback_text: build_announcement_fallback_text(huddle)
       )
       
+      Rails.logger.info "Updating existing announcement for huddle #{huddle.id}"
+      
       # Update the existing message
-      SlackService.new(huddle.organization).update_message(notification.id)
+      result = SlackService.new(huddle.organization).update_message(notification.id)
+      
+      if result[:success]
+        { success: true, action: 'updated', huddle_id: huddle.id, notification_id: notification.id, message_id: result[:message_id] }
+      else
+        { success: false, action: 'update_failed', huddle_id: huddle.id, notification_id: notification.id, error: result[:error] }
+      end
     else
       # Create new notification
       blocks = build_announcement_blocks(huddle)
@@ -38,9 +47,26 @@ class Huddles::PostAnnouncementJob < ApplicationJob
         fallback_text: build_announcement_fallback_text(huddle)
       )
       
+      Rails.logger.info "Creating new announcement for huddle #{huddle.id}"
+      
       # Post new message
-      SlackService.new(huddle.organization).post_message(notification.id)
+      result = SlackService.new(huddle.organization).post_message(notification.id)
+      
+      if result[:success]
+        { success: true, action: 'posted', huddle_id: huddle.id, notification_id: notification.id, message_id: result[:message_id] }
+      else
+        { success: false, action: 'post_failed', huddle_id: huddle.id, notification_id: notification.id, error: result[:error] }
+      end
     end
+  rescue ActiveRecord::RecordNotFound => e
+    error_msg = "Huddle with ID #{huddle_id} not found"
+    Rails.logger.error error_msg
+    { success: false, error: error_msg }
+  rescue => e
+    error_msg = "Unexpected error in PostAnnouncementJob: #{e.message}"
+    Rails.logger.error error_msg
+    Rails.logger.error e.backtrace.first(5).join("\n")
+    { success: false, error: error_msg }
   end
 
   private
