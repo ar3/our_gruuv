@@ -58,6 +58,12 @@ RSpec.describe HuddlesController, type: :controller do
       }
     end
 
+    before do
+      allow(Huddles::PostAnnouncementJob).to receive(:perform_now)
+      allow(Huddles::PostSummaryJob).to receive(:perform_now)
+      allow(Huddles::PostFeedbackJob).to receive(:perform_now)
+    end
+
     context 'with valid parameters' do
       it 'creates a new feedback record' do
         expect {
@@ -82,6 +88,25 @@ RSpec.describe HuddlesController, type: :controller do
         expect(feedback.private_department_head).to eq('Private feedback for DH')
         expect(feedback.private_facilitator).to eq('Private feedback for facilitator')
         expect(feedback.anonymous).to be false
+      end
+
+      it 'calls PostAnnouncementJob.perform_now when creating new feedback' do
+        post :submit_feedback, params: { id: huddle.id }.merge(valid_feedback_params)
+        
+        expect(Huddles::PostAnnouncementJob).to have_received(:perform_now).with(huddle.id)
+      end
+
+      it 'calls PostSummaryJob.perform_now when creating new feedback' do
+        post :submit_feedback, params: { id: huddle.id }.merge(valid_feedback_params)
+        
+        expect(Huddles::PostSummaryJob).to have_received(:perform_now).with(huddle.id)
+      end
+
+      it 'calls PostFeedbackJob.perform_now when creating new feedback' do
+        post :submit_feedback, params: { id: huddle.id }.merge(valid_feedback_params)
+        
+        feedback = HuddleFeedback.last
+        expect(Huddles::PostFeedbackJob).to have_received(:perform_now).with(huddle.id, feedback.id)
       end
     end
 
@@ -116,6 +141,81 @@ RSpec.describe HuddlesController, type: :controller do
         
         feedback = HuddleFeedback.last
         expect(feedback.anonymous).to be true
+      end
+    end
+
+    context 'when updating existing feedback' do
+      let!(:existing_feedback) do
+        create(:huddle_feedback, 
+          huddle: huddle, 
+          person: person,
+          informed_rating: 3,
+          connected_rating: 4,
+          goals_rating: 2,
+          valuable_rating: 3,
+          appreciation: 'Original feedback',
+          change_suggestion: 'Original suggestion'
+        )
+      end
+
+      let(:updated_feedback_params) do
+        {
+          informed_rating: '5',
+          connected_rating: '4',
+          goals_rating: '5',
+          valuable_rating: '4',
+          personal_conflict_style: 'Collaborative',
+          team_conflict_style: 'Compromising',
+          appreciation: 'Updated feedback!',
+          change_suggestion: 'Updated suggestion',
+          private_department_head: 'Updated private feedback for DH',
+          private_facilitator: 'Updated private feedback for facilitator',
+          anonymous: '1'
+        }
+      end
+
+      it 'updates the existing feedback record' do
+        expect {
+          post :submit_feedback, params: { id: huddle.id }.merge(updated_feedback_params)
+        }.not_to change(HuddleFeedback, :count)
+        
+        existing_feedback.reload
+        expect(existing_feedback.informed_rating).to eq(5)
+        expect(existing_feedback.connected_rating).to eq(4)
+        expect(existing_feedback.goals_rating).to eq(5)
+        expect(existing_feedback.valuable_rating).to eq(4)
+        expect(existing_feedback.personal_conflict_style).to eq('Collaborative')
+        expect(existing_feedback.team_conflict_style).to eq('Compromising')
+        expect(existing_feedback.appreciation).to eq('Updated feedback!')
+        expect(existing_feedback.change_suggestion).to eq('Updated suggestion')
+        expect(existing_feedback.private_department_head).to eq('Updated private feedback for DH')
+        expect(existing_feedback.private_facilitator).to eq('Updated private feedback for facilitator')
+        expect(existing_feedback.anonymous).to be true
+      end
+
+      it 'calls PostAnnouncementJob.perform_now when updating existing feedback' do
+        post :submit_feedback, params: { id: huddle.id }.merge(updated_feedback_params)
+        
+        expect(Huddles::PostAnnouncementJob).to have_received(:perform_now).with(huddle.id)
+      end
+
+      it 'calls PostSummaryJob.perform_now when updating existing feedback' do
+        post :submit_feedback, params: { id: huddle.id }.merge(updated_feedback_params)
+        
+        expect(Huddles::PostSummaryJob).to have_received(:perform_now).with(huddle.id)
+      end
+
+      it 'does not call PostFeedbackJob.perform_now when updating existing feedback' do
+        post :submit_feedback, params: { id: huddle.id }.merge(updated_feedback_params)
+        
+        expect(Huddles::PostFeedbackJob).not_to have_received(:perform_now)
+      end
+
+      it 'redirects with success message when updating feedback' do
+        post :submit_feedback, params: { id: huddle.id }.merge(updated_feedback_params)
+        
+        expect(response).to redirect_to(huddle_path(huddle))
+        expect(flash[:notice]).to eq('Your feedback has been updated!')
       end
     end
 
