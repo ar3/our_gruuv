@@ -60,4 +60,12 @@ class Organization < ApplicationRecord
   def calculated_slack_config
     slack_configuration || root_company&.slack_configuration
   end
+  
+  def self_and_descendants
+    [self] + descendants
+  end
+  
+  def descendants
+    children.flat_map { |child| [child] + child.descendants }
+  end
 end 

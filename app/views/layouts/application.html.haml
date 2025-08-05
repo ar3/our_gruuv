@@ -26,6 +26,9 @@
     / Includes all stylesheet files in app/assets/stylesheets
     = stylesheet_link_tag "application", "data-turbo-track": "reload"
     = javascript_importmap_tags
+    
+    / Highcharts for charts
+    %script{src: "https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js", defer: true}
 
   %body
     / Toast Container

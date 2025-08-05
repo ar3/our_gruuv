@@ -191,6 +191,9 @@
                 = link_to huddles_path(organization_id: @organization.id), class: "btn btn-outline-primary" do
                   %i.bi.bi-list.me-2
                   View All Huddles
+                = link_to huddles_review_organization_path(@organization), class: "btn btn-outline-info" do
+                  %i.bi.bi-graph-up.me-2
+                  Huddles Review
                 - if @organization.company?
                   - if @organization.slack_configured?
                     = link_to organization_slack_path(@organization), class: "btn btn-outline-info" do

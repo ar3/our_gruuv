@@ -1,0 +1,381 @@
+.container-fluid
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1.mb-0 Huddles Review
+        = link_to organization_path(@organization), class: "btn btn-outline-secondary" do
+          %i.bi.bi-arrow-left.me-2
+          Back to Organization
+      
+      / Date Range Filter
+      .card.mb-4
+        .card-body
+          %h5.card-title Date Range
+          = form_with url: huddles_review_organization_path(@organization), method: :get, local: true, class: "row g-3" do |form|
+            .col-md-4
+              = form.label :start_date, "Start Date", class: "form-label"
+              = form.date_field :start_date, value: @start_date, class: "form-control"
+            .col-md-4
+              = form.label :end_date, "End Date", class: "form-label"
+              = form.date_field :end_date, value: @end_date, class: "form-control"
+            .col-md-4.d-flex.align-items-end
+              = form.submit "Update Range", class: "btn btn-primary me-2"
+              = link_to "Reset to 6 Weeks", huddles_review_organization_path(@organization), class: "btn btn-outline-secondary"
+      
+      / Summary Cards
+      .row.mb-4
+        .col-md-3
+          .card.text-center
+            .card-body
+              %h3.card-title.text-primary= @overall_metrics[:total_huddles]
+              %p.card-text Huddles
+        .col-md-3
+          .card.text-center
+            .card-body
+              %h3.card-title.text-success= @overall_metrics[:total_participants]
+              %p.card-text Participants
+        .col-md-3
+          .card.text-center
+            .card-body
+              %h3.card-title.text-info= @overall_metrics[:average_rating]
+              %p.card-text Avg Rating
+        .col-md-3
+          .card.text-center
+            .card-body
+              %h3.card-title.text-warning= "#{@overall_metrics[:participation_rate]}%"
+              %p.card-text Participation Rate
+      
+      / Charts Section
+      .row.mb-4
+        .col-12
+          .card
+            .card-header
+              %h5.mb-0 Rating Trends
+            .card-body
+              #rating-chart{style: "height: 400px;"}
+      
+      .row.mb-4
+        .col-md-6
+          .card
+            .card-header
+              %h5.mb-0 Participation Rate
+            .card-body
+              #participation-chart{style: "height: 300px;"}
+        .col-md-6
+          .card
+            .card-header
+              %h5.mb-0 Huddles per Week
+            .card-body
+              #huddles-chart{style: "height: 300px;"}
+      
+      / Weekly Breakdown
+      .row.mb-4
+        .col-12
+          .card
+            .card-header
+              %h5.mb-0 Weekly Breakdown
+            .card-body
+              .table-responsive
+                %table.table.table-striped
+                  %thead
+                    %tr
+                      %th Week Starting
+                      %th Huddles
+                      %th Participants
+                      %th Feedbacks
+                      %th Avg Rating
+                      %th Participation Rate
+                  %tbody
+                    - @weekly_metrics.sort.reverse.each do |week_start, metrics|
+                      %tr
+                        %td= week_start.strftime("%B %d, %Y")
+                        %td= metrics[:total_huddles]
+                        %td= metrics[:total_participants]
+                        %td= metrics[:total_feedbacks]
+                        %td= metrics[:average_rating]
+                        %td= "#{metrics[:participation_rate]}%"
+      
+      / Conflict Style Distribution
+      .row.mb-4
+        .col-md-6
+          .card
+            .card-header
+              %h5.mb-0 Personal Conflict Styles
+            .card-body
+              #personal-conflict-chart{style: "height: 300px;"}
+        .col-md-6
+          .card
+            .card-header
+              %h5.mb-0 Team Conflict Styles
+            .card-body
+              #team-conflict-chart{style: "height: 300px;"}
+      
+      / Rating Distribution
+      .row.mb-4
+        .col-12
+          .card
+            .card-header
+              %h5.mb-0 Rating Distribution
+            .card-body
+              #rating-distribution-chart{style: "height: 300px;"}
+      
+      / Playbook Comparison Section
+      - if @playbook_metrics.any?
+        .row.mb-4
+          .col-12
+            .card
+              .card-header
+                %h5.mb-0 Playbook Comparison
+              .card-body
+                .table-responsive
+                  %table.table.table-striped
+                    %thead
+                      %tr
+                        %th Playbook
+                        %th Organization
+                        %th Huddles
+                        %th Participants
+                        %th Feedbacks
+                        %th Avg Rating
+                        %th Participation Rate
+                        %th Actions
+                    %tbody
+                      - @playbook_metrics.sort_by { |playbook, metrics| -metrics[:average_rating] }.each do |playbook, metrics|
+                        %tr
+                          %td
+                            %strong= playbook.display_name
+                            - if playbook.special_session_name.present?
+                              %br
+                              %small.text-muted= playbook.special_session_name
+                          %td
+                            %small= playbook.organization.display_name
+                          %td= metrics[:total_huddles]
+                          %td= metrics[:total_participants]
+                          %td= metrics[:total_feedbacks]
+                          %td
+                            %span{class: metrics[:average_rating] >= 16 ? 'text-success' : metrics[:average_rating] >= 12 ? 'text-warning' : 'text-danger'}
+                              = metrics[:average_rating]
+                          %td
+                            %span{class: metrics[:participation_rate] >= 80 ? 'text-success' : metrics[:participation_rate] >= 60 ? 'text-warning' : 'text-danger'}
+                              = "#{metrics[:participation_rate]}%"
+                          %td
+                            %button.btn.btn-sm.btn-outline-primary{type: "button", "data-bs-toggle": "modal", "data-bs-target": "#playbookModal", "data-playbook-id": playbook.id} View Details
+      
+      / Playbook Trends Chart
+      - if @playbook_metrics.count > 1
+        .row.mb-4
+          .col-12
+            .card
+              .card-header
+                %h5.mb-0 Playbook Rating Trends
+              .card-body
+                #playbook-trends-chart{style: "height: 400px;"}
+      
+      / Playbook Details Modal
+      .modal.fade#playbookModal{tabindex: "-1", "aria-labelledby": "playbookModalLabel", "aria-hidden": "true"}
+        .modal-dialog.modal-xl
+          .modal-content
+            .modal-header
+              %h5.modal-title#playbookModalLabel Playbook Details
+              %button.btn-close{type: "button", "data-bs-dismiss": "modal", "aria-label": "Close"}
+            .modal-body
+              .row
+                .col-md-6
+                  #playbook-rating-chart{style: "height: 300px;"}
+                .col-md-6
+                  #playbook-participation-chart{style: "height: 300px;"}
+              .row.mt-3
+                .col-md-6
+                  #playbook-conflict-personal-chart{style: "height: 250px;"}
+                .col-md-6
+                  #playbook-conflict-team-chart{style: "height: 250px;"}
+              .row.mt-3
+                .col-12
+                  %h6 Recent Huddles
+                  .table-responsive
+                    %table.table.table-sm
+                      %thead
+                        %tr
+                          %th Date
+                          %th Organization
+                          %th Participants
+                          %th Avg Rating
+                          %th Participation
+                      %tbody#playbook-huddles-list
+            .modal-footer
+              %button.btn.btn-secondary{type: "button", "data-bs-dismiss": "modal"} Close
+
+:javascript
+  function initializeCharts() {
+    console.log('DOM loaded, initializing charts...');
+    console.log('Highcharts available:', typeof Highcharts !== 'undefined');
+    
+    // Chart data from Rails
+    var chartData = #{raw @chart_data.to_json};
+    var overallMetrics = #{raw @overall_metrics.to_json};
+    var playbookMetrics = #{raw @playbook_metrics.to_json};
+    
+    console.log('Chart data:', chartData);
+    console.log('Overall metrics:', overallMetrics);
+    console.log('Playbook metrics count:', Object.keys(playbookMetrics).length);
+    
+    // Rating Trends Chart
+    if (chartData.rating_data && chartData.rating_data.length > 0) {
+      Highcharts.chart('rating-chart', {
+        chart: { type: 'line' },
+        title: { text: 'Average Rating Over Time' },
+        xAxis: { type: 'datetime', title: { text: 'Week' } },
+        yAxis: { title: { text: 'Average Rating' }, min: 0, max: 20 },
+        series: [{
+          name: 'Average Rating',
+          data: chartData.rating_data,
+          color: '#007bff'
+        }],
+        tooltip: {
+          formatter: function() {
+            return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
+                   '<b>Rating:</b> ' + this.y;
+          }
+        }
+      });
+    }
+    
+    // Participation Rate Chart
+    if (chartData.participation_data && chartData.participation_data.length > 0) {
+      Highcharts.chart('participation-chart', {
+        chart: { type: 'line' },
+        title: { text: 'Participation Rate' },
+        xAxis: { type: 'datetime', title: { text: 'Week' } },
+        yAxis: { title: { text: 'Participation Rate (%)' }, min: 0, max: 100 },
+        series: [{
+          name: 'Participation Rate',
+          data: chartData.participation_data,
+          color: '#28a745'
+        }],
+        tooltip: {
+          formatter: function() {
+            return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
+                   '<b>Participation:</b> ' + this.y + '%';
+          }
+        }
+      });
+    }
+    
+    // Huddles per Week Chart
+    if (chartData.huddles_data && chartData.huddles_data.length > 0) {
+      Highcharts.chart('huddles-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Huddles per Week' },
+        xAxis: { type: 'datetime', title: { text: 'Week' } },
+        yAxis: { title: { text: 'Number of Huddles' }, min: 0 },
+        series: [{
+          name: 'Huddles',
+          data: chartData.huddles_data,
+          color: '#ffc107'
+        }],
+        tooltip: {
+          formatter: function() {
+            return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
+                   '<b>Huddles:</b> ' + this.y;
+          }
+        }
+      });
+    }
+    
+    // Personal Conflict Styles Chart
+    if (overallMetrics.personal_conflict_styles && Object.keys(overallMetrics.personal_conflict_styles).length > 0) {
+      var personalConflictData = Object.keys(overallMetrics.personal_conflict_styles).map(function(style) {
+        return [style, overallMetrics.personal_conflict_styles[style]];
+      });
+      
+      Highcharts.chart('personal-conflict-chart', {
+        chart: { type: 'pie' },
+        title: { text: 'Personal Conflict Styles' },
+        series: [{
+          name: 'Count',
+          data: personalConflictData
+        }],
+        tooltip: {
+          pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)'
+        }
+      });
+    }
+    
+    // Team Conflict Styles Chart
+    if (overallMetrics.team_conflict_styles && Object.keys(overallMetrics.team_conflict_styles).length > 0) {
+      var teamConflictData = Object.keys(overallMetrics.team_conflict_styles).map(function(style) {
+        return [style, overallMetrics.team_conflict_styles[style]];
+      });
+      
+      Highcharts.chart('team-conflict-chart', {
+        chart: { type: 'pie' },
+        title: { text: 'Team Conflict Styles' },
+        series: [{
+          name: 'Count',
+          data: teamConflictData
+        }],
+        tooltip: {
+          pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)'
+        }
+      });
+    }
+    
+    // Rating Distribution Chart
+    if (overallMetrics.rating_distribution && Object.keys(overallMetrics.rating_distribution).length > 0) {
+      Highcharts.chart('rating-distribution-chart', {
+        chart: { type: 'column' },
+        title: { text: 'Rating Distribution' },
+        xAxis: {
+          categories: Object.keys(overallMetrics.rating_distribution),
+          title: { text: 'Rating Score' }
+        },
+        yAxis: { title: { text: 'Number of Feedbacks' }, min: 0 },
+        series: [{
+          name: 'Feedbacks',
+          data: Object.values(overallMetrics.rating_distribution),
+          color: '#6f42c1'
+        }],
+        tooltip: {
+          formatter: function() {
+            return '<b>Rating ' + this.x + '</b><br/>' +
+                   '<b>Feedbacks:</b> ' + this.y;
+          }
+        }
+      });
+    }
+    
+    console.log('All charts initialized successfully');
+  }
+  
+  // Wait for both DOM and Highcharts to be ready
+  var attempts = 0;
+  function waitForHighcharts() {
+    attempts++;
+    if (typeof Highcharts !== 'undefined') {
+      initializeCharts();
+    } else if (attempts < 50) { // Wait up to 5 seconds
+      console.log('Waiting for Highcharts to load... (attempt ' + attempts + ')');
+      setTimeout(waitForHighcharts, 100);
+    } else {
+      console.error('Highcharts failed to load after 5 seconds. Trying alternative CDN...');
+      loadHighchartsAlternative();
+    }
+  }
+  
+  function loadHighchartsAlternative() {
+    console.log('Loading Highcharts from alternative CDN...');
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js';
+    script.onload = function() {
+      console.log('Highcharts loaded from alternative CDN');
+      initializeCharts();
+    };
+    script.onerror = function() {
+      console.error('Failed to load Highcharts from alternative CDN');
+    };
+    document.head.appendChild(script);
+  }
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    waitForHighcharts();
+  }); 

@@ -33,6 +33,7 @@ Rails.application.routes.draw do
   resources :organizations do
     member do
       patch :switch
+      get :huddles_review
     end
     
     resources :huddle_playbooks, except: [:show], module: :organizations
