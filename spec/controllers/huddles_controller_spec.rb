@@ -59,9 +59,9 @@ RSpec.describe HuddlesController, type: :controller do
     end
 
     before do
-      allow(Huddles::PostAnnouncementJob).to receive(:perform_now)
-      allow(Huddles::PostSummaryJob).to receive(:perform_now)
-      allow(Huddles::PostFeedbackJob).to receive(:perform_now)
+      allow(Huddles::PostAnnouncementJob).to receive(:perform_and_get_result)
+      allow(Huddles::PostSummaryJob).to receive(:perform_and_get_result)
+      allow(Huddles::PostFeedbackJob).to receive(:perform_and_get_result)
     end
 
     context 'with valid parameters' do
@@ -90,23 +90,23 @@ RSpec.describe HuddlesController, type: :controller do
         expect(feedback.anonymous).to be false
       end
 
-      it 'calls PostAnnouncementJob.perform_now when creating new feedback' do
+      it 'calls PostAnnouncementJob.perform_and_get_result when creating new feedback' do
         post :submit_feedback, params: { id: huddle.id }.merge(valid_feedback_params)
         
-        expect(Huddles::PostAnnouncementJob).to have_received(:perform_now).with(huddle.id)
+        expect(Huddles::PostAnnouncementJob).to have_received(:perform_and_get_result).with(huddle.id)
       end
 
-      it 'calls PostSummaryJob.perform_now when creating new feedback' do
+      it 'calls PostSummaryJob.perform_and_get_result when creating new feedback' do
         post :submit_feedback, params: { id: huddle.id }.merge(valid_feedback_params)
         
-        expect(Huddles::PostSummaryJob).to have_received(:perform_now).with(huddle.id)
+        expect(Huddles::PostSummaryJob).to have_received(:perform_and_get_result).with(huddle.id)
       end
 
-      it 'calls PostFeedbackJob.perform_now when creating new feedback' do
+      it 'calls PostFeedbackJob.perform_and_get_result when creating new feedback' do
         post :submit_feedback, params: { id: huddle.id }.merge(valid_feedback_params)
         
         feedback = HuddleFeedback.last
-        expect(Huddles::PostFeedbackJob).to have_received(:perform_now).with(huddle.id, feedback.id)
+        expect(Huddles::PostFeedbackJob).to have_received(:perform_and_get_result).with(huddle.id, feedback.id)
       end
     end
 
@@ -193,22 +193,22 @@ RSpec.describe HuddlesController, type: :controller do
         expect(existing_feedback.anonymous).to be true
       end
 
-      it 'calls PostAnnouncementJob.perform_now when updating existing feedback' do
+      it 'calls PostAnnouncementJob.perform_and_get_result when updating existing feedback' do
         post :submit_feedback, params: { id: huddle.id }.merge(updated_feedback_params)
         
-        expect(Huddles::PostAnnouncementJob).to have_received(:perform_now).with(huddle.id)
+        expect(Huddles::PostAnnouncementJob).to have_received(:perform_and_get_result).with(huddle.id)
       end
 
-      it 'calls PostSummaryJob.perform_now when updating existing feedback' do
+      it 'calls PostSummaryJob.perform_and_get_result when updating existing feedback' do
         post :submit_feedback, params: { id: huddle.id }.merge(updated_feedback_params)
         
-        expect(Huddles::PostSummaryJob).to have_received(:perform_now).with(huddle.id)
+        expect(Huddles::PostSummaryJob).to have_received(:perform_and_get_result).with(huddle.id)
       end
 
-      it 'does not call PostFeedbackJob.perform_now when updating existing feedback' do
+      it 'does not call PostFeedbackJob.perform_and_get_result when updating existing feedback' do
         post :submit_feedback, params: { id: huddle.id }.merge(updated_feedback_params)
         
-        expect(Huddles::PostFeedbackJob).not_to have_received(:perform_now)
+        expect(Huddles::PostFeedbackJob).not_to have_received(:perform_and_get_result)
       end
 
       it 'redirects with success message when updating feedback' do

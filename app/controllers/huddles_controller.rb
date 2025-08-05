@@ -193,8 +193,8 @@ class HuddlesController < ApplicationController
         anonymous: feedback_params[:anonymous] == '1'
       )
         # Update announcement and summary (but don't post new feedback notification)
-        Huddles::PostAnnouncementJob.perform_now(@huddle.id)
-        Huddles::PostSummaryJob.perform_now(@huddle.id)
+        Huddles::PostAnnouncementJob.perform_and_get_result(@huddle.id)
+        Huddles::PostSummaryJob.perform_and_get_result(@huddle.id)
         
         redirect_to @huddle, notice: 'Your feedback has been updated!'
       else
@@ -220,9 +220,9 @@ class HuddlesController < ApplicationController
       
       if @feedback.save
         # Update summary and post feedback
-        Huddles::PostAnnouncementJob.perform_now(@huddle.id)
-        Huddles::PostSummaryJob.perform_now(@huddle.id)
-        Huddles::PostFeedbackJob.perform_now(@huddle.id, @feedback.id)
+        Huddles::PostAnnouncementJob.perform_and_get_result(@huddle.id)
+        Huddles::PostSummaryJob.perform_and_get_result(@huddle.id)
+        Huddles::PostFeedbackJob.perform_and_get_result(@huddle.id, @feedback.id)
         
         redirect_to @huddle, notice: 'Thank you for your feedback!'
       else
