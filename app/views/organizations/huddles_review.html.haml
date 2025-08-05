@@ -206,158 +206,330 @@
               %button.btn.btn-secondary{type: "button", "data-bs-dismiss": "modal"} Close
 
 :javascript
+  console.log('Huddles Review JavaScript loaded');
+  
+  // Chart data from Rails
+  var chartData = #{raw @chart_data.to_json};
+  var overallMetrics = #{raw @overall_metrics.to_json};
+  var playbookMetrics = #{raw @playbook_metrics.to_json};
+  
+  console.log('Chart data loaded:', chartData);
+  console.log('Overall metrics loaded:', overallMetrics);
+  console.log('Playbook metrics count:', Object.keys(playbookMetrics).length);
+  
   function initializeCharts() {
-    console.log('DOM loaded, initializing charts...');
+    console.log('Initializing charts...');
     console.log('Highcharts available:', typeof Highcharts !== 'undefined');
     
-    // Chart data from Rails
-    var chartData = #{raw @chart_data.to_json};
-    var overallMetrics = #{raw @overall_metrics.to_json};
-    var playbookMetrics = #{raw @playbook_metrics.to_json};
-    
-    console.log('Chart data:', chartData);
-    console.log('Overall metrics:', overallMetrics);
-    console.log('Playbook metrics count:', Object.keys(playbookMetrics).length);
-    
-    // Rating Trends Chart
-    if (chartData.rating_data && chartData.rating_data.length > 0) {
-      Highcharts.chart('rating-chart', {
-        chart: { type: 'line' },
-        title: { text: 'Average Rating Over Time' },
-        xAxis: { type: 'datetime', title: { text: 'Week' } },
-        yAxis: { title: { text: 'Average Rating' }, min: 0, max: 20 },
-        series: [{
-          name: 'Average Rating',
-          data: chartData.rating_data,
-          color: '#007bff'
-        }],
-        tooltip: {
-          formatter: function() {
-            return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
-                   '<b>Rating:</b> ' + this.y;
+    try {
+      // Rating Trends Chart
+      if (chartData.rating_data && chartData.rating_data.length > 0) {
+        console.log('Creating rating chart with data:', chartData.rating_data);
+        Highcharts.chart('rating-chart', {
+          chart: { type: 'line' },
+          title: { text: 'Average Rating Over Time' },
+          xAxis: { type: 'datetime', title: { text: 'Week' } },
+          yAxis: { title: { text: 'Average Rating' }, min: 0, max: 20 },
+          series: [{
+            name: 'Average Rating',
+            data: chartData.rating_data,
+            color: '#007bff'
+          }],
+          tooltip: {
+            formatter: function() {
+              return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
+                     '<b>Rating:</b> ' + this.y;
+            }
           }
-        }
-      });
-    }
-    
-    // Participation Rate Chart
-    if (chartData.participation_data && chartData.participation_data.length > 0) {
-      Highcharts.chart('participation-chart', {
-        chart: { type: 'line' },
-        title: { text: 'Participation Rate' },
-        xAxis: { type: 'datetime', title: { text: 'Week' } },
-        yAxis: { title: { text: 'Participation Rate (%)' }, min: 0, max: 100 },
-        series: [{
-          name: 'Participation Rate',
-          data: chartData.participation_data,
-          color: '#28a745'
-        }],
-        tooltip: {
-          formatter: function() {
-            return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
-                   '<b>Participation:</b> ' + this.y + '%';
-          }
-        }
-      });
-    }
-    
-    // Huddles per Week Chart
-    if (chartData.huddles_data && chartData.huddles_data.length > 0) {
-      Highcharts.chart('huddles-chart', {
-        chart: { type: 'column' },
-        title: { text: 'Huddles per Week' },
-        xAxis: { type: 'datetime', title: { text: 'Week' } },
-        yAxis: { title: { text: 'Number of Huddles' }, min: 0 },
-        series: [{
-          name: 'Huddles',
-          data: chartData.huddles_data,
-          color: '#ffc107'
-        }],
-        tooltip: {
-          formatter: function() {
-            return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
-                   '<b>Huddles:</b> ' + this.y;
-          }
-        }
-      });
-    }
-    
-    // Personal Conflict Styles Chart
-    if (overallMetrics.personal_conflict_styles && Object.keys(overallMetrics.personal_conflict_styles).length > 0) {
-      var personalConflictData = Object.keys(overallMetrics.personal_conflict_styles).map(function(style) {
-        return [style, overallMetrics.personal_conflict_styles[style]];
-      });
+        });
+        console.log('Rating chart created successfully');
+      }
       
-      Highcharts.chart('personal-conflict-chart', {
-        chart: { type: 'pie' },
-        title: { text: 'Personal Conflict Styles' },
-        series: [{
-          name: 'Count',
-          data: personalConflictData
-        }],
-        tooltip: {
-          pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)'
-        }
-      });
-    }
-    
-    // Team Conflict Styles Chart
-    if (overallMetrics.team_conflict_styles && Object.keys(overallMetrics.team_conflict_styles).length > 0) {
-      var teamConflictData = Object.keys(overallMetrics.team_conflict_styles).map(function(style) {
-        return [style, overallMetrics.team_conflict_styles[style]];
-      });
-      
-      Highcharts.chart('team-conflict-chart', {
-        chart: { type: 'pie' },
-        title: { text: 'Team Conflict Styles' },
-        series: [{
-          name: 'Count',
-          data: teamConflictData
-        }],
-        tooltip: {
-          pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)'
-        }
-      });
-    }
-    
-    // Rating Distribution Chart
-    if (overallMetrics.rating_distribution && Object.keys(overallMetrics.rating_distribution).length > 0) {
-      Highcharts.chart('rating-distribution-chart', {
-        chart: { type: 'column' },
-        title: { text: 'Rating Distribution' },
-        xAxis: {
-          categories: Object.keys(overallMetrics.rating_distribution),
-          title: { text: 'Rating Score' }
-        },
-        yAxis: { title: { text: 'Number of Feedbacks' }, min: 0 },
-        series: [{
-          name: 'Feedbacks',
-          data: Object.values(overallMetrics.rating_distribution),
-          color: '#6f42c1'
-        }],
-        tooltip: {
-          formatter: function() {
-            return '<b>Rating ' + this.x + '</b><br/>' +
-                   '<b>Feedbacks:</b> ' + this.y;
+      // Participation Rate Chart
+      if (chartData.participation_data && chartData.participation_data.length > 0) {
+        console.log('Creating participation chart with data:', chartData.participation_data);
+        Highcharts.chart('participation-chart', {
+          chart: { type: 'line' },
+          title: { text: 'Participation Rate' },
+          xAxis: { type: 'datetime', title: { text: 'Week' } },
+          yAxis: { title: { text: 'Participation Rate (%)' }, min: 0, max: 100 },
+          series: [{
+            name: 'Participation Rate',
+            data: chartData.participation_data,
+            color: '#28a745'
+          }],
+          tooltip: {
+            formatter: function() {
+              return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
+                     '<b>Participation:</b> ' + this.y + '%';
+            }
           }
-        }
-      });
+        });
+        console.log('Participation chart created successfully');
+      }
+      
+      // Huddles per Week Chart
+      if (chartData.huddles_data && chartData.huddles_data.length > 0) {
+        console.log('Creating huddles chart with data:', chartData.huddles_data);
+        Highcharts.chart('huddles-chart', {
+          chart: { type: 'column' },
+          title: { text: 'Huddles per Week' },
+          xAxis: { type: 'datetime', title: { text: 'Week' } },
+          yAxis: { title: { text: 'Number of Huddles' }, min: 0 },
+          series: [{
+            name: 'Huddles',
+            data: chartData.huddles_data,
+            color: '#ffc107'
+          }],
+          tooltip: {
+            formatter: function() {
+              return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
+                     '<b>Huddles:</b> ' + this.y;
+            }
+          }
+        });
+        console.log('Huddles chart created successfully');
+      }
+      
+      // Personal Conflict Styles Chart
+      if (overallMetrics.personal_conflict_styles && Object.keys(overallMetrics.personal_conflict_styles).length > 0) {
+        console.log('Creating personal conflict chart');
+        var personalConflictData = Object.keys(overallMetrics.personal_conflict_styles).map(function(style) {
+          return [style, overallMetrics.personal_conflict_styles[style]];
+        });
+        
+        Highcharts.chart('personal-conflict-chart', {
+          chart: { type: 'pie' },
+          title: { text: 'Personal Conflict Styles' },
+          series: [{
+            name: 'Count',
+            data: personalConflictData
+          }],
+          tooltip: {
+            pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)'
+          }
+        });
+        console.log('Personal conflict chart created successfully');
+      }
+      
+      // Team Conflict Styles Chart
+      if (overallMetrics.team_conflict_styles && Object.keys(overallMetrics.team_conflict_styles).length > 0) {
+        console.log('Creating team conflict chart');
+        var teamConflictData = Object.keys(overallMetrics.team_conflict_styles).map(function(style) {
+          return [style, overallMetrics.team_conflict_styles[style]];
+        });
+        
+        Highcharts.chart('team-conflict-chart', {
+          chart: { type: 'pie' },
+          title: { text: 'Team Conflict Styles' },
+          series: [{
+            name: 'Count',
+            data: teamConflictData
+          }],
+          tooltip: {
+            pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)'
+          }
+        });
+        console.log('Team conflict chart created successfully');
+      }
+      
+      // Rating Distribution Chart
+      if (overallMetrics.rating_distribution && Object.keys(overallMetrics.rating_distribution).length > 0) {
+        console.log('Creating rating distribution chart');
+        Highcharts.chart('rating-distribution-chart', {
+          chart: { type: 'column' },
+          title: { text: 'Rating Distribution' },
+          xAxis: {
+            categories: Object.keys(overallMetrics.rating_distribution),
+            title: { text: 'Rating Score' }
+          },
+          yAxis: { title: { text: 'Number of Feedbacks' }, min: 0 },
+          series: [{
+            name: 'Feedbacks',
+            data: Object.values(overallMetrics.rating_distribution),
+            color: '#6f42c1'
+          }],
+          tooltip: {
+            formatter: function() {
+              return '<b>Rating ' + this.x + '</b><br/>' +
+                     '<b>Feedbacks:</b> ' + this.y;
+            }
+          }
+        });
+        console.log('Rating distribution chart created successfully');
+      }
+      
+      // Playbook Trends Chart (if multiple playbooks)
+      var playbookTrendsData = [];
+      if (Object.keys(playbookMetrics).length > 1) {
+        console.log('Creating playbook trends chart');
+        playbookTrendsData = Object.keys(playbookMetrics).map(function(key) {
+          var playbook = playbookMetrics[key];
+          return {
+            name: playbook.display_name,
+            data: playbook.weekly_trends ? Object.keys(playbook.weekly_trends).sort().map(function(week) {
+              return [new Date(week).getTime(), playbook.weekly_trends[week].average_rating];
+            }) : []
+          };
+        });
+      }
+
+      var playbookTrendsChart = document.getElementById('playbook-trends-chart');
+      if (playbookTrendsChart && playbookTrendsData.length > 0) {
+        console.log('Creating playbook trends chart with data:', playbookTrendsData);
+        Highcharts.chart('playbook-trends-chart', {
+          chart: { type: 'line' },
+          title: { text: 'Playbook Rating Trends' },
+          xAxis: { type: 'datetime', title: { text: 'Week' } },
+          yAxis: { title: { text: 'Average Rating' }, min: 0, max: 20 },
+          series: playbookTrendsData,
+          tooltip: {
+            formatter: function() {
+              return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
+                     '<b>' + this.series.name + ':</b> ' + this.y;
+            }
+          },
+          legend: { enabled: true }
+        });
+        console.log('Playbook trends chart created successfully');
+      }
+
+      // Playbook Modal Event Handler (using vanilla JS instead of jQuery)
+      var playbookModal = document.getElementById('playbookModal');
+      if (playbookModal) {
+        playbookModal.addEventListener('show.bs.modal', function (event) {
+          console.log('Playbook modal opening');
+          var button = event.relatedTarget;
+          var playbookId = button.getAttribute('data-playbook-id');
+          var playbook = playbookMetrics[playbookId]; // Direct access using ID as key
+
+          if (playbook) {
+            console.log('Loading playbook data for modal:', playbook);
+            var modalLabel = document.getElementById('playbookModalLabel');
+            if (modalLabel) {
+              modalLabel.textContent = playbook.display_name + ' Details';
+            }
+
+            var ratingData = playbook.weekly_trends ?
+              Object.keys(playbook.weekly_trends).sort().map(function(week) {
+                return [new Date(week).getTime(), playbook.weekly_trends[week].average_rating];
+              }) : [];
+
+            Highcharts.chart('playbook-rating-chart', {
+              chart: { type: 'line' },
+              title: { text: 'Rating Trends' },
+              xAxis: { type: 'datetime' },
+              yAxis: { title: { text: 'Average Rating' }, min: 0, max: 20 },
+              series: [{ name: 'Rating', data: ratingData, color: '#007bff' }],
+              tooltip: {
+                formatter: function() {
+                  return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
+                         '<b>Rating:</b> ' + this.y;
+                }
+              }
+            });
+
+            var participationData = playbook.weekly_trends ?
+              Object.keys(playbook.weekly_trends).sort().map(function(week) {
+                return [new Date(week).getTime(), playbook.weekly_trends[week].participation_rate];
+              }) : [];
+
+            Highcharts.chart('playbook-participation-chart', {
+              chart: { type: 'line' },
+              title: { text: 'Participation Trends' },
+              xAxis: { type: 'datetime' },
+              yAxis: { title: { text: 'Participation Rate (%)' }, min: 0, max: 100 },
+              series: [{ name: 'Participation', data: participationData, color: '#28a745' }],
+              tooltip: {
+                formatter: function() {
+                  return '<b>' + Highcharts.dateFormat('%B %d, %Y', this.x) + '</b><br/>' +
+                         '<b>Participation:</b> ' + this.y + '%';
+                }
+              }
+            });
+
+            var personalConflictData = playbook.personal_conflict_styles ?
+              Object.keys(playbook.personal_conflict_styles).map(function(style) {
+                return [style, playbook.personal_conflict_styles[style]];
+              }) : [];
+
+            Highcharts.chart('playbook-conflict-personal-chart', {
+              chart: { type: 'pie' },
+              title: { text: 'Personal Conflict Styles' },
+              series: [{ name: 'Count', data: personalConflictData }],
+              tooltip: { pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)' }
+            });
+
+            var teamConflictData = playbook.team_conflict_styles ?
+              Object.keys(playbook.team_conflict_styles).map(function(style) {
+                return [style, playbook.team_conflict_styles[style]];
+              }) : [];
+
+            Highcharts.chart('playbook-conflict-team-chart', {
+              chart: { type: 'pie' },
+              title: { text: 'Team Conflict Styles' },
+              series: [{ name: 'Count', data: teamConflictData }],
+              tooltip: { pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)' }
+            });
+
+            var huddlesList = '';
+            if (playbook.huddles) {
+              playbook.huddles.forEach(function(huddle) {
+                huddlesList += '<tr>' +
+                  '<td>' + new Date(huddle.started_at).toLocaleDateString() + '</td>' +
+                  '<td>' + huddle.organization.display_name + '</td>' +
+                  '<td>' + (huddle.huddle_participants_count || huddle.huddle_participants.length) + '</td>' +
+                  '<td>' + (huddle.average_rating || 'N/A') + '</td>' +
+                  '<td>' + (huddle.participation_rate || 'N/A') + '%</td>' +
+                  '</tr>';
+              });
+            }
+            var huddlesListElement = document.getElementById('playbook-huddles-list');
+            if (huddlesListElement) {
+              huddlesListElement.innerHTML = huddlesList;
+            }
+            console.log('Playbook modal charts created successfully');
+          }
+        });
+      }
+
+      console.log('All charts initialized successfully');
+    } catch (error) {
+      console.error('Error initializing charts:', error);
     }
+  }
+  
+  // Multiple initialization strategies
+  function tryInitializeCharts() {
+    console.log('Attempting to initialize charts...');
+    console.log('Document ready state:', document.readyState);
+    console.log('Highcharts available:', typeof Highcharts !== 'undefined');
     
-    console.log('All charts initialized successfully');
+    if (typeof Highcharts !== 'undefined' && document.readyState === 'complete') {
+      console.log('Both Highcharts and DOM are ready, initializing...');
+      initializeCharts();
+    } else if (typeof Highcharts !== 'undefined') {
+      console.log('Highcharts available but DOM not complete, waiting...');
+      setTimeout(tryInitializeCharts, 100);
+    } else {
+      console.log('Highcharts not available, waiting...');
+      setTimeout(tryInitializeCharts, 100);
+    }
   }
   
   // Wait for both DOM and Highcharts to be ready
   var attempts = 0;
   function waitForHighcharts() {
     attempts++;
+    console.log('Waiting for Highcharts... (attempt ' + attempts + ')');
+    
     if (typeof Highcharts !== 'undefined') {
+      console.log('Highcharts found, initializing charts');
       initializeCharts();
-    } else if (attempts < 50) { // Wait up to 5 seconds
-      console.log('Waiting for Highcharts to load... (attempt ' + attempts + ')');
+    } else if (attempts < 100) { // Wait up to 10 seconds
       setTimeout(waitForHighcharts, 100);
     } else {
-      console.error('Highcharts failed to load after 5 seconds. Trying alternative CDN...');
+      console.error('Highcharts failed to load after 10 seconds. Trying alternative CDN...');
       loadHighchartsAlternative();
     }
   }
@@ -376,6 +548,23 @@
     document.head.appendChild(script);
   }
   
-  document.addEventListener('DOMContentLoaded', function() {
+  // Multiple event listeners to ensure initialization
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOMContentLoaded fired');
+      waitForHighcharts();
+    });
+  } else {
+    console.log('Document already loaded, checking Highcharts');
     waitForHighcharts();
-  }); 
+  }
+  
+  // Also try on window load
+  window.addEventListener('load', function() {
+    console.log('Window load fired');
+    tryInitializeCharts();
+  });
+  
+  // Immediate attempt
+  console.log('Making immediate attempt to initialize');
+  tryInitializeCharts(); 
