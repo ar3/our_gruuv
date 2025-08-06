@@ -228,7 +228,11 @@ class OrganizationsController < ApplicationController
       # Calculate weekly trends for this playbook
       weekly_trends = calculate_playbook_weekly_trends(playbook_huddles)
       
-      playbook_metrics[playbook] = {
+      playbook_metrics[playbook.id] = {
+        id: playbook.id,
+        display_name: playbook.display_name,
+        organization_id: playbook.organization_id,
+        organization_name: playbook.organization.display_name,
         total_huddles: total_huddles,
         total_participants: total_participants,
         distinct_participant_count: distinct_participant_count,

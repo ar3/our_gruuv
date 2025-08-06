@@ -32,7 +32,7 @@
         .col-md-3
           .card.text-center
             .card-body
-              %h3.card-title.text-success{data: {bs_toggle: "popover", bs_placement: "top", bs_trigger: "hover", bs_content: @overall_metrics[:distinct_participant_names].join(", "), bs_title: "Distinct Participants"}}= @overall_metrics[:distinct_participant_count]
+              %h3.card-title.text-success{title: @overall_metrics[:distinct_participant_names].join(", "), data: {bs_toggle: "tooltip", bs_placement: "top"}}= @overall_metrics[:distinct_participant_count]
               %p.card-text Distinct Participants
         .col-md-3
           .card.text-center
@@ -90,7 +90,7 @@
                       %tr
                         %td= week_start.strftime("%B %d, %Y")
                         %td= metrics[:total_huddles]
-                        %td{data: {bs_toggle: "popover", bs_placement: "top", bs_trigger: "hover", bs_content: metrics[:distinct_participant_names]&.join(", ") || "No participants", bs_title: "Distinct Participants"}}= metrics[:distinct_participant_count]
+                        %td{title: metrics[:distinct_participant_names]&.join(", ") || "No participants", data: {bs_toggle: "tooltip", bs_placement: "top"}}= metrics[:distinct_participant_count]
                         %td= metrics[:total_feedbacks]
                         %td= metrics[:average_rating]
                         %td= "#{metrics[:participation_rate]}%"
@@ -140,7 +140,8 @@
                         %th Participation Rate
                         %th Actions
                     %tbody
-                      - @playbook_metrics.sort_by { |playbook, metrics| -metrics[:average_rating] }.each do |playbook, metrics|
+                      - @playbook_metrics.sort_by { |playbook_id, metrics| -metrics[:average_rating] }.each do |playbook_id, metrics|
+                        - playbook = HuddlePlaybook.find(playbook_id)
                         %tr
                           %td
                             %strong= link_to playbook.display_name, organization_huddle_playbook_path(playbook.organization, playbook), class: "text-decoration-none"
@@ -150,7 +151,7 @@
                           %td
                             %small= playbook.organization.display_name
                           %td= metrics[:total_huddles]
-                          %td{data: {bs_toggle: "popover", bs_placement: "top", bs_trigger: "hover", bs_content: metrics[:distinct_participant_names]&.join(", ") || "No participants", bs_title: "Distinct Participants"}}= metrics[:distinct_participant_count]
+                          %td{title: metrics[:distinct_participant_names]&.join(", ") || "No participants", data: {bs_toggle: "tooltip", bs_placement: "top"}}= metrics[:distinct_participant_count]
                           %td= metrics[:total_feedbacks]
                           %td
                             %span{class: metrics[:average_rating] >= 16 ? 'text-success' : metrics[:average_rating] >= 12 ? 'text-warning' : 'text-danger'}
@@ -159,7 +160,7 @@
                             %span{class: metrics[:participation_rate] >= 80 ? 'text-success' : metrics[:participation_rate] >= 60 ? 'text-warning' : 'text-danger'}
                               = "#{metrics[:participation_rate]}%"
                           %td
-                            %button.btn.btn-sm.btn-outline-primary{type: "button", "data-bs-toggle": "modal", "data-bs-target": "#playbookModal", "data-playbook-id": playbook.id} View Details
+                            %button.btn.btn-sm.btn-outline-primary{type: "button", "data-bs-toggle": "modal", "data-bs-target": "#playbookModal", "data-playbook-id": playbook_id} View Details
       
       / Playbook Trends Chart
       - if @playbook_metrics.count > 1
@@ -307,7 +308,8 @@
           }],
           tooltip: {
             pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)'
-          }
+          },
+          legend: { enabled: true }
         });
         console.log('Personal conflict chart created successfully');
       }
@@ -328,7 +330,8 @@
           }],
           tooltip: {
             pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)'
-          }
+          },
+          legend: { enabled: true }
         });
         console.log('Team conflict chart created successfully');
       }
@@ -366,7 +369,7 @@
         playbookTrendsData = Object.keys(playbookMetrics).map(function(key) {
           var playbook = playbookMetrics[key];
           return {
-            name: playbook.display_name,
+            name: playbook.display_name + ' (' + playbook.organization_name + ')',
             data: playbook.weekly_trends ? Object.keys(playbook.weekly_trends).sort().map(function(week) {
               return [new Date(week).getTime(), playbook.weekly_trends[week].average_rating];
             }) : []
@@ -457,7 +460,8 @@
               chart: { type: 'pie' },
               title: { text: 'Personal Conflict Styles' },
               series: [{ name: 'Count', data: personalConflictData }],
-              tooltip: { pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)' }
+              tooltip: { pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)' },
+              legend: { enabled: true }
             });
 
             var teamConflictData = playbook.team_conflict_styles ?
@@ -469,7 +473,8 @@
               chart: { type: 'pie' },
               title: { text: 'Team Conflict Styles' },
               series: [{ name: 'Count', data: teamConflictData }],
-              tooltip: { pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)' }
+              tooltip: { pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)' },
+              legend: { enabled: true }
             });
 
             var huddlesList = '';

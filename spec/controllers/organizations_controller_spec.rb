@@ -9,6 +9,20 @@ RSpec.describe OrganizationsController, type: :controller do
     session[:current_person_id] = person.id
   end
 
+  describe 'GET #index' do
+    it 'returns http success' do
+      get :index
+      expect(response).to have_http_status(:success)
+    end
+  end
+
+  describe 'GET #show' do
+    it 'returns http success' do
+      get :show, params: { id: organization.id }
+      expect(response).to have_http_status(:success)
+    end
+  end
+
   describe 'GET #huddles_review' do
     let!(:huddle1) { create(:huddle, organization: organization, started_at: 1.week.ago) }
     let!(:huddle2) { create(:huddle, organization: team, started_at: 2.weeks.ago) }
@@ -91,6 +105,32 @@ RSpec.describe OrganizationsController, type: :controller do
       # Check that each name appears only once in the array
       expect(metrics[:distinct_participant_names].count(person.display_name)).to eq(1)
       expect(metrics[:distinct_participant_names].count(person2.display_name)).to eq(1)
+    end
+
+    it 'assigns playbook metrics correctly' do
+      huddle_playbook = create(:huddle_playbook, organization: organization)
+      huddle = create(:huddle, huddle_playbook: huddle_playbook, organization: organization)
+      
+      get :huddles_review, params: { id: organization.id }
+      
+      expect(assigns(:playbook_metrics)).to be_present
+      expect(assigns(:playbook_metrics).keys).to include(huddle_playbook.id)
+      
+      metrics = assigns(:playbook_metrics)[huddle_playbook.id]
+      expect(metrics[:display_name]).to eq(huddle_playbook.display_name)
+      expect(metrics[:id]).to eq(huddle_playbook.id)
+      expect(metrics[:organization_id]).to eq(huddle_playbook.organization_id)
+    end
+
+    it 'handles playbook metrics without display_name errors' do
+      huddle_playbook = create(:huddle_playbook, organization: organization)
+      huddle = create(:huddle, huddle_playbook: huddle_playbook, organization: organization)
+      
+      expect {
+        get :huddles_review, params: { id: organization.id }
+      }.not_to raise_error
+      
+      expect(response).to have_http_status(:success)
     end
   end
 end 
