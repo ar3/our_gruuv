@@ -32,8 +32,8 @@
         .col-md-3
           .card.text-center
             .card-body
-              %h3.card-title.text-success= @overall_metrics[:total_participants]
-              %p.card-text Participants
+              %h3.card-title.text-success{data: {bs_toggle: "popover", bs_placement: "top", bs_trigger: "hover", bs_content: @overall_metrics[:distinct_participant_names].join(", "), bs_title: "Distinct Participants"}}= @overall_metrics[:distinct_participant_count]
+              %p.card-text Distinct Participants
         .col-md-3
           .card.text-center
             .card-body
@@ -81,7 +81,7 @@
                     %tr
                       %th Week Starting
                       %th Huddles
-                      %th Participants
+                      %th Distinct Participants
                       %th Feedbacks
                       %th Avg Rating
                       %th Participation Rate
@@ -90,7 +90,7 @@
                       %tr
                         %td= week_start.strftime("%B %d, %Y")
                         %td= metrics[:total_huddles]
-                        %td= metrics[:total_participants]
+                        %td{data: {bs_toggle: "popover", bs_placement: "top", bs_trigger: "hover", bs_content: metrics[:distinct_participant_names]&.join(", ") || "No participants", bs_title: "Distinct Participants"}}= metrics[:distinct_participant_count]
                         %td= metrics[:total_feedbacks]
                         %td= metrics[:average_rating]
                         %td= "#{metrics[:participation_rate]}%"
@@ -134,7 +134,7 @@
                         %th Playbook
                         %th Organization
                         %th Huddles
-                        %th Participants
+                        %th Distinct Participants
                         %th Feedbacks
                         %th Avg Rating
                         %th Participation Rate
@@ -143,14 +143,14 @@
                       - @playbook_metrics.sort_by { |playbook, metrics| -metrics[:average_rating] }.each do |playbook, metrics|
                         %tr
                           %td
-                            %strong= playbook.display_name
+                            %strong= link_to playbook.display_name, organization_huddle_playbook_path(playbook.organization, playbook), class: "text-decoration-none"
                             - if playbook.special_session_name.present?
                               %br
                               %small.text-muted= playbook.special_session_name
                           %td
                             %small= playbook.organization.display_name
                           %td= metrics[:total_huddles]
-                          %td= metrics[:total_participants]
+                          %td{data: {bs_toggle: "popover", bs_placement: "top", bs_trigger: "hover", bs_content: metrics[:distinct_participant_names]&.join(", ") || "No participants", bs_title: "Distinct Participants"}}= metrics[:distinct_participant_count]
                           %td= metrics[:total_feedbacks]
                           %td
                             %span{class: metrics[:average_rating] >= 16 ? 'text-success' : metrics[:average_rating] >= 12 ? 'text-warning' : 'text-danger'}
@@ -407,7 +407,7 @@
             console.log('Loading playbook data for modal:', playbook);
             var modalLabel = document.getElementById('playbookModalLabel');
             if (modalLabel) {
-              modalLabel.textContent = playbook.display_name + ' Details';
+              modalLabel.innerHTML = '<a href="/organizations/' + playbook.organization_id + '/huddle_playbooks/' + playbook.id + '" class="text-decoration-none">' + playbook.display_name + '</a> Details';
             }
 
             var ratingData = playbook.weekly_trends ?
@@ -494,9 +494,25 @@
       }
 
       console.log('All charts initialized successfully');
+      
+      // Initialize popovers after charts are done
+      initializePopovers();
     } catch (error) {
       console.error('Error initializing charts:', error);
     }
+  }
+  
+  // Initialize Bootstrap popovers for participant data
+  function initializePopovers() {
+    console.log('Initializing popovers...');
+    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+      return new bootstrap.Popover(popoverTriggerEl, {
+        html: true,
+        sanitize: false
+      });
+    });
+    console.log('Popovers initialized:', popoverList.length);
   }
   
   // Multiple initialization strategies

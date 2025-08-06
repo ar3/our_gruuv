@@ -59,5 +59,38 @@ RSpec.describe OrganizationsController, type: :controller do
       expect(metrics[:total_feedbacks]).to eq(2)
       expect(metrics[:average_rating]).to eq(18.0) # (16 + 20) / 2
     end
+
+    it 'calculates distinct participant names using display_name method and prevents duplicates' do
+      # Create participants for the huddles - same person in both huddles
+      participant1 = create(:huddle_participant, huddle: huddle1, person: person)
+      participant2 = create(:huddle_participant, huddle: huddle2, person: person)
+      
+      get :huddles_review, params: { id: organization.id }
+      
+      metrics = assigns(:overall_metrics)
+      expect(metrics[:distinct_participant_count]).to eq(1) # Same person in both huddles
+      expect(metrics[:distinct_participant_names]).to eq([person.display_name])
+      expect(metrics[:distinct_participant_names].length).to eq(1) # Ensure no duplicates
+    end
+
+    it 'handles multiple distinct participants correctly and prevents duplicates' do
+      # Create a second person
+      person2 = create(:person, first_name: 'Jane', last_name: 'Doe', email: 'jane@example.com')
+      
+      # Create participants for the huddles - person1 in both huddles, person2 only in huddle2
+      participant1 = create(:huddle_participant, huddle: huddle1, person: person)
+      participant2 = create(:huddle_participant, huddle: huddle2, person: person) # Same person again
+      participant3 = create(:huddle_participant, huddle: huddle2, person: person2) # Different person
+      
+      get :huddles_review, params: { id: organization.id }
+      
+      metrics = assigns(:overall_metrics)
+      expect(metrics[:distinct_participant_count]).to eq(2) # Should only count unique people
+      expect(metrics[:distinct_participant_names]).to eq([person.display_name, person2.display_name].sort)
+      expect(metrics[:distinct_participant_names].length).to eq(2) # Ensure no duplicates
+      # Check that each name appears only once in the array
+      expect(metrics[:distinct_participant_names].count(person.display_name)).to eq(1)
+      expect(metrics[:distinct_participant_names].count(person2.display_name)).to eq(1)
+    end
   end
 end 

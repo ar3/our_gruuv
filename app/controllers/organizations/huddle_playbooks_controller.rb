@@ -1,7 +1,7 @@
 class Organizations::HuddlePlaybooksController < ApplicationController
   before_action :require_authentication
   before_action :set_organization
-  before_action :set_huddle_playbook, only: [:edit, :update, :destroy]
+  before_action :set_huddle_playbook, only: [:show, :edit, :update, :destroy]
   
   def index
     @huddle_playbooks = @organization.huddle_playbooks.order(:special_session_name)
@@ -19,6 +19,11 @@ class Organizations::HuddlePlaybooksController < ApplicationController
     else
       render :new, status: :unprocessable_entity
     end
+  end
+  
+  def show
+    @huddles = @huddle_playbook.huddles.includes(:organization, :huddle_participants, :huddle_feedbacks).order(started_at: :desc)
+    @participant_stats = HuddlePlaybookStatsService.new(@huddle_playbook).participant_statistics
   end
   
   def edit

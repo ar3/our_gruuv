@@ -116,6 +116,11 @@ class OrganizationsController < ApplicationController
       total_participants = huddles.sum { |h| h.huddle_participants.count }
       total_feedbacks = huddles.sum { |h| h.huddle_feedbacks.count }
       
+      # Calculate distinct participants for this week
+      distinct_participants = huddles.flat_map(&:huddle_participants).map(&:person).uniq(&:id)
+      distinct_participant_count = distinct_participants.count
+      distinct_participant_names = distinct_participants.map(&:display_name).sort
+      
       # Calculate average ratings
       all_ratings = huddles.flat_map(&:huddle_feedbacks).map(&:nat_20_score).compact
       average_rating = all_ratings.any? ? (all_ratings.sum.to_f / all_ratings.count).round(1) : 0
@@ -126,6 +131,8 @@ class OrganizationsController < ApplicationController
       weekly_metrics[week_start] = {
         total_huddles: total_huddles,
         total_participants: total_participants,
+        distinct_participant_count: distinct_participant_count,
+        distinct_participant_names: distinct_participant_names,
         total_feedbacks: total_feedbacks,
         average_rating: average_rating,
         participation_rate: participation_rate,
@@ -140,6 +147,11 @@ class OrganizationsController < ApplicationController
     total_huddles = huddles.count
     total_participants = huddles.sum { |h| h.huddle_participants.count }
     total_feedbacks = huddles.sum { |h| h.huddle_feedbacks.count }
+    
+    # Calculate distinct participants
+    distinct_participants = huddles.flat_map(&:huddle_participants).map(&:person).uniq(&:id)
+    distinct_participant_count = distinct_participants.count
+    distinct_participant_names = distinct_participants.map(&:display_name).sort
     
     # Calculate average ratings
     all_ratings = huddles.flat_map(&:huddle_feedbacks).map(&:nat_20_score).compact
@@ -158,6 +170,8 @@ class OrganizationsController < ApplicationController
     {
       total_huddles: total_huddles,
       total_participants: total_participants,
+      distinct_participant_count: distinct_participant_count,
+      distinct_participant_names: distinct_participant_names,
       total_feedbacks: total_feedbacks,
       average_rating: average_rating,
       participation_rate: participation_rate,
@@ -192,6 +206,11 @@ class OrganizationsController < ApplicationController
       total_participants = playbook_huddles.sum { |h| h.huddle_participants.count }
       total_feedbacks = playbook_huddles.sum { |h| h.huddle_feedbacks.count }
       
+      # Calculate distinct participants for this playbook
+      distinct_participants = playbook_huddles.flat_map(&:huddle_participants).map(&:person).uniq(&:id)
+      distinct_participant_count = distinct_participants.count
+      distinct_participant_names = distinct_participants.map(&:display_name).sort
+      
       # Calculate average ratings
       all_ratings = playbook_huddles.flat_map(&:huddle_feedbacks).map(&:nat_20_score).compact
       average_rating = all_ratings.any? ? (all_ratings.sum.to_f / all_ratings.count).round(1) : 0
@@ -212,6 +231,8 @@ class OrganizationsController < ApplicationController
       playbook_metrics[playbook] = {
         total_huddles: total_huddles,
         total_participants: total_participants,
+        distinct_participant_count: distinct_participant_count,
+        distinct_participant_names: distinct_participant_names,
         total_feedbacks: total_feedbacks,
         average_rating: average_rating,
         participation_rate: participation_rate,

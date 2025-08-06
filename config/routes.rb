@@ -36,7 +36,7 @@ Rails.application.routes.draw do
       get :huddles_review
     end
     
-    resources :huddle_playbooks, except: [:show], module: :organizations
+    resources :huddle_playbooks, module: :organizations
     
     # Slack integration nested under organizations
     resource :slack, only: [:show], module: :organizations, controller: 'slack' do
