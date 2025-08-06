@@ -1,5 +1,5 @@
 class PositionTypesController < ApplicationController
-  before_action :set_position_type, only: [:show, :edit, :update, :destroy]
+  before_action :set_position_type, only: [:show, :edit, :update, :destroy, :clone_positions]
   before_action :set_organization
 
   def index
