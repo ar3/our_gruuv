@@ -16,7 +16,13 @@ class HuddleFeedback < ApplicationRecord
   # Scopes
   scope :anonymous, -> { where(anonymous: true) }
   scope :named, -> { where(anonymous: false) }
-  
+  def display_personal_conflict_style
+    personal_conflict_style.present? ? personal_conflict_style : 'N/A'
+  end
+
+  def display_team_conflict_style
+    team_conflict_style.present? ? team_conflict_style : 'N/A'
+  end
   # Instance methods
   def nat_20_score
     informed_rating + connected_rating + goals_rating + valuable_rating

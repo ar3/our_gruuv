@@ -183,8 +183,8 @@ module Huddles
       
       rating_distribution = all_ratings.tally
       
-      personal_conflict_styles = huddles.flat_map(&:huddle_feedbacks).map(&:personal_conflict_style).compact
-      team_conflict_styles = huddles.flat_map(&:huddle_feedbacks).map(&:team_conflict_style).compact
+      personal_conflict_styles = huddles.flat_map(&:huddle_feedbacks).map(&:display_personal_conflict_style).compact
+      team_conflict_styles = huddles.flat_map(&:huddle_feedbacks).map(&:display_team_conflict_style).compact
 
       {
         average_rating: average_rating,
