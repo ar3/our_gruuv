@@ -63,33 +63,67 @@ class OrganizationsController < ApplicationController
     end_date = params[:end_date].present? ? Date.parse(params[:end_date]) : Date.current
     start_date = params[:start_date].present? ? Date.parse(params[:start_date]) : (end_date - 6.weeks)
     
-    # Get all organizations in the hierarchy (self + all descendants)
-    @hierarchy_organizations = @organization.self_and_descendants
+    # Use the stats service for all calculations
+    stats_service = Huddles::StatsService.new(@organization, start_date..end_date)
     
-    # Get huddles for all organizations in the hierarchy within the date range
-    @huddles = Huddle.joins(:organization)
-                      .where(organization: @hierarchy_organizations)
-                      .where('started_at >= ? AND started_at <= ?', start_date.beginning_of_day, end_date.end_of_day)
-                      .includes(:organization, :huddle_playbook, :huddle_feedbacks, :huddle_participants)
-                      .order(:started_at)
-    
-    # Group huddles by calendar week
-    @huddles_by_week = @huddles.group_by { |huddle| huddle.started_at.beginning_of_week }
-    
-    # Calculate weekly metrics
-    @weekly_metrics = calculate_weekly_metrics(@huddles_by_week)
-    
-    # Calculate overall metrics for the period
-    @overall_metrics = calculate_overall_metrics(@huddles)
+    # Get all the stats we need
+    @weekly_metrics = stats_service.weekly_stats
+    @overall_metrics = stats_service.overall_stats
+    @playbook_metrics = stats_service.playbook_stats
     
     # Prepare chart data
     @chart_data = prepare_chart_data(@weekly_metrics)
     
-    # Calculate playbook metrics
-    @playbook_metrics = calculate_playbook_metrics(@huddles)
-    
     @start_date = start_date
     @end_date = end_date
+  end
+
+  def refresh_slack_channels
+    @organization = Organization.find(params[:id])
+    
+    if @organization.company?
+      success = Companies::RefreshSlackChannelsJob.perform_and_get_result(@organization.id)
+      
+      if success
+        redirect_to huddles_review_organization_path(@organization), notice: 'Slack channels refreshed successfully!'
+      else
+        redirect_to huddles_review_organization_path(@organization), alert: 'Failed to refresh Slack channels. Please check your Slack configuration.'
+      end
+    else
+      redirect_to huddles_review_organization_path(@organization), alert: 'Slack channel management is only available for companies.'
+    end
+  end
+
+  def update_huddle_review_channel
+    @organization = Organization.find(params[:id])
+    
+    if @organization.company?
+      @organization.huddle_review_notification_channel_id = params[:channel_id]
+      
+      if @organization.save
+        redirect_to huddles_review_organization_path(@organization), notice: 'Huddle review notification channel updated successfully!'
+      else
+        redirect_to huddles_review_organization_path(@organization), alert: 'Failed to update notification channel.'
+      end
+    else
+      redirect_to huddles_review_organization_path(@organization), alert: 'Channel management is only available for companies.'
+    end
+  end
+
+  def trigger_weekly_notification
+    @organization = Organization.find(params[:id])
+    
+    if @organization.company?
+      success = Companies::WeeklyHuddlesReviewNotificationJob.perform_and_get_result(@organization.id)
+      
+      if success
+        redirect_to huddles_review_organization_path(@organization), notice: 'Weekly notification sent successfully!'
+      else
+        redirect_to huddles_review_organization_path(@organization), alert: 'Failed to send weekly notification. Please check your Slack configuration.'
+      end
+    else
+      redirect_to huddles_review_organization_path(@organization), alert: 'Weekly notifications are only available for companies.'
+    end
   end
   
   private
@@ -108,79 +142,6 @@ class OrganizationsController < ApplicationController
     end
   end
   
-  def calculate_weekly_metrics(huddles_by_week)
-    weekly_metrics = {}
-    
-    huddles_by_week.each do |week_start, huddles|
-      total_huddles = huddles.count
-      total_participants = huddles.sum { |h| h.huddle_participants.count }
-      total_feedbacks = huddles.sum { |h| h.huddle_feedbacks.count }
-      
-      # Calculate distinct participants for this week
-      distinct_participants = huddles.flat_map(&:huddle_participants).map(&:person).uniq(&:id)
-      distinct_participant_count = distinct_participants.count
-      distinct_participant_names = distinct_participants.map(&:display_name).sort
-      
-      # Calculate average ratings
-      all_ratings = huddles.flat_map(&:huddle_feedbacks).map(&:nat_20_score).compact
-      average_rating = all_ratings.any? ? (all_ratings.sum.to_f / all_ratings.count).round(1) : 0
-      
-      # Calculate participation rate
-      participation_rate = total_participants > 0 ? (total_feedbacks.to_f / total_participants * 100).round(1) : 0
-      
-      weekly_metrics[week_start] = {
-        total_huddles: total_huddles,
-        total_participants: total_participants,
-        distinct_participant_count: distinct_participant_count,
-        distinct_participant_names: distinct_participant_names,
-        total_feedbacks: total_feedbacks,
-        average_rating: average_rating,
-        participation_rate: participation_rate,
-        huddles: huddles
-      }
-    end
-    
-    weekly_metrics
-  end
-  
-  def calculate_overall_metrics(huddles)
-    total_huddles = huddles.count
-    total_participants = huddles.sum { |h| h.huddle_participants.count }
-    total_feedbacks = huddles.sum { |h| h.huddle_feedbacks.count }
-    
-    # Calculate distinct participants
-    distinct_participants = huddles.flat_map(&:huddle_participants).map(&:person).uniq(&:id)
-    distinct_participant_count = distinct_participants.count
-    distinct_participant_names = distinct_participants.map(&:display_name).sort
-    
-    # Calculate average ratings
-    all_ratings = huddles.flat_map(&:huddle_feedbacks).map(&:nat_20_score).compact
-    average_rating = all_ratings.any? ? (all_ratings.sum.to_f / all_ratings.count).round(1) : 0
-    
-    # Calculate participation rate
-    participation_rate = total_participants > 0 ? (total_feedbacks.to_f / total_participants * 100).round(1) : 0
-    
-    # Calculate rating distribution
-    rating_distribution = all_ratings.tally
-    
-    # Calculate conflict style distribution
-    personal_conflict_styles = huddles.flat_map(&:huddle_feedbacks).map(&:personal_conflict_style).compact
-    team_conflict_styles = huddles.flat_map(&:huddle_feedbacks).map(&:team_conflict_style).compact
-    
-    {
-      total_huddles: total_huddles,
-      total_participants: total_participants,
-      distinct_participant_count: distinct_participant_count,
-      distinct_participant_names: distinct_participant_names,
-      total_feedbacks: total_feedbacks,
-      average_rating: average_rating,
-      participation_rate: participation_rate,
-      rating_distribution: rating_distribution,
-      personal_conflict_styles: personal_conflict_styles.tally,
-      team_conflict_styles: team_conflict_styles.tally
-    }
-  end
-  
   def prepare_chart_data(weekly_metrics)
     # Prepare data for Highcharts
     weeks = weekly_metrics.keys.sort
@@ -194,82 +155,5 @@ class OrganizationsController < ApplicationController
       participation_data: participation_data,
       huddles_data: huddles_data
     }
-  end
-  
-  def calculate_playbook_metrics(huddles)
-    playbook_metrics = {}
-    
-    huddles.group_by(&:huddle_playbook).each do |playbook, playbook_huddles|
-      next unless playbook # Skip huddles without playbooks
-      
-      total_huddles = playbook_huddles.count
-      total_participants = playbook_huddles.sum { |h| h.huddle_participants.count }
-      total_feedbacks = playbook_huddles.sum { |h| h.huddle_feedbacks.count }
-      
-      # Calculate distinct participants for this playbook
-      distinct_participants = playbook_huddles.flat_map(&:huddle_participants).map(&:person).uniq(&:id)
-      distinct_participant_count = distinct_participants.count
-      distinct_participant_names = distinct_participants.map(&:display_name).sort
-      
-      # Calculate average ratings
-      all_ratings = playbook_huddles.flat_map(&:huddle_feedbacks).map(&:nat_20_score).compact
-      average_rating = all_ratings.any? ? (all_ratings.sum.to_f / all_ratings.count).round(1) : 0
-      
-      # Calculate participation rate
-      participation_rate = total_participants > 0 ? (total_feedbacks.to_f / total_participants * 100).round(1) : 0
-      
-      # Calculate rating distribution
-      rating_distribution = all_ratings.tally
-      
-      # Calculate conflict style distribution
-      personal_conflict_styles = playbook_huddles.flat_map(&:huddle_feedbacks).map(&:personal_conflict_style).compact
-      team_conflict_styles = playbook_huddles.flat_map(&:huddle_feedbacks).map(&:team_conflict_style).compact
-      
-      # Calculate weekly trends for this playbook
-      weekly_trends = calculate_playbook_weekly_trends(playbook_huddles)
-      
-      playbook_metrics[playbook.id] = {
-        id: playbook.id,
-        display_name: playbook.display_name,
-        organization_id: playbook.organization_id,
-        organization_name: playbook.organization.display_name,
-        total_huddles: total_huddles,
-        total_participants: total_participants,
-        distinct_participant_count: distinct_participant_count,
-        distinct_participant_names: distinct_participant_names,
-        total_feedbacks: total_feedbacks,
-        average_rating: average_rating,
-        participation_rate: participation_rate,
-        rating_distribution: rating_distribution,
-        personal_conflict_styles: personal_conflict_styles.tally,
-        team_conflict_styles: team_conflict_styles.tally,
-        weekly_trends: weekly_trends,
-        huddles: playbook_huddles
-      }
-    end
-    
-    playbook_metrics
-  end
-  
-  def calculate_playbook_weekly_trends(playbook_huddles)
-    huddles_by_week = playbook_huddles.group_by { |huddle| huddle.started_at.beginning_of_week }
-    
-    weekly_trends = {}
-    huddles_by_week.each do |week_start, huddles|
-      all_ratings = huddles.flat_map(&:huddle_feedbacks).map(&:nat_20_score).compact
-      average_rating = all_ratings.any? ? (all_ratings.sum.to_f / all_ratings.count).round(1) : 0
-      
-      total_participants = huddles.sum { |h| h.huddle_participants.count }
-      total_feedbacks = huddles.sum { |h| h.huddle_feedbacks.count }
-      participation_rate = total_participants > 0 ? (total_feedbacks.to_f / total_participants * 100).round(1) : 0
-      
-      weekly_trends[week_start] = {
-        average_rating: average_rating,
-        participation_rate: participation_rate,
-        total_huddles: huddles.count
-      }
-    end
-    
-    weekly_trends
   end
 end

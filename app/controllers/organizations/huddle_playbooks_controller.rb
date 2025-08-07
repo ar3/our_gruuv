@@ -23,7 +23,7 @@ class Organizations::HuddlePlaybooksController < ApplicationController
   
   def show
     @huddles = @huddle_playbook.huddles.includes(:organization, :huddle_participants, :huddle_feedbacks).order(started_at: :desc)
-    @participant_stats = HuddlePlaybookStatsService.new(@huddle_playbook).participant_statistics
+    @participant_stats = Huddles::PlaybookStatsService.new(@huddle_playbook).participant_statistics
   end
   
   def edit

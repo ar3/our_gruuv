@@ -38,18 +38,20 @@ RSpec.describe OrganizationsController, type: :controller do
       get :huddles_review, params: { id: organization.id }
       
       expect(assigns(:organization).id).to eq(organization.id)
-      expect(assigns(:huddles)).to include(huddle1, huddle2)
       expect(assigns(:overall_metrics)).to be_present
       expect(assigns(:weekly_metrics)).to be_present
       expect(assigns(:chart_data)).to be_present
       expect(assigns(:playbook_metrics)).to be_present
+      expect(assigns(:start_date)).to be_present
+      expect(assigns(:end_date)).to be_present
     end
 
     it 'includes huddles from child organizations' do
       get :huddles_review, params: { id: organization.id }
       
-      expect(assigns(:hierarchy_organizations).map(&:id)).to include(organization.id, team.id)
-      expect(assigns(:huddles)).to include(huddle1, huddle2)
+      # The service should include huddles from child organizations in the metrics
+      metrics = assigns(:overall_metrics)
+      expect(metrics[:total_huddles]).to eq(2) # Both huddles should be included
     end
 
     it 'filters by date range' do
@@ -61,8 +63,9 @@ RSpec.describe OrganizationsController, type: :controller do
         end_date: Date.current 
       }
       
-      expect(assigns(:huddles)).to include(huddle1, huddle2)
-      expect(assigns(:huddles)).not_to include(old_huddle)
+      # The service should filter by date range
+      metrics = assigns(:overall_metrics)
+      expect(metrics[:total_huddles]).to eq(2) # Should only include huddles in the date range
     end
 
     it 'calculates correct metrics' do
@@ -131,6 +134,82 @@ RSpec.describe OrganizationsController, type: :controller do
       }.not_to raise_error
       
       expect(response).to have_http_status(:success)
+    end
+  end
+
+  describe 'POST #refresh_slack_channels' do
+    context 'when organization is a company' do
+      it 'redirects to huddles review with success message' do
+        allow(Companies::RefreshSlackChannelsJob).to receive(:perform_and_get_result).and_return(true)
+        
+        post :refresh_slack_channels, params: { id: organization.id }
+        
+        expect(response).to redirect_to(huddles_review_organization_path(organization))
+        expect(flash[:notice]).to eq('Slack channels refreshed successfully!')
+      end
+      
+      it 'redirects to huddles review with error message on failure' do
+        allow(Companies::RefreshSlackChannelsJob).to receive(:perform_and_get_result).and_return(false)
+        
+        post :refresh_slack_channels, params: { id: organization.id }
+        
+        expect(response).to redirect_to(huddles_review_organization_path(organization))
+        expect(flash[:alert]).to eq('Failed to refresh Slack channels. Please check your Slack configuration.')
+      end
+    end
+    
+    context 'when organization is not a company' do
+      let(:organization) { create(:organization, :team) }
+      
+      it 'redirects to huddles review with error message' do
+        post :refresh_slack_channels, params: { id: organization.id }
+        
+        expect(response).to redirect_to(huddles_review_organization_path(organization))
+        expect(flash[:alert]).to eq('Slack channel management is only available for companies.')
+      end
+    end
+  end
+
+  describe 'PATCH #update_huddle_review_channel' do
+    context 'when organization is a company' do
+      let(:slack_channel) { create(:third_party_object, organization: organization, third_party_source: 'slack', third_party_object_type: 'channel') }
+      
+      before do
+        slack_channel
+      end
+      
+      it 'updates the notification channel successfully' do
+        patch :update_huddle_review_channel, params: { id: organization.id, channel_id: slack_channel.third_party_id }
+        
+        expect(response).to redirect_to(huddles_review_organization_path(organization))
+        expect(flash[:notice]).to eq('Huddle review notification channel updated successfully!')
+        
+        # Check that the association was created
+        organization.reload
+        company = organization.becomes(Company)
+        expect(company.huddle_review_notification_channel).to eq(slack_channel)
+      end
+      
+      it 'handles invalid channel_id gracefully' do
+        # Mock the save to return false for invalid channel_id
+        allow_any_instance_of(Company).to receive(:save).and_return(false)
+        
+        patch :update_huddle_review_channel, params: { id: organization.id, channel_id: 'invalid_channel_id' }
+        
+        expect(response).to redirect_to(huddles_review_organization_path(organization))
+        expect(flash[:alert]).to eq('Failed to update notification channel.')
+      end
+    end
+    
+    context 'when organization is not a company' do
+      let(:organization) { create(:organization, :team) }
+      
+      it 'redirects with error message' do
+        patch :update_huddle_review_channel, params: { id: organization.id, channel_id: 'some_channel_id' }
+        
+        expect(response).to redirect_to(huddles_review_organization_path(organization))
+        expect(flash[:alert]).to eq('Channel management is only available for companies.')
+      end
     end
   end
 end 

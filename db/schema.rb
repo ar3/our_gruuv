@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_162418) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_06_102520) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -230,6 +230,34 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_162418) do
     t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true
   end
 
+  create_table "third_party_object_associations", force: :cascade do |t|
+    t.bigint "third_party_object_id", null: false
+    t.string "associatable_type", null: false
+    t.bigint "associatable_id", null: false
+    t.string "association_type", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["associatable_type", "associatable_id", "association_type"], name: "index_third_party_associations_on_associatable_and_type", unique: true
+    t.index ["associatable_type", "associatable_id"], name: "index_third_party_object_associations_on_associatable"
+    t.index ["third_party_object_id", "association_type"], name: "index_third_party_associations_on_object_and_type"
+    t.index ["third_party_object_id"], name: "index_third_party_object_associations_on_third_party_object_id"
+  end
+
+  create_table "third_party_objects", force: :cascade do |t|
+    t.string "display_name", null: false
+    t.string "third_party_name", null: false
+    t.string "third_party_id", null: false
+    t.string "third_party_object_type", null: false
+    t.string "third_party_source", null: false
+    t.bigint "organization_id", null: false
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "third_party_id", "third_party_source"], name: "index_third_party_objects_on_org_third_party_id_source", unique: true
+    t.index ["organization_id", "third_party_source", "deleted_at"], name: "index_third_party_objects_on_org_source_deleted"
+    t.index ["organization_id"], name: "index_third_party_objects_on_organization_id"
+  end
+
   add_foreign_key "assignment_outcomes", "assignments"
   add_foreign_key "assignments", "organizations", column: "company_id"
   add_foreign_key "huddle_feedbacks", "huddles"
@@ -251,4 +279,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_162418) do
   add_foreign_key "positions", "position_levels"
   add_foreign_key "positions", "position_types"
   add_foreign_key "slack_configurations", "organizations"
+  add_foreign_key "third_party_object_associations", "third_party_objects"
+  add_foreign_key "third_party_objects", "organizations"
 end

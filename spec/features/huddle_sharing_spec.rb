@@ -41,17 +41,23 @@ RSpec.feature 'Huddle Sharing', type: :feature, js: true do
   scenario 'Share button is positioned correctly on huddle cards' do
     visit huddles_path
     
+    # Wait for page to load completely
+    expect(page).to have_css('.share-huddle-btn', wait: 10)
+    
     # Check that share buttons are positioned in top-right corner
     share_buttons = page.all('.share-huddle-btn')
     expect(share_buttons.length).to be > 0
     
     share_buttons.each do |button|
+      # Wait for the button to be visible and stable
+      expect(button).to be_visible
+      
       # The button should be inside a card-body with position-relative
-      card_body = button.find(:xpath, './ancestor::div[contains(@class, "card-body")]')
+      card_body = button.find(:xpath, './ancestor::div[contains(@class, "card-body")]', wait: 5)
       expect(card_body['class']).to include('position-relative')
       
       # The button should be in a position-absolute container
-      button_container = button.find(:xpath, './ancestor::div[contains(@class, "position-absolute")]')
+      button_container = button.find(:xpath, './ancestor::div[contains(@class, "position-absolute")]', wait: 5)
       expect(button_container['class']).to include('top-0', 'end-0')
     end
   end

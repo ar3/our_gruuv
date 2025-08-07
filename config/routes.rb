@@ -34,6 +34,9 @@ Rails.application.routes.draw do
     member do
       patch :switch
       get :huddles_review
+      post :refresh_slack_channels
+      patch :update_huddle_review_channel
+      post :trigger_weekly_notification
     end
     
     resources :huddle_playbooks, module: :organizations
