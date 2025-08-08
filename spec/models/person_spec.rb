@@ -35,6 +35,49 @@ RSpec.describe Person, type: :model do
       person.timezone = ''
       expect(person).to be_valid
     end
+
+    it 'allows blank phone number' do
+      person.unique_textable_phone_number = ''
+      expect(person).to be_valid
+    end
+
+    it 'allows nil phone number' do
+      person.unique_textable_phone_number = nil
+      expect(person).to be_valid
+    end
+
+    it 'validates phone number uniqueness' do
+      existing_person = create(:person, unique_textable_phone_number: '+1234567890')
+      person.unique_textable_phone_number = '+1234567890'
+      expect(person).not_to be_valid
+      expect(person.errors[:unique_textable_phone_number]).to include('has already been taken')
+    end
+  end
+
+  describe 'phone number normalization' do
+    it 'converts empty string to nil before save' do
+      person.unique_textable_phone_number = ''
+      person.save!
+      expect(person.reload.unique_textable_phone_number).to be_nil
+    end
+
+    it 'converts whitespace-only string to nil before save' do
+      person.unique_textable_phone_number = '   '
+      person.save!
+      expect(person.reload.unique_textable_phone_number).to be_nil
+    end
+
+    it 'preserves valid phone numbers' do
+      person.unique_textable_phone_number = '+1234567890'
+      person.save!
+      expect(person.reload.unique_textable_phone_number).to eq('+1234567890')
+    end
+
+    it 'preserves nil phone numbers' do
+      person.unique_textable_phone_number = nil
+      person.save!
+      expect(person.reload.unique_textable_phone_number).to be_nil
+    end
   end
 
   describe '#timezone_or_default' do

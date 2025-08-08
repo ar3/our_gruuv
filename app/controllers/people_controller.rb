@@ -22,12 +22,31 @@ class PeopleController < ApplicationController
       })
       render :edit, status: :unprocessable_entity
     end
+  rescue ActiveRecord::RecordNotUnique => e
+    # Handle unique constraint violations (like duplicate phone numbers)
+    capture_error_in_sentry(e, {
+      method: 'update_profile',
+      person_id: @person&.id,
+      error_type: 'unique_constraint_violation'
+    })
+    @person.errors.add(:unique_textable_phone_number, 'is already taken by another user')
+    render :edit, status: :unprocessable_entity
+  rescue ActiveRecord::StatementInvalid => e
+    # Handle other database constraint violations
+    capture_error_in_sentry(e, {
+      method: 'update_profile',
+      person_id: @person&.id,
+      error_type: 'database_constraint_violation'
+    })
+    @person.errors.add(:base, 'Unable to update profile due to a database constraint. Please try again.')
+    render :edit, status: :unprocessable_entity
   rescue => e
     capture_error_in_sentry(e, {
       method: 'update_profile',
       person_id: @person&.id
     })
-    raise e
+    @person.errors.add(:base, 'An unexpected error occurred while updating your profile. Please try again.')
+    render :edit, status: :unprocessable_entity
   end
 
   private

@@ -5,6 +5,9 @@ class Person < ApplicationRecord
   has_many :huddle_feedbacks, dependent: :destroy
   belongs_to :current_organization, class_name: 'Organization', optional: true
   
+  # Callbacks
+  before_save :normalize_phone_number
+  
   # Validations
   validates :unique_textable_phone_number, uniqueness: true, allow_blank: true
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
@@ -90,6 +93,11 @@ class Person < ApplicationRecord
   end
   
   private
+  
+  def normalize_phone_number
+    # Convert empty strings to nil to avoid unique constraint violations
+    self.unique_textable_phone_number = nil if unique_textable_phone_number.blank?
+  end
   
   def ensure_valid_timezone
     return if timezone.blank?

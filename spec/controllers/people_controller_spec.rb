@@ -98,6 +98,66 @@ RSpec.describe PeopleController, type: :controller do
       end
     end
 
+    context 'with blank phone number' do
+      let(:blank_phone_params) do
+        {
+          person: {
+            unique_textable_phone_number: ''
+          }
+        }
+      end
+
+      it 'successfully updates with blank phone number' do
+        patch :update, params: blank_phone_params
+        person.reload
+        expect(person.unique_textable_phone_number).to be_nil
+      end
+    end
+
+    context 'with duplicate phone number' do
+      let!(:existing_person) { create(:person, unique_textable_phone_number: '+1234567890') }
+      
+      let(:duplicate_phone_params) do
+        {
+          person: {
+            unique_textable_phone_number: '+1234567890'
+          }
+        }
+      end
+
+      it 'handles unique constraint violation gracefully' do
+        patch :update, params: duplicate_phone_params
+        expect(response).to render_template(:edit)
+        expect(assigns(:person).errors[:unique_textable_phone_number]).to include('has already been taken')
+      end
+    end
+
+    context 'with database constraint violation' do
+      before do
+        allow_any_instance_of(Person).to receive(:update).and_raise(
+          ActiveRecord::StatementInvalid.new('PG::UniqueViolation')
+        )
+      end
+
+      it 'handles database constraint violation gracefully' do
+        patch :update, params: { person: { first_name: 'Jane' } }
+        expect(response).to render_template(:edit)
+        expect(assigns(:person).errors[:base]).to include('Unable to update profile due to a database constraint. Please try again.')
+      end
+    end
+
+    context 'with unexpected error' do
+      before do
+        allow_any_instance_of(Person).to receive(:update).and_raise(StandardError.new('Unexpected error'))
+      end
+
+      it 'handles unexpected errors gracefully' do
+        patch :update, params: { person: { first_name: 'Jane' } }
+        expect(response).to render_template(:edit)
+        expect(assigns(:person).errors[:base]).to include('An unexpected error occurred while updating your profile. Please try again.')
+      end
+    end
+
     context 'when not logged in' do
       before { session[:current_person_id] = nil }
 
