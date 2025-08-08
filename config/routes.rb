@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  get "dashboard/index"
+  get "auth/google_oauth2_callback"
   get "positions/index"
   get "positions/show"
   get "positions/new"
@@ -20,6 +22,15 @@ Rails.application.routes.draw do
   root "pages#home"
   get "healthcheck/index"
   get "/healthcheck", to: "healthcheck#index"
+  get "/healthcheck/oauth_test", to: "healthcheck#oauth_test"
+  
+  # OAuth routes
+  get '/auth/:provider/callback', to: 'auth#google_oauth2_callback'
+  get '/auth/failure', to: 'auth#failure'
+  post '/auth/google_oauth2', to: redirect('/auth/google_oauth2')
+  
+  # Dashboard
+  get '/dashboard', to: 'dashboard#index', as: :dashboard
   
   # API routes
   namespace :api do

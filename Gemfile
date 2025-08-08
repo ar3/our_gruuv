@@ -96,3 +96,7 @@ gem "dotenv-rails", "~> 3.1"
 
 # Markdown rendering
 gem "redcarpet", "~> 3.6"
+
+# OAuth authentication
+gem "omniauth-google-oauth2", "~> 1.1"
+gem "omniauth-rails_csrf_protection", "~> 1.0"

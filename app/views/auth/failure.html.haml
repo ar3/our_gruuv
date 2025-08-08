@@ -1,0 +1,36 @@
+.container.py-5
+  .row.justify-content-center
+    .col-md-8.col-lg-6
+      .card.shadow
+        .card-header.bg-danger.text-white
+          %h4.mb-0
+            %i.bi.bi-exclamation-triangle.me-2
+            Authentication Failed
+        .card-body
+          %h5.card-title What happened?
+          %p.card-text
+            We couldn't complete your sign-in with Google. This could be due to:
+          
+          %ul.list-unstyled
+            %li
+              %i.bi.bi-x-circle.text-danger.me-2
+              You denied permission to access your Google account
+            %li
+              %i.bi.bi-x-circle.text-danger.me-2
+              Your Google account doesn't have the required permissions
+            %li
+              %i.bi.bi-x-circle.text-danger.me-2
+              A temporary issue with Google's authentication service
+            %li
+              %i.bi.bi-x-circle.text-danger.me-2
+              Network connectivity issues
+        
+        .card-footer
+          .d-grid.gap-2
+            = link_to "Try Again", "/auth/google_oauth2", method: :post, class: "btn btn-primary"
+            = link_to "Go Home", root_path, class: "btn btn-outline-secondary"
+            
+          .mt-3
+            %small.text-muted
+              If this problem persists, please contact support or try signing in with your email address instead.
+

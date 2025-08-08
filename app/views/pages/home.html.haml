@@ -100,6 +100,13 @@
         transform: translateY(-2px);
         box-shadow: 0 10px 25px rgba(30, 41, 59, 0.2);
       }
+      
+      .hero-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
 
       /* Main Content */
       .main-content {
@@ -223,13 +230,21 @@
               %a{href: "#about"} About
             %li
               %a{href: "#contact"} Contact
+            %li
+              = button_to "/auth/google_oauth2", method: :post, class: "btn btn-primary", style: "background: #4285f4; border: none; color: white; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none; font-weight: 500;", data: { turbo: false } do
+                %i.bi.bi-google.me-2
+                Sign in with Google
 
     / Hero Section
     %section.hero
       .container
         %h1 Transform Your Workflow
         %p Discover nine powerful solutions designed to solve your biggest challenges and streamline your operations.
-        %a.cta-button{href: "#solutions"} Explore Solutions
+        .hero-buttons
+          %a.cta-button{href: "#solutions"} Explore Solutions
+          = button_to "/auth/google_oauth2", method: :post, class: "cta-button", style: "background: #4285f4; margin-left: 1rem;", data: { turbo: false } do
+            %i.bi.bi-google.me-2
+            Sign in with Google
 
     / Main Content
     %main.main-content

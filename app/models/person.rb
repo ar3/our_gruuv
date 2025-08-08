@@ -3,6 +3,7 @@ class Person < ApplicationRecord
   has_many :huddle_participants, dependent: :destroy
   has_many :huddles, through: :huddle_participants
   has_many :huddle_feedbacks, dependent: :destroy
+  has_many :person_identities, dependent: :destroy
   belongs_to :current_organization, class_name: 'Organization', optional: true
   
   # Callbacks
@@ -90,6 +91,29 @@ class Person < ApplicationRecord
   
   def last_huddle_team
     last_huddle&.organization&.team? ? last_huddle.organization : nil
+  end
+  
+  # Identity methods
+  def google_identity
+    person_identities.google.first
+  end
+  
+  def email_identity
+    person_identities.email.first
+  end
+  
+  def has_google_identity?
+    person_identities.google.exists?
+  end
+  
+  def has_email_identity?
+    person_identities.email.exists?
+  end
+  
+  def find_or_create_email_identity
+    person_identities.email.find_or_create_by!(email: email) do |identity|
+      identity.uid = email # Use email as UID for email identities
+    end
   end
   
   private

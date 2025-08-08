@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_06_102520) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_08_115832) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -154,6 +154,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_102520) do
     t.index ["unique_textable_phone_number"], name: "index_people_on_unique_textable_phone_number", unique: true
   end
 
+  create_table "person_identities", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.string "provider", null: false
+    t.string "uid", null: false
+    t.string "email", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_person_identities_on_email"
+    t.index ["person_id", "provider"], name: "index_person_identities_on_person_id_and_provider"
+    t.index ["person_id"], name: "index_person_identities_on_person_id"
+    t.index ["provider", "uid"], name: "index_person_identities_on_provider_and_uid", unique: true
+  end
+
   create_table "position_assignments", force: :cascade do |t|
     t.bigint "position_id", null: false
     t.bigint "assignment_id", null: false
@@ -271,6 +284,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_06_102520) do
   add_foreign_key "notifications", "notifications", column: "original_message_id"
   add_foreign_key "organizations", "organizations", column: "parent_id"
   add_foreign_key "people", "organizations", column: "current_organization_id"
+  add_foreign_key "person_identities", "people"
   add_foreign_key "position_assignments", "assignments"
   add_foreign_key "position_assignments", "positions"
   add_foreign_key "position_levels", "position_major_levels"
