@@ -40,4 +40,49 @@
           .mt-4
             = link_to edit_profile_path, class: "btn btn-primary" do
               %i.bi.bi-pencil.me-2
-              Edit Profile 
+              Edit Profile
+
+        / Identity Management Section
+        .card.mt-4
+          .card-header.bg-info.text-white
+            %h5.mb-0
+              %i.bi.bi-shield-lock.me-2
+              Connected Accounts
+        
+          .card-body
+            - if @person.person_identities.any?
+              .table-responsive
+                %table.table.table-hover
+                  %thead
+                    %tr
+                      %th Account Type
+                      %th Name
+                      %th Email
+                      %th Status
+                      %th Connected
+                      %th Actions
+                  %tbody
+                    - @person.person_identities.each do |identity|
+                      %tr
+                        %td
+                          = identity_profile_image(identity, size: 24)
+                          %i{class: "bi #{identity_provider_icon(identity)} me-2"}
+                          = identity_provider_name(identity)
+                        %td
+                          - if identity.name.present?
+                            = identity.name
+                          - else
+                            %span.text-muted Not provided
+                        %td= identity.email
+                        %td= identity_status_badge(identity)
+                        %td= identity.created_at.strftime('%B %d, %Y')
+                        %td
+                          = disconnect_identity_button(identity)
+                      %tr
+                        %td{colspan: 6}
+                          = identity_raw_data_display(identity)
+            - else
+              %p.text-muted No connected accounts found.
+            
+            -# .mt-3
+            -#   = connect_google_button 

@@ -24,6 +24,16 @@ class PersonPolicy < ApplicationPolicy
     false
   end
 
+  def connect_google_identity?
+    # Users can connect Google accounts to their own profile
+    user == record
+  end
+
+  def disconnect_identity?
+    # Users can disconnect identities from their own profile
+    user == record
+  end
+
   class Scope < Scope
     def resolve
       # Users can only see themselves

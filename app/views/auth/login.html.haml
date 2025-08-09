@@ -1,0 +1,95 @@
+.container.py-5
+  .row.justify-content-center
+    .col-md-8.col-lg-6
+      .card.shadow
+        .card-header.bg-primary.text-white
+          %h3.mb-0
+            %i.bi.bi-box-arrow-in-right.me-2
+            Sign In
+        
+        .card-body
+          .mb-4
+            .form-check.mb-3
+              = radio_button_tag :user_type, 'existing', true, class: 'form-check-input', id: 'user_type_existing'
+              = label_tag 'user_type_existing', 'I have an account', class: 'form-check-label fw-bold'
+              %small.text-muted.d-block.ms-4 Sign in with your existing account, but don't worry... if we don't find a user with your info we'll make sure you want to create an account first.
+          
+            .form-check.mb-3
+              = radio_button_tag :user_type, 'new', false, class: 'form-check-input', id: 'user_type_new'
+              = label_tag 'user_type_new', 'I\'m new here', class: 'form-check-label fw-bold'
+              %small.text-muted.d-block.ms-4 Create a new account to get started, but don't worry... if we find a user with your information we'll just log you in.
+          
+          #existing-user-options
+            .mb-4
+              %h5.text-primary.mb-3 Choose your sign-in method:
+              
+              .d-grid.gap-3
+                = button_to "/auth/google_oauth2", method: :post, class: "btn btn-outline-primary btn-lg full-width", data: { turbo: false } do
+                  %i.bi.bi-google.me-2
+                  Sign in with Google
+                
+                .text-center
+                  %span.text-muted or
+                
+                = link_to "#", class: "btn btn-outline-secondary btn-lg", onclick: "alert('Email sign-in coming soon!'); return false;" do
+                  %i.bi.bi-envelope.me-2
+                  Sign in with Email
+                
+                = link_to "#", class: "btn btn-outline-secondary btn-lg", onclick: "alert('Phone sign-in coming soon!'); return false;" do
+                  %i.bi.bi-telephone.me-2
+                  Sign in with Phone
+                
+                = link_to "#", class: "btn btn-outline-secondary btn-lg", onclick: "alert('Slack sign-in coming soon!'); return false;" do
+                  %i.bi.bi-slack.me-2
+                  Sign in with Slack
+                
+                .text-center
+                  %span.text-muted and possibly 
+
+                = link_to "#", class: "btn btn-outline-secondary btn-lg", onclick: "alert('Asana sign-in coming soon!'); return false;" do
+                  %i.bi.bi-list-task.me-2
+                  Sign in with Asana
+                
+                = link_to "#", class: "btn btn-outline-secondary btn-lg", onclick: "alert('Jira sign-in coming soon!'); return false;" do
+                  %i.bi.bi-bug.me-2
+                  Sign in with Jira
+          
+          #new-user-options.d-none
+            .mb-4
+              %h5.text-primary.mb-3 Choose how to create your account:
+              
+              .d-grid.gap-3
+                = button_to "/auth/google_oauth2", method: :post, class: "btn btn-primary btn-lg full-width", data: { turbo: false } do
+                  %i.bi.bi-google.me-2
+                  Sign up with Google
+                
+                .text-center
+                  %span.text-muted or
+                
+                = link_to "#", class: "btn btn-outline-secondary btn-lg", onclick: "alert('Email sign-up coming soon!'); return false;" do
+                  %i.bi.bi-envelope.me-2
+                  Sign up with Email
+                
+                = link_to "#", class: "btn btn-outline-secondary btn-lg", onclick: "alert('Slack sign-up coming soon!'); return false;" do
+                  %i.bi.bi-slack.me-2
+                  Sign up with Slack
+                
+                = link_to "#", class: "btn btn-outline-secondary btn-lg", onclick: "alert('Asana sign-up coming soon!'); return false;" do
+                  %i.bi.bi-list-task.me-2
+                  Sign up with Asana
+                
+                = link_to "#", class: "btn btn-outline-secondary btn-lg", onclick: "alert('Jira sign-up coming soon!'); return false;" do
+                  %i.bi.bi-bug.me-2
+                  Sign up with Jira
+                
+                = link_to "#", class: "btn btn-outline-secondary btn-lg", onclick: "alert('Phone sign-up coming soon!'); return false;" do
+                  %i.bi.bi-telephone.me-2
+                  Sign up with Phone
+          
+          .mt-4.pt-3.border-top
+            %p.text-muted.text-center.mb-0
+              By signing in, you agree to our 
+              = link_to "Terms of Service", "#", class: "text-decoration-none"
+              and 
+              = link_to "Privacy Policy", "#", class: "text-decoration-none"
+              

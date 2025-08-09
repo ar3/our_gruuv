@@ -1,6 +1,11 @@
 class AuthController < ApplicationController
   skip_before_action :verify_authenticity_token, only: [:google_oauth2_callback, :google_oauth2]
   
+  def login
+    # Redirect if already logged in
+    redirect_to dashboard_path if current_person
+  end
+  
   def google_oauth2_callback
     auth = request.env['omniauth.auth']
     
@@ -10,24 +15,34 @@ class AuthController < ApplicationController
     end
     
     begin
-      # Find or create person based on Google identity
-      person = find_or_create_person_from_google_auth(auth)
+      # Log the OAuth data for debugging
+      Rails.logger.info "🔐 GOOGLE_OAUTH_DATA: #{auth.inspect}"
+      Rails.logger.info "🔐 GOOGLE_OAUTH_UID: #{auth.uid}"
+      Rails.logger.info "🔐 GOOGLE_OAUTH_EMAIL: #{auth.info.email}"
+      Rails.logger.info "🔐 GOOGLE_OAUTH_NAME: #{auth.info.name}"
+      Rails.logger.info "🔐 GOOGLE_OAUTH_FIRST_NAME: #{auth.info.first_name}"
+      Rails.logger.info "🔐 GOOGLE_OAUTH_LAST_NAME: #{auth.info.last_name}"
+      Rails.logger.info "🔐 GOOGLE_OAUTH_IMAGE: #{auth.info.image}"
+      Rails.logger.info "🔐 GOOGLE_OAUTH_RAW_INFO: #{auth.extra.raw_info.inspect}"
       
-      # Create or update Google identity
-      create_or_update_google_identity(person, auth)
-      
-      # Set session
-      session[:current_person_id] = person.id
-      
-      # Redirect to dashboard
-      redirect_to dashboard_path, notice: 'Successfully signed in with Google!'
+      # Check if user is already logged in (connecting additional account)
+      if current_person
+        person = current_person
+        create_or_update_google_identity(person, auth)
+        redirect_to profile_path, notice: 'Google account connected successfully!'
+      else
+        # Normal sign-in flow
+        person = find_or_create_person_from_google_auth(auth)
+        create_or_update_google_identity(person, auth)
+        session[:current_person_id] = person.id
+        redirect_to dashboard_path, notice: 'Successfully signed in with Google!'
+      end
       
     rescue => e
       capture_error_in_sentry(e, {
         method: 'google_oauth2_callback',
         auth_provider: auth&.provider,
-        auth_uid: auth&.uid,
-        auth_email: auth&.info&.email
+        auth_uid: auth&.info&.email
       })
       Rails.logger.error "🔐 GOOGLE_OAUTH_CALLBACK: Error: #{e.class} - #{e.message}"
       redirect_to auth_failure_path, alert: 'Authentication failed. Please try again.'
@@ -51,6 +66,58 @@ class AuthController < ApplicationController
     # This will be called if OAuth fails
     error_message = params[:message] || 'Authentication failed'
     redirect_to root_path, alert: error_message
+  end
+  
+  def oauth_test
+    @oauth_config = {
+      google_client_id: ENV['GOOGLE_CLIENT_ID'],
+      google_client_secret: ENV['GOOGLE_CLIENT_SECRET'],
+      omniauth_full_host: OmniAuth.config.full_host,
+      omniauth_allowed_methods: OmniAuth.config.allowed_request_methods,
+      current_request_url: request.url,
+      current_request_host: request.host,
+      generated_callback_url: "#{OmniAuth.config.full_host}/auth/google_oauth2/callback",
+      generated_authorize_url: "#{OmniAuth.config.full_host}/auth/google_oauth2"
+    }
+    begin
+      test_response = Net::HTTP.get_response(URI("#{OmniAuth.config.full_host}/auth/google_oauth2"))
+      @oauth_endpoint_response = test_response.code
+      @oauth_endpoint_success = test_response.code == "200" || test_response.code == "302"
+    rescue => e
+      @oauth_endpoint_response = "ERROR: #{e.message}"
+      @oauth_endpoint_success = false
+    end
+    render json: { oauth_config: @oauth_config, oauth_endpoint_response: @oauth_endpoint_response, oauth_endpoint_success: @oauth_endpoint_success }
+  end
+
+  def oauth_debug
+    auth = request.env['omniauth.auth']
+    if auth
+      debug_data = {
+        provider: auth.provider,
+        uid: auth.uid,
+        info: {
+          name: auth.info.name,
+          email: auth.info.email,
+          first_name: auth.info.first_name,
+          last_name: auth.info.last_name,
+          image: auth.info.image,
+          urls: auth.info.urls
+        },
+        credentials: {
+          token: auth.credentials.token,
+          refresh_token: auth.credentials.refresh_token,
+          expires_at: auth.credentials.expires_at,
+          expires: auth.credentials.expires
+        },
+        extra: {
+          raw_info: auth.extra.raw_info
+        }
+      }
+      render json: debug_data
+    else
+      render json: { error: 'No OAuth data available' }
+    end
   end
   
   private
@@ -80,6 +147,27 @@ class AuthController < ApplicationController
   def create_or_update_google_identity(person, auth)
     identity = person.person_identities.find_or_initialize_by(provider: 'google_oauth2', uid: auth.uid)
     identity.email = auth.info.email
+    identity.name = auth.info.name
+    identity.profile_image_url = auth.info.image
+    identity.raw_data = {
+      'info' => {
+        'name' => auth.info.name,
+        'email' => auth.info.email,
+        'first_name' => auth.info.first_name,
+        'last_name' => auth.info.last_name,
+        'image' => auth.info.image,
+        'urls' => auth.info.urls
+      },
+      'credentials' => {
+        'token' => auth.credentials.token,
+        'refresh_token' => auth.credentials.refresh_token,
+        'expires_at' => auth.credentials.expires_at,
+        'expires' => auth.credentials.expires
+      },
+      'extra' => {
+        'raw_info' => auth.extra.raw_info
+      }
+    }
     identity.save!
   end
   

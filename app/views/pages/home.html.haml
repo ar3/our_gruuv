@@ -231,9 +231,7 @@
             %li
               %a{href: "#contact"} Contact
             %li
-              = button_to "/auth/google_oauth2", method: :post, class: "btn btn-primary", style: "background: #4285f4; border: none; color: white; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none; font-weight: 500;", data: { turbo: false } do
-                %i.bi.bi-google.me-2
-                Sign in with Google
+              = link_to "Sign In", login_path, class: "btn btn-primary", style: "background: #4285f4; border: none; color: white; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none; font-weight: 500;"
 
     / Hero Section
     %section.hero
@@ -242,9 +240,7 @@
         %p Discover nine powerful solutions designed to solve your biggest challenges and streamline your operations.
         .hero-buttons
           %a.cta-button{href: "#solutions"} Explore Solutions
-          = button_to "/auth/google_oauth2", method: :post, class: "cta-button", style: "background: #4285f4; margin-left: 1rem;", data: { turbo: false } do
-            %i.bi.bi-google.me-2
-            Sign in with Google
+          = link_to "Sign In", login_path, class: "cta-button", style: "background: #4285f4; margin-left: 1rem;"
 
     / Main Content
     %main.main-content

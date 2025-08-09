@@ -115,6 +115,24 @@ class Person < ApplicationRecord
       identity.uid = email # Use email as UID for email identities
     end
   end
+
+  def has_multiple_google_accounts?
+    person_identities.google.count > 1
+  end
+
+  def primary_google_identity
+    person_identities.google.first
+  end
+
+  def all_google_emails
+    person_identities.google.pluck(:email)
+  end
+
+  def can_disconnect_identity?(identity)
+    return false if identity.email? # Don't allow disconnecting email identity
+    return false if identity.google? && person_identities.google.count == 1
+    true
+  end
   
   private
   

@@ -49,6 +49,29 @@ class PeopleController < ApplicationController
     render :edit, status: :unprocessable_entity
   end
 
+  def connect_google_identity
+    authorize @person
+    redirect_to "/auth/google_oauth2", data: { turbo: false }
+  end
+
+  def disconnect_identity
+    authorize @person
+    identity = @person.person_identities.find(params[:id])
+    
+    unless @person.can_disconnect_identity?(identity)
+      redirect_to profile_path, alert: 'Cannot disconnect this account. Please add another Google account first.'
+      return
+    end
+    
+    if identity.destroy
+      redirect_to profile_path, notice: 'Account disconnected successfully!'
+    else
+      redirect_to profile_path, alert: 'Failed to disconnect account. Please try again.'
+    end
+  rescue ActiveRecord::RecordNotFound
+    redirect_to profile_path, alert: 'Account not found.'
+  end
+
   private
 
   def require_login

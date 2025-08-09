@@ -24,10 +24,16 @@ Rails.application.routes.draw do
   get "/healthcheck", to: "healthcheck#index"
   get "/healthcheck/oauth_test", to: "healthcheck#oauth_test"
   
+  # OAuth debug route
+  get "/auth/debug", to: "auth#oauth_debug"
+  
   # OAuth routes
-  get '/auth/:provider/callback', to: 'auth#google_oauth2_callback'
-  get '/auth/failure', to: 'auth#failure'
-  post '/auth/google_oauth2', to: redirect('/auth/google_oauth2')
+get '/auth/:provider/callback', to: 'auth#google_oauth2_callback'
+get '/auth/failure', to: 'auth#failure'
+post '/auth/google_oauth2', to: redirect('/auth/google_oauth2')
+
+# Login page
+get '/login', to: 'auth#login', as: :login
   
   # Dashboard
   get '/dashboard', to: 'dashboard#index', as: :dashboard
@@ -88,9 +94,13 @@ Rails.application.routes.draw do
   get '/my-huddles', to: 'huddles#my_huddles', as: :my_huddles
   
   # Profile management
-  get '/profile', to: 'people#show', as: :profile
-  get '/profile/edit', to: 'people#edit', as: :edit_profile
-  patch '/profile', to: 'people#update', as: :update_profile
+get '/profile', to: 'people#show', as: :profile
+get '/profile/edit', to: 'people#edit', as: :edit_profile
+patch '/profile', to: 'people#update', as: :update_profile
+
+# Identity management
+post '/profile/identities/connect_google', to: 'people#connect_google_identity', as: :connect_google_identity
+delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconnect_identity
   
   # Session management
   delete '/logout', to: 'application#logout', as: :logout
