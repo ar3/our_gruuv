@@ -4,6 +4,9 @@ class PeopleController < ApplicationController
 
   def show
     authorize @person
+    @employment_tenures = @person.employment_tenures.includes(:company, :position, :manager)
+                                 .order(started_at: :desc)
+                                 .decorate
   end
 
   def edit

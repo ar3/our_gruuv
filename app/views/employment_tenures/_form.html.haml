@@ -1,0 +1,48 @@
+= form_with model: employment_tenure, local: true do |form|
+  - if employment_tenure.errors.any?
+    .alert.alert-danger
+      %h5= "#{pluralize(employment_tenure.errors.count, "error")} prohibited this employment tenure from being saved:"
+      %ul.mb-0
+        - employment_tenure.errors.full_messages.each do |message|
+          %li= message
+
+  .row
+    .col-md-6
+      .mb-3
+        = form.label :person_id, "Person", class: "form-label"
+        = form.collection_select :person_id, Person.all.order(:first_name, :last_name), :id, :display_name, 
+          { prompt: 'Select a person' }, { class: "form-select", required: true }
+
+    .col-md-6
+      .mb-3
+        = form.label :company_id, "Company", class: "form-label"
+        = form.collection_select :company_id, Organization.companies.order(:name), :id, :display_name, 
+          { prompt: 'Select a company' }, { class: "form-select", required: true }
+
+  .row
+    .col-md-6
+      .mb-3
+        = form.label :position_id, "Position", class: "form-label"
+        = form.collection_select :position_id, Position.includes(:position_type, :position_level).order('position_types.external_title'), :id, :display_name, 
+          { prompt: 'Select a position' }, { class: "form-select", required: true }
+
+    .col-md-6
+      .mb-3
+        = form.label :manager_id, "Manager (Optional)", class: "form-label"
+        = form.collection_select :manager_id, Person.all.order(:first_name, :last_name), :id, :display_name, 
+          { prompt: 'Select a manager (optional)' }, { class: "form-select" }
+
+  .row
+    .col-md-6
+      .mb-3
+        = form.label :started_at, "Start Date", class: "form-label"
+        = form.datetime_local_field :started_at, class: "form-control", required: true
+
+    .col-md-6
+      .mb-3
+        = form.label :ended_at, "End Date (Leave blank for current employment)", class: "form-label"
+        = form.datetime_local_field :ended_at, class: "form-control"
+
+  .d-flex.justify-content-between
+    = link_to 'Cancel', employment_tenures_path, class: 'btn btn-outline-secondary'
+    = form.submit class: 'btn btn-primary'

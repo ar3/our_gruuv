@@ -1,0 +1,34 @@
+.container
+  .d-flex.justify-content-between.align-items-center.mb-4
+    %h1= @employment_tenure.display_name
+    .btn-group
+      = link_to 'Edit', edit_employment_tenure_path(@employment_tenure), class: 'btn btn-outline-secondary'
+      = link_to 'Back to Employment Tenures', employment_tenures_path, class: 'btn btn-outline-primary'
+
+  .card
+    .card-body
+      .row
+        .col-md-6
+          %h5.card-title Person
+          %p.card-text= @employment_tenure.person.display_name
+          
+          %h5.card-title Company
+          %p.card-text= @employment_tenure.company.display_name
+          
+          %h5.card-title Position
+          %p.card-text= @employment_tenure.position.display_name
+
+        .col-md-6
+          %h5.card-title Manager
+          %p.card-text= @employment_tenure.manager_display
+          
+          %h5.card-title Duration
+          %p.card-text= @employment_tenure.duration_display
+          
+          %h5.card-title Status
+          %p.card-text= @employment_tenure.status_badge
+
+      .mt-3
+        = link_to 'Delete Employment Tenure', @employment_tenure, method: :delete, 
+          data: { confirm: 'Are you sure you want to delete this employment tenure?' }, 
+          class: 'btn btn-danger'

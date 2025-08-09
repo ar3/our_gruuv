@@ -1,0 +1,6 @@
+.container
+  .d-flex.justify-content-between.align-items-center.mb-4
+    %h1 New Employment Tenure
+    = link_to 'Back to Employment Tenures', employment_tenures_path, class: 'btn btn-outline-secondary'
+
+  = render 'form', employment_tenure: @employment_tenure

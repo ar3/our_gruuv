@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_08_233737) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_09_022733) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -43,6 +43,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_233737) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["responseable_type", "responseable_id"], name: "index_debug_responses_on_responseable"
+  end
+
+  create_table "employment_tenures", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.bigint "company_id", null: false
+    t.bigint "position_id", null: false
+    t.bigint "manager_id"
+    t.datetime "started_at", null: false
+    t.datetime "ended_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_employment_tenures_on_company_id"
+    t.index ["manager_id"], name: "index_employment_tenures_on_manager_id"
+    t.index ["person_id", "company_id", "started_at"], name: "index_employment_tenures_on_person_company_started"
+    t.index ["person_id"], name: "index_employment_tenures_on_person_id"
+    t.index ["position_id"], name: "index_employment_tenures_on_position_id"
   end
 
   create_table "external_references", force: :cascade do |t|
@@ -276,6 +292,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_233737) do
 
   add_foreign_key "assignment_outcomes", "assignments"
   add_foreign_key "assignments", "organizations", column: "company_id"
+  add_foreign_key "employment_tenures", "organizations", column: "company_id"
+  add_foreign_key "employment_tenures", "people"
+  add_foreign_key "employment_tenures", "people", column: "manager_id"
+  add_foreign_key "employment_tenures", "positions"
   add_foreign_key "huddle_feedbacks", "huddles"
   add_foreign_key "huddle_feedbacks", "people"
   add_foreign_key "huddle_participants", "huddles"

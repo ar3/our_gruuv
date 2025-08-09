@@ -86,3 +86,45 @@
             
             -# .mt-3
             -#   = connect_google_button 
+
+        / Employment Tenures Section
+        .card.mt-4
+          .card-header.bg-success.text-white
+            %h5.mb-0
+              %i.bi.bi-briefcase.me-2
+              Employment History
+        
+          .card-body
+            - if @employment_tenures.any?
+              .table-responsive
+                %table.table.table-hover
+                  %thead
+                    %tr
+                      %th Company
+                      %th Position
+                      %th Manager
+                      %th Duration
+                      %th Status
+                      %th Actions
+                  %tbody
+                    - @employment_tenures.each do |tenure|
+                      %tr
+                        %td= tenure.company.display_name
+                        %td= tenure.position.display_name
+                        %td= tenure.manager_display
+                        %td= tenure.duration_display
+                        %td= tenure.status_badge
+                        %td
+                          .btn-group.btn-group-sm
+                            = link_to 'View', tenure, class: 'btn btn-outline-primary btn-sm'
+                            = link_to 'Edit', edit_employment_tenure_path(tenure), class: 'btn btn-outline-secondary btn-sm'
+              .mt-3
+                = link_to new_employment_tenure_path, class: 'btn btn-success' do
+                  %i.bi.bi-plus.me-2
+                  Add Employment Tenure
+            - else
+              %p.text-muted No employment history found.
+              .mt-3
+                = link_to new_employment_tenure_path, class: 'btn btn-success' do
+                  %i.bi.bi-plus.me-2
+                  Add Your First Employment Tenure 

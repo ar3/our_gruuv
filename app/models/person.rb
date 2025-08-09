@@ -4,6 +4,7 @@ class Person < ApplicationRecord
   has_many :huddles, through: :huddle_participants
   has_many :huddle_feedbacks, dependent: :destroy
   has_many :person_identities, dependent: :destroy
+  has_many :employment_tenures, dependent: :destroy
   belongs_to :current_organization, class_name: 'Organization', optional: true
   
   # Callbacks

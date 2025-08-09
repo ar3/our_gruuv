@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  resources :employment_tenures
   get "dashboard/index"
   get "auth/google_oauth2_callback"
   get "positions/index"
