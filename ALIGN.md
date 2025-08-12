@@ -231,6 +231,41 @@ sequenceDiagram
 
 ---
 
+## Authorization & Security Implementation
+
+### Current Implementation Status ✅
+- **Pundit Integration**: Fully implemented with proper policy objects
+- **Employment Tenure Authorization**: Complete with `EmploymentTenurePolicy`
+- **Person Authorization**: Complete with `PersonPolicy` 
+- **Admin Role**: Implemented via `og_admin` boolean flag on Person model
+
+### Authorization Patterns Used
+1. **Policy-Based Authorization**: Each model has a dedicated policy class
+2. **Scope-Based Filtering**: `policy_scope` for collection actions
+3. **Action-Specific Permissions**: `authorize` for individual record actions
+4. **Admin Bypass**: `og_admin` flag bypasses all permission checks
+
+### Key Authorization Rules
+- **Employment Tenures**: Users can only manage their own, admins can manage all
+- **Person Profiles**: Users can only view/edit their own, admins can view all
+- **People Index**: Admin-only access
+- **Employment Actions**: Users can change their own employment, admins can change any
+
+### Lessons Learned & Best Practices
+1. **Centralize Authorization**: Use Pundit policies instead of inline controller logic
+2. **Verify Authorization**: Always use `verify_authorized` and `verify_policy_scoped` callbacks
+3. **Test Policies Independently**: Policies should be unit tested separately from controllers
+4. **Clear Permission Hierarchy**: Admin role should be simple and bypass all checks
+5. **Consistent Patterns**: Use the same authorization approach across all controllers
+
+### Future Authorization Enhancements
+- **Organization-Level Permissions**: Discrete permissions per organization (see `docs/vision_for_authorization.md`)
+- **Permission Inheritance**: Company → Department → Team permission inheritance
+- **Role-Based Access Control**: Expand beyond simple admin flag to role-based system
+- **Permission Caching**: Cache permissions for performance optimization
+
+---
+
 *This module provides the structural foundation that enables effective collaboration and transformation within organizations.*
 
 ## Implementation Plan: People-to-Assignment Connection
