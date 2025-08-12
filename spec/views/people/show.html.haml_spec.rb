@@ -5,6 +5,7 @@ RSpec.describe 'people/show', type: :view do
 
   before do
     assign(:person, person)
+    assign(:employment_tenures, [])
     render
   end
 

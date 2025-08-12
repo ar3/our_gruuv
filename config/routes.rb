@@ -1,5 +1,4 @@
 Rails.application.routes.draw do
-  resources :employment_tenures
   get "dashboard/index"
   get "auth/google_oauth2_callback"
   get "positions/index"
@@ -94,7 +93,20 @@ get '/login', to: 'auth#login', as: :login
   # Past huddles for participants
   get '/my-huddles', to: 'huddles#my_huddles', as: :my_huddles
   
-  # Profile management
+  # People routes
+resources :people, only: [:index, :show, :edit, :update] do
+  resources :employment_tenures, only: [:new, :create, :edit, :update, :destroy, :show] do
+    collection do
+      get :change
+      get :add_history
+    end
+    member do
+      get :employment_summary
+    end
+  end
+end
+
+# Profile management
 get '/profile', to: 'people#show', as: :profile
 get '/profile/edit', to: 'people#edit', as: :edit_profile
 patch '/profile', to: 'people#update', as: :update_profile

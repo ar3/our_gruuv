@@ -1,6 +1,15 @@
 class PeopleController < ApplicationController
   before_action :require_login
-  before_action :set_person
+  before_action :set_person, except: [:index]
+  after_action :verify_authorized, except: :index
+  after_action :verify_policy_scoped, only: :index
+
+  def index
+    authorize Person
+    @people = policy_scope(Person).includes(:employment_tenures, :huddles)
+                    .order(:first_name, :last_name)
+                    .decorate
+  end
 
   def show
     authorize @person
@@ -86,6 +95,8 @@ class PeopleController < ApplicationController
   def set_person
     @person = current_person
   end
+
+
 
   def person_params
     params.require(:person).permit(:first_name, :last_name, :middle_name, :suffix, 

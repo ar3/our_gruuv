@@ -73,6 +73,13 @@ flowchart TD
   - Manager Rating: How the manager rates the assignment holder's performance
 - **Issue Provider**: External system integration (e.g., Asana) for escalating assignment concerns
 
+### Person-Company Association Types
+The system will support at least 4 ways a person can be associated with a company:
+1. **Employment**: Official employment relationship with position, manager, and tenure
+2. **Huddle Participation**: Participation in collaborative sessions and meetings
+3. **Ability Milestone Attainment**: Certifications, skills, and competency achievements
+4. **Observation**: Records of noteworthy actions associated with organizational goals, assignments, or abilities
+
 ## Key Features
 
 ### 1. Organizational Structure

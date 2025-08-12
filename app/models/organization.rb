@@ -70,4 +70,14 @@ class Organization < ApplicationRecord
   def descendants
     children.flat_map { |child| [child] + child.descendants }
   end
+  
+  def employees
+    # People employed at this organization
+    Person.joins(:employment_tenures).where(employment_tenures: { company: self })
+  end
+  
+  def positions
+    # Positions within this organization
+    Position.joins(:position_type).where(position_types: { organization: self })
+  end
 end 

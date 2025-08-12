@@ -1,7 +1,17 @@
 class PersonPolicy < ApplicationPolicy
   def show?
-    # Users can only view their own profile
-    user == record
+    # Users can view their own profile, admins can view any profile
+    user == record || user.admin?
+  end
+
+  def employment_summary?
+    # Users can view their own employment summary, admins can view any
+    user == record || user.admin?
+  end
+
+  def change?
+    # Users can change their own employment, admins can change any
+    user == record || user.admin?
   end
 
   def edit?
@@ -17,6 +27,11 @@ class PersonPolicy < ApplicationPolicy
   def create?
     # Anyone can create a person (during join process)
     true
+  end
+
+  def index?
+    # Only admins can see the people index
+    user.admin?
   end
 
   def destroy?
@@ -36,8 +51,12 @@ class PersonPolicy < ApplicationPolicy
 
   class Scope < Scope
     def resolve
-      # Users can only see themselves
-      scope.where(id: user.id)
+      # Users can only see themselves, admins can see all people
+      if user.admin?
+        scope.all
+      else
+        scope.where(id: user.id)
+      end
     end
   end
 end

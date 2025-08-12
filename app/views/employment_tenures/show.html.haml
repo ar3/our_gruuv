@@ -2,8 +2,8 @@
   .d-flex.justify-content-between.align-items-center.mb-4
     %h1= @employment_tenure.display_name
     .btn-group
-      = link_to 'Edit', edit_employment_tenure_path(@employment_tenure), class: 'btn btn-outline-secondary'
-      = link_to 'Back to Employment Tenures', employment_tenures_path, class: 'btn btn-outline-primary'
+      = link_to 'Edit', edit_person_employment_tenure_path(@person, @employment_tenure), class: 'btn btn-outline-secondary'
+      = link_to 'Back to Profile', person_path(@person), class: 'btn btn-outline-primary'
 
   .card
     .card-body
@@ -28,7 +28,13 @@
           %h5.card-title Status
           %p.card-text= @employment_tenure.status_badge
 
+      - if @employment_tenure.employment_change_notes.present?
+        .mt-3
+          %h5.card-title Notes
+          %p.card-text= @employment_tenure.employment_change_notes
+
       .mt-3
-        = link_to 'Delete Employment Tenure', @employment_tenure, method: :delete, 
+        = link_to 'Delete Employment Tenure', person_employment_tenure_path(@person, @employment_tenure), 
+          method: :delete, 
           data: { confirm: 'Are you sure you want to delete this employment tenure?' }, 
           class: 'btn btn-danger'

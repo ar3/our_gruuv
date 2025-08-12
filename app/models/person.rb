@@ -65,6 +65,11 @@ class Person < ApplicationRecord
 
 
 
+  # Admin methods
+  def admin?
+    og_admin?
+  end
+  
   # Organization context methods
   def current_organization_or_default
     current_organization || Organization.companies.first

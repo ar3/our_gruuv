@@ -87,7 +87,7 @@
             -# .mt-3
             -#   = connect_google_button 
 
-        / Employment Tenures Section
+        / Employment History Section
         .card.mt-4
           .card-header.bg-success.text-white
             %h5.mb-0
@@ -96,35 +96,64 @@
         
           .card-body
             - if @employment_tenures.any?
-              .table-responsive
-                %table.table.table-hover
-                  %thead
-                    %tr
-                      %th Company
-                      %th Position
-                      %th Manager
-                      %th Duration
-                      %th Status
-                      %th Actions
-                  %tbody
-                    - @employment_tenures.each do |tenure|
-                      %tr
-                        %td= tenure.company.display_name
-                        %td= tenure.position.display_name
-                        %td= tenure.manager_display
-                        %td= tenure.duration_display
-                        %td= tenure.status_badge
-                        %td
-                          .btn-group.btn-group-sm
-                            = link_to 'View', tenure, class: 'btn btn-outline-primary btn-sm'
-                            = link_to 'Edit', edit_employment_tenure_path(tenure), class: 'btn btn-outline-secondary btn-sm'
-              .mt-3
-                = link_to new_employment_tenure_path, class: 'btn btn-success' do
+              - companies_with_employment = @employment_tenures.map(&:company).uniq
+              - companies_with_employment.each do |company|
+                .company-employment-group.mb-4
+                  %h6.text-primary= company.name
+                  
+                  - company_tenures = @employment_tenures.select { |t| t.company == company }.sort_by(&:started_at).reverse
+                  - active_tenure = company_tenures.find(&:active?)
+                  
+                  - if active_tenure
+                    .active-employment.mb-3
+                      .card.border-success
+                        .card-body.py-2
+                          .row.align-items-center
+                            .col-md-8
+                              %strong= active_tenure.position.display_name
+                              %br
+                              %small.text-muted
+                                Manager: #{active_tenure.manager_display}
+                                %br
+                                Started: #{active_tenure.started_at.strftime('%B %d, %Y')}
+                            .col-md-4.text-end
+                              .btn-group.btn-group-sm
+                                = link_to 'View', person_employment_tenure_path(@person, active_tenure), class: 'btn btn-outline-primary btn-sm'
+                                = link_to 'Change Employment', change_person_employment_tenures_path(@person, company_id: company.id), class: 'btn btn-warning btn-sm'
+                                = link_to 'Terminate', edit_person_employment_tenure_path(@person, active_tenure), class: 'btn btn-outline-danger btn-sm'
+                  
+                  - historical_tenures = company_tenures.reject(&:active?).first(5)
+                  - if historical_tenures.any?
+                    .historical-employment
+                      %small.text-muted Previous positions:
+                      %ul.list-unstyled.mb-2
+                        - historical_tenures.each do |tenure|
+                          %li
+                            = link_to tenure.position.display_name, person_employment_tenure_path(@person, tenure), class: 'text-muted'
+                            %small.text-muted
+                              (#{tenure.started_at.strftime('%b %Y')} - #{tenure.ended_at&.strftime('%b %Y') || 'Present'})
+                  
+                  - if company_tenures.length > 6
+                    .mt-2
+                      = link_to "View all history", employment_summary_person_employment_tenure_path(@person, company_tenures.first), class: 'btn btn-sm btn-outline-secondary'
+                  
+                  .mt-3
+                    - if active_tenure
+                      = link_to change_person_employment_tenures_path(@person, company_id: company.id), class: 'btn btn-warning btn-sm' do
+                        %i.bi.bi-arrow-repeat.me-1
+                        Change Employment
+                    - else
+                      = link_to change_person_employment_tenures_path(@person, company_id: company.id), class: 'btn btn-success btn-sm' do
+                        %i.bi.bi-plus.me-1
+                        Add Employment
+              
+              .mt-4
+                = link_to new_person_employment_tenure_path(@person), class: 'btn btn-success' do
                   %i.bi.bi-plus.me-2
-                  Add Employment Tenure
+                  Add Employment at New Company
             - else
               %p.text-muted No employment history found.
               .mt-3
-                = link_to new_employment_tenure_path, class: 'btn btn-success' do
+                = link_to new_person_employment_tenure_path(@person), class: 'btn btn-success' do
                   %i.bi.bi-plus.me-2
                   Add Your First Employment Tenure 

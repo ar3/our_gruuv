@@ -12,6 +12,9 @@ class EmploymentTenure < ApplicationRecord
   scope :inactive, -> { where.not(ended_at: nil) }
   scope :for_person, ->(person) { where(person: person) }
   scope :for_company, ->(company) { where(company: company) }
+  scope :most_recent_for_person_and_company, ->(person, company) { 
+    for_person(person).for_company(company).order(started_at: :desc).limit(1) 
+  }
 
   def active?
     ended_at.nil?
@@ -19,6 +22,10 @@ class EmploymentTenure < ApplicationRecord
 
   def inactive?
     !active?
+  end
+
+  def self.most_recent_for(person, company)
+    most_recent_for_person_and_company(person, company).first
   end
 
   private

@@ -107,6 +107,36 @@ RSpec.describe EmploymentTenure, type: :model do
         expect(EmploymentTenure.inactive).not_to include(active_tenure)
       end
     end
+
+    describe '.most_recent_for_person_and_company' do
+      let(:person) { create(:person) }
+      let(:company) { create(:organization, :company) }
+      let!(:old_tenure) { create(:employment_tenure, person: person, company: company, started_at: 2.years.ago, ended_at: 1.year.ago) }
+      let!(:new_tenure) { create(:employment_tenure, person: person, company: company, started_at: 1.year.ago) }
+
+      it 'returns the most recent employment tenure for a person and company' do
+        result = EmploymentTenure.most_recent_for_person_and_company(person, company)
+        expect(result.first).to eq(new_tenure)
+      end
+    end
+  end
+
+  describe '.most_recent_for' do
+    let(:person) { create(:person) }
+    let(:company) { create(:organization, :company) }
+    let!(:old_tenure) { create(:employment_tenure, person: person, company: company, started_at: 2.years.ago, ended_at: 1.year.ago) }
+    let!(:new_tenure) { create(:employment_tenure, person: person, company: company, started_at: 1.year.ago) }
+
+    it 'returns the most recent employment tenure for a person and company' do
+      result = EmploymentTenure.most_recent_for(person, company)
+      expect(result).to eq(new_tenure)
+    end
+
+    it 'returns nil when no employment tenures exist' do
+      other_person = create(:person)
+      result = EmploymentTenure.most_recent_for(other_person, company)
+      expect(result).to be_nil
+    end
   end
 
   describe '#active?' do

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_09_022733) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_11_111405) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -54,6 +54,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_09_022733) do
     t.datetime "ended_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "employment_change_notes"
     t.index ["company_id"], name: "index_employment_tenures_on_company_id"
     t.index ["manager_id"], name: "index_employment_tenures_on_manager_id"
     t.index ["person_id", "company_id", "started_at"], name: "index_employment_tenures_on_person_company_started"
@@ -166,7 +167,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_09_022733) do
     t.string "email"
     t.string "timezone"
     t.integer "current_organization_id"
+    t.boolean "og_admin", default: false, null: false
     t.index ["current_organization_id"], name: "index_people_on_current_organization_id"
+    t.index ["og_admin"], name: "index_people_on_og_admin"
     t.index ["unique_textable_phone_number"], name: "index_people_on_unique_textable_phone_number", unique: true
   end
 

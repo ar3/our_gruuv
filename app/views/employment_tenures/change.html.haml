@@ -1,0 +1,76 @@
+.container
+  .row.justify-content-center
+    .col-md-8
+      .card
+        .card-header
+          %h4.card-title.mb-0
+            - if @company
+              = "Employment at #{@company.name}"
+            - else
+              Employment Details
+        .card-body
+          = form_with model: [@person, @employment_tenure], local: true do |f|
+            - if @employment_tenure.errors.any?
+              .alert.alert-danger
+                %h5= "#{pluralize(@employment_tenure.errors.count, "error")} prohibited this employment tenure from being saved:"
+                %ul.mb-0
+                  - @employment_tenure.errors.full_messages.each do |msg|
+                    %li= msg
+
+            .row
+              .col-md-6
+                .mb-3
+                  = f.label :company_id, "Company", class: "form-label"
+                  = f.collection_select :company_id, 
+                                       Organization.companies.order(:name), 
+                                       :id, 
+                                       :name, 
+                                       { selected: @company&.id }, 
+                                       { class: "form-select", required: true, disabled: @company.present? }
+                  - if @company.present?
+                    = f.hidden_field :company_id, value: @company.id
+
+              .col-md-6
+                .mb-3
+                  = f.label :position_id, "Position", class: "form-label"
+                  = f.collection_select :position_id, 
+                                       @positions, 
+                                       :id, 
+                                       :display_name, 
+                                       { prompt: "Select a position..." }, 
+                                       { class: "form-select", required: true }
+
+            .row
+              .col-md-6
+                .mb-3
+                  = f.label :manager_id, "Manager (Optional)", class: "form-label"
+                  = f.collection_select :manager_id, 
+                                       @managers, 
+                                       :id, 
+                                       :display_name, 
+                                       { prompt: "Select a manager...", include_blank: "No Manager" }, 
+                                       { class: "form-select" }
+
+              .col-md-6
+                .mb-3
+                  = f.label :started_at, "Start Date", class: "form-label"
+                  = f.date_field :started_at, class: "form-control", required: true
+
+            - if @company && EmploymentTenure.most_recent_for(@person, @company)&.active?
+              .row
+                .col-md-6
+                  .mb-3
+                    = label_tag :effective_date, "Effective Date for Job Change", class: "form-label"
+                    = date_field_tag :effective_date, Date.current, class: "form-control", required: true
+                    %small.form-text.text-muted This will end your current employment and start the new one on this date.
+
+            .mb-3
+              = f.label :employment_change_notes, "Notes (Optional)", class: "form-label"
+              = f.text_area :employment_change_notes, 
+                           rows: 3, 
+                           class: "form-control",
+                           placeholder: "Add any notes about this employment change..."
+
+            .d-flex.justify-content-between
+              = link_to "Back to Profile", person_path(@person), class: "btn btn-outline-secondary"
+              = f.submit "Save Employment", class: "btn btn-primary"
