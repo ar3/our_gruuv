@@ -91,12 +91,21 @@ This document contains all the rules and conventions we follow in this project t
 
 ### Test Policy
 - Any failing tests must be either fixed or removed; tests should never remain failing
+- **Focus on high-value testing** - test complex business logic that's hard to debug manually
+- **Skip testing simple CRUD** that Rails handles automatically
+- **Test what could go wrong** rather than aiming for 100% coverage
 
 ### Policy Testing
 - **Test policies independently** from controllers using dedicated policy specs
 - **Test all permission scenarios** including admin bypass, user access, and denied access
 - **Test policy scopes** to ensure proper filtering of collections
 - **Mock user context** properly in policy tests to simulate different user roles
+
+### High-Value Testing Scenarios
+- **Data integrity** (validations, constraints, overlapping tenures)
+- **Authorization flows** to prevent security issues
+- **Complex business logic** (job changes, energy % changes, tenure transitions)
+- **Edge cases** that could cause production issues
 
 ## User Experience
 

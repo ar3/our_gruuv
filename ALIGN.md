@@ -202,7 +202,16 @@ sequenceDiagram
   - Validations: no overlapping active tenures for same person/company, ended_at > started_at
   - Note: Future optimization - consider caching active employment status on Person model for performance
 - `AssignmentTenure`: Links Person to Assignment with time spans
+  - `person_id`, `assignment_id`, `started_at`, `ended_at`
+  - `employment_tenure_id` (cached reference), `manager_id` (cached), `position_id` (cached)
+  - `anticipated_energy_percentage` - defines "what the assignment IS"
+  - Validations: no overlapping active tenures for same person/assignment, ended_at > started_at
 - `AssignmentCheckIn`: Periodic performance and satisfaction reviews
+  - `assignment_tenure_id`, `check_in_date`
+  - `actual_energy_percentage`, `manager_rating`, `employee_rating`, `official_rating`
+  - `manager_private_notes`, `employee_private_notes`, `shared_notes`
+  - `employee_personal_alignment` (love, like, neutral, prefer_not, only_if_necessary)
+  - Tracks "how it's GOING" vs tenure which defines "what it IS"
 - `IssueProvider`: External system integration configuration
 - `Issue`: Escalated assignment concerns
 
@@ -266,6 +275,39 @@ sequenceDiagram
 
 ---
 
+## Implementation Notes: Assignment Tenure & Check-in System
+
+### Key Design Decisions Made ✅
+
+#### **Model Structure**
+- **AssignmentTenure**: Defines "what the assignment IS" (scope, energy, duration)
+- **AssignmentCheckIn**: Tracks "how it's GOING" (performance, alignment, actual energy)
+- **Separate models** for clean separation of concerns and historical tracking
+
+#### **Business Logic**
+- **Tenure starts immediately** when assignment begins (not waiting for first check-in)
+- **Energy changes** can trigger new tenure creation (manager decides threshold)
+- **Manager changes** don't affect assignment tenures (only cached in check-ins)
+- **Check-ins are immutable** - never update, only create new ones
+
+#### **Data Flow**
+- **Anticipated energy %** comes from `PositionAssignment` → copied to `AssignmentTenure`
+- **Employment tenure data** looked up dynamically (no caching for now)
+- **Check-in defaults** pre-populate from tenure data for first check-in
+
+#### **UI Philosophy**
+- **"What the assignment IS"** vs **"How it's GOING"** distinction should be clear
+- **Check-in fields** may appear next to tenure creation flow for convenience
+- **Energy % changes** should be obvious when they warrant new tenure creation
+
+### Future Enhancements (Logged)
+- **Employment tenure caching** using JSONB or naming conventions
+- **Assignment scope validation** based on energy % changes
+- **Check-in frequency enforcement** (3-month minimum)
+- **Historical progression views** for ratings over time
+
+---
+
 *This module provides the structural foundation that enables effective collaboration and transformation within organizations.*
 
 ## Implementation Plan: People-to-Assignment Connection
@@ -281,14 +323,16 @@ sequenceDiagram
 - Add basic controller and views for CRUD operations
 - Write specs for model and controller
 
-#### Commit 2: Assignment Tenure Model
+#### Commit 2: Assignment Tenure Model (NEXT)
 - Create `AssignmentTenure` model with:
-  - `person_id`, `assignment_id`
-  - `started_at`, `ended_at` (nullable for current assignment)
+  - `person_id`, `assignment_id`, `started_at`, `ended_at`
+  - `employment_tenure_id` (cached reference), `manager_id` (cached), `position_id` (cached)
+  - `anticipated_energy_percentage` - defines "what the assignment IS"
   - Validations: no overlapping active tenures for same person/assignment, ended_at > started_at
-  - Validations and associations
-- Add basic controller and views for CRUD operations
-- Write specs for model and controller
+- Create `AssignmentCheckIn` model with all 9 check-in fields
+- Add `anticipated_energy_percentage` to `PositionAssignment` model
+- Create controllers and basic views for both models
+- Write high-value specs for complex business logic (overlapping tenures, energy changes)
 
 #### Commit 3: Update Existing Models
 - Add associations to existing models:
