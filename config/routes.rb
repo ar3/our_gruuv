@@ -88,6 +88,11 @@ get '/login', to: 'auth#login', as: :login
       post :post_start_announcement_to_slack
       get :notifications_debug
     end
+    
+    collection do
+      post :start_huddle_from_playbook
+      post :post_weekly_summary
+    end
   end
   
   # Past huddles for participants

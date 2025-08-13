@@ -24,8 +24,8 @@ RSpec.describe OrganizationsController, type: :controller do
   end
 
   describe 'GET #huddles_review' do
-    let!(:huddle1) { create(:huddle, organization: organization, started_at: 1.week.ago) }
-    let!(:huddle2) { create(:huddle, organization: team, started_at: 2.weeks.ago) }
+    let!(:huddle1) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: 1.week.ago) }
+          let!(:huddle2) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: team), started_at: 2.weeks.ago) }
     let!(:feedback1) { create(:huddle_feedback, huddle: huddle1, informed_rating: 4, connected_rating: 4, goals_rating: 4, valuable_rating: 4) }
     let!(:feedback2) { create(:huddle_feedback, huddle: huddle2, informed_rating: 5, connected_rating: 5, goals_rating: 5, valuable_rating: 5) }
 
@@ -55,7 +55,7 @@ RSpec.describe OrganizationsController, type: :controller do
     end
 
     it 'filters by date range' do
-      old_huddle = create(:huddle, organization: organization, started_at: 8.weeks.ago)
+      old_huddle = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: 8.weeks.ago)
       
       get :huddles_review, params: { 
         id: organization.id, 
@@ -112,7 +112,7 @@ RSpec.describe OrganizationsController, type: :controller do
 
     it 'assigns playbook metrics correctly' do
       huddle_playbook = create(:huddle_playbook, organization: organization)
-      huddle = create(:huddle, huddle_playbook: huddle_playbook, organization: organization)
+      huddle = create(:huddle, huddle_playbook: huddle_playbook)
       
       get :huddles_review, params: { id: organization.id }
       
@@ -127,7 +127,7 @@ RSpec.describe OrganizationsController, type: :controller do
 
     it 'handles playbook metrics without display_name errors' do
       huddle_playbook = create(:huddle_playbook, organization: organization)
-      huddle = create(:huddle, huddle_playbook: huddle_playbook, organization: organization)
+      huddle = create(:huddle, huddle_playbook: huddle_playbook)
       
       expect {
         get :huddles_review, params: { id: organization.id }

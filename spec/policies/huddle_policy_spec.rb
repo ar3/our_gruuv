@@ -4,7 +4,7 @@ RSpec.describe HuddlePolicy, type: :policy do
   subject { described_class }
 
   let(:organization) { create(:organization) }
-  let(:huddle) { create(:huddle, organization: organization) }
+  let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization)) }
   let(:person) { create(:person) }
   let(:facilitator) { create(:person) }
   let(:participant) { create(:person) }
@@ -98,8 +98,8 @@ RSpec.describe HuddlePolicy, type: :policy do
 
   describe "scope" do
     let(:organization2) { create(:organization, name: 'Test Org 2') }
-    let!(:huddle1) { create(:huddle, organization: organization) }
-    let!(:huddle2) { create(:huddle, organization: organization2) }
+    let!(:huddle1) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization)) }
+    let!(:huddle2) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization2)) }
     let!(:participant1) { create(:huddle_participant, huddle: huddle1, person: person, role: 'active') }
 
     context "when user is logged in" do

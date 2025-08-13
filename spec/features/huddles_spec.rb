@@ -5,11 +5,10 @@ RSpec.feature 'Huddles', type: :feature do
   let(:team) { Team.create!(name: 'Test Team', parent: company) }
   let(:huddle) do
     playbook = create(:huddle_playbook, organization: team, special_session_name: 'test-huddle')
-    Huddle.create!(
-      organization: team,
-      started_at: Time.current,
-      huddle_playbook: playbook
-    )
+          Huddle.create!(
+        started_at: Time.current,
+        huddle_playbook: playbook
+      )
   end
 
   before do
@@ -30,16 +29,14 @@ RSpec.feature 'Huddles', type: :feature do
   scenario 'index shows only active huddles' do
     # Create a huddle for today
     today_playbook = create(:huddle_playbook, organization: team, special_session_name: 'today-huddle')
-    today_huddle = Huddle.create!(
-      organization: team,
-      started_at: Time.current,
-      huddle_playbook: today_playbook
-    )
+          today_huddle = Huddle.create!(
+        started_at: Time.current,
+        huddle_playbook: today_playbook
+      )
     
     # Create a huddle that's expired (25 hours ago, expires 1 hour ago)
     expired_playbook = create(:huddle_playbook, organization: team, special_session_name: 'expired-huddle')
     expired_huddle = Huddle.create!(
-      organization: team,
       started_at: 25.hours.ago,
       expires_at: 1.hour.ago,
       huddle_playbook: expired_playbook
@@ -59,11 +56,11 @@ RSpec.feature 'Huddles', type: :feature do
     
     # Create huddles where person participated
     playbook1 = create(:huddle_playbook, organization: team, special_session_name: 'yesterday-huddle')
-    huddle1 = Huddle.create!(organization: team, started_at: 1.day.ago, huddle_playbook: playbook1)
+    huddle1 = Huddle.create!(started_at: 1.day.ago, huddle_playbook: playbook1)
     huddle1.huddle_participants.create!(person: person, role: 'facilitator')
     
     playbook2 = create(:huddle_playbook, organization: team, special_session_name: 'older-huddle')
-    huddle2 = Huddle.create!(organization: team, started_at: 2.days.ago, huddle_playbook: playbook2)
+    huddle2 = Huddle.create!(started_at: 2.days.ago, huddle_playbook: playbook2)
     huddle2.huddle_participants.create!(person: person, role: 'active')
     
     # Simulate being logged in
@@ -331,9 +328,10 @@ RSpec.feature 'Huddles', type: :feature do
 
   scenario 'allows multiple huddles for same organization' do
     # Create a huddle for today
+    existing_playbook = create(:huddle_playbook, organization: team, special_session_name: 'existing-huddle')
     existing_huddle = Huddle.create!(
-      organization: team,
-      started_at: Time.current
+      started_at: Time.current,
+      huddle_playbook: existing_playbook
     )
     
     visit new_huddle_path

@@ -3,7 +3,10 @@ require 'rails_helper'
 RSpec.describe HuddleParticipant, type: :model do
   let(:company) { Company.create!(name: 'Test Company') }
   let(:team) { Team.create!(name: 'Test Team', parent: company) }
-  let(:huddle) { Huddle.create!(organization: team, started_at: Time.current) }
+  let(:huddle) do
+    playbook = create(:huddle_playbook, organization: team)
+    Huddle.create!(huddle_playbook: playbook, started_at: Time.current)
+  end
   let(:person) { Person.create!(full_name: 'John Doe', email: 'john@example.com') }
 
   before do

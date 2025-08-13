@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.feature 'Timezone Functionality', type: :feature, js: true do
   let(:organization) { create(:organization, name: 'Test Org') }
-  let(:huddle) { create(:huddle, organization: organization, started_at: Time.current) }
+  let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: Time.current) }
 
   scenario 'User timezone is automatically detected when joining huddle' do
     visit join_huddle_path(huddle)
@@ -23,7 +23,7 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
 
   scenario 'Times are displayed in user timezone on huddle cards' do
     # Create a huddle that's definitely active today
-    today_huddle = create(:huddle, organization: organization, started_at: Time.current)
+    today_huddle = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: Time.current)
     
     # Create a person with timezone
     person = create(:person, 
@@ -45,7 +45,7 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
 
   scenario 'Times are displayed in Eastern Time when user has no timezone' do
     # Create a huddle that's definitely active today
-    today_huddle = create(:huddle, organization: organization, started_at: Time.current)
+    today_huddle = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: Time.current)
     
     # Create a person without timezone
     person = create(:person, 

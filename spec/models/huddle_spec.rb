@@ -3,10 +3,11 @@ require 'rails_helper'
 RSpec.describe Huddle, type: :model do
   let(:company) { Company.create!(name: 'Acme Corp') }
   let(:team) { Team.create!(name: 'Engineering', parent: company) }
-  let(:huddle) { create(:huddle, organization: team, started_at: Time.current) }
+  let(:playbook) { create(:huddle_playbook, organization: team) }
+  let(:huddle) { create(:huddle, huddle_playbook: playbook, started_at: Time.current) }
 
   describe 'associations' do
-    it { should belong_to(:organization) }
+    it { should belong_to(:huddle_playbook).optional }
     it { should have_many(:huddle_participants).dependent(:destroy) }
     it { should have_many(:participants).through(:huddle_participants).source(:person) }
     it { should have_many(:huddle_feedbacks).dependent(:destroy) }
@@ -18,7 +19,8 @@ RSpec.describe Huddle, type: :model do
     describe 'unique organization per day' do
       it 'allows multiple huddles for different organizations on the same day' do
         other_team = Team.create!(name: 'Design', parent: company)
-        other_huddle = Huddle.create!(organization: other_team, started_at: Time.current)
+        other_playbook = create(:huddle_playbook, organization: other_team)
+        other_huddle = Huddle.create!(huddle_playbook: other_playbook, started_at: Time.current)
         
         expect(huddle).to be_valid
       end
@@ -27,7 +29,9 @@ RSpec.describe Huddle, type: :model do
         # Ensure the existing huddle exists
         expect(huddle).to be_persisted
         
-        duplicate_huddle = Huddle.new(organization: team, started_at: Time.current)
+        # Create a different playbook for the same organization
+        different_playbook = create(:huddle_playbook, organization: team, special_session_name: 'Different Session')
+        duplicate_huddle = Huddle.new(huddle_playbook: different_playbook, started_at: Time.current)
         expect(duplicate_huddle).to be_valid
       end
 
@@ -38,7 +42,6 @@ RSpec.describe Huddle, type: :model do
         
         # Try to create another huddle with the same playbook within 24 hours
         duplicate_huddle = Huddle.new(
-          organization: team, 
           started_at: Time.current + 12.hours, # Within 24 hours
           huddle_playbook: huddle.huddle_playbook
         )
@@ -52,7 +55,6 @@ RSpec.describe Huddle, type: :model do
         
         # Try to create another huddle with the same playbook after 24 hours
         future_huddle = Huddle.new(
-          organization: team, 
           started_at: Time.current + 25.hours, # After 24 hours
           huddle_playbook: huddle.huddle_playbook
         )
@@ -68,7 +70,6 @@ RSpec.describe Huddle, type: :model do
         
         # Try to create another huddle with a different playbook within 24 hours
         different_huddle = Huddle.new(
-          organization: team, 
           started_at: Time.current + 12.hours, # Within 24 hours
           huddle_playbook: different_playbook
         )
@@ -76,15 +77,15 @@ RSpec.describe Huddle, type: :model do
       end
       
       it 'allows huddles for the same organization on different days' do
-        tomorrow_huddle = Huddle.new(organization: team, started_at: 1.day.from_now)
+        tomorrow_huddle = Huddle.new(huddle_playbook: playbook, started_at: 1.day.from_now)
         expect(tomorrow_huddle).to be_valid
       end
     end
   end
 
   describe 'scopes' do
-    let!(:old_huddle) { Huddle.create!(organization: team, started_at: 25.hours.ago, expires_at: 1.hour.ago) }
-    let!(:recent_huddle) { Huddle.create!(organization: team, started_at: 1.hour.ago) }
+    let!(:old_huddle) { Huddle.create!(huddle_playbook: playbook, started_at: 25.hours.ago, expires_at: 1.hour.ago) }
+    let!(:recent_huddle) { Huddle.create!(huddle_playbook: playbook, started_at: 1.hour.ago) }
 
     describe '.active' do
       it 'returns huddles that expire in the future' do
@@ -112,7 +113,7 @@ RSpec.describe Huddle, type: :model do
     context 'with alias' do
       let(:huddle_with_alias) do
         playbook = create(:huddle_playbook, organization: team, special_session_name: 'Sprint Planning')
-        Huddle.create!(organization: team, started_at: Time.current, huddle_playbook: playbook)
+        Huddle.create!(huddle_playbook: playbook, started_at: Time.current)
       end
 
       it 'includes the alias in the display name' do
@@ -153,7 +154,7 @@ RSpec.describe Huddle, type: :model do
     end
 
     context 'with feedback from expired huddle' do
-      let(:expired_huddle) { Huddle.create!(organization: team, started_at: 25.hours.ago, expires_at: 1.hour.ago) }
+      let(:expired_huddle) { Huddle.create!(huddle_playbook: playbook, started_at: 25.hours.ago, expires_at: 1.hour.ago) }
 
       before do
         person = Person.create!(email: 'test@example.com', full_name: 'Test User', unique_textable_phone_number: '+12345678902')
@@ -271,7 +272,8 @@ RSpec.describe Huddle, type: :model do
 
   describe 'conflict style distributions' do
     let(:organization) { create(:organization, name: 'Test Org') }
-    let(:huddle) { create(:huddle, organization: organization) }
+    let(:playbook) { create(:huddle_playbook, organization: organization) }
+    let(:huddle) { create(:huddle, huddle_playbook: playbook) }
     let(:person1) { create(:person, first_name: 'John', last_name: 'Doe') }
     let(:person2) { create(:person, first_name: 'Jane', last_name: 'Smith') }
     let(:person3) { create(:person, first_name: 'Bob', last_name: 'Johnson') }
@@ -342,7 +344,8 @@ RSpec.describe Huddle, type: :model do
   describe '#slack_announcement_url' do
     let(:company) { Company.create!(name: 'Acme Corp') }
     let(:team) { Team.create!(name: 'Engineering', parent: company) }
-    let(:huddle) { create(:huddle, organization: team) }
+    let(:playbook) { create(:huddle_playbook, organization: team) }
+    let(:huddle) { create(:huddle, huddle_playbook: playbook) }
     let(:slack_config) { create(:slack_configuration, organization: company, workspace_name: 'Acme Corporation', workspace_subdomain: 'acmecorp') }
 
     before do

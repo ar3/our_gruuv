@@ -65,7 +65,7 @@
                   - @huddles.each do |huddle|
                     %tr
                       %td= huddle.started_at.strftime("%B %d, %Y at %I:%M %p")
-                      %td= huddle.organization.display_name
+                      %td= huddle.huddle_playbook&.organization&.display_name || 'Unknown Organization'
                       %td
                         - participant_count = huddle.huddle_participants.count
                         - participant_names = huddle.huddle_participants.includes(:person).map { |hp| hp.person.full_name }.join(", ")

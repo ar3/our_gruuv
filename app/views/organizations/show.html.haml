@@ -42,7 +42,7 @@
                     %strong Total Playbooks:
                     = @organization.huddle_playbooks.count
           
-          - if @organization.company? && @teams.any?
+          - if @organization.company?
             .card.mb-4
               .card-header.d-flex.justify-content-between.align-items-center
                 %h5.mb-0
@@ -52,29 +52,36 @@
                   %i.bi.bi-plus.me-1
                   Add Team
               .card-body
-                .table-responsive
-                  %table.table.table-hover
-                    %thead
-                      %tr
-                        %th Team Name
-                        %th Playbooks
-                        %th Huddles
-                        %th Actions
-                    %tbody
-                      - @teams.each do |team|
+                - if !@teams.any?
+                  .text-center.py-4
+                    %p.text-muted No teams yet
+                    = link_to new_organization_path(parent_id: @organization.id), class: "btn btn-primary" do
+                      %i.bi.bi-plus.me-1
+                      Create Your First Team
+                - else
+                  .table-responsive
+                    %table.table.table-hover
+                      %thead
                         %tr
-                          %td
-                            = link_to team.name, organization_path(team), class: "text-decoration-none"
-                          %td
-                            %span.badge.bg-info= team.huddle_playbooks.count
-                          %td
-                            %span.badge.bg-secondary= team.huddles.count
-                          %td
-                            .btn-group.btn-group-sm
-                              = link_to organization_path(team), class: "btn btn-outline-primary" do
-                                %i.bi.bi-eye
-                              = link_to edit_organization_path(team), class: "btn btn-outline-secondary" do
-                                %i.bi.bi-pencil
+                          %th Team Name
+                          %th Playbooks
+                          %th Huddles
+                          %th Actions
+                      %tbody
+                        - @teams.each do |team|
+                          %tr
+                            %td
+                              = link_to team.name, organization_path(team), class: "text-decoration-none"
+                            %td
+                              %span.badge.bg-info= team.huddle_playbooks.count
+                            %td
+                              %span.badge.bg-secondary= team.huddles.count
+                            %td
+                              .btn-group.btn-group-sm
+                                = link_to organization_path(team), class: "btn btn-outline-primary" do
+                                  %i.bi.bi-eye
+                                = link_to edit_organization_path(team), class: "btn btn-outline-secondary" do
+                                  %i.bi.bi-pencil
           
           - if @organization.company?
             .card.mb-4

@@ -24,7 +24,7 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
     end
 
     it 'loads huddles for the playbook' do
-      huddle = create(:huddle, huddle_playbook: huddle_playbook, organization: organization)
+      huddle = create(:huddle, huddle_playbook: huddle_playbook)
       
       get :show, params: { organization_id: organization.id, id: huddle_playbook.id }
       
@@ -32,7 +32,7 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
     end
 
     it 'handles huddles with feedback correctly' do
-      huddle = create(:huddle, huddle_playbook: huddle_playbook, organization: organization)
+      huddle = create(:huddle, huddle_playbook: huddle_playbook)
       feedback = create(:huddle_feedback, huddle: huddle, person: person, 
                        informed_rating: 4, connected_rating: 4, goals_rating: 4, valuable_rating: 4)
       
@@ -43,7 +43,7 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
     end
 
     it 'handles huddles without feedback correctly' do
-      huddle = create(:huddle, huddle_playbook: huddle_playbook, organization: organization)
+      huddle = create(:huddle, huddle_playbook: huddle_playbook)
       
       get :show, params: { organization_id: organization.id, id: huddle_playbook.id }
       
@@ -52,8 +52,8 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
     end
 
     it 'loads participant statistics using service' do
-      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 1.week.ago)
-      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 2.days.ago)
+      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 1.week.ago)
+      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 2.weeks.ago)
       
       participant = create(:person, first_name: 'John', last_name: 'Doe')
       create(:huddle_participant, huddle: huddle1, person: participant)
@@ -70,9 +70,9 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
 
     it 'prevents SQL grouping errors with complex participant data' do
       # Create multiple huddles with multiple participants and feedback
-      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 1.week.ago)
-      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 2.days.ago)
-      huddle3 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 1.day.ago)
+      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 1.week.ago)
+      huddle2 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: 2.days.ago)
+      huddle3 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: 1.day.ago)
       
       participant1 = create(:person, first_name: 'John', last_name: 'Doe')
       participant2 = create(:person, first_name: 'Jane', last_name: 'Smith')
@@ -99,8 +99,8 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
     end
 
     it 'does not show duplicate participants' do
-      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 1.week.ago)
-      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 2.days.ago)
+      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 1.week.ago)
+      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 2.weeks.ago)
       
       participant = create(:person, first_name: 'John', last_name: 'Doe')
       

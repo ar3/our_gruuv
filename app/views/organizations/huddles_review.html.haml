@@ -574,7 +574,7 @@
               playbook.huddles.forEach(function(huddle) {
                 huddlesList += '<tr>' +
                   '<td>' + new Date(huddle.started_at).toLocaleDateString() + '</td>' +
-                  '<td>' + huddle.organization.display_name + '</td>' +
+                  '<td>' + (huddle.huddle_playbook && huddle.huddle_playbook.organization ? huddle.huddle_playbook.organization.display_name : 'Unknown Organization') + '</td>' +
                   '<td>' + (huddle.huddle_participants_count || huddle.huddle_participants.length) + '</td>' +
                   '<td>' + (huddle.average_rating || 'N/A') + '</td>' +
                   '<td>' + (huddle.participation_rate || 'N/A') + '%</td>' +

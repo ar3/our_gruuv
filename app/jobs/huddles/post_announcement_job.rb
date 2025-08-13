@@ -6,8 +6,8 @@ class Huddles::PostAnnouncementJob < ApplicationJob
     
     # Check if Slack is configured for this organization
     unless huddle.slack_configured?
-      result = { success: false, error: "Slack not configured for organization #{huddle.organization.id}" }
-      Rails.logger.info "Slack not configured for organization #{huddle.organization.id}, skipping announcement"
+      result = { success: false, error: "Slack not configured for organization #{huddle.organization&.id}" }
+      Rails.logger.info "Slack not configured for organization #{huddle.organization&.id}, skipping announcement"
       return result
     end
     

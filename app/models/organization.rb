@@ -5,8 +5,8 @@ class Organization < ApplicationRecord
   # Associations
   belongs_to :parent, class_name: 'Organization', optional: true
   has_many :children, class_name: 'Organization', foreign_key: 'parent_id'
-  has_many :huddles, dependent: :destroy
   has_many :huddle_playbooks, dependent: :destroy
+  has_many :huddles, through: :huddle_playbooks
   has_many :assignments, foreign_key: 'company_id', dependent: :destroy
   has_one :slack_configuration, dependent: :destroy
   has_many :third_party_objects, dependent: :destroy
@@ -79,5 +79,16 @@ class Organization < ApplicationRecord
   def positions
     # Positions within this organization
     Position.joins(:position_type).where(position_types: { organization: self })
+  end
+
+  def recent_huddle_playbooks(include_descendants: false, weeks_back: 6)
+    start_date = weeks_back.weeks.ago
+    organizations_to_search = include_descendants ? self_and_descendants : [self]
+    
+    HuddlePlaybook.joins(:huddles)
+                  .where(organization: organizations_to_search)
+                  .where(huddles: { started_at: start_date..Time.current })
+                  .distinct
+                  .includes(:organization)
   end
 end 

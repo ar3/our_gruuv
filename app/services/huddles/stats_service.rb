@@ -30,32 +30,24 @@ module Huddles
       @playbook_stats ||= calculate_playbook_stats
     end
 
-    private
-
-    attr_reader :organization, :date_range
-
-    def default_date_range
-      end_date = Date.current
-      start_date = end_date - 6.weeks
-      start_date..end_date
-    end
-
+    # Public method for accessing huddles in range (used in tests)
     def huddles_in_range
-      @huddles_in_range ||= Huddle.joins(:organization)
-                                   .where(organization: organization.self_and_descendants)
+      @huddles_in_range ||= Huddle.joins(huddle_playbook: :organization)
+                                   .where(organizations: { id: organization.self_and_descendants })
                                    .where(started_at: date_range.begin.beginning_of_day..date_range.end.end_of_day)
-                                   .includes(:organization, :huddle_playbook, :huddle_feedbacks, :huddle_participants)
-                                   .order(:started_at)
+                                   .includes(:huddle_feedbacks, :huddle_participants, huddle_playbook: :organization)
+                                   .order(started_at: :desc)
     end
 
+    # Public methods for testing (used in specs)
     def calculate_feedback_stats
-      feedback_count = HuddleFeedback.joins(:huddle)
-                                    .where(huddles: { organization: organization.self_and_descendants })
+      feedback_count = HuddleFeedback.joins(huddle: :huddle_playbook)
+                                    .where(huddles: { huddle_playbooks: { organization: organization.self_and_descendants } })
                                     .where(created_at: date_range.begin..date_range.end)
                                     .count
 
-      unique_participants = HuddleFeedback.joins(:huddle)
-                                         .where(huddles: { organization: organization.self_and_descendants })
+      unique_participants = HuddleFeedback.joins(huddle: :huddle_playbook)
+                                         .where(huddles: { huddle_playbooks: { organization: organization.self_and_descendants } })
                                          .where(created_at: date_range.begin..date_range.end)
                                          .distinct
                                          .count(:person_id)
@@ -156,6 +148,16 @@ module Huddles
       end
       
       playbook_stats
+    end
+
+    private
+
+    attr_reader :organization, :date_range
+
+    def default_date_range
+      end_date = Date.current
+      start_date = end_date - 6.weeks
+      start_date..end_date
     end
 
     def calculate_participation_stats_for_huddles(huddles)

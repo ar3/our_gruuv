@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'huddles/feedback', type: :view do
   let(:organization) { create(:organization, name: 'Test Org') }
-  let(:huddle) { create(:huddle, organization: organization, started_at: 1.day.ago) }
+  let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: 1.day.ago) }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
   let(:facilitator) { create(:person, first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com') }
   let!(:participant) { create(:huddle_participant, huddle: huddle, person: person, role: 'active') }

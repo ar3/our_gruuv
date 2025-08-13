@@ -3,7 +3,8 @@ require 'rails_helper'
 RSpec.describe HuddlesController, type: :controller do
   let(:organization) { create(:organization, name: 'Test Org') }
   let!(:slack_config) { create(:slack_configuration, organization: organization) }
-  let(:huddle) { create(:huddle, organization: organization, started_at: Time.current) }
+  let(:playbook) { create(:huddle_playbook, organization: organization) }
+  let(:huddle) { create(:huddle, huddle_playbook: playbook, started_at: Time.current) }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
   let!(:participant) { create(:huddle_participant, huddle: huddle, person: person, role: 'active') }
 
@@ -268,9 +269,81 @@ RSpec.describe HuddlesController, type: :controller do
     end
   end
 
+  describe 'GET #index' do
+    let(:organization) { create(:organization, :team) }
+    let(:company) { organization.root_company }
+    
+    before do
+      session[:current_person_id] = person.id
+      allow(controller).to receive(:current_organization).and_return(organization)
+      allow(controller).to receive(:current_person).and_return(person)
+    end
 
+    it 'renders the index view without routing errors' do
+      # This test ensures that all path helpers used in the view exist
+      # and that the view can render without NoMethodError exceptions
+      
+      # Ensure all required path helpers exist
+      expect { feedback_huddle_path(1) }.not_to raise_error
+      expect { join_huddle_path(1) }.not_to raise_error
+      expect { new_huddle_path }.not_to raise_error
+      expect { post_weekly_summary_huddles_path }.not_to raise_error
+      expect { start_huddle_from_playbook_huddles_path }.not_to raise_error
+      
+      # Test that the view can render without errors
+      expect { get :index }.not_to raise_error
+      expect(response).to have_http_status(:success)
+    end
 
+    it 'catches routing errors in the view when rendering with active huddle data' do
+      # This test specifically catches the type of routing error that was found in manual testing
+      # where the view tries to use a non-existent path helper
+      
+      # Create test data that will trigger the view logic with active huddles
+      playbook = create(:huddle_playbook, organization: organization)
+      huddle = create(:huddle, 
+        huddle_playbook: playbook, 
+        started_at: Time.current.beginning_of_week(:monday) + 1.day,
+        expires_at: 1.day.from_now
+      )
+      participant = create(:huddle_participant, huddle: huddle, person: person)
+      
+      # Set up the controller instance variables that the view needs
+      controller.instance_variable_set(:@huddles, [])
+      controller.instance_variable_set(:@recent_playbooks, [playbook])
+      controller.instance_variable_set(:@weekly_summary_status, {
+        has_recent_summary: false,
+        last_posted_at: nil,
+        slack_message_url: nil
+      })
+      controller.instance_variable_set(:@playbook_active_huddles, {
+        playbook.id => {
+          huddle: huddle,
+          participant: participant,
+          has_feedback: false,
+          slack_message_url: nil
+        }
+      })
+      
+      # This should not raise a NoMethodError about missing path helpers
+      expect { get :index }.not_to raise_error
+      expect(response).to have_http_status(:success)
+    end
 
+    it 'handles active huddles data correctly' do
+      # Create test data for active huddles
+      playbook = create(:huddle_playbook, organization: organization)
+      huddle = create(:huddle, 
+        huddle_playbook: playbook, 
+        started_at: Time.current.beginning_of_week(:monday) + 1.day,
+        expires_at: 1.day.from_now
+      )
+      participant = create(:huddle_participant, huddle: huddle, person: person)
+      
+      expect { get :index }.not_to raise_error
+      expect(response).to have_http_status(:success)
+    end
+  end
 
   describe 'POST #post_start_announcement_to_slack' do
     let(:slack_config) { create(:slack_configuration, organization: organization) }
@@ -384,6 +457,186 @@ RSpec.describe HuddlesController, type: :controller do
         expect {
           controller.send(:find_or_create_huddle_playbook, organization)
         }.not_to change(HuddlePlaybook, :count)
+      end
+    end
+  end
+
+  describe 'POST #start_huddle_from_playbook' do
+    let(:new_playbook) { create(:huddle_playbook, organization: organization, special_session_name: 'New Session') }
+
+    before do
+      allow(Huddles::PostAnnouncementJob).to receive(:perform_now)
+      allow(Huddles::PostSummaryJob).to receive(:perform_now)
+    end
+
+    it 'creates a new huddle for the playbook' do
+      expect {
+        post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
+      }.to change(Huddle, :count).by(1)
+    end
+
+    it 'posts announcements to Slack' do
+      post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
+      
+      expect(Huddles::PostAnnouncementJob).to have_received(:perform_now)
+      expect(Huddles::PostSummaryJob).to have_received(:perform_now)
+    end
+
+    it 'redirects with success message' do
+      post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
+      
+      expect(response).to redirect_to(huddles_path)
+      expect(flash[:notice]).to eq('Huddle started successfully! Slack notifications have been posted.')
+    end
+  end
+
+  describe 'POST #post_weekly_summary' do
+    before do
+      allow(Companies::WeeklyHuddlesReviewNotificationJob).to receive(:perform_and_get_result)
+        .and_return({ success: true })
+    end
+
+    it 'calls the weekly notification job' do
+      post :post_weekly_summary
+      
+      expect(Companies::WeeklyHuddlesReviewNotificationJob).to have_received(:perform_and_get_result)
+    end
+
+    it 'redirects with success message when job succeeds' do
+      post :post_weekly_summary
+      
+      expect(response).to redirect_to(huddles_path)
+      expect(flash[:notice]).to eq('Weekly huddle summary posted to Slack successfully!')
+    end
+
+    it 'redirects with error message when job fails' do
+      allow(Companies::WeeklyHuddlesReviewNotificationJob).to receive(:perform_and_get_result)
+        .and_return({ success: false, error: 'Job failed' })
+      
+      post :post_weekly_summary
+      
+      expect(response).to redirect_to(huddles_path)
+      expect(flash[:alert]).to eq('Failed to post weekly summary: Job failed')
+    end
+  end
+
+  describe 'private methods' do
+    describe '#get_weekly_summary_status' do
+      let(:company) { create(:organization, :company) }
+      let(:organization) { create(:organization, :team, parent: company) }
+
+      it 'returns correct status when no recent summary exists' do
+        controller.instance_variable_set(:@current_organization, organization)
+        status = controller.send(:get_weekly_summary_status, organization)
+        
+        expect(status[:has_recent_summary]).to be false
+        expect(status[:last_posted_at]).to be_nil
+        expect(status[:slack_message_url]).to be_nil
+      end
+
+      it 'returns correct status when recent summary exists' do
+        controller.instance_variable_set(:@current_organization, organization)
+        
+        # Create a recent weekly summary notification with required slack data
+        notification = create(:notification, 
+          notifiable: company,
+          notification_type: 'huddle_summary',
+          status: 'sent_successfully',
+          created_at: 1.day.ago,
+          message_id: '123456789.123456',
+          metadata: { 'channel' => '#general' }
+        )
+        
+        # Create slack configuration for the company
+        slack_config = create(:slack_configuration, 
+          organization: company,
+          workspace_subdomain: 'testworkspace',
+          workspace_url: 'https://testworkspace.slack.com'
+        )
+        
+        status = controller.send(:get_weekly_summary_status, organization)
+        
+        expect(status[:has_recent_summary]).to be true
+        expect(status[:last_posted_at]).to eq(notification.created_at)
+        expect(status[:slack_message_url]).to be_present
+      end
+    end
+
+    describe '#get_playbook_active_huddles' do
+      let(:company) { create(:organization, :company) }
+      let(:organization) { create(:organization, :team, parent: company) }
+      let(:person) { create(:person) }
+
+      before do
+        controller.instance_variable_set(:@current_organization, organization)
+        allow(controller).to receive(:current_person).and_return(person)
+      end
+
+      it 'returns empty hash when no active huddles exist' do
+        playbook = create(:huddle_playbook, organization: organization)
+        result = controller.send(:get_playbook_active_huddles, [playbook])
+        expect(result).to eq({})
+      end
+
+      it 'returns active huddle data when huddle exists' do
+        playbook = create(:huddle_playbook, organization: organization)
+        # Create an active huddle for this week
+        huddle = create(:huddle, 
+          huddle_playbook: playbook, 
+          started_at: Time.current.beginning_of_week(:monday) + 1.day,
+          expires_at: 1.day.from_now
+        )
+        
+        result = controller.send(:get_playbook_active_huddles, [playbook])
+        
+        expect(result[playbook.id]).to be_present
+        expect(result[playbook.id][:huddle]).to eq(huddle)
+        expect(result[playbook.id][:participant]).to be_nil
+        expect(result[playbook.id][:has_feedback]).to be false
+      end
+
+      it 'includes participant information when user has joined' do
+        playbook = create(:huddle_playbook, organization: organization)
+        huddle = create(:huddle, 
+          huddle_playbook: playbook, 
+          started_at: Time.current.beginning_of_week(:monday) + 2.days,
+          expires_at: 1.day.from_now
+        )
+        
+        participant = create(:huddle_participant, huddle: huddle, person: person)
+        
+        result = controller.send(:get_playbook_active_huddles, [playbook])
+        
+        expect(result[playbook.id][:participant]).to eq(participant)
+        expect(result[playbook.id][:has_feedback]).to be false
+      end
+
+      it 'includes feedback status when user has given feedback' do
+        playbook = create(:huddle_playbook, organization: organization)
+        huddle = create(:huddle, 
+          huddle_playbook: playbook, 
+          started_at: Time.current.beginning_of_week(:monday) + 3.days,
+          expires_at: 1.day.from_now
+        )
+        
+        participant = create(:huddle_participant, huddle: huddle, person: person)
+        create(:huddle_feedback, huddle: huddle, person: person)
+        
+        result = controller.send(:get_playbook_active_huddles, [playbook])
+        
+        expect(result[playbook.id][:participant]).to eq(participant)
+        expect(result[playbook.id][:has_feedback]).to be true
+      end
+    end
+
+    describe '#get_slack_message_url' do
+      let(:huddle) { create(:huddle) }
+
+      it 'returns slack announcement url from huddle' do
+        allow(huddle).to receive(:slack_announcement_url).and_return('https://slack.com/msg/123')
+        
+        result = controller.send(:get_slack_message_url, huddle)
+        expect(result).to eq('https://slack.com/msg/123')
       end
     end
   end

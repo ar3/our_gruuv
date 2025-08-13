@@ -5,7 +5,6 @@ RSpec.describe 'huddles/join', type: :view do
   let(:team) { Team.create!(name: 'Test Team', parent: company) }
   let(:huddle) do
     Huddle.create!(
-      organization: team,
       started_at: Time.current,
       huddle_playbook: create(:huddle_playbook, organization: team, special_session_name: 'test-huddle')
     )

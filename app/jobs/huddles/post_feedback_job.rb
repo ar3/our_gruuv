@@ -7,8 +7,8 @@ class Huddles::PostFeedbackJob < ApplicationJob
     
     # Check if Slack is configured for this organization
     unless huddle.slack_configured?
-      result = { success: false, error: "Slack not configured for organization #{huddle.organization.id}" }
-      Rails.logger.info "Slack not configured for organization #{huddle.organization.id}, skipping feedback"
+      result = { success: false, error: "Slack not configured for organization #{huddle.organization&.id}" }
+      Rails.logger.info "Slack not configured for organization #{huddle.organization&.id}, skipping feedback"
       return result
     end
     

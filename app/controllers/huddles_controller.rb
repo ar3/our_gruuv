@@ -2,16 +2,27 @@ class HuddlesController < ApplicationController
   before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :post_start_announcement_to_slack, :notifications_debug]
 
   def index
-    @huddles = Huddle.active.recent.includes(:organization).decorate
-    @huddles_by_organization = @huddles.group_by { |huddle| huddle.organization.root_company }.sort_by { |company, _| company&.name || '' }
+    @huddles = Huddle.active.recent.includes(huddle_playbook: :organization).decorate
+    @huddles_by_organization = @huddles.group_by { |huddle| huddle.organization&.root_company }.sort_by { |company, _| company&.name || '' }
+    
+    # Get playbooks with recent huddles for the current organization
+    if current_organization
+      @recent_playbooks = current_organization.recent_huddle_playbooks(include_descendants: true)
+      
+      # Get weekly summary status for the current organization
+      @weekly_summary_status = get_weekly_summary_status(current_organization)
+      
+      # Get active huddles for each playbook to show current status
+      @playbook_active_huddles = get_playbook_active_huddles(@recent_playbooks)
+    end
   end
 
   def my_huddles
     @current_person = current_person
     
     if @current_person
-      @huddles = Huddle.participated_by(@current_person).recent.includes(:organization)
-      @huddles_by_organization = @huddles.group_by { |huddle| huddle.organization.root_company }.sort_by { |company, _| company&.name || '' }
+      @huddles = Huddle.participated_by(@current_person).recent.includes(huddle_playbook: :organization)
+      @huddles_by_organization = @huddles.group_by { |huddle| huddle.organization&.root_company }.sort_by { |company, _| company&.name || '' }
     else
       redirect_to huddles_path, alert: "Please log in to view your huddles"
     end
@@ -70,7 +81,6 @@ class HuddlesController < ApplicationController
     
     # Create the huddle
     @huddle = Huddle.new(
-      organization: organization,
       started_at: Time.current,
       expires_at: 24.hours.from_now
     )
@@ -267,6 +277,42 @@ class HuddlesController < ApplicationController
     @notifications = @huddle.notifications.order(created_at: :desc)
   end
 
+  def start_huddle_from_playbook
+    playbook = HuddlePlaybook.find(params[:playbook_id])
+    authorize playbook, :show?
+    
+    # Create a new huddle for this playbook
+    @huddle = Huddle.new(
+      huddle_playbook: playbook,
+      started_at: Time.current,
+      expires_at: 24.hours.from_now
+    )
+    
+    if @huddle.save
+      # Post announcements to Slack
+      Huddles::PostAnnouncementJob.perform_now(@huddle.id)
+      Huddles::PostSummaryJob.perform_now(@huddle.id)
+      
+      redirect_to huddles_path, notice: 'Huddle started successfully! Slack notifications have been posted.'
+    else
+      redirect_to huddles_path, alert: 'Failed to start huddle. Please try again.'
+    end
+  end
+
+  def post_weekly_summary
+    if current_organization&.root_company
+      success = Companies::WeeklyHuddlesReviewNotificationJob.perform_and_get_result(current_organization.root_company.id)
+      
+      if success[:success]
+        redirect_to huddles_path, notice: 'Weekly huddle summary posted to Slack successfully!'
+      else
+        redirect_to huddles_path, alert: "Failed to post weekly summary: #{success[:error]}"
+      end
+    else
+      redirect_to huddles_path, alert: 'No company selected. Please select a company first.'
+    end
+  end
+
   private
 
   def set_huddle
@@ -367,4 +413,70 @@ class HuddlesController < ApplicationController
     
     playbook
   end
+
+  def get_weekly_summary_status(organization)
+    # Check if there's a recent weekly summary for this organization
+    # Look for the most recent successful weekly summary notification from this week
+    week_start = Date.current.beginning_of_week(:monday)
+    week_end = Date.current.end_of_week(:sunday)
+    
+    recent_summary = Notification.where(
+      notifiable: organization.root_company,
+      notification_type: 'huddle_summary',
+      status: 'sent_successfully',
+      created_at: week_start..week_end
+    ).order(created_at: :desc).first
+    
+    if recent_summary
+      {
+        has_recent_summary: true,
+        last_posted_at: recent_summary.created_at,
+        slack_message_url: recent_summary.slack_url
+      }
+    else
+      {
+        has_recent_summary: false,
+        last_posted_at: nil,
+        slack_message_url: nil
+      }
+    end
+  end
+
+  def get_playbook_active_huddles(playbooks)
+    # Get active huddles for each playbook, focusing on the most recent one for this week
+    active_huddles = {}
+    
+    playbooks.each do |playbook|
+      # Get the most recent active huddle for this playbook from this week
+      this_week_start = Time.current.beginning_of_week(:monday)
+      this_week_end = Time.current.end_of_week(:sunday)
+      
+      latest_huddle = Huddle.where(huddle_playbook: playbook)
+                           .where(started_at: this_week_start..this_week_end)
+                           .where('expires_at > ?', Time.current)
+                           .order(started_at: :desc)
+                           .first
+      
+      if latest_huddle
+        # Check if current user has participated
+        current_participant = latest_huddle.huddle_participants.find_by(person: current_person)
+        has_feedback = latest_huddle.huddle_feedbacks.exists?(person: current_person)
+        
+        active_huddles[playbook.id] = {
+          huddle: latest_huddle,
+          participant: current_participant,
+          has_feedback: has_feedback,
+          slack_message_url: get_slack_message_url(latest_huddle)
+        }
+      end
+    end
+    
+    active_huddles
+  end
+
+  def get_slack_message_url(huddle)
+    # Get the Slack message URL for this huddle's announcement
+    huddle.slack_announcement_url
+  end
+
 end

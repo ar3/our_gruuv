@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Huddles::PostSummaryJob, type: :job do
   let(:organization) { create(:organization, name: 'Test Org') }
   let!(:slack_config) { create(:slack_configuration, organization: organization) }
-  let(:huddle) { create(:huddle, organization: organization, started_at: Time.current) }
+  let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: Time.current) }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
   let!(:participant) { create(:huddle_participant, huddle: huddle, person: person, role: 'active') }
 

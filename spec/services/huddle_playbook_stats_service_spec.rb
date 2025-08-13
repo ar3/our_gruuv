@@ -11,8 +11,8 @@ RSpec.describe Huddles::PlaybookStatsService do
     end
 
     it 'returns participant statistics for single participant' do
-      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 1.week.ago)
-      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 2.days.ago)
+      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 1.week.ago)
+      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 2.days.ago)
       
       participant = create(:person, first_name: 'John', last_name: 'Doe')
       create(:huddle_participant, huddle: huddle1, person: participant)
@@ -32,8 +32,8 @@ RSpec.describe Huddles::PlaybookStatsService do
     end
 
     it 'returns statistics for multiple participants' do
-      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 1.week.ago)
-      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 2.days.ago)
+      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 1.week.ago)
+      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 2.days.ago)
       
       participant1 = create(:person, first_name: 'John', last_name: 'Doe')
       participant2 = create(:person, first_name: 'Jane', last_name: 'Smith')
@@ -66,8 +66,8 @@ RSpec.describe Huddles::PlaybookStatsService do
     end
 
     it 'does not show duplicate participants' do
-      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 1.week.ago)
-      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 2.days.ago)
+      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 1.week.ago)
+      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 2.days.ago)
       
       participant = create(:person, first_name: 'John', last_name: 'Doe')
       
@@ -87,10 +87,10 @@ RSpec.describe Huddles::PlaybookStatsService do
 
     it 'handles complex scenario with multiple huddles and participants without duplicates' do
       # Create multiple huddles
-      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 2.weeks.ago)
-      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 1.week.ago)
-      huddle3 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 3.days.ago)
-      huddle4 = create(:huddle, huddle_playbook: huddle_playbook, organization: organization, started_at: 1.day.ago)
+      huddle1 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 2.weeks.ago)
+      huddle2 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 1.week.ago)
+      huddle3 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 3.days.ago)
+      huddle4 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 1.day.ago)
       
       # Create participants
       alice = create(:person, first_name: 'Alice', last_name: 'Anderson')

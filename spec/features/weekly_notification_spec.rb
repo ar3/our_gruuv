@@ -14,8 +14,8 @@ RSpec.feature "Weekly Notification", type: :feature do
     association
     
     # Create some test huddles and feedback for the past week
-    huddle1 = create(:huddle, organization: company, started_at: 1.week.ago)
-    huddle2 = create(:huddle, organization: company, started_at: 1.week.ago)
+          huddle1 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
+          huddle2 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
     person1 = create(:person)
     person2 = create(:person)
     
@@ -129,8 +129,8 @@ RSpec.feature "Weekly Notification", type: :feature do
 
   scenario "Weekly notification includes huddle count" do
     # Create some huddles for this week
-    create(:huddle, organization: company, started_at: 1.week.ago)
-    create(:huddle, organization: company, started_at: 1.week.ago)
+          create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
+      create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
     
     visit huddles_review_organization_path(company)
     

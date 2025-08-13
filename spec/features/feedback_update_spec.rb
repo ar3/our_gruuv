@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.feature 'Feedback Update', type: :feature do
   let(:person) { create(:person, full_name: 'Test User', email: 'test@example.com') }
   let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
-  let(:huddle) { create(:huddle, organization: organization, started_at: 1.hour.ago) }
+  let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: 1.hour.ago) }
   let(:participant) { create(:huddle_participant, huddle: huddle, person: person, role: 'facilitator') }
   let(:existing_feedback) do
     create(:huddle_feedback,

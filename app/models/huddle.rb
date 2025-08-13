@@ -1,6 +1,5 @@
 class Huddle < ApplicationRecord
   # Associations
-  belongs_to :organization
   belongs_to :huddle_playbook, optional: true
   has_many :huddle_participants, dependent: :destroy
   has_many :participants, through: :huddle_participants, source: :person
@@ -31,12 +30,16 @@ class Huddle < ApplicationRecord
     playbook_alias.present? ? "#{huddle_display_day} - #{playbook_alias}" : huddle_display_day
   end
   
+  def organization
+    huddle_playbook&.organization
+  end
+  
   def display_name
-    "#{organization.display_name} - #{display_name_without_organization}"
+    "#{organization&.display_name || 'Unknown Organization'} - #{display_name_without_organization}"
   end
 
   def slug
-    "#{organization.name.parameterize}_#{started_at.strftime('%Y-%m-%d')}"
+    "#{organization&.name&.parameterize || 'unknown'}_#{started_at.strftime('%Y-%m-%d')}"
   end
   
   def closed?

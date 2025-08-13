@@ -4,7 +4,7 @@ RSpec.feature 'Huddle Playbooks Show Tooltip', type: :feature do
   let(:person) { create(:person) }
   let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
   let(:huddle_playbook) { create(:huddle_playbook, organization: organization) }
-  let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook, organization: organization) }
+  let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook) }
   let(:participant1) { create(:person, first_name: 'John', last_name: 'Doe') }
   let(:participant2) { create(:person, first_name: 'Jane', last_name: 'Smith') }
 

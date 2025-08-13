@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'huddles/_huddle_card for non-participants', type: :view do
   let(:organization) { create(:organization, name: 'Test Org') }
-  let(:huddle) { create(:huddle, organization: organization, started_at: 1.day.ago) }
+  let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: 1.day.ago) }
   let(:non_participant) { create(:person, first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com') }
 
   before do

@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.feature 'Huddle Sharing', type: :feature, js: true do
   let(:organization) { create(:organization, name: 'Test Org') }
-  let(:huddle) { create(:huddle, organization: organization, started_at: Time.current) }
+  let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: Time.current) }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
   let!(:participant) { create(:huddle_participant, huddle: huddle, person: person, role: 'active') }
 

@@ -6,7 +6,7 @@ RSpec.describe HuddleDecorator, type: :decorator do
   
   describe '#status_with_time' do
     context 'when huddle is active' do
-      let(:huddle) { Huddle.create!(organization: team, started_at: 1.hour.ago, expires_at: 23.hours.from_now) }
+      let(:huddle) { Huddle.create!(huddle_playbook: create(:huddle_playbook, organization: team), started_at: 1.hour.ago, expires_at: 23.hours.from_now) }
       let(:decorated_huddle) { huddle.decorate }
       
       it 'shows active status with remaining hours' do
@@ -20,7 +20,7 @@ RSpec.describe HuddleDecorator, type: :decorator do
     end
     
     context 'when huddle is closed' do
-      let(:huddle) { Huddle.create!(organization: team, started_at: 25.hours.ago, expires_at: 1.hour.ago) }
+      let(:huddle) { Huddle.create!(huddle_playbook: create(:huddle_playbook, organization: team), started_at: 25.hours.ago, expires_at: 1.hour.ago) }
       let(:decorated_huddle) { huddle.decorate }
       
       it 'shows inactive status with hours ago' do
