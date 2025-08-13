@@ -45,6 +45,12 @@ This document contains all the rules and conventions we follow in this project t
 - When displaying names/titles of objects in views, use a `display_name` method, ideally on the decorator object
 - This ensures separation of concerns and makes it easier to make adjustments in the future if we want to display an object differently
 
+### Decorator Usage
+- **Always decorate collections and records** before passing to views using `.decorate`
+- **Use decorators for presentation logic** - keep models focused on business logic
+- **Apply includes before decorate** for performance: `Model.includes(:associations).decorate`
+- **Create dedicated decorator classes** for complex presentation logic
+
 ## Code Quality & Maintainability
 
 ### Method Design
@@ -53,6 +59,30 @@ This document contains all the rules and conventions we follow in this project t
 
 ### Constants
 - Avoid putting constants hardcoded in views when reasonable to do so
+
+### Model Scopes & Naming
+- **Use consistent scope names** across models: `:active`, `:inactive`, `:recent`
+- **Active scopes should use `where(ended_at: nil)`** for time-based models (employment tenures, assignments)
+- **Inactive scopes should use `where.not(ended_at: nil)`** for completed/ended records
+- **Scope names should be descriptive** and indicate the state or filter being applied
+
+### Database Query Optimization
+- **Always use `includes` for associations** that will be accessed in views
+- **Apply `includes` before `decorate`** for optimal performance
+- **Use `joins` only when you need to filter by associated data**, not for display
+- **Order queries efficiently**: `Model.includes(:associations).order(:field).decorate`
+
+### Transaction Handling
+- **Use transactions for multi-step operations** that must succeed or fail together
+- **Wrap related database changes** in `ActiveRecord::Base.transaction` blocks
+- **Handle transaction failures gracefully** with proper error handling and user feedback
+- **Use `save!` and `update!`** within transactions to ensure failures are caught
+
+### Error Handling & Validation
+- **Rescue specific ActiveRecord errors** (`RecordInvalid`, `RecordNotFound`, `RecordNotUnique`)
+- **Provide user-friendly error messages** when validation fails
+- **Log errors appropriately** for debugging and monitoring
+- **Handle edge cases gracefully** - don't let unexpected errors crash the application
 
 ## Testing
 
