@@ -461,6 +461,99 @@ RSpec.describe HuddlesController, type: :controller do
     end
   end
 
+  describe 'POST #create' do
+    let(:company) { create(:organization, :company) }
+    let(:team) { create(:organization, :team, parent: company) }
+    
+    before do
+      allow(controller).to receive(:find_or_create_organization).and_return(team)
+      allow(controller).to receive(:get_or_create_person_from_session_or_params).and_return(person)
+      allow(controller).to receive(:current_person).and_return(person)
+    end
+
+    context 'when no active huddle exists for the playbook this week' do
+      it 'creates a new huddle' do
+        expect {
+          post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
+        }.to change(Huddle, :count).by(1)
+      end
+
+      it 'creates a default huddle playbook if none exists' do
+        expect {
+          post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
+        }.to change(HuddlePlaybook, :count).by(1)
+      end
+
+      it 'adds the creator as a facilitator participant' do
+        post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
+        
+        huddle = Huddle.last
+        participant = huddle.huddle_participants.find_by(person: person)
+        expect(participant).to be_present
+        expect(participant.role).to eq('facilitator')
+      end
+
+      it 'redirects to the new huddle with success message' do
+        post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
+        
+        huddle = Huddle.last
+        expect(response).to redirect_to(huddle_path(huddle))
+        expect(flash[:notice]).to eq('Huddle created successfully!')
+      end
+    end
+
+    context 'when an active huddle already exists for the playbook this week' do
+      let!(:default_playbook) { create(:huddle_playbook, organization: team, special_session_name: '') }
+      let!(:existing_huddle) do
+        create(:huddle, 
+          huddle_playbook: default_playbook,
+          started_at: 2.days.ago,
+          expires_at: 1.day.from_now
+        )
+      end
+
+      it 'does not create a new huddle' do
+        expect {
+          post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
+        }.not_to change(Huddle, :count)
+      end
+
+      it 'adds the creator as a participant to the existing huddle' do
+        expect {
+          post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
+        }.to change(HuddleParticipant, :count).by(1)
+        
+        participant = existing_huddle.huddle_participants.find_by(person: person)
+        expect(participant).to be_present
+        expect(participant.role).to eq('facilitator')
+      end
+
+      it 'redirects to the existing huddle with a notice' do
+        post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
+        
+        expect(response).to redirect_to(huddle_path(existing_huddle))
+        expect(flash[:notice]).to eq('A huddle for this playbook is already active this week. You have been added as a participant!')
+      end
+    end
+
+    context 'when an old huddle exists for the playbook (not this week)' do
+      let!(:default_playbook) { create(:huddle_playbook, organization: team, special_session_name: '') }
+      let!(:old_huddle) do
+        create(:huddle, 
+          huddle_playbook: default_playbook,
+          started_at: 2.weeks.ago,
+          expires_at: 1.week.ago
+        )
+      end
+
+      it 'creates a new huddle' do
+        expect {
+          post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
+        }.to change(Huddle, :count).by(1)
+      end
+    end
+  end
+
   describe 'POST #start_huddle_from_playbook' do
     let(:new_playbook) { create(:huddle_playbook, organization: organization, special_session_name: 'New Session') }
 
@@ -469,24 +562,82 @@ RSpec.describe HuddlesController, type: :controller do
       allow(Huddles::PostSummaryJob).to receive(:perform_now)
     end
 
-    it 'creates a new huddle for the playbook' do
-      expect {
+    context 'when no active huddle exists for the playbook this week' do
+      it 'creates a new huddle for the playbook' do
+        expect {
+          post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
+        }.to change(Huddle, :count).by(1)
+      end
+
+      it 'posts announcements to Slack' do
         post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
-      }.to change(Huddle, :count).by(1)
+        
+        expect(Huddles::PostAnnouncementJob).to have_received(:perform_now)
+        expect(Huddles::PostSummaryJob).to have_received(:perform_now)
+      end
+
+      it 'redirects with success message' do
+        post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
+        
+        expect(response).to redirect_to(huddles_path)
+        expect(flash[:notice]).to eq('Huddle started successfully! Slack notifications have been posted.')
+      end
     end
 
-    it 'posts announcements to Slack' do
-      post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
-      
-      expect(Huddles::PostAnnouncementJob).to have_received(:perform_now)
-      expect(Huddles::PostSummaryJob).to have_received(:perform_now)
+    context 'when an active huddle already exists for the playbook this week' do
+      let!(:existing_huddle) do
+        create(:huddle, 
+          huddle_playbook: new_playbook,
+          started_at: 2.days.ago,
+          expires_at: 1.day.from_now
+        )
+      end
+
+      it 'does not create a new huddle' do
+        expect {
+          post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
+        }.not_to change(Huddle, :count)
+      end
+
+      it 'adds the current user as a participant to the existing huddle' do
+        expect {
+          post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
+        }.to change(HuddleParticipant, :count).by(1)
+        
+        participant = existing_huddle.huddle_participants.find_by(person: person)
+        expect(participant).to be_present
+        expect(participant.role).to eq('active')
+      end
+
+      it 'redirects to the existing huddle with a notice' do
+        post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
+        
+        expect(response).to redirect_to(huddle_path(existing_huddle))
+        expect(flash[:notice]).to eq('A huddle for this playbook is already active this week. You have been added as a participant!')
+      end
+
+      it 'does not post new Slack notifications' do
+        post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
+        
+        expect(Huddles::PostAnnouncementJob).not_to have_received(:perform_now)
+        expect(Huddles::PostSummaryJob).not_to have_received(:perform_now)
+      end
     end
 
-    it 'redirects with success message' do
-      post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
-      
-      expect(response).to redirect_to(huddles_path)
-      expect(flash[:notice]).to eq('Huddle started successfully! Slack notifications have been posted.')
+    context 'when an old huddle exists for the playbook (not this week)' do
+      let!(:old_huddle) do
+        create(:huddle, 
+          huddle_playbook: new_playbook,
+          started_at: 2.weeks.ago,
+          expires_at: 1.week.ago
+        )
+      end
+
+      it 'creates a new huddle' do
+        expect {
+          post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
+        }.to change(Huddle, :count).by(1)
+      end
     end
   end
 

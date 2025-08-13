@@ -3,9 +3,13 @@
     .col-12
       .d-flex.justify-content-between.align-items-center.mb-4
         %h1.mb-0= @huddle_playbook.display_name
-        = link_to organization_huddle_playbooks_path(@organization), class: "btn btn-outline-secondary" do
-          %i.bi.bi-arrow-left.me-2
-          Back to Playbooks
+        .d-flex.gap-2
+          = link_to organization_path(@organization), class: "btn btn-outline-primary" do
+            %i.bi.bi-building.me-2
+            Back to Organization
+          = link_to organization_huddle_playbooks_path(@organization), class: "btn btn-outline-secondary" do
+            %i.bi.bi-arrow-left.me-2
+            Back to Playbooks
       
       / Playbook Details Card
       .card.mb-4
@@ -56,7 +60,6 @@
                 %thead
                   %tr
                     %th Date
-                    %th Organization
                     %th Participants
                     %th Feedbacks
                     %th Avg Rating
@@ -65,7 +68,6 @@
                   - @huddles.each do |huddle|
                     %tr
                       %td= huddle.started_at.strftime("%B %d, %Y at %I:%M %p")
-                      %td= huddle.huddle_playbook&.organization&.display_name || 'Unknown Organization'
                       %td
                         - participant_count = huddle.huddle_participants.count
                         - participant_names = huddle.huddle_participants.includes(:person).map { |hp| hp.person.full_name }.join(", ")
@@ -114,7 +116,7 @@
                 %tbody
                   - @participant_stats.each do |stat|
                     %tr
-                      %td= "#{stat.first_name} #{stat.last_name}"
+                      %td= "#{stat.first_name} #{stat.last_name} (#{stat.email})"
                       %td= stat.huddle_count
                       %td= stat.feedback_count
                       %td= stat.first_huddle_date&.strftime("%B %d, %Y")

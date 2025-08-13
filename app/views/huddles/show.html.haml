@@ -69,8 +69,8 @@
             .row
               .col-md-4.col-sm-12
                 %p
-                  %strong Organization:
-                  = link_to @huddle.huddle_playbook&.organization&.display_name || 'Unknown Organization', organization_path(@huddle.huddle_playbook&.organization), class: "text-decoration-none"
+                  %strong Playbook:
+                  = link_to @huddle.huddle_playbook&.display_name || 'Unknown Playbook', organization_huddle_playbook_path(@huddle.huddle_playbook&.organization, @huddle.huddle_playbook), class: "text-decoration-none"
               .col-md-4.col-sm-12
                 %p
                   %strong{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "started at #{format_time_in_user_timezone(@huddle.started_at)}"} Status:

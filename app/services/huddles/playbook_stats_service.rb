@@ -40,6 +40,7 @@ module Huddles
           person_id: person_id,
           first_name: person.first_name,
           last_name: person.last_name,
+          email: person.email,
           huddle_count: person_huddles.count,
           feedback_count: feedback_count,
           first_huddle_date: person_huddles.minimum(:started_at),

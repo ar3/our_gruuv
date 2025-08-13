@@ -79,14 +79,38 @@ class HuddlesController < ApplicationController
     # Get the person - either from session or create from params
     person = get_or_create_person_from_session_or_params
     
+    # Find or create default huddle playbook
+    huddle_playbook = find_or_create_huddle_playbook(organization)
+    
+    # Check if there's already an active huddle for this playbook this week
+    this_week_start = Time.current.beginning_of_week(:monday)
+    this_week_end = Time.current.end_of_week(:sunday)
+    
+    existing_huddle = Huddle.where(huddle_playbook: huddle_playbook)
+                           .where(started_at: this_week_start..this_week_end)
+                           .where('expires_at > ?', Time.current)
+                           .order(started_at: :desc)
+                           .first
+    
+    if existing_huddle
+      # Add the creator as a participant to the existing huddle
+      participant = existing_huddle.huddle_participants.find_or_create_by!(person: person) do |p|
+        p.role = 'facilitator'
+      end
+      
+      # Store only the person ID in session
+      session[:current_person_id] = person.id
+      
+      # Redirect to the existing huddle with a notice
+      redirect_to huddle_path(existing_huddle), notice: 'A huddle for this playbook is already active this week. You have been added as a participant!'
+      return
+    end
+    
     # Create the huddle
     @huddle = Huddle.new(
       started_at: Time.current,
       expires_at: 24.hours.from_now
     )
-    
-    # Find or create default huddle playbook
-    huddle_playbook = find_or_create_huddle_playbook(organization)
     
     # Assign the playbook to the huddle
     @huddle.huddle_playbook = huddle_playbook
@@ -102,6 +126,11 @@ class HuddlesController < ApplicationController
       
       # Store only the person ID in session
       session[:current_person_id] = person.id
+      
+      # Run weekly summary job when huddle is created
+      if @huddle.huddle_playbook&.organization&.root_company
+        Companies::WeeklyHuddlesReviewNotificationJob.perform_later(@huddle.huddle_playbook.organization.root_company.id)
+      end
       
       redirect_to @huddle, notice: 'Huddle created successfully!'
     else
@@ -139,6 +168,13 @@ class HuddlesController < ApplicationController
     
     # Store only the person ID in session
     session[:current_person_id] = person.id
+    
+    # Run required jobs when someone joins
+    if @huddle.huddle_playbook&.organization&.root_company
+      Companies::WeeklyHuddlesReviewNotificationJob.perform_later(@huddle.huddle_playbook.organization.root_company.id)
+    end
+    Huddles::PostAnnouncementJob.perform_later(@huddle.id)
+    Huddles::PostSummaryJob.perform_later(@huddle.id)
     
     if role_changed
       redirect_to @huddle, notice: "Role updated successfully!"
@@ -206,6 +242,11 @@ class HuddlesController < ApplicationController
         Huddles::PostAnnouncementJob.perform_and_get_result(@huddle.id)
         Huddles::PostSummaryJob.perform_and_get_result(@huddle.id)
         
+        # Run weekly summary job when feedback is updated
+        if @huddle.huddle_playbook&.organization&.root_company
+          Companies::WeeklyHuddlesReviewNotificationJob.perform_later(@huddle.huddle_playbook.organization.root_company.id)
+        end
+        
         redirect_to @huddle, notice: 'Your feedback has been updated!'
       else
         @feedback = @existing_feedback
@@ -233,6 +274,11 @@ class HuddlesController < ApplicationController
         Huddles::PostAnnouncementJob.perform_and_get_result(@huddle.id)
         Huddles::PostSummaryJob.perform_and_get_result(@huddle.id)
         Huddles::PostFeedbackJob.perform_and_get_result(@huddle.id, @feedback.id)
+        
+        # Run weekly summary job when feedback is completed
+        if @huddle.huddle_playbook&.organization&.root_company
+          Companies::WeeklyHuddlesReviewNotificationJob.perform_later(@huddle.huddle_playbook.organization.root_company.id)
+        end
         
         redirect_to @huddle, notice: 'Thank you for your feedback!'
       else
@@ -281,6 +327,36 @@ class HuddlesController < ApplicationController
     playbook = HuddlePlaybook.find(params[:playbook_id])
     authorize playbook, :show?
     
+    # Check if there's already an active huddle for this playbook this week
+    this_week_start = Time.current.beginning_of_week(:monday)
+    this_week_end = Time.current.end_of_week(:sunday)
+    
+    existing_huddle = Huddle.where(huddle_playbook: playbook)
+                           .where(started_at: this_week_start..this_week_end)
+                           .where('expires_at > ?', Time.current)
+                           .order(started_at: :desc)
+                           .first
+    
+    if existing_huddle
+      # Add the current user as a participant to the existing huddle
+      person = current_person
+      if person
+        participant = existing_huddle.huddle_participants.find_or_create_by!(person: person) do |p|
+          p.role = 'active'
+        end
+        
+        # Store the person ID in session
+        session[:current_person_id] = person.id
+        
+        # Redirect to the existing huddle with a notice
+        redirect_to huddle_path(existing_huddle), notice: 'A huddle for this playbook is already active this week. You have been added as a participant!'
+      else
+        # If no current person, redirect to join the existing huddle
+        redirect_to join_huddle_path(existing_huddle), notice: 'A huddle for this playbook is already active this week. Please join the existing huddle.'
+      end
+      return
+    end
+    
     # Create a new huddle for this playbook
     @huddle = Huddle.new(
       huddle_playbook: playbook,
@@ -292,6 +368,11 @@ class HuddlesController < ApplicationController
       # Post announcements to Slack
       Huddles::PostAnnouncementJob.perform_now(@huddle.id)
       Huddles::PostSummaryJob.perform_now(@huddle.id)
+      
+      # Run weekly summary job when huddle is created
+      if @huddle.huddle_playbook&.organization&.root_company
+        Companies::WeeklyHuddlesReviewNotificationJob.perform_later(@huddle.huddle_playbook.organization.root_company.id)
+      end
       
       redirect_to huddles_path, notice: 'Huddle started successfully! Slack notifications have been posted.'
     else
