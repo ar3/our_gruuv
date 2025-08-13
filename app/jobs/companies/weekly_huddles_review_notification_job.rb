@@ -2,63 +2,81 @@ class Companies::WeeklyHuddlesReviewNotificationJob < ApplicationJob
   queue_as :default
 
   def perform(company_id)
-    company = Company.find(company_id)
-    
-    return unless company.slack_configured?
-    return unless company.huddle_review_notification_channel
+    begin
+      company = Company.find(company_id)
+      
+      unless company.slack_configured?
+        return { success: false, error: 'Slack is not configured for this company' }
+      end
+      
+      unless company.huddle_review_notification_channel
+        return { success: false, error: 'Huddle review notification channel is not configured' }
+      end
 
-    # Get feedback stats for the past week using the service
-    stats_service = Huddles::WeeklyStatsService.new(company)
-    feedback_stats = stats_service.weekly_feedback_stats
-    
-    # Build the message
-    message = build_message(company, feedback_stats)
-    
-    # Check if a notification already exists for this week
-    week_start = Date.current.beginning_of_week(:monday)
-    existing_notification = Notification.where(
-      notifiable: company,
-      notification_type: 'huddle_summary',
-      created_at: week_start..week_start.end_of_week
-    ).first
-
-    if existing_notification
-      # Create a new notification record linked to the original
-      notification = Notification.create!(
+      # Get feedback stats for the past week using the service
+      stats_service = Huddles::WeeklyStatsService.new(company)
+      feedback_stats = stats_service.weekly_feedback_stats
+      
+      # Build the message
+      message = build_message(company, feedback_stats)
+      
+      # Check if a notification already exists for this week
+      week_start = Date.current.beginning_of_week(:monday)
+      existing_notification = Notification.where(
         notifiable: company,
         notification_type: 'huddle_summary',
-        status: 'preparing_to_send',
-        original_message_id: existing_notification.id,
-        metadata: { 
-          channel: company.huddle_review_notification_channel.third_party_id,
-          notifiable_type: 'Company',
-          notifiable_id: company.id
-        },
-        rich_message: message[:blocks],
-        fallback_text: message[:text]
-      )
+        created_at: week_start..week_start.end_of_week
+      ).first
+
+      if existing_notification
+        # Create a new notification record linked to the original
+        notification = Notification.create!(
+          notifiable: company,
+          notification_type: 'huddle_summary',
+          status: 'preparing_to_send',
+          original_message_id: existing_notification.id,
+          metadata: { 
+            channel: company.huddle_review_notification_channel.third_party_id,
+            notifiable_type: 'Company',
+            notifiable_id: company.id
+          },
+          rich_message: message[:blocks],
+          fallback_text: message[:text]
+        )
+            
+        # Send to Slack (update existing message)
+        slack_service = SlackService.new(company)
+        slack_service.update_message(notification.id)
+      else
+        # Create a new notification record
+        notification = Notification.create!(
+          notifiable: company,
+          notification_type: 'huddle_summary',
+          status: 'preparing_to_send',
+          metadata: { 
+            channel: company.huddle_review_notification_channel.third_party_id,
+            notifiable_type: 'Company',
+            notifiable_id: company.id
+          },
+          rich_message: message[:blocks],
+          fallback_text: message[:text]
+        )
+            
+        # Send to Slack
+        slack_service = SlackService.new(company)
+        slack_service.post_message(notification.id)
+      end
       
-      # Send to Slack (update existing message)
-      slack_service = SlackService.new(company)
-      slack_service.update_message(notification.id)
-    else
-      # Create a new notification record
-      notification = Notification.create!(
-        notifiable: company,
-        notification_type: 'huddle_summary',
-        status: 'preparing_to_send',
-        metadata: { 
-          channel: company.huddle_review_notification_channel.third_party_id,
-          notifiable_type: 'Company',
-          notifiable_id: company.id
-        },
-        rich_message: message[:blocks],
-        fallback_text: message[:text]
-      )
+      { success: true, error: nil }
       
-      # Send to Slack
-      slack_service = SlackService.new(company)
-      slack_service.post_message(notification.id)
+    rescue ActiveRecord::RecordNotFound => e
+      Rails.logger.error "Company not found: #{company_id}"
+      { success: false, error: "Company not found" }
+    rescue => e
+      # Log the error and return failure
+      Rails.logger.error "Weekly huddles review notification failed: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      { success: false, error: e.message }
     end
   end
 
@@ -148,4 +166,4 @@ class Companies::WeeklyHuddlesReviewNotificationJob < ApplicationJob
   def huddles_review_url(company)
     Rails.application.routes.url_helpers.huddles_review_organization_url(company)
   end
-end 
+end

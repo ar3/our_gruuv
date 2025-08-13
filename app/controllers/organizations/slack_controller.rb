@@ -24,6 +24,57 @@ class Organizations::SlackController < ApplicationController
     render json: { success: false, error: e.message }, status: :unprocessable_entity
   end
   
+  def debug_channels
+    slack_service = SlackService.new(@organization)
+    
+    # Get raw API response for debugging
+    begin
+      response = slack_service.instance_variable_get(:@client).conversations_list(
+        types: 'public_channel,private_channel,mpim,im,external_shared',
+        limit: 1000,
+        exclude_archived: true
+      )
+      
+      render json: {
+        success: true,
+        response_metadata: response['response_metadata'],
+        total_channels: response['channels']&.length || 0,
+        has_more: response['response_metadata']&.dig('next_cursor').present?,
+        next_cursor: response['response_metadata']&.dig('next_cursor'),
+        sample_channels: response['channels']&.first(5),
+        full_response: response
+      }
+    rescue => e
+      render json: { success: false, error: e.message }
+    end
+  end
+  
+  def list_all_channel_types
+    channels = SlackService.new(@organization).list_all_channel_types
+    render json: { success: true, channels: channels, count: channels.length }
+  rescue => e
+    render json: { success: false, error: e.message }, status: :unprocessable_entity
+  end
+  
+  def debug_responses
+    @debug_responses = @organization.slack_configuration&.debug_responses&.order(created_at: :desc)&.limit(50)
+    render json: @debug_responses.map { |dr| {
+      id: dr.id,
+      method: dr.request['method'],
+      params: dr.request['params'],
+      response: dr.response,
+      notes: dr.notes,
+      created_at: dr.created_at
+    }}
+  end
+  
+  def test_pagination
+    result = SlackService.new(@organization).test_pagination
+    render json: result
+  rescue => e
+    render json: { success: false, error: e.message }, status: :unprocessable_entity
+  end
+  
   def post_test_message
     message = params[:message]
     result = SlackService.new(@organization).post_test_message(message)

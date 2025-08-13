@@ -71,6 +71,12 @@ get '/login', to: 'auth#login', as: :login
         get 'oauth/authorize', to: 'slack/oauth#authorize'
         get 'oauth/callback', to: 'slack/oauth#callback'
         delete 'oauth/uninstall', to: 'slack/oauth#uninstall'
+        
+        # Debug endpoints
+        get :debug_channels
+        get :list_all_channel_types
+        get :debug_responses
+        get :test_pagination
       end
     end
   end

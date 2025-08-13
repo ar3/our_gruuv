@@ -11,9 +11,9 @@ class SlackChannelsService
     slack_service = SlackService.new(@organization)
 
     begin
-      # Get all channels the bot has access to
-      Rails.logger.info "SlackChannelsService: Calling SlackService.list_channels"
-      response = slack_service.list_channels
+      # Get all channels the bot has access to using the comprehensive method
+      Rails.logger.info "SlackChannelsService: Calling SlackService.list_all_channel_types"
+      response = slack_service.list_all_channel_types
       Rails.logger.info "SlackChannelsService: Got response: #{response.class} with #{response&.length || 0} channels"
 
       if response.is_a?(Array) && response.any?
