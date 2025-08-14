@@ -306,6 +306,21 @@ sequenceDiagram
 - **Check-in frequency enforcement** (3-month minimum)
 - **Historical progression views** for ratings over time
 
+### Phase 4: Advanced Assignment Management & Analytics (Future)
+
+#### **"Your Job Description" Page**
+- **Single-page assignment management** for employees to view/edit all their assignments
+- **Bulk edit interface** for assignment tenures and check-ins in one view
+- **Visual indicators** for energy mismatches (anticipated vs actual)
+- **Assignment completion tracking** and progress visualization
+
+#### **Organization Alignment Stats Dashboard**
+- **Check-in analytics**: Average frequency, total count per employee
+- **Assignment metrics**: Completion rates, average duration, energy utilization
+- **Organizational health**: Total positions, employees, assignment coverage
+- **Performance insights**: Rating distributions, improvement trends
+- **Manager oversight**: Check-in frequency monitoring, overdue alerts
+
 ---
 
 *This module provides the structural foundation that enables effective collaboration and transformation within organizations.*
@@ -349,11 +364,14 @@ sequenceDiagram
 - Create `AssignmentCheckIn` model with:
   - `assignment_tenure_id`
   - `check_in_date`
-  - `energy_spent_percentage` (integer 0-100)
-  - `assignment_satisfaction` (enum: very_satisfied, satisfied, neutral, dissatisfied, very_dissatisfied)
-  - `performance_rating` (enum: exceeds_expectations, meets_expectations, needs_improvement, unsatisfactory)
-  - `manager_rating` (enum: same as performance_rating)
-  - `notes` (text)
+  - `actual_energy_percentage` (integer 0-100)
+  - `employee_rating` (enum: working_to_meet, meeting, exceeding)
+  - `manager_rating` (enum: working_to_meet, meeting, exceeding)
+  - `official_rating` (enum: working_to_meet, meeting, exceeding)
+  - `employee_private_notes` (text)
+  - `manager_private_notes` (text)
+  - `shared_notes` (text)
+  - `employee_personal_alignment` (enum: love, like, neutral, prefer_not, only_if_necessary)
 - Add validations and associations
 - Write specs
 
