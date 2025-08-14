@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_12_104800) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_14_041634) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -21,6 +21,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_12_104800) do
     t.datetime "updated_at", null: false
     t.string "outcome_type"
     t.index ["assignment_id"], name: "index_assignment_outcomes_on_assignment_id"
+  end
+
+  create_table "assignment_tenures", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.bigint "assignment_id", null: false
+    t.date "started_at", null: false
+    t.date "ended_at"
+    t.integer "anticipated_energy_percentage"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assignment_id"], name: "index_assignment_tenures_on_assignment_id"
+    t.index ["person_id", "assignment_id", "started_at"], name: "idx_on_person_id_assignment_id_started_at_0a6668f47e"
+    t.index ["person_id"], name: "index_assignment_tenures_on_person_id"
+    t.check_constraint "anticipated_energy_percentage IS NULL OR anticipated_energy_percentage >= 0 AND anticipated_energy_percentage <= 100", name: "check_anticipated_energy_percentage_range"
   end
 
   create_table "assignments", force: :cascade do |t|
@@ -195,10 +209,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_12_104800) do
     t.datetime "updated_at", null: false
     t.integer "min_estimated_energy"
     t.integer "max_estimated_energy"
+    t.integer "anticipated_energy_percentage"
     t.index ["assignment_id"], name: "index_position_assignments_on_assignment_id"
     t.index ["assignment_type"], name: "index_position_assignments_on_assignment_type"
     t.index ["position_id", "assignment_id"], name: "index_position_assignments_on_position_and_assignment_unique", unique: true
     t.index ["position_id"], name: "index_position_assignments_on_position_id"
+    t.check_constraint "anticipated_energy_percentage IS NULL OR anticipated_energy_percentage >= 0 AND anticipated_energy_percentage <= 100", name: "check_anticipated_energy_percentage_range"
   end
 
   create_table "position_levels", force: :cascade do |t|
@@ -292,6 +308,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_12_104800) do
   end
 
   add_foreign_key "assignment_outcomes", "assignments"
+  add_foreign_key "assignment_tenures", "assignments"
+  add_foreign_key "assignment_tenures", "people"
   add_foreign_key "assignments", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "people"

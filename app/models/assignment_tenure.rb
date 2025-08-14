@@ -1,0 +1,46 @@
+class AssignmentTenure < ApplicationRecord
+  belongs_to :person
+  belongs_to :assignment
+
+  validates :started_at, presence: true
+  validates :ended_at, comparison: { greater_than: :started_at }, allow_nil: true
+  validates :anticipated_energy_percentage, 
+            inclusion: { in: 0..100 }, 
+            allow_nil: true
+  validate :no_overlapping_active_tenures_for_same_person_and_assignment
+
+  scope :active, -> { where(ended_at: nil) }
+  scope :inactive, -> { where.not(ended_at: nil) }
+  scope :for_person, ->(person) { where(person: person) }
+  scope :for_assignment, ->(assignment) { where(assignment: assignment) }
+  scope :most_recent_for_person_and_assignment, ->(person, assignment) { 
+    for_person(person).for_assignment(assignment).order(started_at: :desc).limit(1) 
+  }
+
+  def active?
+    ended_at.nil?
+  end
+
+  def inactive?
+    !active?
+  end
+
+  def self.most_recent_for(person, assignment)
+    most_recent_for_person_and_assignment(person, assignment).first
+  end
+
+  private
+
+  def no_overlapping_active_tenures_for_same_person_and_assignment
+    return unless person_id && assignment_id && started_at
+
+    overlapping_tenures = AssignmentTenure
+      .where(person: person, assignment: assignment)
+      .where.not(id: id) # Exclude current record if updating
+      .where('(ended_at IS NULL OR ended_at > ?) AND started_at < ?', started_at, ended_at || Date.current)
+
+    if overlapping_tenures.exists?
+      errors.add(:base, 'Cannot have overlapping active assignment tenures for the same person and assignment')
+    end
+  end
+end
