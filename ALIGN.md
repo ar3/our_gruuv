@@ -323,6 +323,35 @@ sequenceDiagram
 
 ---
 
+## 🚀 **CURRENT STATUS & NEXT STEPS**
+
+### **What We've Built So Far:**
+1. ✅ **Employment Tenure System** - Complete with person-centric management
+2. ✅ **Assignment Tenure Model** - Core tenure tracking with energy percentages  
+3. ✅ **Assignment Check-in Model** - Performance tracking with string enums
+4. ✅ **High-Value Tests** - Complex business logic validation
+
+### **Current Implementation State:**
+- **Models**: All core models complete with validations and associations
+- **Database**: Migrations complete, schema updated
+- **Tests**: Comprehensive test coverage for complex business logic
+- **Factories**: Test data factories for all models
+
+### **Next Implementation Target:**
+**Unified Assignment Management Interface** - Single page for managing both assignment tenures and check-ins:
+- Row-based design (one row per assignment)
+- Inline editing for tenure and check-in data
+- Smart business logic for creating new records vs updating
+- Stale data warnings and visual indicators
+
+### **Key Design Decisions Made:**
+- **String enums** for ratings (more Rails-y and readable)
+- **Immutable check-ins** (never update, always create new)
+- **Energy % changes trigger new tenures** (maintains history)
+- **Assignment stays visible** even when energy = 0%
+
+---
+
 *This module provides the structural foundation that enables effective collaboration and transformation within organizations.*
 
 ## Implementation Plan: People-to-Assignment Connection
@@ -338,16 +367,27 @@ sequenceDiagram
 - Add basic controller and views for CRUD operations
 - Write specs for model and controller
 
-#### Commit 2: Assignment Tenure Model (NEXT)
-- Create `AssignmentTenure` model with:
+#### Commit 2: Assignment Tenure Model ✅ **COMPLETED**
+- ✅ Create `AssignmentTenure` model with:
   - `person_id`, `assignment_id`, `started_at`, `ended_at`
-  - `employment_tenure_id` (cached reference), `manager_id` (cached), `position_id` (cached)
   - `anticipated_energy_percentage` - defines "what the assignment IS"
   - Validations: no overlapping active tenures for same person/assignment, ended_at > started_at
-- Create `AssignmentCheckIn` model with all 9 check-in fields
-- Add `anticipated_energy_percentage` to `PositionAssignment` model
-- Create controllers and basic views for both models
-- Write high-value specs for complex business logic (overlapping tenures, energy changes)
+- ✅ Create `AssignmentCheckIn` model with all 9 check-in fields
+- ✅ Add `anticipated_energy_percentage` to `PositionAssignment` model
+- ✅ Write high-value specs for complex business logic (overlapping tenures, energy changes)
+
+#### Commit 3: Unified Assignment Management Interface (NEXT)
+- Create single-page interface for managing assignments and check-ins
+- **Row-based design**: One row per assignment with tenure + latest check-in
+- **Assignment selection**: Dropdown to add new assignments to person
+- **Business logic**:
+  - Change anticipated energy % → Creates new tenure (old one gets ended_at)
+  - Change check-in data → Creates new check-in (never updates existing)
+  - Change tenure dates → Check-in becomes "stale" but still shows on edit screen
+- **UI features**:
+  - Stale check-in warnings
+  - Assignment stays visible even if energy = 0%
+  - Inline editing for both tenure and check-in data
 
 #### Commit 3: Update Existing Models
 - Add associations to existing models:
