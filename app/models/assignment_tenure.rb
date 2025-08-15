@@ -1,6 +1,7 @@
 class AssignmentTenure < ApplicationRecord
   belongs_to :person
   belongs_to :assignment
+  has_many :assignment_check_ins, dependent: :destroy
 
   validates :started_at, presence: true
   validates :ended_at, comparison: { greater_than: :started_at }, allow_nil: true

@@ -18,4 +18,8 @@ FactoryBot.define do
   trait :with_low_energy do
     anticipated_energy_percentage { rand(1..30) }
   end
+
+  trait :without_start_date do
+    started_at { nil }
+  end
 end

@@ -10,9 +10,27 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_14_041634) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_15_014620) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "assignment_check_ins", force: :cascade do |t|
+    t.bigint "assignment_tenure_id", null: false
+    t.date "check_in_date", null: false
+    t.integer "actual_energy_percentage"
+    t.string "employee_rating"
+    t.string "manager_rating"
+    t.string "official_rating"
+    t.text "employee_private_notes"
+    t.text "manager_private_notes"
+    t.text "shared_notes"
+    t.string "employee_personal_alignment"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assignment_tenure_id", "check_in_date"], name: "idx_on_assignment_tenure_id_check_in_date_1c16f3346c"
+    t.index ["assignment_tenure_id"], name: "index_assignment_check_ins_on_assignment_tenure_id"
+    t.check_constraint "actual_energy_percentage IS NULL OR actual_energy_percentage >= 0 AND actual_energy_percentage <= 100", name: "check_actual_energy_percentage_range"
+  end
 
   create_table "assignment_outcomes", force: :cascade do |t|
     t.text "description"
@@ -307,6 +325,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_14_041634) do
     t.index ["organization_id"], name: "index_third_party_objects_on_organization_id"
   end
 
+  add_foreign_key "assignment_check_ins", "assignment_tenures"
   add_foreign_key "assignment_outcomes", "assignments"
   add_foreign_key "assignment_tenures", "assignments"
   add_foreign_key "assignment_tenures", "people"
