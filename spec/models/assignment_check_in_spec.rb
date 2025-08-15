@@ -22,10 +22,10 @@ RSpec.describe AssignmentCheckIn, type: :model do
   end
 
   describe 'validations' do
-    it 'requires check_in_date' do
-      check_in = build(:assignment_check_in, check_in_date: nil)
+    it 'requires check_in_started_on' do
+      check_in = build(:assignment_check_in, check_in_started_on: nil)
       expect(check_in).not_to be_valid
-      expect(check_in.errors[:check_in_date]).to include("can't be blank")
+      expect(check_in.errors[:check_in_started_on]).to include("can't be blank")
     end
 
     it 'validates actual_energy_percentage is between 0-100' do
@@ -92,8 +92,8 @@ RSpec.describe AssignmentCheckIn, type: :model do
   end
 
   describe 'scopes' do
-    let!(:recent_check_in) { create(:assignment_check_in, assignment_tenure: assignment_tenure, check_in_date: Date.current) }
-    let!(:old_check_in) { create(:assignment_check_in, assignment_tenure: assignment_tenure, check_in_date: 1.month.ago) }
+    let!(:recent_check_in) { create(:assignment_check_in, assignment_tenure: assignment_tenure, check_in_started_on: Date.current) }
+    let!(:old_check_in) { create(:assignment_check_in, assignment_tenure: assignment_tenure, check_in_started_on: 1.month.ago) }
 
     describe '.recent' do
       it 'orders check-ins by check_in_date descending' do
@@ -175,7 +175,7 @@ RSpec.describe AssignmentCheckIn, type: :model do
 
   describe '#days_since_tenure_start' do
     let(:tenure) { create(:assignment_tenure, started_at: 10.days.ago) }
-    let(:check_in) { create(:assignment_check_in, assignment_tenure: tenure, check_in_date: Date.current) }
+    let(:check_in) { create(:assignment_check_in, assignment_tenure: tenure, check_in_started_on: Date.current) }
 
     it 'calculates days since tenure started' do
       expect(check_in.days_since_tenure_start).to eq(10)
@@ -184,6 +184,58 @@ RSpec.describe AssignmentCheckIn, type: :model do
     it 'returns nil when tenure has no started_at' do
       # This test is removed since we can't create a tenure without started_at due to validation
       # The method will handle this gracefully in production
+    end
+  end
+
+  describe 'open/closed check-ins' do
+    let(:check_in) { create(:assignment_check_in) }
+
+    it 'is open by default' do
+      expect(check_in.open?).to be true
+      expect(check_in.closed?).to be false
+    end
+
+    it 'can be closed' do
+      check_in.close!
+      expect(check_in.open?).to be false
+      expect(check_in.closed?).to be true
+      expect(check_in.check_in_ended_on).to eq(Date.current)
+    end
+
+    it 'can be closed with a specific date' do
+      specific_date = 1.week.ago.to_date
+      check_in.close!(ended_on: specific_date)
+      expect(check_in.check_in_ended_on).to eq(specific_date)
+    end
+  end
+
+  describe '.find_or_create_open_for' do
+    context 'when tenure exists' do
+      let!(:person) { create(:person) }
+      let!(:assignment) { create(:assignment) }
+      let!(:tenure) { create(:assignment_tenure, person: person, assignment: assignment) }
+
+      it 'returns existing open check-in if one exists' do
+        existing_check_in = create(:assignment_check_in, assignment_tenure: tenure)
+        result = AssignmentCheckIn.find_or_create_open_for(person, assignment)
+        expect(result).to eq(existing_check_in)
+      end
+
+      it 'creates new check-in if none exists' do
+        expect {
+          AssignmentCheckIn.find_or_create_open_for(person, assignment)
+        }.to change { AssignmentCheckIn.count }.by(1)
+      end
+    end
+
+    context 'when no tenure exists' do
+      it 'returns nil if no tenure exists' do
+        person = create(:person)
+        assignment = create(:assignment)
+        
+        result = AssignmentCheckIn.find_or_create_open_for(person, assignment)
+        expect(result).to be_nil
+      end
     end
   end
 
@@ -197,9 +249,9 @@ RSpec.describe AssignmentCheckIn, type: :model do
     end
 
     it 'calculates average for multiple check-ins' do
-      create(:assignment_check_in, assignment_tenure: tenure, check_in_date: 10.days.ago)
-      create(:assignment_check_in, assignment_tenure: tenure, check_in_date: 5.days.ago)
-      create(:assignment_check_in, assignment_tenure: tenure, check_in_date: Date.current)
+      create(:assignment_check_in, assignment_tenure: tenure, check_in_started_on: 10.days.ago)
+      create(:assignment_check_in, assignment_tenure: tenure, check_in_started_on: 5.days.ago)
+      create(:assignment_check_in, assignment_tenure: tenure, check_in_started_on: Date.current)
       
       # Differences: 5 days between 1st and 2nd, 5 days between 2nd and 3rd
       # Average: (5 + 5) / 2 = 5.0

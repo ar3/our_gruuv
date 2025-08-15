@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :assignment_check_in do
     association :assignment_tenure
-    check_in_date { Date.current }
+    check_in_started_on { Date.current }
     actual_energy_percentage { rand(10..50) }
     employee_rating { :meeting }
     manager_rating { :meeting }
@@ -38,5 +38,9 @@ FactoryBot.define do
 
   trait :prefer_not do
     employee_personal_alignment { :prefer_not }
+  end
+
+  trait :closed do
+    check_in_ended_on { Date.current }
   end
 end

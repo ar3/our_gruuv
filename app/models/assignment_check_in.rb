@@ -32,7 +32,7 @@ class AssignmentCheckIn < ApplicationRecord
   }, prefix: true
 
   # Validations
-  validates :check_in_date, presence: true
+  validates :check_in_started_on, presence: true
   validates :actual_energy_percentage, 
             inclusion: { in: 0..100 }, 
             allow_nil: true
@@ -42,9 +42,11 @@ class AssignmentCheckIn < ApplicationRecord
   validates :employee_personal_alignment, inclusion: { in: employee_personal_alignments.keys }, allow_nil: true
 
   # Scopes
-  scope :recent, -> { order(check_in_date: :desc) }
+  scope :recent, -> { order(check_in_started_on: :desc) }
   scope :for_person, ->(person) { joins(:assignment_tenure).where(assignment_tenures: { person: person }) }
   scope :for_assignment, ->(assignment) { joins(:assignment_tenure).where(assignment_tenures: { assignment: assignment }) }
+  scope :open, -> { where(check_in_ended_on: nil) }
+  scope :closed, -> { where.not(check_in_ended_on: nil) }
 
   # Instance methods
   def rating_display
@@ -68,18 +70,45 @@ class AssignmentCheckIn < ApplicationRecord
   def days_since_tenure_start
     return nil unless assignment_tenure.started_at
     
-    (check_in_date - assignment_tenure.started_at.to_date).to_i
+    (check_in_started_on - assignment_tenure.started_at.to_date).to_i
+  end
+
+  def open?
+    check_in_ended_on.nil?
+  end
+
+  def closed?
+    !open?
+  end
+
+  def close!(ended_on: Date.current)
+    update!(check_in_ended_on: ended_on)
   end
 
   def self.average_days_between_check_ins(person)
-    check_ins = for_person(person).order(:check_in_date)
+    check_ins = for_person(person).order(:check_in_started_on)
     return nil if check_ins.count < 2
     
     total_days = 0
     check_ins.each_cons(2) do |first, second|
-      total_days += (second.check_in_date - first.check_in_date).to_i
+      total_days += (second.check_in_started_on - first.check_in_started_on).to_i
     end
     
     total_days.to_f / (check_ins.count - 1)
+  end
+
+  # Find or create open check-in for a person and assignment
+  def self.find_or_create_open_for(person, assignment)
+    tenure = AssignmentTenure.most_recent_for(person, assignment)
+    return nil unless tenure
+    
+    open_check_in = tenure.assignment_check_ins.open.first
+    return open_check_in if open_check_in
+    
+    # Create new open check-in if none exists
+    tenure.assignment_check_ins.create!(
+      check_in_started_on: Date.current,
+      actual_energy_percentage: tenure.anticipated_energy_percentage
+    )
   end
 end

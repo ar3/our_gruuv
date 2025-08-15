@@ -60,6 +60,10 @@ This document contains all the rules and conventions we follow in this project t
 ### Constants
 - Avoid putting constants hardcoded in views when reasonable to do so
 
+### Database Field Naming
+- **Date fields**: Use `_on` suffix (e.g., `check_in_started_on`, `check_in_ended_on`, `started_at`, `ended_at`)
+- **Timestamp fields**: Use `_at` suffix (e.g., `created_at`, `updated_at`)
+
 ### Model Scopes & Naming
 - **Use consistent scope names** across models: `:active`, `:inactive`, `:recent`
 - **Active scopes should use `where(ended_at: nil)`** for time-based models (employment tenures, assignments)

@@ -10,13 +10,13 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_15_014620) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_15_121815) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "assignment_check_ins", force: :cascade do |t|
     t.bigint "assignment_tenure_id", null: false
-    t.date "check_in_date", null: false
+    t.date "check_in_started_on", null: false
     t.integer "actual_energy_percentage"
     t.string "employee_rating"
     t.string "manager_rating"
@@ -27,8 +27,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_15_014620) do
     t.string "employee_personal_alignment"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["assignment_tenure_id", "check_in_date"], name: "idx_on_assignment_tenure_id_check_in_date_1c16f3346c"
+    t.date "check_in_ended_on"
+    t.index ["assignment_tenure_id", "check_in_started_on"], name: "idx_on_assignment_tenure_id_check_in_started_on_44d8290cb0"
     t.index ["assignment_tenure_id"], name: "index_assignment_check_ins_on_assignment_tenure_id"
+    t.index ["check_in_ended_on"], name: "index_assignment_check_ins_on_check_in_ended_on"
     t.check_constraint "actual_energy_percentage IS NULL OR actual_energy_percentage >= 0 AND actual_energy_percentage <= 100", name: "check_actual_energy_percentage_range"
   end
 
