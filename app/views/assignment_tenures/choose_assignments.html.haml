@@ -1,0 +1,42 @@
+.container-fluid
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1 Choose Assignments for #{@person.display_name}
+        = link_to "Back to Assignment Management", person_assignment_tenures_path(@person), class: "btn btn-outline-secondary"
+
+  .row
+    .col-12
+      .card
+        .card-header
+          %h5.mb-0 Select Assignments to Add
+          %small.text-muted Choose which assignments you'd like to add to your profile
+
+        .card-body
+          - if @available_assignments.any?
+            = form_with url: update_assignments_person_assignment_tenures_path(@person), method: :post, local: true do |form|
+              .row
+                - @available_assignments.each do |assignment|
+                  .col-md-6.mb-3
+                    .card
+                      .card-body
+                        .form-check
+                          = form.check_box "assignments[]", 
+                                          { class: "form-check-input", id: "assignment_#{assignment.id}" },
+                                          assignment.id, nil
+                          = form.label "assignment_#{assignment.id}", class: "form-check-label" do
+                            %strong= assignment.title
+                            %br
+                            %small.text-muted= assignment.company.name
+                            %br
+                            %small.text-muted= assignment.tagline
+
+              .row.mt-4
+                .col-12
+                  .d-flex.justify-content-between
+                    = link_to "Back to Assignment Management", person_assignment_tenures_path(@person), class: "btn btn-outline-secondary"
+                    = form.submit "Add Selected Assignments", class: "btn btn-primary"
+          - else
+            .text-center.py-4
+              %p.text-muted No additional assignments available to add.
+              = link_to "Back to Assignment Management", person_assignment_tenures_path(@person), class: "btn btn-primary"

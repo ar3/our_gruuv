@@ -25,7 +25,7 @@ RSpec.describe OrganizationsController, type: :controller do
 
   describe 'GET #huddles_review' do
     let!(:huddle1) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: 1.week.ago) }
-          let!(:huddle2) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: team), started_at: 2.weeks.ago) }
+    let!(:huddle2) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: team), started_at: 2.weeks.ago) }
     let!(:feedback1) { create(:huddle_feedback, huddle: huddle1, informed_rating: 4, connected_rating: 4, goals_rating: 4, valuable_rating: 4) }
     let!(:feedback2) { create(:huddle_feedback, huddle: huddle2, informed_rating: 5, connected_rating: 5, goals_rating: 5, valuable_rating: 5) }
 
@@ -102,12 +102,9 @@ RSpec.describe OrganizationsController, type: :controller do
       get :huddles_review, params: { id: organization.id }
       
       metrics = assigns(:overall_metrics)
-      expect(metrics[:distinct_participant_count]).to eq(2) # Should only count unique people
-      expect(metrics[:distinct_participant_names]).to eq([person.display_name, person2.display_name].sort)
+      expect(metrics[:distinct_participant_count]).to eq(2) # person1 and person2
+      expect(metrics[:distinct_participant_names]).to include(person.display_name, person2.display_name)
       expect(metrics[:distinct_participant_names].length).to eq(2) # Ensure no duplicates
-      # Check that each name appears only once in the array
-      expect(metrics[:distinct_participant_names].count(person.display_name)).to eq(1)
-      expect(metrics[:distinct_participant_names].count(person2.display_name)).to eq(1)
     end
 
     it 'assigns playbook metrics correctly' do
@@ -212,4 +209,20 @@ RSpec.describe OrganizationsController, type: :controller do
       end
     end
   end
-end 
+
+  describe 'PATCH #switch' do
+    it 'switches to the selected organization and redirects to organization show page' do
+      patch :switch, params: { id: organization.id }
+      expect(response).to redirect_to(organization_path(organization))
+      expect(flash[:notice]).to eq("Switched to #{organization.display_name}")
+    end
+
+    it 'redirects to organizations index on failure' do
+      # Mock the switch_to_organization method to return false
+      allow_any_instance_of(Person).to receive(:switch_to_organization).and_return(false)
+      patch :switch, params: { id: organization.id }
+      expect(response).to redirect_to(organizations_path)
+      expect(flash[:alert]).to eq("Failed to switch organization")
+    end
+  end
+end

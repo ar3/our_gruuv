@@ -1,0 +1,97 @@
+.container-fluid
+  - if current_person == @person
+    .row.mb-3
+      .col-12
+        .alert.alert-info.text-center.py-3
+          %h4.mb-2 🎯 Modify Your Job Description
+          %p.mb-0 Use this page to adjust your assignment energy percentages and provide check-ins on how things are going.
+  
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1 Assignment Management for #{@person.display_name}
+        = link_to "Back to Profile", person_path(@person), class: "btn btn-outline-secondary"
+  .row
+    .col-12
+      .card
+        .card-header
+          %h5.mb-0 Current Position
+        .card-body
+          .position-info.mb-4.p-3.bg-light.rounded
+            .row.align-items-center
+              .col-md-8
+                %p.mb-0
+                  %strong= @current_employment.position.display_name
+                  %br
+                  %small.text-muted
+                    Company: #{@current_employment.company.name}
+                    %br
+                    Started: #{@current_employment.started_at.strftime('%B %d, %Y')}
+                    - if @current_employment.ended_at
+                      %br
+                      Ended: #{@current_employment.ended_at.strftime('%B %d, %Y')}
+                    - else
+                      %br
+                      %span.text-success Duration: #{((Date.current - @current_employment.started_at.to_date).to_i / 30.44).round(1)} months
+              .col-md-4.text-end
+                = link_to "View Position Details", edit_position_path(@current_employment.position), class: "btn btn-outline-primary btn-sm"
+  .row
+    .col-12
+      .card
+        .card-header
+          .d-flex.justify-content-between.align-items-center
+            %h5.mb-0 My Assignments
+            = link_to "Choose Assignments", choose_assignments_person_assignment_tenures_path(@person), class: "btn btn-primary"
+
+        .card-body
+          - if @assignment_data.any?
+            = form_with url: person_assignment_tenures_path(@person), method: :patch, local: true do |form|
+              - @assignment_data.each do |data|
+                .assignment-row.mb-4.p-3.border.rounded
+                  .row
+                    .col-md-3
+                      %h6= data[:assignment].title
+                      %small.text-muted= data[:assignment].company.name
+                    
+                    .col-md-9
+                      .row
+                        .col-md-6
+                          .mb-3
+                            = form.label "tenure_#{data[:assignment].id}_anticipated_energy", "Anticipated Energy %", class: "form-label"
+                            = form.select "tenure_#{data[:assignment].id}_anticipated_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:tenure]&.anticipated_energy_percentage), { prompt: 'Select energy %...' }, { class: "form-select" }
+
+                  - if data[:open_check_in]
+                    .row.mt-3
+                      .col-12
+                        %h6.text-primary Check-in Information
+                        .row
+                          .col-md-4
+                            .mb-3
+                              = form.label "check_in_#{data[:open_check_in].id}_actual_energy", "Actual Energy %", class: "form-label"
+                              = form.select "check_in_#{data[:open_check_in].id}_actual_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:open_check_in].actual_energy_percentage), { prompt: 'Select energy %...' }, { class: "form-select" }
+                          
+                          .col-md-4
+                            .mb-3
+                              = form.label "check_in_#{data[:open_check_in].id}_employee_rating", "My Rating", class: "form-label"
+                              = form.select "check_in_#{data[:open_check_in].id}_employee_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], data[:open_check_in].employee_rating), { prompt: 'Select rating...' }, { class: "form-select" }
+                          
+                          .col-md-4
+                            .mb-3
+                              = form.label "check_in_#{data[:open_check_in].id}_personal_alignment", "Personal Alignment", class: "form-label"
+                              = form.select "check_in_#{data[:open_check_in].id}_personal_alignment", options_for_select([['I love this', 'love'], ['I like this', 'like'], ['I\'m neutral', 'neutral'], ['I prefer not to do this', 'prefer_not'], ['Only if necessary', 'only_if_necessary']], data[:open_check_in].employee_personal_alignment), { prompt: 'Select alignment...' }, { class: "form-select" }
+
+                        .row
+                          .col-12
+                            .mb-3
+                              = form.label "check_in_#{data[:open_check_in].id}_employee_private_notes", "Private Notes", class: "form-label"
+                              = form.text_area "check_in_#{data[:open_check_in].id}_employee_private_notes", value: data[:open_check_in].employee_private_notes, rows: 2, class: "form-control", placeholder: "Notes for my eyes only..."
+
+              .row.mt-4
+                .col-12
+                  .d-flex.justify-content-between
+                    = link_to "Back to Profile", person_path(@person), class: "btn btn-outline-secondary"
+                    = form.submit "Update Assignments", class: "btn btn-primary"
+          - else
+            .text-center.py-4
+              %p.text-muted No assignments found for your current position.
+              = link_to "Choose Assignments", choose_assignments_person_assignment_tenures_path(@person), class: "btn btn-primary"

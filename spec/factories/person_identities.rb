@@ -2,7 +2,7 @@ FactoryBot.define do
   factory :person_identity do
     association :person
     provider { 'google_oauth2' }
-    sequence(:uid) { |n| "google_uid_#{n}" }
+    sequence(:uid) { |n| "google_uid_#{SecureRandom.hex(8)}_#{n}" }
     sequence(:email) { |n| "user#{n}@example.com" }
     name { "Test User" }
     profile_image_url { "https://lh3.googleusercontent.com/a/test" }

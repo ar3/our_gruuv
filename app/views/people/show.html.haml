@@ -5,7 +5,10 @@
         .card-header.bg-primary.text-white
           %h3.mb-0
             %i.bi.bi-person-circle.me-2
-            My Profile
+            - if @person == @current_person
+              My Profile
+            - else
+              = @person.display_name
         
         .card-body
           .row
@@ -38,16 +41,18 @@
                 = @person.created_at.strftime('%B %d, %Y')
           
           .mt-4
-            = link_to edit_profile_path, class: "btn btn-primary" do
-              %i.bi.bi-pencil.me-2
-              Edit Profile
+            - if @person == @current_person
+              = link_to edit_profile_path, class: "btn btn-primary" do
+                %i.bi.bi-pencil.me-2
+                Edit Profile
 
         / Identity Management Section
-        .card.mt-4
-          .card-header.bg-info.text-white
-            %h5.mb-0
-              %i.bi.bi-shield-lock.me-2
-              Connected Accounts
+        - if @person == @current_person
+          .card.mt-4
+            .card-header.bg-info.text-white
+              %h5.mb-0
+                %i.bi.bi-shield-lock.me-2
+                Connected Accounts
         
           .card-body
             - if @person.person_identities.any?
@@ -86,6 +91,7 @@
             
             -# .mt-3
             -#   = connect_google_button 
+          
 
         / Employment History Section
         .card.mt-4
@@ -119,8 +125,9 @@
                             .col-md-4.text-end
                               .btn-group.btn-group-sm
                                 = link_to 'View', person_employment_tenure_path(@person, active_tenure), class: 'btn btn-outline-primary btn-sm'
-                                = link_to 'Change Employment', change_person_employment_tenures_path(@person, company_id: company.id), class: 'btn btn-warning btn-sm'
-                                = link_to 'Terminate', edit_person_employment_tenure_path(@person, active_tenure), class: 'btn btn-outline-danger btn-sm'
+                                - if @person == @current_person
+                                  = link_to 'Change Employment', change_person_employment_tenures_path(@person, company_id: company.id), class: 'btn btn-warning btn-sm'
+                                  = link_to 'Terminate', edit_person_employment_tenure_path(@person, active_tenure), class: 'btn btn-outline-danger btn-sm'
                   
                   - historical_tenures = company_tenures.reject(&:active?).first(5)
                   - if historical_tenures.any?
@@ -138,22 +145,45 @@
                       = link_to "View all history", employment_summary_person_employment_tenure_path(@person, company_tenures.first), class: 'btn btn-sm btn-outline-secondary'
                   
                   .mt-3
-                    - if active_tenure
-                      = link_to change_person_employment_tenures_path(@person, company_id: company.id), class: 'btn btn-warning btn-sm' do
-                        %i.bi.bi-arrow-repeat.me-1
-                        Change Employment
-                    - else
-                      = link_to change_person_employment_tenures_path(@person, company_id: company.id), class: 'btn btn-success btn-sm' do
-                        %i.bi.bi-plus.me-1
-                        Add Employment
+                    - if @person == @current_person
+                      - if active_tenure
+                        = link_to change_person_employment_tenures_path(@person, company_id: company.id), class: 'btn btn-warning btn-sm' do
+                          %i.bi.bi-arrow-repeat.me-1
+                          Change Employment
+                      - else
+                        = link_to change_person_employment_tenures_path(@person, company_id: company.id), class: 'btn btn-success btn-sm' do
+                          %i.bi.bi-plus.me-1
+                          Add Employment
               
               .mt-4
-                = link_to new_person_employment_tenure_path(@person), class: 'btn btn-success' do
-                  %i.bi.bi-plus.me-2
-                  Add Employment at New Company
+                - if @person == @current_person
+                  = link_to new_person_employment_tenure_path(@person), class: 'btn btn-success' do
+                    %i.bi.bi-plus.me-2
+                    Add Employment at New Company
             - else
               %p.text-muted No employment history found.
               .mt-3
-                = link_to new_person_employment_tenure_path(@person), class: 'btn btn-success' do
-                  %i.bi.bi-plus.me-2
-                  Add Your First Employment Tenure 
+                - if @person == @current_person
+                  = link_to new_person_employment_tenure_path(@person), class: 'btn btn-success' do
+                    %i.bi.bi-plus.me-2
+                    Add Your First Employment Tenure
+
+        / Assignment Management Section
+        .card.mt-4
+          .card-header.bg-info.text-white
+            %h5.mb-0
+              %i.bi.bi-list-task.me-2
+              Assignment Management
+        
+          .card-body
+            .text-center.py-3
+              - if @person == @current_person
+                %p.text-muted Manage your assignments and check-ins in one place.
+                = link_to person_assignment_tenures_path(@person), class: 'btn btn-info' do
+                  %i.bi.bi-gear.me-2
+                  Manage Assignments
+              - else
+                %p.text-muted View assignments and check-ins for this person.
+                = link_to person_assignment_tenures_path(@person), class: 'btn btn-info' do
+                  %i.bi.bi-gear.me-2
+                  View Assignments 

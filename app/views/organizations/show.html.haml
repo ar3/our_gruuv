@@ -239,3 +239,23 @@
                   .col-12
                     .h4.text-info= @teams&.count || 0
                     %small.text-muted Teams
+          
+          - if @organization.company?
+            .card
+              .card-header.d-flex.justify-content-between.align-items-center
+                %h5.mb-0 Employee Stats
+                = link_to organization_employees_path(@organization), class: "btn btn-outline-primary btn-sm" do
+                  %i.bi.bi-people.me-1
+                  View All
+              .card-body
+                .row.text-center
+                  .col-6
+                    .h4.text-success= @organization.employees.count
+                    %small.text-muted Active Employees
+                  .col-6
+                    .h4.text-info= @organization.positions.count
+                    %small.text-muted Total Positions
+                .row.text-center.mt-3
+                  .col-12
+                    .h4.text-warning= @organization.huddle_participants.count
+                    %small.text-muted Huddle Participants

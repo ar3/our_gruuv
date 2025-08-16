@@ -81,6 +81,19 @@ class Organization < ApplicationRecord
     Position.joins(:position_type).where(position_types: { organization: self })
   end
 
+  def huddle_participants
+    # People who have participated in huddles within this organization and all child organizations
+    Person
+      .joins(huddle_participants: { huddle: :huddle_playbook })
+      .where(huddle_playbooks: { organization_id: self_and_descendants })
+      .distinct(:id).order(:last_name)
+  end
+
+  def just_huddle_participants
+    # People who participated in huddles but are not active employees
+    huddle_participants.where.not(id: employees.select(:id))
+  end
+
   def recent_huddle_playbooks(include_descendants: false, weeks_back: 6)
     start_date = weeks_back.weeks.ago
     organizations_to_search = include_descendants ? self_and_descendants : [self]

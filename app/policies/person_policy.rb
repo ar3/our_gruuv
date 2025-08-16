@@ -1,6 +1,6 @@
 class PersonPolicy < ApplicationPolicy
   def show?
-    # Users can view their own profile, admins can view any profile
+    # Users can view their own profile and assignment management, admins can view any
     user == record || user.admin?
   end
 
@@ -14,14 +14,26 @@ class PersonPolicy < ApplicationPolicy
     user == record || user.admin?
   end
 
+  def choose_assignments?
+    # Users can choose assignments for themselves, admins can choose for anyone
+    user == record || user.admin?
+  end
+
+  def update_assignments?
+    # Users can update assignments for themselves, admins can update for anyone
+    user == record || user.admin?
+  end
+
+
+
   def edit?
     # Users can only edit their own profile
     user == record
   end
 
   def update?
-    # Users can only update their own profile
-    user == record
+    # Users can update their own profile and assignments, admins can update any
+    user == record || user.admin?
   end
 
   def create?

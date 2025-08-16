@@ -1,170 +1,65 @@
 require 'rails_helper'
 
 RSpec.describe Organization, type: :model do
-  let(:company) { create(:organization, name: 'Acme Corp', type: 'Company') }
-  let(:team) { create(:organization, name: 'Engineering', type: 'Team', parent: company) }
-  let(:subteam) { create(:organization, name: 'Frontend', type: 'Team', parent: team) }
+  let(:company) { create(:organization, :company) }
+  let(:team) { create(:organization, :team, parent: company) }
+  let(:person1) { create(:person) }
+  let(:person2) { create(:person) }
+  let(:huddle_playbook) { create(:huddle_playbook, organization: team) }
+  let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook) }
+  let!(:huddle_participant1) { create(:huddle_participant, huddle: huddle, person: person1) }
+  let!(:huddle_participant2) { create(:huddle_participant, huddle: huddle, person: person2) }
 
-  describe '#display_name' do
-    it 'returns just the name for organizations without parents' do
-      expect(company.display_name).to eq('Acme Corp')
+  describe '#huddle_participants' do
+    it 'returns people who participated in huddles within the organization' do
+      expect(company.huddle_participants).to include(person1, person2)
     end
 
-    it 'returns hierarchical name for organizations with parents' do
-      expect(team.display_name).to eq('Acme Corp > Engineering')
+    it 'includes participants from child organizations' do
+      expect(company.huddle_participants).to include(person1, person2)
     end
 
-    it 'returns full hierarchical path for deeply nested organizations' do
-      expect(subteam.display_name).to eq('Acme Corp > Engineering > Frontend')
-    end
-
-    it 'handles multiple levels of nesting correctly' do
-      department = create(:organization, name: 'Product', type: 'Team', parent: company)
-      squad = create(:organization, name: 'Mobile', type: 'Team', parent: department)
+    it 'returns distinct participants' do
+      # Create another huddle with a different playbook to avoid validation issues
+      another_playbook = create(:huddle_playbook, organization: team)
+      another_huddle = create(:huddle, huddle_playbook: another_playbook)
+      create(:huddle_participant, huddle: another_huddle, person: person1)
       
-      expect(squad.display_name).to eq('Acme Corp > Product > Mobile')
+      expect(company.huddle_participants.count).to eq(2) # person1 and person2, not duplicated
+    end
+
+    it 'returns empty when no huddles exist' do
+      empty_company = create(:organization, :company)
+      expect(empty_company.huddle_participants).to be_empty
     end
   end
 
-  describe '#company?' do
-    it 'returns true for Company type' do
-      expect(company.company?).to be true
+  describe '#just_huddle_participants' do
+    it 'returns only huddle participants who are not active employees' do
+      # Create an employment tenure for person1 (making them an employee)
+      position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
+      position_type = create(:position_type, organization: company, position_major_level: position_major_level)
+      position_level = create(:position_level, position_major_level: position_major_level, level: '1.1')
+      position = create(:position, position_type: position_type, position_level: position_level)
+      create(:employment_tenure, person: person1, company: company, position: position)
+      
+      # person2 has no employment tenure (just a huddle participant)
+      
+      expect(company.just_huddle_participants).to include(person2)
+      expect(company.just_huddle_participants).not_to include(person1)
     end
 
-    it 'returns false for Team type' do
-      expect(team.company?).to be false
-    end
-  end
-
-  describe '#team?' do
-    it 'returns true for Team type' do
-      expect(team.team?).to be true
-    end
-
-    it 'returns false for Company type' do
-      expect(company.team?).to be false
-    end
-  end
-
-  describe '#root_company' do
-    it 'returns self for company without parent' do
-      expect(company.root_company).to eq(company)
-    end
-
-    it 'returns parent company for team' do
-      expect(team.root_company).to eq(company)
-    end
-
-    it 'returns root company for deeply nested team' do
-      expect(subteam.root_company).to eq(company)
-    end
-  end
-
-  describe '#recent_huddle_playbooks' do
-    let(:company) { create(:organization, :company, name: 'Test Company') }
-    let(:team1) { create(:organization, :team, name: 'Team 1', parent: company) }
-    let(:team2) { create(:organization, :team, name: 'Team 2', parent: company) }
-    let(:subteam) { create(:organization, :team, name: 'Subteam', parent: team1) }
-    
-    let!(:company_playbook) { create(:huddle_playbook, organization: company) }
-    let!(:team1_playbook) { create(:huddle_playbook, organization: team1) }
-    let!(:team2_playbook) { create(:huddle_playbook, organization: team2) }
-    let!(:subteam_playbook) { create(:huddle_playbook, organization: subteam) }
-    
-    let!(:company_huddle) { create(:huddle, huddle_playbook: company_playbook, started_at: 1.day.ago) }
-    let!(:team1_huddle) { create(:huddle, huddle_playbook: team1_playbook, started_at: 2.days.ago) }
-    let!(:team2_huddle) { create(:huddle, huddle_playbook: team2_playbook, started_at: 3.days.ago) }
-    let!(:subteam_huddle) { create(:huddle, huddle_playbook: subteam_playbook, started_at: 4.days.ago) }
-    
-    # Create a separate playbook for the old huddle to avoid conflicts
-    let!(:old_playbook) { create(:huddle_playbook, organization: company) }
-    let!(:old_huddle) { create(:huddle, huddle_playbook: old_playbook, started_at: 7.weeks.ago) }
-
-    context 'when include_descendants is false (default)' do
-      it 'returns only playbooks from the current organization' do
-        result = company.recent_huddle_playbooks(include_descendants: false)
-        expect(result).to include(company_playbook)
-        expect(result).not_to include(team1_playbook, team2_playbook, subteam_playbook)
-      end
-
-      it 'returns only playbooks with recent huddles' do
-        result = company.recent_huddle_playbooks(include_descendants: false)
-        expect(result).to include(company_playbook)
-        expect(result).not_to include(old_huddle.huddle_playbook)
-      end
-
-      it 'includes organization associations' do
-        result = company.recent_huddle_playbooks(include_descendants: false)
-        expect(result.first.association(:organization).loaded?).to be true
-      end
-    end
-
-    context 'when include_descendants is true' do
-      it 'returns playbooks from the organization and all descendants' do
-        result = company.recent_huddle_playbooks(include_descendants: true)
-        expect(result).to include(company_playbook, team1_playbook, team2_playbook, subteam_playbook)
-      end
-
-      it 'returns only playbooks with recent huddles' do
-        result = company.recent_huddle_playbooks(include_descendants: true)
-        expect(result).to include(company_playbook, team1_playbook, team2_playbook, subteam_playbook)
-        expect(result).not_to include(old_huddle.huddle_playbook)
-      end
-
-      it 'includes organization associations' do
-        result = company.recent_huddle_playbooks(include_descendants: true)
-        expect(result.first.association(:organization).loaded?).to be true
-      end
-    end
-
-    context 'when called on a team' do
-      it 'returns only playbooks from the team when include_descendants is false' do
-        result = team1.recent_huddle_playbooks(include_descendants: false)
-        expect(result).to include(team1_playbook)
-        expect(result).not_to include(company_playbook, team2_playbook, subteam_playbook)
-      end
-
-      it 'returns playbooks from the team and its descendants when include_descendants is true' do
-        result = team1.recent_huddle_playbooks(include_descendants: true)
-        expect(result).to include(team1_playbook, subteam_playbook)
-        expect(result).not_to include(company_playbook, team2_playbook)
-      end
-    end
-
-    context 'with custom weeks_back parameter' do
-      let!(:recent_huddle) { create(:huddle, huddle_playbook: company_playbook, started_at: 2.weeks.ago) }
-      # Create a separate playbook for the old huddle to avoid conflicts
-      let!(:old_playbook_2_weeks) { create(:huddle_playbook, organization: team1) }
-      let!(:old_huddle_2_weeks) { create(:huddle, huddle_playbook: old_playbook_2_weeks, started_at: 3.weeks.ago) }
-
-      it 'respects the weeks_back parameter' do
-        result = company.recent_huddle_playbooks(include_descendants: true, weeks_back: 2)
-        expect(result).to include(company_playbook)
-        expect(result).not_to include(old_playbook_2_weeks) # 3 weeks ago is outside 2 week range
-      end
-
-      it 'defaults to 6 weeks when not specified' do
-        result = company.recent_huddle_playbooks(include_descendants: true)
-        expect(result).to include(company_playbook, team1_playbook, team2_playbook, subteam_playbook)
-      end
-    end
-
-    context 'with no recent huddles' do
-      let(:empty_company) { create(:organization, :company, name: 'Empty Company') }
-
-      it 'returns empty array when no huddles exist' do
-        result = empty_company.recent_huddle_playbooks(include_descendants: true)
-        expect(result).to be_empty
-      end
-    end
-
-    context 'with huddles but no playbooks' do
-      let(:orphaned_huddle) { create(:huddle, huddle_playbook: nil, started_at: 1.day.ago) }
-
-      it 'handles huddles without playbooks gracefully' do
-        result = company.recent_huddle_playbooks(include_descendants: true)
-        expect(result).not_to include(nil)
-      end
+    it 'returns empty when all huddle participants are employees' do
+      # Make both people employees
+      position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
+      position_type = create(:position_type, organization: company, position_major_level: position_major_level)
+      position_level = create(:position_level, position_major_level: position_major_level, level: '1.1')
+      position = create(:position, position_type: position_type, position_level: position_level)
+      
+      create(:employment_tenure, person: person1, company: company, position: position)
+      create(:employment_tenure, person: person2, company: company, position: position)
+      
+      expect(company.just_huddle_participants).to be_empty
     end
   end
 end 

@@ -93,7 +93,15 @@ class PeopleController < ApplicationController
   end
 
   def set_person
-    @person = current_person
+    # If params[:id] is present, find that person; otherwise use current_person
+    if params[:id].present?
+      @person = Person.find(params[:id])
+    else
+      @person = current_person
+    end
+    
+    # Always set @current_person for the view
+    @current_person = current_person
   end
 
 

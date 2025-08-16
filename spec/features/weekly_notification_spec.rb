@@ -25,10 +25,15 @@ RSpec.feature "Weekly Notification", type: :feature do
     # Sign in as the person using session
     page.set_rack_session(current_person_id: person.id)
     
+    # Mock Slack environment variables
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with('SLACK_BOT_TOKEN').and_return('xoxb-test-token')
+    
     # Mock the Slack service calls
     allow_any_instance_of(SlackService).to receive(:post_message).and_return("success")
     allow_any_instance_of(SlackService).to receive(:update_message).and_return("success")
     allow_any_instance_of(SlackService).to receive(:list_channels).and_return([{"id" => "C123", "name" => "general"}])
+    allow_any_instance_of(SlackService).to receive(:list_all_channel_types).and_return([{"id" => "C123", "name" => "general"}])
   end
 
   scenario "Page loads without HAML syntax errors" do

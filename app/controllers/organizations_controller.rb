@@ -6,6 +6,8 @@ class OrganizationsController < ApplicationController
     @organizations = Organization.all.order(:type, :name)
     @current_organization = current_person.current_organization_or_default
   end
+
+
   
   def show
     # Load teams if this is a company
@@ -52,9 +54,9 @@ class OrganizationsController < ApplicationController
   
   def switch
     if current_person.switch_to_organization(@organization)
-      redirect_back(fallback_location: organizations_path, notice: "Switched to #{@organization.display_name}")
+      redirect_to organization_path(@organization), notice: "Switched to #{@organization.display_name}"
     else
-      redirect_back(fallback_location: organizations_path, alert: "Failed to switch organization")
+      redirect_to organizations_path, alert: "Failed to switch organization"
     end
   end
   

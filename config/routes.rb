@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  
   get "dashboard/index"
   get "auth/google_oauth2_callback"
   get "positions/index"
@@ -56,6 +57,8 @@ get '/login', to: 'auth#login', as: :login
       post :trigger_weekly_notification
     end
     
+    resources :employees, only: [:index], controller: 'organizations/employees'
+    
     resources :huddle_playbooks, module: :organizations
     
     # Slack integration nested under organizations
@@ -105,17 +108,25 @@ get '/login', to: 'auth#login', as: :login
   get '/my-huddles', to: 'huddles#my_huddles', as: :my_huddles
   
   # People routes
-resources :people, only: [:index, :show, :edit, :update] do
-  resources :employment_tenures, only: [:new, :create, :edit, :update, :destroy, :show] do
-    collection do
-      get :change
-      get :add_history
+  resources :people, only: [:index, :show, :edit, :update] do
+    resources :employment_tenures, only: [:new, :create, :edit, :update, :destroy, :show] do
+      collection do
+        get :change
+        get :add_history
+      end
+      member do
+        get :employment_summary
+      end
     end
-    member do
-      get :employment_summary
+    
+    # Assignment tenures - unified interface for managing assignments and check-ins
+    resource :assignment_tenures, only: [:show, :update] do
+      collection do
+        get :choose_assignments
+        post :update_assignments
+      end
     end
   end
-end
 
 # Profile management
 get '/profile', to: 'people#show', as: :profile

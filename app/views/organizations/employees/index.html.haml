@@ -1,0 +1,129 @@
+.container.mt-4
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1.mb-0 Employees & Participants - #{@organization.display_name}
+        = link_to organization_path(@organization), class: "btn btn-outline-secondary" do
+          %i.bi.bi-arrow-left.me-2
+          Back to Organization
+
+  .row
+    .col-md-8
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-briefcase.me-2
+            Active Employees
+            %span.badge.bg-success.ms-2= @active_employees.count
+        .card-body
+          - if @active_employees.any?
+            .table-responsive
+              %table.table.table-hover
+                %thead
+                  %tr
+                    %th Name
+                    %th Position
+                    %th Started
+                    %th Huddles
+                    %th Actions
+                %tbody
+                  - @active_employees.each do |employee|
+                    - current_tenure = employee.employment_tenures.active.first
+                    - if current_tenure
+                      %tr
+                        %td
+                          = link_to employee.display_name, person_path(employee), class: "text-decoration-none", data: { bs_toggle: "tooltip", bs_title: "ID: #{employee.id} | Name: #{employee.display_name} | Email: #{employee.email}" }
+                        %td
+                          - if current_tenure.position
+                            = current_tenure.position.display_name
+                          - else
+                            %span.text-muted No position
+                        %td
+                          %small.text-muted= current_tenure.started_at.strftime('%b %Y')
+                        %td
+                          %span.badge.bg-info= @organization.huddle_participants.where(id: employee.id).count
+                        %td
+                          .btn-group.btn-group-sm
+                            = link_to person_path(employee), class: "btn btn-outline-primary" do
+                              %i.bi.bi-eye
+                            = link_to person_assignment_tenures_path(employee), class: "btn btn-outline-info" do
+                              %i.bi.bi-list-task
+                    - else
+                      %tr
+                        %td{colspan: 5}
+                          %p.text-muted.text-center No active employees found
+          - else
+            .text-center.py-4
+              %p.text-muted No active employees found for this organization.
+
+      .card
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-people.me-2
+            Huddle Participants (Non-Employees)
+            %span.badge.bg-warning.ms-2= @just_huddle_participants.count
+        .card-body
+          - if @just_huddle_participants.any?
+            .table-responsive
+              %table.table.table-hover
+                %thead
+                  %tr
+                    %th Name
+                    %th Huddles Participated
+                    %th Last Participation
+                    %th Actions
+                %tbody
+                  - @just_huddle_participants.each do |participant|
+                    - huddle_count = @organization.huddle_participants.where(id: participant.id).count
+                    - last_huddle = participant.huddle_participants.joins(:huddle).order('huddles.started_at DESC').first
+                    %tr
+                      %td
+                        = link_to participant.display_name, person_path(participant), class: "text-decoration-none", data: { bs_toggle: "tooltip", bs_title: "ID: #{participant.id} | Name: #{participant.display_name} | Email: #{participant.email}" }
+                      %td
+                        %span.badge.bg-info= huddle_count
+                      %td
+                        - if last_huddle
+                          %small.text-muted= last_huddle.huddle.started_at.strftime('%b %Y')
+                        - else
+                          %span.text-muted Unknown
+                      %td
+                        .btn-group.btn-group-sm
+                          = link_to person_path(participant), class: "btn btn-outline-primary" do
+                            %i.bi.bi-eye
+          - else
+            .text-center.py-4
+              %p.text-muted No additional huddle participants found.
+
+    .col-md-4
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Quick Stats
+        .card-body
+          .row.text-center
+            .col-6
+              .h4.text-success= @active_employees.count
+              %small.text-muted Active Employees
+            .col-6
+              .h4.text-info= @organization.positions.count
+              %small.text-muted Total Positions
+          .row.text-center.mt-3
+            .col-12
+              .h4.text-warning= @huddle_participants.count
+              %small.text-muted Total Participants
+          .row.text-center.mt-3
+            .col-12
+              .h4.text-primary= @just_huddle_participants.count
+              %small.text-muted Non-Employee Participants
+
+      .card
+        .card-header
+          %h5.mb-0 Quick Actions
+        .card-body
+          .d-grid.gap-2
+
+            = link_to new_organization_path(parent_id: @organization.id), class: "btn btn-primary" do
+              %i.bi.bi-plus-circle.me-2
+              Add Team/Department
+            = link_to organization_path(@organization), class: "btn btn-outline-secondary" do
+              %i.bi.bi-building.me-2
+              Back to Organization
