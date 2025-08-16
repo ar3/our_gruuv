@@ -25,13 +25,13 @@ This document outlines the vision for core system functionality that spans acros
 ## DOING 🔄
 
 ### Authorization System
-**Current Sprint: Person Organization Access Model**
-- [ ] Create `PersonOrganizationAccess` model with `organization_id` (not company_id)
-- [ ] Add `can_manage_employment` boolean capability
-- [ ] Add `can_manage_maap` boolean capability  
-- [ ] Create migration and update schema
-- [ ] Add model specs and factories
-- [ ] Update authorization policies to use new access model
+**Current Sprint: Person Organization Access Model** ✅ **COMPLETED**
+- ✅ Create `PersonOrganizationAccess` model with `organization_id` (not company_id)
+- ✅ Add `can_manage_employment` boolean capability
+- ✅ Add `can_manage_maap` boolean capability  
+- ✅ Create migration and update schema
+- ✅ Add model specs and factories
+- ✅ Implement hierarchical permission checking
 
 **Next Sprint: Employment Management UI**
 - [ ] Create new page for adding person + employment simultaneously
