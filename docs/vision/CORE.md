@@ -24,16 +24,17 @@ This document outlines the vision for core system functionality that spans acros
 
 ## DOING 🔄
 
-### Authorization System
-**Current Sprint: Person Organization Access Model** ✅ **COMPLETED**
-- ✅ Create `PersonOrganizationAccess` model with `organization_id` (not company_id)
-- ✅ Add `can_manage_employment` boolean capability
-- ✅ Add `can_manage_maap` boolean capability  
-- ✅ Create migration and update schema
-- ✅ Add model specs and factories
-- ✅ Implement hierarchical permission checking
+### **Current OKR: Employment Management Security**
+**Objective: Allow all employees of an organization to have their employment to be managed in a safe and secure way**
 
-**Next Sprint: Employment Management UI**
+**Key Results:**
+1. **100% of employment management actions require proper authorization** (using our new PersonOrganizationAccess model)
+2. **All employment data is accessible only to authorized personnel** (employment managers can see their org + descendants)
+3. **Employment creation/editing interface is available and functional** (the UI we're about to build)
+4. **Employment data integrity is maintained** (no overlapping tenures, proper validation)
+5. **Audit trail exists for all employment changes** (we can track who made what changes)
+
+### **Current Sprint: Employment Management UI**
 - [ ] Create new page for adding person + employment simultaneously
 - [ ] Add authorization checks to employment management actions
 - [ ] Implement disabled button states with permission tooltips

@@ -378,16 +378,26 @@ sequenceDiagram
 
 ## DOING 🔄
 
-### **Current Sprint: Authorization Integration**
-- [ ] Integrate with new `PersonOrganizationAccess` model
-- [ ] Add authorization checks to employment management
-- [ ] Add authorization checks to assignment management
-- [ ] Update UI to show disabled states with permission tooltips
+### **Current OKR: Assignment Check-in Habit Formation**
+**Objective: CareerPlug creates a habit of actionable feedback and fairness calibration by using Assignment Check-ins**
 
-### **Next Sprint: Employment Management UI**
+**Key Results:**
+1. **All CareerPlug Product employees are set up as employees in OurGruuv**
+2. **All CareerPlug product employees have employment with their real positions in OurGruuv**
+3. **80% of CareerPlug employees have 2+ Assignment check-ins logged**
+4. **50% of the managers have visited the assignment-check-in-calibration page of a sibling-manager's employee**
+5. **50% of the managers that visit "diagonally-related" employees have submitted a piece of note-worthy feedback about an assignment rating/check-in**
+6. **All CareerPlug Abilities exist in OurGruuv**
+
+### **Current Sprint: Employment Management UI**
 - [ ] Create new page for adding person + employment simultaneously
 - [ ] Add authorization checks to employment management actions
 - [ ] Implement disabled button states with permission tooltips
+
+### **Next Sprint: Assignment Check-in System**
+- [ ] Build assignment check-in creation and management interface
+- [ ] Implement check-in rating and feedback system
+- [ ] Create manager calibration and review workflows
 
 ### **Future Sprint: MAAP Management UI**
 - [ ] Add authorization checks to position/assignment management
