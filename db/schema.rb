@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_15_121815) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_16_124137) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -221,6 +221,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_15_121815) do
     t.index ["provider", "uid"], name: "index_person_identities_on_provider_and_uid", unique: true
   end
 
+  create_table "person_organization_accesses", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.bigint "organization_id", null: false
+    t.boolean "can_manage_employment"
+    t.boolean "can_manage_maap"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["can_manage_employment"], name: "index_person_organization_accesses_on_can_manage_employment"
+    t.index ["can_manage_maap"], name: "index_person_organization_accesses_on_can_manage_maap"
+    t.index ["organization_id"], name: "index_person_organization_accesses_on_organization_id"
+    t.index ["person_id", "organization_id"], name: "index_person_org_access_on_person_and_org", unique: true
+    t.index ["person_id"], name: "index_person_organization_accesses_on_person_id"
+  end
+
   create_table "position_assignments", force: :cascade do |t|
     t.bigint "position_id", null: false
     t.bigint "assignment_id", null: false
@@ -347,6 +361,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_15_121815) do
   add_foreign_key "organizations", "organizations", column: "parent_id"
   add_foreign_key "people", "organizations", column: "current_organization_id"
   add_foreign_key "person_identities", "people"
+  add_foreign_key "person_organization_accesses", "organizations"
+  add_foreign_key "person_organization_accesses", "people"
   add_foreign_key "position_assignments", "assignments"
   add_foreign_key "position_assignments", "positions"
   add_foreign_key "position_levels", "position_major_levels"

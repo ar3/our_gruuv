@@ -64,6 +64,15 @@ This document contains all the rules and conventions we follow in this project t
 - **Date fields**: Use `_on` suffix (e.g., `check_in_started_on`, `check_in_ended_on`, `started_at`, `ended_at`)
 - **Timestamp fields**: Use `_at` suffix (e.g., `created_at`, `updated_at`)
 
+## UX Rules
+
+### Authorization & Permission Display
+- **Don't hide things**: Show all actions but disable unauthorized ones
+- **Clear feedback**: Use warning icons next to disabled buttons/links
+- **Helpful tooltips**: Explain what permission is needed for each action
+- **Consistent patterns**: Use the same UI patterns across all permission checks
+- **Visual indicators**: Use consistent icons and colors for permission states
+
 ### Model Scopes & Naming
 - **Use consistent scope names** across models: `:active`, `:inactive`, `:recent`
 - **Active scopes should use `where(ended_at: nil)`** for time-based models (employment tenures, assignments)

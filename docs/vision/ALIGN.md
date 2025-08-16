@@ -1,6 +1,30 @@
-# Align
+# ALIGN Vision Board
 
 The Align module focuses on organizational structure, position management, and assignment tracking. It provides the foundation for understanding how work is organized and distributed within organizations.
+
+## DONE ✅
+
+### Core Models & Infrastructure
+- ✅ `EmploymentTenure` model with person/company/position associations
+- ✅ `AssignmentTenure` model with energy percentage tracking
+- ✅ `AssignmentCheckIn` model with comprehensive check-in fields
+- ✅ Organization hierarchy (Company > Department > Team)
+- ✅ Position management (Type, Level, Position)
+- ✅ Assignment system with outcomes and external references
+- ✅ Comprehensive test coverage (872 examples, 0 failures)
+
+### Assignment Management System
+- ✅ Unified assignment management interface
+- ✅ Row-based design for managing assignments and check-ins
+- ✅ Business logic for tenure changes and check-in creation
+- ✅ Assignment selection and management
+- ✅ Check-in system with ratings and notes
+
+### Organization Management
+- ✅ Organization employee listing with huddle participants
+- ✅ Person profile viewing for any person (not just current user)
+- ✅ Organization switching with proper redirects
+- ✅ Employee stats and organizational data display
 
 ## Overview
 
@@ -349,6 +373,48 @@ sequenceDiagram
 - **Immutable check-ins** (never update, always create new)
 - **Energy % changes trigger new tenures** (maintains history)
 - **Assignment stays visible** even when energy = 0%
+
+---
+
+## DOING 🔄
+
+### **Current Sprint: Authorization Integration**
+- [ ] Integrate with new `PersonOrganizationAccess` model
+- [ ] Add authorization checks to employment management
+- [ ] Add authorization checks to assignment management
+- [ ] Update UI to show disabled states with permission tooltips
+
+### **Next Sprint: Employment Management UI**
+- [ ] Create new page for adding person + employment simultaneously
+- [ ] Add authorization checks to employment management actions
+- [ ] Implement disabled button states with permission tooltips
+
+### **Future Sprint: MAAP Management UI**
+- [ ] Add authorization checks to position/assignment management
+- [ ] Implement disabled button states with permission tooltips
+- [ ] Update existing forms to respect new permissions
+
+---
+
+## DREAMING 💭
+
+### **Advanced Assignment Management**
+- Auto-save functionality for the unified interface
+- Former assignments section with reactivation capability
+- Assignment templates and bulk operations
+- Assignment dependency tracking
+
+### **Performance Analytics**
+- Organization-level alignment stats dashboard
+- Average timespan between check-ins
+- Energy utilization analytics
+- Assignment satisfaction trends
+
+### **Integration & Automation**
+- External system integration (Asana, Jira, etc.)
+- Automated check-in reminders
+- Performance review automation
+- Assignment rotation suggestions
 
 ---
 

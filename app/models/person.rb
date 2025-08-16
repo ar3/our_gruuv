@@ -6,6 +6,7 @@ class Person < ApplicationRecord
   has_many :person_identities, dependent: :destroy
   has_many :employment_tenures, dependent: :destroy
   has_many :assignment_tenures, dependent: :destroy
+  has_many :person_organization_accesses, dependent: :destroy
   belongs_to :current_organization, class_name: 'Organization', optional: true
   
   # Callbacks
@@ -98,6 +99,15 @@ class Person < ApplicationRecord
   
   def last_huddle_team
     last_huddle&.organization&.team? ? last_huddle.organization : nil
+  end
+  
+  # Permission checking methods
+  def can_manage_employment?(organization)
+    PersonOrganizationAccess.can_manage_employment_in_hierarchy?(self, organization)
+  end
+  
+  def can_manage_maap?(organization)
+    PersonOrganizationAccess.can_manage_maap_in_hierarchy?(self, organization)
   end
   
   # Identity methods

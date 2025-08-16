@@ -12,6 +12,11 @@ FactoryBot.define do
       association :parent, factory: [:organization, :company]
     end
     
+    trait :department do
+      type { 'Department' }
+      association :parent, factory: [:organization, :company]
+    end
+    
     trait :with_slack_config do
       after(:create) do |organization|
         create(:slack_configuration, organization: organization)
