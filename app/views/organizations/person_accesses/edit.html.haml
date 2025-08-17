@@ -1,0 +1,43 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-8
+      .card
+        .card-header.bg-warning.text-dark
+          %h3.mb-0
+            %i.bi.bi-key.me-2
+            Edit Organization Permission for #{@organization.name}
+        
+        .card-body
+          = form_with url: organization_person_access_path(@organization, @person_organization_access), method: :patch, local: true do |form|
+            .mb-3
+              = form.label :can_manage_employment, 'Employment Management', class: 'form-label'
+              .form-check
+                = form.radio_button :can_manage_employment, true, class: 'form-check-input'
+                = form.label :can_manage_employment_true, 'Yes - Can manage employment', class: 'form-check-label'
+              .form-check
+                = form.radio_button :can_manage_employment, false, class: 'form-check-input'
+                = form.label :can_manage_employment_false, 'No - Cannot manage employment', class: 'form-check-label'
+              .form-check
+                = form.radio_button :can_manage_employment, nil, class: 'form-check-input'
+                = form.label :can_manage_employment_nil, 'Inherit from parent organization', class: 'form-check-label'
+            
+            .mb-3
+              = form.label :can_manage_maap, 'MAAP Management', class: 'form-label'
+              .form-check
+                = form.radio_button :can_manage_maap, true, class: 'form-check-input'
+                = form.label :can_manage_maap_true, 'Yes - Can manage MAAP', class: 'form-check-label'
+              .form-check
+                = form.radio_button :can_manage_maap, false, class: 'form-check-input'
+                = form.label :can_manage_maap_false, 'No - Cannot manage MAAP', class: 'form-check-label'
+              .form-check
+                = form.radio_button :can_manage_maap, nil, class: 'form-check-input'
+                = form.label :can_manage_maap_nil, 'Inherit from parent organization', class: 'form-check-label'
+            
+            .d-flex.justify-content-between
+              = link_to 'Cancel', profile_path, class: 'btn btn-secondary'
+              .d-flex.gap-2
+                = link_to 'Delete', organization_person_access_path(@organization, @person_organization_access),
+                  method: :delete,
+                  class: 'btn btn-danger',
+                  data: { confirm: 'Are you sure you want to remove this permission?' }
+                = form.submit 'Update Permission', class: 'btn btn-success'

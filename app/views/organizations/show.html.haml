@@ -244,9 +244,13 @@
             .card
               .card-header.d-flex.justify-content-between.align-items-center
                 %h5.mb-0 Employee Stats
-                = link_to organization_employees_path(@organization), class: "btn btn-outline-primary btn-sm" do
-                  %i.bi.bi-people.me-1
-                  View All
+                .btn-group.btn-group-sm
+                  = link_to new_employee_organization_employees_path(@organization), class: "btn btn-success btn-sm" do
+                    %i.bi.bi-person-plus.me-1
+                    Add Employee
+                  = link_to organization_employees_path(@organization), class: "btn btn-outline-primary btn-sm" do
+                    %i.bi.bi-people.me-1
+                    View All
               .card-body
                 .row.text-center
                   .col-6

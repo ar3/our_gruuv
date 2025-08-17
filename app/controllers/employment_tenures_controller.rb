@@ -145,6 +145,8 @@ class EmploymentTenuresController < ApplicationController
     params.require(:employment_tenure).permit(:company_id, :position_id, :manager_id, :started_at, :ended_at, :employment_change_notes)
   end
 
+
+
   def require_authentication
     unless current_person
       redirect_to root_path, alert: 'Please log in to access employment tenures.'

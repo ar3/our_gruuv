@@ -2,11 +2,17 @@ require 'rails_helper'
 
 RSpec.describe 'people/show', type: :view do
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com', timezone: 'Eastern Time (US & Canada)') }
+  let(:organization) { create(:organization, type: 'Company') }
 
   before do
     assign(:person, person)
     assign(:employment_tenures, [])
     assign(:current_person, person)
+    
+    # Manually define the current_organization method on the view
+    org = organization # Capture the variable
+    view.define_singleton_method(:current_organization) { org }
+    
     render
   end
 

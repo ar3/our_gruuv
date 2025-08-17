@@ -73,6 +73,12 @@ This document contains all the rules and conventions we follow in this project t
 - **Consistent patterns**: Use the same UI patterns across all permission checks
 - **Visual indicators**: Use consistent icons and colors for permission states
 
+## Development Rules
+
+### Debugging & Testing
+- **Use `rails runner` instead of `rails console`** for quick debugging and testing
+- **Avoid opening interactive consoles** unless actually needed for manual testing
+
 ### Model Scopes & Naming
 - **Use consistent scope names** across models: `:active`, `:inactive`, `:recent`
 - **Active scopes should use `where(ended_at: nil)`** for time-based models (employment tenures, assignments)

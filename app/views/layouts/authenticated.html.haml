@@ -87,7 +87,7 @@
                     %li.dropdown-header
                       %small.text-muted Current Organization
                     %li
-                      %span.dropdown-item.text-primary
+                      = link_to organization_path(current_organization), class: "dropdown-item text-primary" do
                         %i.bi.bi-building.me-2
                         = current_organization.display_name
                         - if current_organization.team?

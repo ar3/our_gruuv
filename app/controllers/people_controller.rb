@@ -16,6 +16,7 @@ class PeopleController < ApplicationController
     @employment_tenures = @person.employment_tenures.includes(:company, :position, :manager)
                                  .order(started_at: :desc)
                                  .decorate
+    @person_organization_accesses = @person.person_organization_accesses.includes(:organization)
   end
 
   def edit

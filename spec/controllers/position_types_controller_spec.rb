@@ -19,14 +19,14 @@ RSpec.describe PositionTypesController, type: :controller do
         source_position # Create the source position
       end
 
-      it 'does not redirect to nil' do
+      it 'successfully clones positions without errors' do
         expect {
           post :clone_positions, params: { 
             id: position_type.id, 
             source_position_id: source_position.id, 
             target_level_ids: [position_level.id] 
           }
-        }.not_to raise_error(ActionController::ActionControllerError, /Cannot redirect to nil/)
+        }.not_to raise_error
       end
 
       it 'redirects to position_type with success message when positions are created' do

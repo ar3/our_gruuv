@@ -57,7 +57,15 @@ get '/login', to: 'auth#login', as: :login
       post :trigger_weekly_notification
     end
     
-    resources :employees, only: [:index], controller: 'organizations/employees'
+    resources :employees, only: [:index, :new, :create], controller: 'organizations/employees' do
+      collection do
+        get :new_employee
+        post :create_employee
+      end
+    end
+    
+    # Person access permissions within organization context
+    resources :person_accesses, only: [:new, :create, :edit, :update, :destroy], controller: 'organizations/person_accesses'
     
     resources :huddle_playbooks, module: :organizations
     
@@ -113,6 +121,7 @@ get '/login', to: 'auth#login', as: :login
       collection do
         get :change
         get :add_history
+
       end
       member do
         get :employment_summary
@@ -127,6 +136,8 @@ get '/login', to: 'auth#login', as: :login
       end
     end
   end
+
+  # Organization access permissions - moved to organization namespace
 
 # Profile management
 get '/profile', to: 'people#show', as: :profile

@@ -135,6 +135,8 @@ class ApplicationController < ActionController::Base
     @current_person
   end
 
+  helper_method :current_organization
+  
   def current_organization
     return nil unless current_person
     current_person.current_organization_or_default

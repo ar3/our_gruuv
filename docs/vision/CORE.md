@@ -34,10 +34,46 @@ This document outlines the vision for core system functionality that spans acros
 4. **Employment data integrity is maintained** (no overlapping tenures, proper validation)
 5. **Audit trail exists for all employment changes** (we can track who made what changes)
 
-### **Current Sprint: Employment Management UI**
+### **Current Sprint: Employment Management Interface** (Waypoint 1)
 - [ ] Create new page for adding person + employment simultaneously
-- [ ] Add authorization checks to employment management actions
-- [ ] Implement disabled button states with permission tooltips
+- [ ] Include comprehensive employment data validation
+- [ ] Add high-quality test coverage
+- **Deliverable**: Functional employment creation interface with validation
+- **Commit**: "feat: create employment management interface"
+
+### **Next Waypoints:**
+**Waypoint 2: Authorization Integration** (Security-focused)
+- [ ] Integrate PersonOrganizationAccess checks into employment actions
+- [ ] Add authorization to employment create/edit/destroy actions
+- [ ] Add high-quality test coverage
+- **Deliverable**: Secure employment management with proper permissions
+
+**Waypoint 3: Data Access Control** (Security-focused)
+- [ ] Implement organization-scoped data access (org + descendants)
+- [ ] Ensure employment data is only visible to authorized personnel
+- [ ] Add high-quality test coverage
+- **Deliverable**: Proper data isolation and access control
+
+**Waypoint 4: Audit Trail System** (Compliance-focused)
+- [ ] Create audit logging for employment changes
+- [ ] Track who made what changes and when
+- [ ] Add high-quality test coverage
+- **Deliverable**: Complete audit trail for employment modifications
+
+**Waypoint 5: PersonAccessesController Test Coverage** (Quality-focused)
+- [ ] Review and implement valuable PersonAccessesController specs
+- [ ] Focus on authorization, CRUD operations, and edge cases
+- [ ] Ensure proper organization-scoped access testing
+- [ ] Remove temporary `xit` skips and add comprehensive coverage
+- **Deliverable**: Robust test coverage for organization-scoped access management
+
+## DREAMING 🌟
+
+### **Organization-Centric User Experience**
+- **Profile page becomes current-organization-centric**: User profile shows information about other organizations but requires switching organizational context to engage with organization-specific features
+- **Organization-scoped access management**: PersonOrganizationAccess management lives within the organization namespace, not as a standalone controller
+- **Context switching for cross-organization work**: Users must switch to specific organization context to manage positions, assignments, huddles, and access for that organization
+- **Unified organization management**: All organization-specific operations (employment, access, positions, etc.) are managed from within that organization's context
 
 **Future Sprint: MAAP Management UI**
 - [ ] Add authorization checks to position/assignment management

@@ -1,0 +1,75 @@
+.container.mt-4
+  .row
+    .col-md-8
+      .card
+        .card-header
+          h3.mb-0 Add New Employee to #{@organization.name}
+        .card-body
+          = form_with model: [@organization, @person, @employment_tenure], url: create_employee_organization_employees_path(@organization), local: true do |form|
+            .row
+              .col-md-6
+                h4.mb-3 Person Information
+                .mb-3
+                  = form.label :first_name, class: 'form-label'
+                  = form.text_field :first_name, class: 'form-control', required: true
+                
+                .mb-3
+                  = form.label :last_name, class: 'form-label'
+                  = form.text_field :last_name, class: 'form-control', required: true
+                
+                .mb-3
+                  = form.label :email, class: 'form-label'
+                  = form.email_field :email, class: 'form-control', required: true
+                
+                .mb-3
+                  = form.label :phone_number, class: 'form-label'
+                  = form.telephone_field :phone_number, class: 'form-control'
+                
+                .mb-3
+                  = form.label :timezone, class: 'form-label'
+                  = form.select :timezone, 
+                    ActiveSupport::TimeZone.all.map { |tz| [tz.name, tz.name] },
+                    { selected: 'Eastern Time (US & Canada)' },
+                    { class: 'form-select' }
+              
+              .col-md-6
+                h4.mb-3 Employment Information
+                .mb-3
+                  = form.label :position_id, 'Position', class: 'form-label'
+                  = form.select :position_id,
+                    @positions.map { |position| ["#{position.position_type.name} - #{position.position_level.name}", position.id] },
+                    { prompt: 'Select a position' },
+                    { class: 'form-select', required: true }
+                
+                .mb-3
+                  = form.label :manager_id, 'Manager', class: 'form-label'
+                  = form.select :manager_id,
+                    @managers.map { |manager| [manager.display_name, manager.id] },
+                    { prompt: 'Select a manager (optional)' },
+                    { class: 'form-select' }
+                
+                .mb-3
+                  = form.label :started_at, 'Start Date', class: 'form-label'
+                  = form.date_field :started_at, value: Date.current, class: 'form-control', required: true
+                
+                .mb-3
+                  = form.label :employment_change_notes, 'Notes', class: 'form-label'
+                  = form.text_area :employment_change_notes, class: 'form-control', rows: 3
+            
+            .d-flex.justify-content-between
+              = link_to 'Cancel', organization_employees_path(@organization), class: 'btn btn-secondary'
+              = form.submit 'Create Employee', class: 'btn btn-primary'
+
+  .row.mt-4
+    .col-12
+      .card
+        .card-header
+          h4.mb-0 Instructions
+        .card-body
+          p This form allows you to create a new employee for #{@organization.name}.
+          p 
+            strong Note: 
+            | The new employee will be automatically set up with their employment and can access the system immediately.
+          p 
+            strong Required fields: 
+            | First name, last name, email, position, and start date.

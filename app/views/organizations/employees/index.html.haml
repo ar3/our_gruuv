@@ -120,6 +120,9 @@
           %h5.mb-0 Quick Actions
         .card-body
           .d-grid.gap-2
+            = link_to new_employee_organization_employees_path(@organization), class: "btn btn-success" do
+              %i.bi.bi-person-plus.me-2
+              Add Employee
 
             = link_to new_organization_path(parent_id: @organization.id), class: "btn btn-primary" do
               %i.bi.bi-plus-circle.me-2

@@ -93,6 +93,72 @@
             -#   = connect_google_button 
           
 
+                / Permissions Section
+        - if @person == @current_person && current_organization
+          .card.mt-4
+            .card-header.bg-warning.text-dark
+              %h5.mb-0
+                %i.bi.bi-key.me-2
+                Organization Permissions for #{current_organization.name}
+        
+            .card-body
+              - current_access = @person.person_organization_accesses.find_by(organization: current_organization)
+              - if current_access
+                .table-responsive
+                  %table.table.table-hover
+                    %thead
+                      %tr
+                        %th Permission Type
+                        %th Status
+                        %th Actions
+                    %tbody
+                      %tr
+                        %td Employment Management
+                        %td
+                          - if current_access.can_manage_employment?
+                            %span.badge.bg-success Yes
+                          - elsif current_access.can_manage_employment.nil?
+                            %span.badge.bg-warning Inherited
+                          - else
+                            %span.badge.bg-secondary No
+                        %td
+                          = link_to edit_organization_person_access_path(current_organization, current_access), class: 'btn btn-outline-primary btn-sm' do
+                            %i.bi.bi-pencil.me-1
+                            Edit
+                      %tr
+                        %td MAAP Management
+                        %td
+                          - if current_access.can_manage_maap?
+                            %span.badge.bg-success Yes
+                          - elsif current_access.can_manage_maap.nil?
+                            %span.badge.bg-warning Inherited
+                          - elsif current_access.can_manage_maap == false
+                            %span.badge.bg-secondary No
+                          - else
+                            %span.badge.bg-secondary No
+                        %td
+                          = link_to edit_organization_person_access_path(current_organization, current_access), class: 'btn btn-outline-primary btn-sm' do
+                            %i.bi.bi-pencil.me-1
+                            Edit
+                
+                .mt-3
+                  .d-flex.gap-2
+                    = link_to edit_organization_person_access_path(current_organization, current_access), class: 'btn btn-warning' do
+                      %i.bi.bi-pencil.me-2
+                      Edit Permissions
+                    = link_to organization_person_access_path(current_organization, current_access),
+                      method: :delete,
+                      class: 'btn btn-danger',
+                      data: { confirm: 'Are you sure you want to remove this permission?' } do
+                      %i.bi.bi-trash.me-2
+                      Remove Permission
+              - else
+                %p.text-muted No permissions set for this organization.
+                .mt-3
+                  = link_to new_organization_person_access_path(current_organization), class: 'btn btn-success' do
+                    %i.bi.bi-plus.me-2
+                    Add Organization Permission
+
         / Employment History Section
         .card.mt-4
           .card-header.bg-success.text-white
