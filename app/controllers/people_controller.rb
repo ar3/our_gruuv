@@ -1,5 +1,5 @@
 class PeopleController < ApplicationController
-  before_action :require_login
+  before_action :require_login, except: [:public]
   before_action :set_person, except: [:index]
   after_action :verify_authorized, except: :index
   after_action :verify_policy_scoped, only: :index
@@ -14,6 +14,34 @@ class PeopleController < ApplicationController
   def show
     authorize @person
     @employment_tenures = @person.employment_tenures.includes(:company, :position, :manager)
+                                 .order(started_at: :desc)
+                                 .decorate
+    @person_organization_accesses = @person.person_organization_accesses.includes(:organization)
+  end
+
+  def public
+    authorize @person
+    # Public view - minimal data, no sensitive information
+    @employment_tenures = @person.employment_tenures.includes(:organization)
+                                 .order(started_at: :desc)
+                                 .decorate
+  end
+
+  def teammate
+    authorize @person
+    # Teammate view - organization-specific data for active employees
+    @current_organization = current_person&.current_organization
+    @employment_tenures = @person.employment_tenures.includes(:organization, :position, :position_type)
+                                 .order(started_at: :desc)
+                                 .decorate
+    @person_organization_accesses = @person.person_organization_accesses.includes(:organization)
+  end
+
+  def manager
+    authorize @person
+    # Manager view - full access to all data and management capabilities
+    @current_organization = current_person&.current_organization
+    @employment_tenures = @person.employment_tenures.includes(:organization, :position, :position_type, :manager)
                                  .order(started_at: :desc)
                                  .decorate
     @person_organization_accesses = @person.person_organization_accesses.includes(:organization)

@@ -56,6 +56,7 @@ This document contains all the rules and conventions we follow in this project t
 ### Method Design
 - Methods should be as small as possible, following Sandi Metz's rules for code maintainability
 - Keep methods focused and single-purpose
+- Follow SOLID principles when appropriate, especially DRY (Don't Repeat Yourself) - use partials and abstractions for identical/near-identical code
 
 ### Constants
 - Avoid putting constants hardcoded in views when reasonable to do so

@@ -4,6 +4,42 @@ class PersonPolicy < ApplicationPolicy
     user == record || user.admin?
   end
 
+  def public?
+    # Public profiles are accessible to anyone (no authentication required)
+    true
+  end
+
+  def teammate?
+    # Teammates can view each other's profiles within the same organization
+    return false unless user && record
+    
+    # Check if both users are active employees in the same organization
+    user_org = user.current_organization
+    record_org = record.current_organization
+    
+    return false unless user_org && record_org
+    return false unless user_org == record_org
+    
+    # Both must be active employees in the same organization
+    user.active_employment_tenure_in?(user_org) && record.active_employment_tenure_in?(record_org)
+  end
+
+  def manager?
+    # Managers can view detailed profiles of people they manage
+    return false unless user && record
+    
+    # User can access if they have employment management permissions
+    return true if user.can_manage_employment?(record.current_organization)
+    
+    # User can access if they are in the managerial hierarchy
+    return true if user.in_managerial_hierarchy_of?(record)
+    
+    # User can always access their own manager view
+    return true if user == record
+    
+    false
+  end
+
   def employment_summary?
     # Users can view their own employment summary, admins can view any
     user == record || user.admin?

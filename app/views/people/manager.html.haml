@@ -1,0 +1,169 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-8
+      .card
+        .card-header.bg-warning.text-dark
+          %h3.mb-0
+            %i.bi.bi-gear.me-2
+            #{@person.full_name} - Manager View
+        
+        .card-body
+          / Current Organization Information
+          - if @current_organization
+            .row.mb-4
+              .col-12
+                %h5.text-muted Current Organization: #{@current_organization.name}
+                
+                / Current Position
+                - current_tenure = @employment_tenures.find { |t| t.organization == @current_organization && t.ended_at.nil? }
+                - if current_tenure&.position&.position_type
+                  .alert.alert-success
+                    %strong Current Position:
+                    = current_tenure.position.position_type.name
+                    - if current_tenure.started_at
+                      %br
+                      %small Started: #{current_tenure.started_at.strftime("%B %d, %Y")}
+                    - if current_tenure.manager
+                      %br
+                      %small Reports to: #{current_tenure.manager.full_name}
+                
+                / Organization Access
+                - org_access = @person_organization_accesses.find { |a| a.organization == @current_organization }
+                - if org_access
+                  .alert.alert-info
+                    %strong Organization Access:
+                    %br
+                    - if org_access.can_manage_employment?
+                      %span.badge.bg-warning.me-2 Employment Management
+                    - if org_access.can_manage_maap?
+                      %span.badge.bg-warning.me-2 MAAP Management
+                    - if !org_access.can_manage_employment? && !org_access.can_manage_maap?
+                      %span.badge.bg-secondary Standard Access
+                    
+                    .mt-2
+                      = link_to edit_organization_person_access_path(@current_organization, org_access), class: 'btn btn-outline-primary btn-sm' do
+                        %i.bi.bi-pencil.me-1
+                        Edit Access
+                - else
+                  .alert.alert-warning
+                    %strong No Access Configured
+                    .mt-2
+                      = link_to new_organization_person_access_path(@current_organization), class: 'btn btn-outline-success btn-sm' do
+                        %i.bi.bi-plus.me-1
+                        Add Access
+          
+          / Employment Management
+          .row.mb-4
+            .col-12
+              %h5.text-muted Employment Management
+              .d-flex.gap-2.mb-3
+                = link_to new_person_employment_tenure_path(@person), class: 'btn btn-success btn-sm' do
+                  %i.bi.bi-plus.me-1
+                  Add Employment
+                = link_to change_person_employment_tenures_path(@person), class: 'btn btn-primary btn-sm' do
+                  %i.bi.bi-arrow-repeat.me-1
+                  Change Employment
+              
+              - if @employment_tenures.any?
+                .table-responsive
+                  %table.table.table-hover
+                    %thead
+                      %tr
+                        %th Organization
+                        %th Position
+                        %th Manager
+                        %th Start Date
+                        %th End Date
+                        %th Actions
+                    %tbody
+                      - @employment_tenures.each do |tenure|
+                        %tr
+                          %td= tenure.organization.name
+                          %td
+                            - if tenure.position&.position_type
+                              = tenure.position.position_type.name
+                            - else
+                              %span.text-muted No position
+                          %td
+                            - if tenure.manager
+                              = tenure.manager.full_name
+                            - else
+                              %span.text-muted No manager
+                          %td= tenure.started_at.strftime("%B %d, %Y")
+                          %td
+                            - if tenure.ended_at
+                              = tenure.ended_at.strftime("%B %d, %Y")
+                            - else
+                              %span.badge.bg-success Active
+                          %td
+                            .btn-group.btn-group-sm
+                              = link_to edit_person_employment_tenure_path(@person, tenure), class: 'btn btn-outline-primary btn-sm' do
+                                %i.bi.bi-pencil
+                              = link_to person_employment_tenure_path(@person, tenure), method: :delete, class: 'btn btn-outline-danger btn-sm', data: { confirm: 'Are you sure?' } do
+                                %i.bi.bi-trash
+              - else
+                %p.text-muted No employment history found.
+          
+          / Huddle Stats (Placeholder)
+          .row.mb-4
+            .col-12
+              %h5.text-muted Huddle Participation & Performance
+              .alert.alert-info
+                %i.bi.bi-info-circle.me-2
+                %strong Coming Soon:
+                Detailed huddle participation statistics, feedback analysis, and performance metrics will be displayed here.
+          
+          / Other Organizations
+          .row.mb-4
+            .col-12
+              %h5.text-muted Other Organizations
+              - other_tenures = @employment_tenures.reject { |t| t.organization == @current_organization }
+              - if other_tenures.any?
+                .table-responsive
+                  %table.table.table-hover
+                    %thead
+                      %tr
+                        %th Organization
+                        %th Position
+                        %th Status
+                        %th Start Date
+                        %th End Date
+                    %tbody
+                      - other_tenures.each do |tenure|
+                        %tr
+                          %td= tenure.organization.name
+                          %td
+                            - if tenure.position&.position_type
+                              = tenure.position.position_type.name
+                            - else
+                              %span.text-muted No position
+                          %td
+                            - if tenure.ended_at.nil?
+                              %span.badge.bg-success Active
+                            - else
+                              %span.badge.bg-secondary Former
+                          %td= tenure.started_at.strftime("%B %Y")
+                          %td
+                            - if tenure.ended_at
+                              = tenure.ended_at.strftime("%B %Y")
+                            - else
+                              %span.text-muted Present
+              - else
+                %p.text-muted No other organizational affiliations.
+          
+          / View Options
+          .row
+            .col-12
+              %hr
+              .d-flex.justify-content-between.align-items-center
+                %small.text-muted
+                  %i.bi.bi-gear.me-1
+                  Manager View
+                .btn-group.btn-group-sm
+                  = link_to public_person_path(@person), class: 'btn btn-outline-primary btn-sm' do
+                    %i.bi.bi-eye.me-1
+                    Public View
+                  
+                  = link_to teammate_person_path(@person), class: 'btn btn-outline-info btn-sm' do
+                    %i.bi.bi-people.me-1
+                    Teammate View

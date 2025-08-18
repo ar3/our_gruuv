@@ -117,6 +117,11 @@ get '/login', to: 'auth#login', as: :login
   
   # People routes
   resources :people, only: [:index, :show, :edit, :update] do
+    member do
+      get :public
+      get :teammate
+      get :manager
+    end
     resources :employment_tenures, only: [:new, :create, :edit, :update, :destroy, :show] do
       collection do
         get :change

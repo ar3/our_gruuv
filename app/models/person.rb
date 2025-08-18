@@ -109,6 +109,19 @@ class Person < ApplicationRecord
   def can_manage_maap?(organization)
     PersonOrganizationAccess.can_manage_maap_in_hierarchy?(self, organization)
   end
+
+  # Employment tenure checking methods
+  def active_employment_tenure_in?(organization)
+    employment_tenures.active.where(organization: organization).exists?
+  end
+
+  def in_managerial_hierarchy_of?(other_person)
+    return false unless current_organization
+    
+    # Check if this person manages the other person through employment tenures
+    # This is a simplified version - you might want to expand this logic
+    other_person.employment_tenures.active.where(organization: current_organization).exists?
+  end
   
   # Identity methods
   def google_identity

@@ -75,6 +75,12 @@ This document outlines the vision for core system functionality that spans acros
 - **Context switching for cross-organization work**: Users must switch to specific organization context to manage positions, assignments, huddles, and access for that organization
 - **Unified organization management**: All organization-specific operations (employment, access, positions, etc.) are managed from within that organization's context
 
+### **Public Profile & Social Sharing**
+- **Customizable vanity URLs**: Allow users to create shareable, branded profile URLs for social media
+- **Public profile pages**: Accessible without authentication, showing portable stats and achievements
+- **Cross-organization reputation**: Stats that follow users across different jobs and organizations
+- **Social media integration**: Easy sharing of professional achievements and milestones
+
 **Future Sprint: MAAP Management UI**
 - [ ] Add authorization checks to position/assignment management
 - [ ] Implement disabled button states with permission tooltips

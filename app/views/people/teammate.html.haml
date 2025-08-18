@@ -1,0 +1,101 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-8
+      .card
+        .card-header.bg-info.text-white
+          %h3.mb-0
+            %i.bi.bi-people.me-2
+            #{@person.full_name} - Teammate View
+        
+        .card-body
+          / Current Organization Information
+          - if @current_organization
+            .row.mb-4
+              .col-12
+                %h5.text-muted Current Organization: #{@current_organization.name}
+                
+                / Current Position
+                - current_tenure = @employment_tenures.find { |t| t.organization == @current_organization && t.ended_at.nil? }
+                - if current_tenure&.position&.position_type
+                  .alert.alert-success
+                    %strong Current Position:
+                    = current_tenure.position.position_type.name
+                    - if current_tenure.started_at
+                      %br
+                      %small Started: #{current_tenure.started_at.strftime("%B %d, %Y")}
+                
+                / Organization Access
+                - org_access = @person_organization_accesses.find { |a| a.organization == @current_organization }
+                - if org_access
+                  .alert.alert-info
+                    %strong Organization Access:
+                    %br
+                    - if org_access.can_manage_employment?
+                      %span.badge.bg-warning.me-2 Employment Management
+                    - if org_access.can_manage_maap?
+                      %span.badge.bg-warning.me-2 MAAP Management
+                    - if !org_access.can_manage_employment? && !org_access.can_manage_maap?
+                      %span.badge.bg-secondary Standard Access
+          
+          / Huddle Stats (Placeholder)
+          .row.mb-4
+            .col-12
+              %h5.text-muted Huddle Participation
+              .alert.alert-info
+                %i.bi.bi-info-circle.me-2
+                %strong Coming Soon:
+                Huddle participation statistics and feedback within this organization will be displayed here.
+          
+          / Other Organizations
+          .row.mb-4
+            .col-12
+              %h5.text-muted Other Organizations
+              - other_tenures = @employment_tenures.reject { |t| t.organization == @current_organization }
+              - if other_tenures.any?
+                .table-responsive
+                  %table.table.table-hover
+                    %thead
+                      %tr
+                        %th Organization
+                        %th Status
+                        %th Start Date
+                        %th End Date
+                    %tbody
+                      - other_tenures.each do |tenure|
+                        %tr
+                          %td= tenure.organization.name
+                          %td
+                            - if tenure.ended_at.nil?
+                              %span.badge.bg-success Active
+                            - else
+                              %span.badge.bg-secondary Former
+                          %td= tenure.started_at.strftime("%B %Y")
+                          %td
+                            - if tenure.ended_at
+                              = tenure.ended_at.strftime("%B %Y")
+                            - else
+                              %span.text-muted Present
+              - else
+                %p.text-muted No other organizational affiliations.
+          
+          / View Options
+          .row
+            .col-12
+              %hr
+              .d-flex.justify-content-between.align-items-center
+                %small.text-muted
+                  %i.bi.bi-people.me-1
+                  Teammate View
+                .btn-group.btn-group-sm
+                  = link_to public_person_path(@person), class: 'btn btn-outline-primary btn-sm' do
+                    %i.bi.bi-eye.me-1
+                    Public View
+                  
+                  - if policy(@person).manager?
+                    = link_to manager_person_path(@person), class: 'btn btn-outline-warning.btn-sm' do
+                      %i.bi.bi-gear.me-1
+                      Manager View
+                  - else
+                    %button.btn.btn-outline-secondary.btn-sm{disabled: true, title: 'You need employment management permissions or to be in the managerial hierarchy to view the manager version'}
+                      %i.bi.bi-gear.me-1
+                      Manager View
