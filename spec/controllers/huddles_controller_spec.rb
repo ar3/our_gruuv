@@ -505,10 +505,12 @@ RSpec.describe HuddlesController, type: :controller do
     context 'when an active huddle already exists for the playbook this week' do
       let!(:default_playbook) { create(:huddle_playbook, organization: team, special_session_name: '') }
       let!(:existing_huddle) do
+        # Create huddle within current week to ensure it's found
+        week_start = Time.current.beginning_of_week(:monday)
         create(:huddle, 
           huddle_playbook: default_playbook,
-          started_at: 2.days.ago,
-          expires_at: 1.day.from_now
+          started_at: week_start + 1.day,
+          expires_at: week_start + 6.days
         )
       end
 
@@ -586,10 +588,12 @@ RSpec.describe HuddlesController, type: :controller do
 
     context 'when an active huddle already exists for the playbook this week' do
       let!(:existing_huddle) do
+        # Create huddle within current week to ensure it's found
+        week_start = Time.current.beginning_of_week(:monday)
         create(:huddle, 
           huddle_playbook: new_playbook,
-          started_at: 2.days.ago,
-          expires_at: 1.day.from_now
+          started_at: week_start + 1.day,
+          expires_at: week_start + 6.days
         )
       end
 
@@ -689,11 +693,13 @@ RSpec.describe HuddlesController, type: :controller do
         controller.instance_variable_set(:@current_organization, organization)
         
         # Create a recent weekly summary notification with required slack data
+        # Ensure it's within the current week
+        week_start = Date.current.beginning_of_week(:monday)
         notification = create(:notification, 
           notifiable: company,
           notification_type: 'huddle_summary',
           status: 'sent_successfully',
-          created_at: 1.day.ago,
+          created_at: week_start + 1.day,
           message_id: '123456789.123456',
           metadata: { 'channel' => '#general' }
         )
