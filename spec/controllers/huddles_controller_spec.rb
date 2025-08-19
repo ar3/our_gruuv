@@ -350,7 +350,7 @@ RSpec.describe HuddlesController, type: :controller do
 
     before do
       slack_config
-      allow(Huddles::PostAnnouncementJob).to receive(:perform_now)
+      allow(Huddles::PostAnnouncementJob).to receive(:perform_and_get_result)
     end
 
     it 'assigns the requested huddle' do
@@ -375,7 +375,7 @@ RSpec.describe HuddlesController, type: :controller do
     end
 
     it 'redirects to huddle page with error when Slack service fails' do
-      allow(Huddles::PostAnnouncementJob).to receive(:perform_now).and_raise(StandardError.new('Slack error'))
+      allow(Huddles::PostAnnouncementJob).to receive(:perform_and_get_result).and_raise(StandardError.new('Slack error'))
       
       post :post_start_announcement_to_slack, params: { id: huddle.id }
       
@@ -469,6 +469,9 @@ RSpec.describe HuddlesController, type: :controller do
       allow(controller).to receive(:find_or_create_organization).and_return(team)
       allow(controller).to receive(:get_or_create_person_from_session_or_params).and_return(person)
       allow(controller).to receive(:current_person).and_return(person)
+      allow(Huddles::PostAnnouncementJob).to receive(:perform_and_get_result)
+      allow(Huddles::PostSummaryJob).to receive(:perform_and_get_result)
+      allow(Companies::WeeklyHuddlesReviewNotificationJob).to receive(:perform_later)
     end
 
     context 'when no active huddle exists for the playbook this week' do
@@ -498,7 +501,21 @@ RSpec.describe HuddlesController, type: :controller do
         
         huddle = Huddle.last
         expect(response).to redirect_to(huddle_path(huddle))
-        expect(flash[:notice]).to eq('Huddle created successfully!')
+        expect(flash[:notice]).to eq('Huddle created successfully! Slack notifications have been posted.')
+      end
+
+      it 'posts announcements to Slack immediately' do
+        post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
+        
+        huddle = Huddle.last
+        expect(Huddles::PostAnnouncementJob).to have_received(:perform_and_get_result).with(huddle.id)
+        expect(Huddles::PostSummaryJob).to have_received(:perform_and_get_result).with(huddle.id)
+      end
+
+      it 'runs weekly summary job when huddle is created' do
+        post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
+        
+        expect(Companies::WeeklyHuddlesReviewNotificationJob).to have_received(:perform_later)
       end
     end
 
@@ -560,8 +577,8 @@ RSpec.describe HuddlesController, type: :controller do
     let(:new_playbook) { create(:huddle_playbook, organization: organization, special_session_name: 'New Session') }
 
     before do
-      allow(Huddles::PostAnnouncementJob).to receive(:perform_now)
-      allow(Huddles::PostSummaryJob).to receive(:perform_now)
+      allow(Huddles::PostAnnouncementJob).to receive(:perform_and_get_result)
+      allow(Huddles::PostSummaryJob).to receive(:perform_and_get_result)
     end
 
     context 'when no active huddle exists for the playbook this week' do
@@ -574,8 +591,8 @@ RSpec.describe HuddlesController, type: :controller do
       it 'posts announcements to Slack' do
         post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
         
-        expect(Huddles::PostAnnouncementJob).to have_received(:perform_now)
-        expect(Huddles::PostSummaryJob).to have_received(:perform_now)
+        expect(Huddles::PostAnnouncementJob).to have_received(:perform_and_get_result)
+        expect(Huddles::PostSummaryJob).to have_received(:perform_and_get_result)
       end
 
       it 'redirects with success message' do
@@ -623,8 +640,8 @@ RSpec.describe HuddlesController, type: :controller do
       it 'does not post new Slack notifications' do
         post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
         
-        expect(Huddles::PostAnnouncementJob).not_to have_received(:perform_now)
-        expect(Huddles::PostSummaryJob).not_to have_received(:perform_now)
+        expect(Huddles::PostAnnouncementJob).not_to have_received(:perform_and_get_result)
+        expect(Huddles::PostSummaryJob).not_to have_received(:perform_and_get_result)
       end
     end
 

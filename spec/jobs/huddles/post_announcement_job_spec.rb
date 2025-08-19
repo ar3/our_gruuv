@@ -6,6 +6,9 @@ RSpec.describe Huddles::PostAnnouncementJob, type: :job do
   let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: Time.current) }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
   let!(:participant) { create(:huddle_participant, huddle: huddle, person: person, role: 'active') }
+  
+  # Test huddle with 0 participants
+  let(:empty_huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: Time.current) }
 
   before do
     # Mock SlackService to avoid actual API calls
@@ -145,6 +148,37 @@ RSpec.describe Huddles::PostAnnouncementJob, type: :job do
         )
         expect(result).to have_key(:notification_id)
       end
+    end
+  end
+
+  describe 'announcement states' do
+    it 'handles huddle with 0 participants correctly' do
+      result = described_class.perform_and_get_result(empty_huddle.id)
+      
+      expect(result).to include(
+        success: true,
+        action: 'posted',
+        huddle_id: empty_huddle.id
+      )
+      
+      # Verify the notification was created with appropriate content
+      notification = empty_huddle.notifications.announcements.last
+      expect(notification).to be_present
+      expect(notification.rich_message).to be_present
+      
+      # Check that the blocks contain appropriate text for 0 participants
+      blocks = notification.rich_message
+      expect(blocks).to be_an(Array)
+      
+      # Find the header block
+      header_block = blocks.find { |block| block["type"] == 'header' }
+      expect(header_block).to be_present
+      expect(header_block["text"]["text"]).to include('New Huddle Starting!')
+      
+      # Find the section block
+      section_block = blocks.find { |block| block["type"] == 'section' }
+      expect(section_block).to be_present
+      expect(section_block["text"]["text"]).to include('Be the first to join')
     end
   end
 

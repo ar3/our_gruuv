@@ -127,12 +127,16 @@ class HuddlesController < ApplicationController
       # Store only the person ID in session
       session[:current_person_id] = person.id
       
+      # Post announcements to Slack immediately
+      Huddles::PostAnnouncementJob.perform_and_get_result(@huddle.id)
+      Huddles::PostSummaryJob.perform_and_get_result(@huddle.id)
+      
       # Run weekly summary job when huddle is created
       if @huddle.huddle_playbook&.organization&.root_company
         Companies::WeeklyHuddlesReviewNotificationJob.perform_later(@huddle.huddle_playbook.organization.root_company.id)
       end
       
-      redirect_to @huddle, notice: 'Huddle created successfully!'
+      redirect_to @huddle, notice: 'Huddle created successfully! Slack notifications have been posted.'
     else
       render :new, status: :unprocessable_entity
     end
@@ -173,8 +177,8 @@ class HuddlesController < ApplicationController
     if @huddle.huddle_playbook&.organization&.root_company
       Companies::WeeklyHuddlesReviewNotificationJob.perform_later(@huddle.huddle_playbook.organization.root_company.id)
     end
-    Huddles::PostAnnouncementJob.perform_later(@huddle.id)
-    Huddles::PostSummaryJob.perform_later(@huddle.id)
+    Huddles::PostAnnouncementJob.perform_and_get_result(@huddle.id)
+    Huddles::PostSummaryJob.perform_and_get_result(@huddle.id)
     
     if role_changed
       redirect_to @huddle, notice: "Role updated successfully!"
@@ -310,7 +314,7 @@ class HuddlesController < ApplicationController
     
     begin
       # Post the start announcement to Slack using the job
-      Huddles::PostAnnouncementJob.perform_now(@huddle.id)
+      Huddles::PostAnnouncementJob.perform_and_get_result(@huddle.id)
       
       redirect_to huddle_path(@huddle), notice: 'Huddle start announcement posted to Slack successfully!'
     rescue => e
@@ -366,8 +370,8 @@ class HuddlesController < ApplicationController
     
     if @huddle.save
       # Post announcements to Slack
-      Huddles::PostAnnouncementJob.perform_now(@huddle.id)
-      Huddles::PostSummaryJob.perform_now(@huddle.id)
+      Huddles::PostAnnouncementJob.perform_and_get_result(@huddle.id)
+      Huddles::PostSummaryJob.perform_and_get_result(@huddle.id)
       
       # Run weekly summary job when huddle is created
       if @huddle.huddle_playbook&.organization&.root_company
