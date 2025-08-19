@@ -15,6 +15,9 @@ class OrganizationsController < ApplicationController
     
     # Load playbooks for this organization
     @playbooks = @organization.huddle_playbooks.includes(:huddles)
+    
+    # Load stats for the three pillars
+    load_organization_stats
   end
   
   def new
@@ -157,5 +160,43 @@ class OrganizationsController < ApplicationController
       participation_data: participation_data,
       huddles_data: huddles_data
     }
+  end
+  
+  def load_organization_stats
+    if @organization.company?
+      # Organization stats
+      @total_employees = @organization.employees.count
+      # Get potential employees (people with access or huddle participation but no employment)
+      access_people = @organization.person_organization_accesses.includes(:person)
+        .where.not(person: @organization.employees)
+        .map(&:person)
+      
+      huddle_people = @organization.huddle_participants
+        .where.not(id: @organization.employees.select(:id))
+      
+      @total_potential_employees = (access_people + huddle_people).uniq.count
+      @total_teams = @organization.children.teams.count
+      @total_departments = @organization.children.departments.count
+      
+      # Align stats (positions and assignments across all sub-organizations)
+      @total_positions = @organization.positions.count + @organization.children.sum { |child| child.positions.count }
+      @total_assignments = @organization.assignments.count + @organization.children.sum { |child| child.assignments.count }
+      
+      # Collaborate stats (huddles and ratings)
+      this_week_start = Time.current.beginning_of_week(:monday)
+      this_week_end = Time.current.end_of_week(:sunday)
+      
+      @active_huddles_this_week = @organization.huddles.where(started_at: this_week_start..this_week_end, expires_at: Time.current..)
+      @total_participants_this_week = @active_huddles_this_week.joins(:huddle_participants).count
+      @average_rating_this_week = @active_huddles_this_week.joins(:huddle_feedbacks)
+        .average('(informed_rating + connected_rating + goals_rating + valuable_rating) / 4.0')
+        &.round(1) || 0
+      
+      @total_huddles_all_time = @organization.huddles.count
+      @total_participants_all_time = @organization.huddles.joins(:huddle_participants).count
+      @average_rating_all_time = @organization.huddles.joins(:huddle_feedbacks)
+        .average('(informed_rating + connected_rating + goals_rating + valuable_rating) / 4.0')
+        &.round(1) || 0
+    end
   end
 end

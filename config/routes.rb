@@ -64,6 +64,13 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
+    # Employment management wizard
+    resources :employment_management, only: [:index, :new, :create], controller: 'organizations/employment_management' do
+      collection do
+        get :potential_employees
+      end
+    end
+    
     # Person access permissions within organization context
     resources :person_accesses, only: [:new, :create, :edit, :update, :destroy], controller: 'organizations/person_accesses'
     

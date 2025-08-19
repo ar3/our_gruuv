@@ -69,10 +69,42 @@ This document contains all the rules and conventions we follow in this project t
 
 ### Authorization & Permission Display
 - **Don't hide things**: Show all actions but disable unauthorized ones
-- **Clear feedback**: Use warning icons next to disabled buttons/links
-- **Helpful tooltips**: Explain what permission is needed for each action
+- **Clear feedback**: Use warning icons next to disabled buttons/links with tooltips
+- **Helpful tooltips**: Explain what permission is needed for each action on hover over warning icon
 - **Consistent patterns**: Use the same UI patterns across all permission checks
 - **Visual indicators**: Use consistent icons and colors for permission states
+- **Disabled button styling**: Use `btn-outline-secondary` class for disabled buttons to clearly indicate they're not actionable
+- **Secondary action styling**: Use `btn-outline-primary` for secondary actions and navigation links to distinguish from disabled buttons
+- **Button layout**: Use `.flex-grow-1` wrapper with `.w-100` on disabled buttons to maintain full-width appearance minus warning icon space
+- **Tooltip implementation**: Use Bootstrap tooltips with `data-bs-toggle="tooltip"` and `data-bs-title` for permission messages
+
+### Color System & Visual Design
+- **Colors must have consistent, meaningful purposes** - never use colors as random decoration
+- **Follow semantic color usage** across the entire interface:
+  - **Blue (primary)**: Main metrics, counts, primary data points
+  - **Blue (info)**: Secondary metrics, ratings, additional information
+  - **Gray (secondary)**: Dates, timestamps, less important data
+  - **Green (success)**: Positive states, completed items, "good" metrics
+  - **Yellow (warning)**: Attention needed, caution states, neutral states
+  - **Red (danger)**: Critical issues, errors, "bad" metrics
+- **Limited color palette**: Use 5-7 colors maximum for clarity
+- **Accessibility first**: Ensure sufficient contrast ratios for all color combinations
+- **Cultural considerations**: Avoid red/green combinations for colorblind users
+
+### Dashboard Layout & Organization
+- **Use full-width cards for each major section** to create visual unity
+- **8:4 column split for stats and actions**: Stats on the left (8 columns), actions on the right (4 columns)
+- **Subtle visual dividers**: Use `border-start border-secondary` for clean separation between stats and actions
+- **Consistent card heights**: Each section should have matching heights for professional appearance
+- **Group related functionality**: Actions should be grouped with their relevant content areas
+- **Prioritize information architecture**: Organize content logically by grouping related information together
+
+### Accessibility & Semantic Structure
+- **Use semantic HTML elements**: Employ proper heading hierarchy (H1 → H5) and semantic tags
+- **ARIA regions and landmarks**: Mark major sections with `role="region"` and `aria-labelledby`
+- **Proper labeling**: Each interactive element should have clear, descriptive labels
+- **Keyboard navigation**: Ensure all interactive elements are accessible via keyboard
+- **Screen reader support**: Use proper ARIA attributes to help assistive technologies navigate content
 
 ## Development Rules
 

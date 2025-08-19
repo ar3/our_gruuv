@@ -3,12 +3,12 @@
     .col-md-8
       .card
         .card-header
-          h3.mb-0 Add New Employee to #{@organization.name}
+          %h3.mb-0 Add New Employee to #{@organization.name}
         .card-body
           = form_with model: [@organization, @person, @employment_tenure], url: create_employee_organization_employees_path(@organization), local: true do |form|
             .row
               .col-md-6
-                h4.mb-3 Person Information
+                %h4.mb-3 Person Information
                 .mb-3
                   = form.label :first_name, class: 'form-label'
                   = form.text_field :first_name, class: 'form-control', required: true
@@ -33,11 +33,11 @@
                     { class: 'form-select' }
               
               .col-md-6
-                h4.mb-3 Employment Information
+                %h4.mb-3 Employment Information
                 .mb-3
                   = form.label :position_id, 'Position', class: 'form-label'
                   = form.select :position_id,
-                    @positions.map { |position| ["#{position.position_type.name} - #{position.position_level.name}", position.id] },
+                    @positions.map { |position| [position.display_name, position.id] },
                     { prompt: 'Select a position' },
                     { class: 'form-select', required: true }
                 
@@ -64,12 +64,12 @@
     .col-12
       .card
         .card-header
-          h4.mb-0 Instructions
+          %h4.mb-0 Instructions
         .card-body
-          p This form allows you to create a new employee for #{@organization.name}.
-          p 
-            strong Note: 
+          %p This form allows you to create a new employee for #{@organization.name}.
+          %p 
+            %strong Note: 
             | The new employee will be automatically set up with their employment and can access the system immediately.
-          p 
-            strong Required fields: 
+          %p 
+            %strong Required fields: 
             | First name, last name, email, position, and start date.

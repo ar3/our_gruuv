@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_16_124137) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_19_104327) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -228,6 +228,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_16_124137) do
     t.boolean "can_manage_maap"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "can_create_employment"
     t.index ["can_manage_employment"], name: "index_person_organization_accesses_on_can_manage_employment"
     t.index ["can_manage_maap"], name: "index_person_organization_accesses_on_can_manage_maap"
     t.index ["organization_id"], name: "index_person_organization_accesses_on_organization_id"

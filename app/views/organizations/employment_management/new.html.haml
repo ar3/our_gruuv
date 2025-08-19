@@ -1,0 +1,189 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-10
+      .card
+        .card-header.bg-primary.text-white
+          %h3.mb-0
+            %i.bi.bi-people-fill.me-2
+            Employment Management
+        
+        .card-body
+          %h5.mb-4 Potential Employees
+          %p.text-muted.mb-4
+            These people are associated with your organization but don't have employment records yet. 
+            You can create employment for them or create a completely new person.
+          
+          - if @potential_employees.any?
+            .table-responsive.mb-4
+              %table.table.table-hover
+                %thead.table-light
+                  %tr
+                    %th Name
+                    %th Email
+                    %th Phone
+                    %th Reason
+                    %th Actions
+                %tbody
+                  - @potential_employees.each do |person|
+                    %tr
+                      %td= person.display_name
+                      %td= person.email
+                      %td= person.phone_number || "—"
+                      %td
+                        %span.badge.bg-info= potential_employee_reason(person)
+                      %td
+                        = link_to "Create Employment", "#", 
+                          class: "btn btn-success btn-sm",
+                          data: { 
+                            action: "click->employment-wizard#selectExistingPerson",
+                            person_id: person.id,
+                            person_name: person.display_name
+                          }
+            .alert.alert-info
+              %i.bi.bi-info-circle.me-2
+              %strong Found #{@potential_employees.count} potential employee#{@potential_employees.count == 1 ? '' : 's'}.
+              You can create employment for any of them above, or create a completely new person below.
+          - else
+            .alert.alert-warning
+              %i.bi.bi-exclamation-triangle.me-2
+              %strong No potential employees found.
+              All people associated with your organization already have employment records.
+          
+          .card.mt-4
+            .card-header.bg-success.text-white
+              %h5.mb-0
+                %i.bi.bi-person-plus.me-2
+                Create New Person & Employment
+            .card-body
+              = form_with model: [@organization, @person || Person.new], 
+                url: organization_employment_management_index_path(@organization), 
+                method: :post, 
+                local: true,
+                data: { controller: "employment-wizard" } do |form|
+                
+                - if @person&.errors&.any?
+                  .alert.alert-danger
+                    %h5 Please fix the following errors:
+                    %ul.mb-0
+                      - @person.errors.full_messages.each do |message|
+                        %li= message
+                
+                - if @employment_tenure&.errors&.any?
+                  .alert.alert-danger
+                    %h5 Employment errors:
+                    %ul.mb-0
+                      - @employment_tenure.errors.full_messages.each do |message|
+                        %li= message
+                
+                .row
+                  .col-md-6
+                    .mb-3
+                      = form.label :first_name, "First Name", class: "form-label"
+                      = form.text_field :first_name, class: "form-control", required: true
+                  
+                  .col-md-6
+                    .mb-3
+                      = form.label :last_name, "Last Name", class: "form-label"
+                      = form.text_field :last_name, class: "form-control", required: true
+                
+                .row
+                  .col-md-6
+                    .mb-3
+                      = form.label :email, "Email", class: "form-label"
+                      = form.email_field :email, class: "form-control", required: true
+                      %small.form-text.text-muted This will be their login email
+                  
+                  .col-md-6
+                    .mb-3
+                      = form.label :phone_number, "Phone Number", class: "form-label"
+                      = form.telephone_field :phone_number, class: "form-control", placeholder: "+1234567890"
+                      %small.form-text.text-muted Optional - for SMS notifications
+                
+                .mb-3
+                  = form.label :timezone, "Timezone", class: "form-label"
+                  = form.select :timezone, available_timezones, 
+                    { prompt: 'Select timezone' }, 
+                    { class: "form-select" }
+                  %small.form-text.text-muted This helps show times in their local timezone
+                
+                %hr.my-4
+                
+                %h6.mb-3 Employment Details
+                
+                .row
+                  .col-md-6
+                    .mb-3
+                      = form.label "employment_tenure[position_id]", "Position", class: "form-label"
+                      = form.collection_select "employment_tenure[position_id]", @positions, :id, :display_name, 
+                        { prompt: 'Select a position' }, 
+                        { class: "form-select", required: true }
+                  
+                  .col-md-6
+                    .mb-3
+                      = form.label "employment_tenure[manager_id]", "Manager (Optional)", class: "form-label"
+                      = form.collection_select "employment_tenure[manager_id]", @managers, :id, :display_name, 
+                        { prompt: 'Select a manager (optional)', include_blank: 'No Manager' }, 
+                        { class: "form-select" }
+                
+                .row
+                  .col-md-6
+                    .mb-3
+                      = form.label "employment_tenure[started_at]", "Start Date", class: "form-label"
+                      = form.date_field "employment_tenure[started_at]", 
+                        value: Date.current, 
+                        class: "form-control", 
+                        required: true
+                  
+                  .col-md-6
+                    .mb-3
+                      = form.label "employment_tenure[employment_change_notes]", "Notes (Optional)", class: "form-label"
+                      = form.text_area "employment_tenure[employment_change_notes]", 
+                        rows: 2, 
+                        class: "form-control", 
+                        placeholder: "Add any notes about this employment..."
+                
+                .d-flex.justify-content-between
+                  = link_to "Back to Organization", organization_path(@organization), class: "btn btn-outline-secondary"
+                  .btn-group
+                    = form.submit "Save & Create Another", 
+                      name: "save_and_continue", 
+                      value: "false",
+                      class: "btn btn-success"
+                    = form.submit "Save & Continue", 
+                      name: "save_and_continue", 
+                      value: "true",
+                      class: "btn btn-primary"
+
+:javascript
+  document.addEventListener('DOMContentLoaded', function() {
+    // Handle selecting existing person
+    document.querySelectorAll('[data-action*="selectExistingPerson"]').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        const personId = this.dataset.personId;
+        const personName = this.dataset.personName;
+        
+        if (confirm(`Create employment for ${personName}?`)) {
+          // Create a hidden form to submit the existing person selection
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = '#{organization_employment_management_index_path(@organization)}';
+          
+          const personIdField = document.createElement('input');
+          personIdField.type = 'hidden';
+          personIdField.name = 'person_id';
+          personIdField.value = personId;
+          
+          const csrfField = document.createElement('input');
+          csrfField.type = 'hidden';
+          csrfField.name = 'authenticity_token';
+          csrfField.value = document.querySelector('meta[name="csrf-token"]').content;
+          
+          form.appendChild(personIdField);
+          form.appendChild(csrfField);
+          document.body.appendChild(form);
+          form.submit();
+        }
+      });
+    });
+  });

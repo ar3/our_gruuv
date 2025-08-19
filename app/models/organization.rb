@@ -105,4 +105,13 @@ class Organization < ApplicationRecord
                   .distinct
                   .includes(:organization)
   end
+  
+  # Permission helper methods
+  def can_manage_employment?(person)
+    PersonOrganizationAccess.can_manage_employment_in_hierarchy?(person, self)
+  end
+  
+  def can_create_employment?(person)
+    PersonOrganizationAccess.can_create_employment?(person, self)
+  end
 end 

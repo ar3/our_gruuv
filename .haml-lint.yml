@@ -1,0 +1,14 @@
+---
+linters:
+  LineLength:
+    enabled: false
+  SpaceInsideHashAttributes:
+    enabled: false
+  TrailingWhitespace:
+    enabled: false
+  TrailingEmptyLines:
+    enabled: false
+  ViewLength:
+    enabled: false
+  RuboCop:
+    enabled: false

@@ -72,6 +72,15 @@ class Person < ApplicationRecord
     og_admin?
   end
   
+  # Permission helper methods
+  def can_manage_employment?(organization)
+    PersonOrganizationAccess.can_manage_employment_in_hierarchy?(self, organization)
+  end
+  
+  def can_create_employment?(organization)
+    PersonOrganizationAccess.can_create_employment?(self, organization)
+  end
+  
   # Organization context methods
   def current_organization_or_default
     current_organization || Organization.companies.first

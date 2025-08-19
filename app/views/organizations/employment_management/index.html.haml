@@ -1,0 +1,69 @@
+.container.mt-4
+  .row.justify-content-center
+    .col-lg-10
+      .card
+        .card-header.bg-primary.text-white
+          %h3.mb-0
+            %i.bi.bi-people-fill.me-2
+            Employment Management
+        
+        .card-body
+          %h5.mb-4 Potential Employees
+          %p.text-muted.mb-4
+            These people are associated with your organization but don't have employment records yet. 
+            You can create employment for them or create a completely new person.
+          
+          - if @potential_employees.any?
+            .table-responsive.mb-4
+              %table.table.table-hover
+                %thead.table-light
+                  %tr
+                    %th Name
+                    %th Email
+                    %th Phone
+                    %th Reason
+                    %th Actions
+                %tbody
+                  - @potential_employees.each do |person|
+                    %tr
+                      %td= person.display_name
+                      %td= person.email
+                      %td= person.phone_number || "—"
+                      %td
+                        %span.badge.bg-info= potential_employee_reason(person)
+                      %td
+                        = link_to "Create Employment", "#", 
+                          class: "btn btn-success btn-sm",
+                          data: { 
+                            action: "click->employment-wizard#selectExistingPerson",
+                            person_id: person.id,
+                            person_name: person.display_name
+                          }
+            .alert.alert-info
+              %i.bi.bi-info-circle.me-2
+              %strong Found #{@potential_employees.count} potential employee#{@potential_employees.count == 1 ? '' : 's'}.
+              You can create employment for any of them above, or create a completely new person below.
+          - else
+            .alert.alert-warning
+              %i.bi.bi-exclamation-triangle.me-2
+              %strong No potential employees found.
+              All people associated with your organization already have employment records.
+          
+          .card.mt-4
+            .card-header.bg-success.text-white
+              %h5.mb-0
+                %i.bi.bi-person-plus.me-2
+                Create New Person & Employment
+            .card-body
+              %p.text-muted
+                Create a completely new person and employment record for your organization.
+              
+              .d-grid.gap-2.d-md-flex.justify-content-md-end
+                = link_to new_organization_employment_management_path(@organization), 
+                  class: "btn btn-primary btn-lg" do
+                  %i.bi.bi-plus-circle.me-2
+                  Create New Employee
+          
+          .d-flex.justify-content-between.mt-4
+            = link_to "Back to Organization", organization_path(@organization), class: "btn btn-outline-secondary"
+            = link_to "View All Employees", organization_employees_path(@organization), class: "btn btn-outline-primary"

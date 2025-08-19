@@ -14,11 +14,16 @@ class PersonOrganizationAccess < ApplicationRecord
     end
   }
   scope :with_employment_management, -> { where(can_manage_employment: true) }
+  scope :with_employment_creation, -> { where(can_create_employment: true) }
   scope :with_maap_management, -> { where(can_manage_maap: true) }
   
   # Instance methods
   def can_manage_employment?
     self[:can_manage_employment] == true
+  end
+  
+  def can_create_employment?
+    self[:can_create_employment] == true
   end
   
   def can_manage_maap?
@@ -29,6 +34,11 @@ class PersonOrganizationAccess < ApplicationRecord
   def self.can_manage_employment?(person, organization)
     access = find_by(person: person, organization: organization)
     access&.can_manage_employment? || false
+  end
+  
+  def self.can_create_employment?(person, organization)
+    access = find_by(person: person, organization: organization)
+    access&.can_create_employment? || false
   end
   
   def self.can_manage_maap?(person, organization)

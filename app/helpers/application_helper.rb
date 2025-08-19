@@ -97,6 +97,17 @@ module ApplicationHelper
   def available_timezones
     ActiveSupport::TimeZone.all.map { |tz| [tz.name, tz.name] }
   end
+  
+  def potential_employee_reason(person)
+    reasons = []
+    if person.person_organization_accesses.exists?
+      reasons << "Has access permissions"
+    end
+    if person.huddle_participants.exists?
+      reasons << "Participated in huddles"
+    end
+    reasons.join(", ")
+  end
 
   # Notification debug helper methods
   def notification_type_badge_class(notification_type)
