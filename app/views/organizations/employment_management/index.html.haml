@@ -28,17 +28,17 @@
                     %tr
                       %td= person.display_name
                       %td= person.email
-                      %td= person.phone_number || "—"
+                      %td= person.unique_textable_phone_number || "—"
                       %td
                         %span.badge.bg-info= potential_employee_reason(person)
                       %td
-                        = link_to "Create Employment", "#", 
-                          class: "btn btn-success btn-sm",
-                          data: { 
-                            action: "click->employment-wizard#selectExistingPerson",
-                            person_id: person.id,
-                            person_name: person.display_name
-                          }
+                        - if current_person&.can_create_employment?(@organization)
+                          = link_to "Create Employment", "#", class: "btn btn-success btn-sm", data: { action: "click->employment-wizard#selectExistingPerson", person_id: person.id, person_name: person.display_name }
+                        - else
+                          .d-flex.align-items-center
+                            %button.btn.btn-outline-secondary.btn-sm.disabled.flex-grow-1{disabled: true}
+                              Create Employment
+                            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment creation permissions to create employment records"}
             .alert.alert-info
               %i.bi.bi-info-circle.me-2
               %strong Found #{@potential_employees.count} potential employee#{@potential_employees.count == 1 ? '' : 's'}.
@@ -59,10 +59,17 @@
                 Create a completely new person and employment record for your organization.
               
               .d-grid.gap-2.d-md-flex.justify-content-md-end
-                = link_to new_organization_employment_management_path(@organization), 
-                  class: "btn btn-primary btn-lg" do
-                  %i.bi.bi-plus-circle.me-2
-                  Create New Employee
+                - if current_person&.can_create_employment?(@organization)
+                  = link_to new_organization_employment_management_path(@organization), 
+                    class: "btn btn-primary btn-lg" do
+                    %i.bi.bi-plus-circle.me-2
+                    Create New Employee
+                - else
+                  .d-flex.align-items-center.justify-content-end
+                    %button.btn.btn-outline-secondary.btn-lg.disabled.flex-grow-1{disabled: true}
+                      %i.bi.bi-plus-circle.me-2
+                      Create New Employee
+                    %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment creation permissions to create new employees"}
           
           .d-flex.justify-content-between.mt-4
             = link_to "Back to Organization", organization_path(@organization), class: "btn btn-outline-secondary"

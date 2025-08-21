@@ -94,8 +94,17 @@ class ApplicationController < ActionController::Base
       return
     end
     
-    flash[:alert] = "You are not authorized to perform this action."
-    redirect_back(fallback_location: root_path)
+    # For person-related actions, redirect to public view if possible
+    if @_pundit_policy_record.is_a?(Person) && 
+       [:show?, :teammate?, :manager?].include?(@_pundit_policy_query&.to_sym)
+      flash[:alert] = "You don't have permission to view that profile. Here's the public information that's available to you."
+      redirect_to public_person_path(@_pundit_policy_record)
+      return
+    end
+    
+    # Default: redirect to homepage to prevent redirect loops
+    flash[:alert] = "You don't have permission to access that resource. Please contact your administrator if you believe this is an error."
+    redirect_to root_path
   end
   
 

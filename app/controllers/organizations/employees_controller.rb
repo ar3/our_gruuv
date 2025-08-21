@@ -1,9 +1,12 @@
 class Organizations::EmployeesController < ApplicationController
   before_action :require_authentication
   before_action :set_organization
-  after_action :verify_authorized, except: :index
+  after_action :verify_authorized
   
   def index
+    # Basic authorization - user should be able to view the organization
+    authorize @organization, :show?
+    
     # Get active employees (people with active employment tenures)
     @active_employees = @organization.employees.includes(:employment_tenures)
     

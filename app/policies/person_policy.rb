@@ -1,7 +1,7 @@
 class PersonPolicy < ApplicationPolicy
   def show?
-    # Users can view their own profile and assignment management, admins can view any
-    user == record || user.admin?
+    # Users can view their own profile, admins can view any, or if they have employment management permissions
+    user == record || user.admin? || user.can_manage_employment?(record.current_organization)
   end
 
   def public?
@@ -43,6 +43,44 @@ class PersonPolicy < ApplicationPolicy
   def employment_summary?
     # Users can view their own employment summary, admins can view any
     user == record || user.admin?
+  end
+
+  def view_employment_history?
+    # Users can view employment history if they are:
+    # 1. The person themselves
+    # 2. In their managerial hierarchy 
+    # 3. Have employment management permissions for that organization
+    return false unless user && record
+    
+    user == record || 
+    user.in_managerial_hierarchy_of?(record) || 
+    user.can_manage_employment?(record.current_organization)
+  end
+
+  def manage_assignments?
+    # Users can manage assignments if they are:
+    # 1. The person themselves
+    # 2. In their managerial hierarchy 
+    # 3. Have BOTH employment management AND MAAP management permissions for that organization
+    return false unless user && record
+    
+    return true if user == record || user.in_managerial_hierarchy_of?(record)
+    
+    # Check for both permissions
+    user.can_manage_employment?(record.current_organization) && 
+    user.can_manage_maap?(record.current_organization)
+  end
+
+  def change_employment?
+    # Users can change employment if they are:
+    # 1. The person themselves
+    # 2. In their managerial hierarchy 
+    # 3. Have employment management permissions for that organization
+    return false unless user && record
+    
+    return true if user == record || user.in_managerial_hierarchy_of?(record)
+    
+    user.can_manage_employment?(record.current_organization)
   end
 
   def change?

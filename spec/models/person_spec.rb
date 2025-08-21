@@ -205,4 +205,27 @@ RSpec.describe Person, type: :model do
       expect(person.last_name).to eq('Doe')
     end
   end
+
+  describe 'employment tenure associations' do
+    let(:person) { create(:person) }
+    let(:company) { create(:organization, :company) }
+    let!(:employment_tenure) { create(:employment_tenure, person: person, company: company) }
+
+    it 'can access employment tenures through company association' do
+      # This test ensures we use the right association name
+      expect(person.employment_tenures.where(company: company)).to include(employment_tenure)
+    end
+
+    it 'can check active employment tenure in organization' do
+      # This test ensures the method works with company association
+      expect(person.active_employment_tenure_in?(company)).to be true
+    end
+
+    it 'prevents using incorrect association names' do
+      # This test catches the exact error we encountered
+      expect {
+        person.employment_tenures.where(organization: company).count
+      }.to raise_error(ActiveRecord::StatementInvalid, /column employment_tenures.organization does not exist/)
+    end
+  end
 end 

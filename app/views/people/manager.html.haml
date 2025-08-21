@@ -15,11 +15,11 @@
                 %h5.text-muted Current Organization: #{@current_organization.name}
                 
                 / Current Position
-                - current_tenure = @employment_tenures.find { |t| t.organization == @current_organization && t.ended_at.nil? }
+                - current_tenure = @employment_tenures.find { |t| t.company == @current_organization && t.ended_at.nil? }
                 - if current_tenure&.position&.position_type
                   .alert.alert-success
                     %strong Current Position:
-                    = current_tenure.position.position_type.name
+                    = current_tenure.position.position_type.external_title
                     - if current_tenure.started_at
                       %br
                       %small Started: #{current_tenure.started_at.strftime("%B %d, %Y")}
@@ -78,10 +78,10 @@
                     %tbody
                       - @employment_tenures.each do |tenure|
                         %tr
-                          %td= tenure.organization.name
+                          %td= tenure.company.name
                           %td
                             - if tenure.position&.position_type
-                              = tenure.position.position_type.name
+                              = tenure.position.position_type.external_title
                             - else
                               %span.text-muted No position
                           %td
@@ -117,7 +117,7 @@
           .row.mb-4
             .col-12
               %h5.text-muted Other Organizations
-              - other_tenures = @employment_tenures.reject { |t| t.organization == @current_organization }
+              - other_tenures = @employment_tenures.reject { |t| t.company.id == @current_organization.id }
               - if other_tenures.any?
                 .table-responsive
                   %table.table.table-hover
@@ -134,7 +134,7 @@
                           %td= tenure.organization.name
                           %td
                             - if tenure.position&.position_type
-                              = tenure.position.position_type.name
+                              = tenure.position.position_type.external_title
                             - else
                               %span.text-muted No position
                           %td

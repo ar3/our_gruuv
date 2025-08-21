@@ -1,0 +1,32 @@
+.dropdown
+  %button.btn.btn-outline-primary.btn-sm.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button"}
+    %i.bi.bi-eye.me-2
+    = current_view_name
+  %ul.dropdown-menu
+    %li
+      = link_to public_person_path(@person), class: 'dropdown-item' do
+        %i.bi.bi-globe.me-2
+        Public Mode
+      
+    %li
+      - if policy(@person).teammate?
+        = link_to teammate_person_path(@person), class: 'dropdown-item' do
+          %i.bi.bi-people.me-2
+          Teammate Mode
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-people.me-2
+          Teammate Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be an active employee in the same organization to view the teammate version"}
+      
+    %li
+      - if policy(@person).manager?
+        .dropdown-item.text-muted
+          %i.bi.bi-gear.me-2
+          Management Mode (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-gear.me-2
+          Management Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access management features"}

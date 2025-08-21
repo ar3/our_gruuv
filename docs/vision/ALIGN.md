@@ -414,6 +414,16 @@ sequenceDiagram
 - Assignment templates and bulk operations
 - Assignment dependency tracking
 
+### **Employment History Deep Dive**
+- **Comprehensive Employment History Page**: A dedicated page (route: `/organizations/:id/employees/:id/employment_history`) that shows a person's complete employment journey within an organization
+- **Timeline Visualization**: Visual timeline showing all employment tenures, position changes, promotions, and transitions
+- **Manager History**: Track who managed them at each point in time with manager change indicators
+- **Position Progression**: Clear visualization of career progression and lateral moves within the organization
+- **Tenure Insights**: Analytics like average time in position, total tenure, promotion velocity
+- **Related Context**: Integration with assignment history, performance data, and milestone achievements during each tenure
+- **Export Capabilities**: Generate employment history reports for performance reviews or reference purposes
+- **Comparison Views**: Compare employment patterns across similar roles or team members for insights
+
 ### **Performance Analytics**
 - Organization-level alignment stats dashboard
 - Average timespan between check-ins

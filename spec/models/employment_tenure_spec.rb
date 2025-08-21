@@ -162,4 +162,43 @@ RSpec.describe EmploymentTenure, type: :model do
       expect(tenure.inactive?).to be true
     end
   end
+
+  describe 'association includes and queries' do
+    let(:person) { create(:person) }
+    let(:company) { create(:organization, :company) }
+    let!(:tenure) { create(:employment_tenure, person: person, company: company) }
+
+    it 'can include company association correctly' do
+      # This test ensures we use the right association name in includes
+      result = EmploymentTenure.includes(:company).find(tenure.id)
+      expect(result.company.id).to eq(company.id)
+      expect(result.company).to be_a(Organization) # Company inherits from Organization
+    end
+
+    it 'can include company with other associations' do
+      # This test ensures complex includes work correctly
+      result = EmploymentTenure.includes(:company, :position, :manager).find(tenure.id)
+      expect(result.company.id).to eq(company.id)
+      expect(result.position).to eq(tenure.position)
+    end
+
+    it 'can query by company association' do
+      # This test ensures where clauses work correctly
+      result = EmploymentTenure.where(company: company).first
+      expect(result).to eq(tenure)
+    end
+
+    it 'can access company through the association' do
+      # This test ensures the association method works
+      expect(tenure.company.id).to eq(company.id)
+      expect(tenure.company.name).to eq(company.name)
+    end
+
+    it 'prevents using incorrect association names in includes' do
+      # This test catches the exact error we encountered
+      expect {
+        EmploymentTenure.includes(:organization).find(tenure.id)
+      }.to raise_error(ActiveRecord::AssociationNotFoundError, /Association named 'organization' was not found/)
+    end
+  end
 end

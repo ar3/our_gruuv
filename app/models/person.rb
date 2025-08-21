@@ -6,6 +6,7 @@ class Person < ApplicationRecord
   has_many :person_identities, dependent: :destroy
   has_many :employment_tenures, dependent: :destroy
   has_many :assignment_tenures, dependent: :destroy
+  has_many :assignments, through: :assignment_tenures
   has_many :person_organization_accesses, dependent: :destroy
   belongs_to :current_organization, class_name: 'Organization', optional: true
   
@@ -121,7 +122,7 @@ class Person < ApplicationRecord
 
   # Employment tenure checking methods
   def active_employment_tenure_in?(organization)
-    employment_tenures.active.where(organization: organization).exists?
+    employment_tenures.active.where(company: organization).exists?
   end
 
   def in_managerial_hierarchy_of?(other_person)
@@ -129,7 +130,7 @@ class Person < ApplicationRecord
     
     # Check if this person manages the other person through employment tenures
     # This is a simplified version - you might want to expand this logic
-    other_person.employment_tenures.active.where(organization: current_organization).exists?
+    other_person.employment_tenures.active.where(company: current_organization).exists?
   end
   
   # Identity methods

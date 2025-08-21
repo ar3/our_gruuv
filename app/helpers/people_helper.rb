@@ -79,4 +79,17 @@ module PeopleHelper
       content_tag(:pre, JSON.pretty_generate(identity.raw_data), class: "mt-2 p-2 bg-light rounded small")
     end
   end
+
+  def current_view_name
+    case action_name
+    when 'show'
+      'Management Mode'
+    when 'teammate'
+      'Teammate Mode'
+    when 'public'
+      'Public Mode'
+    else
+      action_name.titleize
+    end
+  end
 end

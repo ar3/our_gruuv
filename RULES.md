@@ -53,6 +53,12 @@ This document contains all the rules and conventions we follow in this project t
 
 ## Code Quality & Maintainability
 
+### Error Handling & Debugging
+- **Self-correction attempts**: Try to fix errors up to 3 times with the exact same error message
+- **Check-in threshold**: After 3 attempts with the same error, ask user if they want to handle it manually or if you should continue
+- **Error pattern recognition**: If you encounter the same error type multiple times in different contexts, document it as a potential systemic issue
+- **Manual intervention**: When hitting the check-in threshold, clearly state what you've tried and what the persistent issue appears to be
+
 ### Method Design
 - Methods should be as small as possible, following Sandi Metz's rules for code maintainability
 - Keep methods focused and single-purpose
@@ -77,6 +83,15 @@ This document contains all the rules and conventions we follow in this project t
 - **Secondary action styling**: Use `btn-outline-primary` for secondary actions and navigation links to distinguish from disabled buttons
 - **Button layout**: Use `.flex-grow-1` wrapper with `.w-100` on disabled buttons to maintain full-width appearance minus warning icon space
 - **Tooltip implementation**: Use Bootstrap tooltips with `data-bs-toggle="tooltip"` and `data-bs-title` for permission messages
+
+### Permission-Based UI Implementation
+- **Controller authorization**: Use permissive authorization for views (e.g., `authorize @resource, :show?`) and handle specific permissions in the view
+- **View-level permission checks**: Use helper methods like `current_person&.can_create_employment?(@organization)` in views
+- **Conditional UI rendering**: Show enabled buttons for authorized actions, disabled buttons with tooltips for unauthorized actions
+- **Consistent permission patterns**: Use the same `if authorized / else disabled + tooltip` pattern across all actions
+- **Policy logic belongs in Pundit policies**: Never implement complex authorization logic directly in views - use `policy(@record).action?` instead
+- **Avoid multi-line conditionals in views**: Keep view logic simple by delegating complex checks to policy methods
+- **Use semantic policy method names**: Create descriptive policy methods like `view_employment_history?` instead of complex inline checks
 
 ### Color System & Visual Design
 - **Colors must have consistent, meaningful purposes** - never use colors as random decoration
@@ -124,6 +139,12 @@ This document contains all the rules and conventions we follow in this project t
 - **Use `joins` only when you need to filter by associated data**, not for display
 - **Order queries efficiently**: `Model.includes(:associations).order(:field).decorate`
 
+### STI (Single Table Inheritance) & Association Patterns
+- **Use domain-specific association names** when pointing to STI models (e.g., `belongs_to :company` for employment, not generic `organization`)
+- **Be consistent with association names** across all includes, queries, and model methods
+- **Test association includes** to catch naming mismatches early (they fail at query execution, not model loading)
+- **For STI associations**: Use the specific subclass name when the relationship is semantically about that type (employment → company, not organization)
+
 ### Transaction Handling
 - **Use transactions for multi-step operations** that must succeed or fail together
 - **Wrap related database changes** in `ActiveRecord::Base.transaction` blocks
@@ -158,6 +179,13 @@ This document contains all the rules and conventions we follow in this project t
 - **Authorization flows** to prevent security issues
 - **Complex business logic** (job changes, energy % changes, tenure transitions)
 - **Edge cases** that could cause production issues
+
+### Association Testing (Critical for Manual Testing Bug Prevention)
+- **Always test association includes** - test that `Model.includes(:association)` works without errors
+- **Test complex includes** - verify multi-association includes work: `Model.includes(:assoc1, :assoc2, :assoc3)`
+- **Test wrong association names fail** - ensure using incorrect names raises `StatementInvalid` with column errors
+- **Test association queries** - verify `Model.where(association: record)` works correctly
+- **Execute queries in tests** - association errors only appear when queries are executed (`.count`, `.first`, etc.)
 
 ## User Experience
 

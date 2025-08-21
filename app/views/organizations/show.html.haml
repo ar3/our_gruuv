@@ -13,6 +13,28 @@
       
       .row
         .col-12
+          .card.mb-4
+            .card-header
+              %h5.mb-0
+                %i.bi.bi-info-circle.me-2
+                Organization Details
+            .card-body
+              .row
+                .col-md-6
+                  %p
+                    %strong Name:
+                    = @organization.name
+                  %p
+                    %strong Type:
+                    = @organization.type.underscore.humanize
+                  - if @organization.parent
+                    %p
+                      %strong Parent:
+                      = link_to @organization.parent.name, organization_path(@organization.parent)
+                .col-md-6
+                  %p
+                    %strong Created:
+                    = @organization.created_at.strftime("%B %d, %Y")
           - if @organization.company?
             .card.mb-4{ role: "region", "aria-labelledby": "organization-section" }
               .card-header
@@ -56,9 +78,6 @@
                       = link_to new_organization_path(parent_id: @organization.id), class: "btn btn-primary" do
                         %i.bi.bi-plus-circle.me-2
                         Add Team/Department
-                      = link_to organization_path(@organization), class: "btn btn-outline-primary" do
-                        %i.bi.bi-building.me-2
-                        Back to Organizations
                       - if current_person&.can_create_employment?(@organization)
                         = link_to organization_employment_management_index_path(@organization), class: "btn btn-success" do
                           %i.bi.bi-person-plus.me-2
@@ -99,7 +118,7 @@
             .card.mb-4{ role: "region", "aria-labelledby": "align-section" }
               .card-header
                 %h5.mb-0{ id: "align-section" }
-                  %i.bi.bi-target.me-2
+                  %i.bi.bi-bullseye.me-2
                   Align
               .card-body
                 .row
@@ -196,34 +215,5 @@
                       = link_to "#", class: "btn btn-outline-secondary", disabled: true do
                         %i.bi.bi-plus-circle.me-2
                         Track Outcomes
-          - else
-          .card.mb-4
-            .card-header
-              %h5.mb-0
-                %i.bi.bi-info-circle.me-2
-                Organization Details
-            .card-body
-              .row
-                .col-md-6
-                  %p
-                    %strong Name:
-                    = @organization.name
-                  %p
-                    %strong Type:
-                    = @organization.type.underscore.humanize
-                  - if @organization.parent
-                    %p
-                      %strong Parent:
-                      = link_to @organization.parent.name, organization_path(@organization.parent)
-                .col-md-6
-                  %p
-                    %strong Created:
-                    = @organization.created_at.strftime("%B %d, %Y")
-                  %p
-                    %strong Total Huddles:
-                    = @organization.huddles.count
-                  %p
-                    %strong Total Playbooks:
-                    = @organization.huddle_playbooks.count
           
 

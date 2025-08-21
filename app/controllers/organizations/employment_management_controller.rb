@@ -5,8 +5,8 @@ class Organizations::EmploymentManagementController < ApplicationController
   after_action :verify_authorized, except: [:potential_employees]
   
   def index
-    # Show potential employees and option to create new
-    authorize @organization, :create_employment?
+    # Show potential employees and option to create new - but handle permissions in view
+    authorize @organization, :show?  # Allow viewing, but creation permissions handled in view
     @potential_employees = load_potential_employees
   end
   

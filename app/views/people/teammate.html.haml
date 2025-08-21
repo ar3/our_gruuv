@@ -15,11 +15,11 @@
                 %h5.text-muted Current Organization: #{@current_organization.name}
                 
                 / Current Position
-                - current_tenure = @employment_tenures.find { |t| t.organization == @current_organization && t.ended_at.nil? }
+                - current_tenure = @employment_tenures.find { |t| t.company == @current_organization && t.ended_at.nil? }
                 - if current_tenure&.position&.position_type
                   .alert.alert-success
                     %strong Current Position:
-                    = current_tenure.position.position_type.name
+                    = current_tenure.position.position_type.external_title
                     - if current_tenure.started_at
                       %br
                       %small Started: #{current_tenure.started_at.strftime("%B %d, %Y")}
@@ -50,7 +50,7 @@
           .row.mb-4
             .col-12
               %h5.text-muted Other Organizations
-              - other_tenures = @employment_tenures.reject { |t| t.organization == @current_organization }
+              - other_tenures = @employment_tenures.reject { |t| t.company == @current_organization }
               - if other_tenures.any?
                 .table-responsive
                   %table.table.table-hover
@@ -63,7 +63,7 @@
                     %tbody
                       - other_tenures.each do |tenure|
                         %tr
-                          %td= tenure.organization.name
+                          %td= tenure.company.name
                           %td
                             - if tenure.ended_at.nil?
                               %span.badge.bg-success Active
@@ -78,24 +78,4 @@
               - else
                 %p.text-muted No other organizational affiliations.
           
-          / View Options
-          .row
-            .col-12
-              %hr
-              .d-flex.justify-content-between.align-items-center
-                %small.text-muted
-                  %i.bi.bi-people.me-1
-                  Teammate View
-                .btn-group.btn-group-sm
-                  = link_to public_person_path(@person), class: 'btn btn-outline-primary btn-sm' do
-                    %i.bi.bi-eye.me-1
-                    Public View
-                  
-                  - if policy(@person).manager?
-                    = link_to manager_person_path(@person), class: 'btn btn-outline-warning.btn-sm' do
-                      %i.bi.bi-gear.me-1
-                      Manager View
-                  - else
-                    %button.btn.btn-outline-secondary.btn-sm{disabled: true, title: 'You need employment management permissions or to be in the managerial hierarchy to view the manager version'}
-                      %i.bi.bi-gear.me-1
-                      Manager View
+          = render 'view_switcher'

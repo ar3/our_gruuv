@@ -22,7 +22,7 @@ class PeopleController < ApplicationController
   def public
     authorize @person
     # Public view - minimal data, no sensitive information
-    @employment_tenures = @person.employment_tenures.includes(:organization)
+    @employment_tenures = @person.employment_tenures.includes(:company)
                                  .order(started_at: :desc)
                                  .decorate
   end
@@ -31,20 +31,15 @@ class PeopleController < ApplicationController
     authorize @person
     # Teammate view - organization-specific data for active employees
     @current_organization = current_person&.current_organization
-    @employment_tenures = @person.employment_tenures.includes(:organization, :position, :position_type)
+    @employment_tenures = @person.employment_tenures.includes(:company, :position, position: :position_type)
                                  .order(started_at: :desc)
                                  .decorate
     @person_organization_accesses = @person.person_organization_accesses.includes(:organization)
   end
 
   def manager
-    authorize @person
-    # Manager view - full access to all data and management capabilities
-    @current_organization = current_person&.current_organization
-    @employment_tenures = @person.employment_tenures.includes(:organization, :position, :position_type, :manager)
-                                 .order(started_at: :desc)
-                                 .decorate
-    @person_organization_accesses = @person.person_organization_accesses.includes(:organization)
+    # Redirect to unified show page since management functionality is now integrated
+    redirect_to person_path(@person), notice: 'Management functionality is now integrated into the main profile view.'
   end
 
   def edit

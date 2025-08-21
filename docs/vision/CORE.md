@@ -80,6 +80,7 @@ This document outlines the vision for core system functionality that spans acros
 - **Public profile pages**: Accessible without authentication, showing portable stats and achievements
 - **Cross-organization reputation**: Stats that follow users across different jobs and organizations
 - **Social media integration**: Easy sharing of professional achievements and milestones
+- **Dream Goal**: Make the public profile page such that people will want to share it on their social media accounts… ideally this page will challenge what is the center of their professional identity, rivaling LinkedIn
 
 **Future Sprint: MAAP Management UI**
 - [ ] Add authorization checks to position/assignment management
