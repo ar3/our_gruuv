@@ -287,17 +287,56 @@
               / Assignments Sub-section
               .align-subsection.mb-4
                 %h6.text-muted.border-bottom.pb-2 Assignments
-                - if @person.assignments.any?
-                  - @person.assignments.each do |assignment|
-                    .d-flex.justify-content-between.align-items-center.py-2
+                - if @person.active_assignments(current_company).any?
+                  - @person.active_assignments(current_company).each do |assignment|
+                    :ruby
+                      assignment_tenure = @person.assignment_tenures.find { |t| t.assignment == assignment && t.active? }
+                      first_tenure = @person.assignment_tenures.select { |t| t.assignment == assignment && t.anticipated_energy_percentage&.positive? }.sort_by(&:started_at).first
+                      last_check_in = assignment_tenure&.assignment_check_ins&.recent&.first
+                    .d-flex.justify-content-between.align-items-center.py-3.border-bottom.border-light
                       .flex-grow-1
-                        %strong= assignment.title
-                        %br
-                        %small.text-muted= assignment.tagline
-                      .text-end
-                        %span.badge.bg-secondary= assignment.company&.display_name || "Unknown Company"
+                        .container
+                          .row
+                            .col-md-5.col-10
+                              %strong= link_to assignment.title, assignment_path(assignment), class: 'text-decoration-none', target: '_blank'
+                            .col-2
+                              %small.text-muted (#{assignment_tenure&.anticipated_energy_percentage || 0}%)
+                            .col-md-2.col-6
+                              %small.text-muted
+                                %strong Since:
+                                = distance_of_time_in_words(first_tenure&.started_at, Date.current) || "Never"
+                            .col-md-3
+                              %small.text-muted
+                                %strong Last Check-in:
+                                = last_check_in&.check_in_started_on&.strftime("%b %d, %Y") || "Never"
+                          .row
+                            %small.text-muted= assignment.tagline
                 - else
                   %p.text-muted No assignments found.
+              
+              / Abilities & Milestones Sub-section
+              .align-subsection.mb-4
+                %h6.text-muted.border-bottom.pb-2 Abilities & Milestones
+                %p.text-muted 
+                  This section will display certifications, achievements, and milestone competencies that have been earned or awarded. 
+                  Track professional development and skill advancement over time.
+                .mt-3
+                  .border.rounded.p-3.bg-light
+                    %i.bi.bi-trophy.me-2.text-warning
+                    %strong Coming Soon: 
+                    Comprehensive milestone and certification tracking system
+              
+              / Observations Sub-section
+              .align-subsection.mb-4
+                %h6.text-muted.border-bottom.pb-2 Observations
+                %p.text-muted 
+                  This section will instill a culture that believes in 360-degree feedback 365 days of the year, because feedback is the best fuel for growth. 
+                  Growing in skills, knowledge, and competencies is Gruuvin.
+                .mt-3
+                  .border.rounded.p-3.bg-light
+                    %i.bi.bi-chat-quote.me-2.text-info
+                    %strong Coming Soon: 
+                    Comprehensive 360-degree feedback and observation system
             
             .col-md-4.border-start.border-secondary
               .d-grid.gap-3
@@ -340,6 +379,24 @@
                           %i.bi.bi-gear.me-2
                           Manage Assignments
                       %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "You need both employment management AND MAAP management permissions to manage assignments" } }
+                
+                / Abilities & Milestones Actions
+                .action-group.d-grid.gap-2
+                  = button_to "#", class: 'btn btn-outline-info w-100', data: { action: 'click->coming-soon#show' } do
+                    %i.bi.bi-eye.me-2
+                    View All Milestone Details
+                  = button_to "#", class: 'btn btn-outline-success w-100', data: { action: 'click->coming-soon#show' } do
+                    %i.bi.bi-trophy.me-2
+                    Earn/Grant New Milestone
+                
+                / Observations Actions
+                .action-group.d-grid.gap-2
+                  = button_to "#", class: 'btn btn-outline-primary w-100', data: { action: 'click->coming-soon#show' } do
+                    %i.bi.bi-eye.me-2
+                    View All Observations
+                  = button_to "#", class: 'btn btn-outline-warning w-100', data: { action: 'click->coming-soon#show' } do
+                    %i.bi.bi-chat-quote.me-2
+                    Make an Observation
             
 :javascript
 

@@ -7,6 +7,25 @@ class Person < ApplicationRecord
   has_many :employment_tenures, dependent: :destroy
   has_many :assignment_tenures, dependent: :destroy
   has_many :assignments, through: :assignment_tenures
+  
+  # Scopes for active assignments in a specific company
+  def active_assignments(company=nil)
+    company = current_organization&.root_company if company.nil?
+    if company.nil?
+      return assignments.joins(:assignment_tenures)
+                         .where('assignment_tenures.anticipated_energy_percentage > 0')
+                         .where(assignment_tenures: { ended_at: nil })
+                         .distinct
+    else
+      assignments.joins(:assignment_tenures)
+                .where(assignment_tenures: { 
+                  assignments: { company: company }, 
+                  ended_at: nil 
+                })
+                .where('assignment_tenures.anticipated_energy_percentage > 0')
+                .distinct
+    end
+  end
   has_many :person_organization_accesses, dependent: :destroy
   belongs_to :current_organization, class_name: 'Organization', optional: true
   
