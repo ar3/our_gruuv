@@ -228,4 +228,98 @@ RSpec.describe Person, type: :model do
       }.to raise_error(ActiveRecord::StatementInvalid, /column employment_tenures.organization does not exist/)
     end
   end
+
+  describe 'huddle participation methods' do
+    let(:person) { create(:person) }
+    let(:huddle_playbook) { create(:huddle_playbook, special_session_name: 'Daily Standup') }
+    let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook) }
+    let!(:huddle_participant) { create(:huddle_participant, person: person, huddle: huddle) }
+    let!(:huddle_feedback) { create(:huddle_feedback, person: person, huddle: huddle) }
+
+    describe '#huddle_playbook_stats' do
+      it 'groups huddle participations by playbook' do
+        stats = person.huddle_playbook_stats
+        expect(stats).to have_key(huddle_playbook)
+        expect(stats[huddle_playbook]).to include(huddle_participant)
+      end
+
+      it 'includes huddle and playbook associations' do
+        stats = person.huddle_playbook_stats
+        playbook_participations = stats[huddle_playbook]
+        expect(playbook_participations.first.huddle).to eq(huddle)
+        expect(playbook_participations.first.huddle.huddle_playbook).to eq(huddle_playbook)
+      end
+    end
+
+    describe '#total_huddle_participations' do
+      it 'returns total count of huddle participations' do
+        expect(person.total_huddle_participations).to eq(1)
+      end
+    end
+
+    describe '#total_huddle_playbooks' do
+      it 'returns total count of distinct playbooks' do
+        expect(person.total_huddle_playbooks).to eq(1)
+      end
+
+      it 'handles multiple playbooks correctly' do
+        second_playbook = create(:huddle_playbook, special_session_name: 'Weekly Retro')
+        second_huddle = create(:huddle, huddle_playbook: second_playbook)
+        create(:huddle_participant, person: person, huddle: second_huddle)
+        
+        expect(person.total_huddle_playbooks).to eq(2)
+      end
+    end
+
+    describe '#total_feedback_given' do
+      it 'returns count of participations with feedback' do
+        expect(person.total_feedback_given).to eq(1)
+      end
+    end
+
+    describe '#has_huddle_participation?' do
+      it 'returns true when person has participations' do
+        expect(person.has_huddle_participation?).to be true
+      end
+
+      it 'returns false when person has no participations' do
+        person_without_participations = create(:person)
+        expect(person_without_participations.has_huddle_participation?).to be false
+      end
+    end
+
+    describe '#has_given_feedback_for_huddle?' do
+      it 'returns true when person has given feedback for a specific huddle' do
+        expect(person.has_given_feedback_for_huddle?(huddle)).to be true
+      end
+
+      it 'returns false when person has not given feedback for a specific huddle' do
+        other_huddle = create(:huddle)
+        expect(person.has_given_feedback_for_huddle?(other_huddle)).to be false
+      end
+    end
+
+    describe '#huddle_stats_for_playbook' do
+      it 'returns comprehensive stats for a specific playbook' do
+        stats = person.huddle_stats_for_playbook(huddle_playbook)
+        
+        expect(stats[:total_huddles_held]).to eq(1)
+        expect(stats[:participations_count]).to eq(1)
+        expect(stats[:participation_percentage]).to eq(100.0)
+        expect(stats[:feedback_count]).to eq(1)
+        expect(stats[:average_rating]).to be > 0
+      end
+
+      it 'handles playbook with no huddles' do
+        empty_playbook = create(:huddle_playbook)
+        stats = person.huddle_stats_for_playbook(empty_playbook)
+        
+        expect(stats[:total_huddles_held]).to eq(0)
+        expect(stats[:participations_count]).to eq(0)
+        expect(stats[:participation_percentage]).to eq(0)
+        expect(stats[:feedback_count]).to eq(0)
+        expect(stats[:average_rating]).to eq(0)
+      end
+    end
+  end
 end 

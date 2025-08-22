@@ -151,6 +151,62 @@ class Person < ApplicationRecord
     # This is a simplified version - you might want to expand this logic
     other_person.employment_tenures.active.where(company: current_organization).exists?
   end
+
+  # Huddle participation methods
+  def huddle_playbook_stats
+    huddle_participants.joins(:huddle)
+                       .includes(huddle: :huddle_playbook)
+                       .group_by { |p| p.huddle.huddle_playbook }
+  end
+
+  def total_huddle_participations
+    huddle_participants.count
+  end
+
+  def total_huddle_playbooks
+    huddle_participants.joins(:huddle).distinct.count(:huddle_playbook_id)
+  end
+
+  def total_feedback_given
+    huddle_feedbacks.count
+  end
+
+  def has_huddle_participation?
+    huddle_participants.exists?
+  end
+
+  def has_given_feedback_for_huddle?(huddle)
+    huddle_feedbacks.where(huddle: huddle).exists?
+  end
+
+  def huddle_stats_for_playbook(playbook)
+    playbook_huddles = huddles.where(huddle_playbook: playbook)
+    playbook_participations = huddle_participants.joins(:huddle).where(huddles: { huddle_playbook: playbook })
+    
+    total_huddles_held = playbook.huddles.count
+    participations_count = playbook_participations.count
+    feedback_count = huddle_feedbacks.joins(:huddle).where(huddles: { huddle_playbook: playbook }).count
+    
+    # Calculate average rating for this person's feedback in this playbook
+    ratings = huddle_feedbacks.joins(:huddle)
+                              .where(huddles: { huddle_playbook: playbook })
+                              .pluck(:informed_rating, :connected_rating, :goals_rating, :valuable_rating)
+    
+    average_rating = if ratings.any?
+      total_ratings = ratings.flatten.sum
+      (total_ratings.to_f / ratings.flatten.count).round(1)
+    else
+      0
+    end
+    
+    {
+      total_huddles_held: total_huddles_held,
+      participations_count: participations_count,
+      participation_percentage: total_huddles_held > 0 ? ((participations_count.to_f / total_huddles_held) * 100).round(1) : 0,
+      feedback_count: feedback_count,
+      average_rating: average_rating
+    }
+  end
   
   # Identity methods
   def google_identity

@@ -7,6 +7,10 @@ class HuddlePlaybook < ApplicationRecord
   before_validation :normalize_special_session_name
   
   def display_name
+    organization.display_name + " - " + display_special_session_name
+  end
+
+  def display_special_session_name
     special_session_name.present? ? special_session_name.titleize : "Base Team Playbook"
   end
   

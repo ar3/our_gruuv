@@ -397,7 +397,66 @@
                   = button_to "#", class: 'btn btn-outline-warning w-100', data: { action: 'click->coming-soon#show' } do
                     %i.bi.bi-chat-quote.me-2
                     Make an Observation
+
+  / Collaborate Section
+  .row.mb-4
+    .col-12
+      .card.mb-4{ role: "region", "aria-labelledby": "collaborate-section" }
+        .card-header
+          %h5.mb-0{ id: "collaborate-section" }
+            %i.bi.bi-people.me-2
+            Collaborate
+        .card-body
+          .row
+            .col-md-8
+              / Huddles Sub-section
+              .align-subsection.mb-4
+                %h6.text-muted.border-bottom.pb-2 Huddles
+                - if @person.has_huddle_participation?
+                  - @person.huddle_playbook_stats.each do |playbook, participations|
+                    - next if playbook.organization.root_company != current_organization
+                    - stats = @person.huddle_stats_for_playbook(playbook)
+                    .mb-4
+                      %h6.mb-3
+                        = link_to playbook.display_name, organization_huddle_playbook_path(current_organization, playbook), class: 'text-decoration-none'
+                      .row
+                        .col-md-4
+                          .text-center.p-3.border.rounded.bg-light
+                            %h4.mb-1= stats[:participations_count]
+                            %small.text-muted
+                              = pluralize(stats[:participations_count], 'huddle')
+                              %br
+                              %span.text-info= stats[:participation_percentage]
+                              = "% of huddles held"
+                        .col-md-4
+                          .text-center.p-3.border.rounded.bg-light
+                            %h4.mb-1= stats[:feedback_count]
+                            %small.text-muted
+                              = pluralize(stats[:feedback_count], 'feedback')
+                              %br
+                              %span.text-success given
+                        .col-md-4
+                          .text-center.p-3.border.rounded.bg-light
+                            %h4.mb-1= stats[:average_rating]
+                            %small.text-muted
+                              Average Rating
+                              %br
+                              %span.text-warning out of 20
+
+                - else
+                  %p.text-muted No huddle participation yet.
             
+            .col-md-4.border-start.border-secondary
+              .d-grid.gap-3
+                / Collaborate Actions
+                .action-group.d-grid.gap-2
+                  = button_to "#", class: 'btn btn-outline-primary w-100', data: { action: 'click->coming-soon#show' } do
+                    %i.bi.bi-calendar-event.me-2
+                    View Huddle History
+                  = button_to "#", class: 'btn btn-outline-info w-100', data: { action: 'click->coming-soon#show' } do
+                    %i.bi.bi-chat-heart.me-2
+                    Give Feedback
+
 :javascript
 
   // Coming Soon alerts
