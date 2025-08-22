@@ -37,10 +37,7 @@ class PeopleController < ApplicationController
     @person_organization_accesses = @person.person_organization_accesses.includes(:organization)
   end
 
-  def manager
-    # Redirect to unified show page since management functionality is now integrated
-    redirect_to person_path(@person), notice: 'Management functionality is now integrated into the main profile view.'
-  end
+
 
   def edit
     authorize @person
