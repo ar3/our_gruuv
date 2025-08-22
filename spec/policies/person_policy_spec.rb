@@ -52,6 +52,21 @@ RSpec.describe PersonPolicy, type: :policy do
     end
   end
 
+  permissions :view_other_companies? do
+    it "allows users to view their own other companies" do
+      expect(subject).to permit(person, person)
+    end
+
+    it "allows admins to view any person's other companies" do
+      admin_person = create(:person, :admin)
+      expect(subject).to permit(admin_person, other_person)
+    end
+
+    it "denies users from viewing other people's companies" do
+      expect(subject).not_to permit(person, other_person)
+    end
+  end
+
   describe "scope" do
     let!(:person1) { create(:person) }
     let!(:person2) { create(:person) }
