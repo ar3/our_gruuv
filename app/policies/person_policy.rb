@@ -98,6 +98,11 @@ class PersonPolicy < ApplicationPolicy
     user == record || user.admin?
   end
 
+  def view_other_companies?
+    # Users can view their own other companies, og_admin can view any
+    user == record || user.admin?
+  end
+
 
 
   def edit?
