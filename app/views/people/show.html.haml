@@ -343,9 +343,12 @@
                 / Position Actions
                 .action-group.d-grid.gap-2
                   - if policy(@person).view_employment_history?
-                    = button_to "#", class: 'btn btn-outline-primary w-100', data: { action: 'click->coming-soon#show' } do
-                      %i.bi.bi-clock-history.me-2
-                      View Employment History
+                    .d-flex.align-items-center.gap-2
+                      .flex-grow-1
+                        %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                          %i.bi.bi-clock-history.me-2
+                          View Employment History
+                      %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View comprehensive employment history and career progression" } }
                   - else
                     .d-flex.align-items-center.gap-2
                       .flex-grow-1
@@ -382,21 +385,33 @@
                 
                 / Abilities & Milestones Actions
                 .action-group.d-grid.gap-2
-                  = button_to "#", class: 'btn btn-outline-info w-100', data: { action: 'click->coming-soon#show' } do
-                    %i.bi.bi-eye.me-2
-                    View All Milestone Details
-                  = button_to "#", class: 'btn btn-outline-success w-100', data: { action: 'click->coming-soon#show' } do
-                    %i.bi.bi-trophy.me-2
-                    Earn/Grant New Milestone
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-eye.me-2
+                        View All Milestone Details
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View detailed milestone and certification progress" } }
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-trophy.me-2
+                        Earn/Grant New Milestone
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Earn or grant new milestones and achievements" } }
                 
                 / Observations Actions
                 .action-group.d-grid.gap-2
-                  = button_to "#", class: 'btn btn-outline-primary w-100', data: { action: 'click->coming-soon#show' } do
-                    %i.bi.bi-eye.me-2
-                    View All Observations
-                  = button_to "#", class: 'btn btn-outline-warning w-100', data: { action: 'click->coming-soon#show' } do
-                    %i.bi.bi-chat-quote.me-2
-                    Make an Observation
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-eye.me-2
+                        View All Observations
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View 360-degree feedback and observations" } }
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-chat-quote.me-2
+                        Make an Observation
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Provide 360-degree feedback and observations" } }
 
   / Collaborate Section
   .row.mb-4
@@ -467,25 +482,25 @@
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-newspaper.me-2
                         View Headlines
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View actionable headlines and opportunities" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View actionable headlines and opportunities" } }
                   .d-flex.align-items-center.gap-2
                     .flex-grow-1
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-plus-circle.me-2
                         Create Headline
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new actionable headlines" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new actionable headlines" } }
                   .d-flex.align-items-center.gap-2
                     .flex-grow-1
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-lightbulb.me-2
                         View Oppties
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Browse available opportunities" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Browse available opportunities" } }
                   .d-flex.align-items-center.gap-2
                     .flex-grow-1
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-plus-circle.me-2
                         Create Oppty
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new opportunities" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new opportunities" } }
 
                 / Diamond Decisions Actions
                 .action-group.d-grid.gap-2
@@ -494,13 +509,13 @@
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-gem.me-2
                         My Diamond Decision History
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View your decision-making history" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View your decision-making history" } }
                   .d-flex.align-items-center.gap-2
                     .flex-grow-1
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-calendar-check.me-2
                         Upcoming Diamond Decisions
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: See upcoming decisions to be made" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: See upcoming decisions to be made" } }
 
                 / S.E.E. 20 Huddles Actions
                 .action-group.d-grid.gap-2
@@ -515,13 +530,13 @@
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-check2-square.me-2
                         My TODOs
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View your huddle-related TODOs" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View your huddle-related TODOs" } }
                   .d-flex.align-items-center.gap-2
                     .flex-grow-1
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-plus-circle.me-2
                         Create TODO
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new huddle-related TODOs" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new huddle-related TODOs" } }
 
   / Transform Section
   .row.mb-4
@@ -558,13 +573,13 @@
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-clipboard-data.me-2
                         View Scorecard
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View team scorecard signals and alignment metrics" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View team scorecard signals and alignment metrics" } }
                   .d-flex.align-items-center.gap-2
                     .flex-grow-1
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-gear.me-2
-                        Configure Signals
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Set up and configure team scorecard signals" } }
+                          Configure Signals
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Set up and configure team scorecard signals" } }
 
                 / Forest of Hypotheses Actions
                 .action-group.d-grid.gap-2
@@ -573,13 +588,13 @@
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-tree.me-2
                         View Hypotheses
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Explore the forest of team hypotheses and assumptions" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Explore the forest of team hypotheses and assumptions" } }
                   .d-flex.align-items-center.gap-2
                     .flex-grow-1
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-plus-circle.me-2
                         Add Hypothesis
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new hypotheses for team testing" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new hypotheses for team testing" } }
 
                 / OKR-3's Actions
                 .action-group.d-grid.gap-2
@@ -588,13 +603,13 @@
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-target.me-2
                         View OKR-3's
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View COMMIT, STRETCH, and TRANSFORM goals" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View COMMIT, STRETCH, and TRANSFORM goals" } }
                   .d-flex.align-items-center.gap-2
                     .flex-grow-1
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
                         %i.bi.bi-plus-circle.me-2
                         Create OKR-3
-                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new COMMIT, STRETCH, or TRANSFORM goals" } }
+                    %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new COMMIT, STRETCH, or TRANSFORM goals" } }
 
 :javascript
 
