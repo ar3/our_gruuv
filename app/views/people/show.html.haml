@@ -450,12 +450,12 @@
               .d-grid.gap-3
                 / Collaborate Actions
                 .action-group.d-grid.gap-2
-                  = button_to "#", class: 'btn btn-outline-primary w-100', data: { action: 'click->coming-soon#show' } do
+                  = link_to huddles_path, class: 'btn btn-outline-primary w-100' do
                     %i.bi.bi-calendar-event.me-2
-                    View Huddle History
-                  = button_to "#", class: 'btn btn-outline-info w-100', data: { action: 'click->coming-soon#show' } do
+                    Today's Huddles
+                  = link_to my_huddles_path, class: 'btn btn-outline-info w-100' do
                     %i.bi.bi-chat-heart.me-2
-                    Give Feedback
+                    My Huddles
 
 :javascript
 
