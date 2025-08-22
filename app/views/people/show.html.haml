@@ -409,9 +409,21 @@
         .card-body
           .row
             .col-md-8
-              / Huddles Sub-section
+              / Good Opportunities Sub-section
               .align-subsection.mb-4
-                %h6.text-muted.border-bottom.pb-2 Huddles
+                %h6.text-muted.border-bottom.pb-2 Good Opportunities
+                %p.text-muted Coming soon: We will help teams make real progress by identifying actionable topics to discuss, judgments to detoxify, and issues to solve forever. While others are talking in circles... Gruuvy teams take action by ensuring every conversation is focused on forward progress (not noliticking, or adversary building, or the silent killer of time-wasting).
+
+              / Diamond Decisions Sub-section
+              .align-subsection.mb-4
+                %h6.text-muted.border-bottom.pb-2 Diamond Decisions aka Diverge <=> Converge
+                %p.text-muted Coming soon: We will help folks take those clear opportunities and ensure everyone is heard and the best decision is made. A clear opportunity is critical, but how we work together to embrace that opportunity is just as vital! Don't let your decisions be flimsy... make them the strength of a diamond. Diamond decisions are the way.
+
+              / S.E.E. 20 Huddles Sub-section
+              .align-subsection.mb-4
+                %h6.text-muted.border-bottom.pb-2 S.E.E. 20 Huddles
+                %p.text-muted.mb-3 This is how we excavate new opportunities, have a diamond decision made about each, and do it all effectively as a team. Feedback is the fuel for growth and these huddles are too important to not be continuously improving. So let's measure that improvement!
+                
                 - if @person.has_huddle_participation?
                   - @person.huddle_playbook_stats.each do |playbook, participations|
                     - next if playbook.organization.root_company != current_organization
@@ -448,7 +460,49 @@
             
             .col-md-4.border-start.border-secondary
               .d-grid.gap-3
-                / Collaborate Actions
+                / Good Opportunities Actions
+                .action-group.d-grid.gap-2
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-newspaper.me-2
+                        View Headlines
+                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View actionable headlines and opportunities" } }
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-plus-circle.me-2
+                        Create Headline
+                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new actionable headlines" } }
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-lightbulb.me-2
+                        View Oppties
+                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Browse available opportunities" } }
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-plus-circle.me-2
+                        Create Oppty
+                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new opportunities" } }
+
+                / Diamond Decisions Actions
+                .action-group.d-grid.gap-2
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-gem.me-2
+                        My Diamond Decision History
+                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View your decision-making history" } }
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-calendar-check.me-2
+                        Upcoming Diamond Decisions
+                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: See upcoming decisions to be made" } }
+
+                / S.E.E. 20 Huddles Actions
                 .action-group.d-grid.gap-2
                   = link_to huddles_path, class: 'btn btn-outline-primary w-100' do
                     %i.bi.bi-calendar-event.me-2
@@ -456,6 +510,18 @@
                   = link_to my_huddles_path, class: 'btn btn-outline-info w-100' do
                     %i.bi.bi-chat-heart.me-2
                     My Huddles
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-check2-square.me-2
+                        My TODOs
+                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: View your huddle-related TODOs" } }
+                  .d-flex.align-items-center.gap-2
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
+                        %i.bi.bi-plus-circle.me-2
+                        Create TODO
+                    %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Create new huddle-related TODOs" } }
 
 :javascript
 
