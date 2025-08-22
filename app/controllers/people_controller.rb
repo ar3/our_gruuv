@@ -17,6 +17,10 @@ class PeopleController < ApplicationController
                                  .order(started_at: :desc)
                                  .decorate
     @person_organization_accesses = @person.person_organization_accesses.includes(:organization)
+    
+    # Preload huddle associations to avoid N+1 queries
+    @person.huddle_participants.includes(:huddle, huddle: :huddle_playbook).load
+    @person.huddle_feedbacks.includes(:huddle).load
   end
 
   def public
