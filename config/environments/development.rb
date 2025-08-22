@@ -82,4 +82,18 @@ Rails.application.configure do
   # Allow ngrok domains for OAuth testing
   config.hosts << "crappie-saved-absolutely.ngrok-free.app"
   config.hosts << /.*\.ngrok-free\.app/
+  
+  # Configure Bullet for N+1 query detection
+  config.after_initialize do
+    require 'bullet'
+    Bullet.enable = true
+    Bullet.alert = true
+    Bullet.bullet_logger = true
+    Bullet.console = true
+    Bullet.rails_logger = true
+    Bullet.add_footer = true
+    
+    # Skip certain models if needed
+    # Bullet.add_safelist type: :n_plus_one_query, class_name: 'User', association: :roles
+  end
 end

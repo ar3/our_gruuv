@@ -66,6 +66,9 @@ group :development do
   
   # HAML linting for consistent view formatting
   gem "haml-lint", require: false
+  
+  # Detect N+1 queries and unused eager loading
+  gem "bullet", require: false
 end
 
 group :test do

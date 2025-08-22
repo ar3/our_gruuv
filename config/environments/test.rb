@@ -55,4 +55,16 @@ config.action_controller.default_url_options = {}
 
   # Configure rack_session_access for feature tests
   config.middleware.use RackSessionAccess::Middleware
+  
+  # Configure Bullet for N+1 query detection in tests
+  config.after_initialize do
+    require 'bullet'
+    Bullet.enable = true
+    Bullet.bullet_logger = true
+    Bullet.console = true
+    Bullet.rails_logger = true
+    
+    # Raise errors on N+1 queries in tests to catch them early
+    Bullet.raise = true
+  end
 end
