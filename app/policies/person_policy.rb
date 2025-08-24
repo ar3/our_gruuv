@@ -1,7 +1,13 @@
 class PersonPolicy < ApplicationPolicy
   def show?
     # Users can view their own profile, admins can view any, or if they have employment management permissions
-    user == record || user.admin? || (record.current_organization && user.can_manage_employment?(record.current_organization))
+    return true if user == record || user.admin?
+    
+    # Check if user has employment management permissions in any organization
+    user_employment_orgs = user.employment_tenures.includes(:company).map(&:company)
+    user_has_employment_management = user_employment_orgs.any? { |org| user.can_manage_employment?(org) }
+    
+    user_has_employment_management
   end
 
   def public?
@@ -13,23 +19,36 @@ class PersonPolicy < ApplicationPolicy
     # Teammates can view each other's profiles within the same organization
     return false unless user && record
     
-    # Check if both users are active employees in the same organization
+    # Requestor must have a current organization
     user_org = user.current_organization
-    record_org = record.current_organization
+    return false unless user_org
     
-    return false unless user_org && record_org
-    return false unless user_org == record_org
+    Rails.logger.debug "Teammate check: User #{user.id} (#{user.email}) org: #{user_org.id} (#{user_org.name})"
     
-    # Both must be active employees in the same organization
-    user.active_employment_tenure_in?(user_org) && record.active_employment_tenure_in?(record_org)
+    # Requestor must be active in their current organization
+    return false unless user.active_employment_tenure_in?(user_org)
+    
+    # Subject must have employment within the requestor's organization
+    subject_has_employment = record.employment_tenures.where(company: user_org).exists?
+    
+    Rails.logger.debug "Subject employment in org: #{subject_has_employment}"
+    
+    subject_has_employment
   end
 
   def manager?
     # Managers can view detailed profiles of people they manage
     return false unless user && record
     
-    # User can access if they have employment management permissions
-    return true if user.can_manage_employment?(record.current_organization)
+    # User can access if they have employment management permissions for any organization
+    # Check all organizations where user has employment management permissions
+    user_employment_orgs = user.employment_tenures.includes(:company).map(&:company)
+    user_has_employment_management = user_employment_orgs.any? { |org| user.can_manage_employment?(org) }
+    
+    Rails.logger.debug "Manager check: User #{user.id} has employment management: #{user_has_employment_management}"
+    
+    # User can access if they have employment management permissions anywhere
+    return true if user_has_employment_management
     
     # User can access if they are in the managerial hierarchy
     return true if user.in_managerial_hierarchy_of?(record)
@@ -49,40 +68,44 @@ class PersonPolicy < ApplicationPolicy
     # Users can view employment history if they are:
     # 1. The person themselves
     # 2. In their managerial hierarchy 
-    # 3. Have employment management permissions for that organization
-    return false unless user && record
+    # 3. Have employment management permissions for any organization
+    return true if user == record || user.in_managerial_hierarchy_of?(record)
     
-    user == record || 
-    user.in_managerial_hierarchy_of?(record) || 
-    (record.current_organization && user.can_manage_employment?(record.current_organization))
+    # Check if user has employment management permissions in any organization
+    user_employment_orgs = user.employment_tenures.includes(:company).map(&:company)
+    user_has_employment_management = user_employment_orgs.any? { |org| user.can_manage_employment?(org) }
+    
+    user_has_employment_management
   end
 
   def manage_assignments?
     # Users can manage assignments if they are:
     # 1. The person themselves
     # 2. In their managerial hierarchy 
-    # 3. Have BOTH employment management AND MAAP management permissions for that organization
-    return false unless user && record
-    
+    # 3. Have BOTH employment management AND MAAP management permissions for any organization
     return true if user == record || user.in_managerial_hierarchy_of?(record)
     
-    # Check for both permissions
-    return false unless record.current_organization
-    user.can_manage_employment?(record.current_organization) && 
-    user.can_manage_maap?(record.current_organization)
+    # Check for both permissions across all user's organizations
+    user_employment_orgs = user.employment_tenures.includes(:company).map(&:company)
+    user_has_both_permissions = user_employment_orgs.any? do |org| 
+      user.can_manage_employment?(org) && user.can_manage_maap?(org)
+    end
+    
+    user_has_both_permissions
   end
 
   def change_employment?
     # Users can change employment if they are:
     # 1. The person themselves
     # 2. In their managerial hierarchy 
-    # 3. Have employment management permissions for that organization
-    return false unless user && record
-    
+    # 3. Have employment management permissions for any organization
     return true if user == record || user.in_managerial_hierarchy_of?(record)
     
-    return false unless record.current_organization
-    user.can_manage_employment?(record.current_organization)
+    # Check if user has employment management permissions in any organization
+    user_employment_orgs = user.employment_tenures.includes(:company).map(&:company)
+    user_has_employment_management = user_employment_orgs.any? { |org| user.can_manage_employment?(org) }
+    
+    user_has_employment_management
   end
 
   def change?
@@ -151,5 +174,10 @@ class PersonPolicy < ApplicationPolicy
         scope.where(id: user.id)
       end
     end
+  end
+
+  private
+  def has_current_organization?(person)
+    person.current_organization.present?
   end
 end

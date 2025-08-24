@@ -32,7 +32,7 @@
                     - if current_tenure
                       %tr
                         %td
-                          = link_to employee.display_name, person_path(employee), class: "text-decoration-none", data: { bs_toggle: "tooltip", bs_title: "ID: #{employee.id} | Name: #{employee.display_name} | Email: #{employee.email}" }
+                          = link_to employee.display_name, teammate_person_path(employee), class: "text-decoration-none", data: { bs_toggle: "tooltip", bs_title: "ID: #{employee.id} | Name: #{employee.display_name} | Email: #{employee.email}" }
                         %td
                           - if current_tenure.position
                             = current_tenure.position.display_name
@@ -44,7 +44,7 @@
                           %span.badge.bg-info= @organization.huddle_participants.where(id: employee.id).count
                         %td
                           .btn-group.btn-group-sm
-                            = link_to person_path(employee), class: "btn btn-outline-primary" do
+                            = link_to teammate_person_path(employee), class: "btn btn-outline-primary" do
                               %i.bi.bi-eye
                             = link_to person_assignment_tenures_path(employee), class: "btn btn-outline-info" do
                               %i.bi.bi-list-task
@@ -78,7 +78,7 @@
                     - last_huddle = participant.huddle_participants.joins(:huddle).order('huddles.started_at DESC').first
                     %tr
                       %td
-                        = link_to participant.display_name, person_path(participant), class: "text-decoration-none", data: { bs_toggle: "tooltip", bs_title: "ID: #{participant.id} | Name: #{participant.display_name} | Email: #{participant.email}" }
+                        = link_to participant.display_name, public_person_path(participant), class: "text-decoration-none", data: { bs_toggle: "tooltip", bs_title: "ID: #{participant.id} | Name: #{participant.display_name} | Email: #{participant.email}" }
                       %td
                         %span.badge.bg-info= huddle_count
                       %td
@@ -88,7 +88,7 @@
                           %span.text-muted Unknown
                       %td
                         .btn-group.btn-group-sm
-                          = link_to person_path(participant), class: "btn btn-outline-primary" do
+                          = link_to public_person_path(participant), class: "btn btn-outline-primary" do
                             %i.bi.bi-eye
           - else
             .text-center.py-4

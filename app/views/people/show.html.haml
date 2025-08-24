@@ -1,10 +1,10 @@
 - content_for :header do
   %h1.mb-0{id: "person-title"}
-    - if @person == @current_person
-      My Profile
-    - else
-      = @person.display_name
-
+            - if @person == @current_person
+              My Profile
+            - else
+              = @person.display_name
+        
 - content_for :header_action do
   = render 'view_switcher'
 
@@ -21,17 +21,17 @@
         %h5.mb-0{ id: "about-me-section" }
           %i.bi.bi-person.me-2
           About Me
-      .card-body
+        .card-body
         .row.mt-3
           .col-12.col-md-8
-            .row
+          .row
               .col-md-6.col-12
-                %p
-                  %strong Name:
-                  = @person.full_name
-                %p
-                  %strong Email:
-                  = @person.email
+              %p
+                %strong Name:
+                = @person.full_name
+              %p
+                %strong Email:
+                = @person.email
                 %p
                   %strong Phone:
                   = @person.unique_textable_phone_number.present? ? @person.unique_textable_phone_number : "Not provided"
@@ -52,7 +52,7 @@
               
               / Other Companies Section (only visible to person themselves or og_admin)
               - if policy(@person).view_other_companies?
-                .mt-4
+          .mt-4
                   %h6.text-muted.border-bottom.pb-2 Other Companies
                   - other_companies = @employment_tenures.select { |t| t.company != current_organization }.map(&:company).uniq
                   - if other_companies.any?
@@ -79,10 +79,10 @@
                     %p.text-muted No other companies found.
           .col-md-4.col-12.border-start.border-secondary
             .d-grid.gap-2
-              - if @person == @current_person
-                = link_to edit_profile_path, class: "btn btn-primary" do
-                  %i.bi.bi-pencil.me-2
-                  Edit Profile
+            - if @person == @current_person
+              = link_to edit_profile_path, class: "btn btn-primary" do
+                %i.bi.bi-pencil.me-2
+                Edit Profile
 
 
 / Security & Permissions Section
@@ -91,41 +91,41 @@
     .card.mb-4{ role: "region", "aria-labelledby": "security-section" }
       .card-header
         %h5.mb-0{ id: "security-section" }
-          %i.bi.bi-shield-lock.me-2
+                %i.bi.bi-shield-lock.me-2
           Identities
-      .card-body
+          .card-body
         .row
           .col-md-8
-            .table-responsive
-              %table.table.table-hover
-                %thead
-                  %tr
-                    %th Account Type
-                    %th Name
-                    %th Email
-                    %th Status
-                    %th Connected
-                    %th Actions
-                %tbody
-                  - @person.person_identities.each do |identity|
+              .table-responsive
+                %table.table.table-hover
+                  %thead
                     %tr
-                      %td
-                        = identity_profile_image(identity, size: 24)
-                        %i{class: "bi #{identity_provider_icon(identity)} me-2"}
-                        = identity_provider_name(identity)
-                      %td
-                        - if identity.name.present?
-                          = identity.name
-                        - else
-                          %span.text-muted Not provided
-                      %td= identity.email
-                      %td= identity_status_badge(identity)
-                      %td= identity.created_at.strftime('%B %d, %Y')
-                      %td
-                        = disconnect_identity_button(identity)
-                    %tr
-                      %td{colspan: 6}
-                        = identity_raw_data_display(identity)
+                      %th Account Type
+                      %th Name
+                      %th Email
+                      %th Status
+                      %th Connected
+                      %th Actions
+                  %tbody
+                    - @person.person_identities.each do |identity|
+                      %tr
+                        %td
+                          = identity_profile_image(identity, size: 24)
+                          %i{class: "bi #{identity_provider_icon(identity)} me-2"}
+                          = identity_provider_name(identity)
+                        %td
+                          - if identity.name.present?
+                            = identity.name
+                          - else
+                            %span.text-muted Not provided
+                        %td= identity.email
+                        %td= identity_status_badge(identity)
+                        %td= identity.created_at.strftime('%B %d, %Y')
+                        %td
+                          = disconnect_identity_button(identity)
+                      %tr
+                        %td{colspan: 6}
+                          = identity_raw_data_display(identity)
                     - if @person.person_identities.none?
                       %tr
                         %td{colspan: 6}
@@ -147,27 +147,27 @@
     .card.mb-4{ role: "region", "aria-labelledby": "permissions-section" }
       .card-header
         %h5.mb-0{ id: "permissions-section" }
-          %i.bi.bi-key.me-2
-          Organization Permissions for #{current_organization.name}
-      .card-body
+                %i.bi.bi-key.me-2
+                Organization Permissions for #{current_organization.name}
+            .card-body
         .row
           .col-md-8
-            - current_access = @person.person_organization_accesses.find_by(organization: current_organization)
-            - if current_access
-              .table-responsive
-                %table.table.table-hover
-                  %thead
-                    %tr
-                      %th Permission Type
-                      %th Status
+              - current_access = @person.person_organization_accesses.find_by(organization: current_organization)
+              - if current_access
+                .table-responsive
+                  %table.table.table-hover
+                    %thead
+                      %tr
+                        %th Permission Type
+                        %th Status
                       %th Source
-                  %tbody
-                    %tr
-                      %td Employment Management
-                      %td
-                        - if current_access.can_manage_employment?
+                    %tbody
+                      %tr
+                        %td Employment Management
+                        %td
+                          - if current_access.can_manage_employment?
                           %span.badge.bg-success ALLOWED
-                        - elsif current_access.can_manage_employment.nil?
+                          - elsif current_access.can_manage_employment.nil?
                           - if current_organization.parent
                             %span.badge.bg-warning INHERITED
                           - else
@@ -210,12 +210,12 @@
                             %span.text-muted No parent organization (BLOCKED)
                         - else
                           %span.text-muted Direct
-                    %tr
-                      %td MAAP Management
-                      %td
-                        - if current_access.can_manage_maap?
+                      %tr
+                        %td MAAP Management
+                        %td
+                          - if current_access.can_manage_maap?
                           %span.badge.bg-success ALLOWED
-                        - elsif current_access.can_manage_maap.nil?
+                          - elsif current_access.can_manage_maap.nil?
                           - if current_organization.parent
                             %span.badge.bg-warning INHERITED
                           - else
@@ -242,10 +242,10 @@
               - can_modify = current_person.can_manage_employment?(current_organization)
               - if can_modify
                 - if current_access
-                  = link_to edit_organization_person_access_path(current_organization, current_access), class: 'btn btn-warning' do
-                    %i.bi.bi-pencil.me-2
+                    = link_to edit_organization_person_access_path(current_organization, current_access), class: 'btn btn-warning' do
+                      %i.bi.bi-pencil.me-2
                     Modify Permissions
-                - else
+              - else
                   = link_to new_organization_person_access_path(current_organization), class: 'btn btn-success' do
                     %i.bi.bi-plus.me-2
                     Add Organization Permission
@@ -263,7 +263,7 @@
     .card.mb-4{ role: "region", "aria-labelledby": "align-section" }
       .card-header
         %h5.mb-0{ id: "align-section" }
-          %i.bi.bi-briefcase.me-2
+              %i.bi.bi-briefcase.me-2
           Align
       .card-body
         :ruby
@@ -272,7 +272,7 @@
           first_tenure = @employment_tenures.select { |t| t.company == current_company }.sort_by(&:started_at).first
         
         .row
-          .col-md-8
+                            .col-md-8
             / Position Sub-section
             .align-subsection.mb-4
               %h6.text-muted.border-bottom.pb-2 Position
@@ -346,7 +346,7 @@
               %p.text-muted 
                 This section will display certifications, achievements, and milestone competencies that have been earned or awarded. 
                 Track professional development and skill advancement over time.
-              .mt-3
+                  .mt-3
                 .border.rounded.p-3.bg-light
                   %i.bi.bi-trophy.me-2.text-warning
                   %strong Coming Soon: 
@@ -405,8 +405,8 @@
                   .d-flex.align-items-center.gap-2
                     .flex-grow-1
                       %button.btn.btn-outline-secondary.w-100.disabled{disabled: true}
-                        %i.bi.bi-gear.me-2
-                        Manage Assignments
+                  %i.bi.bi-gear.me-2
+                  Manage Assignments
                     %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "You need both employment management AND MAAP management permissions to manage assignments" } }
               
               / Abilities & Milestones Actions
@@ -603,7 +603,7 @@
                 .d-flex.align-items-center.gap-2
                   .flex-grow-1
                     %button.btn.btn-outline-secondary.w-100.disabled{disabled: true, data: { action: 'click->coming-soon#show' }}
-                      %i.bi.bi-gear.me-2
+                  %i.bi.bi-gear.me-2
                         Configure Signals
                   %i.bi.bi-cone-striped.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Coming Soon: Set up and configure team scorecard signals" } }
 
