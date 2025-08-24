@@ -55,22 +55,70 @@
               = flash[:error]
             %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
     
-    - if current_person
-      %nav.navbar.navbar-expand-lg.navbar-light.bg-light
-        .container
-          = link_to "Our Gruuv", root_path, class: "navbar-brand"
-
-          .navbar-nav.ms-auto
-            - if current_person.admin?
-              .nav-item
-                = link_to "People", people_path, class: "nav-link"
-            .nav-item.dropdown
+    / Main Navigation
+    %nav.navbar.navbar-expand-lg.navbar-dark.bg-primary
+      .container
+        = link_to "Our Gruuv", root_path, class: "navbar-brand fw-bold"
+        
+        %button.navbar-toggler{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#navbarMain", "aria-controls": "navbarMain", "aria-expanded": "false", "aria-label": "Toggle navigation"}
+          %span.navbar-toggler-icon
+        
+        .collapse.navbar-collapse#navbarMain
+          %ul.navbar-nav.me-auto
+            %li.nav-item.dropdown
               %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
-                = current_person.full_name
+                Align
               %ul.dropdown-menu
-                %li= button_to "Logout", logout_path, method: :delete, class: "dropdown-item", form: { style: "display: inline;" }
+                %li= link_to "Assignments", assignments_path, class: "dropdown-item"
+                %li= link_to "Positions", positions_path, class: "dropdown-item"
+            %li.nav-item.dropdown
+              %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                Collaborate
+              %ul.dropdown-menu
+                %li= link_to "Today's Huddles", huddles_path, class: "dropdown-item"
+                %li= link_to "My Huddles", my_huddles_path, class: "dropdown-item"
+
+            %li.nav-item
+              = link_to "Transform", "#", class: "nav-link", onclick: "alert('Coming soon!'); return false;"
+          
+          %ul.navbar-nav
+            - if current_person
+              %li.nav-item.dropdown
+                %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                  %i.bi.bi-person-circle.me-1
+                  = current_person.full_name
+                %ul.dropdown-menu.dropdown-menu-end
+                  %li= link_to "My Profile", profile_path, class: "dropdown-item"
+                  - if current_organization
+                    %li
+                      %hr.dropdown-divider
+                    %li.dropdown-header
+                      %small.text-muted Current Organization
+                    %li
+                      = link_to organization_path(current_organization), class: "dropdown-item text-primary" do
+                        %i.bi.bi-building.me-2
+                        = current_organization.display_name
+                        - if current_organization.team?
+                          %small.text-muted.ms-1= "(#{current_organization.parent&.name})"
+                    - current_person.available_companies.each do |org|
+                      - if org != current_organization
+                        %li
+                          = button_to switch_organization_path(org), method: :patch, class: "dropdown-item", form: { style: "display: inline;" } do
+                            %i.bi.bi-building.me-2
+                            = org.display_name
+                    %li
+                      %hr.dropdown-divider
+                    %li= link_to "Manage Organizations", organizations_path, class: "dropdown-item"
+                    - if current_organization
+                      %li
+                        %hr.dropdown-divider
+                      %li= link_to "Slack Integration", organization_slack_path(current_organization), class: "dropdown-item"
+
+                  %li
+                    %hr.dropdown-divider
+                  %li= button_to "Logout", logout_path, method: :delete, class: "dropdown-item", form: { style: "display: inline;" }
     
-    / Main Content Container
+    / Main Content Container with Structured Areas
     .container.mt-4
       / Header Area - Title (left) + Primary Action/View Switcher (right)
       - if content_for?(:header)
@@ -132,5 +180,27 @@
                 %p
                   %strong Valuable:
                   %span#modalValuableRating
+                %p
+                  %strong Total Score:
+                  %span#modalTotalScore
+            .row.mt-3
+              .col-md-6
+                %h6 Personal Conflict Style
+                %div#modalPersonalConflict
+              .col-md-6
+                %h6 Team Conflict Style
+                %div#modalTeamConflict
+            .row.mt-3
+              .col-12
+                %h6 Appreciation
+                %div#modalAppreciation
+            .row.mt-3
+              .col-12
+                %h6 Change Suggestion
+                %div#modalChangeSuggestion
+            .row.mt-3
+              .col-12
+                %h6 Private Feedback
+                %div#modalPrivateFeedback
           .modal-footer
             %button.btn.btn-secondary{type: "button", "data-bs-dismiss": "modal"} Close
