@@ -1,59 +1,64 @@
-.container.mt-4
-  .row.justify-content-center
-    .col-lg-8
-      .card
-        .card-header.bg-primary.text-white
-          %h3.mb-0
-            %i.bi.bi-person-badge.me-2
-            #{@person.full_name}
-        
-        .card-body
-          = render 'view_switcher'
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-person-badge.me-2
+    = @person.full_name
 
-          / Basic Information
-          .row.mb-4
-            .col-md-6
-              %h5.text-muted Basic Information
+- content_for :header_action do
+  = render 'view_switcher'
+
+- content_for :go_back_link do
+  = link_to people_path, class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to People
+
+.row.justify-content-center
+  .col-lg-8
+    .card
+      .card-body
+        / Basic Information
+        .row.mb-4
+          .col-md-6
+            %h5.text-muted Basic Information
+            %p
+              %strong Name:
+              = @person.full_name
+            - if @person.timezone.present?
               %p
-                %strong Name:
-                = @person.full_name
-              - if @person.timezone.present?
-                %p
-                  %strong Timezone:
-                  = @person.timezone
-          
-          / Organizational Affiliations
-          .row.mb-4
-            .col-12
-              %h5.text-muted Organizational Affiliations
-              - if @employment_tenures.any?
-                .table-responsive
-                  %table.table.table-hover
-                    %thead
+                %strong Timezone:
+                = @person.timezone
+        
+        / Organizational Affiliations
+        .row.mb-4
+          .col-12
+            %h5.text-muted Organizational Affiliations
+            - if @employment_tenures.any?
+              .table-responsive
+                %table.table.table-hover
+                  %thead
+                    %tr
+                      %th Organization
+                      %th Status
+                      %th Start Date
+                  %tbody
+                    - @employment_tenures.each do |tenure|
                       %tr
-                        %th Organization
-                        %th Status
-                        %th Start Date
-                    %tbody
-                      - @employment_tenures.each do |tenure|
-                        %tr
-                          %td= tenure.company.name
-                          %td
-                            - if tenure.ended_at.nil?
-                              %span.badge.bg-success Active Employee
-                            - else
-                              %span.badge.bg-secondary Former Employee
-                          %td= tenure.started_at.strftime("%B %Y")
-              - else
-                %p.text-muted No organizational affiliations found.
-          
-          / Placeholder for Future Features
-          .row.mb-4
-            .col-12
-              %h5.text-muted Professional Achievements
-              .alert.alert-info
-                %i.bi.bi-info-circle.me-2
-                %strong Coming Soon:
-                This profile will include huddle participation stats, observations, and milestone achievements that you can carry with you across all organizations using OurGruuv.
+                        %td= tenure.company.name
+                        %td
+                          - if tenure.ended_at.nil?
+                            %span.badge.bg-success Active Employee
+                          - else
+                            %span.badge.bg-secondary Former Employee
+                        %td= tenure.started_at.strftime("%B %Y")
+            - else
+              %p.text-muted No organizational affiliations found.
+        
+        / Placeholder for Future Features
+        .row.mb-4
+          .col-12
+            %h5.text-muted Professional Achievements
+            .alert.alert-info
+              %i.bi.bi-info-circle.me-2
+              %strong Coming Soon:
+              This profile will include huddle participation stats, observations, and milestone achievements that you can carry with you across all organizations using OurGruuv.
 
 
