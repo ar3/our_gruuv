@@ -4,12 +4,23 @@
     = current_view_name
   %ul.dropdown-menu
     %li
-      = link_to public_person_path(@person), class: 'dropdown-item' do
-        %i.bi.bi-globe.me-2
-        Public Mode
+      - if action_name == 'public'
+        .dropdown-item.text-muted
+          %i.bi.bi-globe.me-2
+          Public Mode (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - else
+        = link_to public_person_path(@person), class: 'dropdown-item' do
+          %i.bi.bi-globe.me-2
+          Public Mode
       
     %li
-      - if policy(@person).teammate?
+      - if action_name == 'teammate'
+        .dropdown-item.text-muted
+          %i.bi.bi-people.me-2
+          Teammate Mode (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif policy(@person).teammate?
         = link_to teammate_person_path(@person), class: 'dropdown-item' do
           %i.bi.bi-people.me-2
           Teammate Mode
@@ -20,11 +31,15 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be an active employee in the same organization to view the teammate version"}
       
     %li
-      - if policy(@person).manager?
+      - if action_name == 'show'
         .dropdown-item.text-muted
           %i.bi.bi-gear.me-2
           Management Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
+      - elsif policy(@person).manager?
+        = link_to person_path(@person), class: 'dropdown-item' do
+          %i.bi.bi-gear.me-2
+          Management Mode
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-gear.me-2

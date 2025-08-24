@@ -7,12 +7,12 @@
   = render 'view_switcher'
 
 - content_for :go_back_link do
-  = link_to people_path, class: "text-muted text-decoration-none" do
+  = link_to organization_employees_path(current_organization), class: "text-muted text-decoration-none" do
     %i.bi.bi-arrow-left.me-2
-    Back to People
+    ="Back to Teammates in #{current_organization.display_name}"
 
-.row.justify-content-center
-  .col-lg-8
+.row
+  .col-12
     .card
       .card-body
         / Basic Information
