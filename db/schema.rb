@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_19_104327) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_24_225352) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -342,6 +342,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_19_104327) do
     t.index ["organization_id"], name: "index_third_party_objects_on_organization_id"
   end
 
+  create_table "upload_events", force: :cascade do |t|
+    t.text "file_content"
+    t.jsonb "preview_actions", default: {}
+    t.bigint "creator_id", null: false
+    t.bigint "initiator_id", null: false
+    t.datetime "attempted_at"
+    t.string "status", default: "preview", null: false
+    t.jsonb "results", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_upload_events_on_created_at"
+    t.index ["creator_id"], name: "index_upload_events_on_creator_id"
+    t.index ["initiator_id"], name: "index_upload_events_on_initiator_id"
+    t.index ["status"], name: "index_upload_events_on_status"
+  end
+
   add_foreign_key "assignment_check_ins", "assignment_tenures"
   add_foreign_key "assignment_outcomes", "assignments"
   add_foreign_key "assignment_tenures", "assignments"
@@ -374,4 +390,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_19_104327) do
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
+  add_foreign_key "upload_events", "people", column: "creator_id"
+  add_foreign_key "upload_events", "people", column: "initiator_id"
 end

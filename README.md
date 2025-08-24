@@ -23,6 +23,6 @@ Things you may want to cover:
 
 * ...
 
-`http --url=crappie-saved-absolutely.ngrok-free.app 3000`
 `bin/dev`
+`ngrok http --hostname=crappie-saved-absolutely.ngrok-free.app 300`
 `git push origin main && railway up`
