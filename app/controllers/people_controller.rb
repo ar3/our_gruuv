@@ -1,4 +1,5 @@
 class PeopleController < ApplicationController
+  layout 'authenticated-v2-0', only: [:show, :public, :teammate]
   before_action :require_login, except: [:public]
   before_action :set_person, except: [:index]
   after_action :verify_authorized, except: :index
