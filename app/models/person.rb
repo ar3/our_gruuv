@@ -267,24 +267,12 @@ class Person < ApplicationRecord
   def parse_full_name
     return unless @full_name.present?
     
-    # Split the name into parts
-    name_parts = @full_name.strip.split(/\s+/)
+    # Use FullNameParser for consistent name parsing
+    name_parts = FullNameParser.new(@full_name)
     
-    case name_parts.length
-    when 1
-      self.first_name = name_parts[0]
-    when 2
-      self.first_name = name_parts[0]
-      self.last_name = name_parts[1]
-    when 3
-      self.first_name = name_parts[0]
-      self.middle_name = name_parts[1]
-      self.last_name = name_parts[2]
-    else
-      # For 4+ parts, assume first is first name, last is last name, rest is middle
-      self.first_name = name_parts[0]
-      self.last_name = name_parts[-1]
-      self.middle_name = name_parts[1..-2].join(' ') if name_parts.length > 2
-    end
+    self.first_name = name_parts.first_name
+    self.middle_name = name_parts.middle_name
+    self.last_name = name_parts.last_name
+    self.suffix = name_parts.suffix
   end
 end

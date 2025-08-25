@@ -192,11 +192,19 @@ class EmploymentDataUploadParser
   end
 
   def parse_person_data(row_hash, row_num)
-    {
+    name_parts = row_hash['name']&.strip&.split(' ', 2)
+    person_data = {
       name: row_hash['name']&.strip,
-      email: row_hash['email']&.strip&.downcase,
-      row: row_num
+      email: row_hash['email']&.strip&.downcase
     }
+
+    # Create new person if not found
+    person = Person.create!(
+      first_name: name_parts&.first || 'Unknown',
+      last_name: name_parts&.last || 'Unknown',
+      email: person_data[:email].presence || "unknown_#{SecureRandom.hex(4)}@example.com"
+    )
+    return person, true
   end
 
   def parse_assignment_data(row_hash, row_num)
