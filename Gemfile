@@ -100,6 +100,10 @@ gem "http", "~> 5.0"
 # Environment variables
 gem "dotenv-rails", "~> 3.1"
 
+# Excel file parsing for data uploads
+gem "roo", "~> 2.10"
+gem "csv", "~> 3.2"
+
 # Markdown rendering
 gem "redcarpet", "~> 3.6"
 
