@@ -403,8 +403,8 @@ class EmploymentDataUploadParser
 
   def parse_assignment_data(row_hash, row_num)
     {
-      'assignment_name' => row_hash['assignment_name']&.strip,
-      'assignment_description' => row_hash['assignment_description']&.strip,
+      'assignment_name' => strip_html(row_hash['assignment_name']&.strip),
+      'assignment_description' => strip_html(row_hash['assignment_description']&.strip),
       'row' => row_num
     }
   end
@@ -597,7 +597,7 @@ class EmploymentDataUploadParser
           # Look for existing check-in by date and assignment
           if check_in_data['check_in_date'].present?
             existing_check_in = AssignmentCheckIn.find_by(
-              assignment: assignment,
+              assignment_id: assignment.id,
               check_in_started_on: check_in_data['check_in_date']
             )
           end
@@ -700,5 +700,20 @@ class EmploymentDataUploadParser
     
     rating = value.to_s.strip.downcase
     VALID_RATINGS.include?(rating) ? rating : nil
+  end
+
+  private
+
+  def strip_html(text)
+    return text if text.blank?
+    
+    # Remove HTML tags and entities
+    cleaned = text.gsub(/<[^>]*>/, '')           # Remove HTML tags
+                  .gsub(/&[a-zA-Z0-9#]+;/, ' ')  # Replace HTML entities with spaces
+                  .gsub(/\s+/, ' ')               # Normalize whitespace
+                  .strip                          # Remove leading/trailing whitespace
+    
+    # If the result is empty after cleaning, return the original text
+    cleaned.present? ? cleaned : text
   end
 end

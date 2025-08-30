@@ -10,12 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_25_011553) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_30_202911) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "assignment_check_ins", force: :cascade do |t|
-    t.bigint "assignment_tenure_id", null: false
     t.date "check_in_started_on", null: false
     t.integer "actual_energy_percentage"
     t.string "employee_rating"
@@ -28,9 +27,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_011553) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.date "check_in_ended_on"
-    t.index ["assignment_tenure_id", "check_in_started_on"], name: "idx_on_assignment_tenure_id_check_in_started_on_44d8290cb0"
-    t.index ["assignment_tenure_id"], name: "index_assignment_check_ins_on_assignment_tenure_id"
+    t.bigint "person_id", null: false
+    t.bigint "assignment_id", null: false
+    t.index ["assignment_id", "check_in_started_on"], name: "idx_on_assignment_id_check_in_started_on_9b32849637"
+    t.index ["assignment_id"], name: "index_assignment_check_ins_on_assignment_id"
     t.index ["check_in_ended_on"], name: "index_assignment_check_ins_on_check_in_ended_on"
+    t.index ["person_id", "assignment_id", "check_in_started_on"], name: "idx_on_person_id_assignment_id_check_in_started_on_f9065653da"
+    t.index ["person_id", "check_in_started_on"], name: "idx_on_person_id_check_in_started_on_1e9a0aba88"
+    t.index ["person_id"], name: "index_assignment_check_ins_on_person_id"
     t.check_constraint "actual_energy_percentage IS NULL OR actual_energy_percentage >= 0 AND actual_energy_percentage <= 100", name: "check_actual_energy_percentage_range"
   end
 
@@ -360,7 +364,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_25_011553) do
     t.index ["status"], name: "index_upload_events_on_status"
   end
 
-  add_foreign_key "assignment_check_ins", "assignment_tenures"
+  add_foreign_key "assignment_check_ins", "assignments"
+  add_foreign_key "assignment_check_ins", "people"
   add_foreign_key "assignment_outcomes", "assignments"
   add_foreign_key "assignment_tenures", "assignments"
   add_foreign_key "assignment_tenures", "people"

@@ -18,6 +18,7 @@ class UploadEvent < ApplicationRecord
   scope :by_status, ->(status) { where(status: status) }
   scope :previewable, -> { where(status: %w[preview failed]) }
   scope :processable, -> { where(status: 'preview') }
+  scope :completed_or_failed, -> { where(status: %w[completed failed]) }
 
   # Instance methods
   def preview?
@@ -45,20 +46,22 @@ class UploadEvent < ApplicationRecord
   end
 
   def mark_as_processing!
-    update!(status: 'processing')
+    update!(status: 'processing', attempted_at: Time.current)
   end
 
   def mark_as_completed!(results)
     update!(
       status: 'completed',
-      results: results
+      results: results,
+      attempted_at: Time.current
     )
   end
 
   def mark_as_failed!(error_message)
     update!(
       status: 'failed',
-      results: { error: error_message }
+      results: { error: error_message },
+      attempted_at: Time.current
     )
   end
 
@@ -70,6 +73,22 @@ class UploadEvent < ApplicationRecord
   def failure_count
     return 0 unless results&.dig('failures')
     results['failures'].count
+  end
+
+  def processed?
+    completed? || failed?
+  end
+
+  def total_operations
+    success_count + failure_count
+  end
+
+  def has_failures?
+    failure_count > 0
+  end
+
+  def all_successful?
+    processed? && failure_count == 0
   end
 
   # Format success details for display with links

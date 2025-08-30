@@ -128,12 +128,7 @@ class EmploymentDataUploadProcessor
         
         next unless person && assignment
         
-        # Find the most recent tenure for this person/assignment
-        tenure = AssignmentTenure.most_recent_for(person, assignment)
-        Rails.logger.debug "Found tenure: #{tenure&.id}"
-        next unless tenure
-        
-        check_in, was_created = find_or_create_assignment_check_in(tenure, check_in_data)
+        check_in, was_created = find_or_create_assignment_check_in(person, assignment, check_in_data)
         @results[:successes] << {
           type: 'assignment_check_in',
           id: check_in.id,
@@ -226,17 +221,23 @@ class EmploymentDataUploadProcessor
     # Try to find by assignment_name (from parser) or title
     assignment_name = assignment_data['assignment_name'] || assignment_data['title']
     
+    # Strip HTML from assignment name
     if assignment_name.present?
+      clean_assignment_name = strip_html(assignment_name)
+      Rails.logger.info "Assignment name: '#{assignment_name}' -> cleaned: '#{clean_assignment_name}'"
+      
       assignment = Assignment.find_by(
-        title: assignment_name,
+        title: clean_assignment_name,
         company: organization
       )
       return assignment, false if assignment
+    else
+      clean_assignment_name = 'Unknown Assignment'
     end
     
     # Create new assignment if not found
     assignment = Assignment.create!(
-      title: assignment_name || 'Unknown Assignment',
+      title: clean_assignment_name,
       tagline: assignment_data['assignment_description'] || assignment_data['tagline'] || 'No description provided',
       company: organization
     )
@@ -244,36 +245,88 @@ class EmploymentDataUploadProcessor
   end
 
   def find_or_create_assignment_tenure(person, assignment, tenure_data)
-    # Try to find existing tenure
-    tenure = AssignmentTenure.find_by(
-      person: person,
-      assignment: assignment,
-      started_at: tenure_data['assignment_tenure_start_date']
-    )
-    return tenure, false if tenure
+    Rails.logger.info "=== TENURE LOGIC FOR PERSON #{person.id} (#{person.display_name}) AND ASSIGNMENT #{assignment.id} (#{assignment.title}) ==="
     
-    # Create new tenure if not found
-    tenure = AssignmentTenure.create!(
-      person: person,
-      assignment: assignment,
-      started_at: tenure_data['assignment_tenure_start_date'],
-      ended_at: tenure_data['assignment_tenure_end_date'],
-      anticipated_energy_percentage: tenure_data['anticipated_energy_percentage']
-    )
-    return tenure, true
+    # Determine the start date for the tenure
+    # Priority: 1) tenure_data start date, 2) today
+    tenure_start_date = if tenure_data['assignment_tenure_start_date'].present?
+      tenure_data['assignment_tenure_start_date'].to_date
+    else
+      Date.current
+    end
+    Rails.logger.info "Tenure start date: #{tenure_start_date} (from data: #{tenure_data['assignment_tenure_start_date']}, fallback: #{Date.current})"
+    
+    # Find the most recent active tenure for this person and assignment
+    existing_tenure = AssignmentTenure.most_recent_for(person, assignment)
+    
+    if existing_tenure
+      Rails.logger.info "Found existing tenure: #{existing_tenure.id} (started: #{existing_tenure.started_at}, energy: #{existing_tenure.anticipated_energy_percentage})"
+      
+      # Check if we need to create a new tenure (energy or manager changed)
+      new_energy = tenure_data['anticipated_energy_percentage']
+      energy_changed = existing_tenure.anticipated_energy_percentage != new_energy
+      
+      Rails.logger.info "New energy: #{new_energy}, Energy changed: #{energy_changed}"
+      
+      # For now, we'll assume manager changes aren't tracked in this data
+      # If you need to track manager changes, you'll need to add that field to the upload data
+      
+      if energy_changed
+        Rails.logger.info "Energy changed, closing existing tenure and creating new one"
+        
+        # Close the existing tenure and start a new one
+        existing_tenure.update!(ended_at: tenure_start_date)
+        Rails.logger.info "Closed existing tenure #{existing_tenure.id} at #{existing_tenure.ended_at}"
+        
+        # Create new tenure starting on the check-in date
+        tenure = AssignmentTenure.create!(
+          person: person,
+          assignment: assignment,
+          started_at: tenure_start_date,
+          ended_at: tenure_data['assignment_tenure_end_date'],
+          anticipated_energy_percentage: tenure_data['anticipated_energy_percentage']
+        )
+        Rails.logger.info "Created new tenure: #{tenure.id} (started: #{tenure.started_at}, energy: #{tenure.anticipated_energy_percentage})"
+        return tenure, true
+      else
+        Rails.logger.info "No changes, returning existing tenure"
+        # No changes, just return the existing tenure
+        return existing_tenure, false
+      end
+    else
+      Rails.logger.info "No existing tenure found, creating new one starting on #{tenure_start_date}"
+      
+      # Validate required data
+      if tenure_data['anticipated_energy_percentage'].nil?
+        Rails.logger.warn "Warning: No anticipated energy percentage provided, using nil"
+      end
+      
+      # No existing tenure, create new one starting on the check-in date
+      tenure = AssignmentTenure.create!(
+        person: person,
+        assignment: assignment,
+        started_at: tenure_start_date,
+        ended_at: tenure_data['assignment_tenure_end_date'],
+        anticipated_energy_percentage: tenure_data['anticipated_energy_percentage']
+      )
+      Rails.logger.info "Created new tenure: #{tenure.id} (started: #{tenure.started_at}, energy: #{tenure.anticipated_energy_percentage})"
+      return tenure, true
+    end
   end
 
-  def find_or_create_assignment_check_in(tenure, check_in_data)
+  def find_or_create_assignment_check_in(person, assignment, check_in_data)
     # Try to find existing check-in
     check_in = AssignmentCheckIn.find_by(
-      assignment_tenure: tenure,
+      person: person,
+      assignment: assignment,
       check_in_started_on: check_in_data['check_in_date']
     )
     return check_in, false if check_in
     
     # Create new check-in if not found
     check_in = AssignmentCheckIn.create!(
-      assignment_tenure: tenure,
+      person: person,
+      assignment: assignment,
       check_in_started_on: check_in_data['check_in_date'],
       actual_energy_percentage: check_in_data['energy_percentage'],
       manager_rating: check_in_data['manager_rating'],
@@ -319,12 +372,27 @@ class EmploymentDataUploadProcessor
   end
 
   def find_assignment_by_name(assignment_name)
-    # Remove URL from assignment name for lookup
-    clean_name = assignment_name.gsub(/\[https?:\/\/[^\]]+\]/, '').strip
+    # Remove URL and HTML from assignment name for lookup
+    clean_name = strip_html(assignment_name.gsub(/\[https?:\/\/[^\]]+\]/, '').strip)
     
     Assignment.find_by(
       title: clean_name,
       company: organization
     )
+  end
+
+  private
+
+  def strip_html(text)
+    return text if text.blank?
+    
+    # Remove HTML tags and entities
+    cleaned = text.gsub(/<[^>]*>/, '')           # Remove HTML tags
+                  .gsub(/&[a-zA-Z0-9#]+;/, ' ')  # Replace HTML entities with spaces
+                  .gsub(/\s+/, ' ')               # Normalize whitespace
+                  .strip                          # Remove leading/trailing whitespace
+    
+    # If the result is empty after cleaning, return the original text
+    cleaned.present? ? cleaned : text
   end
 end

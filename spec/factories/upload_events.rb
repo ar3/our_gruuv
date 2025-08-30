@@ -7,6 +7,7 @@ FactoryBot.define do
     
     association :creator, factory: :person
     association :initiator, factory: :person
+    association :organization, factory: :organization
     
     trait :processing do
       status { 'processing' }

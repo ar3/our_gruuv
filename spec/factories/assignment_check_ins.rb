@@ -1,6 +1,7 @@
 FactoryBot.define do
   factory :assignment_check_in do
-    association :assignment_tenure
+    association :person
+    association :assignment
     check_in_started_on { Date.current }
     actual_energy_percentage { rand(10..50) }
     employee_rating { :meeting }

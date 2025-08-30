@@ -1,23 +1,31 @@
 require 'rails_helper'
 
 RSpec.describe AssignmentCheckIn, type: :model do
-  let(:assignment_tenure) { create(:assignment_tenure) }
 
   describe 'associations' do
-    it 'belongs to an assignment tenure' do
-      check_in = build(:assignment_check_in, assignment_tenure: nil)
+    it 'belongs to a person' do
+      check_in = build(:assignment_check_in, person: nil)
       expect(check_in).not_to be_valid
-      expect(check_in.errors[:assignment_tenure]).to include('must exist')
+      expect(check_in.errors[:person]).to include('must exist')
     end
 
-    it 'has access to person through assignment tenure' do
-      check_in = create(:assignment_check_in, assignment_tenure: assignment_tenure)
-      expect(check_in.person).to eq(assignment_tenure.person)
+    it 'belongs to an assignment' do
+      check_in = build(:assignment_check_in, assignment: nil)
+      expect(check_in).not_to be_valid
+      expect(check_in.errors[:assignment]).to include('must exist')
     end
 
-    it 'has access to assignment through assignment tenure' do
-      check_in = create(:assignment_check_in, assignment_tenure: assignment_tenure)
-      expect(check_in.assignment).to eq(assignment_tenure.assignment)
+    it 'can access the associated assignment tenure' do
+      check_in = create(:assignment_check_in)
+      
+      # Create a tenure for this person/assignment combination
+      create(:assignment_tenure, 
+        person: check_in.person, 
+        assignment: check_in.assignment, 
+        started_at: 1.month.ago
+      )
+      
+      expect(check_in.assignment_tenure).to be_present
     end
   end
 
@@ -92,8 +100,13 @@ RSpec.describe AssignmentCheckIn, type: :model do
   end
 
   describe 'scopes' do
-    let!(:recent_check_in) { create(:assignment_check_in, assignment_tenure: assignment_tenure, check_in_started_on: Date.current) }
-    let!(:old_check_in) { create(:assignment_check_in, assignment_tenure: assignment_tenure, check_in_started_on: 1.month.ago) }
+    let!(:recent_check_in) { create(:assignment_check_in, check_in_started_on: Date.current) }
+    let!(:old_check_in) { create(:assignment_check_in, check_in_started_on: 1.month.ago) }
+
+    before do
+      # Ensure both check-ins have the same person and assignment for scope testing
+      old_check_in.update!(person: recent_check_in.person, assignment: recent_check_in.assignment)
+    end
 
     describe '.recent' do
       it 'orders check-ins by check_in_date descending' do
@@ -103,10 +116,9 @@ RSpec.describe AssignmentCheckIn, type: :model do
     end
 
     describe '.for_person' do
-      let(:person) { assignment_tenure.person }
+      let(:person) { recent_check_in.person }
       let(:other_person) { create(:person) }
-      let(:other_tenure) { create(:assignment_tenure, person: other_person) }
-      let!(:other_check_in) { create(:assignment_check_in, assignment_tenure: other_tenure) }
+      let!(:other_check_in) { create(:assignment_check_in, person: other_person) }
 
       it 'returns check-ins for a specific person' do
         result = AssignmentCheckIn.for_person(person)
@@ -117,10 +129,9 @@ RSpec.describe AssignmentCheckIn, type: :model do
     end
 
     describe '.for_assignment' do
-      let(:assignment) { assignment_tenure.assignment }
+      let(:assignment) { recent_check_in.assignment }
       let(:other_assignment) { create(:assignment) }
-      let(:other_tenure) { create(:assignment_tenure, assignment: other_assignment) }
-      let!(:other_check_in) { create(:assignment_check_in, assignment_tenure: other_tenure) }
+      let!(:other_check_in) { create(:assignment_check_in, assignment: other_assignment) }
 
       it 'returns check-ins for a specific assignment' do
         result = AssignmentCheckIn.for_assignment(assignment)
@@ -149,8 +160,16 @@ RSpec.describe AssignmentCheckIn, type: :model do
   end
 
   describe '#energy_mismatch?' do
-    let(:tenure) { create(:assignment_tenure, anticipated_energy_percentage: 50) }
-    let(:check_in) { create(:assignment_check_in, assignment_tenure: tenure) }
+    let(:check_in) { create(:assignment_check_in) }
+
+    before do
+      # Create a tenure for the person/assignment combination
+      create(:assignment_tenure, 
+        person: check_in.person, 
+        assignment: check_in.assignment, 
+        anticipated_energy_percentage: 50
+      )
+    end
 
     it 'returns false when either percentage is missing' do
       check_in.update!(actual_energy_percentage: nil)
@@ -174,8 +193,16 @@ RSpec.describe AssignmentCheckIn, type: :model do
   end
 
   describe '#days_since_tenure_start' do
-    let(:tenure) { create(:assignment_tenure, started_at: 10.days.ago) }
-    let(:check_in) { create(:assignment_check_in, assignment_tenure: tenure, check_in_started_on: Date.current) }
+    let(:check_in) { create(:assignment_check_in, check_in_started_on: Date.current) }
+
+    before do
+      # Create a tenure for the person/assignment combination
+      create(:assignment_tenure, 
+        person: check_in.person, 
+        assignment: check_in.assignment, 
+        started_at: 10.days.ago
+      )
+    end
 
     it 'calculates days since tenure started' do
       expect(check_in.days_since_tenure_start).to eq(10)
@@ -216,7 +243,7 @@ RSpec.describe AssignmentCheckIn, type: :model do
       let!(:tenure) { create(:assignment_tenure, person: person, assignment: assignment) }
 
       it 'returns existing open check-in if one exists' do
-        existing_check_in = create(:assignment_check_in, assignment_tenure: tenure)
+        existing_check_in = create(:assignment_check_in, person: person, assignment: assignment)
         result = AssignmentCheckIn.find_or_create_open_for(person, assignment)
         expect(result).to eq(existing_check_in)
       end
@@ -241,17 +268,16 @@ RSpec.describe AssignmentCheckIn, type: :model do
 
   describe '.average_days_between_check_ins' do
     let(:person) { create(:person) }
-    let(:tenure) { create(:assignment_tenure, person: person) }
 
     it 'returns nil for single check-in' do
-      create(:assignment_check_in, assignment_tenure: tenure)
+      create(:assignment_check_in, person: person)
       expect(AssignmentCheckIn.average_days_between_check_ins(person)).to be_nil
     end
 
     it 'calculates average for multiple check-ins' do
-      create(:assignment_check_in, assignment_tenure: tenure, check_in_started_on: 10.days.ago)
-      create(:assignment_check_in, assignment_tenure: tenure, check_in_started_on: 5.days.ago)
-      create(:assignment_check_in, assignment_tenure: tenure, check_in_started_on: Date.current)
+      create(:assignment_check_in, person: person, check_in_started_on: 10.days.ago)
+      create(:assignment_check_in, person: person, check_in_started_on: 5.days.ago)
+      create(:assignment_check_in, person: person, check_in_started_on: Date.current)
       
       # Differences: 5 days between 1st and 2nd, 5 days between 2nd and 3rd
       # Average: (5 + 5) / 2 = 5.0

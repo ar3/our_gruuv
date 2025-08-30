@@ -13,7 +13,7 @@ class AssignmentTenure < ApplicationRecord
   scope :active, -> { where(ended_at: nil) }
   scope :inactive, -> { where.not(ended_at: nil) }
   scope :for_person, ->(person) { where(person: person) }
-  scope :for_assignment, ->(assignment) { where(assignment: assignment) }
+  scope :for_assignment, ->(assignment) { where(assignment_id: assignment.id) }
   scope :most_recent_for_person_and_assignment, ->(person, assignment) { 
     for_person(person).for_assignment(assignment).order(started_at: :desc).limit(1) 
   }
@@ -36,7 +36,7 @@ class AssignmentTenure < ApplicationRecord
     return unless person_id && assignment_id && started_at
 
     overlapping_tenures = AssignmentTenure
-      .where(person: person, assignment: assignment)
+      .where(person_id: person.id, assignment_id: assignment.id)
       .where.not(id: id) # Exclude current record if updating
       .where('(ended_at IS NULL OR ended_at > ?) AND started_at < ?', started_at, ended_at || Date.current)
 

@@ -1,7 +1,6 @@
 class AssignmentCheckIn < ApplicationRecord
-  belongs_to :assignment_tenure
-  has_one :person, through: :assignment_tenure
-  has_one :assignment, through: :assignment_tenure
+  belongs_to :person
+  belongs_to :assignment
 
   # Enums for ratings
   enum :employee_rating, {
@@ -43,8 +42,8 @@ class AssignmentCheckIn < ApplicationRecord
 
   # Scopes
   scope :recent, -> { order(check_in_started_on: :desc) }
-  scope :for_person, ->(person) { joins(:assignment_tenure).where(assignment_tenures: { person: person }) }
-  scope :for_assignment, ->(assignment) { joins(:assignment_tenure).where(assignment_tenures: { assignment: assignment }) }
+  scope :for_person, ->(person) { where(person: person) }
+  scope :for_assignment, ->(assignment) { where(assignment: assignment) }
   scope :open, -> { where(check_in_ended_on: nil) }
   scope :closed, -> { where.not(check_in_ended_on: nil) }
 
@@ -61,14 +60,14 @@ class AssignmentCheckIn < ApplicationRecord
   end
 
   def energy_mismatch?
-    return false unless actual_energy_percentage && assignment_tenure.anticipated_energy_percentage
+    return false unless actual_energy_percentage && assignment_tenure&.anticipated_energy_percentage
     
     difference = (actual_energy_percentage - assignment_tenure.anticipated_energy_percentage).abs
     difference > 20 # Flag if difference is more than 20%
   end
 
   def days_since_tenure_start
-    return nil unless assignment_tenure.started_at
+    return nil unless assignment_tenure&.started_at
     
     (check_in_started_on - assignment_tenure.started_at.to_date).to_i
   end
@@ -97,16 +96,24 @@ class AssignmentCheckIn < ApplicationRecord
     total_days.to_f / (check_ins.count - 1)
   end
 
+  # Find the associated assignment tenure for this check-in
+  def assignment_tenure
+    @assignment_tenure ||= AssignmentTenure.most_recent_for(person, assignment)
+  end
+
   # Find or create open check-in for a person and assignment
   def self.find_or_create_open_for(person, assignment)
     tenure = AssignmentTenure.most_recent_for(person, assignment)
     return nil unless tenure
     
-    open_check_in = tenure.assignment_check_ins.open.first
+    # Find existing open check-in for this person/assignment
+    open_check_in = where(person: person, assignment: assignment).open.first
     return open_check_in if open_check_in
     
     # Create new open check-in if none exists
-    tenure.assignment_check_ins.create!(
+    create!(
+      person: person,
+      assignment: assignment,
       check_in_started_on: Date.current,
       actual_energy_percentage: tenure.anticipated_energy_percentage
     )
