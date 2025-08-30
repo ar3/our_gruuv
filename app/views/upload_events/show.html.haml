@@ -1,0 +1,416 @@
+.container-fluid
+  -# Define all data variables at the very top level for proper scope
+  - preview_actions = @upload_event.preview_actions.is_a?(Hash) ? @upload_event.preview_actions : {}
+  - results = @upload_event.results.is_a?(Hash) ? @upload_event.results : {}
+  
+  -# Debug: Let's see what we're working with
+  -# preview_actions_debug = preview_actions.inspect
+  -# results_debug = results.inspect
+  
+  - people_data = Array(preview_actions&.dig('people'))
+  - assignments_data = Array(preview_actions&.dig('assignments'))
+  - tenures_data = Array(preview_actions&.dig('assignment_tenures'))
+  - check_ins_data = Array(preview_actions&.dig('assignment_check_ins'))
+  - external_refs_data = Array(preview_actions&.dig('external_references'))
+  
+  - successes_data = Array(results&.dig('successes'))
+  - failures_data = Array(results&.dig('failures'))
+  
+  -# Ensure all variables are arrays and never nil - with explicit assignments
+  - people_data = people_data.nil? ? [] : people_data
+  - assignments_data = assignments_data.nil? ? [] : assignments_data
+  - tenures_data = tenures_data.nil? ? [] : tenures_data
+  - check_ins_data = check_ins_data.nil? ? [] : check_ins_data
+  - external_refs_data = external_refs_data.nil? ? [] : external_refs_data
+  - successes_data = successes_data.nil? ? [] : successes_data
+  - failures_data = failures_data.nil? ? [] : failures_data
+  
+  -# Final safety check - ensure all are arrays
+  - people_data = people_data.is_a?(Array) ? people_data : []
+  - assignments_data = assignments_data.is_a?(Array) ? assignments_data : []
+  - tenures_data = tenures_data.is_a?(Array) ? tenures_data : []
+  - check_ins_data = check_ins_data.is_a?(Array) ? check_ins_data : []
+  - external_refs_data = external_refs_data.is_a?(Array) ? external_refs_data : []
+  - successes_data = successes_data.is_a?(Array) ? successes_data : []
+  - failures_data = failures_data.is_a?(Array) ? failures_data : []
+  
+  .row
+    .col-12
+      -# Safety check - ensure we have valid data
+      - if @upload_event.preview_actions.blank? && @upload_event.results.blank?
+        .alert.alert-warning
+          %strong No data available:
+          This upload event doesn't have any preview actions or results to display.
+      
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1 Upload Details
+        .d-flex.gap-2
+          -# = link_to 'Back to Uploads', organization_upload_events_path(current_organization), class: 'btn btn-outline-secondary'
+          - if @upload_event.can_destroy?
+            -# = link_to 'Delete', organization_upload_event_path(current_organization, @upload_event), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-outline-danger'
+      
+  .row
+    .col-md-12
+      .card.mb-4
+        .card-header
+          %h5.card-title.mb-0 Upload Information
+        .card-body
+          %dl.row
+            %dt.col-sm-4 Status
+            %dd.col-sm-8
+              %span{class: "badge bg-#{@upload_event.status == 'completed' ? 'success' : @upload_event.status == 'failed' ? 'danger' : @upload_event.status == 'processing' ? 'warning' : 'secondary'}"}
+                = @upload_event.status.humanize
+            
+            %dt.col-sm-4 Created
+            %dd.col-sm-8= @upload_event.created_at.strftime('%B %d, %Y at %I:%M %p')
+            
+            %dt.col-sm-4 Creator
+            %dd.col-sm-8= @upload_event.creator.display_name
+            
+            %dt.col-sm-4 Initiator
+            %dd.col-sm-8= @upload_event.initiator.display_name
+            
+            - if @upload_event.attempted_at
+              %dt.col-sm-4 Attempted
+              %dd.col-sm-8= @upload_event.attempted_at.strftime('%B %d, %Y at %I:%M %p')
+            
+            - if @upload_event.completed?
+              %dt.col-sm-4 Results
+              %dd.col-sm-8
+                %span.text-success= "#{@upload_event.success_count} successful"
+                %br
+                %span.text-danger= "#{@upload_event.failure_count} failed"
+      
+      - if @upload_event.preview? && @upload_event.preview_actions.present?
+        .card.mb-4
+          .card-header
+            %h5.card-title.mb-0 Preview Actions
+            %p.text-muted.mb-0 Review the actions that will be taken and select which ones to process
+          .card-body
+            = form_with url: process_upload_organization_upload_event_path(current_organization, @upload_event), method: :post, local: true do |form|
+              - if people_data.present?
+                %h6 People (#{people_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_people', '1', true, class: 'form-check-input', data: { target: 'people-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Name
+                        %th Email
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - people_data.each do |person|
+                        %tr
+                          %td
+                            = check_box_tag "selected_people[]", person['row'], true, class: 'form-check-input people-checkbox'
+                          %td= person['name']
+                          %td= person['email']
+                          %td
+                            - if person['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if person['existing_id']
+                              = link_to person['existing_name'], person_path(person['existing_id']), class: 'text-decoration-none'
+                            - else
+                              %span.text-muted None
+                          %td= person['row']
+              
+              - if assignments_data.present?
+                %h6 Assignments (#{assignments_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_assignments', '1', true, class: 'form-check-input', data: { target: 'assignments-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Assignment Name
+                        %th Description
+                        %th External Reference
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - assignments_data.each do |assignment|
+                        -# Find external reference for this assignment
+                        - external_ref = external_refs_data.find { |ref| ref['assignment_name'] == assignment['assignment_name'] }
+                        %tr
+                          %td
+                            = check_box_tag "selected_assignments[]", assignment['row'], true, class: 'form-check-input assignments-checkbox'
+                          %td= assignment['assignment_name']
+                          %td= assignment['assignment_description']
+                          %td
+                            - if external_ref
+                              = link_to external_ref['external_url'], external_ref['external_url'], target: '_blank', class: 'text-decoration-none'
+                            - else
+                              %span.text-muted None
+                          %td
+                            - if assignment['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if assignment['existing_id']
+                              = link_to assignment['existing_title'], assignment_path(assignment['existing_id']), class: 'text-decoration-none'
+                            - else
+                              %span.text-muted None
+                          %td= assignment['row']
+              
+              - if tenures_data.present?
+                %h6 Assignment Tenures (#{tenures_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_tenures', '1', true, class: 'form-check-input', data: { target: 'tenures-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Person
+                        %th Assignment
+                        %th Energy %
+                        %th Start Date
+                        %th End Date
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - tenures_data.each do |tenure|
+                        %tr
+                          %td
+                            = check_box_tag "selected_tenures[]", tenure['row'], true, class: 'form-check-input tenures-checkbox'
+                          %td
+                            - if tenure['person_reference']
+                              %strong= tenure['person_reference']['name']
+                              %br
+                              %small.text-muted= tenure['person_reference']['email']
+                            - else
+                              %span.text-danger Missing person reference
+                          %td
+                            - if tenure['assignment_reference']
+                              %strong= tenure['assignment_reference']['assignment_name']
+                              %br
+                              %small.text-muted= tenure['assignment_reference']['assignment_description']
+                            - else
+                              %span.text-danger Missing assignment reference
+                          %td= tenure['anticipated_energy_percentage']
+                          %td= tenure['assignment_tenure_start_date']
+                          %td= tenure['assignment_tenure_end_date']
+                          %td
+                            - if tenure['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if tenure['existing_id']
+                              %span.text-muted Existing tenure
+                            - else
+                              %span.text-muted None
+                          %td= tenure['row']
+              
+              - if check_ins_data.present?
+                %h6 Assignment Check-Ins (#{check_ins_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_check_ins', '1', true, class: 'form-check-input', data: { target: 'check-ins-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Person
+                        %th Assignment
+                        %th Check-in Date
+                        %th Energy %
+                        %th Manager Rating
+                        %th Employee Rating
+                        %th Official Rating
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - check_ins_data.each do |check_in|
+                        %tr
+                          %td
+                            = check_box_tag "selected_check_ins[]", check_in['row'], true, class: 'form-check-input check-ins-checkbox'
+                          %td
+                            - if check_in['person_reference']
+                              %strong= check_in['person_reference']['name']
+                              %br
+                              %small.text-muted= check_in['person_reference']['email']
+                            - else
+                              %span.text-danger Missing person reference
+                          %td
+                            - if check_in['assignment_reference']
+                              %strong= check_in['assignment_reference']['assignment_name']
+                              %br
+                              %small.text-muted= check_in['assignment_reference']['assignment_description']
+                            - else
+                              %span.text-danger Missing assignment reference
+                          %td= check_in['check_in_date']
+                          %td= check_in['energy_percentage']
+                          %td= check_in['manager_rating']
+                          %td= check_in['employee_rating']
+                          %td= check_in['official_rating']
+                          %td
+                            - if check_in['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if check_in['existing_id']
+                              %span.text-muted Existing check-in
+                            - else
+                              %span.text-muted None
+                          %td= check_in['row']
+              
+              - if external_refs_data.present?
+                %h6 External References (#{external_refs_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_external_refs', '1', true, class: 'form-check-input', data: { target: 'external-refs-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Assignment
+                        %th URL
+                        %th Row
+                    %tbody
+                      - external_refs_data.each do |ref|
+                        %tr
+                          %td
+                            = check_box_tag "selected_external_refs[]", ref['row'], true, class: 'form-check-input external-refs-checkbox'
+                          %td= ref['assignment_name']
+                          %td
+                            = link_to ref['external_url'], ref['external_url'], target: '_blank', class: 'text-decoration-none'
+                          %td= ref['row']
+              
+              .d-flex.gap-2.mt-4
+                = form.submit 'Process Selected Items', class: 'btn btn-success btn-lg', data: { confirm: 'Are you sure you want to process the selected items? This action cannot be undone.' }
+                = link_to 'Cancel', organization_upload_events_path(current_organization), class: 'btn btn-outline-secondary'
+
+    
+    .col-md-8
+      -# Processing Results Section
+      - if @upload_event.completed? && @upload_event.results.present?
+        .card.mb-4
+          .card-header
+            %h5.card-title.mb-0 Processing Results
+          .card-body
+            -# Check if we have successful operations
+            - if @upload_event.results&.dig('successes')&.present?
+              %h6.text-success Successful Operations (#{@upload_event.results&.dig('successes')&.length})
+              .table-responsive.mb-3
+                %table.table.table-sm.table-success
+                  %thead
+                    %tr
+                      %th Type
+                      %th Action
+                      %th Details
+                      %th Row
+                  %tbody
+                    - @upload_event.results&.dig('successes')&.each do |success|
+                      - success = success || {}
+                      %tr
+                        %td= success['type'].humanize
+                        %td= success['action'].humanize
+                        %td
+                          != @upload_event.success_details_for(success)
+                        %td= success['row']
+            
+            -# Check if we have failed operations
+            - if @upload_event.results&.dig('failures')&.present?
+              %h6.text-danger Failed Operations (#{@upload_event.results&.dig('failures')&.length})
+              .table-responsive.mb-3
+                %table.table.table-sm.table-danger
+                  %thead
+                    %tr
+                      %th Type
+                      %th Error
+                      %th Data
+                      %th Row
+                  %tbody
+                    - @upload_event.results&.dig('failures')&.each do |failure|
+                      %tr
+                        %td= failure['type'].humanize
+                        %td= failure['error']
+                        %td
+                          %small.text-muted= failure['data'].inspect
+                        %td= failure['row']
+      
+      -# Processing Failed Section
+      - if @upload_event.failed?
+        .card.mb-4
+          .card-header
+            %h5.card-title.mb-0 Processing Failed
+          .card-body
+            .alert.alert-danger
+              %strong Error:
+              = @upload_event.results&.dig('error') || 'Unknown error occurred'
+            
+            -# Check if we have failed operations
+            - if @upload_event.results&.dig('failures')&.present?
+              %h6 Failed Operations (#{@upload_event.results&.dig('failures')&.length})
+              .table-responsive
+                %table.table.table-sm.table-danger
+                  %thead
+                    %tr
+                      %th Type
+                      %th Error
+                      %th Data
+                      %th Row
+                  %tbody
+                    - @upload_event.results&.dig('failures')&.each do |failure|
+                      %tr
+                        %td= failure['type'].humanize
+                        %td= failure['error']
+                        %td
+                          %small.text-muted= failure['data'].inspect
+                        %td= failure['row']
+      
+      -# Processing Section
+      - if @upload_event.processing?
+        .card.mb-4
+          .card-header
+            %h5.card-title.mb-0 Processing
+          .card-body
+            .text-center.py-4
+              .spinner-border.text-primary.mb-3{role: "status"}
+                %span.visually-hidden Loading...
+              %p Processing upload... This may take a few minutes.
+              %p.text-muted You can refresh this page to check the status.
+
+
+
+:javascript
+  document.addEventListener('DOMContentLoaded', function() {
+    // Handle "Select All" checkboxes
+    const selectAllCheckboxes = document.querySelectorAll('[data-target]');
+    
+    selectAllCheckboxes.forEach(function(selectAll) {
+      const targetClass = selectAll.dataset.target;
+      const targetCheckboxes = document.querySelectorAll('.' + targetClass);
+      
+      selectAll.addEventListener('change', function() {
+        targetCheckboxes.forEach(function(checkbox) {
+          checkbox.checked = selectAll.checked;
+        });
+      });
+      
+      // Update "Select All" when individual checkboxes change
+      targetCheckboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+          const allChecked = Array.from(targetCheckboxes).every(cb => cb.checked);
+          const someChecked = Array.from(targetCheckboxes).some(cb => cb.checked);
+          
+          selectAll.checked = allChecked;
+          selectAll.indeterminate = someChecked && !allChecked;
+        });
+      });
+    });
+  });

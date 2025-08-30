@@ -223,10 +223,12 @@ class EmploymentDataUploadProcessor
   end
 
   def find_or_create_assignment(assignment_data)
-    # Try to find by title
-    if assignment_data['title'].present?
+    # Try to find by assignment_name (from parser) or title
+    assignment_name = assignment_data['assignment_name'] || assignment_data['title']
+    
+    if assignment_name.present?
       assignment = Assignment.find_by(
-        title: assignment_data['title'],
+        title: assignment_name,
         company: organization
       )
       return assignment, false if assignment
@@ -234,8 +236,8 @@ class EmploymentDataUploadProcessor
     
     # Create new assignment if not found
     assignment = Assignment.create!(
-      title: assignment_data['title'] || 'Unknown Assignment',
-      tagline: assignment_data['tagline'].presence || 'No description provided',
+      title: assignment_name || 'Unknown Assignment',
+      tagline: assignment_data['assignment_description'] || assignment_data['tagline'] || 'No description provided',
       company: organization
     )
     return assignment, true
@@ -246,7 +248,7 @@ class EmploymentDataUploadProcessor
     tenure = AssignmentTenure.find_by(
       person: person,
       assignment: assignment,
-      started_at: tenure_data['started_at']
+      started_at: tenure_data['assignment_tenure_start_date']
     )
     return tenure, false if tenure
     
@@ -254,8 +256,8 @@ class EmploymentDataUploadProcessor
     tenure = AssignmentTenure.create!(
       person: person,
       assignment: assignment,
-      started_at: tenure_data['started_at'],
-      ended_at: tenure_data['ended_at'],
+      started_at: tenure_data['assignment_tenure_start_date'],
+      ended_at: tenure_data['assignment_tenure_end_date'],
       anticipated_energy_percentage: tenure_data['anticipated_energy_percentage']
     )
     return tenure, true
@@ -265,15 +267,15 @@ class EmploymentDataUploadProcessor
     # Try to find existing check-in
     check_in = AssignmentCheckIn.find_by(
       assignment_tenure: tenure,
-      check_in_started_on: check_in_data['check_in_started_on']
+      check_in_started_on: check_in_data['check_in_date']
     )
     return check_in, false if check_in
     
     # Create new check-in if not found
     check_in = AssignmentCheckIn.create!(
       assignment_tenure: tenure,
-      check_in_started_on: check_in_data['check_in_started_on'],
-      actual_energy_percentage: check_in_data['actual_energy_percentage'],
+      check_in_started_on: check_in_data['check_in_date'],
+      actual_energy_percentage: check_in_data['energy_percentage'],
       manager_rating: check_in_data['manager_rating'],
       employee_rating: check_in_data['employee_rating'],
       official_rating: check_in_data['official_rating'],
@@ -295,7 +297,7 @@ class EmploymentDataUploadProcessor
     external_ref = ExternalReference.create!(
       referable: assignment,
       reference_type: 'published',
-      url: ref_data['url']
+      url: ref_data['external_url']
     )
     return external_ref, true
   end

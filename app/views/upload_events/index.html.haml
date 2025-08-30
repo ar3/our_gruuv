@@ -1,0 +1,96 @@
+.container-fluid
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1 Employment Data Uploads
+        = link_to 'New Upload', new_organization_upload_event_path(current_organization), class: 'btn btn-primary'
+      
+      .card.mb-4
+        .card-header
+          %h5.card-title.mb-0 Expected Headers
+        .card-body
+          %p.text-muted The following headers are expected in your XLSX file:
+          .row
+            .col-md-6
+              %h6 People/Employee
+              %ul
+                %li name
+                %li email
+            .col-md-6
+              %h6 Assignment
+              %ul
+                %li assignment_name
+                %li assignment_description
+          .row
+            .col-md-6
+              %h6 Assignment Tenure
+              %ul
+                %li anticipated_energy_percentage
+                %li assignment_tenure_start_date
+                %li assignment_tenure_end_date
+            .col-md-6
+              %h6 Assignment Check-In
+              %ul
+                %li manager_private_notes
+                %li employee_private_notes
+                %li official_rating
+                %li check_in_date
+                %li energy_percentage
+                %li manager_rating
+                %li employee_rating
+          %p.text-muted.mt-3
+            %strong Note: 
+            Only 
+            %code email
+            and 
+            %code assignment_name
+            are required. Other fields are optional.
+
+      .card
+        .card-header
+          %h5.card-title.mb-0 Previous Uploads
+        .card-body
+          - if @upload_events.any?
+            .table-responsive
+              %table.table.table-hover
+                %thead
+                  %tr
+                    %th Created
+                    %th Status
+                    %th Creator
+                    %th Initiator
+                    %th Results
+                    %th Actions
+                %tbody
+                  - @upload_events.each do |upload_event|
+                    %tr
+                      %td= upload_event.created_at.strftime('%B %d, %Y at %I:%M %p')
+                      %td
+                        %span{class: "badge bg-#{upload_event.status == 'completed' ? 'success' : upload_event.status == 'failed' ? 'danger' : upload_event.status == 'processing' ? 'warning' : 'secondary'}"}
+                          = upload_event.status.humanize
+                      %td= upload_event.creator.display_name
+                      %td= upload_event.initiator.display_name
+                      %td
+                        - if upload_event.completed?
+                          %span.text-success
+                            = "#{upload_event.success_count} successful, #{upload_event.failure_count} failed"
+                        - elsif upload_event.failed?
+                          %span.text-danger
+                            = "#{upload_event.failure_count} failed"
+                        - elsif upload_event.processing?
+                          %span.text-warning Processing...
+                        - else
+                          %span.text-muted Preview ready
+                      %td
+                        = link_to 'View', organization_upload_event_path(current_organization, upload_event), class: 'btn btn-sm btn-outline-primary'
+                        - if upload_event.can_destroy?
+                          = link_to 'Delete', organization_upload_event_path(current_organization, upload_event), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-sm btn-outline-danger ml-2'
+            
+            .d-flex.justify-content-center
+              -# Pagination removed - showing all uploads
+              %p.text-muted.text-center Showing all uploads
+          - else
+            .text-center.text-muted.py-4
+              %p No uploads yet.
+              %p
+                = link_to 'Create your first upload', new_organization_upload_event_path(current_organization), class: 'btn btn-primary'

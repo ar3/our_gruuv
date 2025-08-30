@@ -71,6 +71,13 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
+    # Employment data uploads
+    resources :upload_events, only: [:index, :show, :new, :create, :destroy] do
+      member do
+        post :process_upload
+      end
+    end
+    
     # Person access permissions within organization context
     resources :person_accesses, only: [:new, :create, :edit, :update, :destroy], controller: 'organizations/person_accesses'
     

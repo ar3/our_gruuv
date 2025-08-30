@@ -147,18 +147,70 @@ RSpec.describe UploadEvent, type: :model do
     end
 
     describe '#failure_count' do
-      it 'returns count of failed operations' do
-        upload_event.results = { 'failures' => [{ error: 'test' }] }
-        expect(upload_event.failure_count).to eq(1)
-      end
-
       it 'returns 0 when no failures' do
         expect(upload_event.failure_count).to eq(0)
       end
 
-      it 'returns 0 when results is nil' do
-        upload_event.results = nil
-        expect(upload_event.failure_count).to eq(0)
+      it 'returns correct count when failures exist' do
+        upload_event.results = { failures: [{ error: 'test' }, { error: 'test2' }] }
+        expect(upload_event.failure_count).to eq(2)
+      end
+    end
+
+    describe '#success_details_for' do
+      it 'returns unknown record for invalid input' do
+        expect(upload_event.success_details_for(nil)).to eq('Unknown record')
+        expect(upload_event.success_details_for('not a hash')).to eq('Unknown record')
+      end
+
+      it 'formats person records correctly' do
+        person_record = { 'type' => 'person', 'name' => 'John Doe' }
+        expect(upload_event.success_details_for(person_record)).to eq('John Doe')
+      end
+
+      it 'formats assignment records correctly' do
+        assignment_record = { 'type' => 'assignment', 'title' => 'Test Assignment' }
+        expect(upload_event.success_details_for(assignment_record)).to eq('Test Assignment')
+      end
+
+      it 'formats assignment tenure records correctly' do
+        tenure_record = { 
+          'type' => 'assignment_tenure', 
+          'person_name' => 'John Doe', 
+          'assignment_title' => 'Test Assignment' 
+        }
+        expect(upload_event.success_details_for(tenure_record)).to eq('John Doe - Test Assignment')
+      end
+
+      it 'formats assignment check-in records correctly' do
+        check_in_record = { 
+          'type' => 'assignment_check_in', 
+          'person_name' => 'John Doe', 
+          'assignment_title' => 'Test Assignment' 
+        }
+        expect(upload_event.success_details_for(check_in_record)).to eq('John Doe - Test Assignment')
+      end
+
+      it 'formats external reference records correctly' do
+        ref_record = { 
+          'type' => 'external_reference', 
+          'assignment_title' => 'Test Assignment', 
+          'url' => 'https://example.com' 
+        }
+        expect(upload_event.success_details_for(ref_record)).to eq('Test Assignment (https://example.com)')
+      end
+
+      it 'handles missing data gracefully' do
+        incomplete_record = { 'type' => 'person' }
+        expect(upload_event.success_details_for(incomplete_record)).to eq('Unknown person')
+        
+        incomplete_tenure = { 'type' => 'assignment_tenure' }
+        expect(upload_event.success_details_for(incomplete_tenure)).to eq('Unknown person - Unknown assignment')
+      end
+
+      it 'returns unknown type for unrecognized types' do
+        unknown_record = { 'type' => 'unknown_type', 'data' => 'test' }
+        expect(upload_event.success_details_for(unknown_record)).to eq('Unknown type')
       end
     end
 

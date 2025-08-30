@@ -8,32 +8,37 @@ class ApplicationPolicy
     @record = record
   end
 
+  # Admin bypass - og_admin users get all permissions
+  def admin_bypass?
+    user&.admin?
+  end
+
   def index?
-    false
+    admin_bypass? || false
   end
 
   def show?
-    false
+    admin_bypass? || false
   end
 
   def create?
-    false
+    admin_bypass? || false
   end
 
   def new?
-    create?
+    admin_bypass? || create?
   end
 
   def update?
-    false
+    admin_bypass? || false
   end
 
   def edit?
-    update?
+    admin_bypass? || update?
   end
 
   def destroy?
-    false
+    admin_bypass? || false
   end
 
   class Scope

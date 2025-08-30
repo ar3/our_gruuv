@@ -1,26 +1,39 @@
 class OrganizationPolicy < ApplicationPolicy
   def show?
-    true # Anyone can view organization details
+    admin_bypass? || true # Anyone can view organization details
   end
 
   def manage_employment?
-    # Check if the current person has employment management access for this organization
-    return false unless user
-    
-    user.can_manage_employment?(record)
+    admin_bypass? || (user && user.can_manage_employment?(record))
   end
   
   def create_employment?
-    # Check if the current person has employment creation access for this organization
-    return false unless user
-    
-    user.can_create_employment?(record)
+    admin_bypass? || (user && user.can_create_employment?(record))
   end
 
   def manage_maap?
-    # Check if the current person has MAAP management access for this organization
-    return false unless user
-    
-    user.can_manage_maap?(record)
+    admin_bypass? || (user && user.can_manage_maap?(record))
+  end
+
+  def create?
+    admin_bypass? || (user && user.can_manage_employment?(record))
+  end
+
+  def update?
+    admin_bypass? || (user && user.can_manage_employment?(record))
+  end
+
+  def destroy?
+    admin_bypass? || (user && user.can_manage_employment?(record))
+  end
+
+  class Scope < Scope
+    def resolve
+      if user&.admin?
+        scope.all
+      else
+        scope.all # Organizations are generally viewable by all authenticated users
+      end
+    end
   end
 end

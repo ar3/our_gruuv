@@ -1,33 +1,52 @@
 require 'rails_helper'
 
 RSpec.describe Assignment, type: :model do
-  let(:company) { create(:organization, type: 'Company') }
-  let(:assignment) { create(:assignment, company: company) }
+  let(:organization) { create(:organization) }
+  let(:assignment) { create(:assignment, company: organization) }
 
   describe 'validations' do
     it 'is valid with valid attributes' do
       expect(assignment).to be_valid
     end
 
-    it 'requires title' do
+    it 'requires a title' do
       assignment.title = nil
       expect(assignment).not_to be_valid
+      expect(assignment.errors[:title]).to include("can't be blank")
     end
 
-    it 'requires tagline' do
+    it 'requires a tagline' do
       assignment.tagline = nil
       expect(assignment).not_to be_valid
+      expect(assignment.errors[:tagline]).to include("can't be blank")
     end
 
-    it 'requires company' do
+    it 'requires a company' do
       assignment.company = nil
       expect(assignment).not_to be_valid
+      expect(assignment.errors[:company]).to include("must exist")
+    end
+
+    it 'enforces unique titles within the same organization' do
+      create(:assignment, title: 'Software Engineer', company: organization)
+      duplicate_assignment = build(:assignment, title: 'Software Engineer', company: organization)
+      
+      expect(duplicate_assignment).not_to be_valid
+      expect(duplicate_assignment.errors[:title]).to include('has already been taken')
+    end
+
+    it 'allows duplicate titles across different organizations' do
+      other_organization = create(:organization)
+      create(:assignment, title: 'Software Engineer', company: organization)
+      duplicate_assignment = build(:assignment, title: 'Software Engineer', company: other_organization)
+      
+      expect(duplicate_assignment).to be_valid
     end
   end
 
   describe 'associations' do
     it 'belongs to a company' do
-      expect(assignment.company).to eq(company)
+      expect(assignment.company).to eq(organization)
     end
 
     it 'has many assignment outcomes' do
@@ -49,12 +68,12 @@ RSpec.describe Assignment, type: :model do
     end
 
     it 'returns company name' do
-      expect(assignment.company_name).to eq(company.display_name)
+      expect(assignment.company_name).to eq(organization.display_name)
     end
   end
 
   describe 'external references' do
-    let(:assignment_with_urls) { create(:assignment, :with_source_urls, company: company) }
+    let(:assignment_with_urls) { create(:assignment, :with_source_urls, company: organization) }
 
     it 'can have published external reference' do
       expect(assignment_with_urls.published_external_reference).to be_present

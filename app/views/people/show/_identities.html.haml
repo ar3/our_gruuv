@@ -1,0 +1,52 @@
+.card.mb-4{ role: "region", "aria-labelledby": "security-section" }
+  .card-header
+    %h5.mb-0{ id: "security-section" }
+      %i.bi.bi-shield-lock.me-2
+      Identities
+  .card-body
+    .row
+      .col-md-8
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Account Type
+                %th Name
+                %th Email
+                %th Status
+                %th Connected
+                %th Actions
+            %tbody
+              - @person.person_identities.each do |identity|
+                %tr
+                  %td
+                    = identity_profile_image(identity, size: 24)
+                    %i{class: "bi #{identity_provider_icon(identity)} me-2"}
+                    = identity_provider_name(identity)
+                  %td
+                    - if identity.name.present?
+                      = identity.name
+                    - else
+                      %span.text-muted Not provided
+                  %td= identity.email
+                  %td= identity_status_badge(identity)
+                  %td= identity.created_at.strftime('%B %d, %Y')
+                  %td
+                    = disconnect_identity_button(identity)
+                %tr
+                  %td{colspan: 6}
+                    = identity_raw_data_display(identity)
+              - if @person.person_identities.none?
+                %tr
+                  %td{colspan: 6}
+                    .text-muted No connected accounts found.
+      
+      .col-md-4.border-start.border-secondary
+        .d-grid.gap-2
+          = link_to connect_google_identity_path, class: "btn btn-outline-primary" do
+            %i.bi.bi-google.me-2
+            Connect Google Account
+          - if @person.person_identities.any?
+            = link_to "#", class: "btn btn-outline-info" do
+              %i.bi.bi-shield.me-2
+              Security Settings

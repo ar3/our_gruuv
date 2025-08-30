@@ -11,7 +11,7 @@ class Assignment < ApplicationRecord
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
   
   # Validations
-  validates :title, presence: true
+  validates :title, presence: true, uniqueness: { scope: :company_id }
   validates :tagline, presence: true
   validates :company, presence: true
   

@@ -102,6 +102,7 @@ gem "dotenv-rails", "~> 3.1"
 
 # Excel file parsing for data uploads
 gem "roo", "~> 2.10"
+gem "creek", "~> 2.0"
 gem "csv", "~> 3.2"
 
 # Markdown rendering

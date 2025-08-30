@@ -1,0 +1,66 @@
+.card.mb-4{ role: "region", "aria-labelledby": "about-me-section" }
+  .card-header
+    %h5.mb-0{ id: "about-me-section" }
+      %i.bi.bi-person.me-2
+      About Me
+  .card-body
+    .row.mt-3
+      .col-12.col-md-8
+        .row
+          .col-md-6.col-12
+            %p
+              %strong Name:
+              = @person.full_name
+            %p
+              %strong Email:
+              = @person.email
+            %p
+              %strong Phone:
+              = @person.unique_textable_phone_number.present? ? @person.unique_textable_phone_number : "Not provided"
+
+          .col-md-6.col-12
+            %p
+              %strong Time zone:
+              - if @person.timezone.present?
+                = @person.timezone
+                %small.text-muted Timezone
+              - else
+                Eastern Time
+                %small.text-muted Timezone (Default)
+            %p
+              %strong Gruuvin' Since:
+              = @person.created_at.strftime("%b %Y")
+            
+            / Other Companies Section (only visible to person themselves or og_admin)
+            - if policy(@person).view_other_companies?
+              .mt-4
+                %h6.text-muted.border-bottom.pb-2 Other Companies
+                - other_companies = @employment_tenures.select { |t| t.company != current_organization }.map(&:company).uniq
+                - if other_companies.any?
+                  - other_companies.each do |company|
+                    .d-flex.justify-content-between.align-items-center.py-2.border-bottom.border-light
+                      .flex-grow-1
+                        %strong= company.name
+                        %br
+                        %small.text-muted
+                          - company_tenures = @employment_tenures.select { |t| t.company == company }
+                          - first_tenure = company_tenures.sort_by(&:started_at).first
+                          - last_tenure = company_tenures.sort_by(&:ended_at).compact.last
+                          - if first_tenure
+                            = "From #{first_tenure.started_at.strftime('%b %Y')}"
+                            - if last_tenure&.ended_at
+                              = " to #{last_tenure.ended_at.strftime('%b %Y')}"
+                            - else
+                              = " to Present"
+                          .ms-2
+                            = link_to organization_path(company), class: 'btn btn-sm btn-outline-secondary' do
+                              %i.bi.bi-arrow-up-right.me-1
+                              View
+                - else
+                  %p.text-muted No other companies found.
+      .col-md-4.col-12.border-start.border-secondary
+        .d-grid.gap-2
+          - if @person == @current_person
+            = link_to edit_profile_path, class: "btn btn-primary" do
+              %i.bi.bi-pencil.me-2
+              Edit Profile

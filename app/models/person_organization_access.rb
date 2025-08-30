@@ -32,21 +32,27 @@ class PersonOrganizationAccess < ApplicationRecord
   
   # Class methods for permission checking
   def self.can_manage_employment?(person, organization)
+    return true if person.og_admin?
     access = find_by(person: person, organization: organization)
     access&.can_manage_employment? || false
   end
   
   def self.can_create_employment?(person, organization)
+    return true if person.og_admin?
     access = find_by(person: person, organization: organization)
     access&.can_create_employment? || false
   end
   
   def self.can_manage_maap?(person, organization)
+    return true if person.og_admin?
     access = find_by(person: person, organization: organization)
     access&.can_manage_maap? || false
   end
   
   def self.can_manage_employment_in_hierarchy?(person, organization)
+    # og_admin users have access to all organizations
+    return true if person.og_admin?
+    
     organizations_to_check = if organization.company?
       organization.self_and_descendants
     else
@@ -70,12 +76,13 @@ class PersonOrganizationAccess < ApplicationRecord
       end
     end
     
-
-    
     access&.can_manage_employment? || false
   end
   
   def self.can_manage_maap_in_hierarchy?(person, organization)
+    # og_admin users have access to all organizations
+    return true if person.og_admin?
+    
     organizations_to_check = if organization.company?
       organization.self_and_descendants
     else
@@ -100,5 +107,35 @@ class PersonOrganizationAccess < ApplicationRecord
     end
     
     access&.can_manage_maap? || false
+  end
+
+  def self.can_create_employment_in_hierarchy?(person, organization)
+    # og_admin users have access to all organizations
+    return true if person.og_admin?
+    
+    organizations_to_check = if organization.company?
+      organization.self_and_descendants
+    else
+      [organization, organization.parent].compact
+    end
+    
+    # Find the most specific access record (current org first, then parent)
+    access = nil
+    if organization.company?
+      access = where(organization: organizations_to_check).find_by(person: person)
+    else
+      # Check current organization first, then parent
+      # Return true if either has the permission
+      current_access = find_by(person: person, organization: organization)
+      parent_access = find_by(person: person, organization: organization.parent) if organization.parent
+      
+      if current_access&.can_create_employment? || parent_access&.can_create_employment?
+        return true
+      else
+        access = current_access || parent_access
+      end
+    end
+    
+    access&.can_create_employment? || false
   end
 end

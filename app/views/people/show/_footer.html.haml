@@ -1,0 +1,24 @@
+:javascript
+  // Coming Soon alerts
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('[data-action*="coming-soon#show"]')) {
+      e.preventDefault();
+      alert('🚧 Coming Soon! This feature is currently under development.');
+    }
+  });
+
+:css
+  .align-subsection h6 {
+    color: #6c757d;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .action-group {
+    padding-bottom: 1.5rem;
+  }
+  
+  .action-group:last-child {
+    padding-bottom: 0;
+  }

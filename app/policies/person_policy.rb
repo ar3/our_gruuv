@@ -1,7 +1,7 @@
 class PersonPolicy < ApplicationPolicy
   def show?
     # Users can view their own profile, admins can view any, or if they have employment management permissions
-    return true if user == record || user.admin?
+    return true if admin_bypass? || user == record
     
     # Check if user has employment management permissions in any organization
     user_employment_orgs = user.employment_tenures.includes(:company).map(&:company)
@@ -17,6 +17,7 @@ class PersonPolicy < ApplicationPolicy
 
   def teammate?
     # Teammates can view each other's profiles within the same organization
+    return true if admin_bypass?
     return false unless user && record
     
     # Requestor must have a current organization
@@ -38,6 +39,7 @@ class PersonPolicy < ApplicationPolicy
 
   def manager?
     # Managers can view detailed profiles of people they manage
+    return true if admin_bypass?
     return false unless user && record
     
     # User can access if they have employment management permissions for any organization
@@ -61,7 +63,7 @@ class PersonPolicy < ApplicationPolicy
 
   def employment_summary?
     # Users can view their own employment summary, admins can view any
-    user == record || user.admin?
+    admin_bypass? || user == record
   end
 
   def view_employment_history?
@@ -69,7 +71,7 @@ class PersonPolicy < ApplicationPolicy
     # 1. The person themselves
     # 2. In their managerial hierarchy 
     # 3. Have employment management permissions for any organization
-    return true if user == record || user.in_managerial_hierarchy_of?(record)
+    return true if admin_bypass? || user == record || user.in_managerial_hierarchy_of?(record)
     
     # Check if user has employment management permissions in any organization
     user_employment_orgs = user.employment_tenures.includes(:company).map(&:company)
@@ -83,7 +85,7 @@ class PersonPolicy < ApplicationPolicy
     # 1. The person themselves
     # 2. In their managerial hierarchy 
     # 3. Have BOTH employment management AND MAAP management permissions for any organization
-    return true if user == record || user.in_managerial_hierarchy_of?(record)
+    return true if admin_bypass? || user == record || user.in_managerial_hierarchy_of?(record)
     
     # Check for both permissions across all user's organizations
     user_employment_orgs = user.employment_tenures.includes(:company).map(&:company)
@@ -99,45 +101,45 @@ class PersonPolicy < ApplicationPolicy
     # 1. The person themselves
     # 2. In their managerial hierarchy 
     # 3. Have employment management permissions for any organization
-    return true if user == record || user.in_managerial_hierarchy_of?(record)
+    return true if admin_bypass? || user == record || user.in_managerial_hierarchy_of?(record)
     
     # Check if user has employment management permissions in any organization
     user_employment_orgs = user.employment_tenures.includes(:company).map(&:company)
-    user_has_employment_management = user_employment_orgs.any? { |org| user.can_manage_employment?(org) }
+    user_employment_management = user_employment_orgs.any? { |org| user.can_manage_employment?(org) }
     
-    user_has_employment_management
+    user_employment_management
   end
 
   def change?
     # Users can change their own employment, admins can change any
-    user == record || user.admin?
+    admin_bypass? || user == record
   end
 
   def choose_assignments?
     # Users can choose assignments for themselves, admins can choose for anyone
-    user == record || user.admin?
+    admin_bypass? || user == record
   end
 
   def update_assignments?
     # Users can update assignments for themselves, admins can update for anyone
-    user == record || user.admin?
+    admin_bypass? || user == record
   end
 
   def view_other_companies?
     # Users can view their own other companies, og_admin can view any
-    user == record || user.admin?
+    admin_bypass? || user == record
   end
 
 
 
   def edit?
     # Users can only edit their own profile
-    user == record
+    admin_bypass? || user == record
   end
 
   def update?
     # Users can update their own profile and assignments, admins can update any
-    user == record || user.admin?
+    admin_bypass? || user == record
   end
 
   def create?
@@ -147,28 +149,28 @@ class PersonPolicy < ApplicationPolicy
 
   def index?
     # Only admins can see the people index
-    user.admin?
+    admin_bypass?
   end
 
   def destroy?
     # Users cannot delete their own profile (for now)
-    false
+    admin_bypass? || false
   end
 
   def connect_google_identity?
     # Users can connect Google accounts to their own profile
-    user == record
+    admin_bypass? || user == record
   end
 
   def disconnect_identity?
     # Users can disconnect identities from their own profile
-    user == record
+    admin_bypass? || user == record
   end
 
   class Scope < Scope
     def resolve
       # Users can only see themselves, admins can see all people
-      if user.admin?
+      if user&.admin?
         scope.all
       else
         scope.where(id: user.id)
