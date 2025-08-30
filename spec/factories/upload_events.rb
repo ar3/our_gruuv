@@ -1,5 +1,6 @@
 FactoryBot.define do
   factory :upload_event do
+    filename { "test_upload.xlsx" }
     file_content { "test file content" }
     preview_actions { { people: [], assignments: [] } }
     results { { successes: [], failures: [] } }

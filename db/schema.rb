@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_30_202911) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_30_220522) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -357,6 +357,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_202911) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "organization_id", null: false
+    t.string "filename"
     t.index ["created_at"], name: "index_upload_events_on_created_at"
     t.index ["creator_id"], name: "index_upload_events_on_creator_id"
     t.index ["initiator_id"], name: "index_upload_events_on_initiator_id"

@@ -12,6 +12,7 @@ class UploadEvent < ApplicationRecord
 
   validates :status, presence: true, inclusion: { in: statuses.keys }
   validates :file_content, presence: true
+  validates :filename, presence: true
 
   # Scopes
   scope :recent, -> { order(created_at: :desc) }

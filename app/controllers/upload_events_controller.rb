@@ -32,7 +32,8 @@ class UploadEventsController < ApplicationController
         return
       end
       
-      # Read file content as binary and encode to base64 to avoid null byte issues
+      # Save the filename and read file content
+      @upload_event.filename = file.original_filename
       binary_content = file.read
       @upload_event.file_content = Base64.strict_encode64(binary_content)
     end
