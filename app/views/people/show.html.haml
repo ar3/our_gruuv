@@ -1,9 +1,9 @@
 - content_for :header do
   %h1.mb-0{id: "person-title"}
-  - if @person == @current_person
-    My Profile
-  - else
-    = @person.display_name
+    - if @person == @current_person
+      My Profile
+    - else
+      = @person.display_name
         
 - content_for :header_action do
   = render 'view_switcher'

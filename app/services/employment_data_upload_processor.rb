@@ -153,6 +153,7 @@ class EmploymentDataUploadProcessor
     
     upload_event.preview_actions['external_references'].each do |ref_data|
       begin
+        Rails.logger.info "Processing external reference for assignment name: '#{ref_data['assignment_name']}'"
         # Find the assignment for this external reference
         assignment = find_assignment_by_name(ref_data['assignment_name'])
         next unless assignment
@@ -221,6 +222,11 @@ class EmploymentDataUploadProcessor
     # Try to find by assignment_name (from parser) or title
     assignment_name = assignment_data['assignment_name'] || assignment_data['title']
     
+    Rails.logger.info "=== ASSIGNMENT LOOKUP DEBUG ==="
+    Rails.logger.info "Input data: #{assignment_data.inspect}"
+    Rails.logger.info "Organization: #{organization.inspect}"
+    Rails.logger.info "Assignment name: '#{assignment_name}'"
+    
     # Strip HTML from assignment name
     if assignment_name.present?
       clean_assignment_name = strip_html(assignment_name)
@@ -230,6 +236,7 @@ class EmploymentDataUploadProcessor
         title: clean_assignment_name,
         company: organization
       )
+      Rails.logger.info "Lookup result: #{assignment.inspect}"
       return assignment, false if assignment
     else
       clean_assignment_name = 'Unknown Assignment'
@@ -373,12 +380,22 @@ class EmploymentDataUploadProcessor
 
   def find_assignment_by_name(assignment_name)
     # Remove URL and HTML from assignment name for lookup
+    Rails.logger.info "Looking up assignment by name: '#{assignment_name}'"
     clean_name = strip_html(assignment_name.gsub(/\[https?:\/\/[^\]]+\]/, '').strip)
+    Rails.logger.info "Cleaned assignment name: '#{clean_name}'"
     
-    Assignment.find_by(
+    assignment = Assignment.find_by(
       title: clean_name,
       company: organization
     )
+    
+    if assignment
+      Rails.logger.info "Found assignment: #{assignment.id} (#{assignment.title})"
+    else
+      Rails.logger.info "No assignment found with title: '#{clean_name}'"
+    end
+    
+    assignment
   end
 
   private

@@ -262,8 +262,10 @@ class EmploymentDataUploadParser
         
         # Create external reference if URL was found
         if url
+          cleaned_name = strip_html(row_hash['assignment_name'])
+          Rails.logger.info "Parser: Creating external reference - original: '#{row_hash['assignment_name']}' -> cleaned: '#{cleaned_name}'"
           @parsed_data[:external_references] << {
-            'assignment_name' => row_hash['assignment_name'],
+            'assignment_name' => cleaned_name,
             'external_url' => url,
             'row' => row_num
           }
@@ -509,7 +511,9 @@ class EmploymentDataUploadParser
       action = 'create'
       
       if assignment_data['assignment_name'].present?
-        existing_assignment = Assignment.find_by(title: assignment_data['assignment_name'])
+        cleaned_name = strip_html(assignment_data['assignment_name'])
+        Rails.logger.info "Parser: Looking up assignment by name: '#{assignment_data['assignment_name']}' -> cleaned: '#{cleaned_name}'"
+        existing_assignment = Assignment.find_by(title: cleaned_name)
       end
       
       if existing_assignment
@@ -649,7 +653,9 @@ class EmploymentDataUploadParser
 
   def find_existing_assignment(assignment_data)
     if assignment_data['assignment_name'].present?
-      Assignment.find_by(title: assignment_data['assignment_name'])
+      cleaned_name = strip_html(assignment_data['assignment_name'])
+      Rails.logger.info "Parser: find_existing_assignment - '#{assignment_data['assignment_name']}' -> cleaned: '#{cleaned_name}'"
+      Assignment.find_by(title: cleaned_name)
     end
   end
 
