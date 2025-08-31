@@ -121,4 +121,16 @@
     
     / Page Content
     %main.py-4
+      - if impersonating?
+        .alert.alert-warning.alert-dismissible.fade.show.mx-3.mb-4{role: "alert"}
+          .d-flex.align-items-center
+            %i.bi.bi-exclamation-triangle.me-2
+            %strong.me-2 Impersonation Active
+            %span You are currently impersonating #{current_person.display_name}. 
+            %small.text-muted.ms-2 All actions will be performed as this user.
+          %button.btn-close{type: "button", "data-bs-dismiss": "alert", "aria-label": "Close"}
+          .mt-2
+            = button_to impersonation_path(1), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline;" } do
+              %i.bi.bi-person-x.me-1
+              Stop Impersonation
       = yield 

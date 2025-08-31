@@ -85,9 +85,18 @@
             - if current_person
               %li.nav-item.dropdown
                 %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                  - if impersonating?
+                    %i.bi.bi-exclamation-triangle.text-warning.me-1
                   %i.bi.bi-person-circle.me-1
                   = current_person.full_name
                 %ul.dropdown-menu.dropdown-menu-end
+                  - if impersonating?
+                    %li
+                      = button_to impersonation_path(1), method: :delete, class: "dropdown-item text-danger", form: { style: "display: inline;" } do
+                        %i.bi.bi-person-x.me-2
+                        Stop Impersonation
+                    %li
+                      %hr.dropdown-divider
                   %li= link_to "My Profile", profile_path, class: "dropdown-item"
                   - if current_organization
                     %li
@@ -143,6 +152,22 @@
           .col-12
             .d-flex.justify-content-end
               = yield :top_actions
+      
+      / Impersonation Warning Banner
+      - if impersonating?
+        .row.mb-3
+          .col-12
+            .alert.alert-warning.alert-dismissible.fade.show{role: "alert"}
+              .d-flex.align-items-center
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong.me-2 Impersonation Active
+                %span You are currently impersonating #{current_person.display_name}. 
+                %small.text-muted.ms-2 All actions will be performed as this user.
+              %button.btn-close{type: "button", "data-bs-dismiss": "alert", "aria-label": "Close"}
+              .mt-2
+                = button_to impersonation_path(1), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline;" } do
+                  %i.bi.bi-person-x.me-1
+                  Stop Impersonation
       
       / Content Area - Main page content
       = yield 
