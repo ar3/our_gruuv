@@ -3,6 +3,13 @@
   - preview_actions = @upload_event.preview_actions.is_a?(Hash) ? @upload_event.preview_actions : {}
   - results = @upload_event.results.is_a?(Hash) ? @upload_event.results : {}
   
+  -# Back navigation
+  .row.mb-3
+    .col-12
+      = link_to organization_upload_events_path(current_organization), class: "text-muted text-decoration-none" do
+        %i.bi.bi-arrow-left.me-2
+        Back to Uploads
+  
   -# Debug: Let's see what we're working with
   -# preview_actions_debug = preview_actions.inspect
   -# results_debug = results.inspect
@@ -45,7 +52,7 @@
       .d-flex.justify-content-between.align-items-center.mb-4
         %h1 Upload Details
         .d-flex.gap-2
-          -# = link_to 'Back to Uploads', organization_upload_events_path(current_organization), class: 'btn btn-outline-secondary'
+          = link_to 'Back to Uploads', organization_upload_events_path(current_organization), class: 'btn btn-outline-secondary'
           - if @upload_event.can_destroy?
             -# = link_to 'Delete', organization_upload_event_path(current_organization, @upload_event), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-outline-danger'
       

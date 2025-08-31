@@ -17,6 +17,8 @@ class PeopleController < ApplicationController
     @employment_tenures = @person.employment_tenures.includes(:company, :position, :manager)
                                  .order(started_at: :desc)
                                  .decorate
+    @assignment_tenures = @person.assignment_tenures.includes(:assignment)
+                                 .order(started_at: :desc)
     @person_organization_accesses = @person.person_organization_accesses.includes(:organization)
     
     # Preload huddle associations to avoid N+1 queries

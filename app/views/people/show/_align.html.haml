@@ -52,27 +52,28 @@
         / Assignment Sub-section
         .align-subsection.mb-4
           %h6.text-muted.border-bottom.pb-2 Assignment
-          - if current_tenure&.assignment
+          - current_assignment_tenure = @assignment_tenures.find { |t| t.assignment.company == current_company && t.active? }
+          - if current_assignment_tenure
             .row
               .col-md-6
                 %p.mb-1
                   %strong Current Assignment:
                   %br
-                  = current_tenure.assignment.title
+                  = current_assignment_tenure.assignment.title
                 %p.mb-1
                   %strong Assignment Description:
                   %br
-                  = current_tenure.assignment.tagline || "No description provided"
+                  = current_assignment_tenure.assignment.tagline || "No description provided"
               .col-md-6
                 %p.mb-1
                   %strong Assignment Start:
                   %br
-                  = current_tenure.started_at.strftime('%B %d, %Y')
+                  = current_assignment_tenure.started_at.strftime('%B %d, %Y')
                 %p.mb-1
                   %strong Assignment End:
                   %br
-                  - if current_tenure.ended_at
-                    = current_tenure.ended_at.strftime('%B %d, %Y')
+                  - if current_assignment_tenure.ended_at
+                    = current_assignment_tenure.ended_at.strftime('%B %d, %Y')
                   - else
                     %span.text-success Ongoing
               .row.mt-3
