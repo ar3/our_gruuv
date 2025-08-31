@@ -167,6 +167,18 @@ class PersonPolicy < ApplicationPolicy
     admin_bypass? || user == record
   end
 
+  def can_impersonate?
+    # Only og_admin users can impersonate others, and they cannot impersonate other og_admin users
+    return false unless admin_bypass?
+    return false if record&.og_admin? # Can't impersonate other admins
+    true
+  end
+
+  def can_impersonate_anyone?
+    # Check if user has permission to impersonate anyone (for controller-level checks)
+    admin_bypass?
+  end
+
   class Scope < Scope
     def resolve
       # Users can only see themselves, admins can see all people

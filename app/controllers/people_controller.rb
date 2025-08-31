@@ -4,6 +4,8 @@ class PeopleController < ApplicationController
   before_action :set_person, except: [:index]
   after_action :verify_authorized, except: :index
   after_action :verify_policy_scoped, only: :index
+  
+  helper_method :real_current_person
 
   def index
     authorize Person

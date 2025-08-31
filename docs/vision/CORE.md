@@ -95,6 +95,14 @@ This document outlines the vision for core system functionality that spans acros
 - Role-based access control (if needed)
 - Permission audit logging and history
 
+### Impersonation & Audit System
+- **Admin Impersonation**: og_admin users can impersonate other users (except other og_admins) for testing and support
+- **Session Persistence**: Impersonation persists across browser tabs/windows until manually stopped
+- **Permission Enforcement**: Impersonated users only have their actual permissions, not admin privileges
+- **Visual Indicators**: Clear warning icons and "Stop Impersonation" options when impersonating
+- **Future: Whodunit Audit Trail**: Track who took actions and whether they were impersonated, enabling "whodunit" style investigation of system changes
+- **Security Considerations**: Prevent impersonation hijacking, implement session validation, and add audit logging for all impersonation events
+
 ### API Development
 - RESTful API endpoints for core models
 - API authentication and rate limiting

@@ -81,6 +81,8 @@ module PeopleHelper
   end
 
   def current_view_name
+    return 'Management Mode' unless action_name
+    
     case action_name
     when 'show'
       'Management Mode'

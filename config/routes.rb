@@ -162,6 +162,9 @@ get '/profile', to: 'people#show', as: :profile
 get '/profile/edit', to: 'people#edit', as: :edit_profile
 patch '/profile', to: 'people#update', as: :update_profile
 
+# Impersonation routes
+resources :impersonations, only: [:create, :destroy]
+
 # Identity management
 post '/profile/identities/connect_google', to: 'people#connect_google_identity', as: :connect_google_identity
 delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconnect_identity

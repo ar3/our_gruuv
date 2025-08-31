@@ -31,6 +31,8 @@ This document contains all the rules and conventions we follow in this project t
 - **Don't implement custom authorization methods** in controllers (like `ensure_admin_or_self`)
 - **Avoid mixing authorization patterns** - stick to Pundit's standard approach
 - **Don't skip authorization** - always use `verify_authorized` to catch missing authorization calls
+- **Never check admin status directly in controllers or models** - always use Pundit policies for authorization decisions
+- **Never put authorization logic in views** - use `policy(@record).action?` instead of inline permission checks
 
 ### Common Authorization Scenarios
 - **User accessing their own records**: Use `user == record` in policy methods

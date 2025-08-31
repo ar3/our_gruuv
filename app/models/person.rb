@@ -91,6 +91,8 @@ class Person < ApplicationRecord
   def admin?
     og_admin?
   end
+
+
   
   # Permission helper methods
   def can_manage_employment?(organization)

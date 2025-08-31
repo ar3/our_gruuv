@@ -13,6 +13,8 @@ class ApplicationController < ActionController::Base
   
   helper_method :current_person
   helper_method :current_organization
+  helper_method :impersonating?
+  helper_method :real_current_person
   
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
   
@@ -125,6 +127,18 @@ class ApplicationController < ActionController::Base
   
   def current_person
     return @current_person if defined?(@current_person)
+    
+    # Check if we're impersonating someone
+    if session[:impersonating_person_id]
+      begin
+        @current_person = Person.find(session[:impersonating_person_id])
+        return @current_person
+      rescue ActiveRecord::RecordNotFound
+        # Clear the invalid impersonation session
+        session.delete(:impersonating_person_id)
+        # Fall through to normal session handling
+      end
+    end
     
     if session[:current_person_id]
       begin
@@ -297,5 +311,35 @@ class ApplicationController < ActionController::Base
     }
     
     mappings[locale] || mappings[locale.split('-').first]
+  end
+
+  # Impersonation helper methods
+  def impersonating?
+    session[:impersonating_person_id].present?
+  end
+
+  def real_current_person
+    return nil unless session[:current_person_id]
+    
+    begin
+      Person.find(session[:current_person_id])
+    rescue ActiveRecord::RecordNotFound
+      nil
+    end
+  end
+
+  def start_impersonation(person)
+    return false unless real_current_person
+    
+    # Use Pundit policy for authorization
+    policy = PersonPolicy.new(real_current_person, person)
+    return false unless policy.can_impersonate?
+    
+    session[:impersonating_person_id] = person.id
+    true
+  end
+
+  def stop_impersonation
+    session.delete(:impersonating_person_id)
   end
 end
