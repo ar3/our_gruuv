@@ -5,6 +5,8 @@ class Assignment < ApplicationRecord
   has_many :position_assignments, dependent: :destroy
   has_many :positions, through: :position_assignments
   has_many :assignment_tenures, dependent: :destroy
+  has_many :assignment_abilities, dependent: :destroy
+  has_many :abilities, through: :assignment_abilities
   has_one :published_external_reference, -> { where(reference_type: 'published') }, 
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
   has_one :draft_external_reference, -> { where(reference_type: 'draft') }, 
@@ -28,6 +30,31 @@ class Assignment < ApplicationRecord
   
   def company_name
     company&.display_name
+  end
+
+  # Ability-related methods
+  def required_abilities
+    assignment_abilities.by_milestone_level.includes(:ability)
+  end
+
+  def required_abilities_count
+    assignment_abilities.count
+  end
+
+  def has_ability_requirements?
+    assignment_abilities.exists?
+  end
+
+  def highest_milestone_for_ability(ability)
+    assignment_abilities.where(ability: ability).maximum(:milestone_level)
+  end
+
+  def add_ability_requirement(ability, milestone_level)
+    assignment_abilities.create!(ability: ability, milestone_level: milestone_level)
+  end
+
+  def remove_ability_requirement(ability)
+    assignment_abilities.where(ability: ability).destroy_all
   end
   
   # External reference convenience methods

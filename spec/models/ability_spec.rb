@@ -45,6 +45,8 @@ RSpec.describe Ability, type: :model do
     it { should belong_to(:organization) }
     it { should belong_to(:created_by).class_name('Person') }
     it { should belong_to(:updated_by).class_name('Person') }
+    it { should have_many(:assignment_abilities) }
+    it { should have_many(:assignments).through(:assignment_abilities) }
   end
 
   describe 'validations' do
@@ -215,6 +217,56 @@ RSpec.describe Ability, type: :model do
         # The original version would be deprecated if we had a way to access it
         # For now, just test that the current version is not deprecated
         expect(ability.deprecated?).to be false
+      end
+    end
+  end
+
+  describe 'assignment-related methods' do
+    let(:ability) { create(:ability, organization: organization, created_by: person, updated_by: person) }
+    let(:assignment1) { create(:assignment, company: organization) }
+    let(:assignment2) { create(:assignment, company: organization, title: 'Different Assignment') }
+
+    describe '#required_by_assignments' do
+      it 'returns assignments ordered by milestone level' do
+        create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 3)
+        create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
+
+        result = ability.required_by_assignments
+        expect(result.map(&:assignment)).to eq([assignment1, assignment2])
+      end
+    end
+
+    describe '#required_by_assignments_count' do
+      it 'returns count of assignments requiring this ability' do
+        create(:assignment_ability, assignment: assignment1, ability: ability)
+        create(:assignment_ability, assignment: assignment2, ability: ability)
+
+        expect(ability.required_by_assignments_count).to eq(2)
+      end
+    end
+
+    describe '#is_required_by_assignments?' do
+      it 'returns true when ability is required by assignments' do
+        create(:assignment_ability, assignment: assignment1, ability: ability)
+        expect(ability.is_required_by_assignments?).to be true
+      end
+
+      it 'returns false when ability is not required by any assignments' do
+        expect(ability.is_required_by_assignments?).to be false
+      end
+    end
+
+    describe '#highest_milestone_required_by_assignment' do
+      it 'returns highest milestone level required by assignment' do
+        # Update the existing assignment_ability to have milestone level 4
+        assignment_ability = create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 2)
+        assignment_ability.update!(milestone_level: 4)
+
+        expect(ability.highest_milestone_required_by_assignment(assignment1)).to eq(4)
+      end
+
+      it 'returns nil when assignment does not require this ability' do
+        expect(ability.highest_milestone_required_by_assignment(assignment1)).to be_nil
       end
     end
   end

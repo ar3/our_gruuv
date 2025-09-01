@@ -4,6 +4,8 @@ class Ability < ApplicationRecord
   belongs_to :organization
   belongs_to :created_by, class_name: 'Person'
   belongs_to :updated_by, class_name: 'Person'
+  has_many :assignment_abilities, dependent: :destroy
+  has_many :assignments, through: :assignment_abilities
 
   validates :name, presence: true, uniqueness: { scope: :organization_id }
   validates :description, presence: true
@@ -68,5 +70,22 @@ class Ability < ApplicationRecord
     else
       display_name
     end
+  end
+
+  # Assignment-related methods
+  def required_by_assignments
+    assignment_abilities.by_milestone_level.includes(:assignment)
+  end
+
+  def required_by_assignments_count
+    assignment_abilities.count
+  end
+
+  def is_required_by_assignments?
+    assignment_abilities.exists?
+  end
+
+  def highest_milestone_required_by_assignment(assignment)
+    assignment_abilities.where(assignment: assignment).maximum(:milestone_level)
   end
 end

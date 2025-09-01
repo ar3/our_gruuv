@@ -53,6 +53,14 @@ RSpec.describe Assignment, type: :model do
       expect(assignment.assignment_outcomes).to be_empty
     end
 
+    it 'has many assignment abilities' do
+      expect(assignment.assignment_abilities).to be_empty
+    end
+
+    it 'has many abilities through assignment abilities' do
+      expect(assignment.abilities).to be_empty
+    end
+
     it 'has one published external reference' do
       expect(assignment.published_external_reference).to be_nil
     end
@@ -69,6 +77,77 @@ RSpec.describe Assignment, type: :model do
 
     it 'returns company name' do
       expect(assignment.company_name).to eq(organization.display_name)
+    end
+  end
+
+  describe 'ability-related methods' do
+    let(:ability1) { create(:ability, organization: organization) }
+    let(:ability2) { create(:ability, organization: organization) }
+
+    describe '#required_abilities' do
+      it 'returns abilities ordered by milestone level' do
+        create(:assignment_ability, assignment: assignment, ability: ability2, milestone_level: 3)
+        create(:assignment_ability, assignment: assignment, ability: ability1, milestone_level: 1)
+
+        result = assignment.required_abilities
+        expect(result.map(&:ability)).to eq([ability1, ability2])
+      end
+    end
+
+    describe '#required_abilities_count' do
+      it 'returns count of required abilities' do
+        create(:assignment_ability, assignment: assignment, ability: ability1)
+        create(:assignment_ability, assignment: assignment, ability: ability2)
+
+        expect(assignment.required_abilities_count).to eq(2)
+      end
+    end
+
+    describe '#has_ability_requirements?' do
+      it 'returns true when assignment has ability requirements' do
+        create(:assignment_ability, assignment: assignment, ability: ability1)
+        expect(assignment.has_ability_requirements?).to be true
+      end
+
+      it 'returns false when assignment has no ability requirements' do
+        expect(assignment.has_ability_requirements?).to be false
+      end
+    end
+
+    describe '#highest_milestone_for_ability' do
+      it 'returns highest milestone level for ability' do
+        # Update the existing assignment_ability to have milestone level 4
+        assignment_ability = create(:assignment_ability, assignment: assignment, ability: ability1, milestone_level: 2)
+        assignment_ability.update!(milestone_level: 4)
+
+        expect(assignment.highest_milestone_for_ability(ability1)).to eq(4)
+      end
+
+      it 'returns nil when ability not required' do
+        expect(assignment.highest_milestone_for_ability(ability1)).to be_nil
+      end
+    end
+
+    describe '#add_ability_requirement' do
+      it 'adds ability requirement' do
+        expect {
+          assignment.add_ability_requirement(ability1, 3)
+        }.to change(assignment.assignment_abilities, :count).by(1)
+
+        assignment_ability = assignment.assignment_abilities.last
+        expect(assignment_ability.ability).to eq(ability1)
+        expect(assignment_ability.milestone_level).to eq(3)
+      end
+    end
+
+    describe '#remove_ability_requirement' do
+      it 'removes ability requirement' do
+        create(:assignment_ability, assignment: assignment, ability: ability1)
+
+        expect {
+          assignment.remove_ability_requirement(ability1)
+        }.to change(assignment.assignment_abilities, :count).by(-1)
+      end
     end
   end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_01_004104) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_01_011927) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -27,6 +27,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_01_004104) do
     t.index ["name", "organization_id"], name: "index_abilities_on_name_and_organization_id", unique: true
     t.index ["organization_id"], name: "index_abilities_on_organization_id"
     t.index ["updated_by_id"], name: "index_abilities_on_updated_by_id"
+  end
+
+  create_table "assignment_abilities", force: :cascade do |t|
+    t.bigint "assignment_id", null: false
+    t.bigint "ability_id", null: false
+    t.integer "milestone_level", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ability_id"], name: "index_assignment_abilities_on_ability_id"
+    t.index ["assignment_id", "ability_id"], name: "index_assignment_abilities_on_assignment_and_ability_unique", unique: true
+    t.index ["assignment_id"], name: "index_assignment_abilities_on_assignment_id"
+    t.index ["milestone_level"], name: "index_assignment_abilities_on_milestone_level"
   end
 
   create_table "assignment_check_ins", force: :cascade do |t|
@@ -394,6 +406,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_01_004104) do
   add_foreign_key "abilities", "organizations"
   add_foreign_key "abilities", "people", column: "created_by_id"
   add_foreign_key "abilities", "people", column: "updated_by_id"
+  add_foreign_key "assignment_abilities", "abilities"
+  add_foreign_key "assignment_abilities", "assignments"
   add_foreign_key "assignment_check_ins", "assignments"
   add_foreign_key "assignment_check_ins", "people"
   add_foreign_key "assignment_outcomes", "assignments"
