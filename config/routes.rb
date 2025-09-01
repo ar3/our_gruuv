@@ -89,6 +89,13 @@ get '/login', to: 'auth#login', as: :login
     # Abilities management
     resources :abilities, module: :organizations
     
+    # Seats management
+    resources :seats, module: :organizations do
+      member do
+        patch :reconcile
+      end
+    end
+    
     # Slack integration nested under organizations
     resource :slack, only: [:show], module: :organizations, controller: 'slack' do
       collection do

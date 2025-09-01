@@ -3,6 +3,7 @@ class PositionType < ApplicationRecord
   belongs_to :organization
   belongs_to :position_major_level
   has_many :positions, dependent: :destroy
+  has_many :seats, dependent: :destroy
   has_one :published_external_reference, -> { where(reference_type: 'published') }, 
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
   has_one :draft_external_reference, -> { where(reference_type: 'draft') }, 

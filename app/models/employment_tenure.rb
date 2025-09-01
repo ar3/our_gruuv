@@ -3,6 +3,7 @@ class EmploymentTenure < ApplicationRecord
   belongs_to :company, class_name: 'Organization'
   belongs_to :position
   belongs_to :manager, class_name: 'Person', optional: true
+  belongs_to :seat, optional: true
 
   validates :started_at, presence: true
   validates :ended_at, comparison: { greater_than: :started_at }, allow_nil: true

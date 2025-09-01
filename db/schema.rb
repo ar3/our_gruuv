@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_01_021102) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_01_180234) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -125,11 +125,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_01_021102) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "employment_change_notes"
+    t.bigint "seat_id"
     t.index ["company_id"], name: "index_employment_tenures_on_company_id"
     t.index ["manager_id"], name: "index_employment_tenures_on_manager_id"
     t.index ["person_id", "company_id", "started_at"], name: "index_employment_tenures_on_person_company_started"
     t.index ["person_id"], name: "index_employment_tenures_on_person_id"
     t.index ["position_id"], name: "index_employment_tenures_on_position_id"
+    t.index ["seat_id"], name: "index_employment_tenures_on_seat_id"
   end
 
   create_table "external_references", force: :cascade do |t|
@@ -347,6 +349,28 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_01_021102) do
     t.index ["position_type_id"], name: "index_positions_on_position_type_id"
   end
 
+  create_table "seats", force: :cascade do |t|
+    t.bigint "position_type_id", null: false
+    t.date "seat_needed_by", null: false
+    t.string "job_classification", default: "Salaried Exempt"
+    t.string "reports_to"
+    t.string "team"
+    t.text "reports"
+    t.text "measurable_outcomes"
+    t.text "work_environment", default: "Prolonged periods of sitting at a desk and working on a computer."
+    t.text "physical_requirements", default: "While performing the duties of this job, the employee may be regularly required to stand, sit, talk, hear, and use hands and fingers to operate a computer and keyboard. Specific vision abilities required by this job include close vision requirements due to computer work."
+    t.text "travel", default: "Travel is on a voluntary basis."
+    t.text "why_needed"
+    t.text "why_now"
+    t.text "costs_risks"
+    t.string "state", default: "draft", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "seat_disclaimer", default: "This job description is not designed to cover or contain a comprehensive list of duties or responsibilities. Duties may change or new ones may be assigned at any time."
+    t.index ["position_type_id", "seat_needed_by"], name: "index_seats_on_position_type_and_needed_by", unique: true
+    t.index ["position_type_id"], name: "index_seats_on_position_type_id"
+  end
+
   create_table "slack_configurations", force: :cascade do |t|
     t.bigint "organization_id", null: false
     t.string "workspace_id", null: false
@@ -439,6 +463,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_01_021102) do
   add_foreign_key "employment_tenures", "people"
   add_foreign_key "employment_tenures", "people", column: "manager_id"
   add_foreign_key "employment_tenures", "positions"
+  add_foreign_key "employment_tenures", "seats"
   add_foreign_key "huddle_feedbacks", "huddles"
   add_foreign_key "huddle_feedbacks", "people"
   add_foreign_key "huddle_participants", "huddles"
@@ -462,6 +487,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_01_021102) do
   add_foreign_key "position_types", "position_major_levels"
   add_foreign_key "positions", "position_levels"
   add_foreign_key "positions", "position_types"
+  add_foreign_key "seats", "position_types"
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"

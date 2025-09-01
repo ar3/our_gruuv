@@ -1,0 +1,56 @@
+- content_for :header do
+  %h1.mb-0 Seats
+- content_for :header_action do
+  = link_to new_organization_seat_path(@organization), class: "btn btn-primary" do
+    %i.bi.bi-plus.me-2
+    New Seat
+
+.row.justify-content-center
+  .col-lg-12
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-building.me-2
+          Job Requisitions
+      .card-body
+        - if @seats.any?
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Position Type
+                  %th Needed By
+                  %th State
+                  %th Job Classification
+                  %th Actions
+              %tbody
+                - @seats.each do |seat|
+                  %tr
+                    %td
+                      = link_to seat.position_type.external_title, position_type_path(seat.position_type), class: "text-decoration-none"
+                    %td= seat.seat_needed_by.strftime('%B %Y')
+                    %td
+                      %span.badge{class: seat_state_badge_class(seat.state)}
+                        = seat.state.titleize
+                      - if seat.needs_reconciliation?
+                        %span.badge.bg-warning.ms-1
+                          %i.bi.bi-exclamation-triangle
+                    %td= seat.job_classification
+                    %td
+                      .btn-group.btn-group-sm
+                        = link_to organization_seat_path(@organization, seat), class: "btn btn-outline-primary" do
+                          %i.bi.bi-eye
+                        = link_to edit_organization_seat_path(@organization, seat), class: "btn btn-outline-secondary" do
+                          %i.bi.bi-pencil
+                        - if seat.needs_reconciliation?
+                          = link_to reconcile_organization_seat_path(@organization, seat), method: :patch, class: "btn btn-outline-warning", data: { confirm: "Reconcile seat state?" } do
+                            %i.bi.bi-arrow-clockwise
+                        = link_to organization_seat_path(@organization, seat), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
+                          %i.bi.bi-trash
+        - else
+          .alert.alert-info
+            %h6.mb-2
+              %i.bi.bi-info-circle.me-2
+              No Seats Created
+            %p.mb-2 Create your first seat to get started with job requisitions.
+            = link_to "Create First Seat", new_organization_seat_path(@organization), class: "btn btn-primary btn-sm"
