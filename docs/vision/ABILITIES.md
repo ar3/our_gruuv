@@ -4,11 +4,34 @@ The Abilities system enables organizations to define, track, and certify skills,
 
 ## DONE ✅
 
-*No abilities system implemented yet*
+### **Waypoint 1: Ability Foundation** ✅
+**Completed**: Core ability management system with organization scoping and versioning
+
+**Key Results Achieved:**
+1. **Ability model with organization scope** - Abilities belong to organizations, managed by MAAP permissions
+2. **Versioning system** - Track ability evolution with semantic versioning and audit trail
+3. **Basic CRUD operations** - Create, read, update, delete abilities with proper authorization
+4. **MAAP integration** - Only users with can_manage_maap can create/modify abilities
+
+### **Waypoint 2: Assignment-Ability Association** ✅
+**Completed**: Connect abilities to assignments with milestone requirements
+
+**Key Results Achieved:**
+1. **Many-to-many relationship** - Assignments can require multiple abilities at different milestone levels
+2. **Milestone requirement specification** - Define which milestone level is needed for each ability
+3. **Organization scoping validation** - Ensure assignments and abilities belong to same organization
+4. **Assignment validation** - Prevent assignment creation without required abilities
 
 ## DOING 🔄
 
-*No abilities system in progress yet*
+### **Waypoint 3: Job Description Generation** 🔄
+**Next**: Generate job descriptions from ability requirements and milestone attainments
+
+**Key Results:**
+1. **Generic job descriptions** - Generate from position ability requirements
+2. **Unique job descriptions** - Generate from person milestone attainments
+3. **Apprentice vs. full status** - Display logic based on milestone levels
+4. **Growth gap analysis** - Show what milestones needed for next level
 
 ## WAYPOINTS 📋
 
@@ -24,7 +47,7 @@ The Abilities system enables organizations to define, track, and certify skills,
 **Deliverable**: Functional ability management interface with versioning
 **Commit**: "feat: implement ability foundation with organization scoping and versioning"
 
-### **Waypoint 2: Assignment-Ability Association** (2-3 commits)
+### **Waypoint 2: Assignment-Ability Association** ✅ (2-3 commits)
 **Objective**: Connect abilities to assignments with milestone requirements
 
 **Key Results:**
@@ -36,7 +59,7 @@ The Abilities system enables organizations to define, track, and certify skills,
 **Deliverable**: Assignment-ability association system with milestone requirements
 **Commit**: "feat: connect assignments to abilities with milestone requirements"
 
-### **Waypoint 3: Job Description Generation** (2-3 commits)
+### **Waypoint 3: Job Description Generation** 🔄 (2-3 commits)
 **Objective**: Generate job descriptions from ability requirements and milestone attainments
 
 **Key Results:**
