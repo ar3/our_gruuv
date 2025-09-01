@@ -33,6 +33,8 @@ This document contains all the rules and conventions we follow in this project t
 - **Don't skip authorization** - always use `verify_authorized` to catch missing authorization calls
 - **Never check admin status directly in controllers or models** - always use Pundit policies for authorization decisions
 - **Never put authorization logic in views** - use `policy(@record).action?` instead of inline permission checks
+- **Always ask for verification before committing** - after each unit of work, ask user to verify either with code review or manually walking through the UI before executing any commits
+- **Write commit message before starting work** - write the top line commit message before beginning each unit of work to ensure clarity on what we're trying to accomplish
 
 ### Common Authorization Scenarios
 - **User accessing their own records**: Use `user == record` in policy methods

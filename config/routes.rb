@@ -9,6 +9,9 @@ Rails.application.routes.draw do
   # Assignments routes
   resources :assignments
   resources :positions do
+    member do
+      get :job_description
+    end
     collection do
       get :position_levels
     end

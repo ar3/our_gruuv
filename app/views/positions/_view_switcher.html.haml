@@ -1,0 +1,39 @@
+.dropdown
+  %button.btn.btn-outline-primary.btn-sm.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button"}
+    %i.bi.bi-eye.me-2
+    = current_view_name
+  %ul.dropdown-menu
+    %li
+      - if action_name == 'show'
+        .dropdown-item.text-muted
+          %i.bi.bi-gear.me-2
+          Management View (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - else
+        = link_to position_path(@position), class: 'dropdown-item' do
+          %i.bi.bi-gear.me-2
+          Management View
+      
+    %li
+      - if action_name == 'job_description'
+        .dropdown-item.text-muted
+          %i.bi.bi-file-text.me-2
+          Job Description View (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - else
+        = link_to job_description_position_path(@position), class: 'dropdown-item' do
+          %i.bi.bi-file-text.me-2
+          Job Description View
+    
+    %li
+      %hr.dropdown-divider
+    
+    %li
+      = link_to edit_position_path(@position), class: 'dropdown-item' do
+        %i.bi.bi-pencil.me-2
+        Edit Position
+    
+    %li
+      = link_to position_path(@position), method: :delete, data: { confirm: "Are you sure?" }, class: 'dropdown-item text-danger' do
+        %i.bi.bi-trash.me-2
+        Delete Position

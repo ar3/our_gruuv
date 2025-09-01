@@ -1,6 +1,7 @@
 class PositionsController < ApplicationController
-  before_action :set_position, only: [:show, :edit, :update, :destroy]
+  layout 'authenticated-v2-0'
   before_action :set_company
+  before_action :set_position, only: [:show, :job_description, :edit, :update, :destroy]
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
   def index
@@ -12,7 +13,11 @@ class PositionsController < ApplicationController
   end
 
   def show
-    @position = @position.decorate
+    # @position is already set by set_position before_action
+  end
+
+  def job_description
+    # @position is already set by set_position before_action
   end
 
   def new
@@ -67,7 +72,10 @@ class PositionsController < ApplicationController
   private
 
   def set_position
-    @position = Position.find(params[:id])
+    @position = Position.for_company(@company).find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    flash[:error] = "Position not found"
+    redirect_to positions_path
   end
 
   def set_company

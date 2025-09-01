@@ -1,87 +1,16 @@
-.container.mt-4
-  .row.justify-content-center
-    .col-lg-10
-      .d-flex.justify-content-between.align-items-center.mb-4
-        = link_to positions_path, class: "btn btn-outline-secondary" do
-          %i.bi.bi-arrow-left.me-1
-          Back to Positions
-        .dropdown
-          %button.btn.btn-outline-secondary.dropdown-toggle{"data-bs-toggle" => "dropdown", :type => "button"}
-            %i.bi.bi-three-dots
-          %ul.dropdown-menu
-            %li
-              = link_to "Edit", edit_position_path(@position), class: "dropdown-item"
-            %li
-              = link_to "Delete", position_path(@position), 
-                method: :delete, 
-                data: { confirm: "Are you sure?" }, 
-                class: "dropdown-item text-danger"
-      
-      .card
-        .card-header.bg-primary.text-white
-          %h3.mb-0= @position.display_name
-          %p.mb-0.text-light= @position.position_summary
-        
-        .card-body
-          .row
-            .col-md-8.col-sm-12
-              %h5.mb-2
-                %i.bi.bi-building.me-2
-                Company
-              %p= link_to @position.company.display_name, organization_path(@position.company), class: "text-decoration-none"
-            
-              %h5.mb-2
-                %i.bi.bi-tag.me-2
-                Position Type
-              %p= link_to @position.position_type.external_title, position_type_path(@position.position_type), class: "text-decoration-none"
-            
-              %h5.mb-2
-                %i.bi.bi-star.me-2
-                Position Level
-              %p= @position.position_level.level_name
-            
-              - if @position.position_summary.present?
-                %h5.mb-2
-                  %i.bi.bi-file-text.me-2
-                  Summary
-                %p= @position.position_summary
+- content_for :header do
+  %h1.mb-0= @position.display_name
 
-            .col-md-4.col-sm-12
-              - if @position.required_assignments.any? || @position.suggested_assignments.any?
-                %h5.mb-2
-                  %i.bi.bi-list-check.me-2
-                  Assignments
-                - if @position.required_assignments.any?
-                  %h6.text-primary Required Assignments (#{@position.required_assignments_count})
-                  %ul
-                    - @position.required_assignments.each do |pa|
-                      %li
-                        = link_to pa.decorate.display_title, assignment_path(pa.assignment), class: "text-decoration-none"
-                - if @position.suggested_assignments.any?
-                  %h6.text-info.mt-3 Suggested Assignments (#{@position.suggested_assignments_count})
-                  %ul
-                    - @position.suggested_assignments.each do |pa|
-                      %li
-                        = link_to pa.decorate.display_title, assignment_path(pa.assignment), class: "text-decoration-none"
-              - else
-                .alert.alert-warning
-                  %h6.mb-2
-                    %i.bi.bi-exclamation-triangle.me-2
-                    No Assignments Defined
-                  %p.mb-2 This position has no required or suggested assignments.
-                  = link_to "Add Assignments", edit_position_path(@position), class: "btn btn-warning btn-sm"
-              
-              - if @position.published_url.present? || @position.draft_url.present?
-                %h5.mb-2.mt-3
-                  %i.bi.bi-link-45deg.me-2
-                  External References
-                - if @position.published_url.present?
-                  .mb-2
-                    = link_to @position.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm" do
-                      %i.bi.bi-file-earmark-text.me-1
-                      Published Version
-                - if @position.draft_url.present?
-                  .mb-2
-                    = link_to @position.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm" do
-                      %i.bi.bi-file-earmark-text.me-1
-                      Draft Version
+- content_for :header_action do
+  = render 'view_switcher'
+
+- content_for :go_back_link do
+  = link_to positions_path, class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Positions
+
+
+
+.row.justify-content-center
+  .col-lg-10
+    = render 'show_content'

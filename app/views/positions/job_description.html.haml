@@ -1,0 +1,81 @@
+- content_for :header do
+  %h1.mb-0= @position.display_name
+
+- content_for :header_action do
+  = render 'view_switcher'
+
+- content_for :go_back_link do
+  = link_to positions_path, class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Positions
+
+.row.mb-4
+  .col-md-6
+    %h3
+      %strong Summary:
+    %p= @position.position_summary.present? ? @position.position_summary : "No summary provided"
+
+  -# Required Assignments
+  - if @position.required_assignments.any?
+    %h3.mb-3
+      %strong Required Assignments:
+    
+    - @position.required_assignments.each_with_index do |pa, index|
+      - if index > 0
+        %hr.my-4
+      
+      = render 'assignment_job_description', pa: pa, assignment_type: 'required'
+
+  -# Suggested Assignments
+  - if @position.suggested_assignments.any?
+    %h3.mb-1.mt-4
+      %strong Optional / Elective / Uniquely-You Assignments
+    %p.text-muted.mb-3
+      %em We are all about growth… as such, we do our best to make it possible to successfully complete required Assignments and have room for special/elective/unique-to-you Assignments. These should only be taken on if the required Assignments are being completed and we are meeting expectations across them.
+    
+    - @position.suggested_assignments.each_with_index do |pa, index|
+      - if index > 0
+        %hr.my-4
+      
+      = render 'assignment_job_description', pa: pa, assignment_type: 'suggested'
+
+- if @position.required_assignments.empty? && @position.suggested_assignments.empty?
+  .alert.alert-warning
+    %h6.mb-2
+      %i.bi.bi-exclamation-triangle.me-2
+      No Assignments Defined
+    %p.mb-2 This position has no required or suggested assignments.
+    = link_to "Add Assignments", edit_position_path(@position), class: "btn btn-warning btn-sm"
+
+.mt-5
+  %p.text-muted
+    %em This job description is not designed to cover or contain a comprehensive list of duties or responsibilities. Duties may change or new ones may be assigned at any time.
+  
+  %p.text-muted
+    %strong Work environment:
+    Prolonged periods of sitting at a desk and working on a computer.
+  
+  %p.text-muted
+    %strong Physical requirements:
+    While performing the duties of this job, the employee may be regularly required to stand, sit, talk, hear, and use hands and fingers to operate a computer and keyboard. Specific vision abilities required by this job include close vision requirements due to computer work.
+  
+  %p.text-muted
+    %strong Travel:
+    Travel is on a voluntary basis.
+  
+  %hr.my-4
+  
+  %p.text-muted
+    %em Employee signature below indicates the employee's understanding of the requirements, essential functions and duties of the position.
+  
+  .row.mt-4
+    .col-md-6
+      %p.text-muted
+        %strong Employee Signature:
+        %br
+        %small _____________________________
+    .col-md-6
+      %p.text-muted
+        %strong Date:
+        %br
+        %small _____________________________

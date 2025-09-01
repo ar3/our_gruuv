@@ -56,6 +56,13 @@ class Assignment < ApplicationRecord
   def remove_ability_requirement(ability)
     assignment_abilities.where(ability: ability).destroy_all
   end
+
+  # Outcomes convenience method
+  def outcomes
+    assignment_outcomes.ordered
+  end
+
+
   
   # External reference convenience methods
   def published_url

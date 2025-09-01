@@ -33,14 +33,55 @@ The Abilities system enables organizations to define, track, and certify skills,
 
 ## DOING 🔄
 
-### **Waypoint 3: Job Description Generation** 🔄
-**Next**: Generate job descriptions from ability requirements and milestone attainments
+### **Waypoint 3: Job Description Generation System** 🔄
+**Next**: Create comprehensive job description system with dedicated pages and views
 
 **Key Results:**
-1. **Generic job descriptions** - Generate from position ability requirements
-2. **Unique job descriptions** - Generate from person milestone attainments
-3. **Apprentice vs. full status** - Display logic based on milestone levels
-4. **Growth gap analysis** - Show what milestones needed for next level
+1. **Position Job Description** - Default job description for positions
+2. **Seat Job Description** - Job requisition with HR metadata
+3. **Person Job Description** - Individual job description based on assignments and milestones
+4. **Eligibility Analysis** - Gap analysis for position requirements
+
+**Status**: 🚧 In Progress
+
+#### Phase 1: Position Show Page & Job Description View ✅ Completed
+- Updated position show page to use new layout with action switching
+- Created management view (existing functionality)
+- Created job description view with both existing UI and template format
+- Added milestone level display helper (Demonstrated, Advanced, Expert, Coach, Industry-Recognized)
+- Removed text-based job description generator in favor of dedicated pages
+
+#### Phase 2: Seat Concept & Model 🚧 Next
+- **Seat Model**: Job requisition with HR metadata
+  - States: Archived, Filled, Open, Draft
+  - References in EmploymentTenure model
+  - Goal: No active tenure missing seat, no seat missing tenure
+- **Seat Attributes**: Based on template (need to define)
+- **Seat View**: Mirror template structure
+
+#### Phase 3: Person Job Description View 🚧 Planned
+- **Teammate View**: Show job description powered by assignments/abilities
+- **Eligibility View**: Same permissions as management view
+  - Show current position gaps
+  - Allow position selection for gap analysis
+  - Report: "To be X.X of <Position Type> you need Assignments A,B,C and Milestones D,E,F"
+
+#### Phase 4: Position Eligibility Simulator 🚧 Planned
+- **Wizard Flow**:
+  1. Select position
+  2. Choose additional assignments (beyond required)
+  3. Assess milestone levels across all required abilities
+  4. Gap analysis showing apprentice vs. full status eligibility
+- **Features**: 
+  - Current position analysis
+  - New position exploration
+  - Anonymous usage (may merge with eligibility view)
+
+**Questions for Implementation**:
+- **Policies**: Who can access what views? (HR, managers, employees, public?)
+- **Seat Attributes**: What specific metadata fields from template?
+- **View Permissions**: Different access levels for different job description types?
+- **Eligibility Simulator**: Should this be a separate feature or integrated with existing views?
 
 ## WAYPOINTS 📋
 

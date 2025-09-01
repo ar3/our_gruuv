@@ -38,6 +38,8 @@ class Person < ApplicationRecord
   def remove_milestone_attainment(ability, level)
     person_milestones.where(ability: ability, milestone_level: level).destroy_all
   end
+
+
   
   # Scopes for active assignments in a specific company
   def active_assignments(company=nil)

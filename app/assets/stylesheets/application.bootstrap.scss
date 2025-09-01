@@ -188,3 +188,23 @@
   border-left: 4px solid #dee2e6;
   padding-left: 1rem;
 }
+
+// ===== POSITION-SPECIFIC STYLES =====
+.assignment-details {
+  border-left: 3px solid;
+  padding-left: 1rem;
+  margin-left: 1rem;
+  transition: all 0.2s ease-in-out;
+  
+  &.border-primary {
+    border-left-color: var(--bs-primary);
+  }
+  
+  &.border-info {
+    border-left-color: var(--bs-info);
+  }
+  
+  &:hover {
+    transform: translateX(2px);
+  }
+}
