@@ -6,6 +6,32 @@ class Ability < ApplicationRecord
   belongs_to :updated_by, class_name: 'Person'
   has_many :assignment_abilities, dependent: :destroy
   has_many :assignments, through: :assignment_abilities
+  has_many :person_milestones, dependent: :destroy
+  has_many :people, through: :person_milestones
+
+  # Person milestone-related methods
+  def person_attainments
+    person_milestones.by_milestone_level.includes(:person)
+  end
+
+  def person_attainments_count
+    person_milestones.count
+  end
+
+  def has_person_attainments?
+    person_milestones.exists?
+  end
+
+  def people_with_milestone(level)
+    person_milestones.where(milestone_level: level).includes(:person).map(&:person)
+  end
+
+  def people_with_highest_milestone
+    max_level = person_milestones.maximum(:milestone_level)
+    return [] unless max_level
+    
+    person_milestones.where(milestone_level: max_level).includes(:person).map(&:person)
+  end
 
   validates :name, presence: true, uniqueness: { scope: :organization_id }
   validates :description, presence: true
@@ -87,5 +113,29 @@ class Ability < ApplicationRecord
 
   def highest_milestone_required_by_assignment(assignment)
     assignment_abilities.where(assignment: assignment).maximum(:milestone_level)
+  end
+
+  # Milestone-related methods
+  def milestone_description(level)
+    return nil unless (1..5).include?(level)
+    
+    send("milestone_#{level}_description")
+  end
+
+  def defined_milestones
+    (1..5).select { |level| milestone_description(level).present? }
+  end
+
+  def has_milestone_definition?(level)
+    milestone_description(level).present?
+  end
+
+  def milestone_display(level)
+    description = milestone_description(level)
+    if description.present?
+      "Milestone #{level}: #{description}"
+    else
+      "Milestone #{level}"
+    end
   end
 end

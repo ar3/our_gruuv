@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_01_011927) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_01_021102) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,6 +23,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_01_011927) do
     t.bigint "updated_by_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "milestone_1_description"
+    t.text "milestone_2_description"
+    t.text "milestone_3_description"
+    t.text "milestone_4_description"
+    t.text "milestone_5_description"
     t.index ["created_by_id"], name: "index_abilities_on_created_by_id"
     t.index ["name", "organization_id"], name: "index_abilities_on_name_and_organization_id", unique: true
     t.index ["organization_id"], name: "index_abilities_on_organization_id"
@@ -252,6 +257,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_01_011927) do
     t.index ["provider", "uid"], name: "index_person_identities_on_provider_and_uid", unique: true
   end
 
+  create_table "person_milestones", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.bigint "ability_id", null: false
+    t.integer "milestone_level", null: false
+    t.bigint "certified_by_id", null: false
+    t.date "attained_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ability_id"], name: "index_person_milestones_on_ability_id"
+    t.index ["attained_at"], name: "index_person_milestones_on_attained_at"
+    t.index ["certified_by_id"], name: "index_person_milestones_on_certified_by_id"
+    t.index ["milestone_level"], name: "index_person_milestones_on_milestone_level"
+    t.index ["person_id", "ability_id", "milestone_level"], name: "index_person_milestones_on_person_ability_milestone_unique", unique: true
+    t.index ["person_id"], name: "index_person_milestones_on_person_id"
+  end
+
   create_table "person_organization_accesses", force: :cascade do |t|
     t.bigint "person_id", null: false
     t.bigint "organization_id", null: false
@@ -429,6 +450,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_01_011927) do
   add_foreign_key "organizations", "organizations", column: "parent_id"
   add_foreign_key "people", "organizations", column: "current_organization_id"
   add_foreign_key "person_identities", "people"
+  add_foreign_key "person_milestones", "abilities"
+  add_foreign_key "person_milestones", "people"
+  add_foreign_key "person_milestones", "people", column: "certified_by_id"
   add_foreign_key "person_organization_accesses", "organizations"
   add_foreign_key "person_organization_accesses", "people"
   add_foreign_key "position_assignments", "assignments"

@@ -57,6 +57,22 @@ RSpec.describe Ability, type: :model do
     it { should belong_to(:created_by).class_name('Person') }
     it { should belong_to(:updated_by).class_name('Person') }
 
+    describe 'milestone descriptions' do
+      let(:ability) { create(:ability, organization: organization, created_by: person, updated_by: person) }
+
+      it 'allows milestone descriptions to be optional' do
+        ability.milestone_1_description = nil
+        ability.milestone_2_description = nil
+        expect(ability).to be_valid
+      end
+
+      it 'allows milestone descriptions to be set' do
+        ability.milestone_1_description = 'Basic understanding and ability to perform fundamental tasks'
+        ability.milestone_3_description = 'Expert level with ability to handle complex situations'
+        expect(ability).to be_valid
+      end
+    end
+
     it 'validates uniqueness of name within organization' do
       create(:ability, name: 'Ruby Programming', organization: organization)
       duplicate_ability = build(:ability, name: 'Ruby Programming', organization: organization)
@@ -267,6 +283,62 @@ RSpec.describe Ability, type: :model do
 
       it 'returns nil when assignment does not require this ability' do
         expect(ability.highest_milestone_required_by_assignment(assignment1)).to be_nil
+      end
+    end
+  end
+
+  describe 'milestone-related methods' do
+    let(:ability) { create(:ability, organization: organization, created_by: person, updated_by: person) }
+
+    describe '#milestone_description' do
+      it 'returns description for specific milestone level' do
+        ability.milestone_3_description = 'Expert level with ability to handle complex situations'
+        expect(ability.milestone_description(3)).to eq('Expert level with ability to handle complex situations')
+      end
+
+      it 'returns nil for milestone level without description' do
+        expect(ability.milestone_description(4)).to be_nil
+      end
+
+      it 'returns nil for invalid milestone level' do
+        expect(ability.milestone_description(0)).to be_nil
+        expect(ability.milestone_description(6)).to be_nil
+      end
+    end
+
+    describe '#defined_milestones' do
+      it 'returns array of milestone levels that have descriptions' do
+        ability.milestone_1_description = 'Basic understanding'
+        ability.milestone_3_description = 'Expert level'
+        ability.milestone_5_description = 'Master level'
+
+        expect(ability.defined_milestones).to eq([1, 3, 5])
+      end
+
+      it 'returns empty array when no milestones defined' do
+        expect(ability.defined_milestones).to eq([])
+      end
+    end
+
+    describe '#has_milestone_definition?' do
+      it 'returns true for milestone level with description' do
+        ability.milestone_2_description = 'Intermediate level'
+        expect(ability.has_milestone_definition?(2)).to be true
+      end
+
+      it 'returns false for milestone level without description' do
+        expect(ability.has_milestone_definition?(4)).to be false
+      end
+    end
+
+    describe '#milestone_display' do
+      it 'returns formatted milestone with description' do
+        ability.milestone_3_description = 'Expert level with ability to handle complex situations'
+        expect(ability.milestone_display(3)).to eq('Milestone 3: Expert level with ability to handle complex situations')
+      end
+
+      it 'returns just milestone level when no description' do
+        expect(ability.milestone_display(3)).to eq('Milestone 3')
       end
     end
   end

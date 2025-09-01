@@ -7,6 +7,37 @@ class Person < ApplicationRecord
   has_many :employment_tenures, dependent: :destroy
   has_many :assignment_tenures, dependent: :destroy
   has_many :assignments, through: :assignment_tenures
+  has_many :person_milestones, dependent: :destroy
+  has_many :abilities, through: :person_milestones
+
+  # Milestone-related methods
+  def milestone_attainments
+    person_milestones.by_milestone_level.includes(:ability)
+  end
+
+  def milestone_attainments_count
+    person_milestones.count
+  end
+
+  def has_milestone_attainments?
+    person_milestones.exists?
+  end
+
+  def highest_milestone_for_ability(ability)
+    person_milestones.where(ability: ability).maximum(:milestone_level)
+  end
+
+  def has_milestone_for_ability?(ability, level)
+    person_milestones.where(ability: ability, milestone_level: level).exists?
+  end
+
+  def add_milestone_attainment(ability, level, certified_by)
+    person_milestones.create!(ability: ability, milestone_level: level, certified_by: certified_by, attained_at: Date.current)
+  end
+
+  def remove_milestone_attainment(ability, level)
+    person_milestones.where(ability: ability, milestone_level: level).destroy_all
+  end
   
   # Scopes for active assignments in a specific company
   def active_assignments(company=nil)

@@ -24,14 +24,14 @@ The Abilities system enables organizations to define, track, and certify skills,
 
 ## DOING 🔄
 
-### **Waypoint 3: Job Description Generation** 🔄
-**Next**: Generate job descriptions from ability requirements and milestone attainments
+### **Waypoint 4: Milestone System** 🔄
+**Next**: Implement milestone attainment with evidence tracking
 
 **Key Results:**
-1. **Generic job descriptions** - Generate from position ability requirements
-2. **Unique job descriptions** - Generate from person milestone attainments
-3. **Apprentice vs. full status** - Display logic based on milestone levels
-4. **Growth gap analysis** - Show what milestones needed for next level
+1. **Milestone model** - 5-level system (1-5) with evidence tracking
+2. **Attainment workflow** - Process for certifying milestone achievement
+3. **Evidence system** - Track observations, outcomes, and other evidence
+4. **Audit trail** - Record who certified what and when
 
 ## WAYPOINTS 📋
 
@@ -59,7 +59,7 @@ The Abilities system enables organizations to define, track, and certify skills,
 **Deliverable**: Assignment-ability association system with milestone requirements
 **Commit**: "feat: connect assignments to abilities with milestone requirements"
 
-### **Waypoint 3: Job Description Generation** 🔄 (2-3 commits)
+### **Waypoint 3: Job Description Generation** (2-3 commits)
 **Objective**: Generate job descriptions from ability requirements and milestone attainments
 
 **Key Results:**
@@ -71,14 +71,15 @@ The Abilities system enables organizations to define, track, and certify skills,
 **Deliverable**: Dynamic job description generation system
 **Commit**: "feat: generate job descriptions from abilities and milestones"
 
-### **Waypoint 4: Milestone System** (2-3 commits)
+### **Waypoint 4: Milestone System** 🔄 (2-3 commits)
 **Objective**: Implement milestone attainment with evidence tracking
 
 **Key Results:**
 1. **Milestone model** - 5-level system (1-5) with evidence tracking
 2. **Attainment workflow** - Process for certifying milestone achievement
 3. **Evidence system** - Track observations, outcomes, and other evidence
-4. **Audit trail** - Record who certified what and when
+4. **Certification authority** - Only managers with can_manage_maap AND can_manage_employment can certify
+5. **Audit trail** - Record who certified what and when
 
 **Deliverable**: Complete milestone attainment system with evidence tracking
 **Commit**: "feat: implement milestone system with evidence and certification"
