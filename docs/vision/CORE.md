@@ -102,6 +102,7 @@ This document outlines the vision for core system functionality that spans acros
 - **Visual Indicators**: Clear warning icons and "Stop Impersonation" options when impersonating
 - **Future: Whodunit Audit Trail**: Track who took actions and whether they were impersonated, enabling "whodunit" style investigation of system changes
 - **Security Considerations**: Prevent impersonation hijacking, implement session validation, and add audit logging for all impersonation events
+- **Future: Security Hardening** - Enhanced validation, comprehensive testing, audit logging foundation, and bulletproof security for production use
 
 ### API Development
 - RESTful API endpoints for core models

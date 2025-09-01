@@ -83,6 +83,9 @@ get '/login', to: 'auth#login', as: :login
     
     resources :huddle_playbooks, module: :organizations
     
+    # Abilities management
+    resources :abilities, module: :organizations
+    
     # Slack integration nested under organizations
     resource :slack, only: [:show], module: :organizations, controller: 'slack' do
       collection do

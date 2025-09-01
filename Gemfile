@@ -111,3 +111,5 @@ gem "redcarpet", "~> 3.6"
 # OAuth authentication
 gem "omniauth-google-oauth2", "~> 1.1"
 gem "omniauth-rails_csrf_protection", "~> 1.0"
+
+gem "paper_trail", "~> 16.0"

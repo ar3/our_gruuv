@@ -422,6 +422,18 @@ sequenceDiagram
 - **Tenure Insights**: Analytics like average time in position, total tenure, promotion velocity
 - **Related Context**: Integration with assignment history, performance data, and milestone achievements during each tenure
 - **Export Capabilities**: Generate employment history reports for performance reviews or reference purposes
+
+### **Abilities & Skills Management**
+- **Organization-Scoped Abilities**: Define skills, knowledge, and behaviors specific to each organization
+- **Milestone Certification System**: 5-level competency certification with evidence tracking
+- **Assignment-Ability Mapping**: Connect assignments to required abilities and milestone levels
+- **Dynamic Job Descriptions**: Generate generic (position) and unique (person) job descriptions from ability requirements
+- **Growth Plans**: Built-in promotion pathways showing required milestones for career advancement
+- **360-Degree Observation System**: Continuous feedback system with 5-point Likert scale for abilities, assignments, and aspirations
+- **Economic Point System**: Finite pool of acknowledgment points to prevent milestone inflation and gaming
+- **Cross-Organization Inspiration**: "Inspired-by" associations between assignments, positions, abilities, and aspirations across organizations
+- **Skill Atrophy Management**: System to acknowledge and address skill/knowledge decay over time
+- **Advanced Observation Analytics**: Anti-spam and anti-favoritism systems for observation quality control
 - **Comparison Views**: Compare employment patterns across similar roles or team members for insights
 
 ### **Performance Analytics**

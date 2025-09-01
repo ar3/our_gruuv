@@ -18,6 +18,9 @@ class ApplicationController < ActionController::Base
   
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
   
+  # Set up PaperTrail controller info for request tracking
+  before_action :set_paper_trail_controller_info
+  
   # Override Pundit's default user method to use current_person
   def pundit_user
     current_person
@@ -341,5 +344,18 @@ class ApplicationController < ActionController::Base
 
   def stop_impersonation
     session.delete(:impersonating_person_id)
+  end
+  
+  # Set PaperTrail controller info for request tracking
+  def set_paper_trail_controller_info
+    PaperTrail.request.controller_info = {
+      ip: request.remote_ip,
+      user_agent: request.user_agent,
+      url: request.url,
+      controller: controller_name,
+      action: action_name,
+      current_person_id: current_person&.id,
+      impersonating_person_id: impersonating? ? session[:current_person_id] : nil
+    }
   end
 end
