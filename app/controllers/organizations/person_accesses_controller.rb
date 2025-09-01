@@ -1,6 +1,5 @@
-class Organizations::PersonAccessesController < ApplicationController
+class Organizations::PersonAccessesController < Organizations::OrganizationNamespaceBaseController
   before_action :require_login
-  before_action :set_organization
   before_action :set_person_organization_access, only: [:edit, :update, :destroy]
   after_action :verify_authorized
 
@@ -50,10 +49,6 @@ class Organizations::PersonAccessesController < ApplicationController
     unless current_person
       redirect_to root_path, alert: 'Please log in to access this page'
     end
-  end
-
-  def set_organization
-    @organization = Organization.find(params[:organization_id])
   end
 
   def set_person_organization_access

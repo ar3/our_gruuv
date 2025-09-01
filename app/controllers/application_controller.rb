@@ -1,3 +1,5 @@
+require 'ostruct'
+
 class ApplicationController < ActionController::Base
   include Pundit::Authorization
   
@@ -21,9 +23,12 @@ class ApplicationController < ActionController::Base
   # Set up PaperTrail controller info for request tracking
   before_action :set_paper_trail_controller_info
   
-  # Override Pundit's default user method to use current_person
+  # Override Pundit's default user method to use current_person with organization context
   def pundit_user
-    current_person
+    OpenStruct.new(
+      user: current_person,
+      organization: current_person&.current_organization_or_default
+    )
   end
   
   # Helper method to capture errors in Sentry with context

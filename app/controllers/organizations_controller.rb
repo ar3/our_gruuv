@@ -18,6 +18,8 @@ class OrganizationsController < ApplicationController
     
     # Load stats for the three pillars
     load_organization_stats
+    
+    render layout: 'authenticated-v2-0'
   end
   
   def new
@@ -181,6 +183,7 @@ class OrganizationsController < ApplicationController
       # Align stats (positions and assignments across all sub-organizations)
       @total_positions = @organization.positions.count + @organization.children.sum { |child| child.positions.count }
       @total_assignments = @organization.assignments.count + @organization.children.sum { |child| child.assignments.count }
+      @total_seats = @organization.seats.count + @organization.children.sum { |child| child.seats.count }
       
       # Collaborate stats (huddles and ratings)
       this_week_start = Time.current.beginning_of_week(:monday)

@@ -1,0 +1,107 @@
+- content_for :header do
+  %h1.mb-0 Create New Seat
+
+- content_for :go_back_link do
+  = link_to organization_seats_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Seats
+
+.row.justify-content-center
+  .col-lg-12
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-plus-circle.me-2
+          New Seat Details
+      .card-body
+        = form_with model: [:organization, @seat], local: true do |f|
+          .row
+            .col-md-6
+              .mb-3
+                = f.label :position_type_id, "Position Type", class: "form-label"
+                = f.collection_select :position_type_id, @organization.position_types, :id, :external_title, { prompt: "Select a position type" }, { class: "form-select", required: true }
+                - if @seat.errors[:position_type_id].any?
+                  .invalid-feedback.d-block= @seat.errors[:position_type_id].join(", ")
+
+              .mb-3
+                = f.label :seat_needed_by, "Needed By Date", class: "form-label"
+                = f.date_field :seat_needed_by, class: "form-control", required: true
+                - if @seat.errors[:seat_needed_by].any?
+                  .invalid-feedback.d-block= @seat.errors[:seat_needed_by].join(", ")
+
+              .mb-3
+                = f.label :job_classification, "Job Classification", class: "form-label"
+                = f.select :job_classification, ["Salaried Exempt", "Salaried Non-Exempt", "Hourly", "Contractor", "Intern"], {}, { class: "form-select" }
+
+            .col-md-6
+              .mb-3
+                = f.label :reports_to, "Reports To", class: "form-label"
+                = f.text_field :reports_to, class: "form-control", placeholder: "e.g., Engineering Manager"
+
+              .mb-3
+                = f.label :team, "Team", class: "form-label"
+                = f.text_field :team, class: "form-control", placeholder: "e.g., Backend Engineering"
+
+              .mb-3
+                = f.label :reports, "Direct Reports", class: "form-label"
+                = f.text_area :reports, class: "form-control", rows: 3, placeholder: "Describe who this position will manage"
+
+          .row
+            .col-12
+              .mb-3
+                = f.label :measurable_outcomes, "Measurable Outcomes", class: "form-label"
+                = f.text_area :measurable_outcomes, class: "form-control", rows: 4, placeholder: "List specific, measurable outcomes for this role"
+
+          .row
+            .col-12
+              %h5.mt-4.mb-3
+                %i.bi.bi-shield-check.me-2
+                Seat Defense
+              %p.text-muted.mb-3
+                %em These fields help justify the need for this seat and should be completed before opening the position.
+
+              .mb-3
+                = f.label :why_needed, "Why do we need this role?", class: "form-label"
+                = f.text_area :why_needed, class: "form-control", rows: 3, placeholder: "Explain the business need for this position"
+
+              .mb-3
+                = f.label :why_now, "Why is now the time to hire for this role?", class: "form-label"
+                = f.text_area :why_now, class: "form-control", rows: 3, placeholder: "What has changed that makes this hire urgent now?"
+
+              .mb-3
+                = f.label :costs_risks, "What are the costs/risks if we choose not to hire for this role now?", class: "form-label"
+                = f.text_area :costs_risks, class: "form-control", rows: 3, placeholder: "Describe the impact of delaying this hire"
+
+          .row
+            .col-12
+              %h5.mt-4.mb-3
+                %i.bi.bi-file-text.me-2
+                HR Information
+              %p.text-muted.mb-3
+                %em These fields will appear in the job description. You can customize them or use the defaults.
+
+              .mb-3
+                = f.label :seat_disclaimer, "Job Description Disclaimer", class: "form-label"
+                = f.text_area :seat_disclaimer, class: "form-control", rows: 2, placeholder: "Default disclaimer will be used if left blank"
+
+              .mb-3
+                = f.label :work_environment, "Work Environment", class: "form-label"
+                = f.text_area :work_environment, class: "form-control", rows: 2, placeholder: "Default work environment will be used if left blank"
+
+              .mb-3
+                = f.label :physical_requirements, "Physical Requirements", class: "form-label"
+                = f.text_area :physical_requirements, class: "form-control", rows: 3, placeholder: "Default physical requirements will be used if left blank"
+
+              .mb-3
+                = f.label :travel, "Travel Requirements", class: "form-label"
+                = f.text_area :travel, class: "form-control", rows: 2, placeholder: "Default travel policy will be used if left blank"
+
+          .row
+            .col-12
+              .d-flex.justify-content-end.gap-2.mt-4
+                = link_to organization_seats_path(@organization), class: "btn btn-outline-secondary" do
+                  %i.bi.bi-x.me-2
+                  Cancel
+                = f.submit "Create Seat", class: "btn btn-primary" do
+                  %i.bi.bi-check.me-2
+                  Create Seat

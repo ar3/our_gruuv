@@ -1,56 +1,127 @@
 - content_for :header do
-  %h1.mb-0 Seats
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0 
+      Seats
+      = link_to new_organization_seat_path(organization), class: "btn btn-primary" do
+        %i.bi.bi-plus
 - content_for :header_action do
-  = link_to new_organization_seat_path(@organization), class: "btn btn-primary" do
-    %i.bi.bi-plus.me-2
-    New Seat
+  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#seatsFilterModal", type: "button"}
+    %i.bi.bi-funnel.me-2
+    Filter & Sort
 
 .row.justify-content-center
   .col-lg-12
-    .card
-      .card-header
-        %h5.mb-0
-          %i.bi.bi-building.me-2
-          Job Requisitions
-      .card-body
-        - if @seats.any?
-          .table-responsive
-            %table.table.table-hover
-              %thead
-                %tr
-                  %th Position Type
-                  %th Needed By
-                  %th State
-                  %th Job Classification
-                  %th Actions
-              %tbody
-                - @seats.each do |seat|
-                  %tr
-                    %td
-                      = link_to seat.position_type.external_title, position_type_path(seat.position_type), class: "text-decoration-none"
-                    %td= seat.seat_needed_by.strftime('%B %Y')
-                    %td
-                      %span.badge{class: seat_state_badge_class(seat.state)}
-                        = seat.state.titleize
-                      - if seat.needs_reconciliation?
-                        %span.badge.bg-warning.ms-1
-                          %i.bi.bi-exclamation-triangle
-                    %td= seat.job_classification
-                    %td
-                      .btn-group.btn-group-sm
-                        = link_to organization_seat_path(@organization, seat), class: "btn btn-outline-primary" do
-                          %i.bi.bi-eye
-                        = link_to edit_organization_seat_path(@organization, seat), class: "btn btn-outline-secondary" do
-                          %i.bi.bi-pencil
-                        - if seat.needs_reconciliation?
-                          = link_to reconcile_organization_seat_path(@organization, seat), method: :patch, class: "btn btn-outline-warning", data: { confirm: "Reconcile seat state?" } do
-                            %i.bi.bi-arrow-clockwise
-                        = link_to organization_seat_path(@organization, seat), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
-                          %i.bi.bi-trash
-        - else
-          .alert.alert-info
-            %h6.mb-2
-              %i.bi.bi-info-circle.me-2
-              No Seats Created
-            %p.mb-2 Create your first seat to get started with job requisitions.
-            = link_to "Create First Seat", new_organization_seat_path(@organization), class: "btn btn-primary btn-sm"
+
+    - if @seats.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Position Type
+              %th Needed By
+              %th State
+              %th Why Now
+              %th Actions
+          %tbody
+            - @seats.each do |seat|
+              %tr
+                %td
+                  = link_to seat.position_type.external_title, position_type_path(seat.position_type), class: "text-decoration-none"
+                %td= seat.seat_needed_by.strftime('%B %d, %Y')
+                %td
+                  %span.badge{class: seat_state_badge_class(seat.state)}
+                    = seat.state.titleize
+                  - if seat.needs_reconciliation?
+                    %span.badge.bg-warning.ms-1
+                      %i.bi.bi-exclamation-triangle
+                %td= seat.why_now.to_s[0..300]
+                %td
+                  .btn-group.btn-group-sm
+                    = link_to organization_seat_path(organization, seat), class: "btn btn-outline-primary" do
+                      %i.bi.bi-eye
+                    = link_to edit_organization_seat_path(organization, seat), class: "btn btn-outline-secondary" do
+                      %i.bi.bi-pencil
+                    - if seat.needs_reconciliation?
+                      = link_to reconcile_organization_seat_path(organization, seat), method: :patch, class: "btn btn-outline-warning", data: { confirm: "Reconcile seat state?" } do
+                        %i.bi.bi-arrow-clockwise
+                    = link_to organization_seat_path(organization, seat), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
+                      %i.bi.bi-trash
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Seats Created
+        %p.mb-2 
+          Create your first seat to get started with job requisitions.
+          = link_to "Create First Seat", new_organization_seat_path(organization), class: "btn btn-primary btn-sm"
+
+/ Modal for Filter & Sort
+#seatsFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "seatsFilterModalLabel", tabindex: "-1"}
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        %h5.modal-title#seatsFilterModalLabel
+          %i.bi.bi-funnel.me-2
+          Filter & Sort Seats (coming soon)
+        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+      .modal-body
+        .row
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-funnel.me-2
+              Filters
+            .mb-3
+              %label.form-label Position Type
+              %select.form-select
+                %option All Position Types
+                %option Software Engineer
+                %option Product Manager
+                %option Designer
+            .mb-3
+              %label.form-label State
+              %select.form-select
+                %option All States
+                %option Draft
+                %option Open
+                %option Filled
+                %option Closed
+            .mb-3
+              %label.form-label Date Range
+              .input-group
+                %input.form-control{placeholder: "From", type: "date"}
+                %input.form-control{placeholder: "To", type: "date"}
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-sort-down.me-2
+              Sort Options
+            .mb-3
+              %label.form-label Sort By
+              %select.form-select
+                %option Created Date (Newest)
+                %option Created Date (Oldest)
+                %option Position Type (A-Z)
+                %option Position Type (Z-A)
+                %option Needed By Date
+                %option State
+            .mb-3
+              %label.form-label View Style
+              .form-check
+                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
+                %label.form-check-label
+                  %i.bi.bi-table.me-2
+                  Table View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
+                %label.form-check-label
+                  %i.bi.bi-grid.me-2
+                  Card View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
+                %label.form-check-label
+                  %i.bi.bi-list.me-2
+                  List View
+      .modal-footer
+        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+        %button.btn.btn-primary.disabled{type: "button"}
+          %i.bi.bi-check.me-2
+          Apply Filters

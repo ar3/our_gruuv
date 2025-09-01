@@ -9,6 +9,8 @@ class Organization < ApplicationRecord
   has_many :huddles, through: :huddle_playbooks
   has_many :assignments, foreign_key: 'company_id', dependent: :destroy
   has_many :abilities, dependent: :destroy
+  has_many :position_types, dependent: :destroy
+  has_many :seats, through: :position_types
   has_one :slack_configuration, dependent: :destroy
   has_many :third_party_objects, dependent: :destroy
   has_many :third_party_object_associations, as: :associatable, dependent: :destroy

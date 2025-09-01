@@ -1,0 +1,22 @@
+.card.mb-4{ role: "region", "aria-labelledby": "transform-section" }
+  .card-header
+    %h5.mb-0{ id: "transform-section" }
+      %i.bi.bi-graph-up.me-2
+      Transform
+  .card-body
+    .row
+      .col-md-8
+        .row.text-center
+          .col-12
+            .h4.text-secondary Coming Soon
+            %small.text-muted Growth metrics and outcomes tracking
+      .col-md-4.border-start.border-secondary
+        .d-grid.gap-2
+          .text-center.py-2
+            %small.text-muted Coming Soon
+          = link_to "#", class: "btn btn-outline-secondary", disabled: true do
+            %i.bi.bi-graph-up.me-2
+            View Growth Metrics
+          = link_to "#", class: "btn btn-outline-secondary", disabled: true do
+            %i.bi.bi-plus-circle.me-2
+            Track Outcomes

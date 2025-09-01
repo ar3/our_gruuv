@@ -32,7 +32,7 @@ class Seat < ApplicationRecord
   end
 
   def summary
-    position_type.description
+    position_type.position_summary
   end
 
   # Assignment inheritance methods

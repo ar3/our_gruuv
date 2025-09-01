@@ -1,6 +1,5 @@
-class Organizations::EmploymentManagementController < ApplicationController
+class Organizations::EmploymentManagementController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication
-  before_action :set_organization
   before_action :set_wizard_data, only: [:new, :create]
   after_action :verify_authorized, except: [:potential_employees]
   
@@ -45,10 +44,6 @@ class Organizations::EmploymentManagementController < ApplicationController
   end
   
   private
-  
-  def set_organization
-    @organization = Organization.find(params[:organization_id])
-  end
   
   def set_wizard_data
     @positions = @organization.positions.includes(:position_type, :position_level)

@@ -1,6 +1,5 @@
-class Organizations::EmployeesController < ApplicationController
+class Organizations::EmployeesController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication
-  before_action :set_organization
   after_action :verify_authorized
   
   def index
@@ -48,10 +47,6 @@ class Organizations::EmployeesController < ApplicationController
   end
   
   private
-  
-  def set_organization
-    @organization = Organization.find(params[:organization_id])
-  end
   
   def require_authentication
     unless current_person

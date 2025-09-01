@@ -1,0 +1,152 @@
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0= @seat.display_name
+    .d-flex.align-items-center.gap-2
+      - if policy(@seat).update?
+        = link_to edit_organization_seat_path(organization, @seat), class: "btn btn-outline-primary" do
+          %i.bi.bi-pencil.me-2
+          Edit
+      - else
+        .d-flex.align-items-center.gap-2
+          = link_to edit_organization_seat_path(organization, @seat), class: "btn btn-outline-secondary", disabled: true do
+            %i.bi.bi-pencil.me-2
+            Edit
+          %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
+      - if policy(@seat).destroy?
+        = link_to organization_seat_path(organization, @seat), method: :delete, data: { confirm: "Are you sure you want to delete this seat?" }, class: "btn btn-outline-danger" do
+          %i.bi.bi-trash.me-2
+          Delete
+      - else
+        .d-flex.align-items-center.gap-2
+          = link_to organization_seat_path(organization, @seat), method: :delete, data: { confirm: "Are you sure you want to delete this seat?" }, class: "btn btn-outline-secondary", disabled: true do
+            %i.bi.bi-trash.me-2
+            Delete
+          %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
+
+- content_for :go_back_link do
+  = link_to organization_seats_path(organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Seats
+
+.row.justify-content-center
+  .col-lg-10
+    / Job Description Header
+    .card.mb-4
+      .card-body
+        %h2.mb-3= @seat.position_type.external_title
+        %p.lead.mb-4= @seat.summary
+
+        .row.mb-4
+          .col-md-6
+            - if @seat.reports_to.present?
+              %p
+                %strong Reports to:
+                = @seat.reports_to
+            - if @seat.team.present?
+              %p
+                %strong Team:
+                = @seat.team
+            - if @seat.reports.present?
+              %p
+                %strong Reports:
+                = @seat.reports
+          .col-md-6
+            %p
+              %strong Job Classification:
+              = @seat.job_classification
+            %p
+              %strong Needed By:
+              = @seat.seat_needed_by.strftime("%B %d, %Y")
+            %p
+              %strong State:
+              %span.badge{class: seat_state_badge_class(@seat.state)}= @seat.state.humanize
+
+        - if @seat.measurable_outcomes.present?
+          %h4.mb-3 Measurable Outcomes
+          %p= @seat.measurable_outcomes
+
+    / Required Assignments
+    - if @seat.required_assignments.any?
+      .card.mb-4
+        .card-header
+          %h3.mb-0 Required Assignments
+        .card-body
+          - @seat.required_assignments.each_with_index do |pa, index|
+            - if index > 0
+              %hr.my-4
+            = render 'positions/assignment_job_description', pa: pa, assignment_type: 'required'
+
+    / Optional Assignments
+    - if @seat.suggested_assignments.any?
+      .card.mb-4
+        .card-header
+          %h3.mb-0 Optional / Elective / Uniquely-You Assignments
+        .card-body
+          %p.text-muted.mb-3
+            %em We are all about growth… as such, we do our best to make it possible to successfully complete required Assignments and have room for special/elective/unique-to-you Assignments. These should only be taken on if the required Assignments are being completed and we are meeting expectations across them.
+          - @seat.suggested_assignments.each_with_index do |pa, index|
+            - if index > 0
+              %hr.my-4
+            = render 'positions/assignment_job_description', pa: pa, assignment_type: 'suggested'
+
+    / Additional Information
+    .card.mb-4
+      .card-header
+        %h4.mb-0 Additional Information
+      .card-body
+        - if @seat.seat_disclaimer.present?
+          %h5.mb-2 Disclaimer
+          %p= @seat.seat_disclaimer
+
+        - if @seat.work_environment.present?
+          %h5.mb-2 Work Environment
+          %p= @seat.work_environment
+
+        - if @seat.physical_requirements.present?
+          %h5.mb-2 Physical Requirements
+          %p= @seat.physical_requirements
+
+        - if @seat.travel.present?
+          %h5.mb-2 Travel
+          %p= @seat.travel
+
+    / Seat Defense (if any)
+    - if @seat.why_needed.present? || @seat.why_now.present? || @seat.costs_risks.present?
+      .card.mb-4
+        .card-header
+          %h4.mb-0 Seat Defense
+        .card-body
+          - if @seat.why_needed.present?
+            .mb-3
+              %h6 Why do we need this role?
+              %p= @seat.why_needed
+          - if @seat.why_now.present?
+            .mb-3
+              %h6 Why is now the time to hire for this role?
+              %p= @seat.why_now
+          - if @seat.costs_risks.present?
+            .mb-3
+              %h6 What are the costs/risks if we choose not to hire for this role now?
+              %p= @seat.costs_risks
+
+    / State Reconciliation Warning
+    - if @seat.needs_reconciliation?
+      .card.mb-4.border-warning
+        .card-header.bg-warning.text-dark
+          %h5.mb-0
+            %i.bi.bi-exclamation-triangle.me-2
+            State Reconciliation Needed
+        .card-body
+          %p.mb-3
+            This seat's state appears to be inconsistent with its current employment tenures. 
+            Click the button below to automatically reconcile the state.
+          - if policy(@seat).reconcile?
+            = link_to reconcile_organization_seat_path(organization, @seat), method: :patch, class: "btn btn-warning" do
+              %i.bi.bi-arrow-clockwise.me-2
+              Reconcile State
+          - else
+            .d-flex.align-items-center.gap-2
+              = link_to reconcile_organization_seat_path(organization, @seat), method: :patch, class: "btn btn-outline-secondary", disabled: true do
+                %i.bi.bi-arrow-clockwise.me-2
+                Reconcile State
+              %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }

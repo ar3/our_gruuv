@@ -1,4 +1,5 @@
 require 'rails_helper'
+require 'ostruct'
 
 RSpec.describe AbilityPolicy, type: :policy do
   let(:organization) { create(:organization) }
@@ -7,6 +8,10 @@ RSpec.describe AbilityPolicy, type: :policy do
   let(:admin) { create(:person, :admin) }
   let(:maap_user) { create(:person) }
   let(:ability) { create(:ability, organization: organization) }
+
+  let(:pundit_user_maap) { OpenStruct.new(user: maap_user, pundit_organization: organization) }
+  let(:pundit_user_person) { OpenStruct.new(user: person, pundit_organization: organization) }
+  let(:pundit_user_admin) { OpenStruct.new(user: admin, pundit_organization: organization) }
 
   before do
     # Grant MAAP permissions to maap_user for organization
@@ -19,21 +24,21 @@ RSpec.describe AbilityPolicy, type: :policy do
   describe 'index?' do
     context 'when user has MAAP permissions' do
       it 'allows access' do
-        policy = AbilityPolicy.new(maap_user, Ability)
+        policy = AbilityPolicy.new(pundit_user_maap, Ability)
         expect(policy.index?).to be true
       end
     end
 
     context 'when user lacks MAAP permissions' do
       it 'denies access' do
-        policy = AbilityPolicy.new(person, Ability)
+        policy = AbilityPolicy.new(pundit_user_person, Ability)
         expect(policy.index?).to be false
       end
     end
 
     context 'when user is admin' do
       it 'allows access' do
-        policy = AbilityPolicy.new(admin, Ability)
+        policy = AbilityPolicy.new(pundit_user_admin, Ability)
         expect(policy.index?).to be true
       end
     end
@@ -79,21 +84,21 @@ RSpec.describe AbilityPolicy, type: :policy do
   describe 'create?' do
     context 'when user has MAAP permissions for the organization' do
       it 'allows access' do
-        policy = AbilityPolicy.new(maap_user, Ability)
+        policy = AbilityPolicy.new(pundit_user_maap, Ability)
         expect(policy.create?).to be true
       end
     end
 
     context 'when user lacks MAAP permissions' do
       it 'denies access' do
-        policy = AbilityPolicy.new(person, Ability)
+        policy = AbilityPolicy.new(pundit_user_person, Ability)
         expect(policy.create?).to be false
       end
     end
 
     context 'when user is admin' do
       it 'allows access' do
-        policy = AbilityPolicy.new(admin, Ability)
+        policy = AbilityPolicy.new(pundit_user_admin, Ability)
         expect(policy.create?).to be true
       end
     end
@@ -166,7 +171,7 @@ RSpec.describe AbilityPolicy, type: :policy do
 
     context 'when user has MAAP permissions for organization' do
       it 'returns abilities for that organization' do
-        policy = AbilityPolicy::Scope.new(maap_user, Ability)
+        policy = AbilityPolicy::Scope.new(pundit_user_maap, Ability)
         expect(policy.resolve).to include(ability1, ability2)
         expect(policy.resolve).not_to include(other_org_ability)
       end
@@ -174,14 +179,14 @@ RSpec.describe AbilityPolicy, type: :policy do
 
     context 'when user lacks MAAP permissions' do
       it 'returns empty scope' do
-        policy = AbilityPolicy::Scope.new(person, Ability)
+        policy = AbilityPolicy::Scope.new(pundit_user_person, Ability)
         expect(policy.resolve).to be_empty
       end
     end
 
     context 'when user is admin' do
       it 'returns all abilities' do
-        policy = AbilityPolicy::Scope.new(admin, Ability)
+        policy = AbilityPolicy::Scope.new(pundit_user_admin, Ability)
         expect(policy.resolve).to include(ability1, ability2, other_org_ability)
       end
     end

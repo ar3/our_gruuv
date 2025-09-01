@@ -1,5 +1,4 @@
-class Organizations::AbilitiesController < ApplicationController
-  before_action :set_organization
+class Organizations::AbilitiesController < Organizations::OrganizationNamespaceBaseController
   before_action :set_ability, only: [:show, :edit, :update, :destroy]
   before_action :authenticate_person!
 
@@ -57,10 +56,6 @@ class Organizations::AbilitiesController < ApplicationController
   end
 
   private
-
-  def set_organization
-    @organization = Organization.find(params[:organization_id])
-  end
 
   def set_ability
     @ability = @organization.abilities.find(params[:id])

@@ -1,6 +1,5 @@
-class Organizations::SlackController < ApplicationController
+class Organizations::SlackController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication
-  before_action :set_organization
   
   def show
     # The show action displays the Slack integration page for the specific organization
@@ -106,10 +105,6 @@ class Organizations::SlackController < ApplicationController
   end
   
   private
-  
-  def set_organization
-    @organization = Organization.find(params[:organization_id])
-  end
   
   def require_authentication
     unless current_person

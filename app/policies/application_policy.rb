@@ -10,7 +10,12 @@ class ApplicationPolicy
 
   # Admin bypass - og_admin users get all permissions
   def admin_bypass?
-    user&.admin?
+    actual_user&.admin?
+  end
+
+  # Helper method to get the actual user from pundit_user
+  def actual_user
+    user.respond_to?(:user) ? user.user : user
   end
 
   def index?
@@ -54,5 +59,10 @@ class ApplicationPolicy
     private
 
     attr_reader :user, :scope
+
+    # Helper method to get the actual user from pundit_user
+    def actual_user
+      user.respond_to?(:user) ? user.user : user
+    end
   end
 end

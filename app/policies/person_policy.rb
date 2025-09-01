@@ -20,9 +20,9 @@ class PersonPolicy < ApplicationPolicy
     return true if admin_bypass?
     return false unless user && record
     
-    # Requestor must have a current organization
-    user_org = user.current_organization
-    return false unless user_org
+    # Requestor must have organization context
+    return false unless record.respond_to?(:context) && record.context[:organization]
+    user_org = record.context[:organization]
     
     Rails.logger.debug "Teammate check: User #{user.id} (#{user.email}) org: #{user_org.id} (#{user_org.name})"
     
@@ -190,8 +190,5 @@ class PersonPolicy < ApplicationPolicy
     end
   end
 
-  private
-  def has_current_organization?(person)
-    person.current_organization.present?
-  end
+
 end

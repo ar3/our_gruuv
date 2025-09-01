@@ -1,0 +1,47 @@
+.card.mb-4{ role: "region", "aria-labelledby": "collaborate-section" }
+  .card-header
+    %h5.mb-0{ id: "collaborate-section" }
+      %i.bi.bi-people.me-2
+      Collaborate
+  .card-body
+    .row
+      .col-md-8
+        .row.text-center
+          .col-6
+            .h4.text-primary= active_huddles_this_week.count
+            %small.text-muted Active Huddles This Week
+          .col-6
+            .h4.text-primary= total_participants_this_week
+            %small.text-muted Participants This Week
+        .row.text-center.mt-3
+          .col-12
+            .h4.text-info= average_rating_this_week
+            %small.text-muted Average Rating This Week
+        .row.text-center.mt-3
+          .col-6
+            .h4.text-primary= total_huddles_all_time
+            %small.text-muted Total Huddles All Time
+          .col-6
+            .h4.text-primary= total_participants_all_time
+            %small.text-muted Total Participants All Time
+        .row.text-center.mt-3
+          .col-12
+            .h4.text-primary= organization.huddle_playbooks.count
+            %small.text-muted Total Playbooks
+      .col-md-4.border-start.border-secondary
+        .d-grid.gap-2
+          = link_to organization_huddle_playbooks_path(organization), class: "btn btn-outline-primary" do
+            %i.bi.bi-list.me-2
+            View All Playbooks
+          = link_to new_organization_huddle_playbook_path(organization), class: "btn btn-outline-primary" do
+            %i.bi.bi-plus.me-2
+            Create Playbook
+          = link_to huddles_path(organization_id: organization.id), class: "btn btn-outline-primary" do
+            %i.bi.bi-list.me-2
+            View All Huddles
+          = link_to new_huddle_path, class: "btn btn-success" do
+            %i.bi.bi-plus-circle.me-2
+            Start New Huddle
+          = link_to huddles_review_organization_path(organization), class: "btn btn-outline-info" do
+            %i.bi.bi-graph-up.me-2
+            Huddles Review

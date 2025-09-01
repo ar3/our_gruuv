@@ -1,0 +1,56 @@
+.card.mb-4{ role: "region", "aria-labelledby": "align-section" }
+  .card-header
+    %h5.mb-0{ id: "align-section" }
+      %i.bi.bi-bullseye.me-2
+      Align
+  .card-body
+    .row
+      .col-md-8
+        .row.text-center
+          .col-4
+            .h4.text-primary= total_positions
+            %small.text-muted Total Positions
+          .col-4
+            .h4.text-primary= total_assignments
+            %small.text-muted Total Assignments
+          .col-4
+            .h4.text-primary= total_seats
+            %small.text-muted Total Seats
+      .col-md-4.border-start.border-secondary
+        .d-grid.gap-2
+          = link_to assignments_path, class: "btn btn-outline-primary" do
+            %i.bi.bi-list.me-2
+            View All Assignments
+          = link_to new_assignment_path, class: "btn btn-outline-primary" do
+            %i.bi.bi-plus-circle.me-2
+            Add New Assignment
+          = link_to positions_path, class: "btn btn-outline-primary" do
+            %i.bi.bi-list.me-2
+            View All Positions
+          = link_to new_position_path, class: "btn btn-outline-primary" do
+            %i.bi.bi-plus-circle.me-2
+            Add New Position
+          
+          - if current_person&.active_employment_tenure_in?(organization) || current_person&.can_manage_maap?(organization)
+            = link_to organization_seats_path(organization), class: "btn btn-outline-primary" do
+              %i.bi.bi-list.me-2
+              View All Seats
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                = link_to organization_seats_path(organization), class: "btn btn-outline-secondary w-100", disabled: true do
+                  %i.bi.bi-list.me-2
+                  View All Seats
+              %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires active employment in this organization" } }
+          
+          - if current_person&.can_manage_maap?(organization)
+            = link_to new_organization_seat_path(organization), class: "btn btn-outline-primary" do
+              %i.bi.bi-plus-circle.me-2
+              Create New Seat
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                = link_to new_organization_seat_path(organization), class: "btn btn-outline-secondary w-100", disabled: true do
+                  %i.bi.bi-plus-circle.me-2
+                  Create New Seat
+              %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }

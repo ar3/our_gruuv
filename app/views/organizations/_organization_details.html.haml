@@ -1,0 +1,22 @@
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-info-circle.me-2
+      Organization Details
+  .card-body
+    .row
+      .col-md-6
+        %p
+          %strong Name:
+          = organization.name
+        %p
+          %strong Type:
+          = organization.type.underscore.humanize
+        - if organization.parent
+          %p
+            %strong Parent:
+            = link_to organization.parent.name, organization_path(organization.parent)
+      .col-md-6
+        %p
+          %strong Created:
+          = organization.created_at.strftime("%B %d, %Y")

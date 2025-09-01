@@ -1,6 +1,5 @@
-class Organizations::HuddlePlaybooksController < ApplicationController
+class Organizations::HuddlePlaybooksController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication
-  before_action :set_organization
   before_action :set_huddle_playbook, only: [:show, :edit, :update, :destroy]
   
   def index
@@ -43,10 +42,6 @@ class Organizations::HuddlePlaybooksController < ApplicationController
   end
   
   private
-  
-  def set_organization
-    @organization = Organization.find(params[:organization_id])
-  end
   
   def set_huddle_playbook
     @huddle_playbook = @organization.huddle_playbooks.find(params[:id])

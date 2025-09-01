@@ -21,10 +21,15 @@ class AbilityPolicy < ApplicationPolicy
 
   class Scope < Scope
     def resolve
-      if user.og_admin?
+      if actual_user.og_admin?
         scope.all
-      elsif user_has_maap_permission?
-        scope.for_organization(user.current_organization_or_default)
+      elsif user.respond_to?(:pundit_organization) && user.pundit_organization
+        organization = user.pundit_organization
+        if actual_user.person_organization_accesses.exists?(organization: organization, can_manage_maap: true)
+          scope.for_organization(organization)
+        else
+          scope.none
+        end
       else
         scope.none
       end
@@ -34,10 +39,11 @@ class AbilityPolicy < ApplicationPolicy
   private
 
   def user_has_maap_permission?
-    return false unless user&.current_organization_or_default
+    return false unless user.respond_to?(:pundit_organization) && user.pundit_organization
     
-    user.person_organization_accesses.exists?(
-      organization: user.current_organization_or_default,
+    organization = user.pundit_organization
+    actual_user.person_organization_accesses.exists?(
+      organization: organization,
       can_manage_maap: true
     )
   end
@@ -45,7 +51,7 @@ class AbilityPolicy < ApplicationPolicy
   def user_has_maap_permission_for_record?
     return false unless record&.organization
     
-    user.person_organization_accesses.exists?(
+    actual_user.person_organization_accesses.exists?(
       organization: record.organization,
       can_manage_maap: true
     )
