@@ -8,6 +8,11 @@ class EmploymentTenure < ApplicationRecord
   validates :started_at, presence: true
   validates :ended_at, comparison: { greater_than: :started_at }, allow_nil: true
   validate :no_overlapping_active_tenures_for_same_person_and_company
+  validate :seat_position_type_matches_position, if: :seat
+
+  # Callbacks
+  after_create :update_seat_state_to_filled
+  after_update :update_seat_state_on_employment_end, if: :saved_change_to_ended_at?
 
   scope :active, -> { where(ended_at: nil) }
   scope :inactive, -> { where.not(ended_at: nil) }
@@ -30,6 +35,31 @@ class EmploymentTenure < ApplicationRecord
   end
 
   private
+
+  def update_seat_state_to_filled
+    return unless seat && seat.state == 'open'
+    
+    seat.update!(state: 'filled')
+  end
+
+  def update_seat_state_on_employment_end
+    return unless seat && ended_at.present?
+    
+    # Check if this is the only active employment tenure for this seat
+    other_active_tenures = EmploymentTenure.where(seat: seat, ended_at: nil).where.not(id: id)
+    
+    if other_active_tenures.empty?
+      seat.update!(state: 'open')
+    end
+  end
+
+  def seat_position_type_matches_position
+    return unless seat && position
+    
+    unless seat.position_type == position.position_type
+      errors.add(:seat, "must match the position type of the selected position")
+    end
+  end
 
   def no_overlapping_active_tenures_for_same_person_and_company
     return unless person_id && company_id && started_at

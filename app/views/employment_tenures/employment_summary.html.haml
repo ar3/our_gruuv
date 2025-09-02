@@ -31,6 +31,9 @@
                           .card{class: tenure.active? ? 'border-success' : 'border-secondary'}
                             .card-body.py-2
                               %strong= tenure.position.display_name
+                              - if tenure.seat
+                                %br
+                                %small.text-muted Seat: #{tenure.seat.display_name}
                               - if tenure.manager
                                 %br
                                 %small.text-muted Manager: #{tenure.manager.display_name}

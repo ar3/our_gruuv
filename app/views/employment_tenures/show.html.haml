@@ -17,6 +17,9 @@
           
           %h5.card-title Position
           %p.card-text= @employment_tenure.position.display_name
+          
+          %h5.card-title Seat
+          %p.card-text= @employment_tenure.seat ? @employment_tenure.seat.display_name : 'No specific seat'
 
         .col-md-6
           %h5.card-title Manager

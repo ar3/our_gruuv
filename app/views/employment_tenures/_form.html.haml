@@ -38,6 +38,16 @@
   .row
     .col-md-6
       .mb-3
+        = form.label :seat_id, "Seat (Optional)", class: "form-label"
+        - seats = employment_tenure.company ? employment_tenure.company.seats.includes(:position_type).where(state: [:open, :filled]) : []
+        = form.collection_select :seat_id, seats, :id, :display_name, 
+          { prompt: 'Select a seat (optional)', include_blank: 'No Specific Seat' }, { class: "form-select" }
+        %small.form-text.text-muted
+          Seats represent specific job requisitions. Selecting a seat links this employment to a specific seat.
+
+  .row
+    .col-md-6
+      .mb-3
         = form.label :ended_at, "End Date (Leave blank for current employment)", class: "form-label"
         = form.date_field :ended_at, class: "form-control"
 

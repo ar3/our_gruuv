@@ -35,6 +35,7 @@ class EmploymentTenuresController < ApplicationController
     authorize @person, policy_class: PersonPolicy
     @managers = @company ? @company.employees : []
     @positions = @company ? @company.positions.includes(:position_type, :position_level) : []
+    @seats = @company ? @company.seats.includes(:position_type).where(state: [:open, :filled]) : []
   end
 
   def create
@@ -75,6 +76,7 @@ class EmploymentTenuresController < ApplicationController
         @company = @employment_tenure.company
         @managers = @company ? @company.employees : []
         @positions = @company ? @company.positions.includes(:position_type, :position_level) : []
+        @seats = @company ? @company.seats.includes(:position_type).where(state: [:open, :filled]) : []
         render :change, status: :unprocessable_entity
       end
     end
@@ -83,6 +85,7 @@ class EmploymentTenuresController < ApplicationController
     @company = @employment_tenure.company
     @managers = @company ? @company.employees : []
     @positions = @company ? @company.positions.includes(:position_type, :position_level) : []
+    @seats = @company ? @company.seats.includes(:position_type).where(state: [:open, :filled]) : []
     render :change, status: :unprocessable_entity
   end
 
@@ -97,6 +100,7 @@ class EmploymentTenuresController < ApplicationController
     @company = @employment_tenure.company
     @managers = @company.employees
     @positions = @company.positions.includes(:position_type, :position_level)
+    @seats = @company.seats.includes(:position_type).where(state: [:open, :filled])
   end
 
   def update
@@ -107,6 +111,7 @@ class EmploymentTenuresController < ApplicationController
       @company = @employment_tenure.company
       @managers = @company.employees
       @positions = @company.positions.includes(:position_type, :position_level)
+      @seats = @company.seats.includes(:position_type).where(state: [:open, :filled])
       render :edit, status: :unprocessable_entity
     end
   end
@@ -142,7 +147,7 @@ class EmploymentTenuresController < ApplicationController
   end
 
   def employment_tenure_params
-    params.require(:employment_tenure).permit(:company_id, :position_id, :manager_id, :started_at, :ended_at, :employment_change_notes)
+    params.require(:employment_tenure).permit(:company_id, :position_id, :manager_id, :seat_id, :started_at, :ended_at, :employment_change_notes)
   end
 
 
