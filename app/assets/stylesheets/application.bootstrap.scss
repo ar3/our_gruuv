@@ -183,6 +183,24 @@
   }
 }
 
+
+button[aria-expanded="false"] .not-collapsed, a[aria-expanded="false"] .not-collapsed {
+  display: none;
+}
+
+button[aria-expanded="true"] .collapsed, a[aria-expanded="true"] .collapsed {
+  display: none;
+}
+
+button[aria-expanded="true"] .not-collapsed, a[aria-expanded="true"] .not-collapsed {
+  display: inline;
+}
+
+button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
+  display: inline;
+}
+
+
 // Bordered markdown content for visual separation
 .markdown-content--bordered {
   border-left: 4px solid #dee2e6;

@@ -40,7 +40,7 @@ class Seat < ApplicationRecord
     earliest_position = position_type.positions.order(:position_level_id).first
     return [] unless earliest_position
 
-    earliest_position.required_assignments.includes(:assignment).order('position_assignments.max_estimated_energy DESC NULLS LAST, position_assignments.min_estimated_energy DESC NULLS LAST, assignments.title')
+    earliest_position.required_assignments.includes(:assignment).joins(:assignment).order('position_assignments.max_estimated_energy DESC NULLS LAST, position_assignments.min_estimated_energy DESC NULLS LAST, assignments.title')
   end
 
   def suggested_assignments
@@ -62,8 +62,11 @@ class Seat < ApplicationRecord
       suggested_assignments.concat(position.suggested_assignments.includes(:assignment))
     end
 
-    # Remove duplicates and sort
-    suggested_assignments.uniq.sort_by do |pa|
+    # Get required assignment IDs to exclude from suggested
+    required_assignment_ids = required_assignments.map(&:assignment_id)
+
+    # Remove duplicates by assignment_id and exclude assignments that are already required
+    suggested_assignments.uniq { |pa| pa.assignment_id }.reject { |pa| required_assignment_ids.include?(pa.assignment_id) }.sort_by do |pa|
       [
         -(pa.max_estimated_energy || 0),
         -(pa.min_estimated_energy || 0),
