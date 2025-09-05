@@ -17,6 +17,17 @@ FactoryBot.define do
       association :manager, factory: :person
     end
     
+    trait :with_seat do
+      after(:build) do |employment_tenure|
+        # Override the default position creation to use the seat's position type
+        if employment_tenure.seat
+          position_type = employment_tenure.seat.position_type
+          position_level = create(:position_level, position_major_level: position_type.position_major_level)
+          employment_tenure.position = create(:position, position_type: position_type, position_level: position_level)
+        end
+      end
+    end
+    
     trait :inactive do
       ended_at { 1.week.ago }
     end

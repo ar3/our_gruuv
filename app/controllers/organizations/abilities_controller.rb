@@ -1,6 +1,6 @@
 class Organizations::AbilitiesController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_ability, only: [:show, :edit, :update, :destroy]
   before_action :authenticate_person!
+  before_action :set_ability, only: [:show, :edit, :update, :destroy]
 
   after_action :verify_authorized, except: :index
   after_action :verify_policy_scoped, only: :index

@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :assignment do
-    title { "Product Manager" }
+    sequence(:title) { |n| "Product Manager #{n}" }
     tagline { "We create products that users love and that drive business growth" }
     required_activities { "• Lead product strategy and roadmap\n• Conduct user research and interviews\n• Define product requirements" }
     handbook { "Focus on user needs and business impact. Always validate assumptions with data." }

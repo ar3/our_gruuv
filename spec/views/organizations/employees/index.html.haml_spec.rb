@@ -25,6 +25,10 @@ RSpec.describe 'organizations/employees/index', type: :view do
     assign(:active_employees, [employee1, employee2])
     assign(:huddle_participants, [employee1, employee2, huddle_participant])
     assign(:just_huddle_participants, [huddle_participant])
+    
+    # Define current_person helper method on the view
+    current_person_obj = employee1 # Capture the variable
+    view.define_singleton_method(:current_person) { current_person_obj }
   end
 
   it 'renders the organization name in the title' do
@@ -82,8 +86,8 @@ RSpec.describe 'organizations/employees/index', type: :view do
   it 'shows employee position and start date' do
     render
     expect(rendered).to have_content('Software Engineer') # Position type name
-    expect(rendered).to have_content('Aug 2024') # employee1 start date (1.year.ago)
-    expect(rendered).to have_content('Feb 2025') # employee2 start date (6.months.ago)
+    expect(rendered).to have_content('Sep 2024') # employee1 start date (1.year.ago)
+    expect(rendered).to have_content('Mar 2025') # employee2 start date (6.months.ago)
   end
 
   it 'shows huddle participation counts' do

@@ -1,0 +1,30 @@
+- content_for :header do
+  %h1.mb-0= @ability.name
+
+- content_for :header_action do
+  .btn-group
+    = link_to edit_organization_ability_path(@organization, @ability), class: "btn btn-warning" do
+      %i.bi.bi-pencil.me-2
+      Edit
+    = link_to organization_abilities_path(@organization), class: "btn btn-secondary" do
+      %i.bi.bi-arrow-left.me-2
+      Back to Abilities
+
+.row
+  .col-12
+    .card
+      .card-header
+        %h5.mb-0 Ability Details
+      .card-body
+        %dl.row
+          %dt.col-sm-3 Name:
+          %dd.col-sm-9= @ability.name
+          %dt.col-sm-3 Description:
+          %dd.col-sm-9= @ability.description
+          %dt.col-sm-3 Version:
+          %dd.col-sm-9= @ability.version
+          %dt.col-sm-3 Created:
+          %dd.col-sm-9= @ability.created_at.strftime("%B %d, %Y at %I:%M %p")
+          %dt.col-sm-3 Updated:
+          %dd.col-sm-9= @ability.updated_at.strftime("%B %d, %Y at %I:%M %p")
+

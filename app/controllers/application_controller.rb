@@ -95,6 +95,13 @@ class ApplicationController < ActionController::Base
   
   private
   
+  def authenticate_person!
+    unless current_person
+      flash[:error] = "You must be logged in to access this page"
+      redirect_to root_path
+    end
+  end
+  
   def user_not_authorized
     # For huddle-related actions where user is not a participant, redirect to join page
     if @_pundit_policy_record.is_a?(Huddle) && 
@@ -353,12 +360,8 @@ class ApplicationController < ActionController::Base
   
   # Set PaperTrail controller info for request tracking
   def set_paper_trail_controller_info
+    # Only set controller info that can be stored in the meta JSONB column
     PaperTrail.request.controller_info = {
-      ip: request.remote_ip,
-      user_agent: request.user_agent,
-      url: request.url,
-      controller: controller_name,
-      action: action_name,
       current_person_id: current_person&.id,
       impersonating_person_id: impersonating? ? session[:current_person_id] : nil
     }

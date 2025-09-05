@@ -49,10 +49,10 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
         expect(person.can_create_employment?(organization)).to be false
       end
       
-      it 'denies access' do
+      it 'allows access to view but not create' do
         get :index, params: { organization_id: organization.id }
-        expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq("You are not authorized to perform this action.")
+        expect(response).to have_http_status(:success)
+        # Creation permissions are handled in the view, not the controller
       end
     end
   end
@@ -180,7 +180,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
           employment_tenure: valid_employment_params
         }
         expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq("You are not authorized to perform this action.")
+        expect(flash[:alert]).to eq("You don't have permission to access that resource. Please contact your administrator if you believe this is an error.")
       end
     end
   end

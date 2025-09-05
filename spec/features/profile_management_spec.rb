@@ -1,7 +1,8 @@
 require 'rails_helper'
 
 RSpec.feature 'Profile Management', type: :feature, js: true do
-  let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
+  let(:company) { create(:organization, name: 'Test Company', type: 'Company') }
+  let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com', current_organization: company) }
 
   before do
     page.set_rack_session(current_person_id: person.id)
@@ -13,10 +14,8 @@ RSpec.feature 'Profile Management', type: :feature, js: true do
     expect(page).to have_content('My Profile')
     expect(page).to have_content('John Doe')
     expect(page).to have_content('john@example.com')
-    expect(page).to have_content('Account Statistics')
-    expect(page).to have_content('Huddles Participated')
-    expect(page).to have_content('Feedback Submitted')
-    expect(page).to have_content('Member Since')
+    expect(page).to have_content('Gruuvin\' Since')
+    expect(page).to have_content('Other Companies')
   end
 
   scenario 'User can edit their profile' do
@@ -59,7 +58,7 @@ RSpec.feature 'Profile Management', type: :feature, js: true do
     person.update!(timezone: nil)
     visit profile_path
     
-    expect(page).to have_content('Not set (using Eastern Time)')
+    expect(page).to have_content('Eastern Time Timezone (Default)')
   end
 
   scenario 'Profile shows phone number when set' do
@@ -73,7 +72,7 @@ RSpec.feature 'Profile Management', type: :feature, js: true do
     person.update!(unique_textable_phone_number: nil)
     visit profile_path
     
-    expect(page).not_to have_content('Phone:')
+    expect(page).to have_content('Phone: Not provided')
   end
 
   scenario 'User cannot access profile when not logged in' do

@@ -1,0 +1,38 @@
+- content_for :header do
+  %h1.mb-0 New Ability
+
+- content_for :header_action do
+  = link_to organization_abilities_path(@organization), class: "btn btn-secondary" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Abilities
+
+.row
+  .col-12
+    .card
+      .card-header
+        %h5.mb-0 Create New Ability
+      .card-body
+        = form_with model: [@organization, @ability], local: true do |form|
+          - if @ability.errors.any?
+            .alert.alert-danger
+              %h6 Please fix the following errors:
+              %ul.mb-0
+                - @ability.errors.full_messages.each do |message|
+                  %li= message
+          
+          .mb-3
+            = form.label :name, class: "form-label"
+            = form.text_field :name, class: "form-control"
+          
+          .mb-3
+            = form.label :description, class: "form-label"
+            = form.text_area :description, class: "form-control", rows: 3
+          
+          .mb-3
+            = form.label :version, class: "form-label"
+            = form.text_field :version, class: "form-control"
+          
+          .d-flex.gap-2
+            = form.submit "Create Ability", class: "btn btn-primary"
+            = link_to "Cancel", organization_abilities_path(@organization), class: "btn btn-secondary"
+

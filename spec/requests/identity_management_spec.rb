@@ -1,7 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe 'Identity Management', type: :request do
-  let(:person) { create(:person) }
+  let(:company) { create(:organization, name: 'Test Company', type: 'Company') }
+  let(:person) { create(:person, current_organization: company) }
   let(:google_identity) { create(:person_identity, person: person, provider: 'google_oauth2', email: 'test@gmail.com') }
 
   before do
@@ -12,7 +13,7 @@ RSpec.describe 'Identity Management', type: :request do
     it 'shows connected accounts section' do
       get profile_path
       expect(response).to have_http_status(:success)
-      expect(response.body).to include('Connected Accounts')
+      expect(response.body).to include('Identities')
     end
   end
 

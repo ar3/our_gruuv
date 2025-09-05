@@ -1,0 +1,42 @@
+- content_for :header do
+  %h1.mb-0 Abilities
+
+- content_for :header_action do
+  = link_to new_organization_ability_path(@organization), class: "btn btn-primary" do
+    %i.bi.bi-plus.me-2
+    New Ability
+
+.row
+  .col-12
+    .card
+      .card-body
+        - if @abilities.any?
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Name
+                  %th Description
+                  %th Version
+                  %th Actions
+              %tbody
+                - @abilities.each do |ability|
+                  %tr
+                    %td= ability.name
+                    %td= ability.description
+                    %td= ability.version
+                    %td
+                      .btn-group
+                        = link_to organization_ability_path(@organization, ability), class: "btn btn-outline-primary btn-sm" do
+                          %i.bi.bi-eye
+                        = link_to edit_organization_ability_path(@organization, ability), class: "btn btn-outline-warning btn-sm" do
+                          %i.bi.bi-pencil
+                        = link_to organization_ability_path(@organization, ability), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-outline-danger btn-sm" do
+                          %i.bi.bi-trash
+        - else
+          .text-center.py-4
+            %p.text-muted No abilities found.
+            = link_to new_organization_ability_path(@organization), class: "btn btn-primary" do
+              %i.bi.bi-plus.me-2
+              Create First Ability
+

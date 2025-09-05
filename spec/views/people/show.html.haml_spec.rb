@@ -7,11 +7,14 @@ RSpec.describe 'people/show', type: :view do
   before do
     assign(:person, person)
     assign(:employment_tenures, [])
+    assign(:assignment_tenures, [])
     assign(:current_person, person)
     
-    # Manually define the current_organization method on the view
+    # Manually define the current_organization and current_person methods on the view
     org = organization # Capture the variable
+    current_person_obj = person # Capture the variable
     view.define_singleton_method(:current_organization) { org }
+    view.define_singleton_method(:current_person) { current_person_obj }
     
     render
   end
@@ -33,17 +36,16 @@ RSpec.describe 'people/show', type: :view do
   end
 
   it 'displays account statistics' do
-    expect(rendered).to have_content('Account Statistics')
-    expect(rendered).to have_content('Huddles Participated')
-    expect(rendered).to have_content('Feedback Submitted')
-    expect(rendered).to have_content('Member Since')
+    expect(rendered).to have_content('Gruuvin\' Since')
+    expect(rendered).to have_content('Other Companies')
   end
 
   context 'when person has no timezone' do
     let(:person) { create(:person, timezone: nil) }
 
       it 'shows timezone not set message' do
-    expect(rendered).to have_content('Not set (using Eastern Time)')
+    expect(rendered).to have_content('Eastern Time')
+    expect(rendered).to have_content('Timezone (Default)')
   end
   end
 
@@ -59,7 +61,7 @@ RSpec.describe 'people/show', type: :view do
     let(:person) { create(:person, unique_textable_phone_number: nil) }
 
     it 'does not display phone section' do
-      expect(rendered).not_to have_content('Phone:')
+      expect(rendered).to have_content('Not provided')
     end
   end
 end 

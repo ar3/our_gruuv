@@ -1,6 +1,5 @@
-class OrganizationsController < ApplicationController
+class OrganizationsController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication
-  before_action :set_organization, only: [:show, :edit, :update, :destroy, :switch, :huddles_review]
   
   def index
     @organizations = Organization.all.order(:type, :name)
@@ -133,10 +132,11 @@ class OrganizationsController < ApplicationController
     end
   end
   
-  private
-  
-  def set_organization
-    @organization = Organization.find(params[:id])
+    private
+
+  # Skip organization setup for actions that don't need it
+  def skip_organization_setup?
+    !%w[show edit update destroy switch huddles_review].include?(action_name)
   end
   
   def organization_params

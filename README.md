@@ -24,5 +24,5 @@ Things you may want to cover:
 * ...
 
 `bin/dev`
-`ngrok http --hostname=crappie-saved-absolutely.ngrok-free.app 300`
+`ngrok http --hostname=crappie-saved-absolutely.ngrok-free.app 3000`
 `git push origin main && railway up`

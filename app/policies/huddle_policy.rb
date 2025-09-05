@@ -55,7 +55,7 @@ class HuddlePolicy < ApplicationPolicy
   private
 
   def user_participant
-    @user_participant ||= record.huddle_participants.find_by(person: user)
+    @user_participant ||= record.huddle_participants.find_by(person: actual_user)
   end
 
   def facilitator_or_department_head?
@@ -68,13 +68,13 @@ class HuddlePolicy < ApplicationPolicy
 
   def department_head?
     # The department head is defined by the huddle's organization
-    record.organization&.department_head == user
+    record.organization&.department_head == actual_user
   end
 
   class Scope < Scope
     def resolve
-      if user
-        scope.joins(:huddle_participants).where(huddle_participants: { person: user })
+      if actual_user
+        scope.joins(:huddle_participants).where(huddle_participants: { person: actual_user })
       else
         scope.active
       end

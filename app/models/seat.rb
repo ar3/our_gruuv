@@ -85,6 +85,9 @@ class Seat < ApplicationRecord
 
   # State management
   def needs_reconciliation?
+    # Reload to ensure we have the latest employment tenures
+    reload if persisted?
+    
     case state
     when 'filled'
       !employment_tenures.active.exists?
