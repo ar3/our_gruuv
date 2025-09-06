@@ -1,0 +1,48 @@
+- content_for :title, "Accountability"
+
+.card
+  .card-header
+    %h4.mb-0
+      %i.bi.bi-target.me-2
+      Accountability
+  .card-body
+    .row
+      .col-md-4
+        .card.border-primary
+          .card-header.bg-primary.text-white
+            %h6.mb-0
+              %i.bi.bi-heart.me-2
+              Accountable to Aspirations
+          .card-body
+            %p.small Company, department, and team values/philosophies/ways of working
+            %p.text-muted Coming soon...
+            = link_to "Aspirations", aspirations_coming_soon_path, class: "btn btn-sm btn-outline-primary"
+      
+      .col-md-4
+        .card.border-info
+          .card-header.bg-info.text-white
+            %h6.mb-0
+              %i.bi.bi-clipboard-check.me-2
+              Accountable to Assignments
+          .card-body
+            %p.small Specific tasks and responsibilities assigned to individuals
+            = link_to "View Assignments", assignments_path, class: "btn btn-sm btn-outline-info"
+      
+      .col-md-4
+        .card.border-warning
+          .card-header.bg-warning.text-dark
+            %h6.mb-0
+              %i.bi.bi-star.me-2
+              Accountable to Demonstrate Abilities
+          .card-body
+            %p.small Skills and competencies needed for assignments
+            = link_to "View Abilities", organization_abilities_path(current_organization), class: "btn btn-sm btn-outline-warning"
+    
+    .row.mt-4
+      .col-12
+        .card.bg-light
+          .card-body
+            %h6.text-primary
+              %i.bi.bi-lightbulb.me-2
+              Vision
+            %p.small Employees get extreme clarity about what they are being relied upon for when in this area. This system connects daily work to broader organizational mission and values.

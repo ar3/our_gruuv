@@ -195,6 +195,23 @@ delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconn
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  # Coming Soon placeholder pages
+  get '/seats', to: 'pages#seats_coming_soon', as: :seats_coming_soon
+  get '/aspirations', to: 'pages#aspirations_coming_soon', as: :aspirations_coming_soon
+  get '/observations', to: 'pages#observations_coming_soon', as: :observations_coming_soon
+  get '/good-issues', to: 'pages#good_issues_coming_soon', as: :good_issues_coming_soon
+  get '/diverge-converge', to: 'pages#diverge_converge_coming_soon', as: :diverge_converge_coming_soon
+  get '/team-signals', to: 'pages#team_signals_coming_soon', as: :team_signals_coming_soon
+  get '/okr3-management', to: 'pages#okr3_management_coming_soon', as: :okr3_management_coming_soon
+  get '/hypothesis-management', to: 'pages#hypothesis_management_coming_soon', as: :hypothesis_management_coming_soon
+  get '/eligibility-reviews', to: 'pages#eligibility_reviews_coming_soon', as: :eligibility_reviews_coming_soon
+  
+  # Overview pages for Level 2 navigation
+  get '/position-management', to: 'pages#position_management_overview', as: :position_management_overview
+  get '/milestones', to: 'pages#milestones_overview', as: :milestones_overview
+  get '/huddles-overview', to: 'pages#huddles_overview', as: :huddles_overview
+  get '/accountability', to: 'pages#accountability', as: :accountability
+
   # Defines the root path route ("/")
   # root "posts#index"
 end

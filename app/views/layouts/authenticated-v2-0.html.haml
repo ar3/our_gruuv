@@ -69,17 +69,25 @@
               %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
                 Align
               %ul.dropdown-menu
-                %li= link_to "Assignments", assignments_path, class: "dropdown-item"
+                %li= link_to "Milestones", organization_abilities_path(current_organization), class: "dropdown-item"
+                %li= link_to "Accountability", accountability_path, class: "dropdown-item"
                 %li= link_to "Positions", positions_path, class: "dropdown-item"
+            
             %li.nav-item.dropdown
               %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
-                Collaborate
+                Collab
               %ul.dropdown-menu
-                %li= link_to "Today's Huddles", huddles_path, class: "dropdown-item"
-                %li= link_to "My Huddles", my_huddles_path, class: "dropdown-item"
+                %li= link_to "Oppties", good_issues_coming_soon_path, class: "dropdown-item"
+                %li= link_to "D<=>C", diverge_converge_coming_soon_path, class: "dropdown-item"
+                %li= link_to "Huddles", huddles_path, class: "dropdown-item"
 
-            %li.nav-item
-              = link_to "Transform", "#", class: "nav-link", onclick: "alert('Coming soon!'); return false;"
+            %li.nav-item.dropdown
+              %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                Transform
+              %ul.dropdown-menu
+                %li= link_to "Signals", team_signals_coming_soon_path, class: "dropdown-item"
+                %li= link_to "Hypotheses", hypothesis_management_coming_soon_path, class: "dropdown-item"
+                %li= link_to "OKR3s", okr3_management_coming_soon_path, class: "dropdown-item"
           
           %ul.navbar-nav
             - if current_person

@@ -125,6 +125,13 @@ This document contains all the rules and conventions we follow in this project t
 - **Keyboard navigation**: Ensure all interactive elements are accessible via keyboard
 - **Screen reader support**: Use proper ARIA attributes to help assistive technologies navigate content
 
+### Responsive Design
+- **Mobile-first approach**: All pages must be responsive and look good on mobile devices unless otherwise stated
+- **Bootstrap responsive utilities**: Use Bootstrap's responsive classes for consistent mobile experience
+- **Touch-friendly interfaces**: Ensure interactive elements are appropriately sized for touch devices
+- **Responsive navigation**: Navigation should work seamlessly across all device sizes
+- **Responsive images**: Use responsive image techniques for optimal loading across devices
+
 ## Development Rules
 
 ### Debugging & Testing

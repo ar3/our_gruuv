@@ -1,0 +1,62 @@
+- content_for :title, "Position Management Overview"
+
+.card
+  .card-header
+    %h4.mb-0
+      %i.bi.bi-briefcase.me-2
+      Position Management Overview
+  .card-body
+    .row
+      .col-md-8
+        %h5 Position Management System
+        %p The Position Management system handles all aspects of organizational structure, from defining position types to managing individual positions and job requisitions.
+        
+        %h6.mt-4 Key Components:
+        .row.mt-3
+          .col-md-6
+            .card.border-primary
+              .card-body
+                %h6.text-primary
+                  %i.bi.bi-building.me-2
+                  Positions
+                %p.small Individual positions within the organization
+                = link_to "View Positions", positions_path, class: "btn btn-sm btn-outline-primary"
+          .col-md-6
+            .card.border-info
+              .card-body
+                %h6.text-info
+                  %i.bi.bi-tags.me-2
+                  Position Types
+                %p.small Templates for creating positions
+                = link_to "View Position Types", position_types_path, class: "btn btn-sm btn-outline-info"
+        .row.mt-3
+          .col-md-6
+            .card.border-warning
+              .card-body
+                %h6.text-warning
+                  %i.bi.bi-person-plus.me-2
+                  Seats
+                %p.small Job requisitions with HR metadata
+                = link_to "View Seats", seats_coming_soon_path, class: "btn btn-sm btn-outline-warning"
+        
+        %h6.mt-4 Vision:
+        %p This system enables executive teams to manage labor budgets, track headcount planning, and ensure every position has a clear purpose and requirements.
+        
+      .col-md-4
+        .card.bg-light
+          .card-body
+            %h6.text-primary
+              %i.bi.bi-graph-up.me-2
+              Executive Focus
+            %p.small This is where executive teams will spend significant time managing compensation, labor budgets, and seat prioritization.
+            
+            %hr
+            
+            %h6.text-success
+              %i.bi.bi-check-circle.me-2
+              Integration Points
+            %ul.small
+              %li Employment Tenures
+              %li Compensation Management
+              %li Headcount Planning
+              %li Assignment Management

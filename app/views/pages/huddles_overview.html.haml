@@ -1,0 +1,62 @@
+- content_for :title, "Huddles Overview"
+
+.card
+  .card-header
+    %h4.mb-0
+      %i.bi.bi-people.me-2
+      Huddles Overview
+  .card-body
+    .row
+      .col-md-8
+        %h5 Huddles System
+        %p The Huddles system manages team meetings and collaboration, with rating systems to ensure valuable interactions.
+        
+        %h6.mt-4 Key Components:
+        .row.mt-3
+          .col-md-6
+            .card.border-primary
+              .card-body
+                %h6.text-primary
+                  %i.bi.bi-calendar-day.me-2
+                  Today's Huddles
+                %p.small View and join today's scheduled huddles
+                = link_to "View Today's Huddles", huddles_path, class: "btn btn-sm btn-outline-primary"
+          .col-md-6
+            .card.border-info
+              .card-body
+                %h6.text-info
+                  %i.bi.bi-person.me-2
+                  My Huddles
+                %p.small View huddles you're participating in
+                = link_to "View My Huddles", my_huddles_path, class: "btn btn-sm btn-outline-info"
+        .row.mt-3
+          .col-md-6
+            .card.border-warning
+              .card-body
+                %h6.text-warning
+                  %i.bi.bi-plus-circle.me-2
+                  Create Huddle
+                %p.small Start a new huddle for your team
+                = link_to "Create Huddle", new_huddle_path, class: "btn btn-sm btn-outline-warning"
+        
+        %h6.mt-4 Vision:
+        %p Huddles will eventually incorporate good issues and diverge-converge sessions, but for now they focus on rating the huddles to ensure they were valuable.
+        
+      .col-md-4
+        .card.bg-light
+          .card-body
+            %h6.text-primary
+              %i.bi.bi-chat-dots.me-2
+              Team Collaboration
+            %p.small Huddles facilitate effective team communication and collaboration.
+            
+            %hr
+            
+            %h6.text-success
+              %i.bi.bi-star.me-2
+              Value Tracking
+            %ul.small
+              %li Huddle ratings
+              %li Participant feedback
+              %li Meeting effectiveness
+              %li Continuous improvement
