@@ -77,6 +77,35 @@ The Align--Accountability module houses concepts such as Aspirations (company, d
   - New position exploration
   - Anonymous usage (may merge with eligibility view)
 
+### **Assignment Management System**
+- ✅ Unified assignment management interface
+- ✅ Row-based design for managing assignments and check-ins
+- ✅ Business logic for tenure changes and check-in creation
+- ✅ Assignment selection and management
+- ✅ Check-in system with ratings and notes
+
+### **Assignment Tenure & Check-in System Implementation**
+- ✅ **AssignmentTenure Model**: Core tenure tracking with energy percentages
+- ✅ **AssignmentCheckIn Model**: Performance tracking with string enums
+- ✅ **High-Value Tests**: Complex business logic validation
+- ✅ **Models**: All core models complete with validations and associations
+- ✅ **Database**: Migrations complete, schema updated
+- ✅ **Tests**: Comprehensive test coverage for complex business logic
+- ✅ **Factories**: Test data factories for all models
+
+### **Next Implementation Target:**
+**Unified Assignment Management Interface** - Single page for managing both assignment tenures and check-ins:
+- Row-based design (one row per assignment)
+- Inline editing for tenure and check-in data
+- Smart business logic for creating new records vs updating
+- Stale data warnings and visual indicators
+
+### **Key Design Decisions Made:**
+- **String enums** for ratings (more Rails-y and readable)
+- **Immutable check-ins** (never update, always create new)
+- **Energy % changes trigger new tenures** (maintains history)
+- **Assignment stays visible** even when energy = 0%
+
 ## DREAMING 💭
 
 ### **Aspirations & Values Management**

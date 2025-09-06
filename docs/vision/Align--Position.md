@@ -49,6 +49,14 @@ The Align--Position module focuses on organizational structure, position managem
 - [ ] Implement check-in rating and feedback system
 - [ ] Create manager calibration and review workflows
 
+### **Employment Tenure Page Improvements**
+- **Wizard-like Flow**: 
+  - Step 1: Select organization/company
+  - Step 2: Filter managers to show only employees of that organization
+  - Step 3: Filter positions to show only positions within that organization
+- **Dynamic Filtering**: Use JavaScript to update dropdowns based on organization selection
+- **Better UX**: Make the form more intuitive and user-friendly
+
 ## DREAMING 💭
 
 ### **Position Management Evolution**
