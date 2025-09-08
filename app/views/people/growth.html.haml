@@ -111,48 +111,21 @@
               .collapse{"id" => "assignment-#{tenure.id}"}
                 .row
                   .col-md-8
-                    / Assignment Information
+                    / Assignment-Specific Information
                     %h6.mb-3 Assignment Details
                     %p
                       %strong Assignment:
                       = link_to tenure.assignment.title, organization_assignment_path(@current_organization, tenure.assignment), class: "text-decoration-none"
                     
-                    %p
-                      %strong Started:
-                      = tenure.started_at.strftime('%B %d, %Y')
-                    
-                    %p
-                      %strong Anticipated Energy:
-                      = "#{tenure.anticipated_energy_percentage}%"
-                    
-                    / Energy Comparison
-                    - position_assignment = @current_employment&.position&.position_assignments&.find_by(assignment: tenure.assignment)
-                    - if position_assignment&.min_estimated_energy.present? || position_assignment&.max_estimated_energy.present?
+                    - if tenure.assignment.tagline.present?
                       %p
-                        %strong Expected Range:
-                        = position_assignment.energy_range_display
-                      
-                      - if tenure.anticipated_energy_percentage.present?
-                        - min_energy = position_assignment.min_estimated_energy || 0
-                        - max_energy = position_assignment.max_estimated_energy || 100
-                        - if tenure.anticipated_energy_percentage < min_energy
-                          .alert.alert-warning.mt-2
-                            %i.bi.bi-exclamation-triangle.me-2
-                            %strong Below Expected Range
-                            %br
-                            %small Anticipated energy (#{tenure.anticipated_energy_percentage}%) is below the minimum expected (#{min_energy}%)
-                        - elsif tenure.anticipated_energy_percentage > max_energy
-                          .alert.alert-warning.mt-2
-                            %i.bi.bi-exclamation-triangle.me-2
-                            %strong Above Expected Range
-                            %br
-                            %small Anticipated energy (#{tenure.anticipated_energy_percentage}%) exceeds the maximum expected (#{max_energy}%)
-                        - else
-                          .alert.alert-success.mt-2
-                            %i.bi.bi-check-circle.me-2
-                            %strong Within Expected Range
-                            %br
-                            %small Anticipated energy (#{tenure.anticipated_energy_percentage}%) is within the expected range (#{min_energy}%-#{max_energy}%)
+                        %strong Tagline:
+                        = tenure.assignment.tagline
+                    
+                    - if tenure.assignment.required_activities.present?
+                      %p
+                        %strong Required Activities:
+                        = tenure.assignment.required_activities
                     
                     / Assignment Outcomes
                     - outcomes = tenure.assignment.assignment_outcomes
@@ -162,9 +135,65 @@
                         %ul.mb-0
                           - outcomes.each do |outcome|
                             %li= outcome.description
+                    
+                    / Assignment Abilities
+                    - abilities = tenure.assignment.assignment_abilities.includes(:ability)
+                    - if abilities.any?
+                      .mt-3
+                        %h6 Required Abilities:
+                        %ul.mb-0
+                          - abilities.each do |assignment_ability|
+                            %li= "#{assignment_ability.ability.name} - Level #{assignment_ability.milestone_level}"
                   
                   .col-md-4.border-start.border-secondary
                     .d-grid.gap-2
+                      / Tenure Information
+                      .mb-3
+                        %h6.mb-2
+                          %i.bi.bi-clock-history.me-2
+                          Tenure Details
+                        %p.mb-1
+                          %strong Started:
+                          = tenure.started_at.strftime('%b %d, %Y')
+                        
+                        %p.mb-1
+                          %strong Duration:
+                          = distance_of_time_in_words(tenure.started_at, Date.current)
+                        
+                        - if tenure.anticipated_energy_percentage.present?
+                          %p.mb-1
+                            %strong Anticipated Energy:
+                            = "#{tenure.anticipated_energy_percentage}%"
+                        
+                        / Energy Comparison
+                        - position_assignment = @current_employment&.position&.position_assignments&.find_by(assignment: tenure.assignment)
+                        - if position_assignment&.min_estimated_energy.present? || position_assignment&.max_estimated_energy.present?
+                          %p.mb-1
+                            %strong Expected Range:
+                            = position_assignment.energy_range_display
+                          
+                          - if tenure.anticipated_energy_percentage.present?
+                            - min_energy = position_assignment.min_estimated_energy || 0
+                            - max_energy = position_assignment.max_estimated_energy || 100
+                            - if tenure.anticipated_energy_percentage < min_energy
+                              .alert.alert-warning.mt-2.p-2
+                                %i.bi.bi-exclamation-triangle.me-2
+                                %strong Below Expected Range
+                                %br
+                                %small Anticipated energy (#{tenure.anticipated_energy_percentage}%) is below the minimum expected (#{min_energy}%)
+                            - elsif tenure.anticipated_energy_percentage > max_energy
+                              .alert.alert-warning.mt-2.p-2
+                                %i.bi.bi-exclamation-triangle.me-2
+                                %strong Above Expected Range
+                                %br
+                                %small Anticipated energy (#{tenure.anticipated_energy_percentage}%) exceeds the maximum expected (#{max_energy}%)
+                            - else
+                              .alert.alert-success.mt-2.p-2
+                                %i.bi.bi-check-circle.me-2
+                                %strong Within Expected Range
+                                %br
+                                %small Anticipated energy (#{tenure.anticipated_energy_percentage}%) is within the expected range (#{min_energy}%-#{max_energy}%)
+                      
                       / Check-in Information
                       - latest_check_in = AssignmentCheckIn.where(person: @person, assignment: tenure.assignment).recent.first
                       - if latest_check_in
@@ -205,10 +234,6 @@
                         %p.mb-1
                           %strong Open Check-ins:
                           = AssignmentCheckIn.where(person: @person, assignment: tenure.assignment).open.count
-                        
-                        %p.mb-1
-                          %strong Tenure Duration:
-                          = distance_of_time_in_words(tenure.started_at, Date.current)
                       
                       / Actions
                       = link_to organization_assignment_path(@current_organization, tenure.assignment), class: "btn btn-outline-primary" do

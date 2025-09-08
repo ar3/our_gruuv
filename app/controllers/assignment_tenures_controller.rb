@@ -4,12 +4,12 @@ class AssignmentTenuresController < ApplicationController
   after_action :verify_authorized
 
   def show
-    authorize @person, policy_class: PersonPolicy
+    authorize @person, :manager?, policy_class: PersonPolicy
     load_assignments_and_check_ins
   end
 
   def update
-    authorize @person, policy_class: PersonPolicy
+    authorize @person, :manager?, policy_class: PersonPolicy
     
     if update_assignments_and_check_ins
       redirect_to person_assignment_tenures_path(@person), notice: 'Assignments updated successfully.'
@@ -20,12 +20,12 @@ class AssignmentTenuresController < ApplicationController
   end
 
   def choose_assignments
-    authorize @person, policy_class: PersonPolicy
+    authorize @person, :manager?, policy_class: PersonPolicy
     @available_assignments = load_available_assignments
   end
 
   def update_assignments
-    authorize @person, policy_class: PersonPolicy
+    authorize @person, :manager?, policy_class: PersonPolicy
     
     if update_person_assignments
       redirect_to person_assignment_tenures_path(@person), notice: 'Assignments updated successfully.'
