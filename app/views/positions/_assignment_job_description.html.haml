@@ -38,7 +38,7 @@
         %span.badge{class: assignment_type == 'required' ? 'bg-primary' : 'bg-info', class: 'me-1'}
           = aa.ability.name
           %small.ms-1 (#{milestone_level_display(aa.milestone_level)})
-          = link_to ability_path(aa.ability), target: "_blank", class: "ms-1 text-white" do
+          = link_to organization_ability_path(aa.ability.organization, aa.ability), target: "_blank", class: "ms-1 text-white" do
             %i.bi.bi-link-45deg
     - else
       %span.text-muted ability milestones to be determined
