@@ -51,40 +51,51 @@
                   .row
                     .col-md-3
                       %h6= data[:assignment].title
-                      %small.text-muted= data[:assignment].company.name
-                    
-                    .col-md-9
+                  .row.mt-3
+                    .col-4
+                      %nbsp
+                    .col-8
+                      - if data[:open_check_in]
+                        .alert.alert-info.mb-1
+                          %i.bi.bi-info-circle.me-2
+                          Editing existing check-in from #{data[:open_check_in].check_in_started_on.strftime('%B %d, %Y')}
+                      - else
+                        .alert.alert-warning.mb-1
+                          %i.bi.bi-plus-circle.me-2
+                          No active check-in. Fill out fields below to create a new check-in.
+                  .row.mb-3
+                    .col-12.col-md-4
+                      - if data[:tenure]
+                        - tenure_start = data[:tenure].started_at.strftime('%B %d, %Y')
+                        - employee_first_name = @person.first_name
+                        - assignment_name = data[:assignment].title
+                        = form.label "tenure_#{data[:assignment].id}_anticipated_energy", "#{employee_first_name} plans on spending this much of their energy on #{assignment_name} since #{tenure_start}", class: "form-label"
+                      - else
+                        = form.label "tenure_#{data[:assignment].id}_anticipated_energy", "Anticipated Energy %", class: "form-label"
+                      = form.select "tenure_#{data[:assignment].id}_anticipated_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:tenure]&.anticipated_energy_percentage), { prompt: 'Select energy %...' }, { class: "form-select" }
+
+                    .col-12.col-md-8
                       .row
-                        .col-md-6
+                        .col-md-4
                           .mb-3
-                            = form.label "tenure_#{data[:assignment].id}_anticipated_energy", "Anticipated Energy %", class: "form-label"
-                            = form.select "tenure_#{data[:assignment].id}_anticipated_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:tenure]&.anticipated_energy_percentage), { prompt: 'Select energy %...' }, { class: "form-select" }
+                            = form.label "check_in_#{data[:assignment].id}_actual_energy", "Actual Energy %", class: "form-label"
+                            = form.select "check_in_#{data[:assignment].id}_actual_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:open_check_in]&.actual_energy_percentage), { prompt: 'Select energy %...' }, { class: "form-select" }
+                        
+                        .col-md-4
+                          .mb-3
+                            = form.label "check_in_#{data[:assignment].id}_employee_rating", "My Rating", class: "form-label"
+                            = form.select "check_in_#{data[:assignment].id}_employee_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], data[:open_check_in]&.employee_rating), { prompt: 'Select rating...' }, { class: "form-select" }
+                        
+                        .col-md-4
+                          .mb-3
+                            = form.label "check_in_#{data[:assignment].id}_personal_alignment", "Personal Alignment", class: "form-label"
+                            = form.select "check_in_#{data[:assignment].id}_personal_alignment", options_for_select([['I love this', 'love'], ['I like this', 'like'], ['I\'m neutral', 'neutral'], ['I prefer not to do this', 'prefer_not'], ['Only if necessary', 'only_if_necessary']], data[:open_check_in]&.employee_personal_alignment), { prompt: 'Select alignment...' }, { class: "form-select" }
 
-                  - if data[:open_check_in]
-                    .row.mt-3
-                      .col-12
-                        %h6.text-primary Check-in Information
-                        .row
-                          .col-md-4
-                            .mb-3
-                              = form.label "check_in_#{data[:open_check_in].id}_actual_energy", "Actual Energy %", class: "form-label"
-                              = form.select "check_in_#{data[:open_check_in].id}_actual_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:open_check_in].actual_energy_percentage), { prompt: 'Select energy %...' }, { class: "form-select" }
-                          
-                          .col-md-4
-                            .mb-3
-                              = form.label "check_in_#{data[:open_check_in].id}_employee_rating", "My Rating", class: "form-label"
-                              = form.select "check_in_#{data[:open_check_in].id}_employee_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], data[:open_check_in].employee_rating), { prompt: 'Select rating...' }, { class: "form-select" }
-                          
-                          .col-md-4
-                            .mb-3
-                              = form.label "check_in_#{data[:open_check_in].id}_personal_alignment", "Personal Alignment", class: "form-label"
-                              = form.select "check_in_#{data[:open_check_in].id}_personal_alignment", options_for_select([['I love this', 'love'], ['I like this', 'like'], ['I\'m neutral', 'neutral'], ['I prefer not to do this', 'prefer_not'], ['Only if necessary', 'only_if_necessary']], data[:open_check_in].employee_personal_alignment), { prompt: 'Select alignment...' }, { class: "form-select" }
-
-                        .row
-                          .col-12
-                            .mb-3
-                              = form.label "check_in_#{data[:open_check_in].id}_employee_private_notes", "Private Notes", class: "form-label"
-                              = form.text_area "check_in_#{data[:open_check_in].id}_employee_private_notes", value: data[:open_check_in].employee_private_notes, rows: 2, class: "form-control", placeholder: "Notes for my eyes only..."
+                      .row
+                        .col-12
+                          .mb-3
+                            = form.label "check_in_#{data[:assignment].id}_employee_private_notes", "Private Notes", class: "form-label"
+                            = form.text_area "check_in_#{data[:assignment].id}_employee_private_notes", value: data[:open_check_in]&.employee_private_notes, rows: 2, class: "form-control", placeholder: "Notes for my eyes only..."
 
               .row.mt-4
                 .col-12

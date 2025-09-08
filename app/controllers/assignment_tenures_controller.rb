@@ -100,7 +100,7 @@ class AssignmentTenuresController < ApplicationController
         end
         
         # Update or create check-in
-        if check_in_params_present?(open_check_in&.id)
+        if check_in_params_present?(assignment.id)
           update_or_create_check_in(open_check_in, assignment)
         end
       end
@@ -142,13 +142,11 @@ class AssignmentTenuresController < ApplicationController
     params["tenure_#{assignment_id}_anticipated_energy"].present?
   end
 
-  def check_in_params_present?(check_in_id)
-    return false unless check_in_id
-    
-    params["check_in_#{check_in_id}_actual_energy"].present? ||
-    params["check_in_#{check_in_id}_employee_rating"].present? ||
-    params["check_in_#{check_in_id}_personal_alignment"].present? ||
-    params["check_in_#{check_in_id}_employee_private_notes"].present?
+  def check_in_params_present?(assignment_id)
+    params["check_in_#{assignment_id}_actual_energy"].present? ||
+    params["check_in_#{assignment_id}_employee_rating"].present? ||
+    params["check_in_#{assignment_id}_personal_alignment"].present? ||
+    params["check_in_#{assignment_id}_employee_private_notes"].present?
   end
 
   def update_or_create_tenure(assignment, existing_tenure)
@@ -176,22 +174,29 @@ class AssignmentTenuresController < ApplicationController
     if existing_check_in&.open?
       # Update existing open check-in
       existing_check_in.update!(
-        actual_energy_percentage: params["check_in_#{existing_check_in.id}_actual_energy"].to_i,
-        employee_rating: params["check_in_#{existing_check_in.id}_employee_rating"],
-        employee_personal_alignment: params["check_in_#{existing_check_in.id}_personal_alignment"],
-        employee_private_notes: params["check_in_#{existing_check_in.id}_employee_private_notes"]
+        actual_energy_percentage: params["check_in_#{assignment.id}_actual_energy"].to_i,
+        employee_rating: params["check_in_#{assignment.id}_employee_rating"],
+        employee_personal_alignment: params["check_in_#{assignment.id}_personal_alignment"],
+        employee_private_notes: params["check_in_#{assignment.id}_employee_private_notes"]
       )
     else
-      # Create new check-in
-      tenure = AssignmentTenure.most_recent_for(@person, assignment)
-      return unless tenure
+      # Create new check-in - only if at least one field has a value
+      actual_energy = params["check_in_#{assignment.id}_actual_energy"]
+      employee_rating = params["check_in_#{assignment.id}_employee_rating"]
+      personal_alignment = params["check_in_#{assignment.id}_personal_alignment"]
+      private_notes = params["check_in_#{assignment.id}_employee_private_notes"]
       
-      tenure.assignment_check_ins.create!(
+      # Only create if at least one field has a value
+      return unless actual_energy.present? || employee_rating.present? || personal_alignment.present? || private_notes.present?
+      
+      AssignmentCheckIn.create!(
+        person: @person,
+        assignment: assignment,
         check_in_started_on: Date.current,
-        actual_energy_percentage: params["check_in_#{existing_check_in&.id}_actual_energy"]&.to_i,
-        employee_rating: params["check_in_#{existing_check_in&.id}_employee_rating"],
-        employee_personal_alignment: params["check_in_#{existing_check_in&.id}_personal_alignment"],
-        employee_private_notes: params["check_in_#{existing_check_in&.id}_employee_private_notes"]
+        actual_energy_percentage: actual_energy.to_i,
+        employee_rating: employee_rating,
+        employee_personal_alignment: personal_alignment,
+        employee_private_notes: private_notes
       )
     end
   end
