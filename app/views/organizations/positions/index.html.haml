@@ -1,0 +1,120 @@
+- content_for :go_back_link do
+  = link_to organization_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@organization.display_name}
+
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0 
+      %i.bi.bi-briefcase.me-2
+      Positions
+      = link_to new_organization_position_path(@organization), class: "btn btn-primary" do
+        %i.bi.bi-plus
+
+- content_for :header_action do
+  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#positionsFilterModal", type: "button"}
+    %i.bi.bi-funnel.me-2
+    Filter & Sort
+.row.justify-content-center
+  .col-lg-12
+    - if @positions.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Position
+              %th Level
+              %th Assignments
+              %th Actions
+          %tbody
+            - @positions.each do |position|
+              %tr
+                %td
+                  %strong= position.display_name
+                  - if position.position_summary.present?
+                    %br
+                    %small.text-muted= truncate(position.position_summary, length: 100)
+                %td
+                  %span.badge.bg-info= position.position_level.level
+                %td
+                  - if position.required_assignments_count > 0 || position.suggested_assignments_count > 0
+                    %span.badge.bg-primary.me-1
+                      = position.required_assignments_count
+                    %small.text-muted required
+                    - if position.suggested_assignments_count > 0
+                      %br
+                      %span.badge.bg-secondary.me-1
+                        = position.suggested_assignments_count
+                      %small.text-muted suggested
+                  - else
+                    %span.text-muted
+                      %i.bi.bi-exclamation-triangle.me-1
+                      None
+                %td
+                  .btn-group.btn-group-sm
+                    = link_to organization_position_path(@organization, position), class: "btn btn-outline-primary", title: "View" do
+                      %i.bi.bi-eye
+                    = link_to organization_position_job_description_path(@organization, position), class: "btn btn-outline-info", title: "Job Description" do
+                      %i.bi.bi-file-text
+                    = link_to edit_organization_position_path(@organization, position), class: "btn btn-outline-secondary", title: "Edit" do
+                      %i.bi.bi-pencil
+                    = link_to organization_position_path(@organization, position), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure?" } do
+                      %i.bi.bi-trash
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Positions Created
+        %p.mb-2 
+          Create your first position to define roles and responsibilities for your team.
+        = link_to "Create First Position", new_organization_position_path(@organization), class: "btn btn-primary btn-sm"
+
+/ Modal for Filter & Sort
+#positionsFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "positionsFilterModalLabel", tabindex: "-1"}
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        %h5.modal-title#positionsFilterModalLabel
+          %i.bi.bi-funnel.me-2
+          Filter & Sort Positions (coming soon)
+        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+      .modal-body
+        .row
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-funnel.me-2
+              Filters
+            %p.text-muted Position type and level filters will be available soon.
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-sort-down.me-2
+              Sort Options
+            %p.text-muted Sorting by name, level, and assignment count will be available soon.
+            .mb-3
+              %label.form-label View Style
+              .form-check
+                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
+                %label.form-check-label
+                  %i.bi.bi-table.me-2
+                  Table View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
+                %label.form-check-label
+                  %i.bi.bi-grid.me-2
+                  Card View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
+                %label.form-check-label
+                  %i.bi.bi-list.me-2
+                  List View
+            .mb-3
+              %label.form-label Spotlight
+              %select.form-select
+                %option No Spotlight
+                %option High Assignment Count
+                %option Recently Created
+      .modal-footer
+        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+        %button.btn.btn-primary.disabled{type: "button"}
+          %i.bi.bi-check.me-2
+          Apply Filters

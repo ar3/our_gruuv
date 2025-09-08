@@ -54,14 +54,14 @@
                   Positions
                 - @position_type.positions.each do |position|
                   .mb-2
-                    = link_to position.display_name, position_path(position), class: "text-decoration-none"
+                    = link_to position.display_name, organization_position_path(position.position_type.organization, position), class: "text-decoration-none"
               - else
                 .alert.alert-info
                   %h6.mb-2
                     %i.bi.bi-info-circle.me-2
                     No Positions Yet
                   %p.mb-2 This position type has no associated positions.
-                  = link_to "Create Position", new_position_path, class: "btn btn-info btn-sm"
+                  = link_to "Create Position", new_organization_position_path(@position_type.organization), class: "btn btn-info btn-sm"
               
               - if @position_type.published_url.present? || @position_type.draft_url.present?
                 %h5.mb-2.mt-3
@@ -132,4 +132,4 @@
                       = form.submit "Clone Positions", class: "btn btn-warning"
                 - else
                   %p.mb-3 Create the first position manually, then you can clone it for the remaining levels.
-                  = link_to "Create First Position", new_position_path(position_type_id: @position_type.id), class: "btn btn-primary" 
+                  = link_to "Create First Position", new_organization_position_path(@position_type.organization, position_type_id: @position_type.id), class: "btn btn-primary" 

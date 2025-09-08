@@ -9,7 +9,7 @@
         %h5.mb-2
           %i.bi.bi-building.me-2
           Company
-        %p= link_to @position.company.display_name, organization_path(@position.company), class: "text-decoration-none"
+        %p= link_to @position.company.display_name, organization_path(@organization), class: "text-decoration-none"
       
         %h5.mb-2
           %i.bi.bi-tag.me-2
@@ -50,7 +50,7 @@
               %i.bi.bi-exclamation-triangle.me-2
               No Assignments Defined
             %p.mb-2 This position has no required or suggested assignments.
-            = link_to "Add Assignments", edit_position_path(@position), class: "btn btn-warning btn-sm"
+            = link_to "Add Assignments", edit_organization_position_path(@organization, @position), class: "btn btn-warning btn-sm"
         
         - if @position.published_url.present? || @position.draft_url.present?
           %h5.mb-2.mt-3

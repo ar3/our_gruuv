@@ -6,6 +6,10 @@
         %li= message
 
 .row
+  .col-md-12
+    = render 'shared/organization_dropdown', form: form, selected_organization: @organization
+
+.row
   .col-md-6
     .mb-3
       = form.label :position_type_id, "Position Type", class: "form-label"
@@ -117,11 +121,6 @@
         placeholder: "https://docs.google.com/document/d/..."
       %small.form-text.text-muted URL to the draft version of this position
 
-.row
-  .col-md-12
-    .d-flex.justify-content-between
-      = link_to "Cancel", positions_path, class: "btn btn-outline-secondary"
-      = form.submit class: "btn btn-primary"
 
 :javascript
   document.addEventListener('DOMContentLoaded', function() {
@@ -132,7 +131,7 @@
       positionTypeSelect.addEventListener('change', function() {
         const positionTypeId = this.value;
         if (positionTypeId) {
-          fetch(`/positions/position_levels?position_type_id=${positionTypeId}`)
+          fetch(`/organizations/#{@organization.id}/positions/position_levels?position_type_id=${positionTypeId}`)
             .then(response => response.json())
             .then(data => {
               positionLevelSelect.innerHTML = '<option value="">Select a position level</option>';

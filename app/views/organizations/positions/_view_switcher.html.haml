@@ -10,7 +10,7 @@
           Management View (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - else
-        = link_to position_path(@position), class: 'dropdown-item' do
+        = link_to organization_position_path(@organization, @position), class: 'dropdown-item' do
           %i.bi.bi-gear.me-2
           Management View
       
@@ -21,7 +21,7 @@
           Job Description View (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - else
-        = link_to job_description_position_path(@position), class: 'dropdown-item' do
+        = link_to organization_position_job_description_path(@organization, @position), class: 'dropdown-item' do
           %i.bi.bi-file-text.me-2
           Job Description View
     
@@ -29,11 +29,11 @@
       %hr.dropdown-divider
     
     %li
-      = link_to edit_position_path(@position), class: 'dropdown-item' do
+      = link_to edit_organization_position_path(@organization, @position), class: 'dropdown-item' do
         %i.bi.bi-pencil.me-2
         Edit Position
     
     %li
-      = link_to position_path(@position), method: :delete, data: { confirm: "Are you sure?" }, class: 'dropdown-item text-danger' do
+      = link_to organization_position_path(@organization, @position), method: :delete, data: { confirm: "Are you sure?" }, class: 'dropdown-item text-danger' do
         %i.bi.bi-trash.me-2
         Delete Position

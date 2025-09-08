@@ -34,7 +34,7 @@
                       %br
                       %span.text-success Duration: #{((Date.current - @current_employment.started_at.to_date).to_i / 30.44).round(1)} months
               .col-md-4.text-end
-                = link_to "View Position Details", edit_position_path(@current_employment.position), class: "btn btn-outline-primary btn-sm"
+                = link_to "View Position Details", edit_organization_position_path(@current_employment.position.position_type.organization, @current_employment.position), class: "btn btn-outline-primary btn-sm"
   .row
     .col-12
       .card
