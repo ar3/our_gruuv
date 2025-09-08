@@ -1,59 +1,80 @@
-.container-fluid
-  - if current_person == @person
-    .row.mb-3
-      .col-12
-        .alert.alert-info.text-center.py-3
-          %h4.mb-2 🎯 Modify Your Job Description
-          %p.mb-0 Use this page to adjust your assignment energy percentages and provide check-ins on how things are going.
-  
-  .row
+- content_for :go_back_link do
+  = link_to person_path(@person), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@person.display_name}'s Profile
+
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0 Assignment Management for #{@person.display_name}
+    = link_to choose_assignments_person_assignment_tenures_path(@person), class: "btn btn-primary" do
+      %i.bi.bi-plus.me-2
+      Choose Assignments
+
+- content_for :header_action do
+  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#assignmentTenuresFilterModal", type: "button"}
+    %i.bi.bi-funnel.me-2
+    Filter & Sort
+
+- if current_person == @person
+  .row.mb-3
     .col-12
-      .d-flex.justify-content-between.align-items-center.mb-4
-        %h1 Assignment Management for #{@person.display_name}
-        = link_to "Back to Profile", person_path(@person), class: "btn btn-outline-secondary"
-  .row
-    .col-12
-      .card
-        .card-header
-          %h5.mb-0 Current Position
-        .card-body
-          .position-info.mb-4.p-3.bg-light.rounded
-            .row.align-items-center
-              .col-md-8
-                %p.mb-0
-                  %strong= @current_employment.position.display_name
+      .alert.alert-info.text-center.py-3
+        %h4.mb-2 🎯 Modify Your Job Description
+        %p.mb-0 Use this page to adjust your assignment energy percentages and provide check-ins on how things are going.
+.row.justify-content-center
+  .col-lg-12
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Current Position
+      .card-body
+        .position-info.mb-4.p-3.bg-light.rounded
+          .row.align-items-center
+            .col-md-8
+              %p.mb-0
+                %strong= @current_employment.position.display_name
+                %br
+                %small.text-muted
+                  Company: #{@current_employment.company.name}
                   %br
-                  %small.text-muted
-                    Company: #{@current_employment.company.name}
+                  Started: #{@current_employment.started_at.strftime('%B %d, %Y')}
+                  - if @current_employment.ended_at
                     %br
-                    Started: #{@current_employment.started_at.strftime('%B %d, %Y')}
-                    - if @current_employment.ended_at
-                      %br
-                      Ended: #{@current_employment.ended_at.strftime('%B %d, %Y')}
-                    - else
-                      %br
-                      %span.text-success Duration: #{((Date.current - @current_employment.started_at.to_date).to_i / 30.44).round(1)} months
-              .col-md-4.text-end
-                = link_to "View Position Details", edit_organization_position_path(@current_employment.position.position_type.organization, @current_employment.position), class: "btn btn-outline-primary btn-sm"
-  .row
-    .col-12
-      .card
-        .card-header
-          .d-flex.justify-content-between.align-items-center
-            %h5.mb-0 My Assignments
-            = link_to "Choose Assignments", choose_assignments_person_assignment_tenures_path(@person), class: "btn btn-primary"
+                    Ended: #{@current_employment.ended_at.strftime('%B %d, %Y')}
+                  - else
+                    %br
+                    %span.text-success Duration: #{((Date.current - @current_employment.started_at.to_date).to_i / 30.44).round(1)} months
+            .col-md-4.text-end
+              = link_to "View Position Details", edit_organization_position_path(@current_employment.position.position_type.organization, @current_employment.position), class: "btn btn-outline-primary btn-sm"
+    
+    .card
+      .card-header
+        %h5.mb-0 My Assignments
 
         .card-body
           - if @assignment_data.any?
             = form_with url: person_assignment_tenures_path(@person), method: :patch, local: true do |form|
               - @assignment_data.each do |data|
+                - tenure_start = data[:tenure]&.started_at&.strftime('%B %d, %Y')
+                - employee_first_name = @person.first_name
+                - assignment_name = data[:assignment].title
+                
                 .assignment-row.mb-4.p-3.border.rounded
                   .row
                     .col-md-3
                       %h6= data[:assignment].title
                   .row.mt-3
                     .col-4
-                      %nbsp
+                      - if data[:tenure]
+                        %strong=employee_first_name
+                        plans on / has been spending this much 👇🏾 of their energy on 
+                        %strong=assignment_name
+                        since
+                        =tenure_start
+                      - else
+                        %strong=employee_first_name
+                        plans to start on spending this much 👇🏾 of their energy on 
+                        %strong=assignment_name
+                        
                     .col-8
                       - if data[:open_check_in]
                         .alert.alert-info.mb-1
@@ -64,14 +85,7 @@
                           %i.bi.bi-plus-circle.me-2
                           No active check-in. Fill out fields below to create a new check-in.
                   .row.mb-3
-                    .col-12.col-md-4
-                      - if data[:tenure]
-                        - tenure_start = data[:tenure].started_at.strftime('%B %d, %Y')
-                        - employee_first_name = @person.first_name
-                        - assignment_name = data[:assignment].title
-                        = form.label "tenure_#{data[:assignment].id}_anticipated_energy", "#{employee_first_name} plans on spending this much of their energy on #{assignment_name} since #{tenure_start}", class: "form-label"
-                      - else
-                        = form.label "tenure_#{data[:assignment].id}_anticipated_energy", "Anticipated Energy %", class: "form-label"
+                    .col-12.col-md-4.d-flex.flex-column.align-items-start
                       = form.select "tenure_#{data[:assignment].id}_anticipated_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:tenure]&.anticipated_energy_percentage), { prompt: 'Select energy %...' }, { class: "form-select" }
 
                     .col-12.col-md-8
@@ -80,29 +94,100 @@
                           .mb-3
                             = form.label "check_in_#{data[:assignment].id}_actual_energy", "Actual Energy %", class: "form-label"
                             = form.select "check_in_#{data[:assignment].id}_actual_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:open_check_in]&.actual_energy_percentage), { prompt: 'Select energy %...' }, { class: "form-select" }
-                        
-                        .col-md-4
-                          .mb-3
-                            = form.label "check_in_#{data[:assignment].id}_employee_rating", "My Rating", class: "form-label"
-                            = form.select "check_in_#{data[:assignment].id}_employee_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], data[:open_check_in]&.employee_rating), { prompt: 'Select rating...' }, { class: "form-select" }
-                        
+                            %small.text-muted Filled in by #{employee_first_name}, reflecting on their time taking on this Assignment
                         .col-md-4
                           .mb-3
                             = form.label "check_in_#{data[:assignment].id}_personal_alignment", "Personal Alignment", class: "form-label"
                             = form.select "check_in_#{data[:assignment].id}_personal_alignment", options_for_select([['I love this', 'love'], ['I like this', 'like'], ['I\'m neutral', 'neutral'], ['I prefer not to do this', 'prefer_not'], ['Only if necessary', 'only_if_necessary']], data[:open_check_in]&.employee_personal_alignment), { prompt: 'Select alignment...' }, { class: "form-select" }
+                            %small.text-muted Filled in by #{employee_first_name}, reflecting on their time taking on this Assignment
+
+                        .col-md-4
+                          .mb-3
+                            = form.label "check_in_#{data[:assignment].id}_employee_rating", "My Rating", class: "form-label"
+                            = form.select "check_in_#{data[:assignment].id}_employee_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], data[:open_check_in]&.employee_rating), { prompt: 'Select rating...' }, { class: "form-select" }
+                            %small.text-muted Filled in by YOU, reflecting on your performance while taking on this Assignment
+                        
 
                       .row
                         .col-12
                           .mb-3
                             = form.label "check_in_#{data[:assignment].id}_employee_private_notes", "Private Notes", class: "form-label"
                             = form.text_area "check_in_#{data[:assignment].id}_employee_private_notes", value: data[:open_check_in]&.employee_private_notes, rows: 2, class: "form-control", placeholder: "Notes for my eyes only..."
+                            %small.text-muted Filled in by YOU, so you remember when it is time to do the synchronous conversation
 
               .row.mt-4
-                .col-12
-                  .d-flex.justify-content-between
-                    = link_to "Back to Profile", person_path(@person), class: "btn btn-outline-secondary"
-                    = form.submit "Update Assignments", class: "btn btn-primary"
+                .col-12.text-end
+                  = form.submit "Update Assignments", class: "btn btn-primary"
           - else
-            .text-center.py-4
-              %p.text-muted No assignments found for your current position.
-              = link_to "Choose Assignments", choose_assignments_person_assignment_tenures_path(@person), class: "btn btn-primary"
+            .alert.alert-info
+              %h6.mb-2
+                %i.bi.bi-info-circle.me-2
+                No Assignments Found
+              %p.mb-2 No assignments found for your current position.
+              = link_to "Choose Assignments", choose_assignments_person_assignment_tenures_path(@person), class: "btn btn-primary btn-sm"
+
+/ Modal for Filter & Sort
+#assignmentTenuresFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "assignmentTenuresFilterModalLabel", tabindex: "-1"}
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        %h5.modal-title#assignmentTenuresFilterModalLabel
+          %i.bi.bi-funnel.me-2
+          Filter & Sort Assignments (coming soon)
+        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+      .modal-body
+        .row
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-funnel.me-2
+              Filters
+            .mb-3
+              %label.form-label Assignment Status
+              .form-check
+                %input.form-check-input{checked: "checked", type: "checkbox", name: "status", value: "active"}
+                %label.form-check-label Active Assignments
+              .form-check
+                %input.form-check-input{type: "checkbox", name: "status", value: "inactive"}
+                %label.form-check-label Inactive Assignments
+            .mb-3
+              %label.form-label Energy Level
+              %select.form-select
+                %option All Energy Levels
+                %option Low (0-25%)
+                %option Medium (26-75%)
+                %option High (76-100%)
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-sort-down.me-2
+              Sort Options
+            .mb-3
+              %label.form-label Sort By
+              %select.form-select
+                %option Assignment Name
+                %option Energy Level
+                %option Start Date
+                %option Last Check-in
+            .mb-3
+              %label.form-label View Style
+              .form-check
+                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "form"}
+                %label.form-check-label
+                  %i.bi.bi-card-text.me-2
+                  Form View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "table"}
+                %label.form-check-label
+                  %i.bi.bi-table.me-2
+                  Table View
+            .mb-3
+              %label.form-label Spotlight
+              %select.form-select
+                %option No Spotlight
+                %option High Energy Assignments
+                %option Recent Check-ins
+                %option Overdue Check-ins
+      .modal-footer
+        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+        %button.btn.btn-primary.disabled{type: "button"}
+          %i.bi.bi-check.me-2
+          Apply Filters

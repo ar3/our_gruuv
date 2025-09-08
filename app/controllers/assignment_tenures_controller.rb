@@ -1,4 +1,5 @@
 class AssignmentTenuresController < ApplicationController
+  layout 'authenticated-v2-0'
   before_action :require_authentication
   before_action :set_person
   after_action :verify_authorized
