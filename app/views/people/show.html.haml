@@ -9,7 +9,7 @@
   = render 'view_switcher'
 
 - content_for :go_back_link do
-  = link_to organization_employees_path(current_organization), class: "text-muted text-decoration-none" do
+  = link_to organization_employees_path(current_organization), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     ="Back to Teammates in #{current_organization.display_name}"
 

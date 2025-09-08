@@ -1,0 +1,27 @@
+- company = Organization.companies.first
+- organizations = company&.self_and_descendants || []
+- # Sort by hierarchy level first, then alphabetically within each level
+- organizations = organizations.sort_by { |org| [org.ancestry_depth, org.name] }
+- selected_id = defined?(selected_organization) ? selected_organization&.id : company&.id
+
+- # Create options with hierarchy indicators
+- options = organizations.map do |org|
+  - depth = org.ancestry_depth
+  - prefix = depth > 0 ? "#{'-' * depth} " : ""
+  - ["#{prefix}#{org.name}", org.id]
+- options = [['Select Organization', '']] + options
+
+- if defined?(form) && form
+  %div.mb-3
+    = form.label :organization_id, 'Organization', class: 'form-label'
+    = form.select :organization_id, 
+                  options,
+                  { selected: selected_id },
+                  { class: 'form-select' }
+- else
+  %div.mb-3
+    = label_tag :organization_id, 'Organization', class: 'form-label'
+    = select_tag :organization_id,
+                 options,
+                 { selected: selected_id },
+                 { class: 'form-select' }

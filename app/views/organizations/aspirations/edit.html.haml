@@ -1,0 +1,38 @@
+- content_for :go_back_link do
+  = link_to organization_aspiration_path(@organization, @aspiration), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Aspiration
+
+%div.container-fluid
+  %div.row
+    %div.col-12
+      %div.d-flex.justify-content-between.align-items-center.mb-4
+        %h1 Edit Aspiration
+      
+      %div.card
+        %div.card-body
+          = form_with model: [@organization, @aspiration], url: organization_aspiration_path(@organization, @aspiration), local: true do |form|
+            - if @aspiration.errors.any?
+              %div.alert.alert-danger
+                %h4= "#{pluralize(@aspiration.errors.count, "error")} prohibited this aspiration from being saved:"
+                %ul.mb-0
+                  - @aspiration.errors.full_messages.each do |message|
+                    %li= message
+            
+            = render 'shared/organization_dropdown', form: form, selected_organization: @aspiration.organization
+            
+            %div.mb-3
+              = form.label :name, class: 'form-label'
+              = form.text_field :name, class: 'form-control'
+            
+            %div.mb-3
+              = form.label :description, class: 'form-label'
+              = form.text_area :description, class: 'form-control', rows: 4
+            
+            %div.mb-3
+              = form.label :sort_order, class: 'form-label'
+              = form.number_field :sort_order, class: 'form-control'
+            
+            %div
+              = form.submit 'Update Aspiration', class: 'btn btn-primary'
+              = link_to 'Cancel', organization_aspiration_path(@organization, @aspiration), class: 'btn btn-outline-secondary ms-2'

@@ -89,6 +89,9 @@ get '/login', to: 'auth#login', as: :login
     # Abilities management
     resources :abilities, module: :organizations
     
+    # Aspirations management
+    resources :aspirations, module: :organizations
+    
     # Seats management
     resources :seats, module: :organizations do
       member do

@@ -1,0 +1,24 @@
+- content_for :go_back_link do
+  = link_to organization_aspirations_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Aspirations
+
+%div.container-fluid
+  %div.row
+    %div.col-12
+      %div.d-flex.justify-content-between.align-items-center.mb-4
+        %h1= @aspiration.name
+        %div
+          = link_to 'Edit', edit_organization_aspiration_path(@organization, @aspiration), class: 'btn btn-primary me-2'
+      
+      %div.card
+        %div.card-body
+          %h5.card-title= @aspiration.name
+          - if @aspiration.description.present?
+            %p.card-text= @aspiration.description
+          - else
+            %p.card-text.text-muted No description provided
+          
+          %div.mt-3
+            %small.text-muted
+              Sort Order: #{@aspiration.sort_order}

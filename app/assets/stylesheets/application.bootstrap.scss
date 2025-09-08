@@ -227,6 +227,23 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   }
 }
 
+// ===== BACK LINK STYLES =====
+// Standard styling for back navigation links
+.go-back-link {
+  color: #6c757d !important;
+  text-decoration: none !important;
+  
+  &:hover {
+    color: #495057 !important;
+    text-decoration: none !important;
+  }
+  
+  &:focus {
+    color: #495057 !important;
+    text-decoration: none !important;
+  }
+}
+
 // ===== NAVIGATION STYLES =====
 // 3-level dropdown navigation
 .dropdown-submenu {
