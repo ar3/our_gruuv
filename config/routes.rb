@@ -154,6 +154,7 @@ get '/login', to: 'auth#login', as: :login
     member do
       get :public
       get :teammate
+      get :growth
     end
     resources :employment_tenures, only: [:new, :create, :edit, :update, :destroy, :show] do
       collection do

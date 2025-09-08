@@ -80,7 +80,7 @@ module PeopleHelper
     end
   end
 
-  def current_view_name
+  def people_current_view_name
     return 'Management Mode' unless action_name
     
     case action_name
@@ -90,6 +90,8 @@ module PeopleHelper
       'Teammate Mode'
     when 'public'
       'Public Mode'
+    when 'growth'
+      'Growth View'
     else
       action_name.titleize
     end

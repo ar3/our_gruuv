@@ -1,0 +1,139 @@
+- content_for :header do
+  %h1.mb-0= @person.display_name
+  %small.text-muted Growth & Development View
+
+- content_for :header_action do
+  = render 'view_switcher'
+
+- content_for :go_back_link do
+  = link_to organization_employees_path(@current_organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    ="Back to Teammates in #{@current_organization.display_name}"
+
+.row.mb-4
+  .col-md-6
+    %h3
+      %strong Current Position:
+    - if @current_employment&.position
+      %p
+        %strong= @current_employment.position.display_name
+        %br
+        %small.text-muted= @current_employment.position.position_summary.presence || "No summary provided"
+    - else
+      %p.text-muted No current position assigned
+
+  .col-md-6
+    %h3
+      %strong Manager:
+    - if @current_employment&.manager
+      %p
+        = link_to person_path(@current_employment.manager), class: "text-decoration-none" do
+          = @current_employment.manager.display_name
+        %br
+        %small.text-muted= @current_employment.manager.employment_tenures.active.first&.position&.display_name
+    - else
+      %p.text-muted No manager assigned
+
+-# Current Assignments
+- if @current_employment&.position&.position_assignments&.any?
+  %hr.mb-4.mt-4/
+  
+  %h3.mb-3
+    %strong Current Assignments:
+  
+  - @current_employment.position.position_assignments.includes(:assignment).each_with_index do |pa, index|
+    - if index > 0
+      %hr.my-4
+    
+    .card.mb-3
+      .card-header.d-flex.justify-content-between.align-items-center
+        .d-flex.align-items-center
+          - if pa.assignment_type == 'required'
+            %span.badge.bg-primary.me-2 Required
+          - else
+            %span.badge.bg-secondary.me-2 Suggested
+          %strong= pa.assignment.title
+        .text-muted
+          %small= "#{pa.min_estimated_energy}% - #{pa.max_estimated_energy}% time allocation"
+      
+      .card-body
+        %p= pa.assignment.required_activities.presence || "No description provided"
+        
+        - if pa.assignment.assignment_outcomes.any?
+          %h6.mt-3.mb-2
+            %strong Expected Outcomes:
+          %ul.mb-0
+            - pa.assignment.assignment_outcomes.each do |outcome|
+              %li= outcome.description
+
+-# Achieved Milestones
+- if @person.person_milestones.any?
+  %hr.mb-4.mt-4/
+
+  %h3.mb-1.mt-4
+    %strong Achieved Milestones
+    %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#achievedMilestones", "aria-expanded" => "false", "aria-controls" => "achievedMilestones"}
+      %span#milestonesExpandIcon.not-collapsed
+        %i.bi.bi-chevron-up
+        %small.text-muted (Hide milestones)
+      %span#milestonesCollapseText.collapsed
+        %i.bi.bi-chevron-down
+        %small.text-muted="(Show #{pluralize(@person.person_milestones.count, 'milestone')})"
+  
+  .collapse#achievedMilestones
+    %p.text-muted.mb-3
+      %em These are the ability milestones this person has achieved, demonstrating their growth and development.
+    
+    - @person.person_milestones.includes(:ability).each_with_index do |milestone, index|
+      - if index > 0
+        %hr.my-3
+      
+      .d-flex.justify-content-between.align-items-center.py-2
+        .flex-grow-1
+          %strong= milestone.ability.name
+          %br
+          %small.text-muted Level #{milestone.milestone_level}
+        .text-muted
+          %small= milestone.created_at.strftime('%b %Y')
+
+-# Assignment Tenures (Current Assignments)
+- if @person.assignment_tenures.active.any?
+  %hr.mb-4.mt-4/
+
+  %h3.mb-1.mt-4
+    %strong Current Assignment Tenures
+    %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#currentAssignments", "aria-expanded" => "false", "aria-controls" => "currentAssignments"}
+      %span#assignmentsExpandIcon.not-collapsed
+        %i.bi.bi-chevron-up
+        %small.text-muted (Hide current assignments)
+      %span#assignmentsCollapseText.collapsed
+        %i.bi.bi-chevron-down
+        %small.text-muted="(Show #{pluralize(@person.assignment_tenures.active.count, 'assignment')})"
+  
+  .collapse#currentAssignments
+    %p.text-muted.mb-3
+      %em These are the specific assignments this person is currently working on.
+    
+    - @person.assignment_tenures.active.includes(:assignment).each_with_index do |tenure, index|
+      - if index > 0
+        %hr.my-3
+      
+      .d-flex.justify-content-between.align-items-center.py-2
+        .flex-grow-1
+          %strong= tenure.assignment.title
+          %br
+          %small.text-muted= "#{tenure.anticipated_energy_percentage}% time allocation"
+        .text-muted
+          %small Started #{tenure.started_at.strftime('%b %Y')}
+
+- if @current_employment&.position&.position_assignments&.empty? && @person.person_milestones.empty? && @person.assignment_tenures.active.empty?
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No Growth Data Available
+    %p.mb-2 This person has no current assignments, milestones, or assignment tenures to display.
+    = link_to "Edit Position", edit_organization_position_path(@current_organization, @current_employment.position), class: "btn btn-info btn-sm" if @current_employment&.position
+
+.mt-5
+  %p.text-muted
+    %em This growth view provides a comprehensive overview of the person's current position, assignments, and achieved milestones for development planning and performance management.

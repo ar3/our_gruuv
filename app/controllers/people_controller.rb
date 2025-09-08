@@ -1,5 +1,5 @@
 class PeopleController < ApplicationController
-  layout 'authenticated-v2-0', only: [:show, :public, :teammate]
+  layout 'authenticated-v2-0', only: [:show, :public, :teammate, :growth]
   before_action :require_login, except: [:public]
   before_action :set_person, except: [:index]
   after_action :verify_authorized, except: :index
@@ -44,6 +44,16 @@ class PeopleController < ApplicationController
                                  .order(started_at: :desc)
                                  .decorate
     @person_organization_accesses = @person.person_organization_accesses.includes(:organization)
+  end
+
+  def growth
+    authorize @person, :manager?
+    # Growth view - detailed view for managers to see person's position, assignments, and milestones
+    @employment_tenures = @person.employment_tenures.includes(:company, :position, :manager)
+                                 .order(started_at: :desc)
+                                 .decorate
+    @current_employment = @employment_tenures.find { |t| t.ended_at.nil? }
+    @current_organization = @current_employment&.company
   end
 
 
