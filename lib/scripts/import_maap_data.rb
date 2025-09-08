@@ -101,7 +101,13 @@ class MaapDataImporter
         description: 'As a champion of employee development, you help us live our Keep Growing value everyday by operationalizing the growth mindset and helping individuals, and therefore the company, reach its potential.',
         abilities: ['Executive Coaching', 'Learning & Development', 'Emotional Intelligence'],
         energy_percentage: 30,
-        required: true
+        required: true,
+        outcomes: [
+          { description: '% of employees with active growth plan', type: 'quantitative' },
+          { description: '% of employees completing skills & dream goals', type: 'quantitative' },
+          { description: '% of position filled by internal candidates', type: 'quantitative' },
+          { description: '% of employees who earn level increases/promotions', type: 'quantitative' }
+        ]
       },
       {
         title: 'Quarterly Conversation Coordinator',
@@ -109,7 +115,12 @@ class MaapDataImporter
         description: 'Employees deserve to know where they stand, regularly. You keep the company accountable to holding regular performance reviews and growth conversations.',
         abilities: ['Project Management', 'Communication', 'Data Insights'],
         energy_percentage: 20,
-        required: true
+        required: true,
+        outcomes: [
+          { description: '% of eligible employees with completed quarterly reviews', type: 'quantitative' },
+          { description: 'Employees agree "I know the process for quarterly conversations and have the support to execute"', type: 'sentiment' },
+          { description: 'Execs agree, "I have information and insights from quarterly reviews that help us manage our talent and talent systems"', type: 'sentiment' }
+        ]
       },
       {
         title: 'Learning Librarian',
@@ -117,7 +128,12 @@ class MaapDataImporter
         description: 'A curation of learning and development resources for all. The Learning Librarian makes it easy for employees to have the resources they need to upskill and growth.',
         abilities: ['Communication', 'Learning & Development', 'Data Insights'],
         energy_percentage: nil,
-        required: true
+        required: true,
+        outcomes: [
+          { description: '#/% participation in learning programs (L&Ls, trainings, mentorship)', type: 'quantitative' },
+          { description: 'Employees agree "I have the resources I need to help me grow."', type: 'sentiment' },
+          { description: 'Guru resources for L&D are relevant, regularly updated, and utilized', type: 'sentiment' }
+        ]
       },
       {
         title: 'Tooling Admin - CultureAmp',
@@ -125,7 +141,11 @@ class MaapDataImporter
         description: 'We ensure our tools are maintained, supporting business needs, and delivering ROI.',
         abilities: ['Communication', 'Tool Proficiency', 'Data Insights'],
         energy_percentage: nil,
-        required: true
+        required: true,
+        outcomes: [
+          { description: 'Employees that are the intended beneficiaries of a tool in which you are the admin of agrees: "In pursuit of a key aspect of employee enablement; I have the materials and equipment I need to do my work right... I believe this tool is helping me do continually better work!"', type: 'sentiment' },
+          { description: 'Operations agrees: "I understand the why behind this tool and I am confident in the projected costs such that this is a line item I don\'t have to worry about when doing budget re-alignments"', type: 'sentiment' }
+        ]
       },
       {
         title: 'Lifeline Interview Facilitator',
@@ -133,7 +153,11 @@ class MaapDataImporter
         description: 'Hiring managers need to understand someone\'s career journey, and their aspirations for the future, to make informed decisions in the final stages of the hiring process.',
         abilities: ['Interviewing', 'Emotional Intelligence'],
         energy_percentage: nil,
-        required: false
+        required: false,
+        outcomes: [
+          { description: 'Hiring managers agree, "The Lifeline Interview helped me make an informed hiring decision"', type: 'sentiment' },
+          { description: '% offer acceptance rate', type: 'quantitative' }
+        ]
       },
       {
         title: 'New Hire Onboarding Agent',
@@ -141,7 +165,12 @@ class MaapDataImporter
         description: 'We set new hires up for success!',
         abilities: ['Training', 'Communication'],
         energy_percentage: nil,
-        required: false
+        required: false,
+        outcomes: [
+          { description: 'Time to value for new hires', type: 'quantitative' },
+          { description: 'New hire 90 day satisfaction', type: 'sentiment' },
+          { description: 'Engagement with Growth resources by X day', type: 'quantitative' }
+        ]
       }
     ]
 
@@ -180,6 +209,23 @@ class MaapDataImporter
           end
         else
           @errors << "Ability not found: #{ability_name} for assignment #{data[:title]}"
+        end
+      end
+      
+      # Always create assignment outcomes (idempotent)
+      if data[:outcomes]
+        data[:outcomes].each do |outcome_data|
+          outcome = AssignmentOutcome.find_or_create_by(assignment: assignment, description: outcome_data[:description]) do |ao|
+            ao.outcome_type = outcome_data[:type]
+          end
+          
+          if outcome.persisted? && outcome.previously_new_record?
+            puts "    ✅ Added outcome: #{outcome_data[:description]} (#{outcome_data[:type]})"
+            @created_count += 1
+          else
+            puts "    ⏭️  Outcome already exists: #{outcome_data[:description]}"
+            @skipped_count += 1
+          end
         end
       end
     end
