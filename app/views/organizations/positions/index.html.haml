@@ -22,7 +22,10 @@
         .card.mb-3
           .card-header.d-flex.justify-content-between.align-items-center{"data-bs-toggle" => "collapse", "data-bs-target" => "#positionType#{position_type.id}", "aria-expanded" => "false", "aria-controls" => "positionType#{position_type.id}", style: "cursor: pointer;"}
             .d-flex.align-items-center
-              %i.bi.bi-chevron-right.me-2.position-type-chevron{"data-position-type-id" => position_type.id}
+              %span.not-collapsed{id: "positionTypeExpandIcon#{position_type.id}"}
+                %i.bi.bi-chevron-down.me-2
+              %span.collapsed{id: "positionTypeCollapseIcon#{position_type.id}"}
+                %i.bi.bi-chevron-right.me-2
               = link_to position_type_path(position_type), class: "text-decoration-none text-dark fw-bold" do
                 = position_type.external_title
               %span.badge.bg-secondary.ms-2= "#{position_type.positions.count} position#{'s' if position_type.positions.count != 1}"
@@ -138,24 +141,3 @@
           %i.bi.bi-check.me-2
           Apply Filters
 
-:javascript
-  document.addEventListener('DOMContentLoaded', function() {
-    // Handle chevron rotation for position type collapse
-    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function(element) {
-      element.addEventListener('click', function() {
-        const targetId = this.getAttribute('data-bs-target');
-        const chevron = this.querySelector('.position-type-chevron');
-        
-        // Toggle chevron direction
-        if (chevron) {
-          if (this.getAttribute('aria-expanded') === 'false') {
-            chevron.classList.remove('bi-chevron-right');
-            chevron.classList.add('bi-chevron-down');
-          } else {
-            chevron.classList.remove('bi-chevron-down');
-            chevron.classList.add('bi-chevron-right');
-          }
-        }
-      });
-    });
-  });
