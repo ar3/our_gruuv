@@ -1,3 +1,37 @@
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0= @assignment.title
+    .dropdown
+      %button.btn.btn-outline-secondary.dropdown-toggle{"data-bs-toggle" => "dropdown", :type => "button"}
+        %i.bi.bi-three-dots.me-2
+        Actions
+      %ul.dropdown-menu
+        %li
+          = link_to "#", class: "dropdown-item" do
+            %i.bi.bi-eye.me-2
+            View Details
+        %li
+          = link_to "#", class: "dropdown-item" do
+            %i.bi.bi-people.me-2
+            View Assignees
+        %li
+          = link_to "#", class: "dropdown-item" do
+            %i.bi.bi-graph-up.me-2
+            View Analytics
+        %li
+          %hr.dropdown-divider
+        %li
+          = link_to edit_organization_assignment_path(@organization, @assignment), class: "dropdown-item" do
+            %i.bi.bi-pencil.me-2
+            Edit Assignment
+        %li
+          = link_to organization_assignment_path(@organization, @assignment), 
+            method: :delete, 
+            data: { confirm: "Are you sure you want to delete this assignment?" }, 
+            class: "dropdown-item text-danger" do
+            %i.bi.bi-trash.me-2
+            Delete Assignment
+
 - content_for :go_back_link do
   = link_to organization_assignments_path(@organization), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
@@ -5,36 +39,26 @@
 
 .row.justify-content-center
   .col-lg-10
-    .d-flex.justify-content-between.align-items-center.mb-4
-      .dropdown
-        %button.btn.btn-outline-secondary.dropdown-toggle{"data-bs-toggle" => "dropdown", :type => "button"}
-          %i.bi.bi-three-dots
-        %ul.dropdown-menu
-          %li
-            = link_to "Edit", edit_organization_assignment_path(@organization, @assignment), class: "dropdown-item"
-          %li
-            = link_to "Delete", organization_assignment_path(@organization, @assignment), 
-              method: :delete, 
-              data: { confirm: "Are you sure?" }, 
-              class: "dropdown-item text-danger"
-      
-      .card
-        .card-header.bg-primary.text-white
-          %h3.mb-0= @assignment.title
-          %p.mb-0.text-light= @assignment.tagline
-        
-        .card-body
-          .row
-            .col-md-8.col-sm-12
-              %h5.mb-2
-                %i.bi.bi-building.me-2
-                Company
-              %p= link_to @assignment.company_name, organization_path(@organization), class: "text-decoration-none"
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-info-circle.me-2
+          Assignment Details
+      .card-body
+        .row
+          .col-md-8
+            - if @assignment.tagline.present?
+              .mb-3
+                %h6.text-muted Tagline
+                %p.mb-0= @assignment.tagline
             
-              %h5.mb-3
-                %i.bi.bi-list-check.me-2
-                Outcomes
-              - if @assignment.assignment_outcomes.any?
+            .mb-3
+              %h6.text-muted Company
+              %p.mb-0= link_to @assignment.company_name, organization_path(@organization), class: "text-decoration-none"
+            
+            - if @assignment.assignment_outcomes.any?
+              .mb-3
+                %h6.text-muted Outcomes
                 - @assignment.assignment_outcomes.ordered.each do |outcome|
                   .card.mb-2
                     .card-body.py-2
@@ -44,7 +68,8 @@
                             = render_markdown(outcome.description)
                         %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
                           = outcome.outcome_type.titleize
-              - else
+            - else
+              .mb-3
                 .alert.alert-warning
                   %h6.mb-2
                     %i.bi.bi-exclamation-triangle.me-2
@@ -52,33 +77,35 @@
                   %p.mb-2 Outcomes help clarify what success looks like for this assignment.
                   = link_to "Add Outcomes", edit_organization_assignment_path(@organization, @assignment), class: "btn btn-warning btn-sm"
 
-            .col-md-4.col-sm-12
+          .col-md-4.border-start.border-secondary
+            .d-grid.gap-2
               - if @assignment.required_activities.present?
-                %h5.mb-2
-                  %i.bi.bi-list-task.me-2
-                  Required Activities
-                .markdown-content.markdown-content--bordered
-                  = render_markdown(@assignment.required_activities)
+                .mb-3
+                  %h6.text-muted Required Activities
+                  .markdown-content.markdown-content--bordered
+                    = render_markdown(@assignment.required_activities)
 
               - if @assignment.published_url.present? || @assignment.draft_url.present?
-                %h5.mb-2.mt-3
-                  %i.bi.bi-link-45deg.me-2
-                  Source Documents
-                - if @assignment.published_url.present?
-                  .mb-2
-                    = link_to @assignment.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm" do
-                      %i.bi.bi-file-earmark-text.me-1
-                      Published Version
-                - if @assignment.draft_url.present?
-                  .mb-2
-                    = link_to @assignment.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm" do
-                      %i.bi.bi-file-earmark-text.me-1
-                      Draft Version
-            .col-sm-12
-              - if @assignment.handbook.present?
-                %h5.mb-2.mt-3
-                  %i.bi.bi-book.me-2
-                  Handbook
-                .markdown-content.markdown-content--bordered
-                  = render_markdown(@assignment.handbook)
+                .mb-3
+                  %h6.text-muted Source Documents
+                  - if @assignment.published_url.present?
+                    .mb-2
+                      = link_to @assignment.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm w-100" do
+                        %i.bi.bi-file-earmark-text.me-1
+                        Published Version
+                  - if @assignment.draft_url.present?
+                    .mb-2
+                      = link_to @assignment.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm w-100" do
+                        %i.bi.bi-file-earmark-text.me-1
+                        Draft Version
+
+    - if @assignment.handbook.present?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-book.me-2
+            Handbook
+        .card-body
+          .markdown-content.markdown-content--bordered
+            = render_markdown(@assignment.handbook)
               
