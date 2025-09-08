@@ -5,6 +5,7 @@ class Organizations::PositionsController < ApplicationController
 
   def index
     @positions = @organization.positions.includes(:position_type, :position_level).ordered
+    @position_types = @organization.position_types.includes(:positions, :position_major_level).order(:external_title)
     render layout: 'authenticated-v2-0'
   end
 

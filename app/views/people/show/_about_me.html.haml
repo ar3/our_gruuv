@@ -45,7 +45,7 @@
                         %small.text-muted
                           - company_tenures = @employment_tenures.select { |t| t.company == company }
                           - first_tenure = company_tenures.sort_by(&:started_at).first
-                          - last_tenure = company_tenures.sort_by(&:ended_at).compact.last
+                          - last_tenure = company_tenures.sort_by { |t| t.ended_at || Time.current }.last
                           - if first_tenure
                             = "From #{first_tenure.started_at.strftime('%b %Y')}"
                             - if last_tenure&.ended_at

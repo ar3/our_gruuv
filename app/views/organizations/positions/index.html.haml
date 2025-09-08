@@ -17,56 +17,75 @@
     Filter & Sort
 .row.justify-content-center
   .col-lg-12
-    - if @positions.any?
-      .table-responsive
-        %table.table.table-hover
-          %thead
-            %tr
-              %th Position
-              %th Level
-              %th Assignments
-              %th Actions
-          %tbody
-            - @positions.each do |position|
-              %tr
-                %td
-                  %strong= position.display_name
-                  - if position.position_summary.present?
-                    %br
-                    %small.text-muted= truncate(position.position_summary, length: 100)
-                %td
-                  %span.badge.bg-info= position.position_level.level
-                %td
-                  - if position.required_assignments_count > 0 || position.suggested_assignments_count > 0
-                    %span.badge.bg-primary.me-1
-                      = position.required_assignments_count
-                    %small.text-muted required
-                    - if position.suggested_assignments_count > 0
-                      %br
-                      %span.badge.bg-secondary.me-1
-                        = position.suggested_assignments_count
-                      %small.text-muted suggested
-                  - else
-                    %span.text-muted
-                      %i.bi.bi-exclamation-triangle.me-1
-                      None
-                %td
-                  .btn-group.btn-group-sm
-                    = link_to organization_position_path(@organization, position), class: "btn btn-outline-primary", title: "View" do
-                      %i.bi.bi-eye
-                    = link_to job_description_organization_position_path(@organization, position), class: "btn btn-outline-info", title: "Job Description" do
-                      %i.bi.bi-file-text
-                    = link_to edit_organization_position_path(@organization, position), class: "btn btn-outline-secondary", title: "Edit" do
-                      %i.bi.bi-pencil
-                    = link_to organization_position_path(@organization, position), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure?" } do
-                      %i.bi.bi-trash
+    - if @position_types.any?
+      - @position_types.each do |position_type|
+        .card.mb-3
+          .card-header.d-flex.justify-content-between.align-items-center{"data-bs-toggle" => "collapse", "data-bs-target" => "#positionType#{position_type.id}", "aria-expanded" => "false", "aria-controls" => "positionType#{position_type.id}", style: "cursor: pointer;"}
+            .d-flex.align-items-center
+              %i.bi.bi-chevron-right.me-2.position-type-chevron{"data-position-type-id" => position_type.id}
+              = link_to position_type_path(position_type), class: "text-decoration-none text-dark fw-bold" do
+                = position_type.external_title
+              %span.badge.bg-secondary.ms-2= "#{position_type.positions.count} position#{'s' if position_type.positions.count != 1}"
+            .text-muted
+              %small= position_type.position_major_level.set_name
+          
+          .collapse{"id" => "positionType#{position_type.id}"}
+            .card-body.p-0
+              - if position_type.positions.any?
+                .table-responsive
+                  %table.table.table-hover.mb-0
+                    %thead.table-light
+                      %tr
+                        %th Position
+                        %th Level
+                        %th Assignments
+                        %th Actions
+                    %tbody
+                      - position_type.positions.includes(:position_level).order('position_levels.level').each do |position|
+                        %tr
+                          %td
+                            = link_to organization_position_path(@organization, position), class: "text-decoration-none fw-bold" do
+                              = position.display_name
+                            - if position.position_summary.present?
+                              %br
+                              %small.text-muted= truncate(position.position_summary, length: 100)
+                          %td
+                            %span.badge.bg-info= position.position_level.level
+                          %td
+                            - if position.required_assignments_count > 0 || position.suggested_assignments_count > 0
+                              %span.badge.bg-primary.me-1
+                                = position.required_assignments_count
+                              %small.text-muted required
+                              - if position.suggested_assignments_count > 0
+                                %br
+                                %span.badge.bg-secondary.me-1
+                                  = position.suggested_assignments_count
+                                %small.text-muted suggested
+                            - else
+                              %span.text-muted
+                                %i.bi.bi-exclamation-triangle.me-1
+                                None
+                          %td
+                            .btn-group.btn-group-sm
+                              = link_to organization_position_path(@organization, position), class: "btn btn-outline-primary", title: "View" do
+                                %i.bi.bi-eye
+                              = link_to job_description_organization_position_path(@organization, position), class: "btn btn-outline-info", title: "Job Description" do
+                                %i.bi.bi-file-text
+                              = link_to edit_organization_position_path(@organization, position), class: "btn btn-outline-secondary", title: "Edit" do
+                                %i.bi.bi-pencil
+                              = link_to organization_position_path(@organization, position), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure?" } do
+                                %i.bi.bi-trash
+              - else
+                .p-3.text-center.text-muted
+                  %i.bi.bi-info-circle.me-2
+                  No positions created for this type yet.
     - else
       .alert.alert-info
         %h6.mb-2
           %i.bi.bi-info-circle.me-2
-          No Positions Created
+          No Position Types Created
         %p.mb-2 
-          Create your first position to define roles and responsibilities for your team.
+          Create your first position type to define roles and responsibilities for your team.
         = link_to "Create First Position", new_organization_position_path(@organization), class: "btn btn-primary btn-sm"
 
 / Modal for Filter & Sort
@@ -118,3 +137,25 @@
         %button.btn.btn-primary.disabled{type: "button"}
           %i.bi.bi-check.me-2
           Apply Filters
+
+:javascript
+  document.addEventListener('DOMContentLoaded', function() {
+    // Handle chevron rotation for position type collapse
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function(element) {
+      element.addEventListener('click', function() {
+        const targetId = this.getAttribute('data-bs-target');
+        const chevron = this.querySelector('.position-type-chevron');
+        
+        // Toggle chevron direction
+        if (chevron) {
+          if (this.getAttribute('aria-expanded') === 'false') {
+            chevron.classList.remove('bi-chevron-right');
+            chevron.classList.add('bi-chevron-down');
+          } else {
+            chevron.classList.remove('bi-chevron-down');
+            chevron.classList.add('bi-chevron-right');
+          }
+        }
+      });
+    });
+  });
