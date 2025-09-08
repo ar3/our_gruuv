@@ -21,6 +21,11 @@
     %link{rel: "icon", href: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png"}
     %link{rel: "icon", href: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png"}
 
+    / Google Fonts - Inter + Source Sans Pro with font-display: swap for optimal performance
+    %link{rel: "preconnect", href: "https://fonts.googleapis.com"}
+    %link{rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: true}
+    %link{rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Sans+Pro:wght@400;600&display=swap"}
+    
     / Includes all stylesheet files in app/assets/stylesheets
     = stylesheet_link_tag "application", "data-turbo-track": "reload"
     = javascript_importmap_tags
