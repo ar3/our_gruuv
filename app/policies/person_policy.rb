@@ -1,13 +1,15 @@
 class PersonPolicy < ApplicationPolicy
   def show?
-    # Users can view their own profile, admins can view any, or if they have employment management permissions
+    # Users can view their own profile, admins can view any, or if they have employment management or MAAP permissions
     return true if admin_bypass? || actual_user == record
     
     # Check if user has employment management permissions in any organization
     user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
     user_has_employment_management = user_employment_orgs.any? { |org| actual_user.can_manage_employment?(org) }
+    user_has_maap_management = user_employment_orgs.any? { |org| actual_user.can_manage_maap?(org) }
     
-    user_has_employment_management
+    # Allow access if user has either employment management OR MAAP management permissions
+    user_has_employment_management || user_has_maap_management
   end
 
   def public?

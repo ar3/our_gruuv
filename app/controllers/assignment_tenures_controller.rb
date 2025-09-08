@@ -51,7 +51,7 @@ class AssignmentTenuresController < ApplicationController
     # For each assignment, get the current tenure and open check-in
     @assignment_data = @assignments.map do |assignment|
       tenure = AssignmentTenure.most_recent_for(@person, assignment)
-      open_check_in = tenure&.assignment_check_ins&.open&.first
+      open_check_in = AssignmentCheckIn.where(person: @person, assignment: assignment).open.first
       
       {
         assignment: assignment,
