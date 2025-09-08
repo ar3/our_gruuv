@@ -18,10 +18,10 @@
             %small.text-muted Total Seats
       .col-md-4.border-start.border-secondary
         .d-grid.gap-2
-          = link_to assignments_path, class: "btn btn-outline-primary" do
+          = link_to organization_assignments_path(organization), class: "btn btn-outline-primary" do
             %i.bi.bi-list.me-2
             View All Assignments
-          = link_to new_assignment_path, class: "btn btn-outline-primary" do
+          = link_to new_organization_assignment_path(organization), class: "btn btn-outline-primary" do
             %i.bi.bi-plus-circle.me-2
             Add New Assignment
           = link_to positions_path, class: "btn btn-outline-primary" do

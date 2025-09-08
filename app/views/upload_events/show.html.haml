@@ -168,7 +168,7 @@
                               %span.badge.bg-warning Update
                           %td
                             - if assignment['existing_id']
-                              = link_to assignment['existing_title'], assignment_path(assignment['existing_id']), class: 'text-decoration-none'
+                              = link_to assignment['existing_title'], organization_assignment_path(current_organization, assignment['existing_id']), class: 'text-decoration-none'
                             - else
                               %span.text-muted None
                           %td= assignment['row']

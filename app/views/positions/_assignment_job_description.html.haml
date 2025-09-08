@@ -1,9 +1,9 @@
 -# Assignment Job Description Partial
--# Usage: = render 'assignment_job_description', pa: pa, assignment_type: 'required' or 'suggested'
+-# Usage: = render 'assignment_job_description', pa: pa, assignment_type: 'required' or 'suggested', organization: organization
 
 %h5.mb-0
   %strong= pa.assignment.title
-  = link_to assignment_path(pa.assignment), target: "_blank", class: "ms-2 text-muted" do
+  = link_to organization_assignment_path(organization, pa.assignment), target: "_blank", class: "ms-2 text-muted" do
     %i.bi.bi-link-45deg
 
 %p.mb-2

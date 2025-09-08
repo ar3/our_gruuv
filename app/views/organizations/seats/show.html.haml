@@ -126,7 +126,7 @@
         - if index > 0
           %hr.my-4
         
-        = render 'positions/assignment_job_description', pa: pa, assignment_type: 'required'
+        = render 'positions/assignment_job_description', pa: pa, assignment_type: 'required', organization: organization
 
     -# Suggested Assignments
     - if @seat.suggested_assignments.any?
@@ -150,7 +150,7 @@
           - if index > 0
             %hr.my-4
           
-          = render 'positions/assignment_job_description', pa: pa, assignment_type: 'suggested'
+          = render 'positions/assignment_job_description', pa: pa, assignment_type: 'suggested', organization: organization
 
     - if @seat.required_assignments.empty? && @seat.suggested_assignments.empty?
       .alert.alert-warning

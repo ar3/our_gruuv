@@ -1,21 +1,22 @@
-.container.mt-4
-  .row.justify-content-center
-    .col-lg-10
-      .d-flex.justify-content-between.align-items-center.mb-4
-        = link_to assignments_path, class: "btn btn-outline-secondary" do
-          %i.bi.bi-arrow-left.me-1
-          Back to Assignments
-        .dropdown
-          %button.btn.btn-outline-secondary.dropdown-toggle{"data-bs-toggle" => "dropdown", :type => "button"}
-            %i.bi.bi-three-dots
-          %ul.dropdown-menu
-            %li
-              = link_to "Edit", edit_assignment_path(@assignment), class: "dropdown-item"
-            %li
-              = link_to "Delete", assignment_path(@assignment), 
-                method: :delete, 
-                data: { confirm: "Are you sure?" }, 
-                class: "dropdown-item text-danger"
+- content_for :go_back_link do
+  = link_to organization_assignments_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Assignments
+
+.row.justify-content-center
+  .col-lg-10
+    .d-flex.justify-content-between.align-items-center.mb-4
+      .dropdown
+        %button.btn.btn-outline-secondary.dropdown-toggle{"data-bs-toggle" => "dropdown", :type => "button"}
+          %i.bi.bi-three-dots
+        %ul.dropdown-menu
+          %li
+            = link_to "Edit", edit_organization_assignment_path(@organization, @assignment), class: "dropdown-item"
+          %li
+            = link_to "Delete", organization_assignment_path(@organization, @assignment), 
+              method: :delete, 
+              data: { confirm: "Are you sure?" }, 
+              class: "dropdown-item text-danger"
       
       .card
         .card-header.bg-primary.text-white
@@ -28,7 +29,7 @@
               %h5.mb-2
                 %i.bi.bi-building.me-2
                 Company
-              %p= link_to @assignment.company_name, organization_path(@assignment.company), class: "text-decoration-none"
+              %p= link_to @assignment.company_name, organization_path(@organization), class: "text-decoration-none"
             
               %h5.mb-3
                 %i.bi.bi-list-check.me-2
@@ -49,7 +50,7 @@
                     %i.bi.bi-exclamation-triangle.me-2
                     No Outcomes Defined
                   %p.mb-2 Outcomes help clarify what success looks like for this assignment.
-                  = link_to "Add Outcomes", edit_assignment_path(@assignment), class: "btn btn-warning btn-sm"
+                  = link_to "Add Outcomes", edit_organization_assignment_path(@organization, @assignment), class: "btn btn-warning btn-sm"
 
             .col-md-4.col-sm-12
               - if @assignment.required_activities.present?

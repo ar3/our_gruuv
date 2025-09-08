@@ -158,26 +158,29 @@ class MaapDataImporter
       if assignment.persisted? && assignment.previously_new_record?
         puts "  ✅ Created assignment: #{data[:title]}"
         @created_count += 1
-        
-        # Create assignment-ability relationships
-        data[:abilities].each do |ability_name|
-          ability = @abilities[ability_name]
-          if ability
-            assignment_ability = AssignmentAbility.find_or_create_by(assignment: assignment, ability: ability) do |aa|
-              aa.milestone_level = 2 # Default milestone level
-            end
-            
-            if assignment_ability.persisted? && assignment_ability.previously_new_record?
-              puts "    ✅ Added ability requirement: #{ability_name} (Level 2)"
-              @created_count += 1
-            end
-          else
-            @errors << "Ability not found: #{ability_name} for assignment #{data[:title]}"
-          end
-        end
       else
         puts "  ⏭️  Assignment already exists: #{data[:title]}"
         @skipped_count += 1
+      end
+      
+      # Always create assignment-ability relationships (idempotent)
+      data[:abilities].each do |ability_name|
+        ability = @abilities[ability_name]
+        if ability
+          assignment_ability = AssignmentAbility.find_or_create_by(assignment: assignment, ability: ability) do |aa|
+            aa.milestone_level = 2 # Default milestone level
+          end
+          
+          if assignment_ability.persisted? && assignment_ability.previously_new_record?
+            puts "    ✅ Added ability requirement: #{ability_name} (Level 2)"
+            @created_count += 1
+          else
+            puts "    ⏭️  Ability requirement already exists: #{ability_name}"
+            @skipped_count += 1
+          end
+        else
+          @errors << "Ability not found: #{ability_name} for assignment #{data[:title]}"
+        end
       end
     end
   end

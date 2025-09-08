@@ -37,13 +37,13 @@
             %ul
               - @position.required_assignments.each do |pa|
                 %li
-                  = link_to pa.decorate.display_title, assignment_path(pa.assignment), class: "text-decoration-none"
+                  = link_to pa.decorate.display_title, organization_assignment_path(@position.company, pa.assignment), class: "text-decoration-none"
           - if @position.suggested_assignments.any?
             %h6.text-info.mt-3 Suggested Assignments (#{@position.suggested_assignments_count})
             %ul
               - @position.suggested_assignments.each do |pa|
                 %li
-                  = link_to pa.decorate.display_title, assignment_path(pa.assignment), class: "text-decoration-none"
+                  = link_to pa.decorate.display_title, organization_assignment_path(@position.company, pa.assignment), class: "text-decoration-none"
         - else
           .alert.alert-warning
             %h6.mb-2

@@ -6,8 +6,7 @@ Rails.application.routes.draw do
   get "positions/show"
   get "positions/new"
   get "positions/edit"
-  # Assignments routes
-  resources :assignments
+  # Assignments routes - moved to organization namespace
   resources :positions do
     member do
       get :job_description
@@ -88,6 +87,9 @@ get '/login', to: 'auth#login', as: :login
     
     # Abilities management
     resources :abilities, module: :organizations
+    
+    # Assignments management
+    resources :assignments, module: :organizations
     
     # Aspirations management
     resources :aspirations, module: :organizations

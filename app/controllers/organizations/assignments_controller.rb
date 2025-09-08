@@ -1,22 +1,23 @@
-class AssignmentsController < ApplicationController
+class Organizations::AssignmentsController < ApplicationController
+  before_action :set_organization
   before_action :set_assignment, only: [:show, :edit, :update, :destroy]
 
   def index
-    @assignments = Assignment.includes(:company, :assignment_outcomes, :published_external_reference, :draft_external_reference).ordered
+    @assignments = @organization.assignments.includes(:assignment_outcomes, :published_external_reference, :draft_external_reference, :abilities).ordered
+    render layout: 'authenticated-v2-0'
   end
 
   def show
+    render layout: 'authenticated-v2-0'
   end
 
   def new
-    @assignment = Assignment.new
-    @assignment.company_id = params[:company_id] if params[:company_id]
-    @companies = Organization.companies.ordered
+    @assignment = @organization.assignments.build
+    render layout: 'authenticated-v2-0'
   end
 
   def create
-    @assignment = Assignment.new(assignment_params)
-    @companies = Organization.companies.ordered
+    @assignment = @organization.assignments.build(assignment_params)
 
     if @assignment.save
       # Create external references if URLs provided
@@ -27,7 +28,7 @@ class AssignmentsController < ApplicationController
         @assignment.create_outcomes_from_textarea(params[:assignment][:outcomes_textarea])
       end
       
-      redirect_to @assignment, notice: 'Assignment was successfully created.'
+      redirect_to organization_assignment_path(@organization, @assignment), notice: 'Assignment was successfully created.'
     else
       # Preserve outcomes_textarea for re-render
       @assignment.outcomes_textarea = params[:assignment][:outcomes_textarea] if params[:assignment][:outcomes_textarea].present?
@@ -36,12 +37,10 @@ class AssignmentsController < ApplicationController
   end
 
   def edit
-    @companies = Organization.companies.ordered
+    render layout: 'authenticated-v2-0'
   end
 
   def update
-    @companies = Organization.companies.ordered
-    
     if @assignment.update(assignment_params)
       # Update external references
       update_external_references(@assignment, params[:assignment])
@@ -54,7 +53,7 @@ class AssignmentsController < ApplicationController
         @assignment.create_outcomes_from_textarea(params[:assignment][:outcomes_textarea])
       end
       
-      redirect_to @assignment, notice: 'Assignment was successfully updated.'
+      redirect_to organization_assignment_path(@organization, @assignment), notice: 'Assignment was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
     end
@@ -62,17 +61,21 @@ class AssignmentsController < ApplicationController
 
   def destroy
     @assignment.destroy
-    redirect_to assignments_url, notice: 'Assignment was successfully deleted.'
+    redirect_to organization_assignments_path(@organization), notice: 'Assignment was successfully deleted.'
   end
 
   private
 
+  def set_organization
+    @organization = Organization.find(params[:organization_id])
+  end
+
   def set_assignment
-    @assignment = Assignment.find(params[:id])
+    @assignment = @organization.assignments.find(params[:id])
   end
 
   def assignment_params
-    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook, :company_id)
+    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook)
   end
 
   def create_external_references(assignment, params)

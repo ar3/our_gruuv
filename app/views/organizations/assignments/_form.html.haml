@@ -6,19 +6,11 @@
         %li= message
 
 .row
-  .col-md-6
+  .col-md-12
     .mb-3
       = form.label :title, class: "form-label"
       = form.text_field :title, class: "form-control", required: true, placeholder: "e.g., Forward Progress Facilitator"
       %small.form-text.text-muted A noun that conveys what you can be relied upon for
-  
-  .col-md-6
-    .mb-3
-      = form.label :company_id, "Company", class: "form-label"
-      = form.select :company_id, 
-        options_from_collection_for_select(@companies, :id, :name, @assignment.company_id || current_organization&.id), 
-        { prompt: 'Select a company' }, 
-        { class: "form-select", required: true }
 
 .row
   .col-md-12

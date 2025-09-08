@@ -1,0 +1,21 @@
+- content_for :go_back_link do
+  = link_to organization_assignment_path(@organization, @assignment), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Assignment
+
+.row.justify-content-center
+  .col-lg-8
+    .card
+      .card-header
+        %h4.mb-0
+          %i.bi.bi-briefcase.me-2
+          Edit Assignment
+      
+      .card-body
+        = form_with model: [@organization, @assignment], url: organization_assignment_path(@organization, @assignment), local: true do |form|
+          = render 'form', form: form
+          
+          .d-flex.justify-content-between
+            = link_to "Cancel", organization_assignment_path(@organization, @assignment), class: "btn btn-secondary"
+            = form.submit "Update Assignment", class: "btn btn-primary"
+            

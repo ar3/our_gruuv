@@ -26,7 +26,7 @@
               Accountable to Assignments
           .card-body
             %p.small Specific tasks and responsibilities assigned to individuals
-            = link_to "View Assignments", assignments_path, class: "btn btn-sm btn-outline-info"
+            = link_to "View Assignments", organization_assignments_path(current_organization), class: "btn btn-sm btn-outline-info"
       
       .col-md-4
         .card.border-warning
