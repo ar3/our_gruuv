@@ -78,7 +78,15 @@ class Organizations::PositionsController < ApplicationController
 
   def set_related_data
     @position_types = PositionType.joins(:organization).where(organizations: { id: @organization.id })
-    @position_levels = []
+    
+    # Set position levels based on current position's type, or empty if no position
+    if @position&.position_type
+      @position_levels = @position.position_type.position_major_level.position_levels
+    else
+      @position_levels = []
+    end
+    
+    @assignments = @organization.assignments.ordered
   end
 
   def position_params

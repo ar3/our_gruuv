@@ -21,7 +21,7 @@
           Job Description View (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - else
-        = link_to organization_position_job_description_path(@organization, @position), class: 'dropdown-item' do
+        = link_to job_description_organization_position_path(@organization, @position), class: 'dropdown-item' do
           %i.bi.bi-file-text.me-2
           Job Description View
     

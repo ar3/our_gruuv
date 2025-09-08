@@ -7,7 +7,7 @@
 
 .row
   .col-md-12
-    = render 'shared/organization_dropdown', form: form, selected_organization: @organization
+    = render 'shared/organization_dropdown', form: form, selected_organization: @position.position_type&.organization, current_organization: @organization
 
 .row
   .col-md-6
@@ -26,7 +26,7 @@
     .mb-3
       = form.label :position_level_id, "Position Level", class: "form-label"
       = form.select :position_level_id, 
-        options_from_collection_for_select(@position_levels, :id, :level_name, @position.position_level_id), 
+        options_from_collection_for_select(@position_levels, :id, :level, @position.position_level_id), 
         { prompt: 'Select a position level' }, 
         { class: "form-select", required: true, id: "position_level_select" }
       %small.form-text.text-muted Choose the level within the selected position type

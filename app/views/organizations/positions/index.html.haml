@@ -54,7 +54,7 @@
                   .btn-group.btn-group-sm
                     = link_to organization_position_path(@organization, position), class: "btn btn-outline-primary", title: "View" do
                       %i.bi.bi-eye
-                    = link_to organization_position_job_description_path(@organization, position), class: "btn btn-outline-info", title: "Job Description" do
+                    = link_to job_description_organization_position_path(@organization, position), class: "btn btn-outline-info", title: "Job Description" do
                       %i.bi.bi-file-text
                     = link_to edit_organization_position_path(@organization, position), class: "btn btn-outline-secondary", title: "Edit" do
                       %i.bi.bi-pencil

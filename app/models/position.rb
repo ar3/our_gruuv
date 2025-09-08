@@ -21,7 +21,7 @@ class Position < ApplicationRecord
   
   # Instance methods
   def display_name
-    "#{position_type.external_title} - #{position_level.level_name}"
+    "#{position_type.external_title} - #{position_level.level}"
   end
   
   def company

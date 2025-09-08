@@ -1,8 +1,9 @@
-- company = Organization.companies.first
+- company = current_organization&.root_company
+- raise "company is nil" if company.nil?
 - organizations = company&.self_and_descendants || []
 - # Sort by hierarchy level first, then alphabetically within each level
 - organizations = organizations.sort_by { |org| [org.ancestry_depth, org.name] }
-- selected_id = defined?(selected_organization) ? selected_organization&.id : company&.id
+- selected_id = selected_organization&.id
 
 - # Create options with hierarchy indicators
 - options = organizations.map do |org|
