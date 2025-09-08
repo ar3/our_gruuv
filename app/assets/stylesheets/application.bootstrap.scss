@@ -1,3 +1,5 @@
+// Import custom variables BEFORE Bootstrap to override defaults
+@import 'custom-variables';
 @import 'bootstrap/scss/bootstrap';
 @import 'bootstrap-icons/font/bootstrap-icons';
 

@@ -1,0 +1,130 @@
+// Custom Bootstrap Variables - Warm Professional Palette
+// This file must be imported BEFORE bootstrap/scss/bootstrap
+
+// ===== COLOR PALETTE =====
+// Warm Professional Palette
+$primary: #1e40af;        // Navy - Authority, reliability
+$secondary: #78716c;      // Stone - Approachable, warm
+$success: #166534;        // Forest Green - Growth, harmony
+
+// Keep existing semantic colors for universal recognition
+$warning: #fd7e14;        // Orange - Warning states
+$danger: #dc3545;         // Red - Danger/error states
+$info: #0ea5e9;          // Sky Blue - Information
+$light: #f8fafc;          // Light Gray - Backgrounds
+$dark: #1e293b;           // Dark Gray - Text
+
+// ===== THEME COLORS MAP =====
+// Override Bootstrap's default theme colors
+$theme-colors: (
+  "primary": $primary,
+  "secondary": $secondary,
+  "success": $success,
+  "info": $info,
+  "warning": $warning,
+  "danger": $danger,
+  "light": $light,
+  "dark": $dark
+);
+
+// ===== ADDITIONAL CUSTOM COLORS =====
+// Colors that complement the Warm Professional Palette
+$custom-colors: (
+  "stone-50": #fafaf9,
+  "stone-100": #f5f5f4,
+  "stone-200": #e7e5e4,
+  "stone-300": #d6d3d1,
+  "stone-400": #a8a29e,
+  "stone-500": #78716c,
+  "stone-600": #57534e,
+  "stone-700": #44403c,
+  "stone-800": #292524,
+  "stone-900": #1c1917,
+  "navy-50": #eff6ff,
+  "navy-100": #dbeafe,
+  "navy-200": #bfdbfe,
+  "navy-300": #93c5fd,
+  "navy-400": #60a5fa,
+  "navy-500": #3b82f6,
+  "navy-600": #2563eb,
+  "navy-700": #1d4ed8,
+  "navy-800": #1e40af,
+  "navy-900": #1e3a8a,
+  "forest-50": #f0fdf4,
+  "forest-100": #dcfce7,
+  "forest-200": #bbf7d0,
+  "forest-300": #86efac,
+  "forest-400": #4ade80,
+  "forest-500": #22c55e,
+  "forest-600": #16a34a,
+  "forest-700": #15803d,
+  "forest-800": #166534,
+  "forest-900": #14532d
+);
+
+// Merge custom colors with theme colors
+$theme-colors: map-merge($theme-colors, $custom-colors);
+
+// ===== ACCESSIBILITY ENHANCEMENTS =====
+// Ensure sufficient contrast ratios
+$min-contrast-ratio: 4.5;  // WCAG AA standard for normal text
+$min-contrast-ratio-large: 3; // WCAG AA standard for large text
+
+// ===== COMPONENT CUSTOMIZATIONS =====
+// Customize Bootstrap components to work with new palette
+$border-radius: 0.375rem;  // Slightly more rounded for modern feel
+$border-radius-sm: 0.25rem;
+$border-radius-lg: 0.5rem;
+
+// Button customizations
+$btn-border-radius: $border-radius;
+$btn-border-radius-sm: $border-radius-sm;
+$btn-border-radius-lg: $border-radius-lg;
+
+// Card customizations
+$card-border-radius: $border-radius;
+$card-border-color: rgba($secondary, 0.125);
+
+// Form control customizations
+$input-border-radius: $border-radius;
+$input-border-color: rgba($secondary, 0.25);
+$input-focus-border-color: $primary;
+$input-focus-box-shadow: 0 0 0 0.2rem rgba($primary, 0.25);
+
+// ===== TYPOGRAPHY PREPARATION =====
+// Set up for Inter + Source Sans Pro (will be implemented in next commit)
+$font-family-sans-serif: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$headings-font-family: 'Inter', $font-family-sans-serif;
+
+// Font weights
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+// ===== SPACING SYSTEM =====
+// Prepare for 8px grid system (future implementation)
+$spacer: 1rem;
+$spacers: (
+  0: 0,
+  1: $spacer * 0.25,  // 4px
+  2: $spacer * 0.5,   // 8px
+  3: $spacer * 0.75,  // 12px
+  4: $spacer,         // 16px
+  5: $spacer * 1.25, // 20px
+  6: $spacer * 1.5,  // 24px
+  7: $spacer * 1.75, // 28px
+  8: $spacer * 2,    // 32px
+  9: $spacer * 2.25, // 36px
+  10: $spacer * 2.5, // 40px
+  11: $spacer * 3,   // 48px
+  12: $spacer * 3.5, // 56px
+  13: $spacer * 4,   // 64px
+  14: $spacer * 5,   // 80px
+  15: $spacer * 6,   // 96px
+  16: $spacer * 8,   // 128px
+  17: $spacer * 10,  // 160px
+  18: $spacer * 12,  // 192px
+  19: $spacer * 16,  // 256px
+  20: $spacer * 20   // 320px
+);
