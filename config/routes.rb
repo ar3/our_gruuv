@@ -2,11 +2,8 @@ Rails.application.routes.draw do
   
   get "dashboard/index"
   get "auth/google_oauth2_callback"
-  get "positions/index"
-  get "positions/show"
-  get "positions/new"
-  get "positions/edit"
   # Assignments routes - moved to organization namespace
+  
   resources :position_types do
     member do
       post :clone_positions

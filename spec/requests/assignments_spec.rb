@@ -2,25 +2,32 @@ require 'rails_helper'
 
 RSpec.describe "Assignments", type: :request do
   let(:company) { create(:organization, type: 'Company') }
+  let(:person) { create(:person) }
   let(:assignment) { create(:assignment, company: company) }
+  
+  before do
+    # Set up authentication and organization context
+    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
+    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(company)
+  end
 
   describe "GET /assignments" do
     it "returns http success" do
-      get assignments_path
+      get organization_assignments_path(company)
       expect(response).to have_http_status(:success)
     end
   end
 
   describe "GET /assignments/:id" do
     it "returns http success" do
-      get assignment_path(assignment)
+      get organization_assignment_path(company, assignment)
       expect(response).to have_http_status(:success)
     end
   end
 
   describe "GET /assignments/new" do
     it "returns http success" do
-      get new_assignment_path
+      get new_organization_assignment_path(company)
       expect(response).to have_http_status(:success)
     end
   end
@@ -28,22 +35,20 @@ RSpec.describe "Assignments", type: :request do
   describe "POST /assignments" do
     it "creates a new assignment" do
       expect {
-        post assignments_path, params: { assignment: { 
+        post organization_assignments_path(company), params: { assignment: { 
           title: "Test Assignment",
-          tagline: "Test tagline",
-          company_id: company.id
+          tagline: "Test tagline"
         }}
       }.to change(Assignment, :count).by(1)
       
-      expect(response).to redirect_to(assignment_path(Assignment.last))
+      expect(response).to redirect_to(organization_assignment_path(company, Assignment.last))
     end
 
     it "creates an assignment with external references" do
       expect {
-        post assignments_path, params: { assignment: { 
+        post organization_assignments_path(company), params: { assignment: { 
           title: "Test Assignment",
           tagline: "Test tagline",
-          company_id: company.id,
           published_source_url: "https://docs.google.com/document/d/published",
           draft_source_url: "https://docs.google.com/document/d/draft"
         }}
@@ -53,21 +58,21 @@ RSpec.describe "Assignments", type: :request do
       assignment = Assignment.last
       expect(assignment.published_url).to eq("https://docs.google.com/document/d/published")
       expect(assignment.draft_url).to eq("https://docs.google.com/document/d/draft")
-      expect(response).to redirect_to(assignment_path(assignment))
+      expect(response).to redirect_to(organization_assignment_path(company, assignment))
     end
   end
 
   describe "GET /assignments/:id/edit" do
     it "returns http success" do
-      get edit_assignment_path(assignment)
+      get edit_organization_assignment_path(company, assignment)
       expect(response).to have_http_status(:success)
     end
   end
 
   describe "PATCH /assignments/:id" do
     it "updates the assignment" do
-      patch assignment_path(assignment), params: { assignment: { title: "Updated Title" } }
-      expect(response).to redirect_to(assignment_path(assignment))
+      patch organization_assignment_path(company, assignment), params: { assignment: { title: "Updated Title" } }
+      expect(response).to redirect_to(organization_assignment_path(company, assignment))
       expect(assignment.reload.title).to eq("Updated Title")
     end
 
@@ -76,12 +81,12 @@ RSpec.describe "Assignments", type: :request do
       assignment.create_published_external_reference!(url: "https://old-published.com", reference_type: 'published')
       assignment.create_draft_external_reference!(url: "https://old-draft.com", reference_type: 'draft')
       
-      patch assignment_path(assignment), params: { assignment: { 
+      patch organization_assignment_path(company, assignment), params: { assignment: { 
         published_source_url: "https://new-published.com",
         draft_source_url: "https://new-draft.com"
       }}
       
-      expect(response).to redirect_to(assignment_path(assignment))
+      expect(response).to redirect_to(organization_assignment_path(company, assignment))
       assignment.reload
       expect(assignment.published_url).to eq("https://new-published.com")
       expect(assignment.draft_url).to eq("https://new-draft.com")
@@ -92,12 +97,12 @@ RSpec.describe "Assignments", type: :request do
       assignment.create_published_external_reference!(url: "https://old-published.com", reference_type: 'published')
       assignment.create_draft_external_reference!(url: "https://old-draft.com", reference_type: 'draft')
       
-      patch assignment_path(assignment), params: { assignment: { 
+      patch organization_assignment_path(company, assignment), params: { assignment: { 
         published_source_url: "",
         draft_source_url: ""
       }}
       
-      expect(response).to redirect_to(assignment_path(assignment))
+      expect(response).to redirect_to(organization_assignment_path(company, assignment))
       assignment.reload
       expect(assignment.published_url).to be_nil
       expect(assignment.draft_url).to be_nil
@@ -108,10 +113,10 @@ RSpec.describe "Assignments", type: :request do
     it "deletes the assignment" do
       assignment_to_delete = assignment
       expect {
-        delete assignment_path(assignment_to_delete)
+        delete organization_assignment_path(company, assignment_to_delete)
       }.to change(Assignment, :count).by(-1)
       
-      expect(response).to redirect_to(assignments_path)
+      expect(response).to redirect_to(organization_assignments_path(company))
     end
   end
 end

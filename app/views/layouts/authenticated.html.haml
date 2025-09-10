@@ -61,8 +61,9 @@
               %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
                 Align
               %ul.dropdown-menu
-                %li= link_to "Assignments", organization_assignments_path(current_organization), class: "dropdown-item"
-                %li= link_to "Positions", organization_positions_path(current_organization), class: "dropdown-item"
+                - if current_organization
+                  %li= link_to "Assignments", organization_assignments_path(current_organization), class: "dropdown-item"
+                  %li= link_to "Positions", organization_positions_path(current_organization), class: "dropdown-item"
             %li.nav-item.dropdown
               %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
                 Collaborate
