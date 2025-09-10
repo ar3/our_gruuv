@@ -47,6 +47,22 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access growth features"}
       
     %li
+      - if action_name == 'check_in'
+        .dropdown-item.text-muted
+          %i.bi.bi-chat-square-text.me-2
+          Check-In Mode (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif policy(@person).manager?
+        = link_to check_in_person_path(@person), class: 'dropdown-item' do
+          %i.bi.bi-chat-square-text.me-2
+          Check-In Mode
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-chat-square-text.me-2
+          Check-In Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
+      
+    %li
       - if action_name == 'show'
         .dropdown-item.text-muted
           %i.bi.bi-gear.me-2

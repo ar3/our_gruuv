@@ -39,13 +39,23 @@ class AssignmentCheckIn < ApplicationRecord
   validates :manager_rating, inclusion: { in: manager_ratings.keys }, allow_nil: true
   validates :official_rating, inclusion: { in: official_ratings.keys }, allow_nil: true
   validates :employee_personal_alignment, inclusion: { in: employee_personal_alignments.keys }, allow_nil: true
+  
+  # Custom validation to prevent multiple open check-ins per person per assignment
+  validate :only_one_open_check_in_per_person_assignment
 
   # Scopes
   scope :recent, -> { order(check_in_started_on: :desc) }
   scope :for_person, ->(person) { where(person: person) }
   scope :for_assignment, ->(assignment) { where(assignment: assignment) }
-  scope :open, -> { where(check_in_ended_on: nil) }
-  scope :closed, -> { where.not(check_in_ended_on: nil) }
+  scope :open, -> { where(official_check_in_completed_at: nil) }
+  scope :closed, -> { where.not(official_check_in_completed_at: nil) }
+  
+  # Completion tracking scopes
+  scope :employee_completed, -> { where.not(employee_completed_at: nil) }
+  scope :manager_completed, -> { where.not(manager_completed_at: nil) }
+  scope :officially_completed, -> { where.not(official_check_in_completed_at: nil) }
+  scope :ready_for_finalization, -> { where.not(employee_completed_at: nil).where.not(manager_completed_at: nil).where(official_check_in_completed_at: nil) }
+  scope :not_ready_for_finalization, -> { where(employee_completed_at: nil).or(where(manager_completed_at: nil)) }
 
   # Instance methods
   def rating_display
@@ -73,15 +83,11 @@ class AssignmentCheckIn < ApplicationRecord
   end
 
   def open?
-    check_in_ended_on.nil?
+    official_check_in_completed_at.nil?
   end
 
   def closed?
     !open?
-  end
-
-  def close!(ended_on: Date.current)
-    update!(check_in_ended_on: ended_on)
   end
 
   def self.average_days_between_check_ins(person)
@@ -117,5 +123,62 @@ class AssignmentCheckIn < ApplicationRecord
       check_in_started_on: Date.current,
       actual_energy_percentage: tenure.anticipated_energy_percentage
     )
+  end
+
+  # Completion tracking methods
+  def employee_completed?
+    employee_completed_at.present?
+  end
+
+  def manager_completed?
+    manager_completed_at.present?
+  end
+
+  def officially_completed?
+    official_check_in_completed_at.present?
+  end
+
+  def ready_for_finalization?
+    employee_completed? && manager_completed? && !officially_completed?
+  end
+
+  def complete_employee_side!
+    update!(employee_completed_at: Time.current)
+  end
+
+  def complete_manager_side!
+    update!(manager_completed_at: Time.current)
+  end
+
+  def uncomplete_employee_side!
+    update!(employee_completed_at: nil)
+  end
+
+  def uncomplete_manager_side!
+    update!(manager_completed_at: nil)
+  end
+
+  def finalize_check_in!(final_rating: nil)
+    raise ArgumentError, "Final rating is required for check-in finalization" if final_rating.blank?
+    
+    update!(
+      official_check_in_completed_at: Time.current,
+      official_rating: final_rating
+    )
+  end
+
+  private
+
+  def only_one_open_check_in_per_person_assignment
+    return unless open? # Only validate for open check-ins
+    
+    existing_open = AssignmentCheckIn
+      .where(person: person, assignment: assignment)
+      .open
+      .where.not(id: id)
+    
+    if existing_open.exists?
+      errors.add(:base, "Only one open check-in allowed per person per assignment")
+    end
   end
 end

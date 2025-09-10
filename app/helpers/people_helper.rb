@@ -92,6 +92,8 @@ module PeopleHelper
       'Public Mode'
     when 'growth'
       'Growth View'
+    when 'check_in'
+      'Check-In Mode'
     else
       action_name.titleize
     end

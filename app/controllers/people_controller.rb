@@ -1,5 +1,5 @@
 class PeopleController < ApplicationController
-  layout 'authenticated-v2-0', only: [:show, :public, :teammate, :growth]
+  layout 'authenticated-v2-0', only: [:show, :public, :teammate, :growth, :check_in]
   before_action :require_login, except: [:public]
   before_action :set_person, except: [:index]
   after_action :verify_authorized, except: :index
@@ -54,6 +54,42 @@ class PeopleController < ApplicationController
                                  .decorate
     @current_employment = @employment_tenures.find { |t| t.ended_at.nil? }
     @current_organization = @current_employment&.company
+  end
+
+  def check_in
+    authorize @person, :manager?
+    # Check-In mode - for finalizing assignment check-ins and future 1:1 features
+    @employment_tenures = @person.employment_tenures.includes(:company, :position, :manager)
+                                 .order(started_at: :desc)
+                                 .decorate
+    @current_employment = @employment_tenures.find { |t| t.ended_at.nil? }
+    @current_organization = @current_employment&.company
+    
+    # Get assignments ready for finalization (both employee and manager completed)
+    @ready_for_finalization = AssignmentCheckIn
+      .joins(:assignment)
+      .where(person: @person)
+      .ready_for_finalization
+      .includes(:assignment)
+      .order(:check_in_started_on)
+  end
+
+  def finalize_check_in
+    authorize @person, :manager?
+    
+    check_in = AssignmentCheckIn.find(params[:check_in_id])
+    
+    if check_in.ready_for_finalization?
+      if params[:final_rating].present?
+        check_in.update!(shared_notes: params[:shared_notes])
+        check_in.finalize_check_in!(final_rating: params[:final_rating])
+        redirect_to check_in_person_path(@person), notice: 'Check-in finalized successfully.'
+      else
+        redirect_to check_in_person_path(@person), alert: 'Final rating is required to finalize the check-in.'
+      end
+    else
+      redirect_to check_in_person_path(@person), alert: 'Check-in is not ready for finalization. Both employee and manager must complete their sections first.'
+    end
   end
 
 
