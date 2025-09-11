@@ -1,6 +1,9 @@
 class AssignmentCheckIn < ApplicationRecord
   belongs_to :person
   belongs_to :assignment
+  belongs_to :employee_completed_by, class_name: 'Person', optional: true
+  belongs_to :manager_completed_by, class_name: 'Person', optional: true
+  belongs_to :finalized_by, class_name: 'Person', optional: true
 
   # Enums for ratings
   enum :employee_rating, {
@@ -142,28 +145,41 @@ class AssignmentCheckIn < ApplicationRecord
     employee_completed? && manager_completed? && !officially_completed?
   end
 
-  def complete_employee_side!
-    update!(employee_completed_at: Time.current)
+  def complete_employee_side!(completed_by: nil)
+    update!(
+      employee_completed_at: Time.current,
+      employee_completed_by: completed_by || person
+    )
   end
 
-  def complete_manager_side!
-    update!(manager_completed_at: Time.current)
+  def complete_manager_side!(completed_by: nil)
+    update!(
+      manager_completed_at: Time.current,
+      manager_completed_by: completed_by
+    )
   end
 
   def uncomplete_employee_side!
-    update!(employee_completed_at: nil)
+    update!(
+      employee_completed_at: nil,
+      employee_completed_by: nil
+    )
   end
 
   def uncomplete_manager_side!
-    update!(manager_completed_at: nil)
+    update!(
+      manager_completed_at: nil,
+      manager_completed_by: nil
+    )
   end
 
-  def finalize_check_in!(final_rating: nil)
+  def finalize_check_in!(final_rating: nil, finalized_by: nil)
     raise ArgumentError, "Final rating is required for check-in finalization" if final_rating.blank?
     
     update!(
       official_check_in_completed_at: Time.current,
-      official_rating: final_rating
+      official_rating: final_rating,
+      finalized_by: finalized_by
     )
   end
 

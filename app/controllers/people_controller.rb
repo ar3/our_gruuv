@@ -82,7 +82,7 @@ class PeopleController < ApplicationController
     if check_in.ready_for_finalization?
       if params[:final_rating].present?
         check_in.update!(shared_notes: params[:shared_notes])
-        check_in.finalize_check_in!(final_rating: params[:final_rating])
+        check_in.finalize_check_in!(final_rating: params[:final_rating], finalized_by: current_person)
         redirect_to check_in_person_path(@person), notice: 'Check-in finalized successfully.'
       else
         redirect_to check_in_person_path(@person), alert: 'Final rating is required to finalize the check-in.'

@@ -147,7 +147,11 @@ class AssignmentTenuresController < ApplicationController
     params["check_in_#{assignment_id}_actual_energy"].present? ||
     params["check_in_#{assignment_id}_employee_rating"].present? ||
     params["check_in_#{assignment_id}_personal_alignment"].present? ||
-    params["check_in_#{assignment_id}_employee_private_notes"].present?
+    params["check_in_#{assignment_id}_employee_private_notes"].present? ||
+    params["check_in_#{assignment_id}_manager_rating"].present? ||
+    params["check_in_#{assignment_id}_manager_private_notes"].present? ||
+    params["check_in_#{assignment_id}_employee_complete"].present? ||
+    params["check_in_#{assignment_id}_manager_complete"].present?
   end
 
   def update_or_create_tenure(assignment, existing_tenure)
@@ -174,31 +178,62 @@ class AssignmentTenuresController < ApplicationController
     # Find or create open check-in
     if existing_check_in&.open?
       # Update existing open check-in
-      existing_check_in.update!(
+      update_params = {
         actual_energy_percentage: params["check_in_#{assignment.id}_actual_energy"].to_i,
         employee_rating: params["check_in_#{assignment.id}_employee_rating"],
         employee_personal_alignment: params["check_in_#{assignment.id}_personal_alignment"],
-        employee_private_notes: params["check_in_#{assignment.id}_employee_private_notes"]
-      )
+        employee_private_notes: params["check_in_#{assignment.id}_employee_private_notes"],
+        manager_rating: params["check_in_#{assignment.id}_manager_rating"],
+        manager_private_notes: params["check_in_#{assignment.id}_manager_private_notes"]
+      }
+      
+      existing_check_in.update!(update_params)
+      
+      # Handle completion toggles
+      if params["check_in_#{assignment.id}_employee_complete"] == "1"
+        existing_check_in.complete_employee_side!(completed_by: current_person) unless existing_check_in.employee_completed?
+      else
+        existing_check_in.uncomplete_employee_side! if existing_check_in.employee_completed?
+      end
+      
+      if params["check_in_#{assignment.id}_manager_complete"] == "1"
+        existing_check_in.complete_manager_side!(completed_by: current_person) unless existing_check_in.manager_completed?
+      else
+        existing_check_in.uncomplete_manager_side! if existing_check_in.manager_completed?
+      end
     else
       # Create new check-in - only if at least one field has a value
       actual_energy = params["check_in_#{assignment.id}_actual_energy"]
       employee_rating = params["check_in_#{assignment.id}_employee_rating"]
       personal_alignment = params["check_in_#{assignment.id}_personal_alignment"]
-      private_notes = params["check_in_#{assignment.id}_employee_private_notes"]
+      employee_private_notes = params["check_in_#{assignment.id}_employee_private_notes"]
+      manager_rating = params["check_in_#{assignment.id}_manager_rating"]
+      manager_private_notes = params["check_in_#{assignment.id}_manager_private_notes"]
       
       # Only create if at least one field has a value
-      return unless actual_energy.present? || employee_rating.present? || personal_alignment.present? || private_notes.present?
+      return unless actual_energy.present? || employee_rating.present? || personal_alignment.present? || 
+                   employee_private_notes.present? || manager_rating.present? || manager_private_notes.present?
       
-      AssignmentCheckIn.create!(
+      check_in = AssignmentCheckIn.create!(
         person: @person,
         assignment: assignment,
         check_in_started_on: Date.current,
         actual_energy_percentage: actual_energy.to_i,
         employee_rating: employee_rating,
         employee_personal_alignment: personal_alignment,
-        employee_private_notes: private_notes
+        employee_private_notes: employee_private_notes,
+        manager_rating: manager_rating,
+        manager_private_notes: manager_private_notes
       )
+      
+      # Handle completion toggles for new check-in
+      if params["check_in_#{assignment.id}_employee_complete"] == "1"
+        check_in.complete_employee_side!(completed_by: current_person)
+      end
+      
+      if params["check_in_#{assignment.id}_manager_complete"] == "1"
+        check_in.complete_manager_side!(completed_by: current_person)
+      end
     end
   end
 

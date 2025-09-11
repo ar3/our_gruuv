@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_10_105754) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_11_031512) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -77,10 +77,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_105754) do
     t.datetime "employee_completed_at"
     t.datetime "manager_completed_at"
     t.datetime "official_check_in_completed_at"
+    t.integer "employee_completed_by_id"
+    t.integer "manager_completed_by_id"
+    t.integer "finalized_by_id"
     t.index ["assignment_id", "check_in_started_on"], name: "idx_on_assignment_id_check_in_started_on_9b32849637"
     t.index ["assignment_id"], name: "index_assignment_check_ins_on_assignment_id"
     t.index ["employee_completed_at"], name: "index_assignment_check_ins_on_employee_completed_at"
+    t.index ["employee_completed_by_id"], name: "index_assignment_check_ins_on_employee_completed_by_id"
+    t.index ["finalized_by_id"], name: "index_assignment_check_ins_on_finalized_by_id"
     t.index ["manager_completed_at"], name: "index_assignment_check_ins_on_manager_completed_at"
+    t.index ["manager_completed_by_id"], name: "index_assignment_check_ins_on_manager_completed_by_id"
     t.index ["official_check_in_completed_at"], name: "index_assignment_check_ins_on_official_check_in_completed_at"
     t.index ["person_id", "assignment_id", "check_in_started_on"], name: "idx_on_person_id_assignment_id_check_in_started_on_f9065653da"
     t.index ["person_id", "check_in_started_on"], name: "idx_on_person_id_check_in_started_on_1e9a0aba88"
@@ -474,6 +480,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_105754) do
   add_foreign_key "assignment_abilities", "assignments"
   add_foreign_key "assignment_check_ins", "assignments"
   add_foreign_key "assignment_check_ins", "people"
+  add_foreign_key "assignment_check_ins", "people", column: "employee_completed_by_id"
+  add_foreign_key "assignment_check_ins", "people", column: "finalized_by_id"
+  add_foreign_key "assignment_check_ins", "people", column: "manager_completed_by_id"
   add_foreign_key "assignment_outcomes", "assignments"
   add_foreign_key "assignment_tenures", "assignments"
   add_foreign_key "assignment_tenures", "people"

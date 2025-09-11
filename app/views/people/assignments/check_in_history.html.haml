@@ -1,0 +1,148 @@
+- content_for :go_back_link do
+  = link_to person_assignment_tenures_path(@person), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@person.display_name}'s Assignments
+
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0 Check-in History
+    %small.text-muted #{@person.display_name} - #{@assignment.title}
+
+- content_for :header_action do
+  = link_to person_assignment_path(@person, @assignment), class: "btn btn-outline-primary" do
+    %i.bi.bi-eye.me-2
+    View Assignment Details
+
+.row.justify-content-center
+  .col-lg-12
+    .card
+      .card-header
+        %h5.mb-0 All Check-ins for #{@assignment.title}
+        %small.text-muted Complete history of check-ins between #{@person.display_name} and their managers
+
+      .card-body
+        - if @check_ins.any?
+          .table-responsive
+            %table.table.table-hover
+              %thead.table-light
+                %tr
+                  %th Started
+                  %th Employee Completion
+                  %th Manager Completion
+                  %th Finalization
+                  %th Status
+                  %th Actions
+              %tbody
+                - @check_ins.each do |check_in|
+                  %tr{class: check_in.officially_completed? ? 'table-success' : check_in.ready_for_finalization? ? 'table-warning' : ''}
+                    %td
+                      %strong= check_in.check_in_started_on.strftime('%B %d, %Y')
+                      %br
+                      %small.text-muted= check_in.check_in_started_on.strftime('%I:%M %p')
+                    
+                    %td
+                      - if check_in.employee_completed?
+                        %span.badge.bg-success.me-1 ✓ Complete
+                        %br
+                        %small.text-muted= check_in.employee_completed_at.strftime('%m/%d/%Y %I:%M %p')
+                        - if check_in.employee_completed_by
+                          %br
+                          %small.text-muted by #{check_in.employee_completed_by.display_name}
+                      - else
+                        %span.badge.bg-warning Pending
+                    
+                    %td
+                      - if check_in.manager_completed?
+                        %span.badge.bg-success.me-1 ✓ Complete
+                        %br
+                        %small.text-muted= check_in.manager_completed_at.strftime('%m/%d/%Y %I:%M %p')
+                        - if check_in.manager_completed_by
+                          %br
+                          %small.text-muted by #{check_in.manager_completed_by.display_name}
+                      - else
+                        %span.badge.bg-warning Pending
+                    
+                    %td
+                      - if check_in.officially_completed?
+                        %span.badge.bg-primary.me-1 ✓ Finalized
+                        %br
+                        %small.text-muted= check_in.official_check_in_completed_at.strftime('%m/%d/%Y %I:%M %p')
+                        - if check_in.finalized_by
+                          %br
+                          %small.text-muted by #{check_in.finalized_by.display_name}
+                        %br
+                        %small.text-muted Rating: #{check_in.official_rating&.humanize}
+                      - elsif check_in.ready_for_finalization?
+                        %span.badge.bg-warning Ready for Finalization
+                      - else
+                        %span.badge.bg-secondary In Progress
+                    
+                    %td
+                      - if check_in.officially_completed?
+                        %span.badge.bg-success Closed
+                      - elsif check_in.ready_for_finalization?
+                        %span.badge.bg-warning Ready to Finalize
+                      - else
+                        %span.badge.bg-info Open
+                    
+                    %td
+                      - if check_in.officially_completed?
+                        = link_to "View Details", "#", class: "btn btn-sm btn-outline-primary", "data-bs-toggle" => "modal", "data-bs-target" => "#checkInModal#{check_in.id}"
+                      - elsif check_in.ready_for_finalization?
+                        = link_to "Finalize", check_in_person_path(@person), class: "btn btn-sm btn-warning"
+                      - else
+                        = link_to "Continue", person_assignment_tenures_path(@person), class: "btn btn-sm btn-primary"
+
+          - @check_ins.each do |check_in|
+            / Modal for each check-in
+            .modal.fade{id: "checkInModal#{check_in.id}", "aria-hidden" => "true", "aria-labelledby" => "checkInModalLabel#{check_in.id}", tabindex: "-1"}
+              .modal-dialog.modal-lg
+                .modal-content
+                  .modal-header
+                    %h5.modal-title{id: "checkInModalLabel#{check_in.id}"}
+                      Check-in Details - #{check_in.check_in_started_on.strftime('%B %d, %Y')}
+                    %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+                  .modal-body
+                    .row
+                      .col-md-6
+                        %h6 Employee Responses
+                        .mb-3
+                          %label.form-label Actual Energy %
+                          .form-control-plaintext= "#{check_in.actual_energy_percentage}%" if check_in.actual_energy_percentage
+                        .mb-3
+                          %label.form-label Personal Alignment
+                          .form-control-plaintext= check_in.employee_personal_alignment&.humanize || 'Not provided'
+                        .mb-3
+                          %label.form-label Employee Rating
+                          .form-control-plaintext= check_in.employee_rating&.humanize || 'Not provided'
+                        .mb-3
+                          %label.form-label Private Notes
+                          .form-control-plaintext= check_in.employee_private_notes || 'No notes'
+                      
+                      .col-md-6
+                        %h6 Manager Responses
+                        .mb-3
+                          %label.form-label Manager Rating
+                          .form-control-plaintext= check_in.manager_rating&.humanize || 'Not provided'
+                        .mb-3
+                          %label.form-label Manager Private Notes
+                          .form-control-plaintext= check_in.manager_private_notes || 'No notes'
+                        
+                        - if check_in.officially_completed?
+                          %hr
+                          %h6 Finalization
+                          .mb-3
+                            %label.form-label Final Rating
+                            .form-control-plaintext= check_in.official_rating&.humanize
+                          .mb-3
+                            %label.form-label Shared Notes
+                            .form-control-plaintext= check_in.shared_notes || 'No shared notes'
+                  .modal-footer
+                    %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Close
+        - else
+          .alert.alert-info.text-center
+            %h6.mb-2
+              %i.bi.bi-info-circle.me-2
+              No Check-ins Found
+            %p.mb-0 No check-ins have been created for this assignment yet.
+            = link_to "Start First Check-in", person_assignment_tenures_path(@person), class: "btn btn-primary btn-sm mt-2"
