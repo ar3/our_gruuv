@@ -7,6 +7,7 @@ class Person < ApplicationRecord
   has_many :employment_tenures, dependent: :destroy
   has_many :assignment_tenures, dependent: :destroy
   has_many :assignments, through: :assignment_tenures
+  has_many :assignment_check_ins, dependent: :destroy
   has_many :person_milestones, dependent: :destroy
   has_many :abilities, through: :person_milestones
 

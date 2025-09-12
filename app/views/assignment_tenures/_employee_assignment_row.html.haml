@@ -1,0 +1,62 @@
+%tr
+  %td
+    %strong= data[:assignment].title
+    %br
+    %small.text-muted
+      - if data[:tenure]
+        Started #{data[:tenure].started_at.strftime('%B %d, %Y')}
+      - else
+        Not started
+    - if data[:open_check_in]
+      %br
+      %small.text-info
+        %i.bi.bi-info-circle.me-1
+        Check-in #{data[:open_check_in].check_in_started_on.strftime('%m/%d/%Y')}
+    %br
+    = link_to "Focus Assignment", person_assignment_path(@person, data[:assignment]), class: "btn btn-sm btn-outline-primary", target: "_blank"
+  
+  %td
+    = form.select "tenure_#{data[:assignment].id}_anticipated_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:tenure]&.anticipated_energy_percentage), { prompt: 'Select...' }, { class: "form-select form-select-sm energy-select" }
+  
+  %td
+    = form.select "check_in_#{data[:assignment].id}_actual_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:open_check_in]&.actual_energy_percentage), { prompt: 'Select...' }, { class: "form-select form-select-sm energy-select", disabled: data[:open_check_in]&.employee_completed? }
+  
+  %td
+    = form.select "check_in_#{data[:assignment].id}_personal_alignment", options_for_select([['I love this', 'love'], ['I like this', 'like'], ['I\'m neutral', 'neutral'], ['I prefer not to do this', 'prefer_not'], ['Only if necessary', 'only_if_necessary']], data[:open_check_in]&.employee_personal_alignment), { prompt: 'Select...' }, { class: "form-select form-select-sm", disabled: data[:open_check_in]&.employee_completed? }
+  
+  %td
+    = form.select "check_in_#{data[:assignment].id}_employee_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], data[:open_check_in]&.employee_rating), { prompt: 'Select...' }, { class: "form-select form-select-sm", disabled: data[:open_check_in]&.employee_completed? }
+  
+  %td
+    = form.text_area "check_in_#{data[:assignment].id}_employee_private_notes", value: data[:open_check_in]&.employee_private_notes, rows: 2, class: "form-control form-control-sm", placeholder: "Notes...", disabled: data[:open_check_in]&.employee_completed?
+  
+  %td.text-center
+    .form-check.form-switch.d-flex.justify-content-center
+      = form.check_box "check_in_#{data[:assignment].id}_employee_complete", { checked: data[:open_check_in]&.employee_completed? || false, class: "form-check-input completion-toggle", data: { target: "employee-fields-#{data[:assignment].id}" } }
+  
+  %td
+    - if data[:open_check_in]
+      .completion-status
+        - if data[:open_check_in].employee_completed?
+          %span.badge.bg-success.me-1 Employee ✓
+          %br
+          %small.text-muted= data[:open_check_in].employee_completed_at.strftime('%m/%d %I:%M %p')
+          - if data[:open_check_in].employee_completed_by
+            %br
+            %small.text-muted by #{data[:open_check_in].employee_completed_by.first_name}
+        - else
+          %span.badge.bg-warning.me-1 Waiting Employee
+        
+        %br
+        
+        - if data[:open_check_in].manager_completed?
+          %span.badge.bg-success.me-1 Manager ✓
+          %br
+          %small.text-muted= data[:open_check_in].manager_completed_at.strftime('%m/%d %I:%M %p')
+          - if data[:open_check_in].manager_completed_by
+            %br
+            %small.text-muted by #{data[:open_check_in].manager_completed_by.first_name}
+        - else
+          %span.badge.bg-warning.me-1 Waiting Manager
+    - else
+      %span.badge.bg-secondary No Check-in

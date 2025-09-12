@@ -8,6 +8,7 @@ class People::AssignmentsController < ApplicationController
   def show
     authorize @person, :manager?, policy_class: PersonPolicy
     load_assignment_data
+    load_tenure_history
   end
 
   def check_in_history
@@ -36,6 +37,10 @@ class People::AssignmentsController < ApplicationController
       .includes(:employee_completed_by, :manager_completed_by, :finalized_by)
       .order(check_in_started_on: :desc)
       .limit(5)
+  end
+
+  def load_tenure_history
+    @tenure_history = AssignmentTenure.where(person: @person, assignment: @assignment).order(started_at: :desc)
   end
 
   def require_authentication

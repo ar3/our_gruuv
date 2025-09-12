@@ -1,0 +1,13 @@
+.table-responsive
+  %table.table.table-hover.table-bordered
+    %thead.table-light
+      %tr
+        %th Assignment
+        %th Anticipated Energy
+        %th Manager Rating
+        %th Manager Notes
+        %th Complete
+        %th Status
+    %tbody
+      - assignment_data.each do |data|
+        = render 'manager_assignment_row', data: data, form: form

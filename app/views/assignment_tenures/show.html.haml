@@ -44,144 +44,38 @@
                     %br
                     %span.text-success Duration: #{((Date.current - @current_employment.started_at.to_date).to_i / 30.44).round(1)} months
             .col-md-4.text-end
-            = link_to "View Position Details", edit_organization_position_path(@current_employment.position.position_type.organization, @current_employment.position), class: "btn btn-outline-primary btn-sm"
-  
-    .card
-      .card-header
-        %h5.mb-0 My Assignments
+          = link_to "View Position Details", edit_organization_position_path(@current_employment.position.position_type.organization, @current_employment.position), class: "btn btn-outline-primary btn-sm"
 
-      .card-body
-        - if @assignment_data.any?
-          = form_with url: person_assignment_tenures_path(@person), method: :patch, local: true do |form|
-            - is_employee_view = current_person == @person
-            - is_manager_view = !is_employee_view
-            
-            .table-responsive
-              %table.table.table-hover.table-bordered
-                %thead.table-light
-                  %tr
-                    %th Assignment
-                    %th Anticipated Energy
-                    - if is_employee_view
-                      %th Actual Energy
-                      %th Personal Alignment
-                      %th My Rating
-                      %th Private Notes
-                      %th Complete
-                    - if is_manager_view
-                      %th Manager Rating
-                      %th Manager Notes
-                      %th Complete
-                    %th Status
-                %tbody
-                  - @assignment_data.each do |data|
-                    - tenure_start = data[:tenure]&.started_at&.strftime('%B %d, %Y')
-                    - employee_first_name = @person.first_name
-                    - assignment_name = data[:assignment].title
-                    
-                    %tr
-                      %td
-                        %strong= data[:assignment].title
-                        %br
-                        %small.text-muted
-                          - if data[:tenure]
-                            Started #{tenure_start}
-                          - else
-                            Not started
-                        - if data[:open_check_in]
-                          %br
-                          %small.text-info
-                            %i.bi.bi-info-circle.me-1
-                            Check-in #{data[:open_check_in].check_in_started_on.strftime('%m/%d/%Y')}
-                        %br
-                        = link_to "View History", check_in_history_person_assignment_path(@person, data[:assignment]), class: "btn btn-sm btn-outline-secondary"
-                      
-                      %td
-                        = form.select "tenure_#{data[:assignment].id}_anticipated_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:tenure]&.anticipated_energy_percentage), { prompt: 'Select...' }, { class: "form-select form-select-sm" }
-                      
-                      - if is_employee_view
-                        %td
-                          - if data[:open_check_in]
-                            = form.select "check_in_#{data[:assignment].id}_actual_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:open_check_in]&.actual_energy_percentage), { prompt: 'Select...' }, { class: "form-select form-select-sm", disabled: data[:open_check_in]&.employee_completed? }
-                          - else
-                            %span.text-muted No check-in
-                        %td
-                          - if data[:open_check_in]
-                            = form.select "check_in_#{data[:assignment].id}_personal_alignment", options_for_select([['I love this', 'love'], ['I like this', 'like'], ['I\'m neutral', 'neutral'], ['I prefer not to do this', 'prefer_not'], ['Only if necessary', 'only_if_necessary']], data[:open_check_in]&.employee_personal_alignment), { prompt: 'Select...' }, { class: "form-select form-select-sm", disabled: data[:open_check_in]&.employee_completed? }
-                          - else
-                            %span.text-muted No check-in
-                        %td
-                          - if data[:open_check_in]
-                            = form.select "check_in_#{data[:assignment].id}_employee_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], data[:open_check_in]&.employee_rating), { prompt: 'Select...' }, { class: "form-select form-select-sm", disabled: data[:open_check_in]&.employee_completed? }
-                          - else
-                            %span.text-muted No check-in
-                        %td
-                          - if data[:open_check_in]
-                            = form.text_area "check_in_#{data[:assignment].id}_employee_private_notes", value: data[:open_check_in]&.employee_private_notes, rows: 2, class: "form-control form-control-sm", placeholder: "Notes...", disabled: data[:open_check_in]&.employee_completed?
-                          - else
-                            %span.text-muted No check-in
-                        %td.text-center
-                          - if data[:open_check_in]
-                            .form-check.form-switch.d-flex.justify-content-center
-                              = form.check_box "check_in_#{data[:assignment].id}_employee_complete", { checked: data[:open_check_in].employee_completed?, class: "form-check-input completion-toggle", data: { target: "employee-fields-#{data[:assignment].id}" } }
-                          - else
-                            %span.text-muted No check-in
-                      
-                      - if is_manager_view
-                        %td
-                          - if data[:open_check_in]
-                            = form.select "check_in_#{data[:assignment].id}_manager_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], data[:open_check_in]&.manager_rating), { prompt: 'Select...' }, { class: "form-select form-select-sm", disabled: data[:open_check_in]&.manager_completed? }
-                          - else
-                            %span.text-muted No check-in
-                        %td
-                          - if data[:open_check_in]
-                            = form.text_area "check_in_#{data[:assignment].id}_manager_private_notes", value: data[:open_check_in]&.manager_private_notes, rows: 2, class: "form-control form-control-sm", placeholder: "Notes...", disabled: data[:open_check_in]&.manager_completed?
-                          - else
-                            %span.text-muted No check-in
-                        %td.text-center
-                          - if data[:open_check_in]
-                            .form-check.form-switch.d-flex.justify-content-center
-                              = form.check_box "check_in_#{data[:assignment].id}_manager_complete", { checked: data[:open_check_in].manager_completed?, class: "form-check-input completion-toggle", data: { target: "manager-fields-#{data[:assignment].id}" } }
-                          - else
-                            %span.text-muted No check-in
-                      
-                      %td
-                        - if data[:open_check_in]
-                          .completion-status
-                            - if data[:open_check_in].employee_completed?
-                              %span.badge.bg-success.me-1 Employee ✓
-                              %br
-                              %small.text-muted= data[:open_check_in].employee_completed_at.strftime('%m/%d %I:%M %p')
-                              - if data[:open_check_in].employee_completed_by
-                                %br
-                                %small.text-muted by #{data[:open_check_in].employee_completed_by.first_name}
-                            - else
-                              %span.badge.bg-warning.me-1 Waiting Employee
-                            
-                            %br
-                            
-                            - if data[:open_check_in].manager_completed?
-                              %span.badge.bg-success.me-1 Manager ✓
-                              %br
-                              %small.text-muted= data[:open_check_in].manager_completed_at.strftime('%m/%d %I:%M %p')
-                              - if data[:open_check_in].manager_completed_by
-                                %br
-                                %small.text-muted by #{data[:open_check_in].manager_completed_by.first_name}
-                            - else
-                              %span.badge.bg-warning.me-1 Waiting Manager
-                        - else
-                          %span.badge.bg-secondary No Check-in
+        .card
+          .card-header
+            %h5.mb-0 My Assignments
 
-            .row.mt-4
-              .col-12.text-end
-                = form.submit "Update #{@person.first_name}'s Assignments", class: "btn btn-primary"
-        - else
-          .alert.alert-info
-            %h6.mb-2
-              %i.bi.bi-info-circle.me-2
-              No Assignments Found
-            %p.mb-2 No assignments found for your current position.
-            = link_to "Choose Assignments", choose_assignments_person_assignment_tenures_path(@person), class: "btn btn-primary btn-sm"
+          .card-body
+            - if @assignment_data.any?
+              = form_with url: person_assignment_tenures_path(@person), method: :patch, local: true do |form|
+                - is_employee_view = current_person == @person
+                - is_manager_view = !is_employee_view
+                
+                - if is_employee_view
+                  = render 'employee_assignments_table', assignment_data: @assignment_data, form: form
+                - else
+                  = render 'manager_assignments_table', assignment_data: @assignment_data, form: form
+
+                .row.mt-4
+                  .col-6
+                    .energy-total.alert.alert-info
+                      %strong Energy Total: 
+                      %span#energy-total 0%
+                      %span#energy-status
+                  .col-6.text-end
+                    = form.submit "Update #{@person.first_name}'s Assignments", class: "btn btn-primary"
+            - else
+              .alert.alert-info
+                %h6.mb-2
+                  %i.bi.bi-info-circle.me-2
+                  No Assignments Found
+                %p.mb-2 No assignments found for your current position.
+                = link_to "Choose Assignments", choose_assignments_person_assignment_tenures_path(@person), class: "btn btn-primary btn-sm"
 
 / Modal for Filter & Sort
 #assignmentTenuresFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "assignmentTenuresFilterModalLabel", tabindex: "-1"}
@@ -192,14 +86,14 @@
           %i.bi.bi-funnel.me-2
           Filter & Sort Assignments (coming soon)
         %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-      .modal-body
-        .row
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-funnel.me-2
-              Filters
-            .mb-3
-              %label.form-label Assignment Status
+        .modal-body
+          .row
+            .col-md-6
+              %h6.mb-3
+                %i.bi.bi-funnel.me-2
+                Filters
+              .mb-3
+                %label.form-label Assignment Status
               .form-check
                 %input.form-check-input{checked: "checked", type: "checkbox", name: "status", value: "active"}
                 %label.form-check-label Active Assignments
@@ -311,4 +205,48 @@
           }
         });
       });
+
+      // Energy percentage validation
+      function calculateEnergyTotal() {
+        const energySelects = document.querySelectorAll('.energy-select');
+        let total = 0;
+        
+        energySelects.forEach(function(select) {
+          const value = parseInt(select.value) || 0;
+          total += value;
+        });
+        
+        const totalElement = document.getElementById('energy-total');
+        const statusElement = document.getElementById('energy-status');
+        const alertElement = document.querySelector('.energy-total');
+        
+        if (totalElement) {
+          totalElement.textContent = total + '%';
+        }
+        
+        if (alertElement && statusElement) {
+          // Remove existing status classes
+          alertElement.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+          statusElement.innerHTML = '';
+          
+          if (total === 100) {
+            alertElement.classList.add('alert-success');
+            statusElement.innerHTML = ' <i class="bi bi-check-circle"></i> Perfect!';
+          } else if (total > 100) {
+            alertElement.classList.add('alert-danger');
+            statusElement.innerHTML = ' <i class="bi bi-exclamation-triangle"></i> Over 100%!';
+          } else if (total < 100) {
+            alertElement.classList.add('alert-warning');
+            statusElement.innerHTML = ' <i class="bi bi-info-circle"></i> Under 100%';
+          }
+        }
+      }
+      
+      // Add event listeners to energy selects
+      document.querySelectorAll('.energy-select').forEach(function(select) {
+        select.addEventListener('change', calculateEnergyTotal);
+      });
+      
+      // Calculate initial total
+      calculateEnergyTotal();
     });

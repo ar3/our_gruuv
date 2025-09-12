@@ -1,0 +1,15 @@
+.table-responsive
+  %table.table.table-hover.table-bordered
+    %thead.table-light
+      %tr
+        %th Assignment
+        %th Anticipated Energy
+        %th Actual Energy
+        %th Personal Alignment
+        %th My Rating
+        %th Private Notes
+        %th Complete
+        %th Status
+    %tbody
+      - assignment_data.each do |data|
+        = render 'employee_assignment_row', data: data, form: form

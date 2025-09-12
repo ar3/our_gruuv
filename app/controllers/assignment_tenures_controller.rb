@@ -1,3 +1,5 @@
+require 'set'
+
 class AssignmentTenuresController < ApplicationController
   layout 'authenticated-v2-0'
   before_action :require_authentication
@@ -12,10 +14,12 @@ class AssignmentTenuresController < ApplicationController
   def update
     authorize @person, :manager?, policy_class: PersonPolicy
     
+    # Load assignment data before processing updates
+    load_assignments_and_check_ins
+    
     if update_assignments_and_check_ins
       redirect_to person_assignment_tenures_path(@person), notice: 'Assignments updated successfully.'
     else
-      load_assignments_and_check_ins
       render :show, status: :unprocessable_entity
     end
   end
@@ -106,9 +110,40 @@ class AssignmentTenuresController < ApplicationController
         end
       end
       
+      # Also process any assignments that have parameters but are not in the loaded data
+      # This handles cases where assignments are not properly associated with the position
+      processed_assignment_ids = Set.new
+      
+      params.each do |key, value|
+        if key.start_with?('tenure_') && key.end_with?('_anticipated_energy')
+          assignment_id = key.gsub('tenure_', '').gsub('_anticipated_energy', '').to_i
+          assignment = Assignment.find_by(id: assignment_id)
+          
+          if assignment && !@assignment_data.any? { |data| data[:assignment].id == assignment_id }
+            tenure = AssignmentTenure.most_recent_for(@person, assignment)
+            update_or_create_tenure(assignment, tenure)
+            processed_assignment_ids.add(assignment_id)
+          end
+        end
+      end
+      
+      # Also process check-in parameters for assignments not in loaded data
+      params.each do |key, value|
+        if key.start_with?('check_in_') && (key.end_with?('_actual_energy') || key.end_with?('_employee_rating') || key.end_with?('_personal_alignment') || key.end_with?('_employee_private_notes') || key.end_with?('_manager_rating') || key.end_with?('_manager_private_notes') || key.end_with?('_employee_complete') || key.end_with?('_manager_complete'))
+          assignment_id = key.gsub('check_in_', '').split('_')[0].to_i
+          assignment = Assignment.find_by(id: assignment_id)
+          
+          if assignment && !@assignment_data.any? { |data| data[:assignment].id == assignment_id } && !processed_assignment_ids.include?(assignment_id)
+            open_check_in = AssignmentCheckIn.where(person: @person, assignment: assignment).open.first
+            update_or_create_check_in(open_check_in, assignment)
+          end
+        end
+      end
+      
       true
     rescue => e
       Rails.logger.error "Error updating assignments: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
       false
     end
   end
@@ -160,7 +195,7 @@ class AssignmentTenuresController < ApplicationController
     
     if existing_tenure && existing_tenure.anticipated_energy_percentage != new_energy
       # End current tenure and start new one today
-      existing_tenure.update!(ended_at: Date.current - 1.day)
+      existing_tenure.update!(ended_at: Date.current + 1.day)
       existing_tenure = nil
     end
     

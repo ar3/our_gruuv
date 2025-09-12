@@ -1,0 +1,194 @@
+- content_for :go_back_link do
+  = link_to person_assignment_tenures_path(@person), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@person.display_name}'s Assignments
+
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0 Assignment Details
+    %small.text-muted #{@person.display_name} - #{@assignment.title}
+
+- content_for :header_action do
+  .btn.btn-outline-primary What should go here?
+
+.row.justify-content-center
+  .col-lg-12
+    .card
+      .card-header
+        %h5.mb-0 Details about #{@person.display_name} and #{@assignment.title}
+        %small.text-muted Assignment information and current status
+
+      .card-body
+        .row
+          .col-md-6
+            %h6 Assignment Information
+            .mb-3
+              %label.form-label Assignment Title
+              .form-control-plaintext= "#{@assignment.organization.full_display_name}'s #{@assignment.title}"
+              
+            .mb-3
+              %label.form-label tagline
+              .form-control-plaintext= @assignment.tagline || 'No tagline available'
+
+            .mb-3
+              %label.form-label required_activities
+              .form-control-plaintext= @assignment.required_activities || 'No required_activities available'
+            .mb-3
+              %label.form-label handbook
+              .form-control-plaintext= @assignment.handbook || 'No handbook available'
+          
+          .col-md-6
+            %h6 Current Status
+            .mb-3
+              %label.form-label Assignment Tenure
+              - if @tenure
+                .form-control-plaintext
+                  Started: #{@tenure.started_at.strftime('%B %d, %Y')}
+                  %br
+                  Anticipated Energy: #{@tenure.anticipated_energy_percentage}%
+              - else
+                .form-control-plaintext.text-muted Not started
+            .mb-3
+              %label.form-label Current Check-in
+              - if @open_check_in
+                .form-control-plaintext
+                  Started: #{@open_check_in.check_in_started_on.strftime('%B %d, %Y')}
+                  %br
+                  Status: 
+                  - if @open_check_in.ready_for_finalization?
+                    %span.badge.bg-warning Ready for Finalization
+                  - elsif @open_check_in.employee_completed? || @open_check_in.manager_completed?
+                    %span.badge.bg-info In Progress
+                  - else
+                    %span.badge.bg-secondary Open
+              - else
+                .form-control-plaintext.text-muted No active check-in
+
+        .row.mt-4
+          .col-md-6
+            %h6 Assignment Tenure History
+            - if @tenure_history.any?
+              .table-responsive
+                %table.table.table-sm
+                  %thead
+                    %tr
+                      %th Started
+                      %th Ended
+                      %th Energy %
+                      %th Duration
+                  %tbody
+                    - @tenure_history.each do |tenure|
+                      %tr
+                        %td= tenure.started_at.strftime('%m/%d/%Y')
+                        %td
+                          - if tenure.ended_at
+                            = tenure.ended_at.strftime('%m/%d/%Y')
+                          - else
+                            %span.text-success Active
+                        %td= "#{tenure.anticipated_energy_percentage}%"
+                        %td
+                          - if tenure.ended_at
+                            = distance_of_time_in_words(tenure.started_at, tenure.ended_at)
+                          - else
+                            = distance_of_time_in_words(tenure.started_at, Date.current)
+            - else
+              .alert.alert-info No tenure history found.
+          
+          .col-md-6
+            %h6 Recent Check-ins
+            - if @recent_check_ins.any?
+              .table-responsive
+                %table.table.table-sm
+                  %thead
+                    %tr
+                      %th Started
+                      %th Status
+                      %th Employee
+                      %th Manager
+                      %th Finalized
+                  %tbody
+                    - @recent_check_ins.each do |check_in|
+                      %tr
+                        %td= check_in.check_in_started_on.strftime('%m/%d/%Y')
+                        %td
+                          - if check_in.officially_completed?
+                            %span.badge.bg-success Finalized
+                          - elsif check_in.ready_for_finalization?
+                            %span.badge.bg-warning Ready
+                          - else
+                            %span.badge.bg-info Open
+                        %td
+                          - if check_in.employee_completed?
+                            %span.badge.bg-success ✓
+                          - else
+                            %span.badge.bg-warning Pending
+                        %td
+                          - if check_in.manager_completed?
+                            %span.badge.bg-success ✓
+                          - else
+                            %span.badge.bg-warning Pending
+                        %td
+                          - if check_in.officially_completed?
+                            %span.badge.bg-primary ✓
+                            %br
+                            %small= check_in.official_check_in_completed_at.strftime('%m/%d/%Y')
+                          - else
+                            %span.badge.bg-secondary -
+            - else
+              .alert.alert-info No check-in history found.
+
+        .row.mt-4
+          .col-12
+            %h6 Edit Assignment
+            = form_with url: person_assignment_tenures_path(@person), method: :patch, local: true do |form|
+              .row
+                .col-md-6
+                  .mb-3
+                    %label.form-label Anticipated Energy
+                    = form.select "tenure_#{@assignment.id}_anticipated_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, @tenure&.anticipated_energy_percentage), { prompt: 'Select...' }, { class: "form-select" }
+                
+                - if current_person == @person
+                  .col-md-6
+                    .mb-3
+                      %label.form-label Actual Energy
+                      = form.select "check_in_#{@assignment.id}_actual_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, @open_check_in&.actual_energy_percentage), { prompt: 'Select...' }, { class: "form-select" }
+                
+                - if current_person == @person
+                  .col-md-6
+                    .mb-3
+                      %label.form-label Personal Alignment
+                      = form.select "check_in_#{@assignment.id}_personal_alignment", options_for_select([['I love this', 'love'], ['I like this', 'like'], ['I\'m neutral', 'neutral'], ['I prefer not to do this', 'prefer_not'], ['Only if necessary', 'only_if_necessary']], @open_check_in&.employee_personal_alignment), { prompt: 'Select...' }, { class: "form-select" }
+                
+                - if current_person == @person
+                  .col-md-6
+                    .mb-3
+                      %label.form-label My Rating
+                      = form.select "check_in_#{@assignment.id}_employee_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], @open_check_in&.employee_rating), { prompt: 'Select...' }, { class: "form-select" }
+                
+                - if current_person == @person
+                  .col-md-6
+                    .mb-3
+                      %label.form-label Private Notes
+                      = form.text_area "check_in_#{@assignment.id}_employee_private_notes", value: @open_check_in&.employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+                
+                - if current_person != @person
+                  .col-md-6
+                    .mb-3
+                      %label.form-label Manager Rating
+                      = form.select "check_in_#{@assignment.id}_manager_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], @open_check_in&.manager_rating), { prompt: 'Select...' }, { class: "form-select" }
+                
+                - if current_person != @person
+                  .col-md-6
+                    .mb-3
+                      %label.form-label Manager Notes
+                      = form.text_area "check_in_#{@assignment.id}_manager_private_notes", value: @open_check_in&.manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+                
+                .col-12
+                  .mb-3
+                    .form-check.form-switch
+                      = form.check_box "check_in_#{@assignment.id}_#{current_person == @person ? 'employee' : 'manager'}_complete", { checked: @open_check_in&.send("#{current_person == @person ? 'employee' : 'manager'}_completed?") || false, class: "form-check-input" }
+                      %label.form-check-label Complete my section
+                
+                .col-12.text-end
+                  = form.submit "Update Assignment", class: "btn btn-primary me-2"
+                  = link_to "Back to All Assignments", person_assignment_tenures_path(@person), class: "btn btn-outline-secondary"

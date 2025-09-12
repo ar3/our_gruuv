@@ -155,11 +155,7 @@ get '/login', to: 'auth#login', as: :login
       get :check_in
       patch :finalize_check_in
     end
-    resources :assignments, only: [:show] do
-      member do
-        get :check_in_history
-      end
-    end
+              resources :assignments, only: [:show], controller: 'people/assignments'
     resources :employment_tenures, only: [:new, :create, :edit, :update, :destroy, :show] do
       collection do
         get :change
