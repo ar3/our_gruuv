@@ -145,6 +145,14 @@ class AssignmentCheckIn < ApplicationRecord
     employee_completed? && manager_completed? && !officially_completed?
   end
 
+  def employee_started?
+    actual_energy_percentage.present? || employee_personal_alignment.present? || employee_rating.present? || employee_private_notes.present?
+  end
+
+  def manager_started?
+    manager_rating.present? || manager_private_notes.present?
+  end
+
   def complete_employee_side!(completed_by: nil)
     update!(
       employee_completed_at: Time.current,

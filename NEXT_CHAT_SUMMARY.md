@@ -67,3 +67,4 @@ The AI should:
 - `docs/vision/` - All 10 vision documents
 - `spec/fixtures/files/amy_maap.md` - Target job description
 - `app/views/layouts/authenticated-v2-0.html.haml` - Current navigation structure
+

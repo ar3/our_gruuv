@@ -29,28 +29,17 @@
       = form.check_box "check_in_#{data[:assignment].id}_manager_complete", { checked: data[:open_check_in]&.manager_completed? || false, class: "form-check-input completion-toggle", data: { target: "manager-fields-#{data[:assignment].id}" } }
   
   %td
-    - if data[:open_check_in]
-      .completion-status
-        - if data[:open_check_in].employee_completed?
-          %span.badge.bg-success.me-1 Employee ✓
-          %br
-          %small.text-muted= data[:open_check_in].employee_completed_at.strftime('%m/%d %I:%M %p')
-          - if data[:open_check_in].employee_completed_by
-            %br
-            %small.text-muted by #{data[:open_check_in].employee_completed_by.first_name}
-        - else
-          %span.badge.bg-warning.me-1 Waiting Employee
-        
-        %br
-        
-        - if data[:open_check_in].manager_completed?
-          %span.badge.bg-success.me-1 Manager ✓
-          %br
-          %small.text-muted= data[:open_check_in].manager_completed_at.strftime('%m/%d %I:%M %p')
-          - if data[:open_check_in].manager_completed_by
-            %br
-            %small.text-muted by #{data[:open_check_in].manager_completed_by.first_name}
-        - else
-          %span.badge.bg-warning.me-1 Waiting Manager
-    - else
-      %span.badge.bg-secondary No Check-in
+    .completion-status
+      %small.text-muted
+        %strong Last completed check-in: 
+        = last_completed_check_in_date(data, @person)
+      
+      %br
+      %small.text-muted
+        %strong #{@person.first_name}: 
+        = check_in_status_text(data[:open_check_in], :employee)
+      
+      %br
+      %small.text-muted
+        %strong Manager: 
+        = check_in_status_text(data[:open_check_in], :manager)

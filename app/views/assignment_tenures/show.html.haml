@@ -56,18 +56,27 @@
                 - is_employee_view = current_person == @person
                 - is_manager_view = !is_employee_view
                 
+                // Top action bar
+                .row.mb-3
+                  .col-4
+                    = render 'energy_total_component', id_suffix: 'top'
+                  .col-4.text-center
+                    = link_to "Add Assignments", choose_assignments_person_assignment_tenures_path(@person), class: "btn btn-outline-secondary"
+                  .col-4.text-end
+                    = form.submit "Update #{@person.first_name}'s Assignments", class: "btn btn-primary"
+                
                 - if is_employee_view
                   = render 'employee_assignments_table', assignment_data: @assignment_data, form: form
                 - else
                   = render 'manager_assignments_table', assignment_data: @assignment_data, form: form
 
-                .row.mt-4
-                  .col-6
-                    .energy-total.alert.alert-info
-                      %strong Energy Total: 
-                      %span#energy-total 0%
-                      %span#energy-status
-                  .col-6.text-end
+                // Bottom action bar
+                .row.mt-3
+                  .col-4
+                    = render 'energy_total_component', id_suffix: 'bottom'
+                  .col-4.text-center
+                    = link_to "Add Assignments", choose_assignments_person_assignment_tenures_path(@person), class: "btn btn-outline-secondary"
+                  .col-4.text-end
                     = form.submit "Update #{@person.first_name}'s Assignments", class: "btn btn-primary"
             - else
               .alert.alert-info
@@ -173,6 +182,7 @@
 - content_for :javascript do
   :javascript
     document.addEventListener('DOMContentLoaded', function() {
+      console.log('=== DOM Content Loaded ===');
       // Handle completion toggles
       document.querySelectorAll('.completion-toggle').forEach(function(toggle) {
         toggle.addEventListener('change', function() {
@@ -208,45 +218,71 @@
 
       // Energy percentage validation
       function calculateEnergyTotal() {
+        console.log('=== calculateEnergyTotal called ===');
+        
         const energySelects = document.querySelectorAll('.energy-select');
+        console.log('Found energy selects:', energySelects.length);
+        
         let total = 0;
         
-        energySelects.forEach(function(select) {
+        energySelects.forEach(function(select, index) {
           const value = parseInt(select.value) || 0;
+          console.log(`Select ${index}: value="${select.value}", parsed=${value}`);
           total += value;
         });
         
-        const totalElement = document.getElementById('energy-total');
-        const statusElement = document.getElementById('energy-status');
-        const alertElement = document.querySelector('.energy-total');
+        console.log('Total calculated:', total);
         
-        if (totalElement) {
-          totalElement.textContent = total + '%';
-        }
+        // Update both top and bottom energy totals
+        const totalElements = document.querySelectorAll('#energy-total-top, #energy-total-bottom');
+        const statusElements = document.querySelectorAll('#energy-status-top, #energy-status-bottom');
+        const alertElements = document.querySelectorAll('.energy-total');
         
-        if (alertElement && statusElement) {
-          // Remove existing status classes
-          alertElement.classList.remove('alert-success', 'alert-warning', 'alert-danger');
-          statusElement.innerHTML = '';
+        console.log('Found total elements:', totalElements.length);
+        console.log('Found status elements:', statusElements.length);
+        console.log('Found alert elements:', alertElements.length);
+        
+        totalElements.forEach(function(element, index) {
+          console.log(`Updating total element ${index}:`, element);
+          element.textContent = total + '%';
+        });
+        
+        alertElements.forEach(function(alertElement, index) {
+          const statusElement = statusElements[index];
+          console.log(`Updating alert element ${index}:`, alertElement);
+          console.log(`Status element ${index}:`, statusElement);
           
-          if (total === 100) {
-            alertElement.classList.add('alert-success');
-            statusElement.innerHTML = ' <i class="bi bi-check-circle"></i> Perfect!';
-          } else if (total > 100) {
-            alertElement.classList.add('alert-danger');
-            statusElement.innerHTML = ' <i class="bi bi-exclamation-triangle"></i> Over 100%!';
-          } else if (total < 100) {
-            alertElement.classList.add('alert-warning');
-            statusElement.innerHTML = ' <i class="bi bi-info-circle"></i> Under 100%';
+          if (statusElement) {
+            // Remove existing status classes
+            alertElement.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+            statusElement.innerHTML = '';
+            
+            if (total === 100) {
+              alertElement.classList.add('alert-success');
+              statusElement.innerHTML = ' <i class="bi bi-check-circle"></i>';
+            } else if (total > 100) {
+              alertElement.classList.add('alert-danger');
+              statusElement.innerHTML = ' <i class="bi bi-exclamation-triangle"></i>';
+            } else if (total < 100) {
+              alertElement.classList.add('alert-warning');
+              statusElement.innerHTML = ' <i class="bi bi-info-circle"></i>';
+            }
           }
-        }
+        });
+        
+        console.log('=== calculateEnergyTotal completed ===');
       }
       
       // Add event listeners to energy selects
-      document.querySelectorAll('.energy-select').forEach(function(select) {
-        select.addEventListener('change', calculateEnergyTotal);
+      document.querySelectorAll('.energy-select').forEach(function(select, index) {
+        console.log(`Adding event listener to energy select ${index}:`, select);
+        select.addEventListener('change', function() {
+          console.log(`Energy select ${index} changed to:`, this.value);
+          calculateEnergyTotal();
+        });
       });
       
       // Calculate initial total
+      console.log('Calculating initial energy total...');
       calculateEnergyTotal();
     });

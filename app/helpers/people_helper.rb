@@ -98,4 +98,42 @@ module PeopleHelper
       action_name.titleize
     end
   end
+
+  def check_in_status_text(check_in, person_type)
+    return 'Not Started' unless check_in
+    
+    case person_type
+    when :employee
+      if check_in.employee_completed?
+        "Marked Ready #{distance_of_time_in_words(check_in.employee_completed_at, Time.current)} ago"
+      elsif check_in.employee_started?
+        "Started #{distance_of_time_in_words(check_in.check_in_started_on, Time.current)} ago"
+      else
+        'Not Started'
+      end
+    when :manager
+      if check_in.manager_completed?
+        "Marked Ready #{distance_of_time_in_words(check_in.manager_completed_at, Time.current)} ago"
+      elsif check_in.manager_started?
+        "Started #{distance_of_time_in_words(check_in.check_in_started_on, Time.current)} ago"
+      else
+        'Not Started'
+      end
+    end
+  end
+
+  def last_completed_check_in_date(assignment_data, person)
+    # Find the most recent completed check-in for this assignment
+    recent_check_ins = AssignmentCheckIn
+      .where(person: person, assignment: assignment_data[:assignment])
+      .where.not(official_check_in_completed_at: nil)
+      .order(official_check_in_completed_at: :desc)
+      .limit(1)
+    
+    if recent_check_ins.any?
+      recent_check_ins.first.official_check_in_completed_at.strftime('%m/%d/%Y')
+    else
+      'Never'
+    end
+  end
 end
