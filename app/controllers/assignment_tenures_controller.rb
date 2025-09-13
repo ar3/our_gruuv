@@ -26,7 +26,20 @@ class AssignmentTenuresController < ApplicationController
 
   def choose_assignments
     authorize @person, :manager?, policy_class: PersonPolicy
-    @available_assignments = load_available_assignments
+    
+    @person_position = load_person_current_position
+    @current_employment = @person.employment_tenures.active.first
+    
+    if @current_employment.nil?
+      # No active employment tenure - redirect to create one
+      redirect_to new_person_employment_tenure_path(@person), 
+                  alert: 'Please create an employment tenure first before managing assignments.'
+      return
+    end
+    
+    @available_assignments = load_available_assignments_for_company(@current_employment.company)
+    @current_assignments = load_person_assignments
+    @assignments_by_organization = group_assignments_by_organization
   end
 
   def update_assignments
@@ -67,20 +80,8 @@ class AssignmentTenuresController < ApplicationController
   end
 
   def load_person_assignments
-    # Get assignments from current employment tenure
-    current_employment = @person.employment_tenures.active.first
-    return [] unless current_employment
-    
-    # Get required assignments from position assignments
-    position_assignments = current_employment.position.position_assignments.includes(:assignment)
-    assignments = position_assignments.map(&:assignment)
-    
-    # Also get any existing assignment tenures for this person
-    existing_tenures = @person.assignment_tenures.includes(:assignment)
-    existing_assignments = existing_tenures.map(&:assignment)
-    
-    # Combine and deduplicate
-    (assignments + existing_assignments).uniq
+    # Get assignments that the person actually has tenures for
+    @person.assignment_tenures.includes(:assignment).map(&:assignment).uniq
   end
 
   def load_available_assignments
@@ -90,6 +91,42 @@ class AssignmentTenuresController < ApplicationController
     
     all_assignments.reject { |assignment| current_assignments.include?(assignment) }
   end
+
+  def load_available_assignments_for_company(company)
+    # Get assignments for a specific company that could be added to this person
+    current_assignments = load_person_assignments
+    company_assignments = Assignment.includes(:company)
+                                   .where(company: company)
+                                   .order(:title)
+    
+    company_assignments.reject { |assignment| current_assignments.include?(assignment) }
+  end
+
+  def load_person_current_position
+    # Get the person's current active employment tenure and position
+    current_employment = @person.employment_tenures.active.first
+    current_employment&.position
+  end
+
+  def group_assignments_by_organization
+    # Group available assignments by organization
+    @available_assignments.group_by(&:company)
+  end
+
+  def assignment_type_for_position(assignment)
+    return nil unless @person_position
+    
+    position_assignment = @person_position.position_assignments.find_by(assignment: assignment)
+    position_assignment&.assignment_type
+  end
+
+  def has_assignment_history?(assignment)
+    # Check if person has any check-ins or tenures for this assignment
+    @person.assignment_tenures.where(assignment: assignment).exists? ||
+    @person.assignment_check_ins.where(assignment: assignment).exists?
+  end
+
+  helper_method :assignment_type_for_position, :has_assignment_history?
 
   def update_assignments_and_check_ins
     ActiveRecord::Base.transaction do

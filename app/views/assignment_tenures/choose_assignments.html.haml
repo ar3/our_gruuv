@@ -1,42 +1,165 @@
-.container-fluid
-  .row
-    .col-12
-      .d-flex.justify-content-between.align-items-center.mb-4
-        %h1 Choose Assignments for #{@person.display_name}
-        = link_to "Back to Assignment Management", person_assignment_tenures_path(@person), class: "btn btn-outline-secondary"
+- content_for :title, "Choose Assignments for #{@person.display_name}"
 
-  .row
-    .col-12
-      .card
-        .card-header
-          %h5.mb-0 Select Assignments to Add
-          %small.text-muted Choose which assignments you'd like to add to your profile
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    .header-info
+      %h1.mb-0 Choose Assignments for #{@person.first_name}
+      
+- content_for :go_back_link do
+  = link_to person_assignment_tenures_path(@person), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-1
+    Back to Assignment Management
 
-        .card-body
-          - if @available_assignments.any?
-            = form_with url: update_assignments_person_assignment_tenures_path(@person), method: :post, local: true do |form|
+- content_for :header_action do
+  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#chooseAssignmentsFilterModal", type: "button"}
+    %i.bi.bi-funnel.me-2
+    Filter & Sort
+
+- content_for :top_actions do
+  - if @available_assignments.any?
+    = form_with url: update_assignments_person_assignment_tenures_path(@person), method: :post, local: true, id: "assignments-form" do |form|
+      = form.submit "Add Selected Assignments", class: "btn btn-primary"
+
+.row
+  .col-12
+    - if @available_assignments.any?
+      = form_with url: update_assignments_person_assignment_tenures_path(@person), method: :post, local: true, id: "assignments-form" do |form|
+        - @assignments_by_organization.each do |organization, assignments|
+          .card.mb-4
+            .card-header
+              %h5.mb-0
+                = link_to organization.display_name, organization_path(organization), 
+                          target: "_blank", 
+                          class: "text-decoration-none"
+              %small.text-muted #{assignments.count} assignment#{'s' if assignments.count != 1} available
+            
+            .card-body
               .row
-                - @available_assignments.each do |assignment|
+                - assignments.each do |assignment|
                   .col-md-6.mb-3
-                    .card
+                    .card.border
                       .card-body
                         .form-check
-                          = form.check_box "assignments[]", 
-                                          { class: "form-check-input", id: "assignment_#{assignment.id}" },
-                                          assignment.id, nil
-                          = form.label "assignment_#{assignment.id}", class: "form-check-label" do
-                            %strong= assignment.title
-                            %br
-                            %small.text-muted= assignment.company.name
-                            %br
-                            %small.text-muted= assignment.tagline
+                          - assignment_type = assignment_type_for_position(assignment)
+                          - is_required = assignment_type == 'required'
+                          - is_suggested = assignment_type == 'suggested'
+                          - is_current = @current_assignments.include?(assignment)
+                          - should_check = is_current || is_required
+                          
+                          = form.check_box("assignments[]", { class: "form-check-input", id: "assignment_#{assignment.id}", checked: should_check, disabled: is_current }, assignment.id, nil)
 
-              .row.mt-4
-                .col-12
-                  .d-flex.justify-content-between
-                    = link_to "Back to Assignment Management", person_assignment_tenures_path(@person), class: "btn btn-outline-secondary"
-                    = form.submit "Add Selected Assignments", class: "btn btn-primary"
-          - else
-            .text-center.py-4
-              %p.text-muted No additional assignments available to add.
-              = link_to "Back to Assignment Management", person_assignment_tenures_path(@person), class: "btn btn-primary"
+                          = form.label "assignment_#{assignment.id}", class: "form-check-label" do
+                            .d-flex.justify-content-between.align-items-start
+                              .assignment-info
+                                %strong
+                                  = link_to assignment.title, 
+                                            organization_assignment_path(assignment.company, assignment),
+                                            target: "_blank",
+                                            class: "text-decoration-none"
+                                %br
+                                %small.text-muted= assignment.tagline
+                                - if is_current
+                                  %br
+                                  %span.badge.bg-success.mt-1 Currently Assigned
+                                - if has_assignment_history?(assignment)
+                                  %br
+                                  = link_to "View History", 
+                                            person_assignment_path(@person, assignment),
+                                            target: "_blank",
+                                            class: "btn btn-sm btn-outline-secondary mt-1"
+                              .assignment-labels
+                                - if is_required
+                                  %span.badge.bg-danger.me-1 Required
+                                - elsif is_suggested
+                                  %span.badge.bg-warning.me-1 Suggested
+                                - if is_current
+                                  %span.badge.bg-secondary Already Added
+
+        .row.mt-4
+          .col-12
+            .d-flex.justify-content-right 
+              = form.submit "Add Selected Assignments", class: "btn btn-primary"
+    - else
+      .text-center.py-5
+        .card
+          .card-body
+            %i.bi.bi-check-circle.text-success.fs-1.mb-3
+            %h4 No Additional Assignments Available
+            %p.text-muted All available assignments for #{@current_employment.company.display_name} have already been added to #{@person.display_name}'s profile.
+            = link_to "Back to Assignment Management", person_assignment_tenures_path(@person), class: "btn btn-primary"
+
+/ Modal for Filter & Sort
+#chooseAssignmentsFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "chooseAssignmentsFilterModalLabel", tabindex: "-1"}
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        %h5.modal-title#chooseAssignmentsFilterModalLabel
+          %i.bi.bi-funnel.me-2
+          Filter & Sort Assignments
+        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+      .modal-body
+        .row
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-funnel.me-2
+              Filters
+            .mb-3
+              %label.form-label Assignment Type
+              %select.form-select
+                %option All Assignments
+                %option Required Only
+                %option Suggested Only
+                %option Not Required/Suggested
+            .mb-3
+              %label.form-label Status
+              %select.form-select
+                %option All Statuses
+                %option Available
+                %option Already Assigned
+            .mb-3
+              %label.form-label Company
+              %select.form-select
+                %option All Companies
+                - if @current_employment
+                  %option= @current_employment.company.display_name
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-sort-down.me-2
+              Sort Options
+            .mb-3
+              %label.form-label Sort By
+              %select.form-select
+                %option Title (A-Z)
+                %option Title (Z-A)
+                %option Assignment Type
+                %option Required First
+                %option Suggested First
+            .mb-3
+              %label.form-label View Style
+              .form-check
+                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "cards"}
+                %label.form-check-label
+                  %i.bi.bi-grid.me-2
+                  Card View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
+                %label.form-check-label
+                  %i.bi.bi-list.me-2
+                  List View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "table"}
+                %label.form-check-label
+                  %i.bi.bi-table.me-2
+                  Table View
+            .mb-3
+              %label.form-label Spotlight
+              %select.form-select
+                %option No Spotlight
+                %option Required Assignments
+                %option Suggested Assignments
+                %option Recently Created
+      .modal-footer
+        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+        %button.btn.btn-primary.disabled{type: "button"}
+          %i.bi.bi-check.me-2
+          Apply Filters
