@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_11_031512) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_14_235044) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -221,6 +221,26 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_11_031512) do
     t.bigint "huddle_playbook_id"
     t.index ["expires_at"], name: "index_huddles_on_expires_at"
     t.index ["huddle_playbook_id"], name: "index_huddles_on_huddle_playbook_id"
+  end
+
+  create_table "maap_snapshots", force: :cascade do |t|
+    t.bigint "employee_id"
+    t.bigint "created_by_id"
+    t.bigint "company_id"
+    t.string "change_type", null: false
+    t.text "reason", null: false
+    t.jsonb "maap_data", default: {}, null: false
+    t.jsonb "request_info", default: {}, null: false
+    t.date "effective_date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["change_type"], name: "index_maap_snapshots_on_change_type"
+    t.index ["company_id"], name: "index_maap_snapshots_on_company_id"
+    t.index ["created_by_id"], name: "index_maap_snapshots_on_created_by_id"
+    t.index ["effective_date"], name: "index_maap_snapshots_on_effective_date"
+    t.index ["employee_id"], name: "index_maap_snapshots_on_employee_id"
+    t.index ["maap_data"], name: "index_maap_snapshots_on_maap_data", using: :gin
+    t.index ["request_info"], name: "index_maap_snapshots_on_request_info", using: :gin
   end
 
   create_table "notifications", force: :cascade do |t|
@@ -498,6 +518,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_11_031512) do
   add_foreign_key "huddle_participants", "people"
   add_foreign_key "huddle_playbooks", "organizations"
   add_foreign_key "huddles", "huddle_playbooks"
+  add_foreign_key "maap_snapshots", "organizations", column: "company_id"
+  add_foreign_key "maap_snapshots", "people", column: "created_by_id"
+  add_foreign_key "maap_snapshots", "people", column: "employee_id"
   add_foreign_key "notifications", "notifications", column: "main_thread_id"
   add_foreign_key "notifications", "notifications", column: "original_message_id"
   add_foreign_key "organizations", "organizations", column: "parent_id"

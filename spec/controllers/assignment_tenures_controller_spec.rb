@@ -31,267 +31,208 @@ RSpec.describe AssignmentTenuresController, type: :controller do
     allow(controller).to receive(:authenticate_person!)
   end
 
+  describe 'GET #show' do
+    it 'renders the assignment tenures page' do
+      get :show, params: { person_id: employee.id }
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template(:show)
+    end
+
+    it 'loads assignments and check-ins data' do
+      # Create some test data
+      create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20)
+      create(:assignment_check_in, person: employee, assignment: assignment1, actual_energy_percentage: 25)
+      
+      get :show, params: { person_id: employee.id }
+      
+      expect(assigns(:assignment_data)).to be_present
+      expect(assigns(:assignment_data).length).to eq(1)
+    end
+  end
+
   describe 'PATCH #update' do
-    context 'with multiple assignments having different states' do
-      let!(:tenure1) { create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20) }
-      let!(:tenure2) { create(:assignment_tenure, person: employee, assignment: assignment2, anticipated_energy_percentage: 30) }
-      let!(:check_in1) { create(:assignment_check_in, person: employee, assignment: assignment1, actual_energy_percentage: 25, employee_rating: 'meeting') }
-      let!(:check_in2) { create(:assignment_check_in, person: employee, assignment: assignment2, actual_energy_percentage: 35, manager_rating: 'exceeding') }
-
-      context 'when updating only anticipated energy percentages' do
-        let(:params) do
-          {
-            person_id: employee.id,
-            "tenure_#{assignment1.id}_anticipated_energy" => '30',
-            "tenure_#{assignment2.id}_anticipated_energy" => '40',
-            "tenure_#{assignment3.id}_anticipated_energy" => '20'
-          }
-        end
-
-        it 'creates new tenures for changed energy percentages' do
-          # Disable authorization verification for this test
-          allow(controller).to receive(:verify_authorized)
-          
-          # Mock the authorization to pass
-          allow(controller).to receive(:authorize).and_return(true)
-          
-          # Mock the assignment data loading
-          assignment_data = [
-            { assignment: assignment1, tenure: tenure1, open_check_in: nil },
-            { assignment: assignment2, tenure: tenure2, open_check_in: nil },
-            { assignment: assignment3, tenure: nil, open_check_in: nil }
-          ]
-          allow(controller).to receive(:load_assignments_and_check_ins) do
-            controller.instance_variable_set(:@assignment_data, assignment_data)
-          end
-          
-          # Test the actual update logic
-          expect {
-            patch :update, params: params
-          }.to change { AssignmentTenure.count }.by(3)
-          
-          expect(response).to have_http_status(:redirect)
-        end
-
-        it 'ends existing tenures when energy changes' do
-          patch :update, params: params
-          
-          tenure1.reload
-          tenure2.reload
-          
-          expect(tenure1.ended_at).to be_present
-          expect(tenure2.ended_at).to be_present
-        end
-
-        it 'creates new tenure for assignment3' do
-          patch :update, params: params
-          
-          new_tenure = AssignmentTenure.where(person: employee, assignment: assignment3).last
-          expect(new_tenure.anticipated_energy_percentage).to eq(20)
-          expect(new_tenure.started_at).to eq(Date.current)
-        end
+    context 'as a manager with valid parameters' do
+      let(:valid_params) do
+        {
+          person_id: employee.id,
+          reason: 'Testing MAAP snapshot creation'
+        }
       end
 
-      context 'when updating only check-in attributes' do
-        let(:params) do
-          {
-            person_id: employee.id,
-            "check_in_#{assignment1.id}_actual_energy" => '30',
-            "check_in_#{assignment1.id}_employee_rating" => 'exceeding',
-            "check_in_#{assignment1.id}_personal_alignment" => 'love',
-            "check_in_#{assignment1.id}_employee_private_notes" => 'Great assignment!',
-            "check_in_#{assignment2.id}_manager_rating" => 'working_to_meet',
-            "check_in_#{assignment2.id}_manager_private_notes" => 'Needs improvement'
-          }
-        end
-
-        it 'updates existing check-ins' do
-          patch :update, params: params
-          
-          check_in1.reload
-          check_in2.reload
-          
-          expect(check_in1.actual_energy_percentage).to eq(30)
-          expect(check_in1.employee_rating).to eq('exceeding')
-          expect(check_in1.employee_personal_alignment).to eq('love')
-          expect(check_in1.employee_private_notes).to eq('Great assignment!')
-          
-          expect(check_in2.manager_rating).to eq('working_to_meet')
-          expect(check_in2.manager_private_notes).to eq('Needs improvement')
-        end
-
-        it 'does not create new check-ins when updating existing ones' do
-          expect {
-            patch :update, params: params
-          }.not_to change { AssignmentCheckIn.count }
-        end
-      end
-
-      context 'when creating new check-ins' do
-        let(:params) do
-          {
-            person_id: employee.id,
-            "check_in_#{assignment3.id}_actual_energy" => '25',
-            "check_in_#{assignment3.id}_employee_rating" => 'meeting',
-            "check_in_#{assignment3.id}_personal_alignment" => 'like'
-          }
-        end
-
-        it 'creates new check-in for assignment3' do
-          expect {
-            patch :update, params: params
-          }.to change { AssignmentCheckIn.count }.by(1)
-          
-          new_check_in = AssignmentCheckIn.where(person: employee, assignment: assignment3).last
-          expect(new_check_in.actual_energy_percentage).to eq(25)
-          expect(new_check_in.employee_rating).to eq('meeting')
-          expect(new_check_in.employee_personal_alignment).to eq('like')
-          expect(new_check_in.check_in_started_on).to eq(Date.current)
-        end
-      end
-
-      context 'when updating completion status' do
-        let(:params) do
-          {
-            person_id: employee.id,
-            "check_in_#{assignment1.id}_employee_complete" => '1',
-            "check_in_#{assignment2.id}_manager_complete" => '1'
-          }
-        end
-
-        it 'completes employee side for assignment1' do
-          patch :update, params: params
-          
-          check_in1.reload
-          expect(check_in1.employee_completed?).to be true
-          expect(check_in1.employee_completed_at).to be_present
-          expect(check_in1.employee_completed_by).to eq(manager)
-        end
-
-        it 'completes manager side for assignment2' do
-          patch :update, params: params
-          
-          check_in2.reload
-          expect(check_in2.manager_completed?).to be true
-          expect(check_in2.manager_completed_at).to be_present
-          expect(check_in2.manager_completed_by).to eq(manager)
-        end
-      end
-
-      context 'when uncompleting check-ins' do
-        before do
-          # Make the existing check_in1 employee completed
-          check_in1.update!(employee_completed_at: Time.current, employee_completed_by: manager)
-        end
+      it 'creates a MaapSnapshot and redirects to execute_changes' do
+        expect {
+          patch :update, params: valid_params
+        }.to change(MaapSnapshot, :count).by(1)
         
-        let(:params) do
-          {
-            person_id: employee.id,
-            "check_in_#{assignment1.id}_employee_complete" => '0'
-          }
-        end
-
-        it 'uncompletes employee side' do
-          patch :update, params: params
-          
-          check_in1.reload
-          expect(check_in1.employee_completed?).to be false
-          expect(check_in1.employee_completed_at).to be_nil
-          expect(check_in1.employee_completed_by).to be_nil
-        end
+        expect(response).to have_http_status(:redirect)
+        
+        maap_snapshot = MaapSnapshot.last
+        expect(maap_snapshot.employee).to eq(employee)
+        expect(maap_snapshot.created_by).to eq(manager)
+        expect(maap_snapshot.company.id).to eq(organization.id)
+        expect(maap_snapshot.company.name).to eq(organization.name)
+        expect(maap_snapshot.change_type).to eq('assignment_management')
+        expect(maap_snapshot.reason).to eq('Testing MAAP snapshot creation')
+        expect(maap_snapshot.pending?).to be true
+        
+        # Verify redirect to execute_changes
+        expect(response).to redirect_to(execute_changes_person_path(employee, maap_snapshot))
       end
 
-      context 'when creating check-in and completing in same request' do
-        let(:params) do
-          {
-            person_id: employee.id,
-            "check_in_#{assignment3.id}_actual_energy" => '30',
-            "check_in_#{assignment3.id}_employee_complete" => '1'
-          }
-        end
-
-        it 'creates check-in and completes employee side' do
-          expect {
-            patch :update, params: params
-          }.to change { AssignmentCheckIn.count }.by(1)
-          
-          new_check_in = AssignmentCheckIn.where(person: employee, assignment: assignment3).last
-          expect(new_check_in.actual_energy_percentage).to eq(30)
-          expect(new_check_in.employee_completed?).to be true
-          expect(new_check_in.employee_completed_by).to eq(manager)
-        end
+      it 'captures security information in request_info' do
+        allow(request).to receive(:remote_ip).and_return('192.168.1.1')
+        allow(request).to receive(:user_agent).and_return('Test Browser')
+        allow(session).to receive(:id).and_return('test_session_123')
+        
+        patch :update, params: valid_params
+        
+        maap_snapshot = MaapSnapshot.last
+        expect(maap_snapshot.request_info['ip_address']).to be_present
+        expect(maap_snapshot.request_info['user_agent']).to be_present
+        expect(maap_snapshot.request_info['session_id']).to be_present
+        expect(maap_snapshot.request_info['request_id']).to be_present
+        expect(maap_snapshot.request_info['timestamp']).to be_present
       end
 
-      context 'when no data changes' do
-        let(:params) do
-          {
-            person_id: employee.id,
-            "tenure_#{assignment1.id}_anticipated_energy" => '20' # Same as existing
-          }
-        end
+      it 'includes current MAAP data in snapshot' do
+        # Create some test data
+        create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20)
+        create(:assignment_check_in, person: employee, assignment: assignment1, actual_energy_percentage: 25, employee_rating: 'meeting')
+        
+        patch :update, params: valid_params
+        
+        maap_snapshot = MaapSnapshot.last
+        expect(maap_snapshot.maap_data['employment_tenure']).to be_present
+        expect(maap_snapshot.maap_data['assignments']).to be_an(Array)
+        expect(maap_snapshot.maap_data['assignments'].length).to eq(1)
+        
+        assignment_data = maap_snapshot.maap_data['assignments'].first
+        expect(assignment_data['id']).to eq(assignment1.id)
+        expect(assignment_data['tenure']['anticipated_energy_percentage']).to eq(20)
+        expect(assignment_data['employee_check_in']['actual_energy_percentage']).to eq(25)
+        expect(assignment_data['employee_check_in']['employee_rating']).to eq('meeting')
+      end
+    end
 
-        it 'does not create new tenures when energy is unchanged' do
-          expect {
-            patch :update, params: params
-          }.not_to change { AssignmentTenure.count }
-        end
+    context 'as a manager with tenure changes' do
+      let!(:assignment_tenure) { create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20) }
+      
+      let(:tenure_change_params) do
+        {
+          person_id: employee.id,
+          reason: 'Changing energy allocation',
+          "tenure_#{assignment1.id}_anticipated_energy" => '5'
+        }
       end
 
-      context 'when mixing all update types' do
-        let(:params) do
-          {
-            person_id: employee.id,
-            # Change tenure energy
-            "tenure_#{assignment1.id}_anticipated_energy" => '25',
-            # Update existing check-in
-            "check_in_#{assignment1.id}_actual_energy" => '30',
-            "check_in_#{assignment1.id}_employee_complete" => '1',
-            # Create new check-in
-            "check_in_#{assignment3.id}_actual_energy" => '20',
-            "check_in_#{assignment3.id}_employee_rating" => 'meeting',
-            "check_in_#{assignment3.id}_manager_complete" => '1'
-          }
-        end
-
-        it 'handles all update types in one request' do
-          expect {
-            patch :update, params: params
-          }.to change { AssignmentTenure.count }.by(1) # New tenure for assignment1
-            .and change { AssignmentCheckIn.count }.by(1) # New check-in for assignment3
-          
-          # Check tenure update
-          new_tenure = AssignmentTenure.where(person: employee, assignment: assignment1).last
-          expect(new_tenure.anticipated_energy_percentage).to eq(25)
-          
-          # Check existing check-in update
-          check_in1.reload
-          expect(check_in1.actual_energy_percentage).to eq(30)
-          expect(check_in1.employee_completed?).to be true
-          
-          # Check new check-in creation
-          new_check_in = AssignmentCheckIn.where(person: employee, assignment: assignment3).last
-          expect(new_check_in.actual_energy_percentage).to eq(20)
-          expect(new_check_in.employee_rating).to eq('meeting')
-          expect(new_check_in.manager_completed?).to be true
-        end
+      it 'captures tenure changes in the snapshot' do
+        patch :update, params: tenure_change_params
+        
+        maap_snapshot = MaapSnapshot.last
+        assignment_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment1.id }
+        
+        expect(assignment_data['tenure']['anticipated_energy_percentage']).to eq(5)
+        expect(assignment_data['tenure']['started_at']).to eq(assignment_tenure.started_at.to_s)
       end
 
-      context 'when check-in creation fails validation' do
-        let(:params) do
-          {
-            person_id: employee.id,
-            "check_in_#{assignment3.id}_employee_rating" => 'invalid_rating'
-          }
-        end
-
-        it 'handles validation errors gracefully' do
-          expect {
-            patch :update, params: params
-          }.not_to change { AssignmentCheckIn.count }
-          
-          expect(response).to have_http_status(:unprocessable_entity)
-        end
+      it 'creates new tenure when changing from 0% to non-zero' do
+        # End the current tenure (must be after started_at)
+        assignment_tenure.update!(ended_at: Date.current + 1.day)
+        
+        patch :update, params: tenure_change_params
+        
+        maap_snapshot = MaapSnapshot.last
+        assignment_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment1.id }
+        
+        expect(assignment_data['tenure']['anticipated_energy_percentage']).to eq(5)
+        expect(assignment_data['tenure']['started_at']).to eq(Date.current.to_s)
       end
+    end
+
+    context 'as a manager with check-in changes' do
+      let!(:assignment_tenure) { create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20) }
+      let!(:check_in) { create(:assignment_check_in, person: employee, assignment: assignment1, actual_energy_percentage: 15, employee_rating: 'meeting') }
+      
+      let(:check_in_change_params) do
+        {
+          person_id: employee.id,
+          reason: 'Updating check-in data',
+          "check_in_#{assignment1.id}_actual_energy" => '25',
+          "check_in_#{assignment1.id}_employee_rating" => 'exceeding',
+          "check_in_#{assignment1.id}_employee_private_notes" => 'Great progress this quarter',
+          "check_in_#{assignment1.id}_personal_alignment" => 'love',
+          "check_in_#{assignment1.id}_employee_complete" => '1'
+        }
+      end
+
+      it 'captures employee check-in changes' do
+        patch :update, params: check_in_change_params
+        
+        maap_snapshot = MaapSnapshot.last
+        assignment_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment1.id }
+        
+        expect(assignment_data['employee_check_in']['actual_energy_percentage']).to eq(25)
+        expect(assignment_data['employee_check_in']['employee_rating']).to eq('exceeding')
+        expect(assignment_data['employee_check_in']['employee_private_notes']).to eq('Great progress this quarter')
+        expect(assignment_data['employee_check_in']['employee_personal_alignment']).to eq('love')
+        expect(assignment_data['employee_check_in']['employee_completed_at']).to be_present
+      end
+
+      it 'captures manager check-in changes' do
+        manager_params = check_in_change_params.merge(
+          "check_in_#{assignment1.id}_manager_rating" => 'exceeding',
+          "check_in_#{assignment1.id}_manager_private_notes" => 'Excellent work',
+          "check_in_#{assignment1.id}_manager_complete" => '1'
+        )
+        
+        patch :update, params: manager_params
+        
+        maap_snapshot = MaapSnapshot.last
+        assignment_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment1.id }
+        
+        expect(assignment_data['manager_check_in']['manager_rating']).to eq('exceeding')
+        expect(assignment_data['manager_check_in']['manager_private_notes']).to eq('Excellent work')
+        expect(assignment_data['manager_check_in']['manager_completed_at']).to be_present
+      end
+
+      it 'creates new check-in when none exists' do
+        check_in.destroy!
+        
+        patch :update, params: check_in_change_params
+        
+        maap_snapshot = MaapSnapshot.last
+        assignment_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment1.id }
+        
+        expect(assignment_data['employee_check_in']).to be_present
+        expect(assignment_data['employee_check_in']['actual_energy_percentage']).to eq(25)
+        expect(assignment_data['employee_check_in']['employee_rating']).to eq('exceeding')
+      end
+    end
+
+    # Note: Authorization testing is complex in controller specs due to Pundit integration
+    # The core authorization logic is tested in integration specs and policy specs
+
+    context 'when MaapSnapshot creation fails' do
+      before do
+        allow(MaapSnapshot).to receive(:build_for_employee_with_changes).and_return(
+          double(save: false, errors: double(full_messages: ['Test error']))
+        )
+      end
+
+      it 'redirects back with alert' do
+        patch :update, params: { person_id: employee.id }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(person_assignment_tenures_path(employee))
+      end
+    end
+  end
+
+  describe 'GET #choose_assignments' do
+    it 'renders the choose assignments page' do
+      get :choose_assignments, params: { person_id: employee.id }
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template(:choose_assignments)
     end
   end
 end

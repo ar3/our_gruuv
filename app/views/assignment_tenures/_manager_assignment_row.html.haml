@@ -4,14 +4,17 @@
     %br
     %small.text-muted
       - if data[:tenure]
-        Started #{data[:tenure].started_at.strftime('%B %d, %Y')}
+        - # Check if there's a previous inactive tenure for this assignment
+        - previous_tenure = data[:assignment].assignment_tenures.where(person: @person).inactive.order(:ended_at).last
+        - if previous_tenure
+          Went from #{previous_tenure.anticipated_energy_percentage || 0}% to #{data[:tenure].anticipated_energy_percentage || 0}% on #{previous_tenure.ended_at.strftime('%m/%d/%Y')}
+        - else
+          Started #{data[:tenure].started_at.strftime('%m/%d/%Y')}
+      - elsif data[:most_recent_tenure]
+        - most_recent = data[:most_recent_tenure]
+        %small.text-muted Went from #{most_recent.anticipated_energy_percentage || 0}% to 0% on #{most_recent.ended_at.strftime('%m/%d/%Y')}
       - else
         Not started
-    - if data[:open_check_in]
-      %br
-      %small.text-info
-        %i.bi.bi-info-circle.me-1
-        Check-in #{data[:open_check_in].check_in_started_on.strftime('%m/%d/%Y')}
     %br
     = link_to "Focus Assignment", person_assignment_path(@person, data[:assignment]), class: "btn btn-sm btn-outline-primary", target: "_blank"
   
@@ -33,6 +36,12 @@
       %small.text-muted
         %strong Last completed check-in: 
         = last_completed_check_in_date(data, @person)
+      
+      - if data[:open_check_in]
+        %br
+        %small.text-muted
+          %strong This check-in began: 
+          #{data[:open_check_in].check_in_started_on.strftime('%m/%d/%Y')}
       
       %br
       %small.text-muted

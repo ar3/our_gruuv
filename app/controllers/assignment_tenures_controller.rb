@@ -5,6 +5,7 @@ class AssignmentTenuresController < ApplicationController
   before_action :require_authentication
   before_action :set_person
   after_action :verify_authorized
+  before_action :log_request_info
 
   def show
     authorize @person, :manager?, policy_class: PersonPolicy
@@ -14,15 +15,40 @@ class AssignmentTenuresController < ApplicationController
   def update
     authorize @person, :manager?, policy_class: PersonPolicy
     
-    # Load assignment data before processing updates
-    load_assignments_and_check_ins
+    # Capture security information
+    request_info = {
+      ip_address: request.remote_ip,
+      user_agent: request.user_agent,
+      session_id: session.id,
+      request_id: SecureRandom.uuid,
+      timestamp: Time.current
+    }
     
-    if update_assignments_and_check_ins
-      redirect_to person_assignment_tenures_path(@person), notice: 'Assignments updated successfully.'
+    # Build MaapSnapshot with proposed changes from form parameters
+    maap_snapshot = MaapSnapshot.build_for_employee_with_changes(
+      employee: @person,
+      created_by: current_person,
+      change_type: 'assignment_management',
+      reason: params[:reason] || 'Assignment updates',
+      request_info: request_info,
+      form_params: params
+    )
+    
+    if maap_snapshot.save
+      redirect_to execute_changes_person_path(@person, maap_snapshot), 
+                  notice: "Changes queued for processing. Review and execute below. #{@person&.full_name} - #{maap_snapshot&.id}"
     else
-      render :show, status: :unprocessable_entity
+      Rails.logger.error "MaapSnapshot save failed: #{maap_snapshot.errors.full_messages}"
+      redirect_to person_assignment_tenures_path(@person), 
+                  alert: 'Failed to create change record. Please try again.'
     end
   end
+
+  def changes_confirmation
+    authorize @person, :manager?, policy_class: PersonPolicy
+    load_assignments_and_check_ins
+  end
+
 
   def choose_assignments
     authorize @person, :manager?, policy_class: PersonPolicy
@@ -55,6 +81,36 @@ class AssignmentTenuresController < ApplicationController
 
   private
 
+  def normalize_value(value)
+    case value
+    when nil, ''
+      nil
+    when String
+      value.strip.empty? ? nil : value.strip
+    else
+      value
+    end
+  end
+
+  def calculate_effective_tenure_value(assignment_id, db_value)
+    # Get all pending AssignmentChanges for this person, ordered by creation time
+    pending_changes = AssignmentChange.where(person: @person, status: 'pending')
+                                     .where("request_data->'tenure_changes' ? '#{assignment_id}'")
+                                     .order(:created_at)
+    
+    # Start with database value (0% if no active tenure)
+    effective_value = db_value
+    
+    # Apply each pending change in order
+    pending_changes.each do |change|
+      if change.request_data['tenure_changes']&.dig(assignment_id.to_s)&.dig('anticipated_energy_percentage')
+        effective_value = change.request_data['tenure_changes'][assignment_id.to_s]['anticipated_energy_percentage']
+      end
+    end
+    
+    effective_value
+  end
+
   def set_person
     @person = Person.find(params[:person_id])
   end
@@ -66,17 +122,23 @@ class AssignmentTenuresController < ApplicationController
     # Get all assignments for this person (both active and inactive)
     @assignments = load_person_assignments
     
-    # For each assignment, get the current tenure and open check-in
+    # For each assignment, get the active tenure and open check-in
     @assignment_data = @assignments.map do |assignment|
-      tenure = AssignmentTenure.most_recent_for(@person, assignment)
+      # Get active tenure specifically (for energy values)
+      active_tenure = @person.assignment_tenures.where(assignment: assignment).active.first
+      
+      # Get most recent tenure (for general info like start date)
+      most_recent_tenure = AssignmentTenure.most_recent_for(@person, assignment)
+      
       open_check_in = AssignmentCheckIn.where(person: @person, assignment: assignment).open.first
       
       {
         assignment: assignment,
-        tenure: tenure,
+        tenure: active_tenure,  # Use active tenure for energy values
+        most_recent_tenure: most_recent_tenure,  # Keep most recent for other info
         open_check_in: open_check_in
       }
-    end
+    end.sort_by { |data| -(data[:tenure]&.anticipated_energy_percentage || 0) }
   end
 
   def load_person_assignments
@@ -127,6 +189,164 @@ class AssignmentTenuresController < ApplicationController
   end
 
   helper_method :assignment_type_for_position, :has_assignment_history?
+
+  def parse_request_changes
+    changes = {
+      tenure_changes: {},
+      check_in_changes: {},
+      completion_changes: {}
+    }
+    
+    # Parse tenure changes (anticipated energy)
+    params.each do |key, value|
+      if key.start_with?('tenure_') && key.end_with?('_anticipated_energy')
+        assignment_id = key.gsub('tenure_', '').gsub('_anticipated_energy', '').to_i
+        
+        # Get effective current value (database + pending changes) to check if it's actually changing
+        assignment = Assignment.find(assignment_id)
+        active_tenure = @person.assignment_tenures.where(assignment: assignment).active.first
+        db_value = active_tenure&.anticipated_energy_percentage || 0
+        
+        # Calculate effective current value by applying all pending changes
+        effective_current_value = calculate_effective_tenure_value(assignment_id, db_value)
+        new_value = value.to_i
+        
+        # Only store if it's actually changing
+        if effective_current_value != new_value
+          changes[:tenure_changes][assignment_id] = { anticipated_energy_percentage: new_value }
+        end
+      end
+    end
+    
+    # Parse check-in changes
+    params.each do |key, value|
+      if key.start_with?('check_in_')
+        assignment_id = key.gsub('check_in_', '').split('_')[0].to_i
+        field_name = key.gsub("check_in_#{assignment_id}_", '')
+        
+        # Skip completion fields - they're handled separately
+        next if field_name.end_with?('_complete')
+        
+        unless changes[:check_in_changes][assignment_id]
+          changes[:check_in_changes][assignment_id] = {}
+        end
+        
+        # Get current check-in to compare values
+        assignment = Assignment.find(assignment_id)
+        current_check_in = AssignmentCheckIn.where(person: @person, assignment: assignment).open.first
+        
+        case field_name
+        when 'actual_energy'
+          current_value = current_check_in&.actual_energy_percentage || 0
+          new_value = value.to_i
+          if current_value != new_value
+            changes[:check_in_changes][assignment_id][:actual_energy_percentage] = new_value
+          end
+        when 'employee_rating'
+          current_value = current_check_in&.employee_rating
+          new_value = normalize_value(value)
+          if current_value != new_value
+            changes[:check_in_changes][assignment_id][:employee_rating] = new_value
+          end
+        when 'personal_alignment'
+          current_value = current_check_in&.employee_personal_alignment
+          new_value = normalize_value(value)
+          if current_value != new_value
+            changes[:check_in_changes][assignment_id][:employee_personal_alignment] = new_value
+          end
+        when 'employee_private_notes'
+          current_value = current_check_in&.employee_private_notes
+          new_value = normalize_value(value)
+          if current_value != new_value
+            changes[:check_in_changes][assignment_id][:employee_private_notes] = new_value
+          end
+        when 'manager_rating'
+          current_value = current_check_in&.manager_rating
+          new_value = normalize_value(value)
+          if current_value != new_value
+            changes[:check_in_changes][assignment_id][:manager_rating] = new_value
+          end
+        when 'manager_private_notes'
+          current_value = current_check_in&.manager_private_notes
+          new_value = normalize_value(value)
+          if current_value != new_value
+            changes[:check_in_changes][assignment_id][:manager_private_notes] = new_value
+          end
+        end
+      end
+    end
+    
+    # Parse completion changes
+    params.each do |key, value|
+      if key.start_with?('check_in_') && (key.end_with?('_employee_complete') || key.end_with?('_manager_complete'))
+        assignment_id = key.gsub('check_in_', '').split('_')[0].to_i
+        field_name = key.gsub("check_in_#{assignment_id}_", '')
+        
+        # Get current check-in to compare completion status
+        assignment = Assignment.find(assignment_id)
+        current_check_in = AssignmentCheckIn.where(person: @person, assignment: assignment).open.first
+        
+        # Skip if no actual change in completion status
+        if field_name == 'employee_complete'
+          current_completed = current_check_in&.employee_completed? || false
+          new_completed = value == 'true' || value == '1'
+          next if current_completed == new_completed
+        elsif field_name == 'manager_complete'
+          current_completed = current_check_in&.manager_completed? || false
+          new_completed = value == 'true' || value == '1'
+          next if current_completed == new_completed
+        end
+        
+        unless changes[:completion_changes][assignment_id]
+          changes[:completion_changes][assignment_id] = {}
+        end
+        
+        changes[:completion_changes][assignment_id][field_name] = value
+      end
+    end
+    
+    # Filter out non-changes from check_in_changes
+    changes[:check_in_changes].each do |assignment_id, field_changes|
+      assignment = Assignment.find(assignment_id)
+      current_check_in = AssignmentCheckIn.where(person: @person, assignment: assignment).open.first
+      
+      field_changes.reject! do |field, new_value|
+        current_value = case field
+        when :actual_energy_percentage
+          current_check_in&.actual_energy_percentage || 0
+        when :employee_rating
+          current_check_in&.employee_rating
+        when :personal_alignment
+          current_check_in&.personal_alignment
+        when :employee_private_notes
+          current_check_in&.employee_private_notes
+        when :manager_rating
+          current_check_in&.manager_rating
+        when :manager_private_notes
+          current_check_in&.manager_private_notes
+        end
+        
+        # Filter out nil to empty changes
+        if current_value.nil? && (new_value.blank? || new_value == '0')
+          true
+        # Filter out identical values
+        elsif current_value == new_value
+          true
+        else
+          false
+        end
+      end
+    end
+    
+    # Remove empty check_in_changes entries
+    changes[:check_in_changes].reject! { |_, field_changes| field_changes.empty? }
+    
+    # Remove empty change categories and empty assignment changes
+    changes.each do |category, assignment_changes|
+      assignment_changes.reject! { |_, field_changes| field_changes.empty? }
+    end
+    changes.reject { |_, v| v.empty? }
+  end
 
   def update_assignments_and_check_ins
     ActiveRecord::Base.transaction do
@@ -313,5 +533,14 @@ class AssignmentTenuresController < ApplicationController
     unless current_person
       redirect_to root_path, alert: 'Please log in to access assignment management.'
     end
+  end
+
+  def log_request_info
+    Rails.logger.info "=== ASSIGNMENT TENURES REQUEST ==="
+    Rails.logger.info "Action: #{action_name}"
+    Rails.logger.info "Method: #{request.method}"
+    Rails.logger.info "Params: #{params.inspect}"
+    Rails.logger.info "Current person: #{current_person.inspect}"
+    Rails.logger.info "=== END REQUEST INFO ==="
   end
 end

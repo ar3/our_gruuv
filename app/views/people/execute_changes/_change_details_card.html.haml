@@ -1,0 +1,51 @@
+.card.mb-4
+  .card-header
+    .d-flex.justify-content-between.align-items-center
+      %h5.mb-0 Change Details
+      %span.badge.bg-primary= maap_snapshot.change_type.humanize
+  .card-body
+    .row
+      .col-md-6
+        .d-flex.justify-content-between.align-items-center
+          .change-info
+            %p.mb-1
+              %strong Created by: 
+              = maap_snapshot.created_by.display_name
+            %p.mb-1
+              %strong Created at: 
+              = maap_snapshot.created_at.strftime('%m/%d/%Y %I:%M %p')
+            %p.mb-0
+              %strong Status: 
+              - if maap_snapshot.executed?
+                %span.badge.bg-success Executed
+              - else
+                %span.badge.bg-warning Pending
+              
+      .col-md-6
+        / Collapsible Security Information
+        .accordion#securityAccordion
+          .accordion-item
+            %h2.accordion-header#securityHeader
+              %button.accordion-button.collapsed{"aria-controls" => "securityCollapse", "aria-expanded" => "false", "data-bs-target" => "#securityCollapse", "data-bs-toggle" => "collapse", :type => "button"}
+                %i.bi.bi-shield-lock.me-2
+                Security Information
+            .accordion-collapse.collapse#securityCollapse{"aria-labelledby" => "securityHeader", "data-bs-parent" => "#securityAccordion"}
+              .accordion-body
+                - if maap_snapshot.request_info
+                  %p
+                    %strong IP Address: 
+                    = maap_snapshot.request_info['ip_address']
+                  %p
+                    %strong User Agent: 
+                    = maap_snapshot.request_info['user_agent']
+                  %p
+                    %strong Session ID: 
+                    = maap_snapshot.request_info['session_id']
+                  %p
+                    %strong Request ID: 
+                    = maap_snapshot.request_info['request_id']
+                  %p
+                    %strong Timestamp: 
+                    = maap_snapshot.request_info['timestamp']
+                - else
+                  %p.text-muted No security information available

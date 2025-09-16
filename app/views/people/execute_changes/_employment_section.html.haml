@@ -1,0 +1,49 @@
+.card.mb-4
+  .card-header
+    .d-flex.justify-content-between.align-items-center
+      %h5.mb-0 Employment
+      - if employment_has_changes?
+        %span.badge.bg-warning Changes
+      - else
+        %span.badge.bg-success No Changes
+  .card-body
+    - if employment_has_changes?
+      .row
+        .col-md-6
+          %h6 Current Values
+          - if @current_employment
+            %p
+              %strong Position: 
+              = @current_employment.position.display_name
+            %p
+              %strong Manager: 
+              = @current_employment.manager.display_name if @current_employment.manager
+            %p
+              %strong Started: 
+              = @current_employment.started_at.strftime('%m/%d/%Y')
+            %p
+              %strong Seat: 
+              = @current_employment.seat.name if @current_employment.seat
+          - else
+            %p.text-muted No current employment
+          
+        .col-md-6
+          %h6 Proposed Values
+          - if maap_snapshot.maap_data['employment_tenure']
+            - employment = maap_snapshot.maap_data['employment_tenure']
+            %p
+              %strong Position: 
+              = Position.find(employment['position_id']).display_name if employment['position_id']
+            %p
+              %strong Manager: 
+              = Person.find(employment['manager_id']).display_name if employment['manager_id']
+            %p
+              %strong Started: 
+              = employment['started_at']
+            %p
+              %strong Seat: 
+              = employment['seat_id'] if employment['seat_id']
+          - else
+            %p.text-muted No proposed employment changes
+    - else
+      %p.text-muted No employment changes in this snapshot.

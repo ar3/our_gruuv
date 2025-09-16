@@ -1,0 +1,13 @@
+- completion_changes.each do |field, value|
+  %tr
+    %td= field.to_s.humanize
+    %td
+      - if field == 'employee_complete'
+        = current_check_in&.employee_completed? ? 'Complete' : 'Incomplete'
+      - elsif field == 'manager_complete'
+        = current_check_in&.manager_completed? ? 'Complete' : 'Incomplete'
+    %td
+      - if value == 'true' || value == '1'
+        %span.badge.bg-success Mark as Complete
+      - else
+        %span.badge.bg-warning Mark as Incomplete

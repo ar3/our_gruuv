@@ -107,7 +107,7 @@ module PeopleHelper
       if check_in.employee_completed?
         "Marked Ready #{distance_of_time_in_words(check_in.employee_completed_at, Time.current)} ago"
       elsif check_in.employee_started?
-        "Started #{distance_of_time_in_words(check_in.check_in_started_on, Time.current)} ago"
+        "Started / Incomplete"
       else
         'Not Started'
       end
@@ -115,7 +115,7 @@ module PeopleHelper
       if check_in.manager_completed?
         "Marked Ready #{distance_of_time_in_words(check_in.manager_completed_at, Time.current)} ago"
       elsif check_in.manager_started?
-        "Started #{distance_of_time_in_words(check_in.check_in_started_on, Time.current)} ago"
+        "Started / Incomplete"
       else
         'Not Started'
       end
@@ -135,5 +135,89 @@ module PeopleHelper
     else
       'Never'
     end
+  end
+
+  def normalize_value(value)
+    case value
+    when nil, ''
+      nil
+    when String
+      value.strip.empty? ? nil : value.strip
+    else
+      value
+    end
+  end
+
+  def changes_breakdown_content
+    return "No changes" if @assignment_change_data_objects.blank?
+    
+    content = "<div class='changes-breakdown'>"
+    content += "<h6 class='mb-2'><i class='bi bi-list-ul me-1'></i>Changes Breakdown</h6>"
+    
+    @assignment_change_data_objects.each do |assignment_id, change_data|
+      content += "<div class='mb-2'>"
+      content += "<strong>#{change_data.assignment.title}</strong><br>"
+      content += "<small class='text-muted'>#{change_data.assignment.company.display_name}</small><br>"
+      
+      changes_list = []
+      
+      # Add tenure changes
+      change_data.tenure_changes.each do |field, new_value|
+        case field
+        when :anticipated_energy_percentage
+          current_value = change_data.tenure&.anticipated_energy_percentage || 0
+          changes_list << "• Energy: #{current_value}% → #{new_value}%"
+        end
+      end
+      
+      # Add check-in changes
+      change_data.check_in_changes.each do |field, new_value|
+        case field
+        when :actual_energy_percentage
+          current_value = change_data.current_check_in&.actual_energy_percentage || 0
+          changes_list << "• Actual Energy: #{current_value}% → #{new_value}%"
+        when :employee_rating
+          current_value = change_data.current_check_in&.employee_rating || 'Not set'
+          changes_list << "• Employee Rating: #{current_value} → #{new_value}"
+        when :employee_personal_alignment
+          current_value = change_data.current_check_in&.employee_personal_alignment || 'Not set'
+          changes_list << "• Personal Alignment: #{current_value} → #{new_value}"
+        when :employee_private_notes
+          changes_list << "• Employee Notes: Updated"
+        when :manager_rating
+          current_value = change_data.current_check_in&.manager_rating || 'Not set'
+          changes_list << "• Manager Rating: #{current_value} → #{new_value}"
+        when :manager_private_notes
+          changes_list << "• Manager Notes: Updated"
+        end
+      end
+      
+      # Add completion changes
+      change_data.completion_changes.each do |field, value|
+        case field
+        when 'employee_complete'
+          current_completed = change_data.current_check_in&.employee_completed? || false
+          new_completed = value == 'true' || value == '1'
+          changes_list << "• Employee Complete: #{current_completed ? 'Complete' : 'Incomplete'} → #{new_completed ? 'Complete' : 'Incomplete'}"
+        when 'manager_complete'
+          current_completed = change_data.current_check_in&.manager_completed? || false
+          new_completed = value == 'true' || value == '1'
+          changes_list << "• Manager Complete: #{current_completed ? 'Complete' : 'Incomplete'} → #{new_completed ? 'Complete' : 'Incomplete'}"
+        end
+      end
+      
+      if changes_list.any?
+        content += "<ul class='mb-0 small'>"
+        changes_list.each { |change| content += "<li>#{change}</li>" }
+        content += "</ul>"
+      else
+        content += "<small class='text-muted'>No changes</small>"
+      end
+      
+      content += "</div>"
+    end
+    
+    content += "</div>"
+    content.html_safe
   end
 end

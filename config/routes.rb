@@ -154,6 +154,8 @@ get '/login', to: 'auth#login', as: :login
       get :growth
       get :check_in
       patch :finalize_check_in
+      get 'execute_changes/:maap_snapshot_id', action: :execute_changes, as: :execute_changes
+      post 'process_changes/:maap_snapshot_id', action: :process_changes, as: :process_changes
     end
               resources :assignments, only: [:show], controller: 'people/assignments'
     resources :employment_tenures, only: [:new, :create, :edit, :update, :destroy, :show] do
@@ -172,6 +174,7 @@ get '/login', to: 'auth#login', as: :login
       collection do
         get :choose_assignments
         post :update_assignments
+        get :changes_confirmation
       end
     end
   end

@@ -1,0 +1,64 @@
+.card.mb-4
+  .card-header
+    .d-flex.justify-content-between.align-items-center
+      %h5.mb-0 Milestones
+      - milestone_changes_count = @current_milestones.count { |milestone| milestone_has_changes?(milestone) }
+      - if milestone_changes_count > 0
+        %span.badge.bg-warning #{milestone_changes_count} Change#{'s' if milestone_changes_count != 1}
+      - else
+        %span.badge.bg-success No Changes
+  .card-body
+    - milestones_with_changes = @current_milestones.select { |milestone| milestone_has_changes?(milestone) }
+    - milestones_without_changes = @current_milestones.reject { |milestone| milestone_has_changes?(milestone) }
+    
+    / Show milestones with changes
+    - if milestones_with_changes.any?
+      - milestones_with_changes.each do |milestone|
+        - proposed_data = maap_snapshot.maap_data['milestones'].find { |m| m['ability_id'] == milestone.ability_id }
+        .milestone-change-item.mb-4.p-3.border.rounded
+          %h6.mb-3= milestone.ability.name
+          .row
+            .col-md-6
+              %h6.text-muted Current Values
+              %p
+                %strong Level: 
+                = milestone.milestone_level
+              %p
+                %strong Certified by: 
+                = milestone.certified_by.display_name if milestone.certified_by
+              %p
+                %strong Attained: 
+                = milestone.attained_at.strftime('%m/%d/%Y') if milestone.attained_at
+              
+            .col-md-6
+              %h6.text-primary Proposed Values
+              - if proposed_data
+                %p
+                  %strong Level: 
+                  = proposed_data['milestone_level']
+                %p
+                  %strong Certified by: 
+                  = Person.find(proposed_data['certified_by_id']).display_name if proposed_data['certified_by_id']
+                %p
+                  %strong Attained: 
+                  = proposed_data['attained_at']
+              - else
+                %p.text-muted No proposed changes
+    
+    / Collapsible section for milestones without changes
+    - if milestones_without_changes.any?
+      .accordion#milestonesNoChangesAccordion
+        .accordion-item
+          %h2.accordion-header#milestonesNoChangesHeader
+            %button.accordion-button.collapsed{"aria-controls" => "milestonesNoChangesCollapse", "aria-expanded" => "false", "data-bs-target" => "#milestonesNoChangesCollapse", "data-bs-toggle" => "collapse", :type => "button"}
+              %i.bi.bi-chevron-down.me-2
+              Milestones with No Changes (#{milestones_without_changes.count})
+          .accordion-collapse.collapse#milestonesNoChangesCollapse{"aria-labelledby" => "milestonesNoChangesHeader", "data-bs-parent" => "#milestonesNoChangesAccordion"}
+            .accordion-body
+              - milestones_without_changes.each do |milestone|
+                .milestone-no-change-item.mb-3.p-2.bg-light.rounded
+                  %h6= milestone.ability.name
+                  %p.mb-0
+                    %strong Level: 
+                    = milestone.milestone_level
+                    %span.text-muted.ms-2 (No changes)

@@ -1,0 +1,12 @@
+= form_with url: process_changes_person_path(person, maap_snapshot), method: :post, local: true, class: "reason-form" do |form|
+  .card.mb-4
+    .card-header
+      %h5.mb-0 Execute Changes
+    .card-body
+      .mb-3
+        = form.label :reason, "Change Reason", class: "form-label"
+        = form.text_area :reason, value: maap_snapshot.reason, class: "form-control", rows: 3, placeholder: "Describe the reason for these changes..."
+        .form-text This reason will be saved with the changes for audit purposes.
+      
+      .d-flex.justify-content-end
+        = form.submit "Execute Changes", class: "btn btn-success btn-lg", data: { confirm: "Are you sure you want to execute these changes? This action cannot be undone." }

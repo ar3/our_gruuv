@@ -41,7 +41,15 @@ class Person < ApplicationRecord
   end
 
 
-  
+  def active_assignment_tenures(company=nil)
+    company = current_organization&.root_company if company.nil?
+    if company.nil?
+      return assignment_tenures.active
+    else
+      assignment_tenures.active.where(assignments: { company: company })
+    end
+  end
+
   # Scopes for active assignments in a specific company
   def active_assignments(company=nil)
     company = current_organization&.root_company if company.nil?
