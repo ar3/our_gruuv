@@ -8,42 +8,75 @@
         %span.badge.bg-success No Changes
   .card-body
     - if employment_has_changes?
-      .row
-        .col-md-6
-          %h6 Current Values
-          - if @current_employment
-            %p
-              %strong Position: 
-              = @current_employment.position.display_name
-            %p
-              %strong Manager: 
-              = @current_employment.manager.display_name if @current_employment.manager
-            %p
-              %strong Started: 
-              = @current_employment.started_at.strftime('%m/%d/%Y')
-            %p
-              %strong Seat: 
-              = @current_employment.seat.name if @current_employment.seat
-          - else
-            %p.text-muted No current employment
+      .table-responsive
+        %table.table.table-sm.table-borderless
+          %thead
+            %tr
+              %th{style: "width: 30%"} Field
+              %th{style: "width: 70%"} Change
           
-        .col-md-6
-          %h6 Proposed Values
-          - if maap_snapshot.maap_data['employment_tenure']
-            - employment = maap_snapshot.maap_data['employment_tenure']
-            %p
-              %strong Position: 
-              = Position.find(employment['position_id']).display_name if employment['position_id']
-            %p
-              %strong Manager: 
-              = Person.find(employment['manager_id']).display_name if employment['manager_id']
-            %p
-              %strong Started: 
-              = employment['started_at']
-            %p
-              %strong Seat: 
-              = employment['seat_id'] if employment['seat_id']
-          - else
-            %p.text-muted No proposed employment changes
+          %tbody
+            - if maap_snapshot.maap_data['employment_tenure']
+              - employment = maap_snapshot.maap_data['employment_tenure']
+              
+              / Position
+              %tr
+                %td
+                  %strong Position
+                %td
+                  - current_position = @current_employment&.position&.display_name || 'Not set'
+                  - proposed_position = employment['position_id'] ? Position.find(employment['position_id']).display_name : 'Not set'
+                  - if current_position != proposed_position
+                    %span.badge.bg-warning.me-2 CHANGED
+                    %span.text-muted #{current_position} 
+                    %i.bi.bi-arrow-right.mx-1
+                    %span.text-primary #{proposed_position}
+                  - else
+                    %span.text-muted #{current_position} (unchanged)
+              
+              / Manager
+              %tr
+                %td
+                  %strong Manager
+                %td
+                  - current_manager = @current_employment&.manager&.display_name || 'Not set'
+                  - proposed_manager = employment['manager_id'] ? Person.find(employment['manager_id']).display_name : 'Not set'
+                  - if current_manager != proposed_manager
+                    %span.badge.bg-warning.me-2 CHANGED
+                    %span.text-muted #{current_manager} 
+                    %i.bi.bi-arrow-right.mx-1
+                    %span.text-primary #{proposed_manager}
+                  - else
+                    %span.text-muted #{current_manager} (unchanged)
+              
+              / Started Date
+              %tr
+                %td
+                  %strong Started Date
+                %td
+                  - current_started = @current_employment&.started_at&.strftime('%Y-%m-%d') || 'Not set'
+                  - proposed_started = employment['started_at'] || 'Not set'
+                  - if current_started != proposed_started
+                    %span.badge.bg-warning.me-2 CHANGED
+                    %span.text-muted #{current_started} 
+                    %i.bi.bi-arrow-right.mx-1
+                    %span.text-primary #{proposed_started}
+                  - else
+                    %span.text-muted #{current_started} (unchanged)
+              
+              / Seat
+              %tr
+                %td
+                  %strong Seat
+                %td
+                  - current_seat = @current_employment&.seat&.name || 'Not set'
+                  - proposed_seat = employment['seat_id'] ? employment['seat_id'] : 'Not set'
+                  - if current_seat != proposed_seat
+                    %span.badge.bg-warning.me-2 CHANGED
+                    %span.text-muted #{current_seat} 
+                    %i.bi.bi-arrow-right.mx-1
+                    %span.text-primary #{proposed_seat}
+                  - else
+                    %span.text-muted #{current_seat} (unchanged)
     - else
       %p.text-muted No employment changes in this snapshot.

@@ -17,33 +17,60 @@
         - proposed_data = maap_snapshot.maap_data['milestones'].find { |m| m['ability_id'] == milestone.ability_id }
         .milestone-change-item.mb-4.p-3.border.rounded
           %h6.mb-3= milestone.ability.name
-          .row
-            .col-md-6
-              %h6.text-muted Current Values
-              %p
-                %strong Level: 
-                = milestone.milestone_level
-              %p
-                %strong Certified by: 
-                = milestone.certified_by.display_name if milestone.certified_by
-              %p
-                %strong Attained: 
-                = milestone.attained_at.strftime('%m/%d/%Y') if milestone.attained_at
+          
+          .table-responsive
+            %table.table.table-sm.table-borderless
+              %thead
+                %tr
+                  %th{style: "width: 30%"} Field
+                  %th{style: "width: 70%"} Change
               
-            .col-md-6
-              %h6.text-primary Proposed Values
-              - if proposed_data
-                %p
-                  %strong Level: 
-                  = proposed_data['milestone_level']
-                %p
-                  %strong Certified by: 
-                  = Person.find(proposed_data['certified_by_id']).display_name if proposed_data['certified_by_id']
-                %p
-                  %strong Attained: 
-                  = proposed_data['attained_at']
-              - else
-                %p.text-muted No proposed changes
+              %tbody
+                - if proposed_data
+                  / Milestone Level
+                  %tr
+                    %td
+                      %strong Level
+                    %td
+                      - current_level = milestone.milestone_level
+                      - proposed_level = proposed_data['milestone_level']
+                      - if current_level != proposed_level
+                        %span.badge.bg-warning.me-2 CHANGED
+                        %span.text-muted #{current_level} 
+                        %i.bi.bi-arrow-right.mx-1
+                        %span.text-primary #{proposed_level}
+                      - else
+                        %span.text-muted #{current_level} (unchanged)
+                  
+                  / Certified By
+                  %tr
+                    %td
+                      %strong Certified By
+                    %td
+                      - current_certified = milestone.certified_by&.display_name || 'Not set'
+                      - proposed_certified = proposed_data['certified_by_id'] ? Person.find(proposed_data['certified_by_id']).display_name : 'Not set'
+                      - if current_certified != proposed_certified
+                        %span.badge.bg-warning.me-2 CHANGED
+                        %span.text-muted #{current_certified} 
+                        %i.bi.bi-arrow-right.mx-1
+                        %span.text-primary #{proposed_certified}
+                      - else
+                        %span.text-muted #{current_certified} (unchanged)
+                  
+                  / Attained Date
+                  %tr
+                    %td
+                      %strong Attained Date
+                    %td
+                      - current_attained = milestone.attained_at&.strftime('%Y-%m-%d') || 'Not set'
+                      - proposed_attained = proposed_data['attained_at'] || 'Not set'
+                      - if current_attained != proposed_attained
+                        %span.badge.bg-warning.me-2 CHANGED
+                        %span.text-muted #{current_attained} 
+                        %i.bi.bi-arrow-right.mx-1
+                        %span.text-primary #{proposed_attained}
+                      - else
+                        %span.text-muted #{current_attained} (unchanged)
     
     / Collapsible section for milestones without changes
     - if milestones_without_changes.any?
