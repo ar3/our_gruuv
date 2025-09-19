@@ -1,0 +1,82 @@
+.container-fluid
+  .row
+    .col-12
+      .card
+        .card-header
+          h1.mb-0 Pendo-Asana Integration
+          p.text-muted Synchronize Pendo guides with Asana tasks
+        
+        .card-body
+          = form_with url: integrations_pendo_asana_index_path, method: :get, local: true, id: "integration-form" do |f|
+            .row
+              .col-md-6
+                .mb-3
+                  = label_tag :pendo_api_key, "Pendo API Key", class: "form-label"
+                  = text_field_tag :pendo_api_key, params[:pendo_api_key].presence || 'f1b4f536-3aca-4213-852c-74bf42b82033.us', class: "form-control", placeholder: "Enter your Pendo API key"
+                  .form-text 
+                    | Your Pendo API key for authentication. 
+                    = link_to "Get your API key here", "https://app.pendo.io/settings/api", target: "_blank", class: "text-decoration-none"
+                    |  (Go to Settings > API to generate a key)
+                
+                .mb-3
+                  = button_tag "Test Pendo Connection", type: "submit", class: "btn btn-outline-primary", name: "test_pendo", value: "true"
+              
+              .col-md-6
+                .mb-3
+                  = label_tag :asana_api_key, "Asana Personal Access Token", class: "form-label"
+                  = text_field_tag :asana_api_key, params[:asana_api_key].presence || '2/1199995827845461/1211377120317368:2c21b726108edad55a2a92def70aaaeb', class: "form-control", placeholder: "Enter your Asana Personal Access Token"
+                  .form-text 
+                    | Your Asana Personal Access Token for authentication. 
+                    = link_to "Get your token here", "https://app.asana.com/0/my-apps", target: "_blank", class: "text-decoration-none"
+                    |  (Create a new app and generate a Personal Access Token)
+                
+                .mb-3
+                  = button_tag "Test Asana Connection", type: "submit", class: "btn btn-outline-primary", name: "test_asana", value: "true"
+            
+            .row
+              .col-md-6
+                .mb-3
+                  = label_tag :project_id, "Asana Project ID", class: "form-label"
+                  = text_field_tag :project_id, params[:project_id].presence || '1000758526027343', class: "form-control", placeholder: "Enter your Asana Project ID"
+                  .form-text 
+                    | The Project ID from Asana where tasks will be created/updated. 
+                    = link_to "Find your Project ID", "https://app.asana.com/0/list", target: "_blank", class: "text-decoration-none"
+                    |  (Click on a project and look at the URL)
+              
+              .col-md-6
+                .mb-3
+                  = label_tag :sync_limit, "Sync Limit", class: "form-label"
+                  = number_field_tag :sync_limit, params[:sync_limit] || 10, class: "form-control", min: 1, max: 100
+                  .form-text Number of guides to synchronize (default: 10)
+            
+            .row
+              .col-12
+                .mb-3
+                  = button_tag "Synchronize Guides", type: "submit", class: "btn btn-success", name: "sync_guides", value: "true"
+                  .form-text This will create or update Asana tasks for all Pendo guides
+                
+                - if @pendo_guide_count.present?
+                  .mt-3
+                    .alert.alert-info
+                      %h5 Pendo Data:
+                      %p.mb-1 Total Guides: #{@pendo_guide_count}
+                      - if @pendo_guides.present? && @pendo_guides.first.present?
+                        %p.mb-1 First Guide JSON:
+                        %pre.bg-light.p-2.small
+                          = JSON.pretty_generate(@pendo_guides.first)
+                
+                - if session[:asana_project_name].present?
+                  .mt-3
+                    .alert.alert-info
+                      %h5 Asana Project:
+                      %p.mb-0 Project Name: #{session[:asana_project_name]}
+                  - session.delete(:asana_project_name)
+                
+                - if session[:sync_results].present?
+                  .mt-3
+                    .alert.alert-success
+                      %h5 Synchronization Results:
+                      %ul.mb-0
+                        - session[:sync_results].each do |result|
+                          %li="Guide #{result["guide_id"]}: #{result["action"]} task #{result["task_id"]}"
+                  - session.delete(:sync_results)

@@ -112,4 +112,7 @@ gem "redcarpet", "~> 3.6"
 gem "omniauth-google-oauth2", "~> 1.1"
 gem "omniauth-rails_csrf_protection", "~> 1.0"
 
+# External API integrations
+# Using HTTP gem directly for both Pendo and Asana APIs
+
 gem "paper_trail", "~> 16.0"

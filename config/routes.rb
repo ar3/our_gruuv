@@ -35,6 +35,18 @@ get '/login', to: 'auth#login', as: :login
     post 'companies/teams', to: 'companies#teams'
   end
   
+  # Integration routes
+  namespace :integrations do
+    resources :pendo_asana, only: [:index] do
+      collection do
+        post :test_pendo_connection
+        post :test_asana_connection
+        post :fetch_asana_projects
+        post :sync_guides
+      end
+    end
+  end
+  
   # Slack OAuth callback (fixed URL for Slack)
   get 'slack/oauth/callback', to: 'organizations/slack/oauth#callback'
   
