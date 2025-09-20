@@ -55,7 +55,7 @@
               .col-4
                 = render 'energy_total_component', id_suffix: 'top'
               .col-4.text-center
-                %span.text-muted Assignment Overview
+                = link_to "Don't see an assignment? Add more", choose_assignments_organization_assignment_tenure_path(@organization, @person), class: "text-muted text-decoration-none"
               .col-4.text-end
                 = form.submit "Update #{@person.first_name}'s Assignments", class: "btn btn-primary"
             
@@ -69,7 +69,7 @@
               .col-4
                 = render 'energy_total_component', id_suffix: 'bottom'
               .col-4.text-center
-                %span.text-muted Assignment Summary
+                = link_to "Need more assignments? Add them", choose_assignments_organization_assignment_tenure_path(@organization, @person), class: "text-muted text-decoration-none"
               .col-4.text-end
                 = form.submit "Update #{@person.first_name}'s Assignments", class: "btn btn-primary"
         - else
@@ -78,4 +78,6 @@
               %i.bi.bi-info-circle.me-2
               No Assignments Found
             %p.mb-0 No assignments found for #{@person.display_name}.
+            %p.mb-0
+              = link_to "Add your first assignment", choose_assignments_organization_assignment_tenure_path(@organization, @person), class: "text-muted text-decoration-none"
 

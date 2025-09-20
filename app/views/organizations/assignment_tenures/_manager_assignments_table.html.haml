@@ -3,11 +3,11 @@
     %thead.table-light
       %tr
         %th Assignment
-        %th Anticipated Energy
+        %th Energy Now On
+        %th Reflecting on the past
         %th Manager Rating
         %th Manager Notes
         %th Complete
-        %th Status
     %tbody
       - assignment_data.each do |data|
         = render 'manager_assignment_row', data: data, form: form

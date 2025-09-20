@@ -98,9 +98,11 @@ get '/login', to: 'auth#login', as: :login
     # Assignment tenures - unified interface for managing assignments and check-ins
     resources :assignment_tenures, module: :organizations, only: [:show, :update] do
       collection do
-        get :choose_assignments
         post :update_assignments
         get :changes_confirmation
+      end
+      member do
+        get :choose_assignments
       end
     end
     

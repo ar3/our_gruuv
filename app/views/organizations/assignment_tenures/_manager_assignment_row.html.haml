@@ -22,16 +22,6 @@
     = form.select "tenure_#{data[:assignment].id}_anticipated_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:tenure]&.anticipated_energy_percentage), { prompt: 'Select...' }, { class: "form-select form-select-sm energy-select" }
   
   %td
-    = form.select "check_in_#{data[:assignment].id}_manager_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], data[:open_check_in]&.manager_rating), { prompt: 'Select...' }, { class: "form-select form-select-sm", disabled: data[:open_check_in]&.manager_completed? }
-  
-  %td
-    = form.text_area "check_in_#{data[:assignment].id}_manager_private_notes", value: data[:open_check_in]&.manager_private_notes, rows: 2, class: "form-control form-control-sm", placeholder: "Notes...", disabled: data[:open_check_in]&.manager_completed?
-  
-  %td.text-center
-    .form-check.form-switch.d-flex.justify-content-center
-      = form.check_box "check_in_#{data[:assignment].id}_manager_complete", { checked: data[:open_check_in]&.manager_completed? || false, class: "form-check-input completion-toggle", data: { target: "manager-fields-#{data[:assignment].id}" } }
-  
-  %td
     .completion-status
       %small.text-muted
         %strong Last completed check-in: 
@@ -52,3 +42,13 @@
       %small.text-muted
         %strong Manager: 
         = check_in_status_text(data[:open_check_in], :manager)
+  %td
+    = form.select "check_in_#{data[:assignment].id}_manager_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], data[:open_check_in]&.manager_rating), { prompt: 'Select...' }, { class: "form-select form-select-sm", disabled: data[:open_check_in]&.manager_completed? }
+  
+  %td
+    = form.text_area "check_in_#{data[:assignment].id}_manager_private_notes", value: data[:open_check_in]&.manager_private_notes, rows: 2, class: "form-control form-control-sm", placeholder: "Notes...", disabled: data[:open_check_in]&.manager_completed?
+  
+  %td.text-center
+    .form-check.form-switch.d-flex.justify-content-center
+      = form.check_box "check_in_#{data[:assignment].id}_manager_complete", { checked: data[:open_check_in]&.manager_completed? || false, class: "form-check-input completion-toggle", data: { target: "manager-fields-#{data[:assignment].id}" } }
+  
