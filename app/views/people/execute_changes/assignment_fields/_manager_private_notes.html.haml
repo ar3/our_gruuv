@@ -1,0 +1,19 @@
+/ Manager Private Notes Field
+%tr
+  %td
+    %strong Manager Notes
+  %td
+    :ruby
+      current_notes = current_check_in&.manager_private_notes
+      proposed_notes = manager_check_in['manager_private_notes']
+      can_see_manager = can_see_manager_private_data?(person)
+      employee_name = person.first_name
+    
+    - if current_notes != proposed_notes
+      %span.badge.bg-warning.me-2 CHANGED
+      .mt-1
+        %small.text-muted Old: #{format_private_field_value(current_notes, can_see_manager, employee_name, 'manager')}
+        %br
+        %small.text-primary New: #{format_private_field_value(proposed_notes, can_see_manager, employee_name, 'manager')}
+    - else
+      %span.text-muted #{format_private_field_value(current_notes, can_see_manager, employee_name, 'manager')} (unchanged)

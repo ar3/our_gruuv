@@ -1,0 +1,15 @@
+/ Employee Rating Field
+- if employee_check_in['employee_rating'].present?
+  %tr
+    %td
+      %strong Employee Rating
+    %td
+      - current_rating = current_check_in&.employee_rating || 'Not set'
+      - proposed_rating = employee_check_in['employee_rating']
+      - if current_rating != proposed_rating
+        %span.badge.bg-warning.me-2 CHANGED
+        %span.text-muted= current_rating
+        %i.bi.bi-arrow-right.mx-1
+        %span.text-primary= proposed_rating
+      - else
+        %span.text-muted= current_rating + ' (unchanged)'

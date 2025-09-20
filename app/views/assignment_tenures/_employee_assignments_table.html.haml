@@ -4,12 +4,11 @@
       %tr
         %th Assignment
         %th Anticipated Energy
-        %th Actual Energy
-        %th Personal Alignment
-        %th My Rating
-        %th Private Notes
-        %th Complete
-        %th Status
+        %th Reflect on Past
+        %th Energy You Ended Up Using
+        %th How You Feel about this Assignment now
+        %th How You'd Rate your recent Assignment performance
+        %th Ready For Review?
     %tbody
       - assignment_data.each do |data|
         = render 'employee_assignment_row', data: data, form: form

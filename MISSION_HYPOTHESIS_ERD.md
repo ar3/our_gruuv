@@ -1,4 +1,4 @@
-# Mission-Hypothesis Framework - Entity Relationship Diagram
+# Mission-Hypothesis Framework - Entity Relationship Diagram (Simplified)
 
 ## Core Entities and Relationships
 
@@ -17,19 +17,7 @@
 │     deleted_at (datetime)                                                      │
 └─────────────────────────────────────────────────────────────────────────────────┘
                                         │
-                                        │ 1:N
-                                        ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              OUTCOME_CONNECTIONS                               │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│ PK: id                                                                          │
-│     outcome_id (bigint) → outcomes.id                                          │
-│     connected_type (string) - "Mission" | "Hypothesis"                           │
-│     connected_id (bigint)                                                       │
-│     mission_version (string) - version when connected                           │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        │ N:1
+                                        │ outcome_connections
                                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                                OUTCOMES                                        │
@@ -40,6 +28,10 @@
 │                            "assignment" | "position" | "aspiration"            │
 │     owner_type (string) - "Person" | "Organization"                            │
 │     owner_id (bigint)                                                           │
+│     achievement_status (string) - "pending" | "hit" | "miss" | "partial"        │
+│     proof_of_completion (text)                                                  │
+│     achieved_at (date)                                                          │
+│     achieved_by_id (bigint) → people.id                                        │
 │     created_by_id (bigint) → people.id                                          │
 │     updated_by_id (bigint) → people.id                                         │
 │     deleted_at (datetime)                                                      │
@@ -56,19 +48,6 @@
 │     confidence_percentage (integer) - 0-100                                    │
 │     rating_date (date) - Monday of the week                                    │
 │     notes (text)                                                               │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        │ 1:1
-                                        ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           OUTCOME_ACHIEVEMENTS                                 │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│ PK: id                                                                          │
-│     outcome_id (bigint) → outcomes.id                                          │
-│     reporter_id (bigint) → people.id                                           │
-│     status (string) - "hit" | "miss" | "partial"                               │
-│     proof_of_completion (text)                                                  │
-│     achieved_at (date)                                                          │
 └─────────────────────────────────────────────────────────────────────────────────┘
                                         │
                                         │ N:M
@@ -89,6 +68,7 @@
 │ PK: id                                                                          │
 │     title (string) - "React Mastery Hypothesis"                                │
 │     description (text)                                                         │
+│     condition_description (text) - "If I do X..."                             │
 │     owner_type (string) - "Person" | "Organization"                            │
 │     owner_id (bigint)                                                           │
 │     primary_reporter_id (bigint) → people.id                                  │
@@ -102,48 +82,16 @@
 │     updated_by_id (bigint) → people.id                                         │
 └─────────────────────────────────────────────────────────────────────────────────┘
                                         │
-                                        │ N:M
+                                        │ outcome_connections
                                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                          HYPOTHESIS_CONDITIONS                                 │
+│                              OUTCOME_CONNECTIONS                               │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │ PK: id                                                                          │
-│     hypothesis_id (bigint) → hypotheses.id                                     │
-│     condition_id (bigint) → conditions.id                                       │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        │ N:1
-                                        ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                               CONDITIONS                                       │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│ PK: id                                                                          │
-│     description (text) - "If I do X..."                                        │
-│     condition_type (string) - "activity" | "output" | "outcome"                 │
-│     owner_type (string) - "Person" | "Organization"                             │
-│     owner_id (bigint)                                                           │
-│     created_by_id (bigint) → people.id                                         │
-│     updated_by_id (bigint) → people.id                                         │
-│     deleted_at (datetime)                                                      │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        │ 1:N
-                                        ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           HYPOTHESIS_TEMPLATES                                 │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│ PK: id                                                                          │
-│     name (string) - "Learning Hypothesis"                                      │
-│     description (text)                                                         │
-│     condition_template (text)                                                  │
-│     outcome_template (text)                                                     │
-│     condition_type (string)                                                    │
-│     outcome_type (string)                                                       │
-│     owner_type (string) - "Person" | "Organization"                            │
-│     owner_id (bigint)                                                           │
-│     is_public (boolean)                                                        │
-│     created_by_id (bigint) → people.id                                        │
-│     updated_by_id (bigint) → people.id                                         │
+│     outcome_id (bigint) → outcomes.id                                          │
+│     connected_type (string) - "Mission" | "Hypothesis"                           │
+│     connected_id (bigint)                                                       │
+│     mission_version (string) - version when connected                           │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -217,6 +165,7 @@
 │ closer to       │    │ understand      │
 │ Senior Dev      │    │ React patterns" │
 │ eligibility"    │    │                 │
+│ Status: pending │    │ Status: pending │
 └─────────────────┘    └─────────────────┘
          │                       │
          │ hypothesis_outcomes   │ hypothesis_outcomes
@@ -225,27 +174,27 @@
 │              HYPOTHESIS                        │
 │ "React Mastery Hypothesis"                     │
 │                                                │
-│ Primary Reporter: John                         │
+│ Condition: "If I complete React Advanced course"│
+│ Primary Reporter: John                          │
 │ Target Date: 2024-03-15                        │
 │ Status: Active                                 │
 └─────────────────────────────────────────────────┘
-         │
-         │ hypothesis_conditions
-         ▼
-┌─────────────────┐
-│   CONDITION     │
-│ "If I complete  │
-│ React Advanced  │
-│ course"         │
-└─────────────────┘
 ```
 
 ## Key Relationships Summary
 
 1. **Mission** → **Outcome** (through outcome_connections)
-2. **Hypothesis** → **Condition** (many-to-many)
-3. **Hypothesis** → **Outcome** (many-to-many)
-4. **Outcome** → **Mission** or **Hypothesis** (through outcome_connections)
-5. **Outcome** → **Confidence Ratings** (weekly tracking)
-6. **Outcome** → **Achievement** (hit/miss tracking)
-7. **Outcome** → **OurGruuv Tables** (milestones, assignments, positions, aspirations)
+2. **Hypothesis** → **Outcome** (many-to-many through hypothesis_outcomes)
+3. **Outcome** → **Mission** or **Hypothesis** (through outcome_connections)
+4. **Outcome** → **Confidence Ratings** (weekly tracking)
+5. **Outcome** → **Achievement Status** (hit/miss tracking - stored on outcome)
+6. **Outcome** → **OurGruuv Tables** (milestones, assignments, positions, aspirations)
+
+## Key Simplifications Made
+
+1. **Removed separate CONDITIONS table** - conditions are now stored as `condition_description` on hypotheses
+2. **Moved achievement tracking to OUTCOMES table** - no separate outcome_achievements table
+3. **Removed HYPOTHESIS_TEMPLATES table** - focus on core functionality first
+4. **Simplified Mission-Outcome connection** - only outcomes connect to missions, not vice versa
+
+

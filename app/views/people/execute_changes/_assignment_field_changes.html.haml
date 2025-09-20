@@ -1,244 +1,75 @@
 / Assignment Field Changes Partial
 / Shows field-by-field changes in a clean table format
 
-- assignment = data[:assignment]
-- current_tenure = data[:active_tenure]
-- current_check_in = data[:open_check_in]
-- proposed_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment.id }
+:ruby
+  assignment = data[:assignment]
+  current_tenure = data[:active_tenure]
+  current_check_in = data[:open_check_in]
+  proposed_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment.id }
 
 .assignment-change-item.mb-4.p-3.border.rounded
-  %h6.mb-3= assignment.title
+  %h5.mb-3= assignment.title
   
   / Field Changes Table
   .table-responsive
     %table.table.table-sm.table-borderless
       %thead
         %tr
-          %th{style: "width: 30%"} Field
-          %th{style: "width: 70%"} Change
+          %th.field-column &nbsp;
+          %th.change-column &nbsp;
       
       %tbody
         / Tenure Changes
         - if proposed_data&.dig('tenure')
           - proposed_tenure = proposed_data['tenure']
-          
-          / Energy Percentage
-          %tr
-            %td
-              %strong Anticipated Energy
-            %td
-              - current_energy = current_tenure&.anticipated_energy_percentage || 0
-              - proposed_energy = proposed_tenure['anticipated_energy_percentage']
-              - if current_energy != proposed_energy
-                %span.badge.bg-warning.me-2 CHANGED
-                %span.text-muted #{current_energy}% 
-                %i.bi.bi-arrow-right.mx-1
-                %span.text-primary #{proposed_energy}%
-              - else
-                %span.text-muted #{current_energy}% (unchanged)
-          
-          / Started Date
-          %tr
-            %td
-              %strong Started Date
-            %td
-              - current_started = current_tenure&.started_at&.strftime('%Y-%m-%d') || 'Not started'
-              - proposed_started = proposed_tenure['started_at']
-              - if current_started != proposed_started
-                %span.badge.bg-warning.me-2 CHANGED
-                %span.text-muted #{current_started} 
-                %i.bi.bi-arrow-right.mx-1
-                %span.text-primary #{proposed_started}
-              - else
-                %span.text-muted #{current_started} (unchanged)
+          = render 'people/execute_changes/assignment_fields/anticipated_energy', 
+                    current_tenure: current_tenure, 
+                    proposed_tenure: proposed_tenure
+          = render 'people/execute_changes/assignment_fields/started_date', 
+                    current_tenure: current_tenure, 
+                    proposed_tenure: proposed_tenure
         
         / Employee Check-in Changes
-        - if proposed_data&.dig('employee_check_in')
-          - employee_check_in = proposed_data['employee_check_in']
-          
-          / Actual Energy
-          - if employee_check_in['actual_energy_percentage'].present?
-            %tr
-              %td
-                %strong Employee Actual Energy
-              %td
-                - current_actual = current_check_in&.actual_energy_percentage || 0
-                - proposed_actual = employee_check_in['actual_energy_percentage']
-                - if current_actual != proposed_actual
-                  %span.badge.bg-warning.me-2 CHANGED
-                  %span.text-muted #{current_actual}% 
-                  %i.bi.bi-arrow-right.mx-1
-                  %span.text-primary #{proposed_actual}%
-                - else
-                  %span.text-muted #{current_actual}% (unchanged)
-          
-          / Employee Rating
-          - if employee_check_in['employee_rating'].present?
-            %tr
-              %td
-                %strong Employee Rating
-              %td
-                - current_rating = current_check_in&.employee_rating || 'Not set'
-                - proposed_rating = employee_check_in['employee_rating']
-                - if current_rating != proposed_rating
-                  %span.badge.bg-warning.me-2 CHANGED
-                  %span.text-muted #{current_rating} 
-                  %i.bi.bi-arrow-right.mx-1
-                  %span.text-primary #{proposed_rating}
-                - else
-                  %span.text-muted #{current_rating} (unchanged)
-          
-          / Employee Personal Alignment
-          - if employee_check_in['employee_personal_alignment'].present?
-            %tr
-              %td
-                %strong Personal Alignment
-              %td
-                - current_alignment = current_check_in&.employee_personal_alignment || 'Not set'
-                - proposed_alignment = employee_check_in['employee_personal_alignment']
-                - if current_alignment != proposed_alignment
-                  %span.badge.bg-warning.me-2 CHANGED
-                  %span.text-muted #{current_alignment} 
-                  %i.bi.bi-arrow-right.mx-1
-                  %span.text-primary #{proposed_alignment}
-                - else
-                  %span.text-muted #{current_alignment} (unchanged)
-          
-          / Employee Private Notes
-          - if employee_check_in['employee_private_notes'].present?
-            %tr
-              %td
-                %strong Employee Notes
-              %td
-                - current_notes = current_check_in&.employee_private_notes || 'None'
-                - proposed_notes = employee_check_in['employee_private_notes']
-                - if current_notes != proposed_notes
-                  %span.badge.bg-warning.me-2 CHANGED
-                  .mt-1
-                    %small.text-muted Old: #{current_notes}
-                    %br
-                    %small.text-primary New: #{proposed_notes}
-                - else
-                  %span.text-muted #{current_notes} (unchanged)
-          
-          / Employee Completion
-          - if employee_check_in['employee_completed_at'].present?
-            %tr
-              %td
-                %strong Employee Completion
-              %td
-                - current_completed = current_check_in&.employee_completed? || false
-                - proposed_completed = employee_check_in['employee_completed_at'].present?
-                - if current_completed != proposed_completed
-                  %span.badge.bg-warning.me-2 CHANGED
-                  %span.text-muted #{current_completed ? 'Completed' : 'Not completed'} 
-                  %i.bi.bi-arrow-right.mx-1
-                  %span.text-primary #{proposed_completed ? 'Completed' : 'Not completed'}
-                - else
-                  %span.text-muted #{current_completed ? 'Completed' : 'Not completed'} (unchanged)
+        - employee_check_in = proposed_data&.dig('employee_check_in') || {}
+        = render 'people/execute_changes/assignment_fields/employee_actual_energy', 
+                  current_check_in: current_check_in, 
+                  employee_check_in: employee_check_in
+        = render 'people/execute_changes/assignment_fields/employee_rating', 
+                  current_check_in: current_check_in, 
+                  employee_check_in: employee_check_in
+        = render 'people/execute_changes/assignment_fields/employee_personal_alignment', 
+                  current_check_in: current_check_in, 
+                  employee_check_in: employee_check_in
+        = render 'people/execute_changes/assignment_fields/employee_private_notes', 
+                  current_check_in: current_check_in, 
+                  employee_check_in: employee_check_in, 
+                  person: person
+        = render 'people/execute_changes/assignment_fields/employee_completion', 
+                  current_check_in: current_check_in, 
+                  employee_check_in: employee_check_in
         
         / Manager Check-in Changes
-        - if proposed_data&.dig('manager_check_in')
-          - manager_check_in = proposed_data['manager_check_in']
-          
-          / Manager Rating
-          - if manager_check_in['manager_rating'].present?
-            %tr
-              %td
-                %strong Manager Rating
-              %td
-                - current_rating = current_check_in&.manager_rating || 'Not set'
-                - proposed_rating = manager_check_in['manager_rating']
-                - if current_rating != proposed_rating
-                  %span.badge.bg-warning.me-2 CHANGED
-                  %span.text-muted #{current_rating} 
-                  %i.bi.bi-arrow-right.mx-1
-                  %span.text-primary #{proposed_rating}
-                - else
-                  %span.text-muted #{current_rating} (unchanged)
-          
-          / Manager Private Notes
-          - if manager_check_in['manager_private_notes'].present?
-            %tr
-              %td
-                %strong Manager Notes
-              %td
-                - current_notes = current_check_in&.manager_private_notes || 'None'
-                - proposed_notes = manager_check_in['manager_private_notes']
-                - if current_notes != proposed_notes
-                  %span.badge.bg-warning.me-2 CHANGED
-                  .mt-1
-                    %small.text-muted Old: #{current_notes}
-                    %br
-                    %small.text-primary New: #{proposed_notes}
-                - else
-                  %span.text-muted #{current_notes} (unchanged)
-          
-          / Manager Completion
-          - if manager_check_in['manager_completed_at'].present?
-            %tr
-              %td
-                %strong Manager Completion
-              %td
-                - current_completed = current_check_in&.manager_completed? || false
-                - proposed_completed = manager_check_in['manager_completed_at'].present?
-                - if current_completed != proposed_completed
-                  %span.badge.bg-warning.me-2 CHANGED
-                  %span.text-muted #{current_completed ? 'Completed' : 'Not completed'} 
-                  %i.bi.bi-arrow-right.mx-1
-                  %span.text-primary #{proposed_completed ? 'Completed' : 'Not completed'}
-                - else
-                  %span.text-muted #{current_completed ? 'Completed' : 'Not completed'} (unchanged)
+        - manager_check_in = proposed_data&.dig('manager_check_in') || {}
+        = render 'people/execute_changes/assignment_fields/manager_rating', 
+                  current_check_in: current_check_in, 
+                  manager_check_in: manager_check_in, 
+                  person: person
+        = render 'people/execute_changes/assignment_fields/manager_private_notes', 
+                  current_check_in: current_check_in, 
+                  manager_check_in: manager_check_in, 
+                  person: person
+        = render 'people/execute_changes/assignment_fields/manager_completion', 
+                  current_check_in: current_check_in, 
+                  manager_check_in: manager_check_in
         
         / Official Check-in Changes
-        - if proposed_data&.dig('official_check_in')
-          - official_check_in = proposed_data['official_check_in']
-          
-          / Official Rating
-          - if official_check_in['official_rating'].present?
-            %tr
-              %td
-                %strong Official Rating
-              %td
-                - current_rating = current_check_in&.official_rating || 'Not set'
-                - proposed_rating = official_check_in['official_rating']
-                - if current_rating != proposed_rating
-                  %span.badge.bg-warning.me-2 CHANGED
-                  %span.text-muted #{current_rating} 
-                  %i.bi.bi-arrow-right.mx-1
-                  %span.text-primary #{proposed_rating}
-                - else
-                  %span.text-muted #{current_rating} (unchanged)
-          
-          / Shared Notes
-          - if official_check_in['shared_notes'].present?
-            %tr
-              %td
-                %strong Shared Notes
-              %td
-                - current_notes = current_check_in&.shared_notes || 'None'
-                - proposed_notes = official_check_in['shared_notes']
-                - if current_notes != proposed_notes
-                  %span.badge.bg-warning.me-2 CHANGED
-                  .mt-1
-                    %small.text-muted Old: #{current_notes}
-                    %br
-                    %small.text-primary New: #{proposed_notes}
-                - else
-                  %span.text-muted #{current_notes} (unchanged)
-          
-          / Official Completion
-          - if official_check_in['official_check_in_completed_at'].present?
-            %tr
-              %td
-                %strong Official Completion
-              %td
-                - current_completed = current_check_in&.official_check_in_completed? || false
-                - proposed_completed = official_check_in['official_check_in_completed_at'].present?
-                - if current_completed != proposed_completed
-                  %span.badge.bg-warning.me-2 CHANGED
-                  %span.text-muted #{current_completed ? 'Completed' : 'Not completed'} 
-                  %i.bi.bi-arrow-right.mx-1
-                  %span.text-primary #{proposed_completed ? 'Completed' : 'Not completed'}
-                - else
-                  %span.text-muted #{current_completed ? 'Completed' : 'Not completed'} (unchanged)
+        - official_check_in = proposed_data&.dig('official_check_in') || {}
+        = render 'people/execute_changes/assignment_fields/official_rating', 
+                  current_check_in: current_check_in, 
+                  official_check_in: official_check_in
+        = render 'people/execute_changes/assignment_fields/shared_notes', 
+                  current_check_in: current_check_in, 
+                  official_check_in: official_check_in
+        = render 'people/execute_changes/assignment_fields/official_completion', 
+                  current_check_in: current_check_in, 
+                  official_check_in: official_check_in

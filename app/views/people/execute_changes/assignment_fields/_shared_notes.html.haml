@@ -1,0 +1,16 @@
+/ Shared Notes Field
+- if official_check_in['shared_notes'].present?
+  %tr
+    %td
+      %strong Shared Notes
+    %td
+      - current_notes = current_check_in&.shared_notes || 'None'
+      - proposed_notes = official_check_in['shared_notes']
+      - if current_notes != proposed_notes
+        %span.badge.bg-warning.me-2 CHANGED
+        .mt-1
+          %small.text-muted Old: #{current_notes}
+          %br
+          %small.text-primary New: #{proposed_notes}
+      - else
+        %span.text-muted #{current_notes} (unchanged)

@@ -1,0 +1,15 @@
+/ Employee Actual Energy Field
+- if employee_check_in['actual_energy_percentage'].present?
+  %tr
+    %td
+      %strong Employee Actual Energy
+    %td
+      - current_actual = current_check_in&.actual_energy_percentage || 0
+      - proposed_actual = employee_check_in['actual_energy_percentage']
+      - if current_actual != proposed_actual
+        %span.badge.bg-warning.me-2 CHANGED
+        %span.text-muted= "#{current_actual} %"
+        %i.bi.bi-arrow-right.mx-1
+        %span.text-primary= "#{proposed_actual} %"
+      - else
+        %span.text-muted= "#{current_actual} % (unchanged)"

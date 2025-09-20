@@ -1,0 +1,15 @@
+/ Official Completion Field
+- if official_check_in['official_check_in_completed_at'].present?
+  %tr
+    %td
+      %strong Official Completion
+    %td
+      - current_completed = current_check_in&.official_check_in_completed? || false
+      - proposed_completed = official_check_in['official_check_in_completed_at'].present?
+      - if current_completed != proposed_completed
+        %span.badge.bg-warning.me-2 CHANGED
+        %span.text-muted= current_completed ? 'Completed' : 'Not completed'
+        %i.bi.bi-arrow-right.mx-1
+        %span.text-primary= proposed_completed ? 'Completed' : 'Not completed'
+      - else
+        %span.text-muted= (current_completed ? 'Completed' : 'Not completed') + ' (unchanged)'

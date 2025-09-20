@@ -1,0 +1,15 @@
+/ Employee Completion Field
+- if employee_check_in['employee_completed_at'].present?
+  %tr
+    %td
+      %strong Employee Completion
+    %td
+      - current_completed = current_check_in&.employee_completed? || false
+      - proposed_completed = employee_check_in['employee_completed_at'].present?
+      - if current_completed != proposed_completed
+        %span.badge.bg-warning.me-2 CHANGED
+        %span.text-muted= current_completed ? 'Completed' : 'Not completed'
+        %i.bi.bi-arrow-right.mx-1
+        %span.text-primary= proposed_completed ? 'Completed' : 'Not completed'
+      - else
+        %span.text-muted= (current_completed ? 'Completed' : 'Not completed') + ' (unchanged)'

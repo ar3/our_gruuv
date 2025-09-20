@@ -79,4 +79,52 @@
                   - else
                     %span.text-muted #{current_seat} (unchanged)
     - else
-      %p.text-muted No employment changes in this snapshot.
+      / Show employment values in collapsible section when no changes
+      .accordion#employmentNoChangesAccordion
+        .accordion-item
+          %h2.accordion-header#employmentNoChangesHeader
+            %button.accordion-button.collapsed{"aria-controls" => "employmentNoChangesCollapse", "aria-expanded" => "false", "data-bs-target" => "#employmentNoChangesCollapse", "data-bs-toggle" => "collapse", :type => "button"}
+              %i.bi.bi-chevron-down.me-2
+              Employment Details (No Changes)
+          .accordion-collapse.collapse#employmentNoChangesCollapse{"aria-labelledby" => "employmentNoChangesHeader", "data-bs-parent" => "#employmentNoChangesAccordion"}
+            .accordion-body
+              .table-responsive
+                %table.table.table-sm.table-borderless
+                  %thead
+                    %tr
+                      %th{style: "width: 30%"} Field
+                      %th{style: "width: 70%"} Value
+                  
+                  %tbody
+                    - if @current_employment
+                      / Position
+                      %tr
+                        %td
+                          %strong Position
+                        %td
+                          %span.text-muted #{@current_employment.position.display_name}
+                      
+                      / Manager
+                      %tr
+                        %td
+                          %strong Manager
+                        %td
+                          %span.text-muted #{@current_employment.manager&.display_name || 'Not set'}
+                      
+                      / Started Date
+                      %tr
+                        %td
+                          %strong Started Date
+                        %td
+                          %span.text-muted #{@current_employment.started_at.strftime('%Y-%m-%d')}
+                      
+                      / Seat
+                      %tr
+                        %td
+                          %strong Seat
+                        %td
+                          %span.text-muted #{@current_employment.seat&.name || 'Not set'}
+                    - else
+                      %tr
+                        %td{colspan: 2}
+                          %span.text-muted No current employment

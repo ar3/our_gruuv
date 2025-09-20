@@ -22,27 +22,8 @@ end
 **Tests**: Basic model validations, associations
 **Manual Test**: Create a mission via Rails console
 
-### Commit 2: Create conditions table
-**Goal**: Store the "if-this" parts of hypotheses
-```ruby
-# Migration: create_conditions
-create_table "conditions" do |t|
-  t.text "description", null: false
-  t.string "condition_type", null: false
-  t.string "owner_type", null: false
-  t.bigint "owner_id", null: false
-  t.bigint "created_by_id", null: false
-  t.bigint "updated_by_id", null: false
-  t.datetime "deleted_at"
-  # ... indexes
-end
-```
-**Models**: Condition (with polymorphic owner, type validation)
-**Tests**: Basic model validations, associations
-**Manual Test**: Create a condition via Rails console
-
-### Commit 3: Create outcomes table
-**Goal**: Store the "then-that" parts of hypotheses
+### Commit 2: Create outcomes table
+**Goal**: Store the "then-that" parts of hypotheses with achievement tracking
 ```ruby
 # Migration: create_outcomes
 create_table "outcomes" do |t|
@@ -50,23 +31,28 @@ create_table "outcomes" do |t|
   t.string "outcome_type", null: false
   t.string "owner_type", null: false
   t.bigint "owner_id", null: false
+  t.string "achievement_status", default: "pending", null: false
+  t.text "proof_of_completion"
+  t.date "achieved_at"
+  t.bigint "achieved_by_id"
   t.bigint "created_by_id", null: false
   t.bigint "updated_by_id", null: false
   t.datetime "deleted_at"
   # ... indexes
 end
 ```
-**Models**: Outcome (with polymorphic owner, type validation)
-**Tests**: Basic model validations, associations
+**Models**: Outcome (with polymorphic owner, type validation, achievement tracking)
+**Tests**: Basic model validations, associations, achievement status validations
 **Manual Test**: Create an outcome via Rails console
 
-### Commit 4: Create hypotheses table
-**Goal**: Central entity that connects conditions and outcomes
+### Commit 3: Create hypotheses table
+**Goal**: Central entity with condition description and state management
 ```ruby
 # Migration: create_hypotheses
 create_table "hypotheses" do |t|
   t.string "title", null: false
   t.text "description"
+  t.text "condition_description", null: false
   t.string "owner_type", null: false
   t.bigint "owner_id", null: false
   t.bigint "primary_reporter_id", null: false
@@ -81,27 +67,13 @@ create_table "hypotheses" do |t|
   # ... indexes
 end
 ```
-**Models**: Hypothesis (with polymorphic owner, state management)
+**Models**: Hypothesis (with polymorphic owner, state management, condition description)
 **Tests**: Basic model validations, state transitions
 **Manual Test**: Create a hypothesis via Rails console
 
 ## Phase 2: Relationships (Connections)
 
-### Commit 5: Create hypothesis_conditions junction table
-**Goal**: Many-to-many relationship between hypotheses and conditions
-```ruby
-# Migration: create_hypothesis_conditions
-create_table "hypothesis_conditions" do |t|
-  t.bigint "hypothesis_id", null: false
-  t.bigint "condition_id", null: false
-  # ... indexes
-end
-```
-**Models**: Update Hypothesis and Condition models with associations
-**Tests**: Association tests, uniqueness validations
-**Manual Test**: Connect a hypothesis to multiple conditions
-
-### Commit 6: Create hypothesis_outcomes junction table
+### Commit 4: Create hypothesis_outcomes junction table
 **Goal**: Many-to-many relationship between hypotheses and outcomes
 ```ruby
 # Migration: create_hypothesis_outcomes
@@ -115,7 +87,7 @@ end
 **Tests**: Association tests, uniqueness validations
 **Manual Test**: Connect a hypothesis to multiple outcomes
 
-### Commit 7: Create outcome_connections table
+### Commit 5: Create outcome_connections table
 **Goal**: Connect outcomes to missions or other hypotheses
 ```ruby
 # Migration: create_outcome_connections
@@ -133,7 +105,7 @@ end
 
 ## Phase 3: Tracking & Measurement
 
-### Commit 8: Create outcome_confidence_ratings table
+### Commit 6: Create outcome_confidence_ratings table
 **Goal**: Weekly confidence tracking for outcomes
 ```ruby
 # Migration: create_outcome_confidence_ratings
@@ -150,71 +122,28 @@ end
 **Tests**: Confidence range validations, weekly uniqueness
 **Manual Test**: Add confidence ratings for an outcome
 
-### Commit 9: Create outcome_achievements table
-**Goal**: Track hit/miss status for outcomes
-```ruby
-# Migration: create_outcome_achievements
-create_table "outcome_achievements" do |t|
-  t.bigint "outcome_id", null: false
-  t.bigint "reporter_id", null: false
-  t.string "status", null: false
-  t.text "proof_of_completion"
-  t.date "achieved_at", null: false
-  # ... indexes
-end
-```
-**Models**: OutcomeAchievement (with status validations)
-**Tests**: Achievement validations, uniqueness per outcome
-**Manual Test**: Mark an outcome as achieved
-
-## Phase 4: Templates & Usability
-
-### Commit 10: Create hypothesis_templates table
-**Goal**: Reusable templates for common hypothesis patterns
-```ruby
-# Migration: create_hypothesis_templates
-create_table "hypothesis_templates" do |t|
-  t.string "name", null: false
-  t.text "description"
-  t.text "condition_template"
-  t.text "outcome_template"
-  t.string "condition_type", null: false
-  t.string "outcome_type", null: false
-  t.string "owner_type", null: false
-  t.bigint "owner_id", null: false
-  t.boolean "is_public", default: false
-  t.bigint "created_by_id", null: false
-  t.bigint "updated_by_id", null: false
-  # ... indexes
-end
-```
-**Models**: HypothesisTemplate (with template methods)
-**Tests**: Template creation and usage
-**Manual Test**: Create and use a template
-
-### Commit 11: Add business logic methods
+### Commit 7: Add business logic methods
 **Goal**: Implement core business rules
 **Models**: 
-- Condition.complete? (when all outcomes complete)
 - Hypothesis.state (derived from timestamps)
 - Outcome.current_confidence (latest rating)
 - Mission.latest_version
+- Outcome.achievement_status validation
 **Tests**: Business logic validations
 **Manual Test**: Test state transitions and completion logic
 
-## Phase 5: Basic UI (Growth Page Integration)
+## Phase 4: Basic UI (Growth Page Integration)
 
-### Commit 12: Create basic controllers
+### Commit 8: Create basic controllers
 **Goal**: RESTful endpoints for CRUD operations
 **Controllers**: 
 - MissionsController
 - HypothesesController
-- ConditionsController
 - OutcomesController
 **Tests**: Controller specs, authorization
 **Manual Test**: Basic CRUD via browser
 
-### Commit 13: Create basic views
+### Commit 9: Create basic views
 **Goal**: Simple forms and display pages
 **Views**: 
 - Basic HAML templates for create/edit/show
@@ -222,19 +151,18 @@ end
 **Tests**: View specs
 **Manual Test**: Create hypothesis via UI
 
-### Commit 14: Add policies
+### Commit 10: Add policies
 **Goal**: Authorization for all new resources
 **Policies**: 
 - MissionPolicy
 - HypothesisPolicy
-- ConditionPolicy
 - OutcomePolicy
 **Tests**: Policy specs
 **Manual Test**: Test authorization rules
 
-## Phase 6: Growth Compass Visualization
+## Phase 5: Growth Compass Visualization
 
-### Commit 15: Create growth compass partial
+### Commit 11: Create growth compass partial
 **Goal**: Visual representation of hypothesis hierarchy
 **Views**: 
 - Growth compass component
@@ -243,7 +171,7 @@ end
 **Tests**: View specs
 **Manual Test**: View growth compass on person page
 
-### Commit 16: Add confidence tracking UI
+### Commit 12: Add confidence tracking UI
 **Goal**: Weekly confidence update interface
 **Views**: 
 - Confidence rating forms
@@ -251,7 +179,7 @@ end
 **Tests**: View specs
 **Manual Test**: Update confidence ratings
 
-### Commit 17: Add achievement tracking UI
+### Commit 13: Add achievement tracking UI
 **Goal**: Hit/miss outcome tracking
 **Views**: 
 - Achievement forms
@@ -259,9 +187,9 @@ end
 **Tests**: View specs
 **Manual Test**: Mark outcomes as achieved
 
-## Phase 7: Integration with Existing Systems
+## Phase 6: Integration with Existing Systems
 
-### Commit 18: Integrate with person_milestones
+### Commit 14: Integrate with person_milestones
 **Goal**: Connect milestone outcomes to existing milestone system
 **Models**: 
 - Outcome.milestone_outcome? method
@@ -269,7 +197,7 @@ end
 **Tests**: Integration specs
 **Manual Test**: Create milestone outcome
 
-### Commit 19: Integrate with assignment_tenures
+### Commit 15: Integrate with assignment_tenures
 **Goal**: Connect assignment outcomes to existing assignment system
 **Models**: 
 - Outcome.assignment_outcome? method
@@ -277,7 +205,7 @@ end
 **Tests**: Integration specs
 **Manual Test**: Create assignment outcome
 
-### Commit 20: Integrate with employment_tenures
+### Commit 16: Integrate with employment_tenures
 **Goal**: Connect position outcomes to existing position system
 **Models**: 
 - Outcome.position_outcome? method
@@ -285,7 +213,7 @@ end
 **Tests**: Integration specs
 **Manual Test**: Create position outcome
 
-### Commit 21: Integrate with aspirations
+### Commit 17: Integrate with aspirations
 **Goal**: Connect aspiration outcomes to existing aspiration system
 **Models**: 
 - Outcome.aspiration_outcome? method
@@ -293,9 +221,9 @@ end
 **Tests**: Integration specs
 **Manual Test**: Create aspiration outcome
 
-## Phase 8: Check-in Integration
+## Phase 7: Check-in Integration
 
-### Commit 22: Add hypothesis data to check-ins
+### Commit 18: Add hypothesis data to check-ins
 **Goal**: Include hypothesis progress in assignment check-ins
 **Models**: 
 - Add hypothesis methods to AssignmentCheckIn
@@ -303,7 +231,7 @@ end
 **Tests**: Check-in integration specs
 **Manual Test**: View hypothesis data in check-in
 
-### Commit 23: Create hypothesis check-in questions
+### Commit 19: Create hypothesis check-in questions
 **Goal**: Standard questions about hypothesis progress
 **Models**: 
 - Hypothesis check-in questions
@@ -311,9 +239,9 @@ end
 **Tests**: Check-in question specs
 **Manual Test**: Answer hypothesis questions in check-in
 
-## Phase 9: Advanced Features
+## Phase 8: Advanced Features
 
-### Commit 24: Add complexity scoring
+### Commit 20: Add complexity scoring
 **Goal**: Help users understand hypothesis complexity
 **Models**: 
 - Hypothesis.complexity_score method
@@ -321,7 +249,7 @@ end
 **Tests**: Complexity calculation specs
 **Manual Test**: View complexity scores
 
-### Commit 25: Add dependency visualization
+### Commit 21: Add dependency visualization
 **Goal**: Visual representation of hypothesis dependencies
 **Views**: 
 - Dependency graph component
@@ -329,7 +257,7 @@ end
 **Tests**: View specs
 **Manual Test**: Explore hypothesis dependencies
 
-### Commit 26: Add mission alignment scoring
+### Commit 22: Add mission alignment scoring
 **Goal**: Show how well hypotheses align with missions
 **Models**: 
 - Mission.alignment_score method
@@ -337,9 +265,9 @@ end
 **Tests**: Alignment calculation specs
 **Manual Test**: View mission alignment scores
 
-## Phase 10: Polish & Optimization
+## Phase 9: Polish & Optimization
 
-### Commit 27: Add comprehensive validations
+### Commit 23: Add comprehensive validations
 **Goal**: Ensure data integrity and business rules
 **Models**: 
 - All business rule validations
@@ -347,7 +275,7 @@ end
 **Tests**: Comprehensive validation specs
 **Manual Test**: Test edge cases and error handling
 
-### Commit 28: Add performance optimizations
+### Commit 24: Add performance optimizations
 **Goal**: Optimize queries and loading
 **Models**: 
 - Eager loading associations
@@ -355,7 +283,7 @@ end
 **Tests**: Performance specs
 **Manual Test**: Test with large datasets
 
-### Commit 29: Add comprehensive documentation
+### Commit 25: Add comprehensive documentation
 **Goal**: Document the system for users and developers
 **Docs**: 
 - User guide
@@ -363,7 +291,7 @@ end
 - API documentation
 **Manual Test**: Review documentation
 
-### Commit 30: Final integration testing
+### Commit 26: Final integration testing
 **Goal**: End-to-end testing of the complete system
 **Tests**: 
 - Integration specs
@@ -398,3 +326,5 @@ end
 - Integration with existing systems works
 - Performance is acceptable
 - Code is maintainable and well-tested
+
+

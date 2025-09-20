@@ -294,26 +294,7 @@ class PeopleController < ApplicationController
   end
 
   def assignment_has_changes?(assignment)
-    return false unless maap_snapshot&.maap_data&.dig('assignments')
-    
-    proposed_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment.id }
-    return false unless proposed_data
-    
-    current_tenure = person.assignment_tenures.where(assignment: assignment).active.first
-    proposed_tenure = proposed_data['tenure']
-    
-    # Check tenure changes
-    tenure_changed = if current_tenure
-      current_tenure.anticipated_energy_percentage != proposed_tenure['anticipated_energy_percentage'] ||
-      current_tenure.started_at.to_date != Date.parse(proposed_tenure['started_at'])
-    else
-      proposed_tenure['anticipated_energy_percentage'] > 0
-    end
-    
-    # Check check-in changes
-    check_in_changed = check_in_has_changes?(assignment, proposed_data)
-    
-    tenure_changed || check_in_changed
+    change_detection_service.assignment_has_changes?(assignment)
   end
 
   def check_in_has_changes?(assignment, proposed_data)
@@ -326,7 +307,7 @@ class PeopleController < ApplicationController
         current_check_in.employee_rating != proposed_data['employee_check_in']['employee_rating'] ||
         current_check_in.employee_private_notes != proposed_data['employee_check_in']['employee_private_notes'] ||
         current_check_in.employee_personal_alignment != proposed_data['employee_check_in']['employee_personal_alignment'] ||
-        current_check_in.employee_completed_at.to_s != proposed_data['employee_check_in']['employee_completed_at'].to_s
+        (current_check_in.employee_completed? || false) != proposed_data['employee_check_in']['employee_completed_at'].present?
       else
         proposed_data['employee_check_in'].values.any? { |v| v.present? }
       end
@@ -338,7 +319,7 @@ class PeopleController < ApplicationController
       manager_changed = if current_check_in
         current_check_in.manager_rating != proposed_data['manager_check_in']['manager_rating'] ||
         current_check_in.manager_private_notes != proposed_data['manager_check_in']['manager_private_notes'] ||
-        current_check_in.manager_completed_at.to_s != proposed_data['manager_check_in']['manager_completed_at'].to_s ||
+        (current_check_in.manager_completed? || false) != proposed_data['manager_check_in']['manager_completed_at'].present? ||
         current_check_in.manager_completed_by_id.to_s != proposed_data['manager_check_in']['manager_completed_by_id'].to_s
       else
         proposed_data['manager_check_in'].values.any? { |v| v.present? }
@@ -351,7 +332,7 @@ class PeopleController < ApplicationController
       official_changed = if current_check_in
         current_check_in.official_rating != proposed_data['official_check_in']['official_rating'] ||
         current_check_in.shared_notes != proposed_data['official_check_in']['shared_notes'] ||
-        current_check_in.official_check_in_completed_at.to_s != proposed_data['official_check_in']['official_check_in_completed_at'].to_s ||
+        (current_check_in.officially_completed? || false) != proposed_data['official_check_in']['official_check_in_completed_at'].present? ||
         current_check_in.finalized_by_id.to_s != proposed_data['official_check_in']['finalized_by_id'].to_s
       else
         proposed_data['official_check_in'].values.any? { |v| v.present? }
@@ -381,6 +362,10 @@ class PeopleController < ApplicationController
   end
 
   helper_method :employment_has_changes?, :assignment_has_changes?, :milestone_has_changes?, :check_in_has_changes?, :can_see_manager_private_notes?
+
+  def change_detection_service
+    @change_detection_service ||= MaapChangeDetectionService.new(person: person, maap_snapshot: maap_snapshot)
+  end
 
   def execute_maap_changes!
     begin
@@ -415,26 +400,16 @@ class PeopleController < ApplicationController
   end
 
   def update_assignment_tenure(assignment, tenure_data)
-    active_tenure = person.assignment_tenures.where(assignment: assignment).active.first
-    
-    if tenure_data['anticipated_energy_percentage'] == 0
-      # End the tenure
-      if active_tenure
-        active_tenure.update!(ended_at: Date.current)
-      end
-    else
-      # Update or create tenure
-      if active_tenure
-        active_tenure.update!(anticipated_energy_percentage: tenure_data['anticipated_energy_percentage'])
-      else
-        AssignmentTenure.create!(
-          person: person,
-          assignment: assignment,
-          anticipated_energy_percentage: tenure_data['anticipated_energy_percentage'],
-          started_at: Date.current
-        )
-      end
-    end
+    service = AssignmentTenureService.new(
+      person: person,
+      assignment: assignment,
+      created_by: current_person
+    )
+
+    service.update_tenure(
+      anticipated_energy_percentage: tenure_data['anticipated_energy_percentage'],
+      started_at: tenure_data['started_at']
+    )
   end
 
   def update_assignment_check_in(assignment, check_in_data)
@@ -502,6 +477,29 @@ class PeopleController < ApplicationController
     return unless %w[execute_changes process_changes].include?(action_name)
     
     authorize person, :manager?, policy_class: PersonPolicy
+  end
+
+  # Helper methods for execute_changes view
+  helper_method :can_see_manager_private_data?, :can_see_employee_private_data?, :format_private_field_value
+  
+  def can_see_manager_private_data?(employee)
+    policy(employee).manager?
+  end
+
+  def can_see_employee_private_data?(employee)
+    current_person == employee
+  end
+
+  def format_private_field_value(value, can_see, employee_name, field_type)
+    if can_see
+      value.present? ? value : '<not set>'
+    else
+      if field_type == 'manager'
+        "<only visible to #{employee_name}'s managers>"
+      else
+        "<only visible to #{employee_name}>"
+      end
+    end
   end
 
   def person_params

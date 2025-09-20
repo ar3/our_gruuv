@@ -1,0 +1,18 @@
+/ Manager Rating Field
+%tr
+  %td
+    %strong Manager Rating
+  %td
+    :ruby
+      current_rating = current_check_in&.manager_rating
+      proposed_rating = manager_check_in['manager_rating']
+      can_see_manager = can_see_manager_private_data?(person)
+      employee_name = person.first_name
+    
+    - if current_rating != proposed_rating
+      %span.badge.bg-warning.me-2 CHANGED
+      %span.text-muted= format_private_field_value(current_rating, can_see_manager, employee_name, 'manager')
+      %i.bi.bi-arrow-right.mx-1
+      %span.text-primary= format_private_field_value(proposed_rating, can_see_manager, employee_name, 'manager')
+    - else
+      %span.text-muted= format_private_field_value(current_rating, can_see_manager, employee_name, 'manager') + ' (unchanged)'

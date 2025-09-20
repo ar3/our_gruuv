@@ -4,7 +4,7 @@ class AssignmentTenure < ApplicationRecord
   has_many :assignment_check_ins, dependent: :destroy
 
   validates :started_at, presence: true
-  validates :ended_at, comparison: { greater_than: :started_at }, allow_nil: true
+  validates :ended_at, comparison: { greater_than_or_equal_to: :started_at }, allow_nil: true
   validates :anticipated_energy_percentage, 
             inclusion: { in: 0..100 }, 
             allow_nil: true
@@ -35,10 +35,14 @@ class AssignmentTenure < ApplicationRecord
   def no_overlapping_active_tenures_for_same_person_and_assignment
     return unless person_id && assignment_id && started_at
 
+    # Find tenures that would overlap with this one
+    # A tenure overlaps if:
+    # 1. It's active (ended_at IS NULL) OR it ends after our start date
+    # 2. AND it starts before our end date (or before today if we're active)
     overlapping_tenures = AssignmentTenure
       .where(person_id: person.id, assignment_id: assignment.id)
       .where.not(id: id) # Exclude current record if updating
-      .where('(ended_at IS NULL OR ended_at > ?) AND started_at < ?', started_at, ended_at || Date.current)
+      .where('(ended_at IS NULL OR ended_at > ?) AND started_at < ?', started_at, ended_at || Date.current + 1.day)
 
     if overlapping_tenures.exists?
       errors.add(:base, 'Cannot have overlapping active assignment tenures for the same person and assignment')

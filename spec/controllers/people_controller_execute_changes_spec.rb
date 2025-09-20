@@ -150,5 +150,84 @@ RSpec.describe PeopleController, type: :controller do
         expect(result).to be false
       end
     end
+
+    describe '#update_assignment_tenure' do
+      let!(:existing_tenure) { create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20) }
+
+      it 'creates new tenure when energy changes' do
+        controller.instance_variable_set(:@person, employee)
+        
+        tenure_data = {
+          'anticipated_energy_percentage' => 35,
+          'started_at' => Date.current.to_s
+        }
+        
+        expect {
+          controller.send(:update_assignment_tenure, assignment1, tenure_data)
+        }.to change(AssignmentTenure, :count).by(1)
+        
+        # Check that old tenure was ended
+        existing_tenure.reload
+        expect(existing_tenure.ended_at).to eq(Date.current + 1.day)
+        
+        # Check that new tenure was created
+        new_tenure = employee.assignment_tenures.where(assignment: assignment1).active.first
+        expect(new_tenure.anticipated_energy_percentage).to eq(35)
+        expect(new_tenure.started_at).to eq(Date.current)
+      end
+
+      it 'does not create new tenure when energy is the same' do
+        controller.instance_variable_set(:@person, employee)
+        
+        tenure_data = {
+          'anticipated_energy_percentage' => 20, # Same as existing
+          'started_at' => Date.current.to_s
+        }
+        
+        expect {
+          controller.send(:update_assignment_tenure, assignment1, tenure_data)
+        }.not_to change(AssignmentTenure, :count)
+        
+        # Check that existing tenure is still active
+        existing_tenure.reload
+        expect(existing_tenure.ended_at).to be_nil
+      end
+
+      it 'creates new tenure when no active tenure exists' do
+        existing_tenure.update!(ended_at: Date.current + 1.day)
+        controller.instance_variable_set(:@person, employee)
+        
+        tenure_data = {
+          'anticipated_energy_percentage' => 35,
+          'started_at' => Date.current.to_s
+        }
+        
+        expect {
+          controller.send(:update_assignment_tenure, assignment1, tenure_data)
+        }.to change(AssignmentTenure, :count).by(1)
+        
+        # Check that new tenure was created
+        new_tenure = employee.assignment_tenures.where(assignment: assignment1).active.first
+        expect(new_tenure.anticipated_energy_percentage).to eq(35)
+        expect(new_tenure.started_at).to eq(Date.current)
+      end
+
+      it 'ends tenure when energy is set to 0' do
+        controller.instance_variable_set(:@person, employee)
+        
+        tenure_data = {
+          'anticipated_energy_percentage' => 0,
+          'started_at' => Date.current.to_s
+        }
+        
+        expect {
+          controller.send(:update_assignment_tenure, assignment1, tenure_data)
+        }.not_to change(AssignmentTenure, :count)
+        
+        # Check that existing tenure was ended
+        existing_tenure.reload
+        expect(existing_tenure.ended_at).to eq(Date.current + 1.day)
+      end
+    end
   end
 end

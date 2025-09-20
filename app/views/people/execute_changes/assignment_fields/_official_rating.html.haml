@@ -1,0 +1,15 @@
+/ Official Rating Field
+- if official_check_in['official_rating'].present?
+  %tr
+    %td
+      %strong Official Rating
+    %td
+      - current_rating = current_check_in&.official_rating || 'Not set'
+      - proposed_rating = official_check_in['official_rating']
+      - if current_rating != proposed_rating
+        %span.badge.bg-warning.me-2 CHANGED
+        %span.text-muted= current_rating
+        %i.bi.bi-arrow-right.mx-1
+        %span.text-primary= proposed_rating
+      - else
+        %span.text-muted= current_rating + ' (unchanged)'
