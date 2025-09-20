@@ -82,12 +82,12 @@
                     %i.bi.bi-pencil.me-2
                     Manage Assignments
                 .col-md-6
-                  = link_to choose_assignments_organization_assignment_tenure_path(@person.current_organization_or_default, @person), class: "btn btn-outline-success" do
+                  = link_to choose_assignments_organization_assignment_tenures_path(@person.current_organization_or_default, @person), class: "btn btn-outline-success" do
                     %i.bi.bi-plus.me-2
                     Add Assignment
           - else
             %p.text-muted No current assignment.
-            = link_to choose_assignments_organization_assignment_tenure_path(@person.current_organization_or_default, @person), class: "btn btn-outline-success" do
+            = link_to choose_assignments_organization_assignment_tenures_path(@person.current_organization_or_default, @person), class: "btn btn-outline-success" do
               %i.bi.bi-plus.me-2
               Add Assignment
 

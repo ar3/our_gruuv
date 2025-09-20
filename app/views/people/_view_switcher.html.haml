@@ -79,7 +79,7 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access assignment features"}
       
     %li
-      - if action_name == 'show'
+      - if action_name == 'show' && controller_name != 'assignment_tenures'
         .dropdown-item.text-muted
           %i.bi.bi-gear.me-2
           Management Mode (Active)

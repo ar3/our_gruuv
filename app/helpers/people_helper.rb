@@ -83,6 +83,11 @@ module PeopleHelper
   def people_current_view_name
     return 'Management Mode' unless action_name
     
+    # Check for assignment_tenures controller first
+    if controller_name == 'assignment_tenures' && action_name == 'show'
+      return 'Assignment Mode'
+    end
+    
     case action_name
     when 'show'
       'Management Mode'

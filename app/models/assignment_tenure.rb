@@ -39,10 +39,13 @@ class AssignmentTenure < ApplicationRecord
     # A tenure overlaps if:
     # 1. It's active (ended_at IS NULL) OR it ends after our start date
     # 2. AND it starts before our end date (or before today if we're active)
+    # Only check for overlaps with active tenures
+    end_date_for_comparison = ended_at || Date.current + 1.day
     overlapping_tenures = AssignmentTenure
       .where(person_id: person.id, assignment_id: assignment.id)
       .where.not(id: id) # Exclude current record if updating
-      .where('(ended_at IS NULL OR ended_at > ?) AND started_at < ?', started_at, ended_at || Date.current + 1.day)
+      .where('ended_at IS NULL') # Only check active tenures
+      .where('started_at < ?', end_date_for_comparison)
 
     if overlapping_tenures.exists?
       errors.add(:base, 'Cannot have overlapping active assignment tenures for the same person and assignment')
