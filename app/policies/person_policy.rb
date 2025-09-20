@@ -22,8 +22,14 @@ class PersonPolicy < ApplicationPolicy
     return true if admin_bypass?
     return false unless actual_user && record
     
-    # Get organization context from pundit_user (same pattern as audit? method)
-    user_org = user.respond_to?(:organization) ? user.organization : nil
+    # Get organization context from pundit_user (handle both ApplicationController and OrganizationNamespaceBaseController)
+    user_org = if user.respond_to?(:organization) && user.organization
+                 user.organization
+               elsif user.respond_to?(:pundit_organization) && user.pundit_organization
+                 user.pundit_organization
+               else
+                 nil
+               end
     return false unless user_org
     
     Rails.logger.debug "Teammate check: User #{actual_user.id} (#{actual_user.email}) org: #{user_org.id} (#{user_org.name})"
