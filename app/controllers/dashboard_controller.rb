@@ -1,4 +1,5 @@
 class DashboardController < ApplicationController
+  layout 'authenticated-v2-0'
   before_action :require_login
   
   def index

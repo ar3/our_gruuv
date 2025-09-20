@@ -1,4 +1,5 @@
 class OrganizationsController < Organizations::OrganizationNamespaceBaseController
+  layout 'authenticated-v2-0'
   before_action :require_authentication
   
   def index
@@ -18,7 +19,6 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     # Load stats for the three pillars
     load_organization_stats
     
-    render layout: 'authenticated-v2-0'
   end
   
   def new

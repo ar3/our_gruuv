@@ -1,4 +1,5 @@
 class ImpersonationsController < ApplicationController
+  layout 'authenticated-v2-0'
   before_action :authenticate_person!
   before_action :ensure_admin!
 

@@ -1,0 +1,81 @@
+- content_for :go_back_link do
+  = link_to person_path(@person), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@person.display_name}'s Profile
+
+- content_for :header do
+  %h1.mb-0 Assignment Mode for #{@person.display_name}
+
+- content_for :header_action do
+  = render 'people/view_switcher'
+
+  - if current_person == @person
+    .row.mb-3
+      .col-12
+        .alert.alert-info.text-center.py-3
+          %h4.mb-2 🎯 Modify Your Job Description
+          %p.mb-0 Use this page to adjust your assignment energy percentages and provide check-ins on how things are going.
+.row.justify-content-center
+  .col-lg-12
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Current Position
+      .card-body
+        .position-info.mb-4.p-3.bg-light.rounded
+          .row.align-items-center
+            .col-md-8
+              %p.mb-0
+                %strong= @current_employment.position.display_name
+                %br
+                %small.text-muted
+                  Company: #{@current_employment.company.name}
+                  %br
+                  Started: #{@current_employment.started_at.strftime('%B %d, %Y')}
+                  - if @current_employment.ended_at
+                    %br
+                    Ended: #{@current_employment.ended_at.strftime('%B %d, %Y')}
+                  - else
+                    %br
+                    %span.text-success Duration: #{((Date.current - @current_employment.started_at.to_date).to_i / 30.44).round(1)} months
+            .col-md-4.text-end
+        = link_to "View Position Details", edit_organization_position_path(@current_employment.position.position_type.organization, @current_employment.position), class: "btn btn-outline-primary btn-sm"
+
+    .card
+      .card-header
+        %h5.mb-0 My Assignments
+
+      .card-body
+        - if @assignment_data.any?
+          = form_with url: organization_assignment_tenure_path(@organization, @person), method: :patch, local: true do |form|
+            - is_employee_view = current_person == @person
+            - is_manager_view = !is_employee_view
+            
+            // Top action bar
+            .row.mb-3
+              .col-4
+                = render 'energy_total_component', id_suffix: 'top'
+              .col-4.text-center
+                %span.text-muted Assignment Overview
+              .col-4.text-end
+                = form.submit "Update #{@person.first_name}'s Assignments", class: "btn btn-primary"
+            
+            - if is_employee_view
+              = render 'employee_assignments_table', assignment_data: @assignment_data, form: form
+            - else
+              = render 'manager_assignments_table', assignment_data: @assignment_data, form: form
+
+            // Bottom action bar
+            .row.mt-3
+              .col-4
+                = render 'energy_total_component', id_suffix: 'bottom'
+              .col-4.text-center
+                %span.text-muted Assignment Summary
+              .col-4.text-end
+                = form.submit "Update #{@person.first_name}'s Assignments", class: "btn btn-primary"
+        - else
+          .alert.alert-info
+            %h6.mb-2
+              %i.bi.bi-info-circle.me-2
+              No Assignments Found
+            %p.mb-0 No assignments found for #{@person.display_name}.
+

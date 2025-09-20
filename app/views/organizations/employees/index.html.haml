@@ -46,7 +46,7 @@
                           .btn-group.btn-group-sm
                             = link_to teammate_person_path(employee), class: "btn btn-outline-primary" do
                               %i.bi.bi-eye
-                            = link_to person_assignment_tenures_path(employee), class: "btn btn-outline-info" do
+                            = link_to organization_assignment_tenure_path(employee.current_organization_or_default, employee), class: "btn btn-outline-info" do
                               %i.bi.bi-list-task
                     - else
                       %tr

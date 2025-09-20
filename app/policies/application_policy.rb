@@ -10,7 +10,9 @@ class ApplicationPolicy
 
   # Admin bypass - og_admin users get all permissions
   def admin_bypass?
-    actual_user&.admin?
+    # Check if the real user (not impersonated) is an admin
+    real_user = user.respond_to?(:real_user) ? user.real_user : actual_user
+    real_user&.admin?
   end
 
   # Helper method to get the actual user from pundit_user

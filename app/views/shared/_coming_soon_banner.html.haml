@@ -1,0 +1,8 @@
+/ Coming Soon Banner
+.alert.alert-info.alert-dismissible.fade.show{role: "alert"}
+  .d-flex.align-items-center
+    %i.bi.bi-heart.me-2
+    %strong.me-2= strong_text
+    %span We'd love to build with you... ! Let's get started. 
+    = link_to "Tell us what you think", new_interest_submission_path(source_page: source_page, return_url: request.url), class: "alert-link ms-2"
+  %button.btn-close{type: "button", "data-bs-dismiss": "alert", "aria-label": "Close"}

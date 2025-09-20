@@ -4,16 +4,10 @@
     Back to #{@person.display_name}'s Profile
 
 - content_for :header do
-  .d-flex.justify-content-between.align-items-center
-    %h1.mb-0 Check-In Mode for #{@person.display_name}
-    = link_to person_assignment_tenures_path(@person), class: "btn btn-primary" do
-      %i.bi.bi-clipboard-check.me-2
-      Manage Assignments
+  %h1.mb-0 Check-In Mode for #{@person.display_name}
 
 - content_for :header_action do
-  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#checkInFilterModal", type: "button"}
-    %i.bi.bi-funnel.me-2
-    Filter & Sort
+  = render 'people/view_switcher'
 
 .row.justify-content-center
   .col-lg-12
@@ -79,7 +73,7 @@
               %i.bi.bi-info-circle.me-2
               No Check-ins Ready for Finalization
             %p.mb-2 No assignment check-ins are ready for finalization yet. Both employee and manager must complete their sections first.
-            = link_to "Manage Assignments", person_assignment_tenures_path(@person), class: "btn btn-primary btn-sm"
+            = link_to "Manage Assignments", organization_assignment_tenure_path(@person.current_organization_or_default, @person), class: "btn btn-primary btn-sm"
 
     / Coming Soon Sections
     .row
@@ -119,60 +113,3 @@
               %p.text-muted.mt-2 Coming Soon
               %small.text-muted Action items and follow-ups
 
-/ Modal for Filter & Sort
-#checkInFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "checkInFilterModalLabel", tabindex: "-1"}
-  .modal-dialog.modal-lg
-    .modal-content
-      .modal-header
-        %h5.modal-title#checkInFilterModalLabel
-          %i.bi.bi-funnel.me-2
-          Filter & Sort Check-ins (coming soon)
-        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-      .modal-body
-        .row
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-funnel.me-2
-              Filters
-            .mb-3
-              %label.form-label Assignment
-              %select.form-select
-                %option All Assignments
-                %option Employee Growth Plan Champion
-                %option Quarterly Conversation Coordinator
-                %option Learning Librarian
-            .mb-3
-              %label.form-label Completion Status
-              .form-check
-                %input.form-check-input{checked: "checked", type: "checkbox", name: "status", value: "ready"}
-                %label.form-check-label Ready for Finalization
-              .form-check
-                %input.form-check-input{type: "checkbox", name: "status", value: "completed"}
-                %label.form-check-label Completed
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-sort-down.me-2
-              Sort Options
-            .mb-3
-              %label.form-label Sort By
-              %select.form-select
-                %option Check-in Date
-                %option Assignment Name
-                %option Completion Date
-            .mb-3
-              %label.form-label View Style
-              .form-check
-                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "cards"}
-                %label.form-check-label
-                  %i.bi.bi-grid.me-2
-                  Card View
-              .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "table"}
-                %label.form-check-label
-                  %i.bi.bi-table.me-2
-                  Table View
-      .modal-footer
-        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
-        %button.btn.btn-primary.disabled{type: "button"}
-          %i.bi.bi-check.me-2
-          Apply Filters

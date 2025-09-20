@@ -1,5 +1,5 @@
 class PeopleController < ApplicationController
-  layout 'authenticated-v2-0', only: [:show, :public, :teammate, :growth, :check_in, :execute_changes]
+  layout 'authenticated-v2-0'
   before_action :require_login, except: [:public]
   before_action :authorize_maap_snapshot_actions
   after_action :verify_authorized, except: [:index]
@@ -73,6 +73,7 @@ class PeopleController < ApplicationController
       .includes(:assignment)
       .order(:check_in_started_on)
   end
+
 
   def finalize_check_in
     authorize person, :manager?
@@ -176,7 +177,7 @@ class PeopleController < ApplicationController
   def execute_changes
     # Check if current user is the creator of the MaapSnapshot
     unless maap_snapshot.created_by == current_person
-      redirect_to person_assignment_tenures_path(person), 
+      redirect_to organization_assignment_tenure_path(person.current_organization_or_default, person), 
                   alert: 'You are not authorized to view this MaapSnapshot.'
       return
     end
@@ -186,19 +187,19 @@ class PeopleController < ApplicationController
     load_assignments_and_check_ins
   rescue ActiveRecord::RecordNotFound => e
     Rails.logger.error "RecordNotFound: #{e.message}"
-    redirect_to person_assignment_tenures_path(person), 
+    redirect_to organization_assignment_tenure_path(person.current_organization_or_default, person), 
                 alert: 'MaapSnapshot not found. Please try again.'
   rescue => e
     Rails.logger.error "Error in execute_changes: #{e.message}"
     Rails.logger.error "Backtrace: #{e.backtrace.first(5)}"
-    redirect_to person_assignment_tenures_path(person), 
+    redirect_to organization_assignment_tenure_path(person.current_organization_or_default, person), 
                 alert: 'An error occurred. Please try again.'
   end
 
   def process_changes
     # Check if current user is the creator of the MaapSnapshot
     unless maap_snapshot.created_by == current_person
-      redirect_to person_assignment_tenures_path(person), 
+      redirect_to organization_assignment_tenure_path(person.current_organization_or_default, person), 
                   alert: 'You are not authorized to execute this MaapSnapshot.'
       return
     end
@@ -215,7 +216,7 @@ class PeopleController < ApplicationController
       # Redirect based on change type
       redirect_path = case maap_snapshot.change_type
       when 'assignment_management'
-        person_assignment_tenures_path(person)
+        organization_assignment_tenure_path(person.current_organization_or_default, person)
       when 'position_tenure'
         person_path(person) # TODO: Update when position tenure page exists
       when 'milestone_management'
@@ -234,14 +235,14 @@ class PeopleController < ApplicationController
                   alert: 'Failed to execute changes. Please review and try again.'
     end
   rescue ActiveRecord::RecordNotFound
-    redirect_to person_assignment_tenures_path(person), 
+    redirect_to organization_assignment_tenure_path(person.current_organization_or_default, person), 
                 alert: 'MaapSnapshot not found. Please try again.'
   rescue Pundit::NotAuthorizedError
-    redirect_to person_assignment_tenures_path(person), 
+    redirect_to organization_assignment_tenure_path(person.current_organization_or_default, person), 
                 alert: 'You are not authorized to execute changes for this person.'
   rescue => e
     Rails.logger.error "Error in process_changes: #{e.message}"
-    redirect_to person_assignment_tenures_path(person), 
+    redirect_to organization_assignment_tenure_path(person.current_organization_or_default, person), 
                 alert: 'An error occurred while processing changes. Please try again.'
   end
 

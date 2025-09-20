@@ -1,4 +1,5 @@
 class UploadEventsController < ApplicationController
+  layout 'authenticated-v2-0'
   before_action :require_login
   before_action :set_upload_event, only: [:show, :destroy, :process_upload]
   before_action :ensure_employment_management_permission, only: [:index, :new, :create, :process_upload]

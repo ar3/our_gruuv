@@ -7,12 +7,12 @@
       %p.text-muted.mb-0 Your assignment updates have been saved successfully
 
 - content_for :go_back_link do
-  = link_to person_assignment_tenures_path(@person), class: "text-muted text-decoration-none" do
+  = link_to organization_assignment_tenure_path(@organization, @person), class: "text-muted text-decoration-none" do
     %i.bi.bi-arrow-left.me-1
     Back to Assignment Management
 
 - content_for :top_actions do
-  = link_to person_assignment_tenures_path(@person), class: "btn btn-primary" do
+  = link_to organization_assignment_tenure_path(@organization, @person), class: "btn btn-primary" do
     %i.bi.bi-check.me-2
     Continue Managing Assignments
 
@@ -114,9 +114,9 @@
 
     .row.mt-4
       .col-12.text-center
-        = link_to person_assignment_tenures_path(@person), class: "btn btn-primary btn-lg me-3" do
+        = link_to organization_assignment_tenure_path(@organization, @person), class: "btn btn-primary btn-lg me-3" do
           %i.bi.bi-clipboard-check.me-2
           Continue Managing Assignments
-        = link_to choose_assignments_person_assignment_tenures_path(@person), class: "btn btn-outline-secondary btn-lg" do
+        = link_to choose_assignments_organization_assignment_tenure_path(@organization, @person), class: "btn btn-outline-secondary btn-lg" do
           %i.bi.bi-plus.me-2
           Add More Assignments

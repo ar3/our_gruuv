@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_14_235044) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_20_021459) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -221,6 +221,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_14_235044) do
     t.bigint "huddle_playbook_id"
     t.index ["expires_at"], name: "index_huddles_on_expires_at"
     t.index ["huddle_playbook_id"], name: "index_huddles_on_huddle_playbook_id"
+  end
+
+  create_table "interest_submissions", force: :cascade do |t|
+    t.text "thing_interested_in"
+    t.text "why_interested"
+    t.text "current_solution"
+    t.string "source_page"
+    t.bigint "person_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["person_id"], name: "index_interest_submissions_on_person_id"
   end
 
   create_table "maap_snapshots", force: :cascade do |t|
@@ -518,6 +529,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_14_235044) do
   add_foreign_key "huddle_participants", "people"
   add_foreign_key "huddle_playbooks", "organizations"
   add_foreign_key "huddles", "huddle_playbooks"
+  add_foreign_key "interest_submissions", "people"
   add_foreign_key "maap_snapshots", "organizations", column: "company_id"
   add_foreign_key "maap_snapshots", "people", column: "created_by_id"
   add_foreign_key "maap_snapshots", "people", column: "employee_id"

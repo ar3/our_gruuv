@@ -95,6 +95,15 @@ get '/login', to: 'auth#login', as: :login
     # Assignments management
     resources :assignments, module: :organizations
     
+    # Assignment tenures - unified interface for managing assignments and check-ins
+    resources :assignment_tenures, module: :organizations, only: [:show, :update] do
+      collection do
+        get :choose_assignments
+        post :update_assignments
+        get :changes_confirmation
+      end
+    end
+    
     # Positions management
     resources :positions, module: :organizations do
       member do
@@ -183,15 +192,6 @@ get '/login', to: 'auth#login', as: :login
         get :employment_summary
       end
     end
-    
-    # Assignment tenures - unified interface for managing assignments and check-ins
-    resource :assignment_tenures, only: [:show, :update] do
-      collection do
-        get :choose_assignments
-        post :update_assignments
-        get :changes_confirmation
-      end
-    end
   end
 
   # Organization access permissions - moved to organization namespace
@@ -203,6 +203,9 @@ patch '/profile', to: 'people#update', as: :update_profile
 
 # Impersonation routes
 resources :impersonations, only: [:create, :destroy]
+
+# Interest submissions for coming soon features
+resources :interest_submissions, path: 'interest', only: [:index, :new, :create, :show]
 
 # Identity management
 post '/profile/identities/connect_google', to: 'people#connect_google_identity', as: :connect_google_identity

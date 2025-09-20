@@ -240,7 +240,7 @@
                         %i.bi.bi-eye.me-2
                         View Assignment
                       
-                      = link_to person_assignment_tenures_path(@person), class: "btn btn-outline-secondary" do
+                      = link_to organization_assignment_tenure_path(@person.current_organization_or_default, @person), class: "btn btn-outline-secondary" do
                         %i.bi.bi-list.me-2
                         Manage Tenures
 

@@ -12,7 +12,7 @@
       %p.text-muted.mb-0 Review and execute the changes for #{person.display_name}
 
 - content_for :go_back_link do
-  = link_to person_assignment_tenures_path(person), class: "text-muted text-decoration-none" do
+  = link_to organization_assignment_tenure_path(person.current_organization_or_default, person), class: "text-muted text-decoration-none" do
     %i.bi.bi-arrow-left.me-1
     Back to Assignment Management
 
@@ -22,7 +22,7 @@
       %strong Error: 
       MaapSnapshot not found. Please try going back and trying again.
       %br
-      = link_to "Back to Assignment Management", person_assignment_tenures_path(person), class: "btn btn-secondary"
+      = link_to "Back to Assignment Management", organization_assignment_tenure_path(person.current_organization_or_default, person), class: "btn btn-secondary"
 
 .row.justify-content-center
   .col-12
@@ -38,4 +38,4 @@
         %strong Error: 
         MaapSnapshot not found. Please try going back and trying again.
         %br
-        = link_to "Back to Assignment Management", person_assignment_tenures_path(person), class: "btn btn-secondary"
+        = link_to "Back to Assignment Management", organization_assignment_tenure_path(person.current_organization_or_default, person), class: "btn btn-secondary"

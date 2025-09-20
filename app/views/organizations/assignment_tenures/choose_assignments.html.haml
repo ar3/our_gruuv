@@ -6,7 +6,7 @@
       %h1.mb-0 Choose Assignments for #{@person.first_name}
       
 - content_for :go_back_link do
-  = link_to person_assignment_tenures_path(@person), class: "text-muted text-decoration-none" do
+  = link_to organization_assignment_tenure_path(@organization, @person), class: "text-muted text-decoration-none" do
     %i.bi.bi-arrow-left.me-1
     Back to Assignment Management
 
@@ -17,13 +17,13 @@
 
 - content_for :top_actions do
   - if @available_assignments.any?
-    = form_with url: update_assignments_person_assignment_tenures_path(@person), method: :post, local: true, id: "assignments-form" do |form|
+    = form_with url: update_assignments_organization_assignment_tenure_path(@organization, @person), method: :post, local: true, id: "assignments-form" do |form|
       = form.submit "Add Selected Assignments", class: "btn btn-primary"
 
 .row
   .col-12
     - if @available_assignments.any?
-      = form_with url: update_assignments_person_assignment_tenures_path(@person), method: :post, local: true, id: "assignments-form" do |form|
+      = form_with url: update_assignments_organization_assignment_tenure_path(@organization, @person), method: :post, local: true, id: "assignments-form" do |form|
         - @assignments_by_organization.each do |organization, assignments|
           .card.mb-4
             .card-header
@@ -86,7 +86,7 @@
             %i.bi.bi-check-circle.text-success.fs-1.mb-3
             %h4 No Additional Assignments Available
             %p.text-muted All available assignments for #{@current_employment.company.display_name} have already been added to #{@person.display_name}'s profile.
-            = link_to "Back to Assignment Management", person_assignment_tenures_path(@person), class: "btn btn-primary"
+            = link_to "Back to Assignment Management", organization_assignment_tenure_path(@organization, @person), class: "btn btn-primary"
 
 / Modal for Filter & Sort
 #chooseAssignmentsFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "chooseAssignmentsFilterModalLabel", tabindex: "-1"}

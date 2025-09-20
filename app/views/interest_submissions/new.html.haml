@@ -1,0 +1,39 @@
+- content_for :title, "I'm Interested"
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-heart.me-2
+    I'm Interested
+
+- content_for :go_back_link do
+  = link_to "Back to #{@source_page.humanize}", @return_url, class: "text-muted text-decoration-none"
+
+.card
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-lightbulb.me-2
+      Tell Us About Your Interest
+    %small.text-muted Help us understand what features you'd like to see in OurGruuv
+  
+  .card-body
+    = form_with model: @interest_submission, local: true, class: "needs-validation", novalidate: true do |form|
+      = form.hidden_field :source_page
+      
+      .mb-3
+        = form.label :thing_interested_in, "What are you interested in?", class: "form-label"
+        = form.text_area :thing_interested_in, class: "form-control", rows: 3, placeholder: "Describe the feature or functionality you're interested in..."
+        .form-text This could be a specific feature, improvement, or new capability you'd like to see.
+      
+      .mb-3
+        = form.label :why_interested, "Why are you interested?", class: "form-label"
+        = form.text_area :why_interested, class: "form-control", rows: 3, placeholder: "What problem would this solve for you or your team?"
+        .form-text Help us understand the value this would provide.
+      
+      .mb-4
+        = form.label :current_solution, "What are you using to meet this need today?", class: "form-label"
+        = form.text_area :current_solution, class: "form-control", rows: 3, placeholder: "How do you currently handle this? What tools or processes do you use?"
+        .form-text Understanding your current approach helps us design better solutions.
+      
+      .d-flex.justify-content-between
+        = link_to "Cancel", root_path, class: "btn btn-outline-secondary"
+        = form.submit "Submit Interest", class: "btn btn-primary"

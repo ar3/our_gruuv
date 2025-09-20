@@ -1,4 +1,5 @@
 class PositionTypesController < ApplicationController
+  layout 'authenticated-v2-0'
   before_action :set_position_type, only: [:show, :edit, :update, :destroy, :clone_positions]
   before_action :set_organization
 

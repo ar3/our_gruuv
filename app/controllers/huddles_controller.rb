@@ -1,4 +1,5 @@
 class HuddlesController < ApplicationController
+  layout 'authenticated-v2-0'
   before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :post_start_announcement_to_slack, :notifications_debug]
 
   def index

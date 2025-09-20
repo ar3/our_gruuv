@@ -27,7 +27,8 @@ class ApplicationController < ActionController::Base
   def pundit_user
     OpenStruct.new(
       user: current_person,
-      organization: current_person&.current_organization_or_default
+      organization: current_person&.current_organization_or_default,
+      real_user: real_current_person
     )
   end
   
@@ -137,7 +138,7 @@ class ApplicationController < ActionController::Base
   end
   
   def determine_layout
-    current_person ? 'authenticated' : 'application'
+    current_person ? 'authenticated-v2-0' : 'application'
   end
   
   def current_person
