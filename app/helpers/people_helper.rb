@@ -88,6 +88,11 @@ module PeopleHelper
       return 'Assignment Mode'
     end
     
+    # Check for check_ins controller
+    if controller_name == 'check_ins' && action_name == 'show'
+      return 'Check-In Mode'
+    end
+    
     case action_name
     when 'show'
       'Management Mode'

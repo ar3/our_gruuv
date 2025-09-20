@@ -106,6 +106,13 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
+    # Check-in management
+    resources :check_ins, module: :organizations, only: [:show] do
+      member do
+        patch :finalize_check_in
+      end
+    end
+    
     # Positions management
     resources :positions, module: :organizations do
       member do
