@@ -65,6 +65,9 @@ get '/login', to: 'auth#login', as: :login
         get :new_employee
         post :create_employee
       end
+      member do
+        get :audit
+      end
     end
     
     # Employment management wizard

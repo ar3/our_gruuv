@@ -45,6 +45,20 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     @managers = @organization.employees
     render :new_employee, status: :unprocessable_entity
   end
+
+  def audit
+    # Find the person/employee
+    @person = @organization.employees.find(params[:id])
+    
+    # Authorize access to audit view (organization context passed via pundit_user)
+    authorize @person, :audit?
+    
+    # Get MAAP snapshots for this person within this organization
+    @maap_snapshots = MaapSnapshot.for_employee(@person)
+                                  .for_company(@organization)
+                                  .recent
+                                  .includes(:created_by)
+  end
   
   private
   

@@ -65,5 +65,71 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       expect(assigns(:huddle_participants)).to be_empty
     end
   end
+
+  describe 'GET #audit' do
+    let(:maap_manager) { create(:person) }
+    let(:maap_access) { create(:person_organization_access, person: maap_manager, organization: company, can_manage_maap: true) }
+    let(:maap_snapshot1) { create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: company, change_type: 'assignment_management') }
+    let(:maap_snapshot2) { create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: company, change_type: 'position_tenure') }
+
+    before do
+      maap_access
+      maap_snapshot1
+      maap_snapshot2
+    end
+
+    context 'when user has MAAP management permissions' do
+      before do
+        session[:current_person_id] = maap_manager.id
+      end
+
+      it 'returns http success' do
+        get :audit, params: { organization_id: company.id, id: employee1.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'assigns the correct variables' do
+        get :audit, params: { organization_id: company.id, id: employee1.id }
+        
+        expect(assigns(:person)).to eq(employee1)
+        expect(assigns(:maap_snapshots)).to include(maap_snapshot1, maap_snapshot2)
+      end
+
+      it 'only shows MAAP snapshots for the specific organization' do
+        other_company = create(:organization, :company)
+        other_snapshot = create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: other_company)
+        
+        get :audit, params: { organization_id: company.id, id: employee1.id }
+        
+        expect(assigns(:maap_snapshots)).to include(maap_snapshot1, maap_snapshot2)
+        expect(assigns(:maap_snapshots)).not_to include(other_snapshot)
+      end
+    end
+
+    context 'when user does not have MAAP management permissions' do
+      let(:unauthorized_user) { create(:person) }
+      
+      before do
+        session[:current_person_id] = unauthorized_user.id
+      end
+
+      it 'redirects when authorization fails' do
+        get :audit, params: { organization_id: company.id, id: employee1.id }
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(root_path)
+      end
+    end
+
+    context 'when user is the person themselves' do
+      before do
+        session[:current_person_id] = employee1.id
+      end
+
+      it 'allows access to own audit view' do
+        get :audit, params: { organization_id: company.id, id: employee1.id }
+        expect(response).to have_http_status(:success)
+      end
+    end
+  end
 end
 

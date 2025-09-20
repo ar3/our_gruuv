@@ -1,0 +1,66 @@
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-clock-history.me-2
+    = @person.display_name
+    %small.text-muted.ms-2 (Audit View)
+
+- content_for :header_action do
+  = render 'people/view_switcher'
+
+- content_for :go_back_link do
+  = link_to organization_employees_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    ="Back to Employees in #{@organization.display_name}"
+
+.row
+  .col-12
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-file-earmark-text.me-2
+          MAAP Change History
+        %small.text-muted MAAP snapshots for #{@person.display_name} in #{@organization.display_name}
+      
+      .card-body
+        - if @maap_snapshots.any?
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Date
+                  %th Change Type
+                  %th Created By
+                  %th Reason
+                  %th Status
+              %tbody
+                - @maap_snapshots.each do |snapshot|
+                  %tr
+                    %td
+                      = snapshot.created_at.strftime("%Y-%m-%d %I:%M %p")
+                    %td
+                      %span.badge.bg-primary= snapshot.change_type.humanize
+                    %td
+                      = snapshot.created_by&.display_name || "System"
+                    %td
+                      = truncate(snapshot.reason, length: 50)
+                    %td
+                      - if snapshot.executed?
+                        %span.badge.bg-success Executed
+                        %br
+                        %small.text-muted= "on #{snapshot.effective_date.strftime('%Y-%m-%d')}"
+                      - else
+                        %span.badge.bg-warning Pending
+                    -# %td
+                    -#   - if snapshot.executed?
+                    -#     %span.text-muted.text-decoration-none
+                    -#       %i.bi.bi-eye.me-1
+                    -#       View Details
+                    -#   - else
+                    -#     = link_to execute_changes_person_path(@person, snapshot), class: "btn btn-sm btn-outline-primary" do
+                    -#       %i.bi.bi-play-circle.me-1
+                    -#       Execute
+        - else
+          .text-center.py-5
+            %i.bi.bi-clock-history.text-muted{style: "font-size: 3rem;"}
+            %h5.text-muted.mt-3 No MAAP Changes Found
+            %p.text-muted No MAAP snapshots have been created for #{@person.display_name} in #{@organization.display_name}.

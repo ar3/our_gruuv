@@ -82,6 +82,21 @@ class PersonPolicy < ApplicationPolicy
     user_has_employment_management
   end
 
+  def audit?
+    # Users can view MAAP audit if they are:
+    # 1. The person themselves
+    # 2. In their managerial hierarchy 
+    # 3. Have MAAP management permissions for the specific organization
+    return true if admin_bypass? || actual_user == record || actual_user.in_managerial_hierarchy_of?(record)
+    
+    # Check if user has MAAP management permissions for the specific organization
+    # Organization context is passed via pundit_user.pundit_organization
+    organization = user.pundit_organization
+    return false unless organization
+    
+    actual_user.can_manage_maap?(organization)
+  end
+
   def manage_assignments?
     # Users can manage assignments if they are:
     # 1. The person themselves

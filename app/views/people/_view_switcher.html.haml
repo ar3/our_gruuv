@@ -77,3 +77,19 @@
           %i.bi.bi-gear.me-2
           Management Mode
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access management features"}
+    
+    %li
+      - if action_name == 'audit'
+        .dropdown-item.text-muted
+          %i.bi.bi-clock-history.me-2
+          Audit View (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif policy(@person).audit?
+        = link_to audit_organization_employee_path(current_organization, @person), class: 'dropdown-item' do
+          %i.bi.bi-clock-history.me-2
+          Audit View
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-clock-history.me-2
+          Audit View
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization or to be in the managerial hierarchy to access audit features"}
