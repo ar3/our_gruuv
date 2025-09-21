@@ -59,7 +59,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     
     # Determine what information the current user can see
     @is_employee = current_person == @person
-    @is_manager = !@is_employee && policy(@person).manager?
+    @is_manager = !@is_employee && policy(@person).can_view_manage_mode?
     @can_see_both_sides = @check_ins_in_progress.any? { |ci| ci.ready_for_finalization? }
   end
 

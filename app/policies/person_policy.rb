@@ -45,6 +45,22 @@ class PersonPolicy < ApplicationPolicy
     subject_has_employment
   end
 
+  def can_view_manage_mode?
+    # Users can view management mode pages if they are:
+    # 1. The person themselves (employees can view their own management mode)
+    # 2. In their managerial hierarchy 
+    # 3. Have employment management permissions for any organization
+    return true if admin_bypass? || actual_user == record || actual_user.in_managerial_hierarchy_of?(record)
+    
+    # Check if user has employment management permissions in any organization
+    user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
+    user_has_employment_management = user_employment_orgs.any? { |org| actual_user.can_manage_employment?(org) }
+    
+    Rails.logger.debug "Manage mode check: User #{actual_user.id} has employment management: #{user_has_employment_management}"
+    
+    user_has_employment_management
+  end
+
   def manager?
     # Managers can view detailed profiles of people they manage
     return true if admin_bypass?

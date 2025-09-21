@@ -1,7 +1,6 @@
 class AssignmentCheckIn < ApplicationRecord
   belongs_to :person
   belongs_to :assignment
-  belongs_to :employee_completed_by, class_name: 'Person', optional: true
   belongs_to :manager_completed_by, class_name: 'Person', optional: true
   belongs_to :finalized_by, class_name: 'Person', optional: true
 

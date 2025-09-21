@@ -1,7 +1,7 @@
 / Anticipated Energy Field
 %tr
   %td
-    %strong Anticipated Energy
+    %strong Forecasted Energy
   %td
     - current_energy = current_tenure&.anticipated_energy_percentage.try(:to_i)|| 0
     - proposed_energy = proposed_tenure['anticipated_energy_percentage'].try(:to_i) || 0

@@ -484,6 +484,10 @@ class PeopleController < ApplicationController
   helper_method :can_see_manager_private_data?, :can_see_employee_private_data?, :format_private_field_value
   
   def can_see_manager_private_data?(employee)
+    # Only allow managers of other people to see manager private data
+    # Exclude the case where current_person == employee (employees can't see their own manager data)
+    return false if current_person == employee
+    
     policy(employee).manager?
   end
 

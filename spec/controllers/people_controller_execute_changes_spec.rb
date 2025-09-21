@@ -231,46 +231,47 @@ RSpec.describe PeopleController, type: :controller do
     end
 
     describe 'privacy helper methods' do
-      describe '#can_see_manager_private_data?' do
-        context 'when current person is a manager of the employee' do
-          before do
-            # Set up manager-employee relationship
-            allow(controller).to receive(:current_person).and_return(manager)
-            allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(true)
-          end
+          describe '#can_see_manager_private_data?' do
+            context 'when current person is a manager of the employee' do
+              before do
+                # Set up manager-employee relationship
+                allow(controller).to receive(:current_person).and_return(manager)
+                allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(true)
+              end
 
-          it 'returns true for manager viewing employee data' do
-            result = controller.send(:can_see_manager_private_data?, employee)
-            expect(result).to be true
-          end
-        end
+              it 'returns true for manager viewing employee data' do
+                result = controller.send(:can_see_manager_private_data?, employee)
+                expect(result).to be true
+              end
+            end
 
-        context 'when current person is the employee themselves' do
-          before do
-            allow(controller).to receive(:current_person).and_return(employee)
-            allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(false)
-          end
+            context 'when current person is the employee themselves' do
+              before do
+                allow(controller).to receive(:current_person).and_return(employee)
+                # Even if the policy would return true, the helper should return false for self-viewing
+                allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(true)
+              end
 
-          it 'returns false for employee viewing their own manager data' do
-            result = controller.send(:can_see_manager_private_data?, employee)
-            expect(result).to be false
-          end
-        end
+              it 'returns false for employee viewing their own manager data' do
+                result = controller.send(:can_see_manager_private_data?, employee)
+                expect(result).to be false
+              end
+            end
 
-        context 'when current person has no management relationship' do
-          let!(:other_person) { create(:person, current_organization: organization) }
+            context 'when current person has no management relationship' do
+              let!(:other_person) { create(:person, current_organization: organization) }
 
-          before do
-            allow(controller).to receive(:current_person).and_return(other_person)
-            allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(false)
-          end
+              before do
+                allow(controller).to receive(:current_person).and_return(other_person)
+                allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(false)
+              end
 
-          it 'returns false for non-manager viewing employee data' do
-            result = controller.send(:can_see_manager_private_data?, employee)
-            expect(result).to be false
+              it 'returns false for non-manager viewing employee data' do
+                result = controller.send(:can_see_manager_private_data?, employee)
+                expect(result).to be false
+              end
+            end
           end
-        end
-      end
 
       describe '#format_private_field_value' do
         context 'when user can see manager data' do
@@ -290,17 +291,17 @@ RSpec.describe PeopleController, type: :controller do
           end
         end
 
-        context 'when user cannot see manager data' do
-          it 'returns privacy message for manager fields' do
-            result = controller.send(:format_private_field_value, 'Exceeding Expectations', false, 'Amy', 'manager')
-            expect(result).to eq('<only visible by managers>')
-          end
+            context 'when user cannot see manager data' do
+              it 'returns privacy message for manager fields' do
+                result = controller.send(:format_private_field_value, 'Exceeding Expectations', false, 'Amy', 'manager')
+                expect(result).to eq("<only visible to Amy's managers>")
+              end
 
-          it 'returns privacy message for employee fields' do
-            result = controller.send(:format_private_field_value, 'Great work!', false, 'Amy', 'employee')
-            expect(result).to eq('<only visible to Amy>')
-          end
-        end
+              it 'returns privacy message for employee fields' do
+                result = controller.send(:format_private_field_value, 'Great work!', false, 'Amy', 'employee')
+                expect(result).to eq('<only visible to Amy>')
+              end
+            end
       end
     end
   end
