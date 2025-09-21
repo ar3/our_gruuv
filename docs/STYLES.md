@@ -91,6 +91,49 @@ All content sections should use this pattern:
 - Use consistent icon (`bi-arrow-left`) and styling
 - No button styling for navigation elements
 
+## Interactive Components
+
+### Collapse Elements
+All collapsible sections should use this consistent pattern for chevron rotation:
+
+```haml
+%a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#target-id", "aria-expanded" => "false", "aria-controls" => "target-id", style: "cursor: pointer;"}
+  %span.not-collapsed
+    %i.bi.bi-chevron-up.me-2
+    %small.text-muted (Hide details)
+  %span.collapsed
+    %i.bi.bi-chevron-down.me-2
+    %small.text-muted (Show details)
+```
+
+#### Key Elements:
+- **Anchor tag**: Use `<a>` instead of `<button>` for better Bootstrap compatibility
+- **Two spans**: `.not-collapsed` and `.collapsed` classes
+- **Two icons**: `bi-chevron-up` (expanded) and `bi-chevron-down` (collapsed)
+- **Existing CSS**: Leverages app's existing collapse CSS that handles `aria-expanded`
+
+#### Examples in App:
+- Position index page (`/organizations/:id/positions`)
+- People growth page (`/people/:id/growth`)
+- Assignment details page (`/people/:id/assignments/:id`)
+
+#### CSS Support:
+The app already has CSS in `application.bootstrap.scss` that handles this pattern:
+```scss
+button[aria-expanded="false"] .not-collapsed, a[aria-expanded="false"] .not-collapsed {
+  display: none;
+}
+button[aria-expanded="true"] .collapsed, a[aria-expanded="true"] .collapsed {
+  display: none;
+}
+button[aria-expanded="true"] .not-collapsed, a[aria-expanded="true"] .not-collapsed {
+  display: inline;
+}
+button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
+  display: inline;
+}
+```
+
 ## Responsive Design
 
 ### Column Behavior
@@ -111,5 +154,6 @@ When creating or updating pages, ensure:
 - [ ] Sections use 8:4 column split
 - [ ] No colored headers - clean and simple
 - [ ] Consistent button patterns and spacing
+- [ ] Collapse elements use standard pattern (anchor tag + two spans + two icons)
 - [ ] Responsive design considerations
 - [ ] Semantic color usage only

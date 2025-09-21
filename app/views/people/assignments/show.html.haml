@@ -11,6 +11,8 @@
 - content_for :header_action do
   .btn.btn-outline-primary What should go here?
 
+
+
 .row.justify-content-center
   .col-lg-12
     .card
@@ -20,50 +22,95 @@
 
       .card-body
         .row
-          .col-md-6
-            %h6 Assignment Information
+          .col-12
             .mb-3
-              %label.form-label Assignment Title
-              .form-control-plaintext= "#{@assignment.company.display_name}'s #{@assignment.title}"
-              
-            .mb-3
-              %label.form-label tagline
-              .form-control-plaintext= @assignment.tagline || 'No tagline available'
+              .d-flex.align-items-center.justify-content-between
+                %div
+                  %strong.form-control-plaintext= "#{@assignment.company.display_name}'s #{@assignment.title}"
+                  .form-control-plaintext= @assignment.tagline || 'No tagline available'
+                %div
+                  %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#assignment-details", "aria-expanded" => "false", "aria-controls" => "assignment-details", style: "cursor: pointer;"}
+                    %span.not-collapsed
+                      %i.bi.bi-chevron-up.me-2
+                      %small.text-muted (Hide details)
+                    %span.collapsed
+                      %i.bi.bi-chevron-down.me-2
+                      %small.text-muted (Show details)
 
-            .mb-3
-              %label.form-label required_activities
-              .form-control-plaintext= @assignment.required_activities || 'No required_activities available'
-            .mb-3
-              %label.form-label handbook
-              .form-control-plaintext= @assignment.handbook || 'No handbook available'
+            / Collapsible Assignment Details
+            .collapse{"id" => "assignment-details"}
+              .card.card-body.bg-light.mt-3
+                .row
+                  .col-md-6
+                    - if @assignment.required_activities.present?
+                      .mb-3
+                        %label.form-label.fw-bold Required Activities
+                        .form-control-plaintext= @assignment.required_activities
+                    
+                    - if @assignment.handbook.present?
+                      .mb-3
+                        %label.form-label.fw-bold Handbook
+                        .form-control-plaintext= @assignment.handbook
+                    
+                    / Position Connection Status
+                    .mb-3
+                      %label.form-label.fw-bold Position Connection
+                      - if @position_assignment
+                        .form-control-plaintext
+                          %span.badge.bg-primary.me-2= @position_assignment.assignment_type.titleize
+                          Connected to #{@current_employment.position.position_type.external_title}
+                          - if @position_assignment.min_estimated_energy.present? || @position_assignment.max_estimated_energy.present?
+                            %br
+                            %small.text-muted= @position_assignment.energy_range_display
+                      - else
+                        .form-control-plaintext
+                          %span.badge.bg-secondary.me-2 Unconnected
+                          Not connected to #{@current_employment&.position&.position_type&.external_title || 'current position'}
+                  
+                  .col-md-6
+                    / Assignment Outcomes
+                    - if @assignment_outcomes.any?
+                      .mb-3
+                        %label.form-label.fw-bold Expected Outcomes
+                        - @assignment_outcomes.each do |outcome|
+                          .form-control-plaintext.mb-1
+                            %i.bi.bi-check-circle.text-success.me-2
+                            = outcome.description
+                    - else
+                      .mb-3
+                        %label.form-label.fw-bold Expected Outcomes
+                        .form-control-plaintext.text-muted No outcomes defined
+                    
+                    / Required Abilities
+                    - if @assignment_abilities.any?
+                      .mb-3
+                        %label.form-label.fw-bold Required Abilities
+                        - @assignment_abilities.each do |assignment_ability|
+                          .form-control-plaintext.mb-1
+                            %i.bi.bi-star.text-warning.me-2
+                            = assignment_ability.ability.name
+                            %small.text-muted (Level #{assignment_ability.milestone_level})
+                    - else
+                      .mb-3
+                        %label.form-label.fw-bold Required Abilities
+                        .form-control-plaintext.text-muted No ability requirements defined
+                
+                / External References
+                - if @assignment.published_external_reference.present? || @assignment.draft_external_reference.present?
+                  .row.mt-3
+                    .col-12
+                      %label.form-label.fw-bold External References
+                      - if @assignment.published_external_reference.present?
+                        .mb-2
+                          %i.bi.bi-link-45deg.text-primary.me-2
+                          %strong Published:
+                          = link_to @assignment.published_external_reference.url, @assignment.published_external_reference.url, target: "_blank", class: "text-decoration-none"
+                      - if @assignment.draft_external_reference.present?
+                        .mb-2
+                          %i.bi.bi-file-earmark-text.text-secondary.me-2
+                          %strong Draft:
+                          = link_to @assignment.draft_external_reference.url, @assignment.draft_external_reference.url, target: "_blank", class: "text-decoration-none"
           
-          .col-md-6
-            %h6 Current Status
-            .mb-3
-              %label.form-label Assignment Tenure
-              - if @tenure
-                .form-control-plaintext
-                  Started: #{@tenure.started_at.strftime('%B %d, %Y')}
-                  %br
-                  Anticipated Energy: #{@tenure.anticipated_energy_percentage}%
-              - else
-                .form-control-plaintext.text-muted Not started
-            .mb-3
-              %label.form-label Current Check-in
-              - if @open_check_in
-                .form-control-plaintext
-                  Started: #{@open_check_in.check_in_started_on.strftime('%B %d, %Y')}
-                  %br
-                  Status: 
-                  - if @open_check_in.ready_for_finalization?
-                    %span.badge.bg-warning Ready for Finalization
-                  - elsif @open_check_in.employee_completed? || @open_check_in.manager_completed?
-                    %span.badge.bg-info In Progress
-                  - else
-                    %span.badge.bg-secondary Open
-              - else
-                .form-control-plaintext.text-muted No active check-in
-
         .row.mt-4
           .col-md-6
             %h6 Assignment Tenure History

@@ -37,6 +37,20 @@ class People::AssignmentsController < ApplicationController
       .includes(:employee_completed_by, :manager_completed_by, :finalized_by)
       .order(check_in_started_on: :desc)
       .limit(5)
+    
+    # Load assignment details
+    @assignment_outcomes = @assignment.assignment_outcomes.ordered
+    @assignment_abilities = @assignment.assignment_abilities.includes(:ability)
+    @current_employment = @person.employment_tenures.active.first
+    @position_assignment = nil
+    
+    # Check if this assignment is connected to the person's current position
+    if @current_employment&.position&.position_type
+      @position_assignment = PositionAssignment.joins(:position)
+        .where(assignment: @assignment)
+        .where(positions: { position_type: @current_employment.position.position_type })
+        .first
+    end
   end
 
   def load_tenure_history
