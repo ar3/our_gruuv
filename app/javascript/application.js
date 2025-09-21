@@ -85,6 +85,52 @@ function initializeToasts() {
   }
 }
 
+// Energy total calculation functionality
+function updateEnergyTotal() {
+  console.log('ENERGY_UPDATE:: 1. Updating energy total...');
+  // const inputs = document.querySelectorAll('input[name*="[anticipated_energy_percentage]"]')
+  const inputs = document.querySelectorAll('[name^="tenure_"][name$="_anticipated_energy"]');
+
+  console.log('ENERGY_UPDATE:: Found energy inputs:', inputs.length);
+  
+  const total = Array.from(inputs).reduce((sum, input) => {
+    const value = parseFloat(input.value) || 0;
+    console.log('ENERGY_UPDATE:: 2. Input value:', input.value, 'Parsed:', value);
+    return sum + value;
+  }, 0)
+  
+  console.log('ENERGY_UPDATE:: 3. Total energy calculated:', total);
+  
+  // Update all energy total displays
+  document.querySelectorAll('.energy-total-display').forEach(display => {
+    console.log('ENERGY_UPDATE:: 4. Updating energy total display:', display);
+    display.textContent = `${Math.round(total)}%`
+  })
+  
+  // Update alert classes on energy total containers
+  document.querySelectorAll('.energy-total').forEach(container => {
+    console.log('ENERGY_UPDATE:: 5. Updating energy total container classes:', container);
+    
+    // Remove all alert classes
+    container.classList.remove('alert-info', 'alert-warning', 'alert-danger', 'alert-success');
+    
+    // Add appropriate class based on total
+    if (total === 0) {
+      container.classList.add('alert-info');
+      console.log('ENERGY_UPDATE:: 6. Added alert-info class');
+    } else if (total === 100) {
+      container.classList.add('alert-success');
+      console.log('ENERGY_UPDATE:: 7. Added alert-success class');
+    } else if (total > 100) {
+      container.classList.add('alert-danger');
+      console.log('ENERGY_UPDATE:: 8. Added alert-danger class');
+    } else if (total < 100) {
+      container.classList.add('alert-warning');
+      console.log('ENERGY_UPDATE:: 9. Added alert-warning class');
+    }
+  })
+}
+
 // Initialize share huddle functionality
 function initializeShareHuddle() {
   console.log('Initializing share huddle functionality...')
@@ -194,10 +240,23 @@ document.addEventListener('turbo:load', () => {
   initializePopovers()
   initializeToasts()
   initializeShareHuddle()
+  updateEnergyTotal()
 })
 document.addEventListener('DOMContentLoaded', () => {
   initializeTooltips()
   initializePopovers()
   initializeToasts()
   initializeShareHuddle()
+  updateEnergyTotal()
 })
+
+// Find all selects that match your naming convention
+const energySelects = document.querySelectorAll('[name^="tenure_"][name$="_anticipated_energy"]');
+
+// Attach a change listener to each one
+energySelects.forEach((el) => {
+  el.addEventListener('change', (e) => {
+    console.log('Changed:', e.target.name, 'Value:', e.target.value);
+    updateEnergyTotal();
+  });
+});
