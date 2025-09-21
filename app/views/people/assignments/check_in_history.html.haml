@@ -45,9 +45,6 @@
                         %span.badge.bg-success.me-1 ✓ Complete
                         %br
                         %small.text-muted= check_in.employee_completed_at.strftime('%m/%d/%Y %I:%M %p')
-                        - if check_in.employee_completed_by
-                          %br
-                          %small.text-muted by #{check_in.employee_completed_by.display_name}
                       - else
                         %span.badge.bg-warning Pending
                     

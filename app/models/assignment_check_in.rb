@@ -154,8 +154,7 @@ class AssignmentCheckIn < ApplicationRecord
 
   def complete_employee_side!(completed_by: nil)
     update!(
-      employee_completed_at: Time.current,
-      employee_completed_by: completed_by || person
+      employee_completed_at: Time.current
     )
   end
 
@@ -168,8 +167,7 @@ class AssignmentCheckIn < ApplicationRecord
 
   def uncomplete_employee_side!
     update!(
-      employee_completed_at: nil,
-      employee_completed_by: nil
+      employee_completed_at: nil
     )
   end
 

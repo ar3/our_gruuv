@@ -15,7 +15,7 @@ class People::AssignmentsController < ApplicationController
     authorize @person, :manager?, policy_class: PersonPolicy
     @check_ins = AssignmentCheckIn
       .where(person: @person, assignment: @assignment)
-      .includes(:employee_completed_by, :manager_completed_by, :finalized_by)
+      .includes(:manager_completed_by, :finalized_by)
       .order(check_in_started_on: :desc)
   end
 
@@ -34,7 +34,7 @@ class People::AssignmentsController < ApplicationController
     @open_check_in = AssignmentCheckIn.where(person: @person, assignment: @assignment).open.first
     @recent_check_ins = AssignmentCheckIn
       .where(person: @person, assignment: @assignment)
-      .includes(:employee_completed_by, :manager_completed_by, :finalized_by)
+      .includes(:manager_completed_by, :finalized_by)
       .order(check_in_started_on: :desc)
       .limit(5)
     

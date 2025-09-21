@@ -442,7 +442,7 @@ class PeopleController < ApplicationController
       )
       
       if employee_data['employee_completed_at']
-        check_in.complete_employee_side!(completed_by: current_person)
+        check_in.complete_employee_side!
       end
     end
     
