@@ -31,7 +31,20 @@
         %br
         %small.text-muted
           %strong This check-in began: 
-          #{data[:open_check_in].check_in_started_on.strftime('%m/%d/%Y')}
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Check-in ID: #{data[:open_check_in].id}"}
+            #{data[:open_check_in].check_in_started_on.strftime('%m/%d/%Y')}
+      - elsif data[:original_check_in]
+        %br
+        %small.text-muted
+          %strong This check-in began: 
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Check-in ID: #{data[:original_check_in].id} (Completed - no open check-ins)"}
+            #{data[:original_check_in].check_in_started_on.strftime('%m/%d/%Y')} (Completed)
+      - else
+        %br
+        %small.text-muted
+          %strong This check-in began: 
+          %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "No open check-ins"}
+            No open check-ins
       
       %br
       %small.text-muted

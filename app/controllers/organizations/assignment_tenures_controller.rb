@@ -115,7 +115,10 @@ class Organizations::AssignmentTenuresController < ApplicationController
     @current_employment = @person.employment_tenures.active.first
     
     # Get all assignments for this person (both active and inactive)
-    @assignments = load_person_assignments
+    all_assignments = load_person_assignments
+    
+    # Filter assignments to only show those within the current organization's company
+    @assignments = all_assignments.select { |assignment| assignment.company == @organization }
     
     # For each assignment, get the active tenure and open check-in
     @assignment_data = @assignments.map do |assignment|
@@ -127,11 +130,20 @@ class Organizations::AssignmentTenuresController < ApplicationController
       
       open_check_in = AssignmentCheckIn.where(person: @person, assignment: assignment).open.first
       
+      # If there's a completed check-in, treat it as empty for the assignment tenures page
+      # This prevents users from updating completed check-ins
+      effective_check_in = if open_check_in&.official_check_in_completed_at.present?
+        nil  # Treat completed check-ins as empty
+      else
+        open_check_in
+      end
+      
       {
         assignment: assignment,
         tenure: active_tenure,  # Use active tenure for energy values
         most_recent_tenure: most_recent_tenure,  # Keep most recent for other info
-        open_check_in: open_check_in
+        open_check_in: effective_check_in,
+        original_check_in: open_check_in  # Keep original for debugging/tooltip
       }
     end.sort_by { |data| -(data[:tenure]&.anticipated_energy_percentage || 0) }
   end

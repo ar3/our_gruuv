@@ -4,7 +4,7 @@
     Back to Assignment Mode
 
 - content_for :header do
-  %h1.mb-0 Check-In Mode for #{@person.display_name}
+  %h1.mb-0 Check-In Mode for #{@person.display_name} within #{@organization.name}
 
 - content_for :header_action do
   = render 'people/view_switcher'
@@ -41,7 +41,11 @@
                     %small.text-muted
                       Started: #{check_in.check_in_started_on.strftime('%B %d, %Y')}
                       %span.mx-2 •
-                      - if check_in.ready_for_finalization?
+                      - if check_in.official_check_in_completed_at.present?
+                        %span.badge.bg-success.me-2
+                          %i.bi.bi-check-circle-fill.me-1
+                          Completed
+                      - elsif check_in.ready_for_finalization?
                         %span.badge.bg-success.me-2
                           %i.bi.bi-check-circle.me-1
                           Ready for Finalization
@@ -123,7 +127,18 @@
                         %h6.text-secondary.mb-3
                           %i.bi.bi-star.me-2
                           Final Rating
-                        - if check_in.ready_for_finalization?
+                        - if check_in.official_check_in_completed_at.present?
+                          / Completed check-in - show final results
+                          .completed-check-in
+                            %p.mb-1
+                              %strong Final Rating:
+                              = check_in.official_rating&.humanize if check_in.official_rating.present?
+                            %p.mb-1
+                              %strong Shared Notes:
+                              = check_in.shared_notes if check_in.shared_notes.present?
+                            %small.text-muted
+                              Completed: #{check_in.official_check_in_completed_at.strftime('%B %d, %Y at %l:%M %p')}
+                        - elsif check_in.ready_for_finalization?
                           = form_with url: finalize_check_in_organization_check_in_path(@organization, @person), method: :patch, local: true do |form|
                             = form.hidden_field :check_in_id, value: check_in.id
                             .mb-3

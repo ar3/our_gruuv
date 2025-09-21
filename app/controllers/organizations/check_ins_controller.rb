@@ -42,6 +42,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   def load_check_in_data
     # Get check-ins that have at least one side completed (employee or manager)
     # Filter by assignments within the current organization
+    # Only show in-progress check-ins (exclude completed ones)
     @check_ins_in_progress = AssignmentCheckIn
       .joins(:assignment)
       .where(person: @person)
@@ -52,7 +53,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
         .where(person: @person)
         .where(assignments: { company: @organization })
         .where.not(manager_completed_at: nil))
-      .where(official_check_in_completed_at: nil) # Not yet finalized
+      .where(official_check_in_completed_at: nil) # Exclude completed check-ins
       .includes(:assignment)
       .order(:check_in_started_on)
     

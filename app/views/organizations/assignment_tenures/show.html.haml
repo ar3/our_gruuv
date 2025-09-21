@@ -4,7 +4,7 @@
     Back to #{@person.display_name}'s Profile
 
 - content_for :header do
-  %h1.mb-0 Assignment Mode for #{@person.display_name}
+  %h1.mb-0 Assignment Mode for #{@person.display_name} within #{@organization.name}
 
 - content_for :header_action do
   = render 'people/view_switcher'
