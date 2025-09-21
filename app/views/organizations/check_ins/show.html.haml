@@ -37,7 +37,10 @@
               .check-in-header.p-3.cursor-pointer{"data-bs-toggle" => "collapse", "data-bs-target" => "#check-in-#{check_in.id}", "aria-expanded" => "false"}
                 .row.align-items-center
                   .col-md-8
-                    %h6.mb-1= check_in.assignment.title
+                    %h6.mb-1
+                      = check_in.assignment.title
+                      = link_to person_assignment_path(@person, check_in.assignment), class: "ms-2", target: "_blank", "data-bs-toggle" => "tooltip", "data-bs-title" => "View assignment details" do
+                        %i.bi.bi-box-arrow-up-right.text-muted
                     %small.text-muted
                       Started: #{check_in.check_in_started_on.strftime('%B %d, %Y')}
                       %span.mx-2 •
