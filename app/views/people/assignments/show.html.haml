@@ -5,8 +5,7 @@
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center
-    %h1.mb-0 Assignment Details
-    %small.text-muted #{@person.display_name} - #{@assignment.title}
+    %h1.mb-0 #{@person.display_name} - #{@assignment.title}
 
 - content_for :header_action do
   .btn.btn-outline-primary What should go here?
@@ -124,7 +123,7 @@
                       %th Energy %
                       %th Duration
                   %tbody
-                    - @tenure_history.each do |tenure|
+                    - @tenure_history.order(ended_at: :desc).each do |tenure|
                       %tr
                         %td= tenure.started_at.strftime('%m/%d/%Y')
                         %td
@@ -189,11 +188,15 @@
             %h6 Edit Assignment
             = form_with url: organization_assignment_tenure_path(@person.current_organization_or_default, @person), method: :patch, local: true do |form|
               .row
-                .col-md-6
-                  .mb-3
-                    %label.form-label Anticipated Energy
+                .col-12
+                  .mb-1
+                    %label.form-label Forecasted Energy
                     = form.select "tenure_#{@assignment.id}_anticipated_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, @tenure&.anticipated_energy_percentage), { prompt: 'Select...' }, { class: "form-select" }
-                
+                  %hr.mb-2
+
+                .col-12
+                  .mb-1
+                    Reflect on the past
                 - if current_person == @person
                   .col-md-6
                     .mb-3
@@ -234,7 +237,7 @@
                   .mb-3
                     .form-check.form-switch
                       = form.check_box "check_in_#{@assignment.id}_#{current_person == @person ? 'employee' : 'manager'}_complete", { checked: @open_check_in&.send("#{current_person == @person ? 'employee' : 'manager'}_completed?") || false, class: "form-check-input" }
-                      %label.form-check-label Complete my section
+                      %label.form-check-label My Check-in is Complete?
                 
                 .col-12.text-end
                   = form.submit "Update Assignment", class: "btn btn-primary me-2"

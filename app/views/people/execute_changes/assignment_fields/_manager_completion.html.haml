@@ -4,12 +4,19 @@
     %td
       %strong Manager Completion
     %td
-      - current_completed = current_check_in&.manager_completed? || false
-      - proposed_completed = manager_check_in['manager_completed_at'].present?
-      - if current_completed != proposed_completed
-        %span.badge.bg-warning.me-2 CHANGED
-        %span.text-muted= current_completed ? 'Completed' : 'Not completed'
-        %i.bi.bi-arrow-right.mx-1
-        %span.text-primary= proposed_completed ? 'Completed' : 'Not completed'
+      :ruby
+        current_completed = current_check_in&.manager_completed? || false
+        proposed_completed = manager_check_in['manager_completed_at'].present?
+        can_see_manager = can_see_manager_private_data?(person)
+        employee_name = person.first_name
+      
+      - if can_see_manager
+        - if current_completed != proposed_completed
+          %span.badge.bg-warning.me-2 CHANGED
+          %span.text-muted= current_completed ? 'Completed' : 'Not completed'
+          %i.bi.bi-arrow-right.mx-1
+          %span.text-primary= proposed_completed ? 'Completed' : 'Not completed'
+        - else
+          %span.text-muted= (current_completed ? 'Completed' : 'Not completed') + ' (unchanged)'
       - else
-        %span.text-muted= (current_completed ? 'Completed' : 'Not completed') + ' (unchanged)'
+        %span.text-muted= format_private_field_value(nil, false, employee_name, 'manager')
