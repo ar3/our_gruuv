@@ -6,6 +6,11 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     @organizations = Organization.all.order(:type, :name)
     @current_organization = current_person.current_organization_or_default
   end
+  
+  def switch_page
+    @organizations = current_person.available_companies.companies#.includes(:children)
+    @current_organization = current_person.current_organization_or_default
+  end
 
 
   

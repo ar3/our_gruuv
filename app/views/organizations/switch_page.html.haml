@@ -1,0 +1,151 @@
+- content_for :header do
+  %h1.mb-0 Switch Organization
+
+- content_for :header_action do
+  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#organizationFilterModal", type: "button"}
+    %i.bi.bi-funnel.me-2
+    Filter & Sort
+
+.row.justify-content-center
+  .col-lg-12
+    - if @organizations.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Organization
+              %th Connection Reason
+              %th Status
+              %th Actions
+          %tbody
+            - @organizations.each do |organization|
+              %tr{class: organization == @current_organization ? "table-primary" : ""}
+                %td
+                  .d-flex.align-items-center
+                    %i.bi.bi-building.me-2.text-primary
+                    %div
+                      %strong= organization.display_name
+                      %br
+                      %small.text-muted= organization.type.titleize
+                %td
+                  - connection_reasons = get_connection_reasons(current_person, organization)
+                  - if connection_reasons.any?
+                    - connection_reasons.each do |reason|
+                      %span.badge.bg-info.me-1.mb-1= reason
+                  - else
+                    %span.badge.bg-secondary No connections
+                %td
+                  - if organization == @current_organization
+                    %span.badge.bg-primary
+                      %i.bi.bi-check-circle.me-1
+                      Current
+                  - else
+                    %span.badge.bg-outline-secondary Available
+                %td
+                  .btn-group.btn-group-sm
+                    - if organization == @current_organization
+                      = link_to organization_path(organization), class: "btn btn-outline-primary" do
+                        %i.bi.bi-eye.me-1
+                        View
+                    - else
+                      = button_to switch_organization_path(organization), method: :patch, class: "btn btn-primary", form: { style: "display: inline;" } do
+                        %i.bi.bi-arrow-right-circle.me-1
+                        Switch To
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Organizations Available
+        %p.mb-2 
+          You don't have access to any organizations yet. Contact your administrator to get access.
+          = link_to "Contact Support", "#", class: "btn btn-primary btn-sm"
+
+/ Modal for Filter & Sort
+#organizationFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby": "organizationFilterModalLabel", tabindex: "-1"}
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        %h5.modal-title#organizationFilterModalLabel
+          %i.bi.bi-funnel.me-2
+          Filter & Sort Organizations
+        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+      .modal-body
+        .row
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-funnel.me-2
+              Filters
+            .mb-3
+              %label.form-label Connection Type
+              .form-check
+                %input.form-check-input{type: "checkbox", name: "connectionType", value: "employment", checked: "checked"}
+                %label.form-check-label
+                  %i.bi.bi-briefcase.me-2
+                  Employment
+              .form-check
+                %input.form-check-input{type: "checkbox", name: "connectionType", value: "huddle", checked: "checked"}
+                %label.form-check-label
+                  %i.bi.bi-people.me-2
+                  Huddle Participation
+              .form-check
+                %input.form-check-input{type: "checkbox", name: "connectionType", value: "access", checked: "checked"}
+                %label.form-check-label
+                  %i.bi.bi-key.me-2
+                  Access Permission
+            .mb-3
+              %label.form-label Organization Type
+              .form-check
+                %input.form-check-input{type: "checkbox", name: "orgType", value: "company", checked: "checked"}
+                %label.form-check-label
+                  %i.bi.bi-building.me-2
+                  Companies
+              .form-check
+                %input.form-check-input{type: "checkbox", name: "orgType", value: "department", checked: "checked"}
+                %label.form-check-label
+                  %i.bi.bi-diagram-3.me-2
+                  Departments
+              .form-check
+                %input.form-check-input{type: "checkbox", name: "orgType", value: "team", checked: "checked"}
+                %label.form-check-label
+                  %i.bi.bi-people.me-2
+                  Teams
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-sort-down.me-2
+              Sort Options
+            .mb-3
+              %label.form-label Sort By
+              %select.form-select
+                %option{value: "name"} Organization Name
+                %option{value: "type"} Organization Type
+                %option{value: "connection"} Connection Strength
+                %option{value: "recent"} Most Recent Activity
+            .mb-3
+              %label.form-label View Style
+              .form-check
+                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
+                %label.form-check-label
+                  %i.bi.bi-table.me-2
+                  Table View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
+                %label.form-check-label
+                  %i.bi.bi-grid.me-2
+                  Card View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
+                %label.form-check-label
+                  %i.bi.bi-list.me-2
+                  List View
+            .mb-3
+              %label.form-label Spotlight
+              %select.form-select
+                %option No Spotlight
+                %option Current Organization
+                %option Most Active
+                %option Recently Joined
+      .modal-footer
+        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+        %button.btn.btn-primary.disabled{type: "button"}
+          %i.bi.bi-check.me-2
+          Apply Filters

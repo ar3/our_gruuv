@@ -118,14 +118,9 @@
                         = current_organization.display_name
                         - if current_organization.team?
                           %small.text-muted.ms-1= "(#{current_organization.parent&.name})"
-                    - current_person.available_companies.each do |org|
-                      - if org != current_organization
-                        %li
-                          = button_to switch_organization_path(org), method: :patch, class: "dropdown-item", form: { style: "display: inline;" } do
-                            %i.bi.bi-building.me-2
-                            = org.display_name
                     %li
                       %hr.dropdown-divider
+                    %li= link_to "Switch Organization", switch_organizations_path, class: "dropdown-item"
                     %li= link_to "Manage Organizations", organizations_path, class: "dropdown-item"
                     - if current_organization
                       %li

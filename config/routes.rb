@@ -30,6 +30,9 @@ get '/login', to: 'auth#login', as: :login
   # Dashboard
   get '/dashboard', to: 'dashboard#index', as: :dashboard
   
+  # Organization switcher
+  get '/organizations/switch', to: 'organizations#switch_page', as: :switch_organizations
+  
   # API routes
   namespace :api do
     post 'companies/teams', to: 'companies#teams'
