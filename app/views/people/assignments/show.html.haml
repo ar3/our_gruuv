@@ -175,9 +175,9 @@
                             %span.badge.bg-warning Pending
                         %td
                           - if check_in.officially_completed?
-                            %span.badge.bg-primary ✓
-                            %br
-                            %small= check_in.official_check_in_completed_at.strftime('%m/%d/%Y')
+                            %span.badge.bg-success 
+                              ✓
+                              %small= check_in.official_check_in_completed_at.strftime('%m/%d/%Y')
                           - else
                             %span.badge.bg-secondary -
             - else
