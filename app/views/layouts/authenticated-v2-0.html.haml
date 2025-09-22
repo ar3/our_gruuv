@@ -107,9 +107,9 @@
                     %li
                       %hr.dropdown-divider
                   %li= link_to "My Profile", profile_path, class: "dropdown-item"
+                  %li
+                    %hr.dropdown-divider
                   - if current_organization
-                    %li
-                      %hr.dropdown-divider
                     %li.dropdown-header
                       %small.text-muted Current Organization
                     %li
@@ -120,8 +120,13 @@
                           %small.text-muted.ms-1= "(#{current_organization.parent&.name})"
                     %li
                       %hr.dropdown-divider
-                    %li= link_to "Switch Organization", switch_organizations_path, class: "dropdown-item"
-                    %li= link_to "Manage Organizations", organizations_path, class: "dropdown-item"
+                  - else
+                    %li.dropdown-header
+                      %small.text-muted No Organization Selected
+                    %li
+                      %hr.dropdown-divider
+                  %li= link_to "Switch Organization", switch_organizations_path, class: "dropdown-item"
+                  %li= link_to "Manage Organizations", organizations_path, class: "dropdown-item"
                     - if current_organization
                       %li
                         %hr.dropdown-divider

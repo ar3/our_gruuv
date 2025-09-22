@@ -2,6 +2,19 @@ class PagesController < ApplicationController
   layout false, only: [:home]
   
   def home
+    if current_person
+      # If logged in but no current organization, redirect to organization switcher
+      if current_person.current_organization.nil?
+        redirect_to switch_organizations_path
+        return
+      end
+      
+      # If logged in with current organization, redirect to dashboard
+      redirect_to dashboard_path
+      return
+    end
+    
+    # If not logged in, show the marketing home page
   end
   
   # Coming Soon placeholder pages
