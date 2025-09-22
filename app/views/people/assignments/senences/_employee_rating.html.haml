@@ -1,1 +1,5 @@
-%span.label-sentence="#{check_in.person.first_name} believes they have been <strong>#{check_in.employee_rating&.humanize || '???'}</strong> the expectations of this Assignment.".html_safe
+- if check_in.present?
+  %span.label-sentence="#{check_in.person.first_name} believes they have been <strong>#{check_in.employee_rating&.humanize || '???'}</strong> the expectations of this Assignment.".html_safe
+- else
+  %span No Check-In Found
+  

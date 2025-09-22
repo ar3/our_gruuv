@@ -1,0 +1,17 @@
+- if check_in.present?
+  %div.final-check-in-content
+    %h6="On #{check_in.official_check_in_completed_at.strftime('%m/%d/%Y')}, #{check_in.person.first_name} and #{check_in.manager_completed_by&.first_name} completed the following check-in:".html_safe
+    %p
+      = render 'people/assignments/senences/employee_rating', check_in: check_in
+    %p
+      = render 'people/assignments/senences/employee_reflections', check_in: check_in
+    %p
+      = render 'people/assignments/senences/manager_rating', check_in: check_in
+    %p
+      %span.label-sentence="Together they agreed that #{check_in.person.first_name} was <strong>#{check_in.official_rating&.humanize}</strong> the expectations of this Assignment.".html_safe
+    %p
+      %span.label-sentence="They also shared the following notes:".html_safe
+      %br
+      %span.label-sentence="#{check_in.shared_notes}".html_safe
+- else 
+  %span No Check-In Found

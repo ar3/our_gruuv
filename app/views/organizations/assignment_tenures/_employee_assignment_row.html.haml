@@ -22,7 +22,7 @@
     = form.select "tenure_#{data[:assignment].id}_anticipated_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:tenure]&.anticipated_energy_percentage), { prompt: 'Select...' }, { class: "form-select form-select-sm energy-select" }
   
   %td{rowspan: 2}
-    .completion-status
+    .completion-status{"data-bs-toggle" => "popover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => render('people/assignments/senences/final_check_in', check_in: last_completed_check_in(data, @person)), "data-bs-trigger" => "hover"}
       %small.text-muted
         %strong Last completed check-in: 
         = last_completed_check_in_date(data, @person)

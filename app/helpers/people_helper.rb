@@ -132,7 +132,7 @@ module PeopleHelper
     end
   end
 
-  def last_completed_check_in_date(assignment_data, person)
+  def last_completed_check_in(assignment_data, person)
     # Find the most recent completed check-in for this assignment
     recent_check_ins = AssignmentCheckIn
       .where(person: person, assignment: assignment_data[:assignment])
@@ -141,7 +141,18 @@ module PeopleHelper
       .limit(1)
     
     if recent_check_ins.any?
-      recent_check_ins.first.official_check_in_completed_at.strftime('%m/%d/%Y')
+      recent_check_ins.first
+    else
+      nil
+    end
+  end
+
+  def last_completed_check_in_date(assignment_data, person)
+    # Find the most recent completed check-in for this assignment
+    recent_check_in = last_completed_check_in(assignment_data, person)
+    
+    if recent_check_in.present?
+      recent_check_in.official_check_in_completed_at.strftime('%m/%d/%Y')
     else
       'Never'
     end
