@@ -58,7 +58,11 @@
     / Main Navigation
     %nav.navbar.navbar-expand-lg.navbar-dark.bg-primary
       .container
-        = link_to "OurGruuv", root_path, class: "navbar-brand fw-bold"
+        - if current_person && current_organization
+          = link_to dashboard_organization_path(current_organization), class: "navbar-brand fw-bold" do
+            = "#{current_organization.display_name}'s Gruuv"
+        - else
+          = link_to "OurGruuv", root_path, class: "navbar-brand fw-bold"
         
         %button.navbar-toggler{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#navbarMain", "aria-controls": "navbarMain", "aria-expanded": "false", "aria-label": "Toggle navigation"}
           %span.navbar-toggler-icon
@@ -107,6 +111,8 @@
                     %li
                       %hr.dropdown-divider
                   %li= link_to "My Profile", profile_path, class: "dropdown-item"
+                  - if current_organization
+                    %li= link_to "Home / Dashboard", dashboard_organization_path(current_organization), class: "dropdown-item"
                   %li
                     %hr.dropdown-divider
                   - if current_organization
@@ -125,14 +131,12 @@
                       %small.text-muted No Organization Selected
                     %li
                       %hr.dropdown-divider
-                  %li= link_to "Switch Organization", switch_organizations_path, class: "dropdown-item"
-                  %li= link_to "Manage Organizations", organizations_path, class: "dropdown-item"
-                    - if current_organization
-                      %li
-                        %hr.dropdown-divider
-                      %li= link_to "Slack Integration", organization_slack_path(current_organization), class: "dropdown-item"
+                  - if current_organization
+                    %li= link_to "View Teammates", organization_employees_path(current_organization), class: "dropdown-item"
 
+                  %li= link_to "Switch Organization", switch_organizations_path, class: "dropdown-item"
                   - if current_person&.og_admin?
+                    %li= link_to "Manage Organizations", organizations_path, class: "dropdown-item"
                     %li
                       %hr.dropdown-divider
                     %li= link_to "Interest Submissions", interest_submissions_path, class: "dropdown-item"

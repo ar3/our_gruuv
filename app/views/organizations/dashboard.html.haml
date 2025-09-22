@@ -1,0 +1,80 @@
+- content_for :header do
+  %h1.mb-0 
+    = @organization.display_name
+    Dashboard
+
+.container-fluid.py-4
+  .row
+    .col-12
+      %p.text-muted Welcome to your #{@organization.display_name} dashboard!
+  
+  .row
+    .col-md-4
+      .card.mb-4
+        .card-header
+          %h5.card-title.mb-0 Organization Overview
+        .card-body
+          - if @organization.company?
+            .row.text-center
+              .col-4
+                %h3.text-primary= @total_employees
+                %small.text-muted Employees
+              .col-4
+                %h3.text-info= @total_teams
+                %small.text-muted Teams
+              .col-4
+                %h3.text-success= @total_departments
+                %small.text-muted Departments
+          - else
+            %p.text-muted Organization details and quick stats will appear here.
+    
+    .col-md-4
+      .card.mb-4
+        .card-header
+          %h5.card-title.mb-0 Recent Huddles
+        .card-body
+          - if @recent_org_huddles&.any?
+            - @recent_org_huddles.each do |huddle|
+              .d-flex.justify-content-between.align-items-center.mb-2
+                %div
+                  %strong= huddle.huddle_playbook&.organization&.display_name || 'Unknown Organization'
+                  %br
+                  %small.text-muted= huddle.started_at.strftime('%B %d, %Y')
+                = link_to "View", huddle_path(huddle), class: "btn btn-sm btn-outline-primary"
+          - else
+            %p.text-muted No recent huddles found.
+            = link_to "Create a Huddle", new_huddle_path, class: "btn btn-primary"
+    
+    .col-md-4
+      .card.mb-4
+        .card-header
+          %h5.card-title.mb-0 Quick Stats
+        .card-body
+          - if @organization.company?
+            .mb-2
+              %strong Positions:
+              %span.badge.bg-primary.ms-2= @total_positions
+            .mb-2
+              %strong Assignments:
+              %span.badge.bg-info.ms-2= @total_assignments  
+            .mb-2
+              %strong Abilities:
+              %span.badge.bg-success.ms-2= @total_abilities
+          - else
+            %p.text-muted Organization statistics will appear here.
+  
+  / Placeholder for 9 pillar boxes - will be implemented in next commit
+  .row.mt-4
+    .col-12
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          Coming Soon: OurGruuv Pillars Dashboard
+        %p.mb-0 
+          This dashboard will soon display 9 action boxes for each pillar of OurGruuv:
+          %strong Align
+          (Milestones, Accountability, Position),
+          %strong Collab
+          (Opportunities, Diamond Decision, Huddles), and
+          %strong Transform
+          (Signals, Hypotheses, OKR3s).

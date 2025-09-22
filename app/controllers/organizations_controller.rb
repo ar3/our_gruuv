@@ -11,6 +11,14 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     @organizations = current_person.available_companies.companies#.includes(:children)
     @current_organization = current_person.current_organization_or_default
   end
+  
+  def dashboard
+    @current_person = current_person
+    @recent_huddles = current_person.huddles.recent.limit(5)
+    
+    # Organization-specific dashboard content will go here
+    load_organization_dashboard_stats
+  end
 
 
   
@@ -141,7 +149,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
 
   # Skip organization setup for actions that don't need it
   def skip_organization_setup?
-    !%w[show edit update destroy switch huddles_review].include?(action_name)
+    !%w[show edit update destroy switch huddles_review dashboard].include?(action_name)
   end
   
   def organization_params
@@ -205,6 +213,23 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       @average_rating_all_time = @organization.huddles.joins(:huddle_feedbacks)
         .average('(informed_rating + connected_rating + goals_rating + valuable_rating) / 4.0')
         &.round(1) || 0
+    end
+  end
+  
+  def load_organization_dashboard_stats
+    # For now, we'll load basic stats - this will be expanded with the 9 pillar boxes
+    if @organization.company?
+      @total_employees = @organization.employees.count
+      @total_teams = @organization.children.teams.count
+      @total_departments = @organization.children.departments.count
+      
+      # Recent huddles for this organization
+      @recent_org_huddles = @organization.huddles.recent.limit(3)
+      
+      # Basic pillar stats (will be expanded)
+      @total_positions = @organization.positions.count + @organization.children.sum { |child| child.positions.count }
+      @total_assignments = @organization.assignments.count + @organization.children.sum { |child| child.assignments.count }
+      @total_abilities = @organization.abilities.count
     end
   end
 end

@@ -61,6 +61,7 @@ get '/login', to: 'auth#login', as: :login
       post :refresh_slack_channels
       patch :update_huddle_review_channel
       post :trigger_weekly_notification
+      get :dashboard
     end
     
     resources :employees, only: [:index, :new, :create], controller: 'organizations/employees' do

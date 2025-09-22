@@ -9,8 +9,8 @@ class PagesController < ApplicationController
         return
       end
       
-      # If logged in with current organization, redirect to dashboard
-      redirect_to dashboard_path
+      # If logged in with current organization, redirect to organization dashboard
+      redirect_to dashboard_organization_path(current_person.current_organization)
       return
     end
     
