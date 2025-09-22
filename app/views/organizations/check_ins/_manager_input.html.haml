@@ -7,8 +7,7 @@
     - if check_in.manager_completed_at.present?
       .completed-section
         %p.mb-1
-          %strong Manager Rating:
-          = check_in.manager_rating&.humanize if check_in.manager_rating.present?
+          = render 'people/assignments/senences/manager_rating', check_in: check_in
         - if @is_manager
           %p.mb-1
             %strong Private Notes:

@@ -370,3 +370,9 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
     }
   }
 }
+
+.label-sentence {
+  strong {
+    color: var(--bs-warning);
+  }
+}

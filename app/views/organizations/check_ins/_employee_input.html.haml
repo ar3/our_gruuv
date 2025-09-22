@@ -7,14 +7,9 @@
     - if check_in.employee_completed_at.present?
       .completed-section
         %p.mb-1
-          %strong Energy Level:
-          = check_in.actual_energy_percentage&.to_s + '%' if check_in.actual_energy_percentage.present?
+          = render 'people/assignments/senences/employee_rating', check_in: check_in
         %p.mb-1
-          %strong Self Rating:
-          = check_in.employee_rating&.humanize if check_in.employee_rating.present?
-        %p.mb-1
-          %strong Personal Alignment:
-          = check_in.employee_personal_alignment&.humanize if check_in.employee_personal_alignment.present?
+          = render 'people/assignments/senences/employee_reflections', check_in: check_in
         %p.mb-1
           %strong Private Notes:
           = check_in.employee_private_notes if check_in.employee_private_notes.present?
