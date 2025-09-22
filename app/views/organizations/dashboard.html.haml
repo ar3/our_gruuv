@@ -8,73 +8,105 @@
     .col-12
       %p.text-muted Welcome to your #{@organization.display_name} dashboard!
   
-  .row
-    .col-md-4
-      .card.mb-4
-        .card-header
-          %h5.card-title.mb-0 Organization Overview
-        .card-body
-          - if @organization.company?
-            .row.text-center
-              .col-4
-                %h3.text-primary= @total_employees
-                %small.text-muted Employees
-              .col-4
-                %h3.text-info= @total_teams
-                %small.text-muted Teams
-              .col-4
-                %h3.text-success= @total_departments
-                %small.text-muted Departments
-          - else
-            %p.text-muted Organization details and quick stats will appear here.
-    
-    .col-md-4
-      .card.mb-4
-        .card-header
-          %h5.card-title.mb-0 Recent Huddles
-        .card-body
-          - if @recent_org_huddles&.any?
-            - @recent_org_huddles.each do |huddle|
-              .d-flex.justify-content-between.align-items-center.mb-2
-                %div
-                  %strong= huddle.huddle_playbook&.organization&.display_name || 'Unknown Organization'
-                  %br
-                  %small.text-muted= huddle.started_at.strftime('%B %d, %Y')
-                = link_to "View", huddle_path(huddle), class: "btn btn-sm btn-outline-primary"
-          - else
-            %p.text-muted No recent huddles found.
-            = link_to "Create a Huddle", new_huddle_path, class: "btn btn-primary"
-    
-    .col-md-4
-      .card.mb-4
-        .card-header
-          %h5.card-title.mb-0 Quick Stats
-        .card-body
-          - if @organization.company?
-            .mb-2
-              %strong Positions:
-              %span.badge.bg-primary.ms-2= @total_positions
-            .mb-2
-              %strong Assignments:
-              %span.badge.bg-info.ms-2= @total_assignments  
-            .mb-2
-              %strong Abilities:
-              %span.badge.bg-success.ms-2= @total_abilities
-          - else
-            %p.text-muted Organization statistics will appear here.
-  
-  / Placeholder for 9 pillar boxes - will be implemented in next commit
+  / 9 Pillar Boxes for OurGruuv
   .row.mt-4
-    .col-12
-      .alert.alert-info
-        %h6.mb-2
-          %i.bi.bi-info-circle.me-2
-          Coming Soon: OurGruuv Pillars Dashboard
-        %p.mb-0 
-          This dashboard will soon display 9 action boxes for each pillar of OurGruuv:
-          %strong Align
-          (Milestones, Accountability, Position),
-          %strong Collab
-          (Opportunities, Diamond Decision, Huddles), and
-          %strong Transform
-          (Signals, Hypotheses, OKR3s).
+    .col-md-4.mb-4
+      .card.h-100
+        .card-header.bg-primary.text-white
+          %h5.mb-0
+            %i.bi.bi-target.me-2
+            Align :: Milestone
+        .card-body.d-flex.flex-column
+          %p.card-text Track milestone achievements and certifications
+          .mt-auto
+            = link_to "View Milestones", organization_abilities_path(@organization), class: "btn btn-primary"
+    
+    .col-md-4.mb-4
+      .card.h-100
+        .card-header.bg-info.text-white
+          %h5.mb-0
+            %i.bi.bi-check-circle.me-2
+            Align :: Accountability
+        .card-body.d-flex.flex-column
+          %p.card-text Manage assignments and abilities
+          .mt-auto
+            = link_to "View Assignments", organization_assignments_path(@organization), class: "btn btn-info"
+    
+    .col-md-4.mb-4
+      .card.h-100
+        .card-header.bg-success.text-white
+          %h5.mb-0
+            %i.bi.bi-briefcase.me-2
+            Align :: Position
+        .card-body.d-flex.flex-column
+          %p.card-text Manage positions and employment
+          .mt-auto
+            = link_to "View Positions", organization_positions_path(@organization), class: "btn btn-success"
+  
+  .row
+    .col-md-4.mb-4
+      .card.h-100
+        .card-header.bg-warning.text-dark
+          %h5.mb-0
+            %i.bi.bi-lightbulb.me-2
+            Collab :: Opportunities
+        .card-body.d-flex.flex-column
+          %p.card-text Create and manage opportunities
+          .mt-auto
+            = link_to "Coming Soon", good_issues_coming_soon_path, class: "btn btn-warning"
+    
+    .col-md-4.mb-4
+      .card.h-100
+        .card-header.bg-secondary.text-white
+          %h5.mb-0
+            %i.bi.bi-diagram-3.me-2
+            Collab :: Diamond Decision
+        .card-body.d-flex.flex-column
+          %p.card-text Group decision-making methodology
+          .mt-auto
+            = link_to "Coming Soon", diverge_converge_coming_soon_path, class: "btn btn-secondary"
+    
+    .col-md-4.mb-4
+      .card.h-100
+        .card-header.bg-danger.text-white
+          %h5.mb-0
+            %i.bi.bi-people.me-2
+            Collab :: Huddle
+        .card-body.d-flex.flex-column
+          %p.card-text Manage team huddles and feedback
+          .mt-auto
+            = link_to "View Huddles", huddles_path, class: "btn btn-danger"
+  
+  .row
+    .col-md-4.mb-4
+      .card.h-100
+        .card-header.bg-dark.text-white
+          %h5.mb-0
+            %i.bi.bi-graph-up.me-2
+            Transform :: Signals
+        .card-body.d-flex.flex-column
+          %p.card-text Team signals and metrics
+          .mt-auto
+            = link_to "Coming Soon", team_signals_coming_soon_path, class: "btn btn-dark"
+    
+    .col-md-4.mb-4
+      .card.h-100
+        .card-header.bg-light.text-dark
+          %h5.mb-0
+            %i.bi.bi-question-circle.me-2
+            Transform :: Hypotheses
+        .card-body.d-flex.flex-column
+          %p.card-text Hypothesis management
+          .mt-auto
+            = link_to "Coming Soon", hypothesis_management_coming_soon_path, class: "btn btn-outline-dark"
+    
+    .col-md-4.mb-4
+      .card.h-100
+        .card-header.bg-primary.text-white
+          %h5.mb-0
+            %i.bi.bi-bullseye.me-2
+            Transform :: OKR3s
+        .card-body.d-flex.flex-column
+          %p.card-text OKR3 methodology and tracking
+          .mt-auto
+            = link_to "Coming Soon", okr3_management_coming_soon_path, class: "btn btn-primary"

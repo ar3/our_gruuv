@@ -34,6 +34,14 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     
   end
   
+  def dashboard
+    @current_person = current_person
+    @recent_huddles = current_person.huddles.recent.limit(5)
+    
+    # Organization-specific dashboard content will go here
+    load_organization_dashboard_stats
+  end
+  
   def new
     @organization = Organization.new
     @organization.parent_id = params[:parent_id] if params[:parent_id].present?
