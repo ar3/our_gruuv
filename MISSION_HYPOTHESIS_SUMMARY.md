@@ -159,3 +159,4 @@ The framework is designed to be:
 - **Learning-oriented**: Every hypothesis teaches something
 
 This is truly "deep simple" - easy to understand and implement, but powerful for sophisticated strategic thinking and growth planning.
+

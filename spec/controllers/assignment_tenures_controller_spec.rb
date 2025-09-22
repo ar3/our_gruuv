@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe AssignmentTenuresController, type: :controller do
+RSpec.describe Organizations::AssignmentTenuresController, type: :controller do
   let!(:organization) { create(:organization) }
   let!(:manager) { create(:person, current_organization: organization) }
   let!(:employee) { create(:person, current_organization: organization) }
@@ -33,7 +33,7 @@ RSpec.describe AssignmentTenuresController, type: :controller do
 
   describe 'GET #show' do
     it 'renders the assignment tenures page' do
-      get :show, params: { person_id: employee.id }
+      get :show, params: { organization_id: organization.id, id: employee.id }
       expect(response).to have_http_status(:success)
       expect(response).to render_template(:show)
     end
@@ -43,7 +43,7 @@ RSpec.describe AssignmentTenuresController, type: :controller do
       create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20)
       create(:assignment_check_in, person: employee, assignment: assignment1, actual_energy_percentage: 25)
       
-      get :show, params: { person_id: employee.id }
+      get :show, params: { organization_id: organization.id, id: employee.id }
       
       expect(assigns(:assignment_data)).to be_present
       expect(assigns(:assignment_data).length).to eq(1)
@@ -54,7 +54,8 @@ RSpec.describe AssignmentTenuresController, type: :controller do
     context 'as a manager with valid parameters' do
       let(:valid_params) do
         {
-          person_id: employee.id,
+          organization_id: organization.id,
+          id: employee.id,
           reason: 'Testing MAAP snapshot creation'
         }
       end
@@ -119,7 +120,8 @@ RSpec.describe AssignmentTenuresController, type: :controller do
       
       let(:tenure_change_params) do
         {
-          person_id: employee.id,
+          organization_id: organization.id,
+          id: employee.id,
           reason: 'Changing energy allocation',
           "tenure_#{assignment1.id}_anticipated_energy" => '5'
         }
@@ -155,7 +157,8 @@ RSpec.describe AssignmentTenuresController, type: :controller do
       
       let(:check_in_change_params) do
         {
-          person_id: employee.id,
+          organization_id: organization.id,
+          id: employee.id,
           reason: 'Updating check-in data',
           "check_in_#{assignment1.id}_actual_energy" => '25',
           "check_in_#{assignment1.id}_employee_rating" => 'exceeding',
@@ -220,17 +223,17 @@ RSpec.describe AssignmentTenuresController, type: :controller do
       end
 
       it 'redirects back with alert' do
-        patch :update, params: { person_id: employee.id }
+        patch :update, params: { organization_id: organization.id, id: employee.id }
         
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(person_assignment_tenures_path(employee))
+        expect(response).to redirect_to(organization_assignment_tenure_path(organization, employee))
       end
     end
   end
 
   describe 'GET #choose_assignments' do
     it 'renders the choose assignments page' do
-      get :choose_assignments, params: { person_id: employee.id }
+      get :choose_assignments, params: { organization_id: organization.id, id: employee.id }
       expect(response).to have_http_status(:success)
       expect(response).to render_template(:choose_assignments)
     end

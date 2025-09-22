@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe AssignmentTenuresController, type: :request do
+RSpec.describe Organizations::AssignmentTenuresController, type: :request do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
@@ -15,16 +15,16 @@ RSpec.describe AssignmentTenuresController, type: :request do
     employment_tenure
   end
 
-  describe "GET /people/:person_id/assignment_tenures" do
+  describe "GET /organizations/:organization_id/assignment_tenures/:id" do
     it "returns http success" do
-      get person_assignment_tenures_path(person)
+      get organization_assignment_tenure_path(company, person)
       expect(response).to have_http_status(:success)
     end
   end
 
-  describe "GET /people/:person_id/assignment_tenures/choose_assignments" do
+  describe "GET /organizations/:organization_id/assignment_tenures/:id/choose_assignments" do
     it "returns http success" do
-      get choose_assignments_person_assignment_tenures_path(person)
+      get choose_assignments_organization_assignment_tenure_path(company, person)
       expect(response).to have_http_status(:success)
     end
   end
