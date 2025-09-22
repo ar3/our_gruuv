@@ -6,13 +6,16 @@ class MaapSnapshot < ApplicationRecord
   
   # Change metadata
   validates :change_type, presence: true, inclusion: { 
-    in: %w[assignment_management position_tenure milestone_management aspiration_management exploration bulk_update] 
+    in: %w[assignment_management position_tenure milestone_management aspiration_management exploration bulk_update bulk_check_in_finalization] 
   }
   validates :reason, presence: true
   validates :company, presence: true
   
   # Full MAAP data as JSONB (structured for easy querying)
   # maap_data contains: employment_tenure, assignments, milestones, aspirations
+  
+  # Form parameters as JSONB (raw form submission data)
+  # form_params contains: return_to_check_ins, original_organization_id, check_in_*_*, etc.
   
   # Security audit trail
   # request_info contains: ip_address, user_agent, session_id, request_id, timestamp
@@ -63,6 +66,7 @@ class MaapSnapshot < ApplicationRecord
       change_type: change_type,
       reason: reason,
       request_info: request_info,
+      form_params: form_params,
       maap_data: build_maap_data_for_employee_with_changes(employee, form_params)
     )
   end
@@ -264,9 +268,12 @@ class MaapSnapshot < ApplicationRecord
   
   def self.build_official_check_in_data_with_changes(current_check_in, form_params, assignment_id)
     # Check if there are any official check-in form parameters
-    official_rating = form_params["check_in_#{assignment_id}_official_rating"]
-    shared_notes = form_params["check_in_#{assignment_id}_shared_notes"]
-    official_complete = form_params["check_in_#{assignment_id}_official_complete"] == "1"
+    # Handle both bulk finalization format (check_in_#{check_in_id}_*) and regular format (check_in_#{assignment_id}_*)
+    check_in_id = current_check_in&.id
+    
+    official_rating = form_params["check_in_#{check_in_id}_final_rating"] || form_params["check_in_#{assignment_id}_official_rating"]
+    shared_notes = form_params["check_in_#{check_in_id}_shared_notes"] || form_params["check_in_#{assignment_id}_shared_notes"]
+    official_complete = form_params["check_in_#{check_in_id}_close_rating"] == "true" || form_params["check_in_#{assignment_id}_official_complete"] == "1"
     
     # Only include if there are form changes or current data
     if official_rating.present? || shared_notes.present? || official_complete || current_check_in

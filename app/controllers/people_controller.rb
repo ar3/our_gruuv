@@ -213,22 +213,39 @@ class PeopleController < ApplicationController
     if execute_maap_changes!
       maap_snapshot.update!(effective_date: Date.current)
 
-      # Redirect based on change type
-      redirect_path = case maap_snapshot.change_type
-      when 'assignment_management'
-        organization_assignment_tenure_path(person.current_organization_or_default, person)
-      when 'position_tenure'
-        person_path(person) # TODO: Update when position tenure page exists
-      when 'milestone_management'
-        person_path(person) # TODO: Update when milestone management page exists
-      when 'aspiration_management'
-        person_path(person) # TODO: Update when aspiration management page exists
-      when 'exploration'
-        person_path(person) # TODO: Update when exploration results page exists
+      # Redirect based on change type and return_to_check_ins parameter
+      Rails.logger.info "BULK_FINALIZE: 18 - Processing redirect in PeopleController#process_changes"
+      Rails.logger.info "BULK_FINALIZE: 19 - Current person: #{current_person.id} (#{current_person.full_name})"
+      Rails.logger.info "BULK_FINALIZE: 20 - Impersonation session: #{session[:impersonating_person_id]}"
+      Rails.logger.info "BULK_FINALIZE: 21 - MaapSnapshot change_type: #{maap_snapshot.change_type}"
+      Rails.logger.info "BULK_FINALIZE: 22 - Return to check-ins: #{maap_snapshot.form_params&.dig('return_to_check_ins')}"
+      Rails.logger.info "BULK_FINALIZE: 23 - Original org ID: #{maap_snapshot.form_params&.dig('original_organization_id')}"
+      
+      redirect_path = if maap_snapshot.form_params&.dig('return_to_check_ins') == 'true'
+        original_org_id = maap_snapshot.form_params&.dig('original_organization_id')
+        organization = original_org_id ? Organization.find(original_org_id) : person.current_organization_or_default
+        Rails.logger.info "BULK_FINALIZE: 24 - Using organization for redirect: #{organization.id} (#{organization.name})"
+        organization_check_in_path(organization, person)
       else
-        person_path(person)
+        case maap_snapshot.change_type
+        when 'assignment_management'
+          organization_assignment_tenure_path(person.current_organization_or_default, person)
+        when 'bulk_check_in_finalization', 'individual_check_in_finalization'
+          organization_check_in_path(person.current_organization_or_default, person)
+        when 'position_tenure'
+          person_path(person) # TODO: Update when position tenure page exists
+        when 'milestone_management'
+          person_path(person) # TODO: Update when milestone management page exists
+        when 'aspiration_management'
+          person_path(person) # TODO: Update when aspiration management page exists
+        when 'exploration'
+          person_path(person) # TODO: Update when exploration results page exists
+        else
+          person_path(person)
+        end
       end
 
+      Rails.logger.info "BULK_FINALIZE: 25 - Final redirect path: #{redirect_path}"
       redirect_to redirect_path, notice: 'Changes executed successfully!'
     else
       redirect_to execute_changes_person_path(person, maap_snapshot),
@@ -468,7 +485,7 @@ class PeopleController < ApplicationController
       )
       
       if official_data['official_check_in_completed_at']
-        check_in.finalize_check_in!(finalized_by: current_person)
+        check_in.finalize_check_in!(final_rating: official_data['official_rating'], finalized_by: current_person)
       end
     end
   end

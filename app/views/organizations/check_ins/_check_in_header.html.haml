@@ -1,0 +1,28 @@
+%h6.mb-1
+  = check_in.assignment.title
+  = link_to person_assignment_path(@person, check_in.assignment), class: "ms-2", target: "_blank", "data-bs-toggle" => "tooltip", "data-bs-title" => "View assignment details" do
+    %i.bi.bi-box-arrow-up-right.text-muted
+%small.text-muted
+  %span{"data-bs-toggle" => "tooltip", "data-bs-title" => "Check-in ID: #{check_in.id}"}
+    Started: #{check_in.check_in_started_on.strftime('%B %d, %Y')}
+  %span.mx-2 •
+  - if check_in.official_check_in_completed_at.present?
+    %span.badge.bg-success.me-2
+      %i.bi.bi-check-circle-fill.me-1
+      Completed
+  - elsif check_in.ready_for_finalization?
+    %span.badge.bg-success.me-2
+      %i.bi.bi-check-circle.me-1
+      Ready for Finalization
+  - elsif check_in.employee_completed_at.present? && check_in.manager_completed_at.nil?
+    %span.badge.bg-warning.me-2
+      %i.bi.bi-clock.me-1
+      Waiting for Manager
+  - elsif check_in.manager_completed_at.present? && check_in.employee_completed_at.nil?
+    %span.badge.bg-info.me-2
+      %i.bi.bi-person.me-1
+      Waiting for Employee
+  - else
+    %span.badge.bg-secondary.me-2
+      %i.bi.bi-hourglass.me-1
+      In Progress

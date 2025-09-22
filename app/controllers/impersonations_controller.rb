@@ -16,6 +16,14 @@ class ImpersonationsController < ApplicationController
   end
 
   def destroy
+    Rails.logger.info "IMPERSONATION_DESTROY: 1 - Impersonation destroy called"
+    Rails.logger.info "IMPERSONATION_DESTROY: 2 - Current person: #{current_person&.id} (#{current_person&.full_name})"
+    Rails.logger.info "IMPERSONATION_DESTROY: 3 - Real person: #{real_current_person&.id} (#{real_current_person&.full_name})"
+    Rails.logger.info "IMPERSONATION_DESTROY: 4 - Referer: #{request.referer}"
+    Rails.logger.info "IMPERSONATION_DESTROY: 5 - User agent: #{request.user_agent}"
+    Rails.logger.info "IMPERSONATION_DESTROY: 6 - Request method: #{request.method}"
+    Rails.logger.info "IMPERSONATION_DESTROY: 7 - Request path: #{request.path}"
+    
     stop_impersonation
     flash[:notice] = "Stopped impersonation"
     redirect_back(fallback_location: root_path)

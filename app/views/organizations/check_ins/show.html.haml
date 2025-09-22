@@ -26,154 +26,50 @@
     / Assignment Check-ins Section
     .card.mb-4
       .card-header
-        %h5.mb-0
-          %i.bi.bi-clipboard-check.me-2
-          Assignment Check-ins
-      .card-body
-        - if @check_ins_in_progress.any?
-          - @check_ins_in_progress.each do |check_in|
-            .assignment-check-in-card.mb-4.border.rounded
-              / Collapsed Header
-              .check-in-header.p-3.cursor-pointer
-                .row.align-items-center
-                  .col-md-8
-                    %h6.mb-1
-                      = check_in.assignment.title
-                      = link_to person_assignment_path(@person, check_in.assignment), class: "ms-2", target: "_blank", "data-bs-toggle" => "tooltip", "data-bs-title" => "View assignment details" do
-                        %i.bi.bi-box-arrow-up-right.text-muted
-                    %small.text-muted
-                      Started: #{check_in.check_in_started_on.strftime('%B %d, %Y')}
-                      %span.mx-2 •
-                      - if check_in.official_check_in_completed_at.present?
-                        %span.badge.bg-success.me-2
-                          %i.bi.bi-check-circle-fill.me-1
-                          Completed
-                      - elsif check_in.ready_for_finalization?
-                        %span.badge.bg-success.me-2
-                          %i.bi.bi-check-circle.me-1
-                          Ready for Finalization
-                      - elsif check_in.employee_completed_at.present? && check_in.manager_completed_at.nil?
-                        %span.badge.bg-warning.me-2
-                          %i.bi.bi-clock.me-1
-                          Waiting for Manager
-                      - elsif check_in.manager_completed_at.present? && check_in.employee_completed_at.nil?
-                        %span.badge.bg-info.me-2
-                          %i.bi.bi-person.me-1
-                          Waiting for Employee
-                      - else
-                        %span.badge.bg-secondary.me-2
-                          %i.bi.bi-hourglass.me-1
-                          In Progress
-                  .col-md-4.text-end
-                    %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#check-in-#{check_in.id}", "aria-expanded" => "false", "aria-controls" => "check-in-#{check_in.id}", style: "cursor: pointer;"}
-                      %span.not-collapsed
-                        %i.bi.bi-chevron-up.me-2
-                        %small.text-muted (Hide details)
-                      %span.collapsed
-                        %i.bi.bi-chevron-down.me-2
-                        %small.text-muted (Show details)
-              
-              / Expanded Content
-              .collapse{"id" => "check-in-#{check_in.id}"}
-                .p-3.border-top
-                  .row
-                    / Employee Section
-                    .col-md-4
-                      .employee-section
-                        %h6.text-primary.mb-3
-                          %i.bi.bi-person.me-2
-                          Employee Input
-                        - if check_in.employee_completed_at.present?
-                          %p.mb-1
-                            ="#{check_in.person.first_name} believes they have been <b>#{check_in.employee_rating&.humanize || '???'}</b> the expectations of this Assignment.".html_safe
-                          %p.mb-1
-                            ="... They reflected and they spent <b>#{check_in.actual_energy_percentage || '???'}%</b> of their energy and they <b>#{check_in.employee_personal_alignment&.humanize || '???'}</b> taking on this Assignment.".html_safe
-                          %small.text-muted
-                            Completed: #{check_in.employee_completed_at.strftime('%B %d, %Y at %l:%M %p')}
-                        - else
-                          - if @is_employee
-                            .alert.alert-warning
-                              %i.bi.bi-exclamation-triangle.me-2
-                              You haven't completed your self-assessment yet.
-                          - else
-                            .alert.alert-info
-                              %i.bi.bi-info-circle.me-2
-                              Employee hasn't completed their self-assessment yet.
-                    
-                    / Manager Section
-                    .col-md-4
-                      .manager-section
-                        %h6.text-success.mb-3
-                          %i.bi.bi-person-badge.me-2
-                          Manager Input
-                        - if check_in.manager_completed_at.present?
-                          - if @is_manager || check_in.employee_completed_at.present?
-                            %p.mb-1
-                              ="#{check_in.manager_completed_by&.first_name} believes #{@person.first_name} is <b>#{check_in.manager_rating&.humanize}</b> the expectations of this Assignment.".html_safe
-                            - if @is_manager
-                              %p.mb-1
-                                %strong Private Notes:
-                                = check_in.manager_private_notes if check_in.manager_private_notes.present?
-                            %small.text-muted
-                              Completed: #{check_in.manager_completed_at.strftime('%B %d, %Y at %l:%M %p')}
-                          - else
-                            .alert.alert-info
-                              %i.bi.bi-info-circle.me-2
-                              Manager has completed their review. You'll be able to see their feedback once you complete your self-assessment.
-                        - else
-                          - if @is_manager
-                            .alert.alert-warning
-                              %i.bi.bi-exclamation-triangle.me-2
-                              You haven't completed your review yet.
-                          - else
-                            .alert.alert-info
-                              %i.bi.bi-info-circle.me-2
-                              Manager hasn't completed their review yet.
-                    
-                    / Final Rating Section
-                    .col-md-4
-                      .final-rating-section
-                        %h6.text-secondary.mb-3
-                          %i.bi.bi-star.me-2
-                          Final Rating
-                        - if check_in.official_check_in_completed_at.present?
-                          / Completed check-in - show final results
-                          .completed-check-in
-                            %p.mb-1
-                              %strong Final Rating:
-                              = check_in.official_rating&.humanize if check_in.official_rating.present?
-                            %p.mb-1
-                              %strong Shared Notes:
-                              = check_in.shared_notes if check_in.shared_notes.present?
-                            %small.text-muted
-                              Completed: #{check_in.official_check_in_completed_at.strftime('%B %d, %Y at %l:%M %p')}
-                        - elsif check_in.ready_for_finalization?
-                          - if @is_manager
-                            = form_with url: finalize_check_in_organization_check_in_path(@organization, @person), method: :patch, local: true do |form|
-                              = form.hidden_field :check_in_id, value: check_in.id
-                              .mb-3
-                                = form.label :shared_notes, "Shared Notes", class: "form-label"
-                                = form.text_area :shared_notes, value: check_in.shared_notes, rows: 2, class: "form-control", placeholder: "Notes visible to both parties..."
-                              
-                              .mb-3
-                                = form.label :final_rating, "Final Rating", class: "form-label"
-                                %span.text-danger *
-                                = form.select :final_rating, options_for_select([ ['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding'] ], check_in.manager_rating), { prompt: 'Select final rating...' }, { class: "form-select", required: true }
-                              
-                              .form-check.mb-3
-                                = form.check_box :close_rating, { class: "form-check-input" }, "true", "false"
-                                = form.label :close_rating, "Close this rating", class: "form-check-label"
-                              
-                              = form.submit "Finalize Check-in", class: "btn btn-success btn-sm"
-                          - else
-                            .alert.alert-info
-                              %i.bi.bi-info-circle.me-2
-                              Final rating is ready for manager review. Only managers can set the final rating.
-                        - else
-                          .alert.alert-light
-                            %i.bi.bi-lock.me-2
-                            Final rating will be available once both employee and manager complete their sections.
-        - else
+        .row.align-items-center
+          .col-md-8
+            %h5.mb-0
+              %i.bi.bi-clipboard-check.me-2
+              Assignment Check-ins
+          .col-md-4.text-end
+            - if @is_manager && @check_ins_in_progress.any? { |ci| ci.ready_for_finalization? }
+              %span.btn.btn-success.btn-sm#top-save-button{style: "cursor: pointer;", onclick: "console.log('Top save button clicked'); var form = document.getElementById('bulk-finalize-form'); console.log('Form found:', form); console.log('Form action:', form ? form.action : 'no form'); form && form.submit();"} Save Check-ins
+      - if @check_ins_in_progress.any?
+        = form_with url: bulk_finalize_check_ins_organization_check_in_path(@organization, @person), method: :patch, local: true, html: { id: "bulk-finalize-form", onsubmit: "console.log('Form submitting to:', this.action); console.log('Form method:', this.method); return true;" } do |form|
+          .card-body
+            - @check_ins_in_progress.each do |check_in|
+              .assignment-check-in-card.mb-4.border.rounded
+                / Collapsed Header
+                .check-in-header.p-3.cursor-pointer
+                  .row.align-items-center
+                    .col-md-8
+                      = render 'organizations/check_ins/check_in_header', check_in: check_in
+                    .col-md-4.text-end
+                      %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#check-in-#{check_in.id}", "aria-expanded" => "false", "aria-controls" => "check-in-#{check_in.id}", style: "cursor: pointer;"}
+                        %span.not-collapsed
+                          %i.bi.bi-chevron-up.me-2
+                          %small.text-muted (Hide details)
+                        %span.collapsed
+                          %i.bi.bi-chevron-down.me-2
+                          %small.text-muted (Show details)
+                
+                / Expanded Content
+                .collapse{"id" => "check-in-#{check_in.id}"}
+                  .p-3.border-top
+                    .row
+                      = render 'organizations/check_ins/employee_input', check_in: check_in
+                      = render 'organizations/check_ins/manager_input', check_in: check_in
+                      
+                = render 'organizations/check_ins/finalization_form', check_in: check_in, form: form
+            
+            / Bottom action bar
+            - if @is_manager && @check_ins_in_progress.any? { |ci| ci.ready_for_finalization? }
+              .row.mt-3
+                .col-md-8
+                .col-md-4.text-end
+                  = form.submit "Save Check-ins", class: "btn btn-success btn-sm"
+      - else
+        .card-body
           .alert.alert-info
             %h6.mb-2
               %i.bi.bi-info-circle.me-2

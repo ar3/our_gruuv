@@ -19,7 +19,8 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
         
         # Handle close_rating checkbox
         if params[:close_rating] == 'true'
-          check_in.finalize_check_in!(final_rating: params[:final_rating], finalized_by: current_person)
+          real_user = session[:impersonating_person_id] ? Person.find(session[:impersonating_person_id]) : current_person
+          check_in.finalize_check_in!(final_rating: params[:final_rating], finalized_by: real_user)
           redirect_to organization_check_in_path(@organization, @person), notice: 'Check-in finalized and closed successfully.'
         else
           check_in.update!(official_rating: params[:final_rating])
@@ -32,6 +33,89 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
       redirect_to organization_check_in_path(@organization, @person), alert: 'Check-in is not ready for finalization. Both employee and manager must complete their sections first.'
     end
   end
+
+  def bulk_finalize_check_ins
+    Rails.logger.info "BULK_FINALIZE: 1 - Starting bulk_finalize_check_ins for person #{@person.id} (#{@person.full_name})"
+    Rails.logger.info "BULK_FINALIZE: 2 - Current user: #{current_person.id} (#{current_person.full_name})"
+    Rails.logger.info "BULK_FINALIZE: 3 - Organization: #{@organization.id} (#{@organization.name})"
+    Rails.logger.info "BULK_FINALIZE: 4 - Impersonation session: #{session[:impersonating_person_id]}"
+    
+    authorize @person, :manager?, policy_class: PersonPolicy
+    Rails.logger.info "BULK_FINALIZE: 5 - Authorization passed"
+    
+    # Get all check-ins ready for finalization
+    ready_check_ins = AssignmentCheckIn
+      .joins(:assignment)
+      .where(person: @person)
+      .where(assignments: { company: @organization })
+      .where.not(employee_completed_at: nil)
+      .where.not(manager_completed_at: nil)
+      .where(official_check_in_completed_at: nil)
+    
+    Rails.logger.info "BULK_FINALIZE: 6 - Ready check-ins query executed, count: #{ready_check_ins.count}"
+    
+    if ready_check_ins.any?
+      Rails.logger.info "BULK_FINALIZE: 7 - Processing #{ready_check_ins.count} ready check-ins"
+      
+      # Collect form data for each check-in
+      check_in_data = {}
+      ready_check_ins.each do |check_in|
+        check_in_id = check_in.id
+        Rails.logger.info "BULK_FINALIZE: 8 - Processing check-in #{check_in_id} for assignment #{check_in.assignment.title}"
+        
+        check_in_data[check_in_id] = {
+          check_in_id: check_in_id,
+          final_rating: params["check_in_#{check_in_id}_final_rating"],
+          shared_notes: params["check_in_#{check_in_id}_shared_notes"],
+          close_rating: params["check_in_#{check_in_id}_close_rating"] == 'true'
+        }
+        
+        Rails.logger.info "BULK_FINALIZE: 9 - Check-in #{check_in_id} data: #{check_in_data[check_in_id].inspect}"
+      end
+      
+      # Capture security information
+      request_info = {
+        ip_address: request.remote_ip,
+        user_agent: request.user_agent,
+        session_id: session.id,
+        request_id: SecureRandom.uuid,
+        timestamp: Time.current
+      }
+      Rails.logger.info "BULK_FINALIZE: 10 - Request info captured: #{request_info.inspect}"
+      
+      # Determine the real user (admin) vs impersonated user
+      real_user = session[:impersonating_person_id] ? Person.find(session[:impersonating_person_id]) : current_person
+      Rails.logger.info "BULK_FINALIZE: 11 - Real user determined: #{real_user.id} (#{real_user.full_name})"
+      
+      # Build MaapSnapshot for bulk check-in finalization
+      Rails.logger.info "BULK_FINALIZE: 12 - Building MaapSnapshot with form_params keys: #{params.keys.inspect}"
+      maap_snapshot = MaapSnapshot.build_for_employee_with_changes(
+        employee: @person,
+        created_by: real_user,
+        change_type: 'bulk_check_in_finalization',
+        reason: 'Bulk finalization of ready check-ins',
+        request_info: request_info,
+        form_params: params.merge(return_to_check_ins: true, check_in_data: check_in_data, original_organization_id: @organization.id)
+      )
+      Rails.logger.info "BULK_FINALIZE: 13 - MaapSnapshot built, ID: #{maap_snapshot.id}"
+      Rails.logger.info "BULK_FINALIZE: 14 - MaapSnapshot maap_data: #{maap_snapshot.maap_data.inspect}"
+      
+      if maap_snapshot.save
+        Rails.logger.info "BULK_FINALIZE: 15 - MaapSnapshot saved successfully, redirecting to execute changes"
+        redirect_to execute_changes_person_path(@person, maap_snapshot), 
+                    notice: "Bulk check-in finalization queued for processing. Review and execute below. #{@person&.full_name} - #{maap_snapshot&.id}"
+      else
+        Rails.logger.error "BULK_FINALIZE: 16 - MaapSnapshot save failed: #{maap_snapshot.errors.full_messages}"
+        redirect_to organization_check_in_path(@organization, @person), 
+                    alert: 'Failed to create change record. Please try again.'
+      end
+    else
+      Rails.logger.info "BULK_FINALIZE: 17 - No check-ins ready for finalization, redirecting with alert"
+      redirect_to organization_check_in_path(@organization, @person), 
+                  alert: 'No check-ins are ready for finalization. Both employee and manager must complete their sections first.'
+    end
+  end
+
 
   private
 

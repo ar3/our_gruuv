@@ -234,6 +234,22 @@ function createToastContainer() {
   return container
 }
 
+
+function initializeEnergyUpdateListening() {
+  // Find all selects that match your naming convention
+  const energySelects = document.querySelectorAll('[name^="tenure_"][name$="_anticipated_energy"]');
+  console.log('ENERGY_UPDATE:: LISTENING COUNT:', energySelects.length);
+
+  // Attach a change listener to each one
+  energySelects.forEach((el) => {
+    console.log('ENERGY_UPDATE:: LISTENING FOR CHANGE ON:', el.name);
+    el.addEventListener('change', (e) => {
+      console.log('Changed:', e.target.name, 'Value:', e.target.value);
+      updateEnergyTotal();
+    });
+  });
+}
+
 // Try multiple events to ensure tooltips and toasts are initialized
 document.addEventListener('turbo:load', () => {
   initializeTooltips()
@@ -241,6 +257,7 @@ document.addEventListener('turbo:load', () => {
   initializeToasts()
   initializeShareHuddle()
   updateEnergyTotal()
+  initializeEnergyUpdateListening()
 })
 document.addEventListener('DOMContentLoaded', () => {
   initializeTooltips()
@@ -248,15 +265,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeToasts()
   initializeShareHuddle()
   updateEnergyTotal()
+  initializeEnergyUpdateListening()
 })
-
-// Find all selects that match your naming convention
-const energySelects = document.querySelectorAll('[name^="tenure_"][name$="_anticipated_energy"]');
-
-// Attach a change listener to each one
-energySelects.forEach((el) => {
-  el.addEventListener('change', (e) => {
-    console.log('Changed:', e.target.name, 'Value:', e.target.value);
-    updateEnergyTotal();
-  });
-});
