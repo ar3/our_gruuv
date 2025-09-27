@@ -1,6 +1,5 @@
 Rails.application.routes.draw do
   
-  get "dashboard/index"
   get "auth/google_oauth2_callback"
   # Assignments routes - moved to organization namespace
   
@@ -27,8 +26,6 @@ post '/auth/google_oauth2', to: redirect('/auth/google_oauth2')
 # Login page
 get '/login', to: 'auth#login', as: :login
   
-  # Dashboard
-  get '/dashboard', to: 'dashboard#index', as: :dashboard
   
   # Organization switcher
   get '/organizations/switch', to: 'organizations#switch_page', as: :switch_organizations

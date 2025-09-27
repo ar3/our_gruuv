@@ -1,0 +1,24 @@
+.col-md-4.mb-4.mt-4
+  .card.h-100.border-0.shadow-sm
+    .card-body.text-center.p-4.d-flex.flex-column
+      %h4.mb-3.text-secondary
+        %i.bi.bi-gem.me-2
+        Decisions
+      %p.text-muted.mb-4.d-flex.align-items-center.justify-content-center{style: "min-height: 48px;"} Group decision-making methodology
+      
+      / Primary Action - Large and Prominent
+      .mb-4
+        = link_to diverge_converge_coming_soon_path, class: "btn btn-secondary btn-lg w-100 py-3" do
+          %i.bi.bi-clock.me-2
+          Coming Soon
+      
+      / Secondary Actions - Bottom Row
+      .row.g-2.mt-auto
+        .col-6
+          = link_to diverge_converge_coming_soon_path, class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center", style: "min-height: 50px;" do
+            %i.bi.bi-info.me-1
+            Learn
+        .col-6
+          = link_to diverge_converge_coming_soon_path, class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center", style: "min-height: 50px;" do
+            %i.bi.bi-bell.me-1
+            Notify

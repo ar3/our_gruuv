@@ -1,0 +1,28 @@
+/ Giant Observations Card at Top
+.row.mb-5
+  .col-12
+    .card.border-0.shadow-md
+      .card-body.text-center.p-5
+        %h2.mb-3.text-primary
+          %i.bi.bi-eye.me-3
+          %span{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-content" => "Observations help teams grow by combining appreciative inquiry's focus on strengths with radical candor's commitment to honest feedback. Non-violent communication principles ensure all feedback is delivered with care and respect. This creates a culture where teams can celebrate wins, learn from challenges, and continuously improve together.", "data-bs-title" => "About Observations", style: "cursor: pointer;"} Observations
+        %p.text-muted.mb-4.fs-5 See what's good, say what's real, grow what works
+        
+        / Primary Action - Extra Large
+        .mb-4
+          = link_to observations_coming_soon_path, class: "btn btn-primary btn-xl w-100 py-4" do
+            %i.bi.bi-plus.me-3
+            Give the gift 
+            %i.bi.bi-gift.ml-1.mr-3
+            of feedback
+        
+        / Secondary Actions
+        .row.g-3.mt-auto
+          .col-md-6
+            = link_to observations_coming_soon_path, class: "btn btn-outline-secondary btn-lg w-100 d-flex align-items-center justify-content-center", style: "min-height: 60px;" do
+              %i.bi.bi-clock.me-2
+              3 Recent Observations
+          .col-md-6
+            = link_to observations_coming_soon_path, class: "btn btn-outline-secondary btn-lg w-100 d-flex align-items-center justify-content-center", style: "min-height: 60px;" do
+              %i.bi.bi-person.me-2
+              My 12 Observations

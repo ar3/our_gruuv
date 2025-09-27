@@ -1,0 +1,27 @@
+.row.mb-5.mt-5
+  .col-12.mb-5.mt-5
+    %hr/
+  .col-12
+    .card.border-0.shadow
+      .card-body.text-center.p-5
+        %h2.mb-3.text-primary
+          %i.bi.bi-hexagon.me-3
+          =organization.display_name
+        %p.text-muted.mb-4.fs-5 Continuous improvement insights for product teams
+        
+        / Primary Action - Extra Large
+        .mb-4
+          = link_to observations_coming_soon_path, class: "btn btn-primary btn-xl w-100 py-4" do
+            %i.bi.bi-people.me-3
+            View Teammates
+        
+        / Secondary Actions
+        .row.g-3.mt-auto
+          .col-md-6
+            = link_to observations_coming_soon_path, class: "btn btn-outline-secondary btn-lg w-100 d-flex align-items-center justify-content-center", style: "min-height: 60px;" do
+              %i.bi.bi-clock.me-2
+              View All Teams
+          .col-md-6
+            = link_to observations_coming_soon_path, class: "btn btn-outline-secondary btn-lg w-100 d-flex align-items-center justify-content-center", style: "min-height: 60px;" do
+              %i.bi.bi-person.me-2
+              ???

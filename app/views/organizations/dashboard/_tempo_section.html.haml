@@ -1,0 +1,15 @@
+/ TEMPO Section
+.row.mb-4.mt-5
+  .col-12.mt-5
+    .d-flex.align-items-center.mb-3
+      %h3.text-primary.mb-0.me-3
+        %i.bi.bi-clock.me-2
+        TEMPO
+      .flex-grow-1
+        %hr.border-primary
+      %small.text-muted.ms-3 Highlight progress
+
+.row.mt-4
+  = render 'organizations/dashboard/signals', organization: organization
+  = render 'organizations/dashboard/hypotheses', organization: organization
+  = render 'organizations/dashboard/okr3s', organization: organization

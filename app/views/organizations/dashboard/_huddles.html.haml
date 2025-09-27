@@ -1,0 +1,24 @@
+.col-md-4.mb-4.mt-4
+  .card.h-100.border-0.shadow-sm
+    .card-body.text-center.p-4.d-flex.flex-column
+      %h4.mb-3.text-primary
+        %i.bi.bi-people.me-2
+        Huddles
+      %p.text-muted.mb-4.d-flex.align-items-center.justify-content-center{style: "min-height: 48px;"} Manage team huddles and feedback
+      
+      / Primary Action - Large and Prominent
+      .mb-4
+        = link_to huddles_path, class: "btn btn-primary btn-lg w-100 py-3" do
+          %i.bi.bi-eye.me-2
+          View All Huddles
+      
+      / Secondary Actions - Bottom Row
+      .row.g-2.mt-auto
+        .col-6
+          = link_to new_huddle_path, class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center", style: "min-height: 50px;" do
+            %i.bi.bi-plus.me-1
+            Create
+        .col-6
+          = link_to huddles_path, class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center", style: "min-height: 50px;" do
+            %i.bi.bi-search.me-1
+            Search

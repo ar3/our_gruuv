@@ -18,12 +18,13 @@ RSpec.describe 'Login Page', type: :request do
     end
 
     context 'when user is already logged in' do
-      let(:person) { create(:person) }
+      let(:company) { create(:organization, :company) }
+      let(:person) { create(:person, current_organization: company) }
 
-      it 'redirects to dashboard' do
+      it 'redirects to organization dashboard' do
         allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
         get login_path
-        expect(response).to redirect_to(dashboard_path)
+        expect(response).to redirect_to(dashboard_organization_path(company))
       end
     end
   end

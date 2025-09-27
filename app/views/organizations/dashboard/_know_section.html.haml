@@ -1,0 +1,16 @@
+/ KNOW Section
+.row.mb-4
+  .col-12
+    .d-flex.align-items-center.mb-3
+      %h3.text-primary.mb-0.me-3
+        %i.bi.bi-compass.me-2
+        KNOW
+      .flex-grow-1
+        %hr.border-primary
+      %small.text-muted.ms-3 Clarify expectations
+
+/ KNOW Pillar Boxes
+.row.mt-4
+  = render 'organizations/dashboard/milestones', organization: organization
+  = render 'organizations/dashboard/assignments', organization: organization
+  = render 'organizations/dashboard/positions', organization: organization

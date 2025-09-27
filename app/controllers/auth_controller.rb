@@ -3,7 +3,10 @@ class AuthController < ApplicationController
   
   def login
     # Redirect if already logged in
-    redirect_to dashboard_path if current_person
+    if current_person
+      current_org = current_person.current_organization_or_default
+      redirect_to dashboard_organization_path(current_org)
+    end
   end
   
   def google_oauth2_callback
@@ -35,7 +38,8 @@ class AuthController < ApplicationController
         person = find_or_create_person_from_google_auth(auth)
         create_or_update_google_identity(person, auth)
         session[:current_person_id] = person.id
-        redirect_to dashboard_path, notice: 'Successfully signed in with Google!'
+        current_org = person.current_organization_or_default
+        redirect_to dashboard_organization_path(current_org), notice: 'Successfully signed in with Google!'
       end
       
     rescue => e

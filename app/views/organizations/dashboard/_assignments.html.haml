@@ -1,0 +1,24 @@
+.col-md-4.mb-4
+  .card.h-100.border-0.shadow-sm
+    .card-body.text-center.p-4.d-flex.flex-column
+      %h4.mb-3.text-primary
+        %i.bi.bi-check-circle.me-2
+        Assignments
+      %p.text-muted.mb-4.d-flex.align-items-center.justify-content-center{style: "min-height: 48px;"} Manage assignments and abilities
+      
+      / Primary Action - Large and Prominent
+      .mb-4
+        = link_to organization_assignments_path(organization), class: "btn btn-primary btn-lg w-100 py-3" do
+          %i.bi.bi-check-circle.me-2
+          Check-in on my 3 Assignments
+      
+      / Secondary Actions - Bottom Row
+      .row.g-2.mt-auto
+        .col-6
+          = link_to organization_assignments_path(organization), class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center", style: "min-height: 50px;" do
+            %i.bi.bi-list.me-1
+            Explore All 15 Assignments
+        .col-6
+          = link_to organization_assignments_path(organization), class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center", style: "min-height: 50px;" do
+            %i.bi.bi-eye.me-1
+            2 Ready For Review

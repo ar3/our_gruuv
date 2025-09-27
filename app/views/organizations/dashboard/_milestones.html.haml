@@ -1,0 +1,26 @@
+.col-md-4.mb-4
+  .card.h-100.border-0.shadow-sm
+    .card-body.text-center.p-4.d-flex.flex-column
+      %h4.mb-3.text-primary
+        %i.bi.bi-award.me-2
+        %span{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-content" => "Milestones create a clear map for professional growth by setting clear expectations and recognizing progress along the way. Rather than generic praise, milestones celebrate concrete progress toward defined skills, knowledge, and behaviors. This targeted recognition motivates continued development while building a portfolio of valuable credentials. Not only is the valuable for clarity, since each milestone represents a concrete achievement that builds toward larger career goals – the certification-style value of milestones ensures that growth is both celebrated and benefits careers beyond the current seat.", "data-bs-title" => "About Milestones", style: "cursor: pointer;"} Milestones
+      %p.text-muted.mb-4.d-flex.align-items-center.justify-content-center{style: "min-height: 48px;"} 
+        =['Set expectations, recognize progress, reward achievement', 'Build skills, earn badges, grow your career'].sample
+        
+      
+      / Primary Action - Large and Prominent
+      .mb-4
+        = link_to organization_abilities_path(organization), class: "btn btn-primary btn-lg w-100 py-3" do
+          %i.bi.bi-trophy.me-2
+          2 Recent Milestones to Celebrate
+      
+      / Secondary Actions - Bottom Row
+      .row.g-2.mt-auto
+        .col-6
+          = link_to organization_abilities_path(organization), class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center", style: "min-height: 50px;" do
+            %i.bi.bi-list.me-1
+            All Abilities
+        .col-6
+          = link_to organization_abilities_path(organization), class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center", style: "min-height: 50px;" do
+            %i.bi.bi-person.me-1
+            My Milestones
