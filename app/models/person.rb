@@ -51,6 +51,21 @@ class Person < ApplicationRecord
   end
 
   # Scopes for active assignments in a specific company
+  def assignments_ready_for_finalization_count(company=nil)
+    company = current_organization&.root_company if company.nil?
+    if company.nil?
+      AssignmentCheckIn.joins(:assignment)
+                       .where(person: self)
+                       .ready_for_finalization
+                       .count
+    else
+      AssignmentCheckIn.joins(:assignment)
+                       .where(person: self, assignments: { company: company })
+                       .ready_for_finalization
+                       .count
+    end
+  end
+
   def active_assignments(company=nil)
     company = current_organization&.root_company if company.nil?
     if company.nil?

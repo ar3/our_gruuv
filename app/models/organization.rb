@@ -105,6 +105,10 @@ class Organization < ApplicationRecord
     huddle_participants.where.not(id: employees.select(:id))
   end
 
+  def all_assignments_including_descendants
+    Assignment.where(company: self_and_descendants)
+  end
+
   def recent_huddle_playbooks(include_descendants: false, weeks_back: 6)
     start_date = weeks_back.weeks.ago
     organizations_to_search = include_descendants ? self_and_descendants : [self]

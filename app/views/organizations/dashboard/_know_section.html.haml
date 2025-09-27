@@ -44,23 +44,41 @@
     Assignments
   - assignments_primary_html = capture do
     %i.bi.bi-check-circle.me-2
-    Check-in on my 3 Assignments
+    Check-in on my #{current_person.active_assignments(organization).count} Assignments
   - assignments_secondary_html = capture do
     %i.bi.bi-list.me-1
-    Explore All 15 Assignments
+    Explore All #{organization.all_assignments_including_descendants.count} Assignments
   - assignments_tertiary_html = capture do
     %i.bi.bi-eye.me-1
-    2 Ready For Review
-  
+    #{current_person.assignments_ready_for_finalization_count(organization)} Ready For Review
+  - assignments_popover_content = capture do
+    Assignments break traditional job descriptions into specific mini-jobs that represent the specific outcomes we can truly rely on each other to deliver. 
+    %hr.mt-1.mb-1/
+    %strong Job Architecture
+    %p Think of assignments as the architectural blueprint of a seat - breaking down the big picture into specific, buildable components that can be rearranged as needed.
+    %br/
+    %strong Recipes
+    %p Assignments are ingredients in a role recipe - you can adjust the portions, swap ingredients, or add new ones to create the perfect dish for your team's needs.
+    %hr.mt-2.mb-2/
+    %br.mt-1/
+    Unlike broad job descriptions, assignments provide clear, measurable expectations that can be tracked and improved over time. This clarity transforms accountability from vague concepts into concrete, actionable responsibilities.
+    %br.mt-1/
+    When employees "wear many hats," assignments help identify exactly which hats they're wearing and how well they're wearing each one. 
+    %br.mt-1/
+    This specificity transforms vague job descriptions into precise, measurable expectations that evolve with changing needs.
+    
+
   = render 'organizations/dashboard/dashboard_card',
     header_html: assignments_header_html,
-    description: "Manage assignments and abilities",
-    primary_action_url: organization_assignments_path(organization),
+    header_popover_content: assignments_popover_content,
+    header_popover_title: "About Assignments",
+    description: ['Flexible assignments, focused feedback, better results', 'Replace job confusion with assignment clarity', 'Accountability that\'s clear and works'].sample,
+    primary_action_url: organization_assignment_tenure_path(organization, current_person),
     primary_action_html: assignments_primary_html,
     primary_action_style: 'urgent',
     secondary_action_url: organization_assignments_path(organization),
     secondary_action_html: assignments_secondary_html,
-    tertiary_action_url: organization_assignments_path(organization),
+    tertiary_action_url: organization_check_in_path(organization, current_person),
     tertiary_action_html: assignments_tertiary_html
 
   / Positions Card
