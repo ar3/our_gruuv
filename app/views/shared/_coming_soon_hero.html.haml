@@ -1,0 +1,15 @@
+.row.mb-5
+  .col-12
+    .card.border-0.shadow
+      .card-body.text-center.p-5
+        %h2.mb-3.text-primary
+          %i.bi.bi-tools.me-3
+          Let's Build This Together!
+        %p.text-muted.mb-4.fs-5 We're working on #{feature_name} and would love your input!
+        
+        / Primary Action - Extra Large
+        .mb-4
+          = link_to new_interest_submission_path, class: "btn btn-primary btn-xl w-100 py-4" do
+            %i.bi.bi-heart.me-3
+            Share Your Stories
+            %i.bi.bi-lightbulb.ms-2
