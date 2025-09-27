@@ -11,8 +11,19 @@
       
       / Primary Action
       .mb-4
-        = link_to primary_action_url, class: "btn btn-primary btn-lg w-100 py-3" do
-          = primary_action_html
+        - case primary_action_style
+        - when 'coming_soon'
+          = link_to primary_action_url, class: "btn btn-outline-secondary btn-lg w-100 py-3" do
+            = primary_action_html
+        - when 'not_urgent'
+          = link_to primary_action_url, class: "btn btn-outline-primary btn-lg w-100 py-3" do
+            = primary_action_html
+        - when 'urgent'
+          = link_to primary_action_url, class: "btn btn-primary btn-lg w-100 py-3" do
+            = primary_action_html
+        - else
+          = link_to primary_action_url, class: "btn btn-primary btn-lg w-100 py-3" do
+            = primary_action_html
       
       / Secondary Actions
       .row.g-2.mt-auto
