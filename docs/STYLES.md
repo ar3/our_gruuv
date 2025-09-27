@@ -114,7 +114,7 @@ All collapsible sections should use this consistent pattern for chevron rotation
 
 #### Examples in App:
 - Position index page (`/organizations/:id/positions`)
-- People growth page (`/people/:id/growth`)
+- People complete picture page (`/organizations/:org_id/people/:id/complete_picture`)
 - Assignment details page (`/people/:id/assignments/:id`)
 
 #### CSS Support:

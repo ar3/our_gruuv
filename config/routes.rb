@@ -115,6 +115,13 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
+    # People management
+    resources :people, module: :organizations, only: [:show] do
+      member do
+        get :complete_picture
+      end
+    end
+    
     # Positions management
     resources :positions, module: :organizations do
       member do
@@ -186,7 +193,6 @@ get '/login', to: 'auth#login', as: :login
     member do
       get :public
       get :teammate
-      get :growth
       get :check_in
       patch :finalize_check_in
       get 'execute_changes/:maap_snapshot_id', action: :execute_changes, as: :execute_changes

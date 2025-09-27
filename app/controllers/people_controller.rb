@@ -46,16 +46,6 @@ class PeopleController < ApplicationController
     @person_organization_accesses = person.person_organization_accesses.includes(:organization)
   end
 
-  def growth
-    authorize person, :manager?
-    # Growth view - detailed view for managers to see person's position, assignments, and milestones
-    @employment_tenures = person.employment_tenures.includes(:company, :position, :manager)
-                                 .order(started_at: :desc)
-                                 .decorate
-    @current_employment = @employment_tenures.find { |t| t.ended_at.nil? }
-    @current_organization = @current_employment&.company
-  end
-
   def check_in
     authorize person, :manager?
     # Check-In mode - for finalizing assignment check-ins and future 1:1 features

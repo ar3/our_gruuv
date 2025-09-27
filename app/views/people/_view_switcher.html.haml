@@ -31,20 +31,20 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be an active employee in the same organization to view the teammate version"}
       
     %li
-      - if action_name == 'growth'
+      - if action_name == 'complete_picture'
         .dropdown-item.text-muted
           %i.bi.bi-graph-up.me-2
-          Growth View (Active)
+          Complete Picture (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).can_view_manage_mode?
-        = link_to growth_person_path(@person), class: 'dropdown-item' do
+        = link_to complete_picture_organization_person_path(@person.current_organization_or_default, @person), class: 'dropdown-item' do
           %i.bi.bi-graph-up.me-2
-          Growth View
+          Complete Picture
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-graph-up.me-2
-          Growth View
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access growth features"}
+          Complete Picture
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"}
       
     %li
       - if action_name == 'show' && controller_name == 'check_ins'
