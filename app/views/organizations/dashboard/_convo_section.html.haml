@@ -10,6 +10,74 @@
       %small.text-muted.ms-3 Amplify collaboration
 
 .row.mt-4
-  = render 'organizations/dashboard/opportunities', organization: organization
-  = render 'organizations/dashboard/decisions', organization: organization
-  = render 'organizations/dashboard/huddles', organization: organization
+  / Opportunities Card
+  - opportunities_header_html = capture do
+    %i.bi.bi-lightbulb.me-2
+    Opportunities
+  - opportunities_primary_html = capture do
+    %i.bi.bi-clock.me-2
+    Coming Soon
+  - opportunities_secondary_html = capture do
+    %i.bi.bi-info.me-1
+    Learn
+  - opportunities_tertiary_html = capture do
+    %i.bi.bi-bell.me-1
+    Notify
+  
+  = render 'organizations/dashboard/dashboard_card',
+    header_html: opportunities_header_html,
+    description: "Continuously Improve w/ \"Good\" opportunities",
+    primary_action_url: good_issues_coming_soon_path,
+    primary_action_html: opportunities_primary_html,
+    secondary_action_url: good_issues_coming_soon_path,
+    secondary_action_html: opportunities_secondary_html,
+    tertiary_action_url: good_issues_coming_soon_path,
+    tertiary_action_html: opportunities_tertiary_html
+
+  / Decisions Card
+  - decisions_header_html = capture do
+    %i.bi.bi-gem.me-2
+    Decisions
+  - decisions_primary_html = capture do
+    %i.bi.bi-clock.me-2
+    Coming Soon
+  - decisions_secondary_html = capture do
+    %i.bi.bi-info.me-1
+    Learn
+  - decisions_tertiary_html = capture do
+    %i.bi.bi-bell.me-1
+    Notify
+  
+  = render 'organizations/dashboard/dashboard_card',
+    header_html: decisions_header_html,
+    description: "Group decision-making methodology",
+    primary_action_url: diverge_converge_coming_soon_path,
+    primary_action_html: decisions_primary_html,
+    secondary_action_url: diverge_converge_coming_soon_path,
+    secondary_action_html: decisions_secondary_html,
+    tertiary_action_url: diverge_converge_coming_soon_path,
+    tertiary_action_html: decisions_tertiary_html
+
+  / Huddles Card
+  - huddles_header_html = capture do
+    %i.bi.bi-people.me-2
+    Huddles
+  - huddles_primary_html = capture do
+    %i.bi.bi-eye.me-2
+    View All Huddles
+  - huddles_secondary_html = capture do
+    %i.bi.bi-plus.me-1
+    Create
+  - huddles_tertiary_html = capture do
+    %i.bi.bi-search.me-1
+    Search
+  
+  = render 'organizations/dashboard/dashboard_card',
+    header_html: huddles_header_html,
+    description: "Manage team huddles and feedback",
+    primary_action_url: huddles_path,
+    primary_action_html: huddles_primary_html,
+    secondary_action_url: new_huddle_path,
+    secondary_action_html: huddles_secondary_html,
+    tertiary_action_url: huddles_path,
+    tertiary_action_html: huddles_tertiary_html

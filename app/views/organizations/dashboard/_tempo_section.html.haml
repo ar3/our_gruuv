@@ -10,6 +10,74 @@
       %small.text-muted.ms-3 Highlight progress
 
 .row.mt-4
-  = render 'organizations/dashboard/signals', organization: organization
-  = render 'organizations/dashboard/hypotheses', organization: organization
-  = render 'organizations/dashboard/okr3s', organization: organization
+  / Signals Card
+  - signals_header_html = capture do
+    %i.bi.bi-stoplights-fill.me-2
+    Signals
+  - signals_primary_html = capture do
+    %i.bi.bi-clock.me-2
+    Coming Soon
+  - signals_secondary_html = capture do
+    %i.bi.bi-info.me-1
+    Learn
+  - signals_tertiary_html = capture do
+    %i.bi.bi-bell.me-1
+    Notify
+  
+  = render 'organizations/dashboard/dashboard_card',
+    header_html: signals_header_html,
+    description: "Team signals and metrics",
+    primary_action_url: team_signals_coming_soon_path,
+    primary_action_html: signals_primary_html,
+    secondary_action_url: team_signals_coming_soon_path,
+    secondary_action_html: signals_secondary_html,
+    tertiary_action_url: team_signals_coming_soon_path,
+    tertiary_action_html: signals_tertiary_html
+
+  / Hypotheses Card
+  - hypotheses_header_html = capture do
+    %i.bi.bi-flask.me-2
+    Hypotheses
+  - hypotheses_primary_html = capture do
+    %i.bi.bi-clock.me-2
+    Coming Soon
+  - hypotheses_secondary_html = capture do
+    %i.bi.bi-info.me-1
+    Learn
+  - hypotheses_tertiary_html = capture do
+    %i.bi.bi-bell.me-1
+    Notify
+  
+  = render 'organizations/dashboard/dashboard_card',
+    header_html: hypotheses_header_html,
+    description: "Hypothesis management",
+    primary_action_url: hypothesis_management_coming_soon_path,
+    primary_action_html: hypotheses_primary_html,
+    secondary_action_url: hypothesis_management_coming_soon_path,
+    secondary_action_html: hypotheses_secondary_html,
+    tertiary_action_url: hypothesis_management_coming_soon_path,
+    tertiary_action_html: hypotheses_tertiary_html
+
+  / OKR3s Card
+  - okr3s_header_html = capture do
+    %i.bi.bi-bullseye.me-2
+    OKR3s
+  - okr3s_primary_html = capture do
+    %i.bi.bi-clock.me-2
+    Coming Soon
+  - okr3s_secondary_html = capture do
+    %i.bi.bi-info.me-1
+    Learn
+  - okr3s_tertiary_html = capture do
+    %i.bi.bi-bell.me-1
+    Notify
+  
+  = render 'organizations/dashboard/dashboard_card',
+    header_html: okr3s_header_html,
+    description: "OKR3 methodology and tracking",
+    primary_action_url: okr3_management_coming_soon_path,
+    primary_action_html: okr3s_primary_html,
+    secondary_action_url: okr3_management_coming_soon_path,
+    secondary_action_html: okr3s_secondary_html,
+    tertiary_action_url: okr3_management_coming_soon_path,
+    tertiary_action_html: okr3s_tertiary_html

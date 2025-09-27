@@ -1,27 +1,26 @@
 .row.mb-5.mt-5
   .col-12.mb-5.mt-5
     %hr/
-  .col-12
-    .card.border-0.shadow
-      .card-body.text-center.p-5
-        %h2.mb-3.text-primary
-          %i.bi.bi-hexagon.me-3
-          =organization.display_name
-        %p.text-muted.mb-4.fs-5 Continuous improvement insights for product teams
-        
-        / Primary Action - Extra Large
-        .mb-4
-          = link_to observations_coming_soon_path, class: "btn btn-primary btn-xl w-100 py-4" do
-            %i.bi.bi-people.me-3
-            View Teammates
-        
-        / Secondary Actions
-        .row.g-3.mt-auto
-          .col-md-6
-            = link_to observations_coming_soon_path, class: "btn btn-outline-secondary btn-lg w-100 d-flex align-items-center justify-content-center", style: "min-height: 60px;" do
-              %i.bi.bi-clock.me-2
-              View All Teams
-          .col-md-6
-            = link_to observations_coming_soon_path, class: "btn btn-outline-secondary btn-lg w-100 d-flex align-items-center justify-content-center", style: "min-height: 60px;" do
-              %i.bi.bi-person.me-2
-              ???
+
+- organization_header_html = capture do
+  %i.bi.bi-hexagon.me-3
+  =organization.display_name
+- organization_primary_html = capture do
+  %i.bi.bi-people.me-3
+  View Teammates
+- organization_secondary_html = capture do
+  %i.bi.bi-clock.me-2
+  View All Teams
+- organization_tertiary_html = capture do
+  %i.bi.bi-person.me-2
+  ???
+
+= render 'organizations/dashboard/dashboard_hero_card',
+  header_html: organization_header_html,
+  description: "Continuous improvement insights for product teams",
+  primary_action_url: observations_coming_soon_path,
+  primary_action_html: organization_primary_html,
+  secondary_action_url: observations_coming_soon_path,
+  secondary_action_html: organization_secondary_html,
+  tertiary_action_url: observations_coming_soon_path,
+  tertiary_action_html: organization_tertiary_html

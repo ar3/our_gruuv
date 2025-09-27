@@ -1,0 +1,25 @@
+.row.mb-5.mt-5
+  .col-12
+    .card.border-0.shadow
+      .card-body.text-center.p-5
+        %h2.mb-3.text-primary
+          - if defined?(header_popover_content) && header_popover_content
+            %span{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-content" => header_popover_content, "data-bs-title" => header_popover_title, style: "cursor: pointer;"}
+              = header_html
+          - else
+            = header_html
+        %p.text-muted.mb-4.fs-5= description
+        
+        / Primary Action - Extra Large
+        .mb-4
+          = link_to primary_action_url, class: "btn btn-primary btn-xl w-100 py-4" do
+            = primary_action_html
+        
+        / Secondary Actions
+        .row.g-3.mt-auto
+          .col-md-6
+            = link_to secondary_action_url, class: "btn btn-outline-secondary btn-lg w-100 d-flex align-items-center justify-content-center", style: "min-height: 60px;" do
+              = secondary_action_html
+          .col-md-6
+            = link_to tertiary_action_url, class: "btn btn-outline-secondary btn-lg w-100 d-flex align-items-center justify-content-center", style: "min-height: 60px;" do
+              = tertiary_action_html
