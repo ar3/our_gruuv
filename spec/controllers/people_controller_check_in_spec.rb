@@ -7,7 +7,7 @@ RSpec.describe PeopleController, type: :controller do
   let!(:check_in) { create(:assignment_check_in, person: employee, assignment: assignment) }
 
   before do
-    sign_in manager
+    session[:current_person_id] = manager.id
     allow(controller).to receive(:current_person).and_return(manager)
   end
 
@@ -147,6 +147,145 @@ RSpec.describe PeopleController, type: :controller do
         patch :finalize_check_in, params: valid_params
         expect(response).to redirect_to(check_in_person_path(employee))
         expect(flash[:alert]).to eq('Check-in is not ready for finalization. Both employee and manager must complete their sections first.')
+      end
+    end
+  end
+
+  describe 'concurrent update protection' do
+    let(:check_in_data) do
+      {
+        'employee_check_in' => {
+          'actual_energy_percentage' => 80,
+          'employee_rating' => 'exceeding',
+          'employee_private_notes' => 'Employee notes',
+          'employee_personal_alignment' => 'love'
+        },
+        'manager_check_in' => {
+          'manager_rating' => 'meeting',
+          'manager_private_notes' => 'Manager notes'
+        }
+      }
+    end
+
+    context 'when employee updates their fields' do
+      before do
+        session[:current_person_id] = employee.id
+        allow(controller).to receive(:current_person).and_return(employee)
+      end
+
+      it 'only updates employee fields and preserves manager fields' do
+        # Set initial manager data
+        check_in.update!(
+          manager_rating: 'working_to_meet',
+          manager_private_notes: 'Original manager notes'
+        )
+
+        # Employee updates their fields
+        controller.send(:update_check_in_fields, check_in, check_in_data)
+
+        check_in.reload
+        # Employee fields should be updated
+        expect(check_in.actual_energy_percentage).to eq(80)
+        expect(check_in.employee_rating).to eq('exceeding')
+        expect(check_in.employee_private_notes).to eq('Employee notes')
+        expect(check_in.employee_personal_alignment).to eq('love')
+        
+        # Manager fields should be preserved
+        expect(check_in.manager_rating).to eq('working_to_meet')
+        expect(check_in.manager_private_notes).to eq('Original manager notes')
+      end
+
+      it 'does not update manager fields even if provided' do
+        # Set initial manager data
+        check_in.update!(
+          manager_rating: 'working_to_meet',
+          manager_private_notes: 'Original manager notes'
+        )
+
+        # Employee tries to update manager fields (should be ignored)
+        controller.send(:update_check_in_fields, check_in, check_in_data)
+
+        check_in.reload
+        # Manager fields should remain unchanged
+        expect(check_in.manager_rating).to eq('working_to_meet')
+        expect(check_in.manager_private_notes).to eq('Original manager notes')
+      end
+    end
+
+    context 'when manager updates their fields' do
+      before do
+        session[:current_person_id] = manager.id
+        allow(controller).to receive(:current_person).and_return(manager)
+        # Mock manager permissions
+        allow(controller).to receive(:policy).with(employee).and_return(
+          double(manage_assignments?: true)
+        )
+      end
+
+      it 'only updates manager fields and preserves employee fields' do
+        # Set initial employee data
+        check_in.update!(
+          actual_energy_percentage: 60,
+          employee_rating: 'working_to_meet',
+          employee_private_notes: 'Original employee notes',
+          employee_personal_alignment: 'neutral'
+        )
+
+        # Manager updates their fields
+        controller.send(:update_check_in_fields, check_in, check_in_data)
+
+        check_in.reload
+        # Manager fields should be updated
+        expect(check_in.manager_rating).to eq('meeting')
+        expect(check_in.manager_private_notes).to eq('Manager notes')
+        
+        # Employee fields should be preserved
+        expect(check_in.actual_energy_percentage).to eq(60)
+        expect(check_in.employee_rating).to eq('working_to_meet')
+        expect(check_in.employee_private_notes).to eq('Original employee notes')
+        expect(check_in.employee_personal_alignment).to eq('neutral')
+      end
+
+      it 'does not update employee fields even if provided' do
+        # Set initial employee data
+        check_in.update!(
+          actual_energy_percentage: 60,
+          employee_rating: 'working_to_meet',
+          employee_private_notes: 'Original employee notes',
+          employee_personal_alignment: 'neutral'
+        )
+
+        # Manager tries to update employee fields (should be ignored)
+        controller.send(:update_check_in_fields, check_in, check_in_data)
+
+        check_in.reload
+        # Employee fields should remain unchanged
+        expect(check_in.actual_energy_percentage).to eq(60)
+        expect(check_in.employee_rating).to eq('working_to_meet')
+        expect(check_in.employee_private_notes).to eq('Original employee notes')
+        expect(check_in.employee_personal_alignment).to eq('neutral')
+      end
+    end
+
+    context 'when admin updates fields' do
+      let(:admin) { create(:person, og_admin: true) }
+
+      before do
+        session[:current_person_id] = admin.id
+        allow(controller).to receive(:current_person).and_return(admin)
+      end
+
+      it 'can update both employee and manager fields' do
+        controller.send(:update_check_in_fields, check_in, check_in_data)
+
+        check_in.reload
+        # Both employee and manager fields should be updated
+        expect(check_in.actual_energy_percentage).to eq(80)
+        expect(check_in.employee_rating).to eq('exceeding')
+        expect(check_in.employee_private_notes).to eq('Employee notes')
+        expect(check_in.employee_personal_alignment).to eq('love')
+        expect(check_in.manager_rating).to eq('meeting')
+        expect(check_in.manager_private_notes).to eq('Manager notes')
       end
     end
   end

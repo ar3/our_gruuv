@@ -1,7 +1,8 @@
 class MaapChangeDetectionService
-  def initialize(person:, maap_snapshot:)
+  def initialize(person:, maap_snapshot:, current_user: nil)
     @person = person
     @maap_snapshot = maap_snapshot
+    @current_user = current_user
   end
 
   # Returns a hash with counts of changes by category
@@ -316,8 +317,10 @@ class MaapChangeDetectionService
   def check_in_has_changes?(assignment, proposed_data)
     current_check_in = AssignmentCheckIn.where(person: person, assignment: assignment).open.first
     
-    # Check employee check-in changes
-    if proposed_data['employee_check_in']
+    # Only check for changes in fields the current user is authorized to modify
+    
+    # Check employee check-in changes (only if current user can update employee fields)
+    if proposed_data['employee_check_in'] && can_update_employee_check_in_fields?(current_check_in)
       employee_changed = if current_check_in
         current_check_in.actual_energy_percentage != proposed_data['employee_check_in']['actual_energy_percentage'] ||
         current_check_in.employee_rating != proposed_data['employee_check_in']['employee_rating'] ||
@@ -330,8 +333,8 @@ class MaapChangeDetectionService
       return true if employee_changed
     end
     
-    # Check manager check-in changes
-    if proposed_data['manager_check_in']
+    # Check manager check-in changes (only if current user can update manager fields)
+    if proposed_data['manager_check_in'] && can_update_manager_check_in_fields?(current_check_in)
       manager_changed = if current_check_in
         current_check_in.manager_rating != proposed_data['manager_check_in']['manager_rating'] ||
         current_check_in.manager_private_notes != proposed_data['manager_check_in']['manager_private_notes'] ||
@@ -342,8 +345,8 @@ class MaapChangeDetectionService
       return true if manager_changed
     end
     
-    # Check official check-in changes
-    if proposed_data['official_check_in']
+    # Check official check-in changes (only if current user can finalize)
+    if proposed_data['official_check_in'] && can_finalize_check_in?(current_check_in)
       official_changed = if current_check_in
         current_check_in.official_rating != proposed_data['official_check_in']['official_rating'] ||
         current_check_in.shared_notes != proposed_data['official_check_in']['shared_notes'] ||
@@ -356,6 +359,74 @@ class MaapChangeDetectionService
     end
     
     false
+  end
+
+  private
+
+  attr_reader :person, :maap_snapshot, :current_user
+
+  def can_update_employee_check_in_fields?(check_in)
+    # Employee can update their own check-in fields
+    return false unless current_user
+    
+    # If check_in is nil, we're creating a new check-in
+    # Employee can create check-ins for themselves
+    return true if check_in.nil? && current_user == person
+    
+    # If check_in exists, check if employee can update their own fields
+    return false unless check_in&.person
+    current_user == check_in.person || admin_bypass?
+  end
+
+  def can_update_manager_check_in_fields?(check_in)
+    # Manager can update manager fields if they have management permissions
+    return false unless current_user
+    return true if admin_bypass?
+    
+    # If person is nil, we can't check permissions
+    return false unless person
+    
+    # If check_in is nil, we're creating a new check-in
+    # Manager can create check-ins for people they manage
+    if check_in.nil?
+      policy = PersonPolicy.new(current_user, person)
+      return policy.manage_assignments?
+    end
+    
+    # If check_in exists, check if manager can update manager fields
+    return false unless check_in&.person
+    
+    # Check if current user can manage this person's assignments
+    # We need to create a policy instance to check permissions
+    policy = PersonPolicy.new(current_user, check_in.person)
+    policy.manage_assignments?
+  end
+
+  def can_finalize_check_in?(check_in)
+    # Only managers can finalize check-ins
+    return false unless current_user
+    return true if admin_bypass?
+    
+    # If person is nil, we can't check permissions
+    return false unless person
+    
+    # If check_in is nil, we're creating a new check-in
+    # Manager can finalize check-ins for people they manage
+    if check_in.nil?
+      policy = PersonPolicy.new(current_user, person)
+      return policy.manage_assignments?
+    end
+    
+    # If check_in exists, check if manager can finalize
+    return false unless check_in&.person
+    
+    # Check if current user can manage this person's assignments
+    policy = PersonPolicy.new(current_user, check_in.person)
+    policy.manage_assignments?
+  end
+
+  def admin_bypass?
+    current_user&.og_admin?
   end
 
   def milestone_has_changes?(milestone)

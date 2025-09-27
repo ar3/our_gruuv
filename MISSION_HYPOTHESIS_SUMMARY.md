@@ -160,3 +160,5 @@ The framework is designed to be:
 
 This is truly "deep simple" - easy to understand and implement, but powerful for sophisticated strategic thinking and growth planning.
 
+
+

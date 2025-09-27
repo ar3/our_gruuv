@@ -175,6 +175,10 @@ class PeopleController < ApplicationController
   end
 
   def execute_changes
+    Rails.logger.error "DEBUG: params = #{params.inspect}"
+    Rails.logger.error "DEBUG: person = #{person.inspect}"
+    Rails.logger.error "DEBUG: maap_snapshot = #{maap_snapshot.inspect}"
+    
     # Check if current user is the creator of the MaapSnapshot
     unless maap_snapshot.created_by == current_person
       redirect_to organization_assignment_tenure_path(person.current_organization_or_default, person), 
@@ -318,8 +322,10 @@ class PeopleController < ApplicationController
   def check_in_has_changes?(assignment, proposed_data)
     current_check_in = AssignmentCheckIn.where(person: person, assignment: assignment).open.first
     
-    # Check employee check-in changes
-    if proposed_data['employee_check_in']
+    # Only check for changes in fields the current user is authorized to modify
+    
+    # Check employee check-in changes (only if current user can update employee fields)
+    if proposed_data['employee_check_in'] && can_update_employee_check_in_fields?(current_check_in)
       employee_changed = if current_check_in
         current_check_in.actual_energy_percentage != proposed_data['employee_check_in']['actual_energy_percentage'] ||
         current_check_in.employee_rating != proposed_data['employee_check_in']['employee_rating'] ||
@@ -332,8 +338,8 @@ class PeopleController < ApplicationController
       return true if employee_changed
     end
     
-    # Check manager check-in changes
-    if proposed_data['manager_check_in']
+    # Check manager check-in changes (only if current user can update manager fields)
+    if proposed_data['manager_check_in'] && can_update_manager_check_in_fields?(current_check_in)
       manager_changed = if current_check_in
         current_check_in.manager_rating != proposed_data['manager_check_in']['manager_rating'] ||
         current_check_in.manager_private_notes != proposed_data['manager_check_in']['manager_private_notes'] ||
@@ -345,8 +351,8 @@ class PeopleController < ApplicationController
       return true if manager_changed
     end
     
-    # Check official check-in changes
-    if proposed_data['official_check_in']
+    # Check official check-in changes (only if current user can finalize)
+    if proposed_data['official_check_in'] && can_finalize_check_in?(current_check_in)
       official_changed = if current_check_in
         current_check_in.official_rating != proposed_data['official_check_in']['official_rating'] ||
         current_check_in.shared_notes != proposed_data['official_check_in']['shared_notes'] ||
@@ -382,7 +388,7 @@ class PeopleController < ApplicationController
   helper_method :employment_has_changes?, :assignment_has_changes?, :milestone_has_changes?, :check_in_has_changes?, :can_see_manager_private_notes?
 
   def change_detection_service
-    @change_detection_service ||= MaapChangeDetectionService.new(person: person, maap_snapshot: maap_snapshot)
+    @change_detection_service ||= MaapChangeDetectionService.new(person: person, maap_snapshot: maap_snapshot, current_user: current_person)
   end
 
   def execute_maap_changes!
@@ -448,51 +454,96 @@ class PeopleController < ApplicationController
   end
 
   def update_check_in_fields(check_in, check_in_data)
-    # Update employee check-in fields
-    if check_in_data['employee_check_in']
-      employee_data = check_in_data['employee_check_in']
-      check_in.update!(
-        actual_energy_percentage: employee_data['actual_energy_percentage'],
-        employee_rating: employee_data['employee_rating'],
-        employee_private_notes: employee_data['employee_private_notes'],
-        employee_personal_alignment: employee_data['employee_personal_alignment']
-      )
-      
-      if employee_data['employee_completed_at']
-        check_in.complete_employee_side!
-      end
+    # Only update fields that the current user is authorized to modify
+    # This prevents concurrent updates from overwriting each other
+    
+    # Update employee check-in fields (only if current user is the employee)
+    if check_in_data['employee_check_in'] && can_update_employee_check_in_fields?(check_in)
+      update_employee_check_in_fields(check_in, check_in_data['employee_check_in'])
     end
     
-    # Update manager check-in fields
-    if check_in_data['manager_check_in']
-      manager_data = check_in_data['manager_check_in']
-      check_in.update!(
-        manager_rating: manager_data['manager_rating'],
-        manager_private_notes: manager_data['manager_private_notes']
-      )
-      
-      if manager_data['manager_completed_at']
-        check_in.complete_manager_side!(completed_by: current_person)
-      end
+    # Update manager check-in fields (only if current user is authorized manager)
+    if check_in_data['manager_check_in'] && can_update_manager_check_in_fields?(check_in)
+      update_manager_check_in_fields(check_in, check_in_data['manager_check_in'])
     end
     
-    # Update official check-in fields
-    if check_in_data['official_check_in']
-      official_data = check_in_data['official_check_in']
-      check_in.update!(
-        official_rating: official_data['official_rating'],
-        shared_notes: official_data['shared_notes']
-      )
-      
-      if official_data['official_check_in_completed_at']
-        check_in.finalize_check_in!(final_rating: official_data['official_rating'], finalized_by: current_person)
-      end
+    # Update official check-in fields (only if current user can finalize)
+    if check_in_data['official_check_in'] && can_finalize_check_in?(check_in)
+      update_official_check_in_fields(check_in, check_in_data['official_check_in'])
+    end
+  end
+
+  def admin_bypass?
+    current_person&.og_admin?
+  end
+
+  private
+
+  def can_update_employee_check_in_fields?(check_in)
+    # Employee can update their own check-in fields
+    current_person == check_in.person || admin_bypass?
+  end
+
+  def can_update_manager_check_in_fields?(check_in)
+    # Manager can update manager fields if they have management permissions
+    return true if admin_bypass?
+    
+    # Employee cannot update their own manager fields
+    return false if current_person == check_in.person
+    
+    # Check if current user can manage this person's assignments
+    policy(check_in.person).manage_assignments?
+  end
+
+  def can_finalize_check_in?(check_in)
+    # Only managers can finalize check-ins
+    return true if admin_bypass?
+    
+    # Check if current user can manage this person's assignments
+    policy(check_in.person).manage_assignments?
+  end
+
+  def update_employee_check_in_fields(check_in, employee_data)
+    check_in.update!(
+      actual_energy_percentage: employee_data['actual_energy_percentage'],
+      employee_rating: employee_data['employee_rating'],
+      employee_private_notes: employee_data['employee_private_notes'],
+      employee_personal_alignment: employee_data['employee_personal_alignment']
+    )
+    
+    if employee_data['employee_completed_at']
+      check_in.complete_employee_side!
+    end
+  end
+
+  def update_manager_check_in_fields(check_in, manager_data)
+    check_in.update!(
+      manager_rating: manager_data['manager_rating'],
+      manager_private_notes: manager_data['manager_private_notes']
+    )
+    
+    if manager_data['manager_completed_at']
+      check_in.complete_manager_side!(completed_by: current_person)
+    end
+  end
+
+  def update_official_check_in_fields(check_in, official_data)
+    check_in.update!(
+      official_rating: official_data['official_rating'],
+      shared_notes: official_data['shared_notes']
+    )
+    
+    if official_data['official_check_in_completed_at']
+      check_in.finalize_check_in!(final_rating: official_data['official_rating'], finalized_by: current_person)
     end
   end
 
   def authorize_maap_snapshot_actions
     # Only authorize for MAAP snapshot actions
     return unless %w[execute_changes process_changes].include?(action_name)
+    
+    # Ensure person is available before authorization
+    return unless person.present?
     
     authorize person, :manager?, policy_class: PersonPolicy
   end
