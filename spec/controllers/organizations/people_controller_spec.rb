@@ -21,10 +21,15 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       let(:position) { create(:position, position_type: position_type, position_level: position_level) }
       let(:active_employment) { create(:employment_tenure, person: person, company: organization, position: position, started_at: 6.months.ago, ended_at: nil) }
       let(:past_employment) { create(:employment_tenure, person: person, company: organization, position: position, started_at: 1.year.ago, ended_at: 8.months.ago) }
+      
+      # Add assignments for this organization
+      let(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
+      let(:assignment_tenure) { create(:assignment_tenure, person: person, assignment: assignment, started_at: 3.months.ago, ended_at: nil) }
 
       before do
         active_employment
         past_employment
+        assignment_tenure
       end
 
       it 'returns http success' do
@@ -55,6 +60,17 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         get :complete_picture, params: { organization_id: organization.id, id: person.id }
         expect(assigns(:current_organization)).to be_a(Organization)
         expect(assigns(:current_organization).id).to eq(organization.id)
+      end
+
+      it 'assigns filtered assignment tenures for the organization' do
+        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        assignment_tenures = assigns(:assignment_tenures)
+        expect(assignment_tenures).to be_present
+        # All assignments should belong to the organization
+        assignment_tenures.each do |tenure|
+          expect(tenure.assignment.company).to be_a(Organization)
+          expect(tenure.assignment.company.id).to eq(organization.id)
+        end
       end
 
       it 'includes associated data to avoid N+1 queries' do
@@ -92,9 +108,9 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         get :complete_picture, params: { organization_id: organization.id, id: person.id }
         
         employment_tenures = assigns(:employment_tenures)
-        expect(employment_tenures).to include(past_employment1, past_employment2)
+        expect(employment_tenures).to include(past_employment1)
+        expect(employment_tenures).not_to include(past_employment2) # Different organization
         expect(employment_tenures.first).to eq(past_employment1) # Most recent first
-        expect(employment_tenures.last).to eq(past_employment2)
       end
 
       it 'assigns nil for current employment tenure' do
@@ -104,7 +120,8 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
       it 'assigns nil for current organization' do
         get :complete_picture, params: { organization_id: organization.id, id: person.id }
-        expect(assigns(:current_organization)).to be_nil
+        expect(assigns(:current_organization)).to be_a(Organization)
+        expect(assigns(:current_organization).id).to eq(organization.id)
       end
     end
 
@@ -130,7 +147,8 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
       it 'assigns nil for current organization' do
         get :complete_picture, params: { organization_id: organization.id, id: person.id }
-        expect(assigns(:current_organization)).to be_nil
+        expect(assigns(:current_organization)).to be_a(Organization)
+        expect(assigns(:current_organization).id).to eq(organization.id)
       end
     end
 
@@ -160,18 +178,19 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         get :complete_picture, params: { organization_id: organization.id, id: person.id }
         
         employment_tenures = assigns(:employment_tenures)
-        expect(employment_tenures).to include(active_employment1, active_employment2)
+        expect(employment_tenures).to include(active_employment1)
+        expect(employment_tenures).not_to include(active_employment2) # Different organization
       end
 
-      it 'assigns the most recent active employment as current' do
+      it 'assigns the active employment from the organization as current' do
         get :complete_picture, params: { organization_id: organization.id, id: person.id }
-        expect(assigns(:current_employment)).to eq(active_employment2) # Started 3 months ago vs 6 months ago
+        expect(assigns(:current_employment)).to eq(active_employment1) # Only one from this organization
       end
 
-      it 'assigns the organization from the most recent active employment' do
+      it 'assigns the organization from the route' do
         get :complete_picture, params: { organization_id: organization.id, id: person.id }
         expect(assigns(:current_organization)).to be_a(Organization)
-        expect(assigns(:current_organization).id).to eq(other_organization.id)
+        expect(assigns(:current_organization).id).to eq(organization.id)
       end
     end
 

@@ -203,6 +203,24 @@ class Person < ApplicationRecord
     employment_tenures.active.where(company: organization).exists?
   end
 
+  def employment_status_text_for(organization)
+    # Check if person has any employment tenure with this organization
+    tenures = employment_tenures.where(company: organization).order(started_at: :desc)
+    
+    if tenures.empty?
+      # Never been employed
+      "Never been employed at #{organization.display_name}"
+    elsif active_employment_tenure_in?(organization)
+      # Currently employed
+      current_tenure = tenures.active.first
+      "#{current_tenure.position.display_name}"
+    else
+      # Previously employed but not currently
+      last_tenure = tenures.first
+      "Last employed #{time_ago_in_words(last_tenure.ended_at)} as a #{last_tenure.position.display_name}"
+    end
+  end
+
   def in_managerial_hierarchy_of?(other_person)
     return false unless current_organization
     

@@ -54,7 +54,7 @@
         %p.mb-0 This person does not have an active employment tenure with a position.
 
 / Active Assignment Tenures Section
-- if @person.assignment_tenures.active.any?
+- if @assignment_tenures.any?
   .card.mb-4{ role: "region", "aria-labelledby": "assignments-section" }
     .card-header
       %h5.mb-0{ id: "assignments-section" }
@@ -66,13 +66,13 @@
             %small.text-muted (Hide assignments)
           %span#assignmentsCollapseText.collapsed
             %i.bi.bi-chevron-down
-            %small.text-muted="(Show #{pluralize(@person.assignment_tenures.active.count, 'assignment')})"
+            %small.text-muted="(Show #{pluralize(@assignment_tenures.count, 'assignment')})"
     .card-body
       .collapse.show#assignmentsCollapse
         %p.text-muted.mb-3
-          %em These are the specific assignments this person is currently working on.
+          %em These are the specific assignments this person is currently working on for #{@current_organization.display_name}.
         
-        - @person.assignment_tenures.active.includes(:assignment).each_with_index do |tenure, index|
+        - @assignment_tenures.each_with_index do |tenure, index|
           - if index > 0
             %hr.my-4
           
@@ -245,7 +245,7 @@
                         Manage Tenures
 
 / Milestones Section
-- if @person.person_milestones.any?
+- if @person_milestones.any?
   .card.mb-4{ role: "region", "aria-labelledby": "milestones-section" }
     .card-header
       %h5.mb-0{ id: "milestones-section" }
@@ -257,15 +257,15 @@
             %small.text-muted (Hide milestones)
           %span#milestonesCollapseText.collapsed
             %i.bi.bi-chevron-down
-            %small.text-muted="(Show #{pluralize(@person.person_milestones.count, 'milestone')})"
+            %small.text-muted="(Show #{pluralize(@person_milestones.count, 'milestone')})"
     .card-body
       .collapse.show#milestonesCollapse
         %p.text-muted.mb-3
-          %em These are the ability milestones this person has achieved.
+          %em These are the ability milestones this person has achieved for #{@current_organization.display_name}.
         
         .row
           .col-md-8
-            - @person.person_milestones.includes(:ability).each_with_index do |milestone, index|
+            - @person_milestones.each_with_index do |milestone, index|
               - if index > 0
                 %hr.my-3
               
@@ -286,14 +286,14 @@
                 Create New Ability
 
 / No Data State
-- if @current_employment&.position&.position_assignments&.empty? && @person.person_milestones.empty? && @person.assignment_tenures.active.empty?
+- if @current_employment&.position&.position_assignments&.empty? && @person_milestones.empty? && @assignment_tenures.empty?
   .alert.alert-info
     %h6.mb-2
       %i.bi.bi-info-circle.me-2
       No Growth Data Available
-    %p.mb-2 This person has no current assignments, milestones, or assignment tenures to display.
+    %p.mb-2 This person has no current assignments, milestones, or assignment tenures to display for #{@current_organization.display_name}.
     = link_to "Edit Position", edit_organization_position_path(@current_organization, @current_employment.position), class: "btn btn-info btn-sm" if @current_employment&.position
 
 .mt-5
   %p.text-muted
-    %em This complete picture view provides a comprehensive overview of the person's current position, assignments, and achieved milestones for development planning and performance management.
+    %em This complete picture view provides a comprehensive overview of the person's current position, assignments, and achieved milestones for #{@current_organization.display_name} for development planning and performance management.
