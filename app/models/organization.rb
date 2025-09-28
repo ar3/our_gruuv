@@ -96,6 +96,10 @@ class Organization < ApplicationRecord
     position_types.count
   end
 
+  def seats_count
+    seats.count
+  end
+
   def huddle_participants
     # People who have participated in huddles within this organization and all child organizations
     Person

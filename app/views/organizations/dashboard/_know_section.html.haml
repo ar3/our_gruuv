@@ -90,10 +90,10 @@
     = current_person.employment_status_text_for(organization)
   - positions_secondary_html = capture do
     %i.bi.bi-list.me-1
-    View all #{pluralize(organization.position_types_count, 'Position Type')}
+    #{pluralize(organization.position_types_count, 'Position Type')}
   - positions_tertiary_html = capture do
-    %i.bi.bi-search.me-1
-    Search
+    %i.bi.bi-people.me-1
+    #{pluralize(organization.seats_count, 'Seat')}
   
   = render 'organizations/dashboard/dashboard_card',
     header_html: positions_header_html,
@@ -103,5 +103,5 @@
     primary_action_style: 'not_urgent',
     secondary_action_url: organization_positions_path(organization),
     secondary_action_html: positions_secondary_html,
-    tertiary_action_url: organization_positions_path(organization),
+    tertiary_action_url: organization_seats_path(organization),
     tertiary_action_html: positions_tertiary_html
