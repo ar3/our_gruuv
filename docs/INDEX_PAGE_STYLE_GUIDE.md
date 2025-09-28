@@ -20,14 +20,21 @@ This document defines the standard style guide for all index pages in the OurGru
 ### 2. Header Section
 - **Title**: Use `content_for :header` with a flex container
 - **Plus Button**: Add a plus button next to the title for creating new objects
+- **Authorization**: Include conditional logic for permission-based button states
 
 ```haml
 - content_for :header do
-  .d-flex.justify-content-between.align-items-center
-    %h1.mb-0 
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
       [Page Title]
-      = link_to new_[resource]_path, class: "btn btn-primary" do
-        %i.bi.bi-plus
+    .d-flex.align-items-center
+      - if policy([Model]).create?
+        = link_to new_[resource]_path, class: "btn btn-primary ml-2" do
+          %i.bi.bi-plus
+      - else
+        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+          %i.bi.bi-plus
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need [specific permission] to perform this action"}
 ```
 
 ### 3. Header Action Section
@@ -161,6 +168,8 @@ This document defines the standard style guide for all index pages in the OurGru
 4. **Accessibility**: Include proper ARIA labels and semantic HTML
 5. **Consistency**: Follow the same pattern across all index pages
 6. **Back Link Styling**: Use the `go-back-link` CSS class instead of inline styles for consistency
+7. **Header Layout**: Use `.d-flex.align-items-center` with proper spacing (`me-2` on title, `ml-2` on button)
+8. **Authorization**: Always include conditional logic for create button permissions with tooltip warnings
 
 ## Examples
 

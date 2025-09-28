@@ -146,6 +146,41 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
 - **Header spacing**: `mb-2` for header row, `mb-4` for back link
 - **Content spacing**: `mt-3` for content within sections
 
+## Authorization UX Patterns
+
+### Index Page Header with Create Button
+For index pages, use this header structure with conditional create button:
+
+```haml
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      [Page Title]
+    .d-flex.align-items-center
+      - if policy([Model]).create?
+        = link_to new_[resource]_path, class: "btn btn-primary ml-2" do
+          %i.bi.bi-plus
+      - else
+        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+          %i.bi.bi-plus
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need [specific permission] to perform this action"}
+```
+
+#### Key Principles:
+- **Flex layout**: Use `.d-flex.align-items-center` for proper vertical alignment
+- **Title spacing**: Add `me-2` to title for proper spacing from button
+- **Button container**: Wrap button logic in `.d-flex.align-items-center` for consistent alignment
+- **Plus icon only**: Use only the `bi-plus` icon for create buttons (no text) - follows Material Design FAB pattern
+- **Warning icon outside button**: Place warning icon next to the disabled button, not inside it
+- **Clear messaging**: Tooltip explains exactly what permission is needed
+- **Visual hierarchy**: Disabled button shows the action, warning icon explains the restriction
+- **Consistent styling**: Use `opacity: 0.6` and `cursor: not-allowed` for disabled state
+
+### Bootstrap Components
+- **No manual initialization**: All Bootstrap components (tooltips, collapse, popovers) are automatically initialized in the global JavaScript file
+- **Use standard attributes**: `data-bs-toggle`, `data-bs-title`, etc. work out of the box
+- **No custom JavaScript**: Avoid adding initialization code in individual views
+
 ## Implementation Checklist
 
 When creating or updating pages, ensure:
@@ -155,5 +190,7 @@ When creating or updating pages, ensure:
 - [ ] No colored headers - clean and simple
 - [ ] Consistent button patterns and spacing
 - [ ] Collapse elements use standard pattern (anchor tag + two spans + two icons)
+- [ ] Authorization UX follows warning icon pattern (outside button)
+- [ ] No manual Bootstrap component initialization
 - [ ] Responsive design considerations
 - [ ] Semantic color usage only
