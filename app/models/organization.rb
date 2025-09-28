@@ -92,6 +92,10 @@ class Organization < ApplicationRecord
     Position.joins(:position_type).where(position_types: { organization: self })
   end
 
+  def position_types_count
+    position_types.count
+  end
+
   def huddle_participants
     # People who have participated in huddles within this organization and all child organizations
     Person

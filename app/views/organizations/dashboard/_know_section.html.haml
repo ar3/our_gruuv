@@ -44,13 +44,13 @@
     Assignments
   - assignments_primary_html = capture do
     %i.bi.bi-check-circle.me-2
-    Check-in on my #{current_person.active_assignments(organization).count} Assignments
+    Check-in on my #{pluralize(current_person.active_assignments(organization).count, 'Assignment')}
   - assignments_secondary_html = capture do
     %i.bi.bi-list.me-1
-    Explore All #{organization.all_assignments_including_descendants.count} Assignments
+    Explore All #{pluralize(organization.all_assignments_including_descendants.count, 'Assignment')}
   - assignments_tertiary_html = capture do
     %i.bi.bi-eye.me-1
-    #{current_person.assignments_ready_for_finalization_count(organization)} Ready For Review
+    #{pluralize(current_person.assignments_ready_for_finalization_count(organization), 'Assignment')} Ready For Review
   - assignments_popover_content = capture do
     Assignments break traditional job descriptions into specific mini-jobs that represent the specific outcomes we can truly rely on each other to deliver. 
     %hr.mt-1.mb-1/
@@ -89,8 +89,8 @@
     %i.bi.bi-eye.me-2
     = current_person.employment_status_text_for(organization)
   - positions_secondary_html = capture do
-    %i.bi.bi-plus.me-1
-    Add
+    %i.bi.bi-list.me-1
+    View all #{pluralize(organization.position_types_count, 'Position Type')}
   - positions_tertiary_html = capture do
     %i.bi.bi-search.me-1
     Search
