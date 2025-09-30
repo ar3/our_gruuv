@@ -120,8 +120,6 @@ get '/login', to: 'auth#login', as: :login
       member do
         get :complete_picture
         get :teammate
-        get :check_in
-        patch :finalize_check_in
         get 'execute_changes/:maap_snapshot_id', action: :execute_changes, as: :execute_changes
         post 'process_changes/:maap_snapshot_id', action: :process_changes, as: :process_changes
         post :update_permission

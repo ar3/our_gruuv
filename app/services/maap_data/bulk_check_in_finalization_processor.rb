@@ -148,17 +148,28 @@ module MaapData
                          @form_params["check_in_data"][assignment_id.to_s]&.key?("manager_complete"))
       
       # Also include if manager_complete is explicitly set (even to false/0)
-      has_explicit_manager_complete = !@form_params["check_in_#{assignment_id}_manager_complete"].nil?
+      has_explicit_manager_complete = !@form_params["check_in_#{assignment_id}_manager_complete"].nil? || 
+                                      !@form_params["check_in_#{check_in_id}_manager_complete"].nil?
       
       if has_form_changes || has_explicit_manager_complete || current_check_in
         
-        {
+        result = {
           manager_private_notes: current_check_in&.manager_private_notes,
           manager_rating: manager_rating.present? ? manager_rating : current_check_in&.manager_rating,
-          shared_notes: shared_notes.present? ? shared_notes : current_check_in&.shared_notes,
-          manager_completed_at: manager_complete == true ? Time.current : current_check_in&.manager_completed_at&.strftime('%Y-%m-%d %H:%M:%S'),
-          manager_completed_by_id: manager_complete == true ? @form_params[:created_by_id] : current_check_in&.manager_completed_by_id
+          shared_notes: shared_notes.present? ? shared_notes : current_check_in&.shared_notes
         }
+        
+        # Only include manager completion fields if explicitly set OR if there's current data
+        if has_explicit_manager_complete
+          result[:manager_completed_at] = manager_complete == true ? Time.current : nil
+          result[:manager_completed_by_id] = manager_complete == true ? @form_params[:created_by_id] : nil
+        elsif current_check_in
+          # Preserve existing manager completion state when not explicitly set
+          result[:manager_completed_at] = current_check_in.manager_completed_at&.strftime('%Y-%m-%d %H:%M:%S')
+          result[:manager_completed_by_id] = current_check_in.manager_completed_by_id
+        end
+        
+        result
       else
         nil
       end
@@ -169,6 +180,7 @@ module MaapData
       # Handle both bulk finalization format (check_in_#{check_in_id}_*) and regular format (check_in_#{assignment_id}_*)
       check_in_id = current_check_in&.id
       
+      
       # For bulk finalization, if both employee and manager are completed, we should finalize
       # unless explicitly told not to
       if @form_params["check_in_data"].present?
@@ -177,8 +189,16 @@ module MaapData
           official_rating = check_in_data["final_rating"]
           shared_notes = check_in_data["shared_notes"]
           # For bulk finalization, finalize if both sides are completed and we have a rating
-          official_complete = (check_in_data["close_rating"] == true || check_in_data["close_rating"] == "true") ||
-                             (official_rating.present? && current_check_in&.employee_completed_at.present? && current_check_in&.manager_completed_at.present?)
+          # Respect close_rating when it's explicitly set
+          official_complete = if check_in_data["close_rating"] == true || check_in_data["close_rating"] == "true"
+            true   # Explicitly checking
+          elsif check_in_data.key?("close_rating") && (check_in_data["close_rating"] == false || check_in_data["close_rating"] == "false")
+            false  # Explicitly unchecking - don't finalize (for manual uncompleting)
+          else
+            # Default behavior: finalize if both sides are completed and we have a rating
+            # This handles close_rating = nil (not explicitly set, e.g. bulk finalization form)
+            official_rating.present? && current_check_in&.employee_completed_at.present? && current_check_in&.manager_completed_at.present?
+          end
         else
           official_rating = nil
           shared_notes = nil
@@ -190,13 +210,33 @@ module MaapData
           official_rating = @form_params["check_in_#{assignment_id}_final_rating"] || @form_params["check_in_#{assignment_id}_official_rating"]
           shared_notes = @form_params["check_in_#{assignment_id}_shared_notes"]
           # For bulk finalization, finalize if both sides are completed and we have a rating
-          official_complete = @form_params["check_in_#{assignment_id}_close_rating"] == "true" || 
-                             @form_params["check_in_#{assignment_id}_official_complete"] == "1" ||
-                             (official_rating.present? && current_check_in&.employee_completed_at.present? && current_check_in&.manager_completed_at.present?)
+          # Respect close_rating when it's explicitly set
+          official_complete = if @form_params["check_in_#{assignment_id}_close_rating"] == "true" || 
+                @form_params["check_in_#{assignment_id}_official_complete"] == "1"
+            true   # Explicitly checking
+          elsif @form_params["check_in_#{assignment_id}_close_rating"] == "false"
+            false  # Explicitly unchecking - don't finalize
+          else
+            # Default behavior: finalize if both sides are completed and we have a rating
+            # This handles close_rating = nil (not explicitly set)
+            official_rating.present? && current_check_in&.employee_completed_at.present? && current_check_in&.manager_completed_at.present?
+          end
         else
           official_rating = @form_params["check_in_#{check_in_id}_final_rating"] || @form_params["check_in_#{assignment_id}_official_rating"]
           shared_notes = @form_params["check_in_#{check_in_id}_shared_notes"] || @form_params["check_in_#{assignment_id}_shared_notes"]
-          official_complete = @form_params["check_in_#{check_in_id}_close_rating"] == "true" || @form_params["check_in_#{assignment_id}_official_complete"] == "1"
+          # For bulk finalization, finalize if both sides are completed and we have a rating
+          # Respect close_rating when it's explicitly set
+          official_complete = if @form_params["check_in_#{check_in_id}_close_rating"] == "true" || 
+                @form_params["check_in_#{assignment_id}_official_complete"] == "1"
+            true   # Explicitly checking
+          elsif @form_params["check_in_#{check_in_id}_close_rating"] == "false"
+            false  # Explicitly unchecking - don't finalize
+          else
+            # Default behavior: finalize if both sides are completed and we have a rating
+            # This handles close_rating = nil (not explicitly set)
+            official_rating.present? && current_check_in&.employee_completed_at.present? && current_check_in&.manager_completed_at.present?
+          end
+          
         end
       end
       
@@ -211,12 +251,15 @@ module MaapData
       
       if has_form_changes || current_check_in
         
-        {
+        result = {
           official_rating: official_rating.present? ? official_rating : current_check_in&.official_rating,
           shared_notes: shared_notes.present? ? shared_notes : current_check_in&.shared_notes,
           official_check_in_completed_at: official_complete ? Time.current : (official_complete == false ? nil : current_check_in&.official_check_in_completed_at),
           finalized_by_id: official_complete ? @form_params[:created_by_id] : (official_complete == false ? nil : current_check_in&.finalized_by_id)
         }
+        
+        
+        result
       else
         nil
       end

@@ -207,6 +207,7 @@ class MaapChangeExecutionService
       # Explicitly unchecking manager completion
       check_in.uncomplete_manager_side!
     end
+    # If manager_completed_at is present but not nil, preserve existing state (no action needed)
   end
 
   def update_official_check_in_fields(check_in, official_data)

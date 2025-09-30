@@ -67,14 +67,20 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
         # Try both formats: check_in_#{check_in_id}_* and check_in_#{assignment_id}_*
         final_rating = params["check_in_#{check_in_id}_final_rating"] || params["check_in_#{assignment_id}_final_rating"]
         shared_notes = params["check_in_#{check_in_id}_shared_notes"] || params["check_in_#{assignment_id}_shared_notes"]
-        close_rating = params["check_in_#{check_in_id}_close_rating"] == 'true' || params["check_in_#{assignment_id}_close_rating"] == 'true'
+        close_rating_param = params["check_in_#{check_in_id}_close_rating"] || params["check_in_#{assignment_id}_close_rating"]
         
+        # Only include close_rating if explicitly set to true
+        # Otherwise, processor will default to finalizing when both sides are completed and rating is present
         check_in_data[assignment_id] = {
           check_in_id: check_in_id,
           final_rating: final_rating,
-          shared_notes: shared_notes,
-          close_rating: close_rating
+          shared_notes: shared_notes
         }
+        
+        # Only include close_rating if explicitly checked to finalize
+        if close_rating_param == 'true'
+          check_in_data[assignment_id][:close_rating] = true
+        end
         
         Rails.logger.info "BULK_FINALIZE: 9 - Check-in #{check_in_id} (assignment #{assignment_id}) data: #{check_in_data[assignment_id].inspect}"
       end

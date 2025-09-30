@@ -59,6 +59,7 @@ RSpec.describe 'Bulk Finalization Manager Completed Bug', type: :request do
       # Find the created snapshot
       snapshot = MaapSnapshot.last
       expect(snapshot.change_type).to eq('bulk_check_in_finalization')
+      
 
       # Step 2: Execute the changes
       post process_changes_organization_person_path(organization, person, snapshot)
