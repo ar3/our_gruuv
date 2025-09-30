@@ -370,8 +370,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
           'started_at' => Date.current.to_s
         }
         
+        service = MaapChangeExecutionService.new(
+          maap_snapshot: nil,
+          current_user: employee
+        )
+        service.instance_variable_set(:@person, employee)
+        
         expect {
-          controller.send(:update_assignment_tenure, assignment1, tenure_data)
+          service.send(:update_assignment_tenure, assignment1, tenure_data)
         }.to change(AssignmentTenure, :count).by(1)
         
         # Check that old tenure was ended
@@ -392,8 +398,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
           'started_at' => Date.current.to_s
         }
         
+        service = MaapChangeExecutionService.new(
+          maap_snapshot: nil,
+          current_user: employee
+        )
+        service.instance_variable_set(:@person, employee)
+        
         expect {
-          controller.send(:update_assignment_tenure, assignment1, tenure_data)
+          service.send(:update_assignment_tenure, assignment1, tenure_data)
         }.not_to change(AssignmentTenure, :count)
         
         # Check that existing tenure is still active
@@ -410,8 +422,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
           'started_at' => Date.current.to_s
         }
         
+        service = MaapChangeExecutionService.new(
+          maap_snapshot: nil,
+          current_user: employee
+        )
+        service.instance_variable_set(:@person, employee)
+        
         expect {
-          controller.send(:update_assignment_tenure, assignment1, tenure_data)
+          service.send(:update_assignment_tenure, assignment1, tenure_data)
         }.to change(AssignmentTenure, :count).by(1)
         
         # Check that new tenure was created
@@ -428,8 +446,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
           'started_at' => Date.current.to_s
         }
         
+        service = MaapChangeExecutionService.new(
+          maap_snapshot: nil,
+          current_user: employee
+        )
+        service.instance_variable_set(:@person, employee)
+        
         expect {
-          controller.send(:update_assignment_tenure, assignment1, tenure_data)
+          service.send(:update_assignment_tenure, assignment1, tenure_data)
         }.not_to change(AssignmentTenure, :count)
         
         # Check that existing tenure was ended

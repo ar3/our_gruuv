@@ -191,8 +191,13 @@ RSpec.describe Organizations::PeopleController, type: :controller do
           manager_private_notes: 'Original manager notes'
         )
 
-        # Employee updates their fields
-        controller.send(:update_check_in_fields, check_in, check_in_data)
+        # Employee updates their fields using the service
+        service = MaapChangeExecutionService.new(
+          maap_snapshot: nil,
+          current_user: employee
+        )
+        service.instance_variable_set(:@person, employee)
+        service.send(:update_check_in_fields, check_in, check_in_data)
 
         check_in.reload
         # Employee fields should be updated
@@ -214,7 +219,12 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         )
 
         # Employee tries to update manager fields (should be ignored)
-        controller.send(:update_check_in_fields, check_in, check_in_data)
+        service = MaapChangeExecutionService.new(
+          maap_snapshot: nil,
+          current_user: employee
+        )
+        service.instance_variable_set(:@person, employee)
+        service.send(:update_check_in_fields, check_in, check_in_data)
 
         check_in.reload
         # Manager fields should remain unchanged
@@ -242,13 +252,18 @@ RSpec.describe Organizations::PeopleController, type: :controller do
           employee_personal_alignment: 'neutral'
         )
 
-        # Manager updates their fields
-        controller.send(:update_check_in_fields, check_in, check_in_data)
+        # Manager updates their fields using the service
+        service = MaapChangeExecutionService.new(
+          maap_snapshot: nil,
+          current_user: manager
+        )
+        service.instance_variable_set(:@person, employee)
+        service.send(:update_check_in_fields, check_in, check_in_data)
 
         check_in.reload
         # Manager fields should be updated
         expect(check_in.manager_rating).to eq('meeting')
-        expect(check_in.manager_private_notes).to eq('Manager notes')
+        expect(check_in.manager_private_notes).to eq('Manager test notes')
         
         # Employee fields should be preserved
         expect(check_in.actual_energy_percentage).to eq(60)
@@ -267,7 +282,12 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         )
 
         # Manager tries to update employee fields (should be ignored)
-        controller.send(:update_check_in_fields, check_in, check_in_data)
+        service = MaapChangeExecutionService.new(
+          maap_snapshot: nil,
+          current_user: manager
+        )
+        service.instance_variable_set(:@person, employee)
+        service.send(:update_check_in_fields, check_in, check_in_data)
 
         check_in.reload
         # Employee fields should remain unchanged
@@ -287,7 +307,12 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       end
 
       it 'can update both employee and manager fields' do
-        controller.send(:update_check_in_fields, check_in, check_in_data)
+        service = MaapChangeExecutionService.new(
+          maap_snapshot: nil,
+          current_user: admin
+        )
+        service.instance_variable_set(:@person, employee)
+        service.send(:update_check_in_fields, check_in, check_in_data)
 
         check_in.reload
         # Both employee and manager fields should be updated
