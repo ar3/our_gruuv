@@ -1,4 +1,4 @@
-= form_with url: process_changes_person_path(person, maap_snapshot), method: :post, local: true, class: "reason-form" do |form|
+= form_with url: process_changes_organization_person_path(person.current_organization_or_default, person, maap_snapshot), method: :post, local: true, class: "reason-form" do |form|
   .card.mb-4
     .card-header
       %h5.mb-0 Execute Changes

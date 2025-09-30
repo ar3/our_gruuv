@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe PeopleController, type: :controller do
+RSpec.describe Organizations::PeopleController, type: :controller do
   let!(:organization) { create(:organization) }
   let!(:manager) { create(:person, current_organization: organization) }
   let!(:employee) { create(:person, current_organization: organization) }
@@ -9,7 +9,7 @@ RSpec.describe PeopleController, type: :controller do
   let!(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
   let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
   let!(:employment) { create(:employment_tenure, person: employee, position: position, company: organization) }
-  let!(:assignment1) { create(:assignment, title: 'Assignment 1') }
+  let!(:assignment1) { create(:assignment, title: 'Assignment 1', company: organization) }
   
   before do
     # Set up position assignments
@@ -25,6 +25,9 @@ RSpec.describe PeopleController, type: :controller do
     allow(controller).to receive(:current_person).and_return(manager)
     allow(controller).to receive(:authenticate_person!)
     
+    # Set organization ID in params
+    controller.params[:organization_id] = organization.id
+    
     # Mock authorization
     allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(true)
     
@@ -33,8 +36,8 @@ RSpec.describe PeopleController, type: :controller do
   end
 
   describe 'GET #execute_changes' do
-    let!(:assignment2) { create(:assignment, title: 'Assignment 2') }
-    let!(:assignment3) { create(:assignment, title: 'Assignment 3') }
+    let!(:assignment2) { create(:assignment, title: 'Assignment 2', company: organization) }
+    let!(:assignment3) { create(:assignment, title: 'Assignment 3', company: organization) }
     
     before do
       # Set up position assignments
@@ -53,11 +56,11 @@ RSpec.describe PeopleController, type: :controller do
     end
 
     it 'renders the execute_changes page successfully' do
-      get :execute_changes, params: { id: employee.id, maap_snapshot_id: maap_snapshot.id }
+      get :execute_changes, params: { organization_id: organization.id, id: employee.id, maap_snapshot_id: maap_snapshot.id }
       
       expect(response).to have_http_status(:success)
       expect(response).to render_template(:execute_changes)
-      expect(controller.maap_snapshot).to eq(maap_snapshot)
+        expect(assigns(:maap_snapshot)).to eq(maap_snapshot)
     end
 
     context 'with mixed check-in states' do
@@ -143,7 +146,7 @@ RSpec.describe PeopleController, type: :controller do
       end
 
       it 'handles assignments with mixed check-in states correctly' do
-        get :execute_changes, params: { id: employee.id, maap_snapshot_id: maap_snapshot_with_mixed_data.id }
+        get :execute_changes, params: { organization_id: organization.id, id: employee.id, maap_snapshot_id: maap_snapshot_with_mixed_data.id }
         
         expect(response).to have_http_status(:success)
         expect(response).to render_template(:execute_changes)
@@ -261,16 +264,16 @@ RSpec.describe PeopleController, type: :controller do
       allow(controller).to receive(:current_person).and_return(other_manager)
       allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(true)
       
-      get :execute_changes, params: { id: employee.id, maap_snapshot_id: maap_snapshot.id }
+      get :execute_changes, params: { organization_id: organization.id, id: employee.id, maap_snapshot_id: maap_snapshot.id }
       
-      expect(response).to redirect_to(person_assignment_tenures_path(employee))
+      expect(response).to redirect_to(organization_assignment_tenure_path(organization, employee))
       expect(flash[:alert]).to include('not authorized')
     end
 
     it 'handles missing MaapSnapshot gracefully' do
-      get :execute_changes, params: { id: employee.id, maap_snapshot_id: 99999 }
+      get :execute_changes, params: { organization_id: organization.id, id: employee.id, maap_snapshot_id: 99999 }
       
-      expect(response).to redirect_to(person_assignment_tenures_path(employee))
+      expect(response).to redirect_to(organization_assignment_tenure_path(organization, employee))
       expect(flash[:alert]).to include('not found')
     end
   end
@@ -373,7 +376,7 @@ RSpec.describe PeopleController, type: :controller do
         
         # Check that old tenure was ended
         existing_tenure.reload
-        expect(existing_tenure.ended_at).to eq(Date.current + 1.day)
+        expect(existing_tenure.ended_at).to eq(Date.current)
         
         # Check that new tenure was created
         new_tenure = employee.assignment_tenures.where(assignment: assignment1).active.first
@@ -431,7 +434,7 @@ RSpec.describe PeopleController, type: :controller do
         
         # Check that existing tenure was ended
         existing_tenure.reload
-        expect(existing_tenure.ended_at).to eq(Date.current + 1.day)
+        expect(existing_tenure.ended_at).to eq(Date.current)
       end
     end
 

@@ -14,7 +14,7 @@
     / Show assignments with changes
     - if assignments_with_changes.any?
       - assignments_with_changes.each do |data|
-        = render 'people/execute_changes/assignment_field_changes', data: data
+        = render 'people/execute_changes/assignment_field_changes', data: data, maap_snapshot: @maap_snapshot
     
     / Collapsible section for assignments without changes
     - if assignments_without_changes.any?

@@ -14,7 +14,7 @@ RSpec.describe AssignmentTenure, type: :model do
     it 'validates ended_at is after started_at' do
       tenure = build(:assignment_tenure, started_at: Date.current, ended_at: 1.day.ago)
       expect(tenure).not_to be_valid
-      expect(tenure.errors[:ended_at]).to include("must be greater than #{tenure.started_at}")
+      expect(tenure.errors[:ended_at]).to include("must be greater than or equal to #{tenure.started_at}")
     end
 
     it 'allows nil ended_at for active tenures' do

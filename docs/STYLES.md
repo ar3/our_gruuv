@@ -181,6 +181,38 @@ For index pages, use this header structure with conditional create button:
 - **Use standard attributes**: `data-bs-toggle`, `data-bs-title`, etc. work out of the box
 - **No custom JavaScript**: Avoid adding initialization code in individual views
 
+## HAML Best Practices
+
+### Multi-line Ruby Code
+When writing complex Ruby expressions in HAML, avoid deep nesting and multi-line expressions that can cause indentation errors:
+
+```haml
+// ❌ AVOID: Complex multi-line expressions
+= f.select :permission_value, 
+    options_for_select(
+      [
+        ['Yes', 'true'],
+        ['No', 'false'], 
+        ['Not Set', 'nil']
+      ], 
+      complex_conditional_logic
+    ),
+    {}, 
+    { class: "form-select", onchange: "this.form.submit();" }
+
+// ✅ PREFER: Single-line assignments
+- options = [['Yes', 'true'], ['No', 'false'], ['Not Set', 'nil']]
+- selected_value = complex_conditional_logic
+= f.select :permission_value, options, { selected: selected_value }, { class: "form-select", onchange: "this.form.submit();" }
+```
+
+#### Key Principles:
+- **Use `-` for Ruby code** that doesn't output to HTML (variable assignments)
+- **Use `=` for Ruby code** that outputs to HTML (form helpers, content)
+- **Keep complex logic on separate lines** with clear variable names
+- **Avoid deep nesting** in single expressions
+- **Prefer single-line assignments** over multi-line complex expressions
+
 ## Implementation Checklist
 
 When creating or updating pages, ensure:
@@ -192,5 +224,6 @@ When creating or updating pages, ensure:
 - [ ] Collapse elements use standard pattern (anchor tag + two spans + two icons)
 - [ ] Authorization UX follows warning icon pattern (outside button)
 - [ ] No manual Bootstrap component initialization
+- [ ] HAML uses single-line assignments for complex Ruby code
 - [ ] Responsive design considerations
 - [ ] Semantic color usage only

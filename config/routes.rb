@@ -119,6 +119,12 @@ get '/login', to: 'auth#login', as: :login
     resources :people, module: :organizations, only: [:show] do
       member do
         get :complete_picture
+        get :teammate
+        get :check_in
+        patch :finalize_check_in
+        get 'execute_changes/:maap_snapshot_id', action: :execute_changes, as: :execute_changes
+        post 'process_changes/:maap_snapshot_id', action: :process_changes, as: :process_changes
+        post :update_permission
       end
     end
     
@@ -192,11 +198,6 @@ get '/login', to: 'auth#login', as: :login
   resources :people, only: [:index, :show, :edit, :update] do
     member do
       get :public
-      get :teammate
-      get :check_in
-      patch :finalize_check_in
-      get 'execute_changes/:maap_snapshot_id', action: :execute_changes, as: :execute_changes
-      post 'process_changes/:maap_snapshot_id', action: :process_changes, as: :process_changes
     end
               resources :assignments, only: [:show], controller: 'people/assignments'
     resources :employment_tenures, only: [:new, :create, :edit, :update, :destroy, :show] do

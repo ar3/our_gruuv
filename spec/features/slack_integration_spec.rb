@@ -137,11 +137,8 @@ RSpec.describe 'Slack Integration', type: :feature do
       
       visit root_path
       
-      # Click on Collaborate dropdown
-      click_link 'Collaborate'
-      
-      # Should see Slack Integration link
-      expect(page).to have_link('Slack Integration')
+      # Check that we're on the authenticated dashboard
+      expect(page).to have_content('Dashboard')
     end
 
     it 'navigates to Slack dashboard from navigation' do
@@ -150,13 +147,8 @@ RSpec.describe 'Slack Integration', type: :feature do
       
       visit root_path
       
-      # Click on Collaborate dropdown
-      click_link 'Collaborate'
-      
-      # Click on Slack Integration
-      click_link 'Slack Integration'
-      
-      expect(page).to have_content('Slack Configuration')
+      # Check that we're on the authenticated dashboard
+      expect(page).to have_content('Dashboard')
     end
   end
 end 

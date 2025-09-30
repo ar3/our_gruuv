@@ -21,7 +21,7 @@
           Teammate Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).teammate?
-        = link_to teammate_person_path(@person), class: 'dropdown-item' do
+        = link_to teammate_organization_person_path(@person.current_organization_or_default, @person), class: 'dropdown-item' do
           %i.bi.bi-people.me-2
           Teammate Mode
       - else

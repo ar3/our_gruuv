@@ -134,6 +134,8 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         expect(assignment_data).to have_key('tenure')
         
         # Check that the form data was processed correctly
+        # Find the assignment with check_in1 (assignment1)
+        assignment_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment1.id }
         employee_check_in = assignment_data['employee_check_in']
         expect(employee_check_in['actual_energy_percentage']).to eq(85)
         expect(employee_check_in['employee_rating']).to eq('meeting')
@@ -147,7 +149,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
       it 'redirects to execute changes page' do
         patch :bulk_finalize_check_ins, params: valid_params
         maap_snapshot = MaapSnapshot.last
-        expect(response).to redirect_to(execute_changes_person_path(employee, maap_snapshot))
+        expect(response).to redirect_to(execute_changes_organization_person_path(company, employee, maap_snapshot))
       end
 
       it 'includes success notice' do

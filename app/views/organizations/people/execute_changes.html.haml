@@ -1,0 +1,41 @@
+- content_for :title, "Execute Changes - #{@person.display_name}"
+
+- content_for :head do
+  :css
+    .field-column { width: 30%; }
+    .change-column { width: 70%; }
+
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    .header-info
+      %h1.mb-0 Execute MAAP Changes
+      %p.text-muted.mb-0 Review and execute the changes for #{@person.display_name}
+
+- content_for :go_back_link do
+  = link_to organization_assignment_tenure_path(@current_organization, @person), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-1
+    Back to Assignment Management
+
+- content_for :top_actions do
+  - unless @maap_snapshot
+    .alert.alert-danger
+      %strong Error: 
+      MaapSnapshot not found. Please try going back and trying again.
+      %br
+      = link_to "Back to Assignment Management", organization_assignment_tenure_path(@current_organization, @person), class: "btn btn-secondary"
+
+.row.justify-content-center
+  .col-12
+    - if @maap_snapshot
+      = render 'people/execute_changes/change_details_card', maap_snapshot: @maap_snapshot
+      = render 'people/execute_changes/employment_section', maap_snapshot: @maap_snapshot
+      = render 'people/execute_changes/assignments_section'
+      = render 'people/execute_changes/milestones_section', maap_snapshot: @maap_snapshot
+      = render 'people/execute_changes/aspirations_section'
+      = render 'people/execute_changes/execute_form', maap_snapshot: @maap_snapshot
+    - else
+      .alert.alert-danger
+        %strong Error: 
+        MaapSnapshot not found. Please try going back and trying again.
+        %br
+        = link_to "Back to Assignment Management", organization_assignment_tenure_path(@current_organization, @person), class: "btn btn-secondary"

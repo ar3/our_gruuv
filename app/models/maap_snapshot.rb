@@ -47,27 +47,43 @@ class MaapSnapshot < ApplicationRecord
   
   # Class methods for building snapshots
   def self.build_for_employee(employee:, created_by:, change_type:, reason:, request_info: {})
+    company = employee.employment_tenures.active.first&.company
     new(
       employee: employee,
       created_by: created_by,
-      company: employee.employment_tenures.active.first&.company,
+      company: company,
       change_type: change_type,
       reason: reason,
       request_info: request_info,
-      maap_data: build_maap_data_for_employee(employee)
+      maap_data: build_maap_data_for_employee(employee, company)
     )
   end
   
   def self.build_for_employee_with_changes(employee:, created_by:, change_type:, reason:, request_info: {}, form_params: {})
+    company = employee.employment_tenures.active.first&.company
     new(
       employee: employee,
       created_by: created_by,
-      company: employee.employment_tenures.active.first&.company,
+      company: company,
       change_type: change_type,
       reason: reason,
       request_info: request_info,
       form_params: form_params,
-      maap_data: build_maap_data_for_employee_with_changes(employee, form_params)
+      maap_data: build_maap_data_for_employee_with_changes(employee, company, form_params)
+    )
+  end
+
+  def self.build_for_employee_without_maap_data(employee:, created_by:, change_type:, reason:, request_info: {}, form_params: {})
+    company = employee.employment_tenures.active.first&.company
+    new(
+      employee: employee,
+      created_by: created_by,
+      company: company,
+      change_type: change_type,
+      reason: reason,
+      request_info: request_info,
+      form_params: form_params,
+      maap_data: nil
     )
   end
   
@@ -82,30 +98,37 @@ class MaapSnapshot < ApplicationRecord
       maap_data: {}
     )
   end
+
+  def process_with_processor!
+    processor_class = "MaapData::#{change_type.classify}Processor".constantize
+    processor = processor_class.new(self)
+    self.maap_data = processor.process
+    save!
+  end
   
 
   private
   
-  def self.build_maap_data_for_employee(employee)
+  def self.build_maap_data_for_employee(employee, company)
     {
-      employment_tenure: build_employment_tenure_data(employee),
-      assignments: build_assignments_data(employee),
-      milestones: build_milestones_data(employee),
-      aspirations: build_aspirations_data(employee)
+      employment_tenure: build_employment_tenure_data(employee, company),
+      assignments: build_assignments_data(employee, company),
+      milestones: build_milestones_data(employee, company),
+      aspirations: build_aspirations_data(employee, company)
     }
   end
   
-  def self.build_maap_data_for_employee_with_changes(employee, form_params)
+  def self.build_maap_data_for_employee_with_changes(employee, company, form_params)
     {
-      employment_tenure: build_employment_tenure_data(employee),
-      assignments: build_assignments_data_with_changes(employee, form_params),
-      milestones: build_milestones_data(employee),
-      aspirations: build_aspirations_data(employee)
+      employment_tenure: build_employment_tenure_data(employee, company),
+      assignments: build_assignments_data_with_changes(employee, company, form_params),
+      milestones: build_milestones_data(employee, company),
+      aspirations: build_aspirations_data(employee, company)
     }
   end
   
-  def self.build_employment_tenure_data(employee)
-    employment = employee.employment_tenures.active.first
+  def self.build_employment_tenure_data(employee, company)
+    employment = employee.employment_tenures.active.where(company: company).first
     return nil unless employment
     
     {
@@ -116,8 +139,8 @@ class MaapSnapshot < ApplicationRecord
     }
   end
   
-  def self.build_assignments_data(employee)
-    employee.assignment_tenures.active.includes(:assignment).map do |tenure|
+  def self.build_assignments_data(employee, company)
+    employee.assignment_tenures.active.includes(:assignment).joins(:assignment).where(assignments: { company: company }).map do |tenure|
       check_in = AssignmentCheckIn.where(person: employee, assignment: tenure.assignment).open.first
       
       {
@@ -149,10 +172,10 @@ class MaapSnapshot < ApplicationRecord
     end
   end
   
-  def self.build_assignments_data_with_changes(employee, form_params)
-    # Get all assignments where the person has ever had a tenure
-    assignment_ids = employee.assignment_tenures.distinct.pluck(:assignment_id)
-    assignments = Assignment.where(id: assignment_ids).includes(:assignment_tenures)
+  def self.build_assignments_data_with_changes(employee, company, form_params)
+    # Get all assignments where the person has ever had a tenure, filtered by company
+    assignment_ids = employee.assignment_tenures.joins(:assignment).where(assignments: { company: company }).distinct.pluck(:assignment_id)
+    assignments = Assignment.where(id: assignment_ids, company: company).includes(:assignment_tenures)
     
     assignments.map do |assignment|
       current_tenure = employee.assignment_tenures.where(assignment: assignment).active.first
@@ -179,8 +202,8 @@ class MaapSnapshot < ApplicationRecord
     end
   end
   
-  def self.build_milestones_data(employee)
-    employee.person_milestones.includes(:ability).map do |milestone|
+  def self.build_milestones_data(employee, company)
+    employee.person_milestones.joins(:ability).where(abilities: { organization: company }).includes(:ability).map do |milestone|
       {
         ability_id: milestone.ability_id,
         milestone_level: milestone.milestone_level,
@@ -191,9 +214,18 @@ class MaapSnapshot < ApplicationRecord
     end
   end
   
-  def self.build_aspirations_data(employee)
-    # TODO: Implement when aspiration model exists
-    []
+  def self.build_aspirations_data(employee, company)
+    # Aspirations belong to the organization, not the person
+    company.aspirations.map do |aspiration|
+      {
+        id: aspiration.id,
+        name: aspiration.name,
+        description: aspiration.description,
+        organization_id: aspiration.organization_id,
+        sort_order: aspiration.sort_order,
+        created_at: aspiration.created_at
+      }
+    end
   end
   
   # Helper methods for processing form changes
@@ -250,16 +282,29 @@ class MaapSnapshot < ApplicationRecord
     # Check if there are any manager check-in form parameters
     manager_rating = form_params["check_in_#{assignment_id}_manager_rating"]
     manager_private_notes = form_params["check_in_#{assignment_id}_manager_private_notes"]
-    manager_complete = form_params["check_in_#{assignment_id}_manager_complete"] == "1"
+    manager_complete_param = form_params["check_in_#{assignment_id}_manager_complete"]
+    
+    # Handle manager_complete parameter - convert string values to boolean
+    manager_complete = case manager_complete_param
+    when "true", "1", true, 1
+      true
+    when "false", "0", false, 0
+      false
+    else
+      nil
+    end
+    
+    # Check if there are explicit manager_complete changes
+    has_explicit_manager_complete = manager_complete_param.present?
     
     # Only include if there are form changes or current data
-    if manager_rating.present? || manager_private_notes.present? || manager_complete || current_check_in
+    if manager_rating.present? || manager_private_notes.present? || has_explicit_manager_complete || current_check_in
       
       {
         manager_rating: manager_rating.present? ? manager_rating : current_check_in&.manager_rating,
-        manager_completed_at: manager_complete ? Time.current : current_check_in&.manager_completed_at,
+        manager_completed_at: manager_complete ? Time.current : (manager_complete == false ? nil : current_check_in&.manager_completed_at),
         manager_private_notes: manager_private_notes.present? ? manager_private_notes : current_check_in&.manager_private_notes,
-        manager_completed_by_id: manager_complete ? form_params[:created_by_id] : current_check_in&.manager_completed_by_id
+        manager_completed_by_id: manager_complete ? form_params[:created_by_id] : (manager_complete == false ? nil : current_check_in&.manager_completed_by_id)
       }
     else
       nil
@@ -271,9 +316,40 @@ class MaapSnapshot < ApplicationRecord
     # Handle both bulk finalization format (check_in_#{check_in_id}_*) and regular format (check_in_#{assignment_id}_*)
     check_in_id = current_check_in&.id
     
-    official_rating = form_params["check_in_#{check_in_id}_final_rating"] || form_params["check_in_#{assignment_id}_official_rating"]
-    shared_notes = form_params["check_in_#{check_in_id}_shared_notes"] || form_params["check_in_#{assignment_id}_shared_notes"]
-    official_complete = form_params["check_in_#{check_in_id}_close_rating"] == "true" || form_params["check_in_#{assignment_id}_official_complete"] == "1"
+    # Check individual form params first (these should take precedence)
+    individual_official_rating = form_params["check_in_#{assignment_id}_final_rating"] || form_params["check_in_#{assignment_id}_official_rating"]
+    individual_shared_notes = form_params["check_in_#{assignment_id}_shared_notes"]
+    individual_official_complete = form_params["check_in_#{assignment_id}_close_rating"] == "true" || form_params["check_in_#{assignment_id}_official_complete"] == "1"
+    
+    # If individual form params are present, use them
+    if individual_official_rating.present? || individual_shared_notes.present? || individual_official_complete
+      official_rating = individual_official_rating
+      shared_notes = individual_shared_notes
+      official_complete = individual_official_complete
+    elsif form_params["check_in_data"].present?
+      # Fall back to check_in_data format if no individual params
+      check_in_data = form_params["check_in_data"][assignment_id.to_s]
+      if check_in_data.present?
+        official_rating = check_in_data["final_rating"]
+        shared_notes = check_in_data["shared_notes"]
+        official_complete = check_in_data["close_rating"] == true || check_in_data["close_rating"] == "true"
+      else
+        official_rating = nil
+        shared_notes = nil
+        official_complete = false
+      end
+    else
+      # Use check_in_id format when check_in_id is present and no assignment_id format
+      if check_in_id.present?
+        official_rating = form_params["check_in_#{check_in_id}_final_rating"] || form_params["check_in_#{assignment_id}_official_rating"]
+        shared_notes = form_params["check_in_#{check_in_id}_shared_notes"] || form_params["check_in_#{assignment_id}_shared_notes"]
+        official_complete = form_params["check_in_#{check_in_id}_close_rating"] == "true" || form_params["check_in_#{assignment_id}_official_complete"] == "1"
+      else
+        official_rating = nil
+        shared_notes = nil
+        official_complete = false
+      end
+    end
     
     # Only include if there are form changes or current data
     if official_rating.present? || shared_notes.present? || official_complete || current_check_in

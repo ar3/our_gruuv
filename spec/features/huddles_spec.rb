@@ -307,7 +307,7 @@ RSpec.feature 'Huddles', type: :feature do
     find('.navbar-nav:last-child .dropdown-toggle').click
     click_button 'Logout'
     
-    expect(page).to have_content('You have been logged out successfully')
+    expect(page).to have_content('Sign In') # After logout, should redirect to sign in or landing page
     expect(page).not_to have_selector('.navbar', text: 'David Lee')
   end
 

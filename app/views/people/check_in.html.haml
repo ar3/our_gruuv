@@ -55,7 +55,7 @@
                   
                   .row.mt-3
                     .col-12
-                      = form_with url: finalize_check_in_person_path(@person), method: :patch, local: true do |form|
+                      = form_with url: finalize_check_in_organization_person_path(@person.current_organization_or_default, @person), method: :patch, local: true do |form|
                         = form.hidden_field :check_in_id, value: check_in.id
                         .mb-3
                           = form.label :shared_notes, "Shared Notes (visible to both parties)", class: "form-label"

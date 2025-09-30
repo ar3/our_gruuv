@@ -1,27 +1,33 @@
 require 'rails_helper'
 
-RSpec.describe PeopleController, type: :controller do
-  let(:manager) { create(:person) }
-  let(:employee) { create(:person) }
-  let(:assignment) { create(:assignment) }
+RSpec.describe Organizations::PeopleController, type: :controller do
+  let(:organization) { create(:organization) }
+  let(:manager) { create(:person, current_organization: organization) }
+  let(:employee) { create(:person, current_organization: organization) }
+  let(:assignment) { create(:assignment, company: organization) }
   let!(:check_in) { create(:assignment_check_in, person: employee, assignment: assignment) }
 
   before do
     session[:current_person_id] = manager.id
     allow(controller).to receive(:current_person).and_return(manager)
+    # Set up employment for manager
+    create(:employment_tenure, person: manager, company: organization)
+    # Set up organization access for manager
+    create(:person_organization_access, person: manager, organization: organization, can_manage_employment: true)
   end
 
   describe 'GET #check_in' do
     context 'when user has manager permissions' do
       before do
-        allow(controller).to receive(:authorize).and_return(true)
+        # Set up proper authorization by allowing the policy method
+        allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(true)
       end
 
       it 'assigns ready for finalization check-ins' do
         check_in.complete_employee_side!
         check_in.complete_manager_side!
         
-        get :check_in, params: { id: employee.id }
+        get :check_in, params: { organization_id: organization.id, id: employee.id }
         
         expect(assigns(:ready_for_finalization)).to include(check_in)
       end
@@ -30,7 +36,7 @@ RSpec.describe PeopleController, type: :controller do
         check_in.complete_employee_side!
         # Manager not completed
         
-        get :check_in, params: { id: employee.id }
+        get :check_in, params: { organization_id: organization.id, id: employee.id }
         
         expect(assigns(:ready_for_finalization)).not_to include(check_in)
       end
@@ -40,7 +46,7 @@ RSpec.describe PeopleController, type: :controller do
         check_in.complete_manager_side!
         check_in.finalize_check_in!(final_rating: 'meeting')
         
-        get :check_in, params: { id: employee.id }
+        get :check_in, params: { organization_id: organization.id, id: employee.id }
         
         expect(assigns(:ready_for_finalization)).not_to include(check_in)
       end
@@ -50,6 +56,7 @@ RSpec.describe PeopleController, type: :controller do
   describe 'PATCH #finalize_check_in' do
     let(:valid_params) do
       {
+        organization_id: organization.id,
         id: employee.id,
         check_in_id: check_in.id,
         final_rating: 'exceeding',
@@ -61,7 +68,8 @@ RSpec.describe PeopleController, type: :controller do
       before do
         check_in.complete_employee_side!
         check_in.complete_manager_side!
-        allow(controller).to receive(:authorize).and_return(true)
+        # Set up proper authorization by allowing the policy method
+        allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(true)
       end
 
       it 'finalizes the check-in successfully' do
@@ -82,7 +90,7 @@ RSpec.describe PeopleController, type: :controller do
 
       it 'redirects to check_in page with success message' do
         patch :finalize_check_in, params: valid_params
-        expect(response).to redirect_to(check_in_person_path(employee))
+        expect(response).to redirect_to(check_in_organization_person_path(organization, employee))
         expect(flash[:notice]).to eq('Check-in finalized successfully.')
       end
     end
@@ -91,7 +99,8 @@ RSpec.describe PeopleController, type: :controller do
       before do
         # Only employee completed, manager not completed
         check_in.complete_employee_side!
-        allow(controller).to receive(:authorize).and_return(true)
+        # Set up proper authorization by allowing the policy method
+        allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(true)
       end
 
       it 'does not finalize the check-in' do
@@ -102,7 +111,7 @@ RSpec.describe PeopleController, type: :controller do
 
       it 'redirects with error message' do
         patch :finalize_check_in, params: valid_params
-        expect(response).to redirect_to(check_in_person_path(employee))
+        expect(response).to redirect_to(check_in_organization_person_path(organization, employee))
         expect(flash[:alert]).to eq('Check-in is not ready for finalization. Both employee and manager must complete their sections first.')
       end
     end
@@ -111,7 +120,8 @@ RSpec.describe PeopleController, type: :controller do
       before do
         check_in.complete_employee_side!
         check_in.complete_manager_side!
-        allow(controller).to receive(:authorize).and_return(true)
+        # Set up proper authorization by allowing the policy method
+        allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(true)
       end
 
       let(:invalid_params) { valid_params.except(:final_rating) }
@@ -124,7 +134,7 @@ RSpec.describe PeopleController, type: :controller do
 
       it 'redirects with error message' do
         patch :finalize_check_in, params: invalid_params
-        expect(response).to redirect_to(check_in_person_path(employee))
+        expect(response).to redirect_to(check_in_organization_person_path(organization, employee))
         expect(flash[:alert]).to eq('Final rating is required to finalize the check-in.')
       end
     end
@@ -134,7 +144,8 @@ RSpec.describe PeopleController, type: :controller do
         check_in.complete_employee_side!
         check_in.complete_manager_side!
         check_in.finalize_check_in!(final_rating: 'meeting')
-        allow(controller).to receive(:authorize).and_return(true)
+        # Set up proper authorization by allowing the policy method
+        allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(true)
       end
 
       it 'does not finalize again' do
@@ -145,7 +156,7 @@ RSpec.describe PeopleController, type: :controller do
 
       it 'redirects with error message' do
         patch :finalize_check_in, params: valid_params
-        expect(response).to redirect_to(check_in_person_path(employee))
+        expect(response).to redirect_to(check_in_organization_person_path(organization, employee))
         expect(flash[:alert]).to eq('Check-in is not ready for finalization. Both employee and manager must complete their sections first.')
       end
     end

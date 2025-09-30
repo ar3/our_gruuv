@@ -5,6 +5,11 @@ RSpec.describe MaapSnapshot, type: :model do
   let!(:created_by) { create(:person) }
   let!(:company) { create(:organization) }
   
+  before do
+    # Set up employment tenure for the employee
+    create(:employment_tenure, person: employee, company: company)
+  end
+  
   describe 'validations' do
     it 'requires change_type' do
       snapshot = build(:maap_snapshot, change_type: nil)
@@ -108,7 +113,7 @@ RSpec.describe MaapSnapshot, type: :model do
         
         expect(snapshot.employee).to eq(employee)
         expect(snapshot.created_by).to eq(created_by)
-        expect(snapshot.company).to eq(employee.current_organization)
+        expect(snapshot.company.id).to eq(company.id)
         expect(snapshot.change_type).to eq('assignment_management')
         expect(snapshot.reason).to eq('Test snapshot')
         expect(snapshot.request_info['ip_address']).to eq('127.0.0.1')
@@ -133,8 +138,7 @@ RSpec.describe MaapSnapshot, type: :model do
     end
     
     describe '.build_for_employee_with_changes' do
-      let(:assignment) { create(:assignment) }
-      let!(:employment_tenure) { create(:employment_tenure, person: employee, company: company) }
+      let(:assignment) { create(:assignment, company: company) }
       let!(:assignment_tenure) { create(:assignment_tenure, person: employee, assignment: assignment, anticipated_energy_percentage: 20) }
       
       it 'creates a snapshot with form changes' do

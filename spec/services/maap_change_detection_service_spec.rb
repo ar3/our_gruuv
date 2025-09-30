@@ -5,7 +5,7 @@ RSpec.describe MaapChangeDetectionService, type: :service do
   let(:person) { create(:person, current_organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
   let(:maap_snapshot) { create(:maap_snapshot, created_by: person) }
-  let(:service) { described_class.new(person: person, maap_snapshot: maap_snapshot) }
+  let(:service) { described_class.new(person: person, maap_snapshot: maap_snapshot, current_user: person) }
 
   describe '#assignment_has_changes?' do
     context 'when there are no changes' do

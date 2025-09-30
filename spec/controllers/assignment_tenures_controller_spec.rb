@@ -9,9 +9,9 @@ RSpec.describe Organizations::AssignmentTenuresController, type: :controller do
   let!(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
   let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
   let!(:employment) { create(:employment_tenure, person: employee, position: position, company: organization) }
-  let!(:assignment1) { create(:assignment, title: 'Assignment 1') }
-  let!(:assignment2) { create(:assignment, title: 'Assignment 2') }
-  let!(:assignment3) { create(:assignment, title: 'Assignment 3') }
+  let!(:assignment1) { create(:assignment, title: 'Assignment 1', company: organization) }
+  let!(:assignment2) { create(:assignment, title: 'Assignment 2', company: organization) }
+  let!(:assignment3) { create(:assignment, title: 'Assignment 3', company: organization) }
   
   before do
     # Set up position assignments
@@ -77,7 +77,7 @@ RSpec.describe Organizations::AssignmentTenuresController, type: :controller do
         expect(maap_snapshot.pending?).to be true
         
         # Verify redirect to execute_changes
-        expect(response).to redirect_to(execute_changes_person_path(employee, maap_snapshot))
+        expect(response).to redirect_to(execute_changes_organization_person_path(organization, employee, maap_snapshot))
       end
 
       it 'captures security information in request_info' do

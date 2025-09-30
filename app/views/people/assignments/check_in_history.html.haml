@@ -86,7 +86,7 @@
                       - if check_in.officially_completed?
                         = link_to "View Details", "#", class: "btn btn-sm btn-outline-primary", "data-bs-toggle" => "modal", "data-bs-target" => "#checkInModal#{check_in.id}"
                       - elsif check_in.ready_for_finalization?
-                        = link_to "Finalize", check_in_person_path(@person), class: "btn btn-sm btn-warning"
+                        = link_to "Finalize", check_in_organization_person_path(@person.current_organization_or_default, @person), class: "btn btn-sm btn-warning"
                       - else
                         = link_to "Continue", organization_assignment_tenure_path(@person.current_organization_or_default, @person), class: "btn btn-sm btn-primary"
 

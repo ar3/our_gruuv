@@ -16,7 +16,7 @@ RSpec.describe 'MaapSnapshot Integration', type: :request do
   let!(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
   let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
   let!(:employment) { create(:employment_tenure, person: employee, position: position, company: organization) }
-  let!(:assignment1) { create(:assignment, title: 'Assignment 1') }
+  let!(:assignment1) { create(:assignment, title: 'Assignment 1', company: organization) }
   
   before do
     # Set up position assignments
@@ -39,7 +39,7 @@ RSpec.describe 'MaapSnapshot Integration', type: :request do
   describe 'MaapSnapshot Creation' do
     it 'creates MaapSnapshot when form is submitted' do
       # Submit the form
-      patch person_assignment_tenures_path(employee), params: { person_id: employee.id, reason: 'Test snapshot' }
+      patch organization_assignment_tenure_path(organization, employee), params: { person_id: employee.id, reason: 'Test snapshot' }
       
       expect(response).to have_http_status(:redirect)
       
@@ -54,11 +54,11 @@ RSpec.describe 'MaapSnapshot Integration', type: :request do
       expect(maap_snapshot.pending?).to be true
       
       # Verify redirect to execute_changes
-      expect(response).to redirect_to(execute_changes_person_path(employee, maap_snapshot))
+      expect(response).to redirect_to(execute_changes_organization_person_path(organization, employee, maap_snapshot))
     end
 
     it 'includes current MAAP data in snapshot' do
-      patch person_assignment_tenures_path(employee), params: { person_id: employee.id }
+      patch organization_assignment_tenure_path(organization, employee), params: { person_id: employee.id }
       
       maap_snapshot = MaapSnapshot.last
       expect(maap_snapshot.maap_data['employment_tenure']).to be_present
@@ -142,9 +142,6 @@ RSpec.describe 'MaapSnapshot Integration', type: :request do
     end
 
     it 'executes changes successfully' do
-      # Create initial tenure
-      create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20)
-      
       # Test the execution logic directly
       expect {
         maap_snapshot.update!(effective_date: Date.current)

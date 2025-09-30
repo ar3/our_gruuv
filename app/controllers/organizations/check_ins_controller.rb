@@ -61,16 +61,22 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
       check_in_data = {}
       ready_check_ins.each do |check_in|
         check_in_id = check_in.id
-        Rails.logger.info "BULK_FINALIZE: 8 - Processing check-in #{check_in_id} for assignment #{check_in.assignment.title}"
+        assignment_id = check_in.assignment.id
+        Rails.logger.info "BULK_FINALIZE: 8 - Processing check-in #{check_in_id} for assignment #{assignment_id} (#{check_in.assignment.title})"
         
-        check_in_data[check_in_id] = {
+        # Try both formats: check_in_#{check_in_id}_* and check_in_#{assignment_id}_*
+        final_rating = params["check_in_#{check_in_id}_final_rating"] || params["check_in_#{assignment_id}_final_rating"]
+        shared_notes = params["check_in_#{check_in_id}_shared_notes"] || params["check_in_#{assignment_id}_shared_notes"]
+        close_rating = params["check_in_#{check_in_id}_close_rating"] == 'true' || params["check_in_#{assignment_id}_close_rating"] == 'true'
+        
+        check_in_data[assignment_id] = {
           check_in_id: check_in_id,
-          final_rating: params["check_in_#{check_in_id}_final_rating"],
-          shared_notes: params["check_in_#{check_in_id}_shared_notes"],
-          close_rating: params["check_in_#{check_in_id}_close_rating"] == 'true'
+          final_rating: final_rating,
+          shared_notes: shared_notes,
+          close_rating: close_rating
         }
         
-        Rails.logger.info "BULK_FINALIZE: 9 - Check-in #{check_in_id} data: #{check_in_data[check_in_id].inspect}"
+        Rails.logger.info "BULK_FINALIZE: 9 - Check-in #{check_in_id} (assignment #{assignment_id}) data: #{check_in_data[assignment_id].inspect}"
       end
       
       # Capture security information
@@ -87,9 +93,9 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
       real_user = session[:impersonating_person_id] ? Person.find(session[:impersonating_person_id]) : current_person
       Rails.logger.info "BULK_FINALIZE: 11 - Real user determined: #{real_user.id} (#{real_user.full_name})"
       
-      # Build MaapSnapshot for bulk check-in finalization
-      Rails.logger.info "BULK_FINALIZE: 12 - Building MaapSnapshot with form_params keys: #{params.keys.inspect}"
-      maap_snapshot = MaapSnapshot.build_for_employee_with_changes(
+      # Step 1: Build MaapSnapshot without maap_data
+      Rails.logger.info "BULK_FINALIZE: 12 - Building MaapSnapshot without maap_data with form_params keys: #{params.keys.inspect}"
+      maap_snapshot = MaapSnapshot.build_for_employee_without_maap_data(
         employee: @person,
         created_by: real_user,
         change_type: 'bulk_check_in_finalization',
@@ -97,15 +103,21 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
         request_info: request_info,
         form_params: params.merge(return_to_check_ins: true, check_in_data: check_in_data, original_organization_id: @organization.id)
       )
-      Rails.logger.info "BULK_FINALIZE: 13 - MaapSnapshot built, ID: #{maap_snapshot.id}"
-      Rails.logger.info "BULK_FINALIZE: 14 - MaapSnapshot maap_data: #{maap_snapshot.maap_data.inspect}"
       
       if maap_snapshot.save
-        Rails.logger.info "BULK_FINALIZE: 15 - MaapSnapshot saved successfully, redirecting to execute changes"
-        redirect_to execute_changes_person_path(@person, maap_snapshot), 
+        Rails.logger.info "BULK_FINALIZE: 13 - MaapSnapshot saved without maap_data, ID: #{maap_snapshot.id}"
+        
+        # Step 2: Process the snapshot with the processor
+        Rails.logger.info "BULK_FINALIZE: 14 - Processing snapshot with BulkCheckInFinalizationProcessor"
+        maap_snapshot.process_with_processor!
+        Rails.logger.info "BULK_FINALIZE: 15 - MaapSnapshot processed successfully, maap_data built"
+        
+        # Step 3: Redirect to execute changes
+        Rails.logger.info "BULK_FINALIZE: 16 - Redirecting to execute changes"
+        redirect_to execute_changes_organization_person_path(@organization, @person, maap_snapshot), 
                     notice: "Bulk check-in finalization queued for processing. Review and execute below. #{@person&.full_name} - #{maap_snapshot&.id}"
       else
-        Rails.logger.error "BULK_FINALIZE: 16 - MaapSnapshot save failed: #{maap_snapshot.errors.full_messages}"
+        Rails.logger.error "BULK_FINALIZE: 17 - MaapSnapshot save failed: #{maap_snapshot.errors.full_messages}"
         redirect_to organization_check_in_path(@organization, @person), 
                     alert: 'Failed to create change record. Please try again.'
       end

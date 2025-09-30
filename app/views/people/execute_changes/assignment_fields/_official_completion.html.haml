@@ -1,12 +1,15 @@
 / Official Completion Field
-- if official_check_in['official_check_in_completed_at'].present?
+:ruby
+  current_completed = current_check_in&.officially_completed? || false
+  proposed_completed = official_check_in['official_check_in_completed_at'].present?
+  has_completion_change = current_completed != proposed_completed
+
+- if has_completion_change || official_check_in['official_check_in_completed_at'].present?
   %tr
     %td
       %strong Official Completion
     %td
-      - current_completed = current_check_in&.officially_completed? || false
-      - proposed_completed = official_check_in['official_check_in_completed_at'].present?
-      - if current_completed != proposed_completed
+      - if has_completion_change
         %span.badge.bg-warning.me-2 CHANGED
         %span.text-muted= current_completed ? 'Completed' : 'Not completed'
         %i.bi.bi-arrow-right.mx-1

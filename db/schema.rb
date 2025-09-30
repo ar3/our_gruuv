@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_22_003533) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_29_105531) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -238,7 +238,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_22_003533) do
     t.bigint "company_id"
     t.string "change_type", null: false
     t.text "reason", null: false
-    t.jsonb "maap_data", default: {}, null: false
+    t.jsonb "maap_data", default: {}
     t.jsonb "request_info", default: {}, null: false
     t.date "effective_date"
     t.datetime "created_at", null: false

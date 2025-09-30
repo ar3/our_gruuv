@@ -36,7 +36,7 @@ class Organizations::AssignmentTenuresController < ApplicationController
     )
     
     if maap_snapshot.save
-      redirect_to execute_changes_person_path(@person, maap_snapshot), 
+      redirect_to execute_changes_organization_person_path(@organization, @person, maap_snapshot), 
                   notice: "Changes queued for processing. Review and execute below. #{@person&.full_name} - #{maap_snapshot&.id}"
     else
       Rails.logger.error "MaapSnapshot save failed: #{maap_snapshot.errors.full_messages}"
