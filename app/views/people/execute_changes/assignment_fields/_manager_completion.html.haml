@@ -6,7 +6,7 @@
   can_see_manager = can_see_manager_private_data?(person)
   employee_name = person.first_name
 
-- if has_completion_change || manager_check_in['manager_completed_at'].present?
+- if has_completion_change
   %tr
     %td
       %strong Manager Completion
@@ -17,7 +17,5 @@
           %span.text-muted= current_completed ? 'Completed' : 'Not completed'
           %i.bi.bi-arrow-right.mx-1
           %span.text-primary= proposed_completed ? 'Completed' : 'Not completed'
-        - else
-          %span.text-muted= (current_completed ? 'Completed' : 'Not completed') + ' (unchanged)'
       - else
         %span.text-muted= format_private_field_value(nil, false, employee_name, 'manager')

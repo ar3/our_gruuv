@@ -38,9 +38,22 @@ class MaapChangeExecutionService
   attr_reader :maap_snapshot, :current_user, :person
 
   def execute_bulk_check_in_finalization
-    # Implementation for bulk check-in finalization
-    # This would contain the logic from the original method
-    true # Placeholder
+    # Execute bulk check-in finalization based on the snapshot
+    if maap_snapshot.maap_data['assignments']
+      execute_bulk_finalization_changes
+    end
+    true
+  end
+
+  def execute_bulk_finalization_changes
+    maap_snapshot.maap_data['assignments'].each do |assignment_data|
+      assignment = Assignment.find(assignment_data['id'])
+      
+      # Update check-in with finalization data
+      if assignment_data['official_check_in']
+        update_assignment_check_in(assignment, assignment_data)
+      end
+    end
   end
 
   def execute_individual_check_in_finalization

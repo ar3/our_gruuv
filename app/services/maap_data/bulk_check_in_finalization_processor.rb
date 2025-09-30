@@ -156,8 +156,8 @@ module MaapData
           manager_private_notes: current_check_in&.manager_private_notes,
           manager_rating: manager_rating.present? ? manager_rating : current_check_in&.manager_rating,
           shared_notes: shared_notes.present? ? shared_notes : current_check_in&.shared_notes,
-          manager_completed_at: manager_complete == true ? Time.current : (manager_complete == false ? nil : current_check_in&.manager_completed_at&.strftime('%Y-%m-%d %H:%M:%S')),
-          manager_completed_by_id: manager_complete == true ? @form_params[:created_by_id] : (manager_complete == false ? nil : current_check_in&.manager_completed_by_id)
+          manager_completed_at: manager_complete == true ? Time.current : current_check_in&.manager_completed_at&.strftime('%Y-%m-%d %H:%M:%S'),
+          manager_completed_by_id: manager_complete == true ? @form_params[:created_by_id] : current_check_in&.manager_completed_by_id
         }
       else
         nil
@@ -169,13 +169,16 @@ module MaapData
       # Handle both bulk finalization format (check_in_#{check_in_id}_*) and regular format (check_in_#{assignment_id}_*)
       check_in_id = current_check_in&.id
       
-      # Check if we have check_in_data format (hash with assignment IDs as keys)
+      # For bulk finalization, if both employee and manager are completed, we should finalize
+      # unless explicitly told not to
       if @form_params["check_in_data"].present?
         check_in_data = @form_params["check_in_data"][assignment_id.to_s]
         if check_in_data.present?
           official_rating = check_in_data["final_rating"]
           shared_notes = check_in_data["shared_notes"]
-          official_complete = check_in_data["close_rating"] == true || check_in_data["close_rating"] == "true"
+          # For bulk finalization, finalize if both sides are completed and we have a rating
+          official_complete = (check_in_data["close_rating"] == true || check_in_data["close_rating"] == "true") ||
+                             (official_rating.present? && current_check_in&.employee_completed_at.present? && current_check_in&.manager_completed_at.present?)
         else
           official_rating = nil
           shared_notes = nil
@@ -186,7 +189,10 @@ module MaapData
         if check_in_id.nil? || @form_params["check_in_#{assignment_id}_shared_notes"].present?
           official_rating = @form_params["check_in_#{assignment_id}_final_rating"] || @form_params["check_in_#{assignment_id}_official_rating"]
           shared_notes = @form_params["check_in_#{assignment_id}_shared_notes"]
-          official_complete = @form_params["check_in_#{assignment_id}_close_rating"] == "true" || @form_params["check_in_#{assignment_id}_official_complete"] == "1"
+          # For bulk finalization, finalize if both sides are completed and we have a rating
+          official_complete = @form_params["check_in_#{assignment_id}_close_rating"] == "true" || 
+                             @form_params["check_in_#{assignment_id}_official_complete"] == "1" ||
+                             (official_rating.present? && current_check_in&.employee_completed_at.present? && current_check_in&.manager_completed_at.present?)
         else
           official_rating = @form_params["check_in_#{check_in_id}_final_rating"] || @form_params["check_in_#{assignment_id}_official_rating"]
           shared_notes = @form_params["check_in_#{check_in_id}_shared_notes"] || @form_params["check_in_#{assignment_id}_shared_notes"]
