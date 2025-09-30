@@ -490,6 +490,9 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
     
     if employee_data['employee_completed_at']
       check_in.complete_employee_side!
+    elsif employee_data.key?('employee_completed_at') && employee_data['employee_completed_at'].nil?
+      # Explicitly unchecking employee completion
+      check_in.uncomplete_employee_side!
     end
   end
 
@@ -501,6 +504,9 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
     
     if manager_data['manager_completed_at']
       check_in.complete_manager_side!(completed_by: current_person)
+    elsif manager_data.key?('manager_completed_at') && manager_data['manager_completed_at'].nil?
+      # Explicitly unchecking manager completion
+      check_in.uncomplete_manager_side!
     end
   end
 
