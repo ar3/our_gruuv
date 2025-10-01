@@ -117,6 +117,23 @@ class Organization < ApplicationRecord
     Assignment.where(company: self_and_descendants)
   end
 
+  # Milestone-related methods
+  def recent_milestones_count(days_back: 90)
+    PersonMilestone.joins(:ability)
+                   .where(abilities: { organization: self })
+                   .where(attained_at: days_back.days.ago..Time.current)
+                   .count
+  end
+
+  def abilities_count
+    abilities.count
+  end
+
+  def person_milestones_for_person(person)
+    PersonMilestone.joins(:ability)
+                   .where(person: person, abilities: { organization: self })
+  end
+
   def recent_huddle_playbooks(include_descendants: false, weeks_back: 6)
     start_date = weeks_back.weeks.ago
     organizations_to_search = include_descendants ? self_and_descendants : [self]

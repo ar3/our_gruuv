@@ -17,25 +17,25 @@
     Milestones
   - milestones_primary_html = capture do
     %i.bi.bi-trophy.me-2
-    2 Recent Milestones to Celebrate
+    #{pluralize(organization.recent_milestones_count, 'Recent Milestone')} to Celebrate
   - milestones_secondary_html = capture do
     %i.bi.bi-list.me-1
-    All Abilities
+    All #{pluralize(organization.abilities_count, 'Ability')}
   - milestones_tertiary_html = capture do
     %i.bi.bi-person.me-1
-    My Milestones
+    My #{pluralize(organization.person_milestones_for_person(current_person).count, 'Milestone')}
   
   = render 'organizations/dashboard/dashboard_card',
     header_html: milestones_header_html,
     header_popover_content: "Milestones create a clear map for professional growth by setting clear expectations and recognizing progress along the way. Rather than generic praise, milestones celebrate concrete progress toward defined skills, knowledge, and behaviors. This targeted recognition motivates continued development while building a portfolio of valuable credentials. Not only is the valuable for clarity, since each milestone represents a concrete achievement that builds toward larger career goals – the certification-style value of milestones ensures that growth is both celebrated and benefits careers beyond the current seat.",
     header_popover_title: "About Milestones",
-    description: "Track achievements and certifications",
-    primary_action_url: organization_abilities_path(organization),
+    description: "Clarify expectations, celebrate achievements, build credentials",
+    primary_action_url: celebrate_milestones_organization_path(organization),
     primary_action_html: milestones_primary_html,
     primary_action_style: 'not_urgent',
     secondary_action_url: organization_abilities_path(organization),
     secondary_action_html: milestones_secondary_html,
-    tertiary_action_url: organization_abilities_path(organization),
+    tertiary_action_url: complete_picture_organization_person_path(organization, current_person) + '#milestones',
     tertiary_action_html: milestones_tertiary_html
 
   / Assignments Card

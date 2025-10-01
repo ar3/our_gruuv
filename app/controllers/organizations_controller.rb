@@ -152,12 +152,28 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       redirect_to huddles_review_organization_path(@organization), alert: 'Weekly notifications are only available for companies.'
     end
   end
+
+  def celebrate_milestones
+    # Get milestones attained in the last 90 days within this organization
+    @recent_milestones = PersonMilestone.joins(:ability, :person, :certified_by)
+                                       .where(abilities: { organization: @organization })
+                                       .where(attained_at: 90.days.ago..Time.current)
+                                       .includes(:ability, :person, :certified_by)
+                                       .order(attained_at: :desc)
+    
+    # Group by person for easier display
+    @milestones_by_person = @recent_milestones.group_by(&:person)
+    
+    # Get counts for the page
+    @total_milestones = @recent_milestones.count
+    @unique_people = @milestones_by_person.keys.count
+  end
   
     private
 
   # Skip organization setup for actions that don't need it
   def skip_organization_setup?
-    !%w[show edit update destroy switch huddles_review dashboard].include?(action_name)
+    !%w[show edit update destroy switch huddles_review dashboard celebrate_milestones].include?(action_name)
   end
   
   def organization_params

@@ -59,6 +59,7 @@ get '/login', to: 'auth#login', as: :login
       patch :update_huddle_review_channel
       post :trigger_weekly_notification
       get :dashboard
+      get :celebrate_milestones
     end
     
     resources :employees, only: [:index, :new, :create], controller: 'organizations/employees' do

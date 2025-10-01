@@ -1,0 +1,153 @@
+- content_for :go_back_link do
+  = link_to organization_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@organization.display_name}
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-trophy.me-2
+      Recent Milestones
+    .d-flex.align-items-center
+      = link_to organization_abilities_path(@organization), class: "btn btn-primary ml-2" do
+        %i.bi.bi-plus.me-2
+        Manage Abilities
+
+- content_for :header_action do
+  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#milestonesFilterModal", type: "button"}
+    %i.bi.bi-funnel.me-2
+    Filter & Sort
+
+.row.justify-content-center
+  .col-lg-12
+    - if @recent_milestones.any?
+      .alert.alert-success.mb-4
+        %h6.mb-2
+          %i.bi.bi-celebration.me-2
+          #{pluralize(@total_milestones, 'Milestone')} Achieved!
+        %p.mb-0 
+          #{pluralize(@unique_people, 'person')} have reached new milestones in the past 90 days. 
+          Let's celebrate their growth and achievement!
+      
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Person
+              %th Ability
+              %th Milestone Level
+              %th Attained Date
+              %th Certified By
+          %tbody
+            - @recent_milestones.each do |milestone|
+              %tr
+                %td
+                  = link_to complete_picture_organization_person_path(@organization, milestone.person), class: "text-decoration-none" do
+                    %strong= milestone.person.display_name
+                %td
+                  = milestone.ability.name
+                %td
+                  %span.badge.bg-primary= milestone.milestone_level_display
+                %td
+                  = milestone.attained_at.strftime('%B %d, %Y')
+                %td
+                  = milestone.certified_by.display_name
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Recent Milestones
+        %p.mb-2 
+          No milestones have been achieved in the past 90 days. 
+          Encourage your team to work toward their next ability milestones!
+        = link_to "Manage Abilities", organization_abilities_path(@organization), class: "btn btn-primary btn-sm"
+
+/ Modal for Filter & Sort
+#milestonesFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "milestonesFilterModalLabel", tabindex: "-1"}
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        %h5.modal-title#milestonesFilterModalLabel
+          %i.bi.bi-funnel.me-2
+          Filter & Sort Milestones (coming soon)
+        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+      .modal-body
+        .row
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-funnel.me-2
+              Filters
+            .mb-3
+              %label.form-label Person
+              %select.form-select
+                %option All People
+                %option Recent Achievers
+                %option First-time Achievers
+            .mb-3
+              %label.form-label Ability
+              %select.form-select
+                %option All Abilities
+                %option Technical Skills
+                %option Leadership Skills
+                %option Communication Skills
+            .mb-3
+              %label.form-label Milestone Level
+              %select.form-select
+                %option All Levels
+                %option Level 1
+                %option Level 2
+                %option Level 3
+                %option Level 4
+                %option Level 5
+            .mb-3
+              %label.form-label Time Period
+              %select.form-select
+                %option Last 90 Days
+                %option Last 30 Days
+                %option Last 7 Days
+                %option This Year
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-sort-down.me-2
+              Sort Options
+            .mb-3
+              %label.form-label Sort By
+              %select.form-select
+                %option Most Recent
+                %option Person Name
+                %option Ability Name
+                %option Milestone Level
+            .mb-3
+              %label.form-label Order
+              %select.form-select
+                %option Descending
+                %option Ascending
+            .mb-3
+              %label.form-label View Style
+              .form-check
+                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
+                %label.form-check-label
+                  %i.bi.bi-table.me-2
+                  Table View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
+                %label.form-check-label
+                  %i.bi.bi-grid.me-2
+                  Card View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "timeline"}
+                %label.form-check-label
+                  %i.bi.bi-clock-history.me-2
+                  Timeline View
+            .mb-3
+              %label.form-label Spotlight
+              %select.form-select
+                %option No Spotlight
+                %option High Achievers
+                %option New Milestones
+                %option Level 5 Achievements
+      .modal-footer
+        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+        %button.btn.btn-primary.disabled{type: "button"}
+          %i.bi.bi-check.me-2
+          Apply Filters
