@@ -44,18 +44,22 @@
     %i.bi.bi-flask.me-2
     Hypotheses
   - hypotheses_primary_html = capture do
-    %i.bi.bi-clock.me-2
-    Coming Soon
+    %i.bi.bi-plus.me-2
+    Coming Soon: Create Hypothesis
   - hypotheses_secondary_html = capture do
-    %i.bi.bi-info.me-1
-    Learn
+    %i.bi.bi-list.me-1
+    All 0 Hypotheses
   - hypotheses_tertiary_html = capture do
-    %i.bi.bi-bell.me-1
-    Notify
+    %i.bi.bi-people.me-1
+    My Team's 0 Hypotheses
+  - hypotheses_popover_content = capture do
+    Hypotheses provide a structured approach to testing ideas and assumptions before committing to major changes. Instead of making decisions based on gut feelings or incomplete information, hypotheses allow teams to experiment systematically and learn from real data. This scientific approach to decision-making reduces risk while accelerating innovation. By tracking hypotheses and their outcomes, teams can build knowledge over time and make increasingly better decisions.
   
   = render 'organizations/dashboard/dashboard_card',
     header_html: hypotheses_header_html,
-    description: "Hypothesis management",
+    header_popover_content: hypotheses_popover_content,
+    header_popover_title: "About Hypotheses",
+    description: ['Test assumptions, learn from data, make better decisions', 'Think scientifically, act experimentally, improve iteratively', 'Convert uncertainty into learning opportunities', 'Test, learn, improve - repeat'].sample,
     primary_action_url: hypothesis_management_coming_soon_path,
     primary_action_html: hypotheses_primary_html,
     primary_action_style: 'coming_soon',
