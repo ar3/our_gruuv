@@ -15,18 +15,22 @@
     %i.bi.bi-stoplights-fill.me-2
     Signals
   - signals_primary_html = capture do
-    %i.bi.bi-clock.me-2
-    Coming Soon
+    %i.bi.bi-eye.me-2
+    Coming Soon: View Team Signals
   - signals_secondary_html = capture do
-    %i.bi.bi-info.me-1
-    Learn
+    %i.bi.bi-list.me-1
+    All 0 Signals
   - signals_tertiary_html = capture do
-    %i.bi.bi-bell.me-1
-    Notify
+    %i.bi.bi-people.me-1
+    My Team's 0 Signals
+  - signals_popover_content = capture do
+    Signals provide real-time visibility into team health and performance through key metrics and indicators. Instead of waiting for quarterly reviews or annual surveys, signals give you continuous insight into how your team is doing. These metrics help identify issues early, celebrate wins, and make data-driven decisions about team dynamics. By tracking signals consistently, teams can maintain momentum and address challenges before they become problems.
   
   = render 'organizations/dashboard/dashboard_card',
     header_html: signals_header_html,
-    description: "Team signals and metrics",
+    header_popover_content: signals_popover_content,
+    header_popover_title: "About Signals",
+    description: ['Convert team anxiety into confident action', 'Transform reactive management into proactive leadership', 'Turn blind spots into clear insights', 'Replace guesswork with team health visibility', 'See what\'s working, catch what\'s not, fix what matters'].sample,
     primary_action_url: team_signals_coming_soon_path,
     primary_action_html: signals_primary_html,
     primary_action_style: 'coming_soon',
