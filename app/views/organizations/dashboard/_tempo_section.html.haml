@@ -73,18 +73,22 @@
     %i.bi.bi-bullseye.me-2
     OKR3s
   - okr3s_primary_html = capture do
-    %i.bi.bi-clock.me-2
-    Coming Soon
+    %i.bi.bi-plus.me-2
+    Coming Soon: Create OKR3
   - okr3s_secondary_html = capture do
-    %i.bi.bi-info.me-1
-    Learn
+    %i.bi.bi-list.me-1
+    All 0 OKR3s
   - okr3s_tertiary_html = capture do
-    %i.bi.bi-bell.me-1
-    Notify
+    %i.bi.bi-people.me-1
+    My Team's 0 OKR3s
+  - okr3s_popover_content = capture do
+    OKR3s provide a structured framework for setting and achieving meaningful goals through Objectives, Key Results, and confidence levels. Unlike traditional goal-setting that focuses only on outcomes, OKR3s emphasize the journey and learning process. This methodology helps teams align on what matters most while maintaining flexibility to adapt as they learn. By tracking both progress and confidence, OKR3s create a culture of continuous improvement and honest assessment.
   
   = render 'organizations/dashboard/dashboard_card',
     header_html: okr3s_header_html,
-    description: "OKR3 methodology and tracking",
+    header_popover_content: okr3s_popover_content,
+    header_popover_title: "About OKR3s",
+    description: ['Define objectives, measure results, grow confidence', 'Aim high, measure well, learn continuously', 'Dream big, plan smart, achieve together', 'Convert wishful thinking into confident action', 'Objectives, results, and confidence - the complete picture'].sample,
     primary_action_url: okr3_management_coming_soon_path,
     primary_action_html: okr3s_primary_html,
     primary_action_style: 'coming_soon',
