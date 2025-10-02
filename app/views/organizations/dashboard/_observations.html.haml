@@ -9,16 +9,22 @@
   of feedback
 - observations_secondary_html = capture do
   %i.bi.bi-clock.me-2
-  3 Recent Observations
+  X Recent Observations
 - observations_tertiary_html = capture do
   %i.bi.bi-person.me-2
-  My 12 Observations
+  My X Observations
+- observations_header_popover_content_html = capture do
+  Observations help teams grow by combining appreciative inquiry's focus on strengths with radical candor's commitment to honest feedback.
+  %hr.mt-1.mb-1/
+  Non-violent communication principles ensure all feedback is delivered with care and respect.
+  %hr.mt-1.mb-1/
+  This creates a culture where teams can celebrate wins, learn from challenges, and continuously improve together.
 
 = render 'organizations/dashboard/dashboard_hero_card',
   header_html: observations_header_html,
-  header_popover_content: "Observations help teams grow by combining appreciative inquiry's focus on strengths with radical candor's commitment to honest feedback. Non-violent communication principles ensure all feedback is delivered with care and respect. This creates a culture where teams can celebrate wins, learn from challenges, and continuously improve together.",
+  header_popover_content: observations_header_popover_content_html,
   header_popover_title: "About Observations",
-  description: "See what's good, say what's real, grow what works",
+  description: ['See what\'s good, say what\'s real, grow what works', 'Notice strengths, share insights, nurture growth', 'Observe carefully, communicate clearly, improve continuously', 'See the good, speak the truth, build the future', 'Replace generic feedback with specific observations', 'Turn workplace silence into constructive dialogue'].sample,
   primary_action_url: observations_coming_soon_path,
   primary_action_html: observations_primary_html,
   secondary_action_url: observations_coming_soon_path,
