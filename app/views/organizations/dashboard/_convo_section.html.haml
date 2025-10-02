@@ -48,18 +48,26 @@
     %i.bi.bi-gem.me-2
     Decisions
   - decisions_primary_html = capture do
-    %i.bi.bi-clock.me-2
-    Coming Soon
+    %i.bi.bi-play.me-2
+    Coming Soon: Start Decision Process
   - decisions_secondary_html = capture do
-    %i.bi.bi-info.me-1
-    Learn
+    %i.bi.bi-list.me-1
+    All 0 Decisions
   - decisions_tertiary_html = capture do
-    %i.bi.bi-bell.me-1
-    Notify
+    %i.bi.bi-people.me-1
+    My Team's 0 Decisions
+  - decisions_popover_content = capture do
+    Rushed or stalled consensus, top-down mandates, and voices being ignored… This is too often the norm for group decision making.
+    %hr.mt-1.mb-1/
+    Diamond Decisions transform messy debates into constructive choices.
+    %hr.mt-1.mb-1/
+    Diamond Decisions work best when they have rhythm: expansion and contraction, like breathing. The diverge phase expands possibilities, welcoming creativity and diverse viewpoints. The converge phase contracts toward clarity, producing alignment and action. This rhythm keeps teams healthy, collaborative, and focused.
   
   = render 'organizations/dashboard/dashboard_card',
     header_html: decisions_header_html,
-    description: "Group decision-making methodology",
+    header_popover_content: decisions_popover_content,
+    header_popover_title: "About Decisions",
+    description: ['Diverge to listen, converge to decide, align to move', 'Transform scattered opinions into shared direction', 'Better decisions, made together', 'Convert messy debates into confident choices', 'Diverge to explore, converge to decide, align to execute', 'Explore possibilities, narrow choices, commit to action', 'Think broadly, decide clearly, act together'].sample,
     primary_action_url: diverge_converge_coming_soon_path,
     primary_action_html: decisions_primary_html,
     primary_action_style: 'coming_soon',
