@@ -82,21 +82,35 @@
     Huddles
   - huddles_primary_html = capture do
     %i.bi.bi-eye.me-2
-    View All Huddles
+    Huddles Review
   - huddles_secondary_html = capture do
-    %i.bi.bi-plus.me-1
-    Create
+    %i.bi.bi-list.me-1
+    All #{pluralize(Huddle.active.count, 'Open Huddle')}
   - huddles_tertiary_html = capture do
-    %i.bi.bi-search.me-1
-    Search
+    %i.bi.bi-person.me-1
+    My Huddles
   
+  - huddles_popover_content = capture do
+    Too many meetings drain energy instead of fueling it. 
+    %hr.mt-1.mb-1/
+    Huddles flip that script. With a clear playbook, every huddle, guided by the S.E.E.20 framework (Sync, Execute, Evolve) builds connection, keeps the team aligned, and ensures outcomes. 
+    %hr.mt-1.mb-1/
+    Huddles aren\’t just about running a meeting—they\’re about building culture. By combining alignment, execution, and evolution, huddles create a team habit of collaboration and improvement. They turn meetings from necessary evils into catalysts for growth.
+    %hr.mt-1.mb-1/
+    Bonus: The Nat20 feedback system allows teams to continuously improve their collaboration and meeting effectiveness... a little better every time!
+  
+  - huddles_tagline = [ "<span class='fw-bold'>S</span>ync to align, <span class='fw-bold'>E</span>xecute to progress, <span class='fw-bold'>E</span>volve to improve", "<span class='fw-bold'>S</span>ync with purpose, <span class='fw-bold'>E</span>xecute with focus, <span class='fw-bold'>E</span>volve with feedback", "Meet less, achieve more"].sample.html_safe
+
+
   = render 'organizations/dashboard/dashboard_card',
     header_html: huddles_header_html,
-    description: "Manage team huddles and feedback",
-    primary_action_url: huddles_path,
+    description: huddles_tagline,
+    primary_action_url: huddles_review_organization_path(organization),
     primary_action_html: huddles_primary_html,
-    primary_action_style: 'urgent',
-    secondary_action_url: new_huddle_path,
+    primary_action_style: 'not_urgent',
+    secondary_action_url: huddles_path,
     secondary_action_html: huddles_secondary_html,
-    tertiary_action_url: huddles_path,
-    tertiary_action_html: huddles_tertiary_html
+    tertiary_action_url: my_huddles_path,
+    tertiary_action_html: huddles_tertiary_html,
+    header_popover_title: "About Huddles",
+    header_popover_content: huddles_popover_content
