@@ -15,18 +15,26 @@
     %i.bi.bi-lightbulb.me-2
     Opportunities
   - opportunities_primary_html = capture do
-    %i.bi.bi-clock.me-2
-    Coming Soon
+    %i.bi.bi-plus.me-2
+    Coming Soon: Add New Oppty
   - opportunities_secondary_html = capture do
-    %i.bi.bi-info.me-1
-    Learn
+    %i.bi.bi-list.me-1
+    All 0 Oppties
   - opportunities_tertiary_html = capture do
-    %i.bi.bi-bell.me-1
-    Notify
+    %i.bi.bi-people.me-1
+    My Team's 0 Oppties
+  - opportunities_popover_content = capture do
+    Without a structure, improvement work can feel chaotic or random. Opportunities anchor that energy by pointing to specific issues that matter. Instead of random complaints or distractions, they highlight challenges that are specific, relevant, and solvable.
+    %hr.mt-1.mb-1/
+    Opportunities represent a shift in mindset: from reacting to problems to seeking possibilities. They reframe obstacles into constructive challenges, giving your team clarity and focus. By identifying opportunities teams shift from a reactive mindset to a proactive one—channeling energy into meaningful progress that strengthens both results and culture.
+    %hr.mt-1.mb-1/
+    Opportunities are a vehicle to create momentum for continuous progress and a culture that thrives on improvement.
   
   = render 'organizations/dashboard/dashboard_card',
     header_html: opportunities_header_html,
-    description: "Continuously Improve w/ \"Good\" opportunities",
+    header_popover_content: opportunities_popover_content,
+    header_popover_title: "About Opportunities",
+    description: ['Find what matters, frame it well, fix it together', 'Define the challenge, focus the effort, deliver the improvement'].sample,
     primary_action_url: good_issues_coming_soon_path,
     primary_action_html: opportunities_primary_html,
     primary_action_style: 'coming_soon',

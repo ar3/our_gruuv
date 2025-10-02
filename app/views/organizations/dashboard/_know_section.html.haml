@@ -90,10 +90,10 @@
     = current_person.employment_status_text_for(organization)
   - positions_secondary_html = capture do
     %i.bi.bi-list.me-1
-    All #{pluralize(organization.position_types_count, 'Position Type')}
+    All #{pluralize(organization.position_types_count, 'Titles')}
   - positions_tertiary_html = capture do
     %i.bi.bi-people.me-1
-    #{pluralize(organization.seats_count, 'Seat')}
+    All #{pluralize(organization.seats_count, 'Seat')}
   - positions_popover_content = capture do
     With positions, promotions and title/compensation-based growth are no longer based on chance or favoritism.
     %hr.mt-1.mb-1/
