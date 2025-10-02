@@ -7,20 +7,20 @@
   =organization.display_name
 - organization_primary_html = capture do
   %i.bi.bi-people.me-3
-  View Teammates
+  All #{pluralize(organization.employees.count, 'Teammate')}
 - organization_secondary_html = capture do
-  %i.bi.bi-clock.me-2
-  View All Teams
+  %i.bi.bi-diagram-3.me-2
+  All #{pluralize(organization.descendants_count, 'Team')}
 - organization_tertiary_html = capture do
-  %i.bi.bi-person.me-2
-  ???
+  %i.bi.bi-building.me-2
+  Organization Overview
 
 = render 'organizations/dashboard/dashboard_hero_card',
   header_html: organization_header_html,
-  description: "Continuous improvement insights for product teams",
-  primary_action_url: observations_coming_soon_path,
+  description: "Helping #{organization.name} get its gruuv on!",
+  primary_action_url: organization_employees_path(organization),
   primary_action_html: organization_primary_html,
-  secondary_action_url: observations_coming_soon_path,
+  secondary_action_url: organization_departments_and_teams_path(organization),
   secondary_action_html: organization_secondary_html,
-  tertiary_action_url: observations_coming_soon_path,
+  tertiary_action_url: organization_path(organization),
   tertiary_action_html: organization_tertiary_html

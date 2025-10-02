@@ -134,6 +134,10 @@ class Organization < ApplicationRecord
                    .where(person: person, abilities: { organization: self })
   end
 
+  def descendants_count
+    descendants.count
+  end
+
   def recent_huddle_playbooks(include_descendants: false, weeks_back: 6)
     start_date = weeks_back.weeks.ago
     organizations_to_search = include_descendants ? self_and_descendants : [self]

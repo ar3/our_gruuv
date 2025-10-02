@@ -147,6 +147,9 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
+    # Departments and Teams management
+    resources :departments_and_teams, module: :organizations, only: [:index]
+    
     # Slack integration nested under organizations
     resource :slack, only: [:show], module: :organizations, controller: 'slack' do
       collection do

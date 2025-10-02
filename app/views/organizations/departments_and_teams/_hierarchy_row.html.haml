@@ -1,0 +1,28 @@
+%tr
+  %td{style: "padding-left: #{20 + (item[:level] * 20)}px;"}
+    - if item[:level] > 0
+      %i.bi.bi-arrow-return-right.me-2.text-muted
+    = link_to organization_path(item[:organization]), class: "text-decoration-none" do
+      %strong= item[:organization].name
+  %td
+    %span.badge{class: item[:organization].department? ? "bg-primary" : "bg-info"}
+      = item[:organization].type
+  %td
+    - if item[:organization].parent
+      = link_to organization_path(item[:organization].parent), class: "text-muted text-decoration-none" do
+        = item[:organization].parent.name
+    - else
+      %span.text-muted= @organization.name
+  %td
+    .btn-group.btn-group-sm
+      = link_to organization_path(item[:organization]), class: "btn btn-outline-primary" do
+        %i.bi.bi-eye
+      - if policy(item[:organization]).edit?
+        = link_to edit_organization_path(item[:organization]), class: "btn btn-outline-secondary" do
+          %i.bi.bi-pencil
+      - if policy(item[:organization]).destroy?
+        = link_to organization_path(item[:organization]), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
+          %i.bi.bi-trash
+
+- item[:children].each do |child_item|
+  = render 'organizations/departments_and_teams/hierarchy_row', item: child_item

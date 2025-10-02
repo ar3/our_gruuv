@@ -1,0 +1,126 @@
+- content_for :go_back_link do
+  = link_to organization_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@organization.display_name}
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-diagram-3.me-2
+      Departments & Teams
+    .d-flex.align-items-center
+      - if policy(@organization).create?
+        = link_to new_organization_path(parent_id: @organization.id), class: "btn btn-primary ml-2" do
+          %i.bi.bi-plus
+      - else
+        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+          %i.bi.bi-plus
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need organization creation permission to perform this action"}
+
+- content_for :header_action do
+  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#departmentsTeamsFilterModal", type: "button"}
+    %i.bi.bi-funnel.me-2
+    Filter & Sort
+
+.row.justify-content-center
+  .col-lg-12
+    - if @departments_and_teams.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Name
+              %th Type
+              %th Parent
+              %th Actions
+          %tbody
+            - @hierarchy.each do |item|
+              = render 'organizations/departments_and_teams/hierarchy_row', item: item
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Departments or Teams Created
+        %p.mb-2 
+          This organization doesn't have any departments or teams yet. 
+          Create your first department or team to get started!
+        = link_to "Create First Department", new_organization_path(parent_id: @organization.id, type: 'Department'), class: "btn btn-primary btn-sm"
+
+/ Modal for Filter & Sort
+#departmentsTeamsFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "departmentsTeamsFilterModalLabel", tabindex: "-1"}
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        %h5.modal-title#departmentsTeamsFilterModalLabel
+          %i.bi.bi-funnel.me-2
+          Filter & Sort Departments & Teams (coming soon)
+        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+      .modal-body
+        .row
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-funnel.me-2
+              Filters
+            .mb-3
+              %label.form-label Type
+              %select.form-select
+                %option All Types
+                %option Departments Only
+                %option Teams Only
+            .mb-3
+              %label.form-label Parent Organization
+              %select.form-select
+                %option All Parents
+                %option Direct Children Only
+                %option Nested Children Only
+            .mb-3
+              %label.form-label Status
+              %select.form-select
+                %option All Status
+                %option Active
+                %option Inactive
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-sort-down.me-2
+              Sort Options
+            .mb-3
+              %label.form-label Sort By
+              %select.form-select
+                %option Name
+                %option Type
+                %option Parent
+                %option Created Date
+            .mb-3
+              %label.form-label Order
+              %select.form-select
+                %option Ascending
+                %option Descending
+            .mb-3
+              %label.form-label View Style
+              .form-check
+                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
+                %label.form-check-label
+                  %i.bi.bi-table.me-2
+                  Table View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
+                %label.form-check-label
+                  %i.bi.bi-grid.me-2
+                  Card View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "tree"}
+                %label.form-check-label
+                  %i.bi.bi-diagram-3.me-2
+                  Tree View
+            .mb-3
+              %label.form-label Spotlight
+              %select.form-select
+                %option No Spotlight
+                %option Recently Created
+                %option Most Active
+                %option Largest Teams
+      .modal-footer
+        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+        %button.btn.btn-primary.disabled{type: "button"}
+          %i.bi.bi-check.me-2
+          Apply Filters
