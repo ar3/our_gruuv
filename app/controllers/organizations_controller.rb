@@ -206,7 +206,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       # Organization stats
       @total_employees = @organization.employees.count
       # Get potential employees (people with access or huddle participation but no employment)
-      access_people = @organization.person_organization_accesses.includes(:person)
+      access_people = @organization.teammates.includes(:person)
         .where.not(person: @organization.employees)
         .map(&:person)
       

@@ -27,7 +27,7 @@ RSpec.describe 'Manager Complete Bug Still Exists', type: :request do
            manager_rating: 'meeting')
     
     # Grant manager permissions
-    create(:person_organization_access, person: manager, organization: organization, can_manage_employment: true)
+    create(:teammate, person: manager, organization: organization, can_manage_employment: true)
     
     # Mock authentication
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)

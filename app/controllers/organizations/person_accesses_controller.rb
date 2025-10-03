@@ -1,22 +1,22 @@
 class Organizations::PersonAccessesController < Organizations::OrganizationNamespaceBaseController
   before_action :require_login
-  before_action :set_person_organization_access, only: [:edit, :update, :destroy]
+  before_action :set_teammate, only: [:edit, :update, :destroy]
   after_action :verify_authorized
 
   def new
-    @person_organization_access = PersonOrganizationAccess.new
-    @person_organization_access.organization = @organization
-    @person_organization_access.person = current_person
-    authorize @person_organization_access
+    @teammate = Teammate.new
+    @teammate.organization = @organization
+    @teammate.person = current_person
+    authorize @teammate
   end
 
   def create
-    @person_organization_access = PersonOrganizationAccess.new(person_organization_access_params)
-    @person_organization_access.organization = @organization
-    @person_organization_access.person = current_person
-    authorize @person_organization_access
+    @teammate = Teammate.new(teammate_params)
+    @teammate.organization = @organization
+    @teammate.person = current_person
+    authorize @teammate
 
-    if @person_organization_access.save
+    if @teammate.save
       redirect_to profile_path, notice: 'Organization permission was successfully created.'
     else
       render :new, status: :unprocessable_entity
@@ -24,13 +24,13 @@ class Organizations::PersonAccessesController < Organizations::OrganizationNames
   end
 
   def edit
-    authorize @person_organization_access
+    authorize @teammate
   end
 
   def update
-    authorize @person_organization_access
+    authorize @teammate
     
-    if @person_organization_access.update(person_organization_access_params)
+    if @teammate.update(teammate_params)
       redirect_to profile_path, notice: 'Organization permission was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
@@ -38,8 +38,8 @@ class Organizations::PersonAccessesController < Organizations::OrganizationNames
   end
 
   def destroy
-    authorize @person_organization_access
-    @person_organization_access.destroy
+    authorize @teammate
+    @teammate.destroy
     redirect_to profile_path, notice: 'Organization permission was successfully removed.'
   end
 
@@ -51,11 +51,11 @@ class Organizations::PersonAccessesController < Organizations::OrganizationNames
     end
   end
 
-  def set_person_organization_access
-    @person_organization_access = @organization.person_organization_accesses.find(params[:id])
+  def set_teammate
+    @teammate = @organization.teammates.find(params[:id])
   end
 
-  def person_organization_access_params
-    params.require(:person_organization_access).permit(:can_manage_employment, :can_manage_maap)
+  def teammate_params
+    params.require(:teammate).permit(:can_manage_employment, :can_manage_maap)
   end
 end

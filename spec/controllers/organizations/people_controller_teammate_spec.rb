@@ -13,9 +13,9 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     # Set up employment for employee
     create(:employment_tenure, person: employee, company: organization)
     # Set up organization access for manager
-    create(:person_organization_access, person: manager, organization: organization, can_manage_employment: true)
+    create(:teammate, person: manager, organization: organization, can_manage_employment: true)
     # Set up organization access for employee
-    create(:person_organization_access, person: employee, organization: organization)
+    create(:teammate, person: employee, organization: organization)
   end
 
   describe 'GET #teammate' do
@@ -37,7 +37,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         expect(assigns(:person)).to eq(employee)
         expect(assigns(:current_organization)).to be_a(Organization).and have_attributes(id: organization.id)
         expect(assigns(:employment_tenures)).to be_present
-        expect(assigns(:person_organization_accesses)).to be_present
+        expect(assigns(:teammates)).to be_present
       end
     end
   end

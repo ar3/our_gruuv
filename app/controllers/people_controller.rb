@@ -21,7 +21,7 @@ class PeopleController < ApplicationController
                                  .decorate
     @assignment_tenures = person.assignment_tenures.includes(:assignment)
                                  .order(started_at: :desc)
-    @person_organization_accesses = person.person_organization_accesses.includes(:organization)
+    @teammates = person.teammates.includes(:organization)
     
     # Preload huddle associations to avoid N+1 queries
     person.huddle_participants.includes(:huddle, huddle: :huddle_playbook).load

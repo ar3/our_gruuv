@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe PersonOrganizationAccess, type: :model do
+RSpec.describe Teammate, type: :model do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
   let(:team) { create(:organization, :team, parent: company) }
@@ -12,8 +12,8 @@ RSpec.describe PersonOrganizationAccess, type: :model do
   
   describe 'validations' do
     it 'validates uniqueness of person_id scoped to organization_id' do
-      existing_access = create(:person_organization_access, person: person, organization: company)
-      duplicate_access = build(:person_organization_access, person: person, organization: company)
+      existing_access = create(:teammate, person: person, organization: company)
+      duplicate_access = build(:teammate, person: person, organization: company)
       
       expect(duplicate_access).not_to be_valid
       expect(duplicate_access.errors[:person_id]).to include('has already been taken')
@@ -25,8 +25,8 @@ RSpec.describe PersonOrganizationAccess, type: :model do
     let(:person3) { create(:person) }
     let(:person4) { create(:person) }
     
-    let!(:access1) { create(:person_organization_access, person: person, organization: company) }
-    let!(:access2) { create(:person_organization_access, person: person2, organization: team) }
+    let!(:access1) { create(:teammate, person: person, organization: company) }
+    let!(:access2) { create(:teammate, person: person2, organization: team) }
     
     describe '.for_organization_hierarchy' do
       it 'returns access records for organization and all descendants' do
@@ -41,7 +41,7 @@ RSpec.describe PersonOrganizationAccess, type: :model do
     end
     
     describe '.with_employment_management' do
-      let!(:employment_access) { create(:person_organization_access, :employment_manager, person: person3, organization: company) }
+      let!(:employment_access) { create(:teammate, :employment_manager, person: person3, organization: company) }
       
       it 'returns only access records with employment management' do
         result = described_class.with_employment_management
@@ -51,7 +51,7 @@ RSpec.describe PersonOrganizationAccess, type: :model do
     end
     
     describe '.with_maap_management' do
-      let!(:maap_access) { create(:person_organization_access, :maap_manager, person: person4, organization: team) }
+      let!(:maap_access) { create(:teammate, :maap_manager, person: person4, organization: team) }
       
       it 'returns only access records with MAAP management' do
         result = described_class.with_maap_management
@@ -62,7 +62,7 @@ RSpec.describe PersonOrganizationAccess, type: :model do
   end
   
   describe 'instance methods' do
-    let(:access) { create(:person_organization_access, person: person, organization: company) }
+    let(:access) { create(:teammate, person: person, organization: company) }
     
     describe '#can_manage_employment?' do
       it 'returns true when can_manage_employment is true' do
@@ -100,7 +100,7 @@ RSpec.describe PersonOrganizationAccess, type: :model do
   end
   
   describe 'class methods' do
-    let!(:access) { create(:person_organization_access, person: person, organization: company) }
+    let!(:access) { create(:teammate, person: person, organization: company) }
     
     describe '.can_manage_employment?' do
       it 'returns true when person has employment management access' do
@@ -137,7 +137,7 @@ RSpec.describe PersonOrganizationAccess, type: :model do
     end
     
     describe '.can_manage_employment_in_hierarchy?' do
-      let!(:team_access) { create(:person_organization_access, person: person, organization: team) }
+      let!(:team_access) { create(:teammate, person: person, organization: team) }
       
       it 'returns true when person has employment management access at organization level' do
         team_access.update!(can_manage_employment: true)
@@ -157,7 +157,7 @@ RSpec.describe PersonOrganizationAccess, type: :model do
     end
     
     describe '.can_manage_maap_in_hierarchy?' do
-      let!(:team_access) { create(:person_organization_access, person: person, organization: team) }
+      let!(:team_access) { create(:teammate, person: person, organization: team) }
       
       it 'returns true when person has MAAP management access at organization level' do
         team_access.update!(can_manage_maap: true)

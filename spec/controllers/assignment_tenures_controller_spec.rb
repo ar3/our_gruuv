@@ -24,7 +24,7 @@ RSpec.describe Organizations::AssignmentTenuresController, type: :controller do
     create(:employment_tenure, person: manager, position: position, company: organization) # Manager employment
     
     # Set up organization access for manager
-    create(:person_organization_access, person: manager, organization: organization, can_manage_maap: true, can_manage_employment: true)
+    create(:teammate, person: manager, organization: organization, can_manage_maap: true, can_manage_employment: true)
     
     # Mock authentication
     allow(controller).to receive(:current_person).and_return(manager)

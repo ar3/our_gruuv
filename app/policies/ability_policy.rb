@@ -25,7 +25,7 @@ class AbilityPolicy < ApplicationPolicy
         scope.all
       elsif user.respond_to?(:pundit_organization) && user.pundit_organization
         organization = user.pundit_organization
-        if actual_user.person_organization_accesses.exists?(organization: organization, can_manage_maap: true)
+        if actual_user.teammates.exists?(organization: organization, can_manage_maap: true)
           scope.for_organization(organization)
         else
           scope.none
@@ -42,7 +42,7 @@ class AbilityPolicy < ApplicationPolicy
     return false unless user.respond_to?(:pundit_organization) && user.pundit_organization
     
     organization = user.pundit_organization
-    actual_user.person_organization_accesses.exists?(
+    actual_user.teammates.exists?(
       organization: organization,
       can_manage_maap: true
     )
@@ -51,7 +51,7 @@ class AbilityPolicy < ApplicationPolicy
   def user_has_maap_permission_for_record?
     return false unless record&.organization
     
-    actual_user.person_organization_accesses.exists?(
+    actual_user.teammates.exists?(
       organization: record.organization,
       can_manage_maap: true
     )

@@ -17,7 +17,7 @@ RSpec.describe 'Manager Completed Uncheck Bug', type: :request do
       create(:employment_tenure, person: person, company: organization)
       
       # Grant manager permissions
-      create(:person_organization_access, person: manager, organization: organization, can_manage_employment: true, can_manage_maap: true)
+      create(:teammate, person: manager, organization: organization, can_manage_employment: true, can_manage_maap: true)
       
       # Set up current state: manager has completed the check-in
       create(:assignment_tenure, 

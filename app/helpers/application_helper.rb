@@ -100,7 +100,7 @@ module ApplicationHelper
   
   def potential_employee_reason(person)
     reasons = []
-    if person.person_organization_accesses.exists?
+    if person.teammates.exists?
       reasons << "Has access permissions"
     end
     if person.huddle_participants.exists?

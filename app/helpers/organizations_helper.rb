@@ -13,7 +13,7 @@ module OrganizationsHelper
     end
     
     # Check access permissions
-    if person.person_organization_accesses.where(organization: organization).exists?
+    if person.teammates.where(organization: organization).exists?
       reasons << "Access"
     end
     

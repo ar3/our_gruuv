@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Organizations::PeopleController, type: :controller do
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person) }
-  let(:manager_access) { create(:person_organization_access, person: manager, organization: organization, can_manage_employment: true) }
+  let(:manager_access) { create(:teammate, person: manager, organization: organization, can_manage_employment: true) }
   
   before do
     session[:current_person_id] = manager.id

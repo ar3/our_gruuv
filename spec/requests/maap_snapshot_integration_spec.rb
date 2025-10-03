@@ -26,7 +26,7 @@ RSpec.describe 'MaapSnapshot Integration', type: :request do
     create(:employment_tenure, person: manager, position: position, company: organization)
     
     # Set up organization access for manager
-    create(:person_organization_access, person: manager, organization: organization, can_manage_maap: true, can_manage_employment: true)
+    create(:teammate, person: manager, organization: organization, can_manage_maap: true, can_manage_employment: true)
     
     # Set up initial data
     create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20)

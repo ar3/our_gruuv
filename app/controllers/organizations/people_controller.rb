@@ -15,7 +15,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
                                  .joins(:assignment)
                                  .where(assignments: { company: organization })
                                  .order(started_at: :desc)
-    @person_organization_accesses = @person.person_organization_accesses.includes(:organization)
+    @teammates = @person.teammates.includes(:organization)
     
     # Preload huddle associations to avoid N+1 queries
     @person.huddle_participants.includes(:huddle, huddle: :huddle_playbook).load
@@ -54,7 +54,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
                                  .where(company: organization)
                                  .order(started_at: :desc)
                                  .decorate
-    @person_organization_accesses = @person.person_organization_accesses.includes(:organization)
+    @teammates = @person.teammates.includes(:organization)
   end
 
   def execute_changes
@@ -169,8 +169,8 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
     permission_value = params[:permission_value]
     org = organization
     
-    # Find or create the person organization access record
-    access = @person.person_organization_accesses.find_or_initialize_by(organization: org)
+    # Find or create the teammate record
+    access = @person.teammates.find_or_initialize_by(organization: org)
     
     # Update the specific permission
     case permission_type

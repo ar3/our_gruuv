@@ -4,7 +4,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
   let(:organization) { create(:organization) }
   let(:manager) { create(:person) }
   let(:person) { create(:person) }
-  let(:current_access) { create(:person_organization_access, person: person, organization: organization) }
+  let(:current_access) { create(:teammate, person: person, organization: organization) }
 
   before do
     # Set up session for authentication
@@ -14,7 +14,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     create(:employment_tenure, person: manager, company: organization)
     
     # Grant manager permissions
-    create(:person_organization_access, 
+    create(:teammate, 
            person: manager, 
            organization: organization,
            can_manage_employment: true)
@@ -35,7 +35,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         
         # Verify the permission was updated
         person.reload
-        access = person.person_organization_accesses.find_by(organization: organization)
+        access = person.teammates.find_by(organization: organization)
         expect(access.can_manage_employment).to be true
       end
 
@@ -52,7 +52,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         
         # Verify the permission was updated
         person.reload
-        access = person.person_organization_accesses.find_by(organization: organization)
+        access = person.teammates.find_by(organization: organization)
         expect(access.can_create_employment).to be false
       end
 
@@ -69,7 +69,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         
         # Verify the permission was updated
         person.reload
-        access = person.person_organization_accesses.find_by(organization: organization)
+        access = person.teammates.find_by(organization: organization)
         expect(access.can_manage_maap).to be_nil
       end
 
@@ -90,7 +90,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     context 'when user lacks manager permissions' do
       before do
         # Remove manager permissions
-        manager.person_organization_accesses.destroy_all
+        manager.teammates.destroy_all
       end
 
       it 'handles authorization failure' do

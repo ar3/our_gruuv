@@ -68,7 +68,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
 
   describe 'GET #audit' do
     let(:maap_manager) { create(:person) }
-    let(:maap_access) { create(:person_organization_access, person: maap_manager, organization: company, can_manage_maap: true) }
+    let(:maap_access) { create(:teammate, person: maap_manager, organization: company, can_manage_maap: true) }
     let(:maap_snapshot1) { create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: company, change_type: 'assignment_management') }
     let(:maap_snapshot2) { create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: company, change_type: 'position_tenure') }
 

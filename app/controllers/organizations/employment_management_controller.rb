@@ -56,7 +56,7 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
     potential_people = []
     
     # People with access permissions but no employment
-    access_people = @organization.person_organization_accesses.includes(:person)
+    access_people = @organization.teammates.includes(:person)
       .where.not(person: @organization.employees)
       .map(&:person)
     
@@ -70,7 +70,7 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
   
   def potential_employee_reason(person)
     reasons = []
-    reasons << "Has access permissions" if @organization.person_organization_accesses.exists?(person: person)
+    reasons << "Has access permissions" if @organization.teammates.exists?(person: person)
     reasons << "Participated in huddles" if @organization.huddle_participants.where(id: person.id).exists?
     reasons.join(", ")
   end

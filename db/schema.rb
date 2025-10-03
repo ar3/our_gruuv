@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_29_105531) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_03_002827) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -329,21 +329,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_29_105531) do
     t.index ["person_id"], name: "index_person_milestones_on_person_id"
   end
 
-  create_table "person_organization_accesses", force: :cascade do |t|
-    t.bigint "person_id", null: false
-    t.bigint "organization_id", null: false
-    t.boolean "can_manage_employment"
-    t.boolean "can_manage_maap"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.boolean "can_create_employment"
-    t.index ["can_manage_employment"], name: "index_person_organization_accesses_on_can_manage_employment"
-    t.index ["can_manage_maap"], name: "index_person_organization_accesses_on_can_manage_maap"
-    t.index ["organization_id"], name: "index_person_organization_accesses_on_organization_id"
-    t.index ["person_id", "organization_id"], name: "index_person_org_access_on_person_and_org", unique: true
-    t.index ["person_id"], name: "index_person_organization_accesses_on_person_id"
-  end
-
   create_table "position_assignments", force: :cascade do |t|
     t.bigint "position_id", null: false
     t.bigint "assignment_id", null: false
@@ -444,6 +429,29 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_29_105531) do
     t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true
   end
 
+  create_table "teammates", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.bigint "organization_id", null: false
+    t.boolean "can_manage_employment"
+    t.boolean "can_manage_maap"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "can_create_employment"
+    t.datetime "first_employed_at"
+    t.datetime "last_terminated_at"
+    t.datetime "became_followable_at"
+    t.string "type"
+    t.index ["became_followable_at"], name: "index_teammates_on_became_followable_at"
+    t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"
+    t.index ["can_manage_maap"], name: "index_teammates_on_can_manage_maap"
+    t.index ["first_employed_at", "last_terminated_at"], name: "index_teammates_on_first_employed_at_and_last_terminated_at"
+    t.index ["first_employed_at"], name: "index_teammates_on_first_employed_at"
+    t.index ["last_terminated_at"], name: "index_teammates_on_last_terminated_at"
+    t.index ["organization_id"], name: "index_teammates_on_organization_id"
+    t.index ["person_id", "organization_id"], name: "index_person_org_access_on_person_and_org", unique: true
+    t.index ["person_id"], name: "index_teammates_on_person_id"
+  end
+
   create_table "third_party_object_associations", force: :cascade do |t|
     t.bigint "third_party_object_id", null: false
     t.string "associatable_type", null: false
@@ -539,8 +547,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_29_105531) do
   add_foreign_key "person_milestones", "abilities"
   add_foreign_key "person_milestones", "people"
   add_foreign_key "person_milestones", "people", column: "certified_by_id"
-  add_foreign_key "person_organization_accesses", "organizations"
-  add_foreign_key "person_organization_accesses", "people"
   add_foreign_key "position_assignments", "assignments"
   add_foreign_key "position_assignments", "positions"
   add_foreign_key "position_levels", "position_major_levels"
@@ -550,6 +556,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_29_105531) do
   add_foreign_key "positions", "position_types"
   add_foreign_key "seats", "position_types"
   add_foreign_key "slack_configurations", "organizations"
+  add_foreign_key "teammates", "organizations"
+  add_foreign_key "teammates", "people"
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
   add_foreign_key "upload_events", "organizations"

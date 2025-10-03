@@ -71,7 +71,7 @@ RSpec.describe PersonPolicy, type: :policy do
   permissions :audit? do
     let(:organization) { create(:organization, :company) }
     let(:maap_manager) { create(:person) }
-    let(:maap_access) { create(:person_organization_access, person: maap_manager, organization: organization, can_manage_maap: true) }
+    let(:maap_access) { create(:teammate, person: maap_manager, organization: organization, can_manage_maap: true) }
     let(:regular_user) { create(:person) }
     let(:pundit_user_with_org) { OpenStruct.new(user: maap_manager, pundit_organization: organization) }
     let(:pundit_user_without_org) { OpenStruct.new(user: maap_manager, pundit_organization: nil) }

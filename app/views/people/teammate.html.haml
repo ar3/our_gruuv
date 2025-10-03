@@ -33,7 +33,7 @@
                     %small Started: #{current_tenure.started_at.strftime("%B %d, %Y")}
               
               / Organization Access
-              - org_access = @person_organization_accesses.find { |a| a.organization == @current_organization }
+              - org_access = @teammates.find { |a| a.organization == @current_organization }
               - if org_access
                 .alert.alert-info
                   %strong Organization Access:

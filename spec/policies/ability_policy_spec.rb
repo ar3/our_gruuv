@@ -15,7 +15,7 @@ RSpec.describe AbilityPolicy, type: :policy do
 
   before do
     # Grant MAAP permissions to maap_user for organization
-    create(:person_organization_access, 
+    create(:teammate, 
            person: maap_user, 
            organization: organization, 
            can_manage_maap: true)
@@ -61,7 +61,7 @@ RSpec.describe AbilityPolicy, type: :policy do
 
     context 'when user has MAAP permissions for different organization' do
       before do
-        create(:person_organization_access, 
+        create(:teammate, 
                person: person, 
                organization: other_organization, 
                can_manage_maap: true)
@@ -121,7 +121,7 @@ RSpec.describe AbilityPolicy, type: :policy do
 
     context 'when user has MAAP permissions for different organization' do
       before do
-        create(:person_organization_access, 
+        create(:teammate, 
                person: person, 
                organization: other_organization, 
                can_manage_maap: true)

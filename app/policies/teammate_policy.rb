@@ -1,4 +1,4 @@
-class PersonOrganizationAccessPolicy < ApplicationPolicy
+class TeammatePolicy < ApplicationPolicy
   def new?
     return true if admin_bypass?
     return false unless actual_user

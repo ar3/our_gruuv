@@ -10,7 +10,7 @@ RSpec.describe 'Bulk Finalization Manager Completed Bug', type: :request do
   before do
     create(:employment_tenure, person: manager, company: organization)
     create(:employment_tenure, person: person, company: organization)
-    create(:person_organization_access, person: manager, organization: organization, can_manage_employment: true, can_manage_maap: true)
+    create(:teammate, person: manager, organization: organization, can_manage_employment: true, can_manage_maap: true)
 
     # Create assignment tenures so the processor can find the assignments
     create(:assignment_tenure, person: person, assignment: assignment1, anticipated_energy_percentage: 50)

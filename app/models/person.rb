@@ -83,7 +83,7 @@ class Person < ApplicationRecord
                 .distinct
     end
   end
-  has_many :person_organization_accesses, dependent: :destroy
+  has_many :teammates, dependent: :destroy
   belongs_to :current_organization, class_name: 'Organization', optional: true
   
   # Callbacks
@@ -153,11 +153,11 @@ class Person < ApplicationRecord
   
   # Permission helper methods
   def can_manage_employment?(organization)
-    PersonOrganizationAccess.can_manage_employment_in_hierarchy?(self, organization)
+    Teammate.can_manage_employment_in_hierarchy?(self, organization)
   end
   
   def can_create_employment?(organization)
-    PersonOrganizationAccess.can_create_employment?(self, organization)
+    Teammate.can_create_employment?(self, organization)
   end
   
   # Organization context methods
@@ -191,11 +191,11 @@ class Person < ApplicationRecord
   
   # Permission checking methods
   def can_manage_employment?(organization)
-    PersonOrganizationAccess.can_manage_employment_in_hierarchy?(self, organization)
+    Teammate.can_manage_employment_in_hierarchy?(self, organization)
   end
   
   def can_manage_maap?(organization)
-    PersonOrganizationAccess.can_manage_maap_in_hierarchy?(self, organization)
+    Teammate.can_manage_maap_in_hierarchy?(self, organization)
   end
 
   # Employment tenure checking methods

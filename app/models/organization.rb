@@ -15,7 +15,7 @@ class Organization < ApplicationRecord
   has_one :slack_configuration, dependent: :destroy
   has_many :third_party_objects, dependent: :destroy
   has_many :third_party_object_associations, as: :associatable, dependent: :destroy
-  has_many :person_organization_accesses, dependent: :destroy
+  has_many :teammates, dependent: :destroy
   has_many :upload_events, dependent: :destroy
   
   # Validations
@@ -151,10 +151,10 @@ class Organization < ApplicationRecord
   
   # Permission helper methods
   def can_manage_employment?(person)
-    PersonOrganizationAccess.can_manage_employment_in_hierarchy?(person, self)
+    Teammate.can_manage_employment_in_hierarchy?(person, self)
   end
   
   def can_create_employment?(person)
-    PersonOrganizationAccess.can_create_employment?(person, self)
+    Teammate.can_create_employment?(person, self)
   end
 end 

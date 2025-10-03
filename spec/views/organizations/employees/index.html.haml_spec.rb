@@ -10,10 +10,10 @@ RSpec.describe 'organizations/employees/index', type: :view do
     let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
     let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
     let(:position) { create(:position, position_type: position_type, position_level: position_level) }
-  let(:employment_tenure1) { create(:employment_tenure, person: employee1, company: company, position: position, started_at: 1.year.ago) }
-  let(:employment_tenure2) { create(:employment_tenure, person: employee2, company: company, position: position, started_at: 6.months.ago) }
+  let(:employment_tenure1) { create(:employment_tenure, person: employee1, company: company, position: position, started_at: Date.new(2024, 9, 15)) }
+  let(:employment_tenure2) { create(:employment_tenure, person: employee2, company: company, position: position, started_at: Date.new(2025, 3, 15)) }
   let(:huddle_playbook) { create(:huddle_playbook, organization: team) }
-  let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook, started_at: 1.month.ago) }
+  let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook, started_at: Date.new(2025, 9, 1)) }
   let(:huddle_participation) { create(:huddle_participant, huddle: huddle, person: huddle_participant) }
 
   before do
@@ -86,8 +86,8 @@ RSpec.describe 'organizations/employees/index', type: :view do
   it 'shows employee position and start date' do
     render
     expect(rendered).to have_content('Software Engineer') # Position type name
-    expect(rendered).to have_content('Sep 2024') # employee1 start date (1.year.ago)
-    expect(rendered).to have_content('Mar 2025') # employee2 start date (6.months.ago)
+    expect(rendered).to have_content('Sep 2024') # employee1 start date
+    expect(rendered).to have_content('Mar 2025') # employee2 start date
   end
 
   it 'shows huddle participation counts' do

@@ -24,7 +24,7 @@ RSpec.describe 'Check-ins UI Duplication Bug', type: :request do
     create(:assignment_check_in, person: employee, assignment: assignment3, shared_notes: '', official_rating: '', employee_completed_at: Time.current, manager_completed_at: Time.current)
     
     # Set up authorization
-    create(:person_organization_access, person: manager, organization: organization, can_manage_employment: true)
+    create(:teammate, person: manager, organization: organization, can_manage_employment: true)
     
     # Mock authentication
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)

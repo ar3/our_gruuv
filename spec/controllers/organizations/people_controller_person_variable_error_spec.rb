@@ -16,9 +16,9 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     # Set up employment for employee
     create(:employment_tenure, person: employee, company: organization)
     # Set up organization access for manager
-    create(:person_organization_access, person: manager, organization: organization, can_manage_employment: true)
+    create(:teammate, person: manager, organization: organization, can_manage_employment: true)
     # Set up organization access for employee
-    create(:person_organization_access, person: employee, organization: organization)
+    create(:teammate, person: employee, organization: organization)
     
     # Create assignment tenure to ensure @assignment_data is populated
     assignment_tenure

@@ -14,7 +14,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
     create(:employment_tenure, person: manager, company: organization, position: position)
     
     # Set up person organization access for current user
-    create(:person_organization_access, 
+    create(:teammate, 
            person: person, 
            organization: organization, 
            can_create_employment: true)
@@ -32,7 +32,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
       it 'loads potential employees' do
         # Create a person with access but no employment
         potential_person = create(:person)
-        create(:person_organization_access, 
+        create(:teammate, 
                person: potential_person, 
                organization: organization)
         
@@ -44,7 +44,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
     context 'when user lacks create employment permission' do
       before do
         # Remove the person organization access completely
-        person.person_organization_accesses.destroy_all
+        person.teammates.destroy_all
         # Verify the permission is actually removed
         expect(person.can_create_employment?(organization)).to be false
       end
@@ -168,7 +168,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
     context 'when user lacks create employment permission' do
       before do
         # Remove the person organization access completely
-        person.person_organization_accesses.destroy_all
+        person.teammates.destroy_all
         # Verify the permission is actually removed
         expect(person.can_create_employment?(organization)).to be false
       end
@@ -188,7 +188,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
   describe 'GET #potential_employees' do
           it 'returns potential employees as JSON' do
         potential_person = create(:person)
-        create(:person_organization_access, 
+        create(:teammate, 
                person: potential_person, 
                organization: organization)
         
@@ -209,7 +209,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
     describe '#load_potential_employees' do
       it 'finds people with access but no employment' do
         access_person = create(:person)
-        create(:person_organization_access, 
+        create(:teammate, 
                person: access_person, 
                organization: organization)
         
