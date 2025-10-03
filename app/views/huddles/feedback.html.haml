@@ -12,10 +12,18 @@
           = form_with url: submit_feedback_huddle_path(@huddle), method: :post, local: true do |form|
             .row
               .col-12
-                .alert.alert-info
-                  %strong Your feedback helps us improve future huddles!
-                  %br
-                  %small Please rate each aspect of your huddle experience. REMEMBER: We are rating the entire team / all of us, not just the facilitator.
+                - teammate = @current_person.teammates.find_by(organization: @huddle.organization)
+                - if teammate&.follower?
+                  .alert.alert-warning
+                    %i.bi.bi-heart.me-2
+                    %strong Thank you for participating as a follower!
+                    %br
+                    %small Your feedback helps us improve future huddles. Please rate each aspect of your huddle experience.
+                - else
+                  .alert.alert-info
+                    %strong Your feedback helps us improve future huddles!
+                    %br
+                    %small Please rate each aspect of your huddle experience. REMEMBER: We are rating the entire team / all of us, not just the facilitator.
             
             .row.mb-4
               .col-12

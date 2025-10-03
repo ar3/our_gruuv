@@ -166,9 +166,18 @@ class HuddlesController < ApplicationController
     # Get the person - either from session or create from params
     person = get_or_create_person_from_session_or_params(:join)
     
+    # Find teammate for this person and organization
+    teammate = person.teammates.find_by(organization: @huddle.organization)
+    
     # Add or update the person as a participant to the huddle
     participant = @huddle.huddle_participants.find_or_create_by!(person: person) do |p|
       p.role = join_params[:role]
+      p.teammate = teammate
+    end
+    
+    # Update teammate if it changed
+    if participant.teammate != teammate
+      participant.update!(teammate: teammate)
     end
     
     # Update role if it changed
@@ -262,9 +271,13 @@ class HuddlesController < ApplicationController
         render :feedback, status: :unprocessable_entity
       end
     else
+      # Find teammate for this person and organization
+      teammate = @current_person.teammates.find_by(organization: @huddle.organization)
+      
       # Create new feedback
       @feedback = @huddle.huddle_feedbacks.build(
         person: @current_person,
+        teammate: teammate,
         informed_rating: feedback_params[:informed_rating],
         connected_rating: feedback_params[:connected_rating],
         goals_rating: feedback_params[:goals_rating],

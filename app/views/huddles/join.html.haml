@@ -38,11 +38,19 @@
           
           - elsif @current_person
             / State 2: Logged in but not associated with huddle
-            .alert.alert-info
-              %i.bi.bi-person-check.me-2
-              %strong Welcome, #{@current_person.full_name}!
-              %br
-              %small You're logged in. Please confirm your information and select your role.
+            - teammate = @current_person.teammates.find_by(organization: @huddle.organization)
+            - if teammate&.follower?
+              .alert.alert-warning
+                %i.bi.bi-heart.me-2
+                %strong Welcome, #{@current_person.full_name}!
+                %br
+                %small You're following this organization. Please confirm your information and select your role to participate in this huddle.
+            - else
+              .alert.alert-info
+                %i.bi.bi-person-check.me-2
+                %strong Welcome, #{@current_person.full_name}!
+                %br
+                %small You're logged in. Please confirm your information and select your role.
             
             = form_with url: join_huddle_huddle_path(@huddle), method: :post, local: true do |form|
               .mb-3.field-readonly
