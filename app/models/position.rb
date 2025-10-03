@@ -18,6 +18,8 @@ class Position < ApplicationRecord
   # Scopes
   scope :ordered, -> { joins(:position_type, :position_level).order('position_types.external_title, position_levels.level') }
   scope :for_company, ->(company) { joins(position_type: :organization).where(organizations: { id: company.id }) }
+  scope :publicly_available, -> { where.not(became_public_at: nil) }
+  scope :private_only, -> { where(became_public_at: nil) }
   
   # Instance methods
   def display_name
@@ -51,5 +53,22 @@ class Position < ApplicationRecord
   
   def draft_url
     draft_external_reference&.url
+  end
+
+  # Public/private methods
+  def public?
+    became_public_at.present?
+  end
+
+  def private?
+    became_public_at.nil?
+  end
+
+  def make_public!
+    update!(became_public_at: Time.current)
+  end
+
+  def make_private!
+    update!(became_public_at: nil)
   end
 end 

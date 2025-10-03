@@ -9,6 +9,10 @@ class Ability < ApplicationRecord
   has_many :person_milestones, dependent: :destroy
   has_many :people, through: :person_milestones
 
+  # Scopes
+  scope :publicly_available, -> { where.not(became_public_at: nil) }
+  scope :private_only, -> { where(became_public_at: nil) }
+
   # Person milestone-related methods
   def person_attainments
     person_milestones.by_milestone_level.includes(:person)
@@ -137,5 +141,22 @@ class Ability < ApplicationRecord
     else
       "Milestone #{level}"
     end
+  end
+
+  # Public/private methods
+  def public?
+    became_public_at.present?
+  end
+
+  def private?
+    became_public_at.nil?
+  end
+
+  def make_public!
+    update!(became_public_at: Time.current)
+  end
+
+  def make_private!
+    update!(became_public_at: nil)
   end
 end

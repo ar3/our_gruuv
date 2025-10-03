@@ -22,6 +22,8 @@ class Assignment < ApplicationRecord
   
   # Scopes
   scope :ordered, -> { order(:title) }
+  scope :publicly_available, -> { where.not(became_public_at: nil) }
+  scope :private_only, -> { where(became_public_at: nil) }
   
   # Instance methods
   def display_name
@@ -30,6 +32,23 @@ class Assignment < ApplicationRecord
   
   def company_name
     company&.display_name
+  end
+
+  # Public/private methods
+  def public?
+    became_public_at.present?
+  end
+
+  def private?
+    became_public_at.nil?
+  end
+
+  def make_public!
+    update!(became_public_at: Time.current)
+  end
+
+  def make_private!
+    update!(became_public_at: nil)
   end
 
   # Ability-related methods
