@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_03_012755) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_03_013516) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -81,6 +81,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_012755) do
     t.datetime "official_check_in_completed_at"
     t.integer "manager_completed_by_id"
     t.integer "finalized_by_id"
+    t.bigint "teammate_id"
     t.index ["assignment_id", "check_in_started_on"], name: "idx_on_assignment_id_check_in_started_on_9b32849637"
     t.index ["assignment_id"], name: "index_assignment_check_ins_on_assignment_id"
     t.index ["employee_completed_at"], name: "index_assignment_check_ins_on_employee_completed_at"
@@ -91,6 +92,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_012755) do
     t.index ["person_id", "assignment_id", "check_in_started_on"], name: "idx_on_person_id_assignment_id_check_in_started_on_f9065653da"
     t.index ["person_id", "check_in_started_on"], name: "idx_on_person_id_check_in_started_on_1e9a0aba88"
     t.index ["person_id"], name: "index_assignment_check_ins_on_person_id"
+    t.index ["teammate_id"], name: "index_assignment_check_ins_on_teammate_id"
     t.check_constraint "actual_energy_percentage IS NULL OR actual_energy_percentage >= 0 AND actual_energy_percentage <= 100", name: "check_actual_energy_percentage_range"
   end
 
@@ -111,9 +113,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_012755) do
     t.integer "anticipated_energy_percentage"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "teammate_id"
     t.index ["assignment_id"], name: "index_assignment_tenures_on_assignment_id"
     t.index ["person_id", "assignment_id", "started_at"], name: "idx_on_person_id_assignment_id_started_at_0a6668f47e"
     t.index ["person_id"], name: "index_assignment_tenures_on_person_id"
+    t.index ["teammate_id"], name: "index_assignment_tenures_on_teammate_id"
     t.check_constraint "anticipated_energy_percentage IS NULL OR anticipated_energy_percentage >= 0 AND anticipated_energy_percentage <= 100", name: "check_anticipated_energy_percentage_range"
   end
 
@@ -152,12 +156,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_012755) do
     t.datetime "updated_at", null: false
     t.text "employment_change_notes"
     t.bigint "seat_id"
+    t.bigint "teammate_id"
     t.index ["company_id"], name: "index_employment_tenures_on_company_id"
     t.index ["manager_id"], name: "index_employment_tenures_on_manager_id"
     t.index ["person_id", "company_id", "started_at"], name: "index_employment_tenures_on_person_company_started"
     t.index ["person_id"], name: "index_employment_tenures_on_person_id"
     t.index ["position_id"], name: "index_employment_tenures_on_position_id"
     t.index ["seat_id"], name: "index_employment_tenures_on_seat_id"
+    t.index ["teammate_id"], name: "index_employment_tenures_on_teammate_id"
   end
 
   create_table "external_references", force: :cascade do |t|
@@ -189,9 +195,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_012755) do
     t.boolean "anonymous"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "teammate_id"
     t.index ["huddle_id", "person_id"], name: "index_huddle_feedbacks_on_huddle_and_person_unique", unique: true
     t.index ["huddle_id"], name: "index_huddle_feedbacks_on_huddle_id"
     t.index ["person_id"], name: "index_huddle_feedbacks_on_person_id"
+    t.index ["teammate_id"], name: "index_huddle_feedbacks_on_teammate_id"
   end
 
   create_table "huddle_participants", force: :cascade do |t|
@@ -200,9 +208,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_012755) do
     t.string "role"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "teammate_id"
     t.index ["huddle_id", "person_id"], name: "index_huddle_participants_on_huddle_and_person_unique", unique: true
     t.index ["huddle_id"], name: "index_huddle_participants_on_huddle_id"
     t.index ["person_id"], name: "index_huddle_participants_on_person_id"
+    t.index ["teammate_id"], name: "index_huddle_participants_on_teammate_id"
   end
 
   create_table "huddle_playbooks", force: :cascade do |t|
@@ -325,12 +335,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_012755) do
     t.date "attained_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "teammate_id"
     t.index ["ability_id"], name: "index_person_milestones_on_ability_id"
     t.index ["attained_at"], name: "index_person_milestones_on_attained_at"
     t.index ["certified_by_id"], name: "index_person_milestones_on_certified_by_id"
     t.index ["milestone_level"], name: "index_person_milestones_on_milestone_level"
     t.index ["person_id", "ability_id", "milestone_level"], name: "index_person_milestones_on_person_ability_milestone_unique", unique: true
     t.index ["person_id"], name: "index_person_milestones_on_person_id"
+    t.index ["teammate_id"], name: "index_person_milestones_on_teammate_id"
   end
 
   create_table "position_assignments", force: :cascade do |t|
@@ -524,19 +536,24 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_012755) do
   add_foreign_key "assignment_check_ins", "people"
   add_foreign_key "assignment_check_ins", "people", column: "finalized_by_id"
   add_foreign_key "assignment_check_ins", "people", column: "manager_completed_by_id"
+  add_foreign_key "assignment_check_ins", "teammates"
   add_foreign_key "assignment_outcomes", "assignments"
   add_foreign_key "assignment_tenures", "assignments"
   add_foreign_key "assignment_tenures", "people"
+  add_foreign_key "assignment_tenures", "teammates"
   add_foreign_key "assignments", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "people"
   add_foreign_key "employment_tenures", "people", column: "manager_id"
   add_foreign_key "employment_tenures", "positions"
   add_foreign_key "employment_tenures", "seats"
+  add_foreign_key "employment_tenures", "teammates"
   add_foreign_key "huddle_feedbacks", "huddles"
   add_foreign_key "huddle_feedbacks", "people"
+  add_foreign_key "huddle_feedbacks", "teammates"
   add_foreign_key "huddle_participants", "huddles"
   add_foreign_key "huddle_participants", "people"
+  add_foreign_key "huddle_participants", "teammates"
   add_foreign_key "huddle_playbooks", "organizations"
   add_foreign_key "huddles", "huddle_playbooks"
   add_foreign_key "interest_submissions", "people"
@@ -551,6 +568,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_012755) do
   add_foreign_key "person_milestones", "abilities"
   add_foreign_key "person_milestones", "people"
   add_foreign_key "person_milestones", "people", column: "certified_by_id"
+  add_foreign_key "person_milestones", "teammates"
   add_foreign_key "position_assignments", "assignments"
   add_foreign_key "position_assignments", "positions"
   add_foreign_key "position_levels", "position_major_levels"
