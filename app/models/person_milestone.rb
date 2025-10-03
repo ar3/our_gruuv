@@ -1,6 +1,7 @@
 class PersonMilestone < ApplicationRecord
   # Associations
   belongs_to :person
+  belongs_to :teammate, optional: true
   belongs_to :ability
   belongs_to :certified_by, class_name: 'Person'
 

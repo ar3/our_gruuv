@@ -1,5 +1,6 @@
 class AssignmentTenure < ApplicationRecord
   belongs_to :person
+  belongs_to :teammate, optional: true
   belongs_to :assignment
   has_many :assignment_check_ins, dependent: :destroy
 

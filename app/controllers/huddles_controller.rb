@@ -119,9 +119,13 @@ class HuddlesController < ApplicationController
     authorize @huddle
     
     if @huddle.save
+      # Find teammate for this person and organization
+      teammate = person.teammates.find_by(organization: @huddle.organization)
+      
       # Add the creator as a participant (default to facilitator)
       @huddle.huddle_participants.create!(
         person: person,
+        teammate: teammate,
         role: 'facilitator'
       )
       

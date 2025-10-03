@@ -2,6 +2,7 @@ class HuddleFeedback < ApplicationRecord
   # Associations
   belongs_to :huddle
   belongs_to :person
+  belongs_to :teammate, optional: true
   
   # Validations
   validates :informed_rating, :connected_rating, :goals_rating, :valuable_rating,

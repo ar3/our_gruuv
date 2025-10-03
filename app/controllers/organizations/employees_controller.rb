@@ -34,8 +34,15 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       @person = Person.new(person_params)
       @person.save!
       
+      # Create teammate for this person and organization
+      teammate = @person.teammates.create!(
+        organization: @organization,
+        type: 'CompanyTeammate'
+      )
+      
       @employment_tenure = @person.employment_tenures.build(employment_tenure_params)
       @employment_tenure.company = @organization
+      @employment_tenure.teammate = teammate
       @employment_tenure.save!
       
       redirect_to person_path(@person), notice: 'Employee was successfully created.'

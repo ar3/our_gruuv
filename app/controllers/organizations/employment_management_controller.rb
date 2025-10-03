@@ -76,8 +76,14 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
   end
   
   def create_employment_for_existing_person
+    # Find or create teammate for this person and organization
+    teammate = @person.teammates.find_or_create_by(organization: @organization) do |t|
+      t.type = 'CompanyTeammate'
+    end
+    
     @employment_tenure = @person.employment_tenures.build(employment_tenure_params)
     @employment_tenure.company = @organization
+    @employment_tenure.teammate = teammate
     
     if @employment_tenure.save
       redirect_to person_path(@person), notice: 'Employment was successfully created.'
@@ -92,8 +98,15 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
       @person = Person.new(person_params)
       @person.save!
       
+      # Create teammate for this person and organization
+      teammate = @person.teammates.create!(
+        organization: @organization,
+        type: 'CompanyTeammate'
+      )
+      
       @employment_tenure = @person.employment_tenures.build(employment_tenure_params)
       @employment_tenure.company = @organization
+      @employment_tenure.teammate = teammate
       @employment_tenure.save!
       
       if params[:save_and_continue] == 'true'

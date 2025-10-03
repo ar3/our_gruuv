@@ -292,8 +292,12 @@ class PeopleController < ApplicationController
       update_check_in_fields(check_in, check_in_data)
     else
       # Create new check-in
+      # Find teammate for this person and assignment's company
+      teammate = person.teammates.find_by(organization: assignment.company)
+      
       check_in = AssignmentCheckIn.create!(
         person: person,
+        teammate: teammate,
         assignment: assignment,
         check_in_started_on: Date.current
       )

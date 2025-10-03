@@ -2,6 +2,7 @@ class HuddleParticipant < ApplicationRecord
   # Associations
   belongs_to :huddle
   belongs_to :person
+  belongs_to :teammate, optional: true
   
   # Constants
   ROLES = HuddleConstants::ROLES

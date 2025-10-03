@@ -40,7 +40,13 @@ class EmploymentTenuresController < ApplicationController
   end
 
   def create
+    # Find or create teammate for this person and company
+    teammate = @person.teammates.find_or_create_by(organization: employment_tenure_params[:company_id]) do |t|
+      t.type = 'CompanyTeammate'
+    end
+    
     @employment_tenure = @person.employment_tenures.build(employment_tenure_params)
+    @employment_tenure.teammate = teammate
     authorize @employment_tenure
     
     # Check if this is a job change (there's an active employment at the same company)

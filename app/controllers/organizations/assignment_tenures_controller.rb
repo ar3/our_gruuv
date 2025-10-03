@@ -187,8 +187,12 @@ class Organizations::AssignmentTenuresController < ApplicationController
       existing_tenure = @person.assignment_tenures.where(assignment: assignment).active.first
       
       if existing_tenure.nil?
+        # Find teammate for this person and assignment's company
+        teammate = @person.teammates.find_by(organization: assignment.company)
+        
         # Create new tenure
         @person.assignment_tenures.create!(
+          teammate: teammate,
           assignment: assignment,
           started_at: Date.current,
           anticipated_energy_percentage: assignment.default_energy_percentage

@@ -1,5 +1,6 @@
 class EmploymentTenure < ApplicationRecord
   belongs_to :person
+  belongs_to :teammate, optional: true
   belongs_to :company, class_name: 'Organization'
   belongs_to :position
   belongs_to :manager, class_name: 'Person', optional: true
