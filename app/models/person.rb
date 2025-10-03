@@ -170,11 +170,35 @@ class Person < ApplicationRecord
   end
   
   def available_organizations
-    Organization.all.order(:type, :name)
+    # Return organizations where person is at least a follower
+    Organization.joins(:teammates)
+                .where(teammates: { person: self })
+                .order(:type, :name)
   end
   
   def available_companies
     Organization.companies.order(:type, :name)
+  end
+  
+  def followable_organizations
+    # Return organizations that have public assignments, abilities, or positions
+    Organization.joins("LEFT JOIN assignments ON assignments.company_id = organizations.id AND assignments.became_public_at IS NOT NULL")
+                .joins("LEFT JOIN abilities ON abilities.organization_id = organizations.id AND abilities.became_public_at IS NOT NULL")
+                .joins("LEFT JOIN positions ON positions.position_type_id IN (SELECT id FROM position_types WHERE organization_id = organizations.id) AND positions.became_public_at IS NOT NULL")
+                .where("assignments.id IS NOT NULL OR abilities.id IS NOT NULL OR positions.id IS NOT NULL")
+                .distinct
+                .order(:type, :name)
+  end
+  
+  def can_follow_organization?(organization)
+    # Check if organization has public content and person is not already a teammate
+    has_public_content = organization.assignments.publicly_available.exists? ||
+                        organization.abilities.publicly_available.exists? ||
+                        organization.positions.publicly_available.exists?
+    
+    not_already_teammate = !teammates.exists?(organization: organization)
+    
+    has_public_content && not_already_teammate
   end
   
   def last_huddle

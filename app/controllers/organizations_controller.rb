@@ -3,7 +3,8 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   before_action :require_authentication
   
   def index
-    @organizations = Organization.all.order(:type, :name)
+    @organizations = current_person.available_organizations
+    @followable_organizations = current_person.followable_organizations
     @current_organization = current_person.current_organization_or_default
   end
   
@@ -19,7 +20,34 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     # Organization-specific dashboard content will go here
     load_organization_dashboard_stats
   end
-
+  
+  def follow
+    organization = Organization.find(params[:id])
+    
+    if current_person.can_follow_organization?(organization)
+      # Create a follower teammate (no employment dates)
+      teammate = current_person.teammates.create!(
+        organization: organization,
+        type: 'CompanyTeammate'
+      )
+      
+      redirect_to organizations_path, notice: "You are now following #{organization.name}."
+    else
+      redirect_to organizations_path, alert: "You cannot follow this organization."
+    end
+  end
+  
+  def unfollow
+    organization = Organization.find(params[:id])
+    teammate = current_person.teammates.find_by(organization: organization)
+    
+    if teammate&.follower?
+      teammate.destroy
+      redirect_to organizations_path, notice: "You are no longer following #{organization.name}."
+    else
+      redirect_to organizations_path, alert: "You are not following this organization or cannot unfollow."
+    end
+  end
 
   
   def show

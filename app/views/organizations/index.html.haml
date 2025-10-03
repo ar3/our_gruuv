@@ -20,7 +20,7 @@
         .col-12
           .card
             .card-header
-              %h5.mb-0 All Organizations
+              %h5.mb-0 My Organizations
             .card-body
               - if @organizations.any?
                 .table-responsive
@@ -60,16 +60,66 @@
                                 = button_to switch_organization_path(organization), method: :patch, class: "btn btn-outline-primary", form: { style: "display: inline;" } do
                                   %i.bi.bi-arrow-right-circle.me-1
                                   Switch
-                              = link_to edit_organization_path(organization), class: "btn btn-outline-secondary" do
-                                %i.bi.bi-pencil
-                              = link_to organization_slack_path(organization), class: "btn btn-outline-info" do
-                                %i.bi.bi-slack
-                              = link_to organization_path(organization), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to delete this organization?" } do
-                                %i.bi.bi-trash
+                              - teammate = current_person.teammates.find_by(organization: organization)
+                              - if teammate&.follower?
+                                = button_to unfollow_organization_path(organization), method: :delete, class: "btn btn-outline-warning", form: { style: "display: inline;" }, data: { confirm: "Stop following #{organization.name}?" } do
+                                  %i.bi.bi-heart-fill.me-1
+                                  Unfollow
+                              - else
+                                = link_to edit_organization_path(organization), class: "btn btn-outline-secondary" do
+                                  %i.bi.bi-pencil
+                                = link_to organization_slack_path(organization), class: "btn btn-outline-info" do
+                                  %i.bi.bi-slack
+                                = link_to organization_path(organization), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to delete this organization?" } do
+                                  %i.bi.bi-trash
               - else
                 .text-center.py-4
                   %p.text-muted No organizations found.
                   = link_to "Create your first organization", new_organization_path, class: "btn btn-primary"
+      
+      - if @followable_organizations.any?
+        .row.mt-4
+          .col-12
+            .card
+              .card-header
+                %h5.mb-0 Followable Organizations
+                %small.text-muted Organizations with public content you can follow
+              .card-body
+                .table-responsive
+                  %table.table.table-hover
+                    %thead
+                      %tr
+                        %th Type
+                        %th Name
+                        %th Public Content
+                        %th Actions
+                    %tbody
+                      - @followable_organizations.each do |organization|
+                        %tr
+                          %td
+                            %span.badge{class: organization.company? ? "bg-primary" : "bg-secondary"}
+                              = organization.type
+                          %td
+                            = link_to organization_path(organization), class: "text-decoration-none" do
+                              %strong= organization.name
+                          %td
+                            .badge-group
+                              - if organization.assignments.publicly_available.exists?
+                                %span.badge.bg-info.me-1
+                                  %i.bi.bi-clipboard-check.me-1
+                                  Assignments
+                              - if organization.abilities.publicly_available.exists?
+                                %span.badge.bg-success.me-1
+                                  %i.bi.bi-award.me-1
+                                  Abilities
+                              - if organization.positions.publicly_available.exists?
+                                %span.badge.bg-warning.me-1
+                                  %i.bi.bi-briefcase.me-1
+                                  Positions
+                          %td
+                            = button_to follow_organization_path(organization), method: :post, class: "btn btn-outline-primary btn-sm" do
+                              %i.bi.bi-heart.me-1
+                              Follow
       
       .row.mt-4
         .col-12

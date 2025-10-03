@@ -54,6 +54,8 @@ get '/login', to: 'auth#login', as: :login
   resources :organizations do
     member do
       patch :switch
+      post :follow
+      delete :unfollow
       get :huddles_review
       post :refresh_slack_channels
       patch :update_huddle_review_channel
