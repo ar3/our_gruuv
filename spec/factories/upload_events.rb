@@ -1,5 +1,6 @@
 FactoryBot.define do
   factory :upload_event do
+    type { 'UploadEvent::UploadAssignmentCheckins' }
     filename { "test_upload.xlsx" }
     file_content { "test file content" }
     preview_actions { { people: [], assignments: [] } }
@@ -9,6 +10,17 @@ FactoryBot.define do
     association :creator, factory: :person
     association :initiator, factory: :person
     association :organization, factory: :organization
+
+    factory :upload_assignment_checkins, class: 'UploadEvent::UploadAssignmentCheckins' do
+      filename { "test_upload.xlsx" }
+      file_content { "test xlsx content" }
+    end
+
+    factory :upload_employees, class: 'UploadEvent::UploadEmployees' do
+      type { 'UploadEvent::UploadEmployees' }
+      filename { "test_upload.csv" }
+      file_content { "test csv content" }
+    end
     
     trait :processing do
       status { 'processing' }

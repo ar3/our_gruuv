@@ -2,35 +2,47 @@
   .row
     .col-12
       .d-flex.justify-content-between.align-items-center.mb-4
-        %h1 New Employment Data Upload
+        %h1= @upload_event.display_name
         = link_to 'Back to Uploads', organization_upload_events_path(current_organization), class: 'btn btn-outline-secondary'
       
       .row
         .col-md-8
           .card
             .card-header
-              %h5.card-title.mb-0 Upload XLSX File
+              %h5.card-title.mb-0= "Upload #{@upload_event.file_extension.upcase} File"
             .card-body
-              = form_with model: [current_organization.becomes(Organization), @upload_event], local: true do |form|
+              = form_with url: organization_upload_events_path(current_organization), local: true do |form|
+                = hidden_field_tag 'upload_event[type]', @upload_event.type
+                
                 .mb-3
-                  = form.label :file, 'Select XLSX File', class: 'form-label'
-                  = form.file_field :file, accept: '.xlsx,.xls', class: 'form-control', required: true
+                  = form.label :file, "Select #{@upload_event.file_extension.upcase} File", class: 'form-label', for: 'upload_event_file'
+                  = form.file_field :file, name: 'upload_event[file]', id: 'upload_event_file', accept: ".#{@upload_event.file_extension}", class: 'form-control', required: true
                   .form-text
-                    Only XLSX files are supported. Maximum file size: 10MB.
+                    Only #{@upload_event.file_extension.upcase} files are supported. Maximum file size: 10MB.
                 
                 .mb-3
                   .alert.alert-info
-                    %h6.mb-2 Expected File Format:
-                    %p.mb-1
-                      %strong Required columns:
-                      %code email
-                      and 
-                      %code assignment_name
-                    %p.mb-0
-                      %strong Optional columns:
-                      See the 
-                      = link_to 'uploads index', organization_upload_events_path(current_organization)
-                      for a complete list of supported headers.
+                    %h6.mb-2= "#{@upload_event.display_name} Format Requirements:"
+                    - if @upload_event.type == 'UploadEvent::UploadAssignmentCheckins'
+                      %p.mb-1
+                        %strong Required columns:
+                        %code email
+                        and 
+                        %code assignment_name
+                      %p.mb-0
+                        %strong Optional columns:
+                        check_in_date, energy_percentage, manager_rating, employee_rating, official_rating, manager_private_notes, employee_private_notes
+                    - else
+                      %p.mb-1
+                        %strong Required columns:
+                        %code Name
+                        , 
+                        %code Email
+                        , and 
+                        %code Start Date
+                      %p.mb-0
+                        %strong Optional columns:
+                        Department, Manager, Location, Country, Employment Type, Job Title, Job Title Level
                 
                 .d-flex.gap-2
                   = form.submit 'Upload and Preview', class: 'btn btn-primary'

@@ -81,7 +81,7 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
-    # Employment data uploads
+    # Upload events (consolidated for all upload types)
     resources :upload_events, only: [:index, :show, :new, :create, :destroy] do
       member do
         post :process_upload

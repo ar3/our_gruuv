@@ -50,7 +50,8 @@ RSpec.describe UploadEventsController, type: :controller do
 
     it 'assigns @upload_event' do
       get :show, params: { organization_id: organization.id, id: upload_event.id }
-      expect(assigns(:upload_event)).to eq(upload_event)
+      expect(assigns(:upload_event)).to be_a(UploadEvent::UploadAssignmentCheckins)
+      expect(assigns(:upload_event).id).to eq(upload_event.id)
     end
   end
 
@@ -60,14 +61,15 @@ RSpec.describe UploadEventsController, type: :controller do
         allow(person).to receive(:can_manage_employment?).and_return(true)
       end
 
-      it 'returns a successful response' do
+      it 'redirects to index when no type parameter is provided' do
         get :new, params: { organization_id: organization.id }
-        expect(response).to be_successful
+        expect(response).to redirect_to(organization_upload_events_path(organization))
+        expect(flash[:alert]).to eq('Please select an upload type from the dropdown.')
       end
 
-      it 'assigns a new upload_event' do
-        get :new, params: { organization_id: organization.id }
-        expect(assigns(:upload_event)).to be_a_new(UploadEvent)
+      it 'assigns a new upload_event when type parameter is provided' do
+        get :new, params: { organization_id: organization.id, upload_event: { type: 'UploadEvent::UploadAssignmentCheckins' } }
+        expect(assigns(:upload_event)).to be_a_new(UploadEvent::UploadAssignmentCheckins)
       end
     end
 
@@ -85,7 +87,7 @@ RSpec.describe UploadEventsController, type: :controller do
 
   describe 'POST #create' do
     let(:file) { fixture_file_upload('test.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') }
-    let(:valid_params) { { organization_id: organization.id, upload_event: { file: file } } }
+    let(:valid_params) { { organization_id: organization.id, upload_event: { file: file, type: 'UploadEvent::UploadAssignmentCheckins' } } }
 
     context 'when user has employment management permission' do
       before do
@@ -120,9 +122,9 @@ RSpec.describe UploadEventsController, type: :controller do
         let(:invalid_file) { fixture_file_upload('test.txt', 'text/plain') }
         let(:invalid_params) { { organization_id: organization.id, upload_event: { file: invalid_file } } }
 
-        it 'redirects back to new with error' do
+        it 'redirects back to index with error' do
           post :create, params: invalid_params
-          expect(response).to redirect_to(new_organization_upload_event_path(organization))
+          expect(response).to redirect_to(organization_upload_events_path(organization))
         end
       end
 
@@ -132,9 +134,9 @@ RSpec.describe UploadEventsController, type: :controller do
           allow_any_instance_of(EmploymentDataUploadParser).to receive(:errors).and_return(['Invalid format'])
         end
 
-        it 'redirects back to new with error' do
+        it 'redirects back to index with error' do
           post :create, params: valid_params
-          expect(response).to redirect_to(new_organization_upload_event_path(organization))
+          expect(response).to redirect_to(organization_upload_events_path(organization))
         end
       end
     end

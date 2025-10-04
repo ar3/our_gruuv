@@ -8,6 +8,10 @@ class EmploymentTenure < ApplicationRecord
 
   validates :started_at, presence: true
   validates :ended_at, comparison: { greater_than: :started_at }, allow_nil: true
+  validates :employment_type, inclusion: { 
+    in: %w[full_time part_time contract contractor intern temporary consultant freelance], 
+    allow_blank: true 
+  }
   validate :no_overlapping_active_tenures_for_same_person_and_company
   validate :seat_position_type_matches_position, if: :seat
 

@@ -68,7 +68,7 @@ RSpec.describe UploadEvent, type: :model do
 
     describe '.recent' do
       it 'orders by created_at desc' do
-        expect(UploadEvent.recent).to eq([recent_event, old_event])
+        expect(UploadEvent.recent.map(&:id)).to eq([recent_event.id, old_event.id])
       end
     end
 

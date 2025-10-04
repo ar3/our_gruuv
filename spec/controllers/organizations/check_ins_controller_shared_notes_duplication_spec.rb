@@ -15,7 +15,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
     create(:employment_tenure, person: employee, company: organization)
     
     # Set up manager permissions
-    create(:teammate, person: manager, organization: organization, can_manage_employment: true)
+    create(:person_organization_access, person: manager, organization: organization, can_manage_employment: true)
     
     # Set up assignment tenures
     create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 50)

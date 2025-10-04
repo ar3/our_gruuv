@@ -45,6 +45,55 @@ This document defines the coding standards and style conventions for this Rails 
 - **Nested resources**: Authorize the parent resource when appropriate (e.g., `authorize @person` for employment tenures)
 - **New records**: For `new`/`create` actions, authorize based on the context (e.g., the person being created for)
 
+## View Organization & Partials
+
+### Partial Rendering Rules
+- **Always use full paths for partials** - never use relative paths
+- **Organize partials in logical subdirectories** - use `spotlights/`, `forms/`, `cards/` folders
+- **Use descriptive partial names** - avoid generic names like `_item.html.haml`
+- **Test partial rendering** - verify partials can be found and rendered correctly
+
+### Partial Path Examples
+```haml
+/ CORRECT - Full path from app/views/
+= render 'upload_events/spotlights/upload_data_overview'
+= render 'organizations/cards/team_summary'
+= render 'shared/forms/error_messages'
+
+/ INCORRECT - Relative paths (will cause MissingTemplate errors)
+= render 'spotlights/upload_data_overview'
+= render '../shared/error_messages'
+= render './partial_name'
+```
+
+### Partial Organization Structure
+```
+app/views/
+├── [resource]/
+│   ├── spotlights/          # Data overview partials
+│   ├── forms/               # Form partials
+│   ├── cards/               # Card component partials
+│   └── index.html.haml
+├── shared/                  # Cross-resource partials
+│   ├── forms/
+│   ├── cards/
+│   └── modals/
+```
+
+### Partial Naming Conventions
+- **Spotlights**: `_[resource]_overview.html.haml` (e.g., `_upload_data_overview.html.haml`)
+- **Forms**: `_[form_name].html.haml` (e.g., `_user_registration.html.haml`)
+- **Cards**: `_[card_name].html.haml` (e.g., `_team_summary.html.haml`)
+- **Modals**: `_[modal_name].html.haml` (e.g., `_confirmation_dialog.html.haml`)
+
+### Partial Testing Checklist
+Before committing partials:
+- [ ] Partial file exists in correct directory
+- [ ] Render call uses full path from `app/views/`
+- [ ] Partial renders without errors
+- [ ] All required instance variables are available
+- [ ] Partial follows naming conventions
+
 ## Display & Presentation
 
 ### Display Names

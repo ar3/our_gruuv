@@ -3,6 +3,27 @@ class UploadEvent < ApplicationRecord
   belongs_to :initiator, class_name: 'Person'
   belongs_to :organization
 
+  # Handle STI type mapping for backward compatibility
+  def self.find_sti_class(type_name)
+    case type_name
+    when 'UploadAssignmentCheckins'
+      UploadEvent::UploadAssignmentCheckins
+    when 'UploadEmployees'
+      UploadEvent::UploadEmployees
+    when 'UploadEvent::UploadAssignmentCheckins'
+      UploadEvent::UploadAssignmentCheckins
+    when 'UploadEvent::UploadEmployees'
+      UploadEvent::UploadEmployees
+    else
+      super
+    end
+  end
+
+  def self.sti_name
+    # Always store the fully qualified class name
+    name
+  end
+
   enum :status, {
     preview: 'preview',
     processing: 'processing',
@@ -90,6 +111,27 @@ class UploadEvent < ApplicationRecord
 
   def all_successful?
     processed? && failure_count == 0
+  end
+
+  # Abstract methods to be implemented by subclasses
+  def validate_file_type(file)
+    raise NotImplementedError, 'Subclasses must implement validate_file_type'
+  end
+
+  def process_file_for_preview
+    raise NotImplementedError, 'Subclasses must implement process_file_for_preview'
+  end
+
+  def process_upload_in_background
+    raise NotImplementedError, 'Subclasses must implement process_upload_in_background'
+  end
+
+  def display_name
+    raise NotImplementedError, 'Subclasses must implement display_name'
+  end
+
+  def file_extension
+    raise NotImplementedError, 'Subclasses must implement file_extension'
   end
 
   # Format success details for display with links

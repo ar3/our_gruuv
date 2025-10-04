@@ -18,7 +18,13 @@ class UnassignedEmployeeUploadProcessor
   end
 
   def process
-    return false unless parser.parse
+    unless parser.parse
+      results[:failures] << {
+        type: 'system_error',
+        error: "Parser failed: #{parser.errors.join(', ')}"
+      }
+      return false
+    end
 
     parsed_data = parser.parsed_data
 
@@ -193,7 +199,7 @@ class UnassignedEmployeeUploadProcessor
           update_employee_information(existing_employee, employee_data)
           
           # Ensure teammate relationship exists
-          ensure_teammate_relationship(existing_employee, organization)
+          ensure_teammate_relationship(existing_employee, organization, start_date)
           
           results[:successes] << {
             type: 'unassigned_employee',
@@ -252,29 +258,36 @@ class UnassignedEmployeeUploadProcessor
     teammate
   end
 
-  def ensure_teammate_relationship(person, organization)
+  def ensure_teammate_relationship(person, organization, start_date = nil)
     teammate = person.teammates.find_by(organization: organization)
     
-    unless teammate
-      teammate = create_teammate_relationship(person, organization, 'unassigned_employee')
+    if teammate.nil?
+      teammate = create_teammate_relationship(person, organization, 'unassigned_employee', start_date)
+    elsif start_date.present? && teammate.first_employed_at != start_date
+      teammate.update!(first_employed_at: start_date)
     end
     
     teammate
   end
 
-  def update_employee_information(employee, employee_data)
-    # Update teammate relationship if start date is provided
-    if employee_data['start_date'].present?
-      teammate = employee.teammates.find_by(organization: organization)
-      if teammate
-        teammate.update!(first_employed_at: employee_data['start_date'])
+      def update_employee_information(employee, employee_data)
+        # Update teammate relationship if start date is provided
+        if employee_data['start_date'].present?
+          teammate = employee.teammates.find_by(organization: organization)
+          if teammate
+            teammate.update!(first_employed_at: employee_data['start_date'])
+          end
+        end
+
+        # Update person attributes if they exist
+        if employee_data['preferred_name'].present?
+          employee.update!(preferred_name: employee_data['preferred_name']) if employee.respond_to?(:preferred_name=)
+        end
+
+        # Note: Person model currently only has basic attributes (first_name, last_name, email, etc.)
+        # Additional attributes like preferred_name, location, gender, country would need to be added
+        # to the Person model or stored elsewhere if needed
       end
-    end
-    
-    # Note: Person model currently only has basic attributes (first_name, last_name, email, etc.)
-    # Additional attributes like preferred_name, location, gender, country would need to be added
-    # to the Person model or stored elsewhere if needed
-  end
 
   def update_summary
     results[:summary][:total_processed] = results[:successes].count + results[:failures].count

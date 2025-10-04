@@ -41,7 +41,8 @@ class EmploymentTenuresController < ApplicationController
 
   def create
     # Find or create teammate for this person and company
-    teammate = @person.teammates.find_or_create_by(organization: employment_tenure_params[:company_id]) do |t|
+    company = Organization.find(employment_tenure_params[:company_id])
+    teammate = @person.teammates.find_or_create_by(organization: company) do |t|
       t.type = 'CompanyTeammate'
     end
     

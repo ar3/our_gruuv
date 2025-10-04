@@ -99,7 +99,10 @@
     %hr.mt-1.mb-1/
     Bonus: The Nat20 feedback system allows teams to continuously improve their collaboration and meeting effectiveness... a little better every time!
   
-  - huddles_tagline = [ "<span class='fw-bold'>S</span>ync to align, <span class='fw-bold'>E</span>xecute to progress, <span class='fw-bold'>E</span>volve to improve", "<span class='fw-bold'>S</span>ync with purpose, <span class='fw-bold'>E</span>xecute with focus, <span class='fw-bold'>E</span>volve with feedback", "Meet less, achieve more"].sample.html_safe
+  - huddle_tagline_1 = "<span class='fw-bold'>S</span>ync to align, <span class='fw-bold'>E</span>xecute to progress, <span class='fw-bold'>E</span>volve to improve"
+  - huddle_tagline_2 = "<span class='fw-bold'>S</span>ync with purpose, <span class='fw-bold'>E</span>xecute with focus, <span class='fw-bold'>E</span>volve with feedback"
+  - huddle_tagline_3 = "Meet less, achieve more"
+  - huddles_tagline = [ huddle_tagline_1, huddle_tagline_3].sample.html_safe
 
 
   = render 'organizations/dashboard/dashboard_card',

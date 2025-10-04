@@ -48,7 +48,66 @@ This document defines the standard style guide for all index pages in the OurGru
     Filter & Sort
 ```
 
-### 4. Main Content Area
+### 4. Spotlight Section (Optional)
+- **Purpose**: Provide key insights and data overview for the resource
+- **Placement**: Between header actions and main content
+- **Structure**: Card with header, body, and footer
+- **Implementation**: Use partials in `spotlights/` folder
+
+```haml
+= render 'upload_events/spotlights/upload_data_overview'
+```
+
+**Spotlight Structure:**
+```haml
+/ Spotlight Section
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            / Main statistics/metrics area
+            .row.text-center
+              .col-3
+                .h3.text-primary= @spotlight_stats[:metric1]
+                %small.text-muted Metric Label
+              / Additional metrics...
+            / Additional breakdown sections...
+          .col-md-4
+            / Action alerts or status messages
+            - if condition
+              .alert.alert-warning.small
+                %i.bi.bi-icon.me-2
+                %strong Action message
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-funnel.me-1
+              Filters: [Current filter state]
+              %br
+              %i.bi.bi-sort-down.me-1
+              Sort: [Current sort]
+          .col-md-6.text-end
+            %small.text-muted
+              %i.bi.bi-table.me-1
+              View: [Current view style]
+              %br
+              %i.bi.bi-eye.me-1
+              Spotlight: [Spotlight name]
+```
+
+**Spotlight Guidelines:**
+- **No Header**: Spotlight name is shown in footer only - cleaner visual design
+- **Main Area**: Focus on key metrics that answer "what is the user trying to accomplish?"
+- **Alerts**: Use contextual alerts (warning/success/info) to guide user actions
+- **Footer**: Show current filter/sort/view state and spotlight name
+- **Responsive**: Use Bootstrap grid system for mobile compatibility
+- **Data**: Controller should provide `@spotlight_stats` hash with relevant metrics
+- **Clean Design**: Minimal visual elements to avoid competing with page header
+
+### 5. Main Content Area
 - **Container**: Use `.row.justify-content-center` with `.col-lg-12`
 - **Table View**: Default to table view with responsive wrapper
 - **Empty State**: Use alert with info styling and call-to-action
@@ -84,7 +143,7 @@ This document defines the standard style guide for all index pages in the OurGru
           = link_to "Create First [Resource]", new_[resource]_path, class: "btn btn-primary btn-sm"
 ```
 
-### 5. Filter & Sort Modal
+### 6. Filter & Sort Modal
 - **Modal ID**: Use `#[resource]FilterModal`
 - **Title**: Include "(coming soon)" in the title
 - **Disabled Save Button**: The "Apply Filters" button should be disabled

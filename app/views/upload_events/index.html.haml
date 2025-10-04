@@ -1,99 +1,161 @@
-.container-fluid
-  .row
-    .col-12
-      .d-flex.justify-content-between.align-items-center.mb-4
-        %h1 Employment Data Uploads
-        = link_to 'New Upload', new_organization_upload_event_path(current_organization), class: 'btn btn-primary'
-      
-      .card.mb-4
-        .card-header
-          %h5.card-title.mb-0 Expected Headers
-        .card-body
-          %p.text-muted The following headers are expected in your XLSX file:
-          .row
-            .col-md-6
-              %h6 People/Employee
-              %ul
-                %li name
-                %li email
-            .col-md-6
-              %h6 Assignment
-              %ul
-                %li assignment_name
-                %li assignment_description
-          .row
-            .col-md-6
-              %h6 Assignment Tenure
-              %ul
-                %li anticipated_energy_percentage
-                %li assignment_tenure_start_date
-                %li assignment_tenure_end_date
-            .col-md-6
-              %h6 Assignment Check-In
-              %ul
-                %li manager_private_notes
-                %li employee_private_notes
-                %li official_rating
-                %li check_in_date
-                %li energy_percentage
-                %li manager_rating
-                %li employee_rating
-          %p.text-muted.mt-3
-            %strong Note: 
-            Only 
-            %code email
-            and 
-            %code assignment_name
-            are required. Other fields are optional.
+- content_for :go_back_link do
+  = link_to organization_employees_path(current_organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{current_organization.display_name} Teammates
 
-      .card
-        .card-header
-          %h5.card-title.mb-0 Previous Uploads
-        .card-body
-          - if @upload_events.any?
-            .table-responsive
-              %table.table.table-hover
-                %thead
-                  %tr
-                    %th Created
-                    %th Filename
-                    %th Status
-                    %th Creator
-                    %th Initiator
-                    %th Results
-                    %th Actions
-                %tbody
-                  - @upload_events.each do |upload_event|
-                    %tr
-                      %td= upload_event.created_at.strftime('%B %d, %Y at %I:%M %p')
-                      %td
-                        %code= upload_event.filename
-                      %td
-                        %span{class: "badge bg-#{upload_event.status == 'completed' ? 'success' : upload_event.status == 'failed' ? 'danger' : upload_event.status == 'processing' ? 'warning' : 'secondary'}"}
-                          = upload_event.status.humanize
-                      %td= upload_event.creator.display_name
-                      %td= upload_event.initiator.display_name
-                      %td
-                        - if upload_event.completed?
-                          %span.text-success
-                            = "#{upload_event.success_count} successful, #{upload_event.failure_count} failed"
-                        - elsif upload_event.failed?
-                          %span.text-danger
-                            = "#{upload_event.failure_count} failed"
-                        - elsif upload_event.processing?
-                          %span.text-warning Processing...
-                        - else
-                          %span.text-muted Preview ready
-                      %td
-                        = link_to 'View', organization_upload_event_path(current_organization, upload_event), class: 'btn btn-sm btn-outline-primary'
-                        - if upload_event.can_destroy?
-                          = link_to 'Delete', organization_upload_event_path(current_organization, upload_event), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-sm btn-outline-danger ml-2'
-            
-            .d-flex.justify-content-center
-              -# Pagination removed - showing all uploads
-              %p.text-muted.text-center Showing all uploads
-          - else
-            .text-center.text-muted.py-4
-              %p No uploads yet.
-              %p
-                = link_to 'Create your first upload', new_organization_upload_event_path(current_organization), class: 'btn btn-primary'
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2 Upload Events
+    .d-flex.align-items-center
+      - if policy([UploadEvent]).create?
+        .dropdown
+          %button#dropdownMenuButton.btn.btn-primary.dropdown-toggle.ml-2{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", :type => "button"}
+            %i.bi.bi-plus
+          %ul.dropdown-menu{"aria-labelledby" => "dropdownMenuButton"}
+            %li
+              = link_to "Upload Assignment Check-Ins", new_organization_upload_event_path(current_organization, upload_event: {type: 'UploadEvent::UploadAssignmentCheckins'}), class: 'dropdown-item'
+            %li
+              = link_to "Upload Employee Positions", new_organization_upload_event_path(current_organization, upload_event: {type: 'UploadEvent::UploadEmployees'}), class: 'dropdown-item'
+      - else
+        .btn.btn-primary.disabled.ml-2{style: "opacity: 0.6; cursor: not-allowed;"}
+          %i.bi.bi-plus
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permission to perform this action"}
+
+- content_for :header_action do
+  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#uploadEventFilterModal", type: "button"}
+    %i.bi.bi-funnel.me-2
+    Filter & Sort
+
+= render 'upload_events/spotlights/upload_data_overview'
+
+.row.justify-content-center
+  .col-lg-12
+    - if @upload_events.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Created
+              %th Filename
+              %th Version
+              %th Status
+              %th Creator
+              %th Results
+              %th Actions
+          %tbody
+            - @upload_events.each do |upload_event|
+              %tr
+                %td
+                  %small.text-muted= upload_event.created_at.strftime('%b %d, %Y')
+                  %br
+                  %small.text-muted= upload_event.created_at.strftime('%I:%M %p')
+                %td
+                  %code.small= upload_event.filename
+                %td
+                  %span{class: "badge bg-#{upload_event.type == 'UploadEvent::UploadAssignmentCheckins' ? 'primary' : 'success'}"}
+                    = upload_event.display_name
+                %td
+                  %span{class: "badge bg-#{upload_event.status == 'completed' ? 'success' : upload_event.status == 'failed' ? 'danger' : upload_event.status == 'processing' ? 'warning' : 'secondary'}"}
+                    = upload_event.status.humanize
+                %td
+                  %small= upload_event.creator.display_name
+                %td
+                  - if upload_event.completed?
+                    %span.text-success.small
+                      = "#{upload_event.success_count} success, #{upload_event.failure_count} failed"
+                  - elsif upload_event.failed?
+                    %span.text-danger.small
+                      = "#{upload_event.failure_count} failed"
+                  - elsif upload_event.processing?
+                    %span.text-warning.small Processing...
+                  - else
+                    %span.text-muted.small Preview ready
+                %td
+                  .btn-group.btn-group-sm
+                    = link_to organization_upload_event_path(current_organization, upload_event), class: "btn btn-outline-primary" do
+                      %i.bi.bi-eye
+                    = link_to organization_upload_event_path(current_organization, upload_event), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
+                      %i.bi.bi-trash
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Upload Events Created
+        %p.mb-2 Upload files to manage assignment check-ins or employee positions for your organization.
+        = link_to "Create First Upload Event", new_organization_upload_event_path(current_organization, upload_event: {type: 'UploadEvent::UploadAssignmentCheckins'}), class: "btn btn-primary btn-sm"
+
+/ Modal for Filter & Sort
+#uploadEventFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "uploadEventFilterModalLabel", tabindex: "-1"}
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        %h5.modal-title#uploadEventFilterModalLabel
+          %i.bi.bi-funnel.me-2
+          Filter & Sort Upload Events (coming soon)
+        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+      .modal-body
+        .row
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-funnel.me-2
+              Filters
+            .mb-3
+              %label.form-label Upload Type
+              %select.form-select
+                %option All Types
+                %option Assignment Check-Ins
+                %option Employee Positions
+            .mb-3
+              %label.form-label Status
+              %select.form-select
+                %option All Statuses
+                %option Completed
+                %option Processing
+                %option Failed
+                %option Preview Ready
+            .mb-3
+              %label.form-label Creator
+              %select.form-select
+                %option All Creators
+                %option Current User
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-sort-down.me-2
+              Sort Options
+            .mb-3
+              %label.form-label Sort By
+              %select.form-select
+                %option Created Date (Newest First)
+                %option Created Date (Oldest First)
+                %option Filename (A-Z)
+                %option Filename (Z-A)
+                %option Status
+            .mb-3
+              %label.form-label View Style
+              .form-check
+                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
+                %label.form-check-label
+                  %i.bi.bi-table.me-2
+                  Table View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
+                %label.form-check-label
+                  %i.bi.bi-grid.me-2
+                  Card View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
+                %label.form-check-label
+                  %i.bi.bi-list.me-2
+                  List View
+            .mb-3
+              %label.form-label Spotlight
+              %select.form-select
+                %option No Spotlight
+                %option Recent Uploads (Last 7 Days)
+                %option Failed Uploads
+                %option Processing Uploads
+      .modal-footer
+        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+        %button.btn.btn-primary.disabled{type: "button"}
+          %i.bi.bi-check.me-2
+          Apply Filters

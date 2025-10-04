@@ -133,6 +133,15 @@
                 %i.bi.bi-upload.me-2
                 Employment Data Upload
 
+            - if current_person.can_manage_employment?(@organization)
+              = link_to new_organization_upload_event_path(@organization, upload_event: {type: 'UploadEvent::UploadEmployees'}), class: "btn btn-outline-info" do
+                %i.bi.bi-upload.me-2
+                Bulk Upload Employees
+            - else
+              .btn.btn-outline-info.disabled{data: { bs_toggle: "tooltip", bs_title: "Requires employment management permission" }}
+                %i.bi.bi-upload.me-2
+                Bulk Upload Employees
+
             = link_to new_organization_path(parent_id: @organization.id), class: "btn btn-primary" do
               %i.bi.bi-plus-circle.me-2
               Add Team/Department

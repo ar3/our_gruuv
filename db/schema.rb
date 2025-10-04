@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_03_013516) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_04_155051) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -34,6 +34,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_013516) do
     t.index ["name", "organization_id"], name: "index_abilities_on_name_and_organization_id", unique: true
     t.index ["organization_id"], name: "index_abilities_on_organization_id"
     t.index ["updated_by_id"], name: "index_abilities_on_updated_by_id"
+  end
+
+  create_table "addresses", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.string "address_type", default: "home", null: false
+    t.string "street_address"
+    t.string "city"
+    t.string "state_province"
+    t.string "postal_code"
+    t.string "country"
+    t.boolean "is_primary", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["person_id"], name: "index_addresses_on_person_id"
   end
 
   create_table "aspirations", force: :cascade do |t|
@@ -157,6 +171,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_013516) do
     t.text "employment_change_notes"
     t.bigint "seat_id"
     t.bigint "teammate_id"
+    t.string "employment_type", default: "full_time"
     t.index ["company_id"], name: "index_employment_tenures_on_company_id"
     t.index ["manager_id"], name: "index_employment_tenures_on_manager_id"
     t.index ["person_id", "company_id", "started_at"], name: "index_employment_tenures_on_person_company_started"
@@ -306,6 +321,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_013516) do
     t.string "timezone"
     t.integer "current_organization_id"
     t.boolean "og_admin", default: false, null: false
+    t.string "preferred_name"
+    t.string "gender_identity"
+    t.string "pronouns"
     t.index ["current_organization_id"], name: "index_people_on_current_organization_id"
     t.index ["og_admin"], name: "index_people_on_og_admin"
     t.index ["unique_textable_phone_number"], name: "index_people_on_unique_textable_phone_number", unique: true
@@ -508,6 +526,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_013516) do
     t.datetime "updated_at", null: false
     t.bigint "organization_id", null: false
     t.string "filename"
+    t.string "type"
     t.index ["created_at"], name: "index_upload_events_on_created_at"
     t.index ["creator_id"], name: "index_upload_events_on_creator_id"
     t.index ["initiator_id"], name: "index_upload_events_on_initiator_id"
@@ -529,6 +548,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_03_013516) do
   add_foreign_key "abilities", "organizations"
   add_foreign_key "abilities", "people", column: "created_by_id"
   add_foreign_key "abilities", "people", column: "updated_by_id"
+  add_foreign_key "addresses", "people"
   add_foreign_key "aspirations", "organizations"
   add_foreign_key "assignment_abilities", "abilities"
   add_foreign_key "assignment_abilities", "assignments"

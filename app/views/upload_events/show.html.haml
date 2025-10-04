@@ -20,6 +20,13 @@
   - check_ins_data = Array(preview_actions&.dig('assignment_check_ins'))
   - external_refs_data = Array(preview_actions&.dig('external_references'))
   
+  -# UploadEmployees data
+  - managers_data = Array(preview_actions&.dig('managers'))
+  - departments_data = Array(preview_actions&.dig('departments'))
+  - unassigned_employees_data = Array(preview_actions&.dig('unassigned_employees'))
+  - position_types_data = Array(preview_actions&.dig('position_types'))
+  - positions_data = Array(preview_actions&.dig('positions'))
+  
   - successes_data = Array(results&.dig('successes'))
   - failures_data = Array(results&.dig('failures'))
   
@@ -29,6 +36,11 @@
   - tenures_data = tenures_data.nil? ? [] : tenures_data
   - check_ins_data = check_ins_data.nil? ? [] : check_ins_data
   - external_refs_data = external_refs_data.nil? ? [] : external_refs_data
+  - managers_data = managers_data.nil? ? [] : managers_data
+  - departments_data = departments_data.nil? ? [] : departments_data
+  - unassigned_employees_data = unassigned_employees_data.nil? ? [] : unassigned_employees_data
+  - position_types_data = position_types_data.nil? ? [] : position_types_data
+  - positions_data = positions_data.nil? ? [] : positions_data
   - successes_data = successes_data.nil? ? [] : successes_data
   - failures_data = failures_data.nil? ? [] : failures_data
   
@@ -38,6 +50,11 @@
   - tenures_data = tenures_data.is_a?(Array) ? tenures_data : []
   - check_ins_data = check_ins_data.is_a?(Array) ? check_ins_data : []
   - external_refs_data = external_refs_data.is_a?(Array) ? external_refs_data : []
+  - managers_data = managers_data.is_a?(Array) ? managers_data : []
+  - departments_data = departments_data.is_a?(Array) ? departments_data : []
+  - unassigned_employees_data = unassigned_employees_data.is_a?(Array) ? unassigned_employees_data : []
+  - position_types_data = position_types_data.is_a?(Array) ? position_types_data : []
+  - positions_data = positions_data.is_a?(Array) ? positions_data : []
   - successes_data = successes_data.is_a?(Array) ? successes_data : []
   - failures_data = failures_data.is_a?(Array) ? failures_data : []
   
@@ -300,6 +317,176 @@
                           %td
                             = link_to ref['external_url'], ref['external_url'], target: '_blank', class: 'text-decoration-none'
                           %td= ref['row']
+              
+              -# UploadEmployees sections
+              - if managers_data.present?
+                %h6 Managers (#{managers_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_managers', '1', true, class: 'form-check-input', data: { target: 'managers-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Name
+                        %th Email
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - managers_data.each do |manager|
+                        %tr
+                          %td
+                            = check_box_tag "selected_managers[]", manager['row'], true, class: 'form-check-input managers-checkbox'
+                          %td= manager['name']
+                          %td= manager['email']
+                          %td
+                            - if manager['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if manager['existing_id']
+                              = link_to manager['existing_name'], person_path(manager['existing_id']), class: 'text-decoration-none'
+                            - else
+                              %span.text-muted None
+                          %td= manager['row']
+              
+              - if departments_data.present?
+                %h6 Departments (#{departments_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_departments', '1', true, class: 'form-check-input', data: { target: 'departments-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Name
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - departments_data.each do |department|
+                        %tr
+                          %td
+                            = check_box_tag "selected_departments[]", department['row'], true, class: 'form-check-input departments-checkbox'
+                          %td= department['name']
+                          %td
+                            - if department['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if department['existing_id']
+                              %span.text-muted Existing department
+                            - else
+                              %span.text-muted None
+                          %td= department['row']
+              
+              - if unassigned_employees_data.present?
+                %h6 Unassigned Employees (#{unassigned_employees_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_unassigned_employees', '1', true, class: 'form-check-input', data: { target: 'unassigned-employees-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Name
+                        %th Email
+                        %th Job Title
+                        %th Department
+                        %th Manager
+                        %th Start Date
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - unassigned_employees_data.each do |employee|
+                        %tr
+                          %td
+                            = check_box_tag "selected_unassigned_employees[]", employee['row'], true, class: 'form-check-input unassigned-employees-checkbox'
+                          %td= employee['name']
+                          %td= employee['email']
+                          %td= employee['job_title']
+                          %td= employee['department']
+                          %td= employee['manager_name']
+                          %td= employee['start_date']
+                          %td
+                            - if employee['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if employee['existing_id']
+                              = link_to employee['existing_name'], person_path(employee['existing_id']), class: 'text-decoration-none'
+                            - else
+                              %span.text-muted None
+                          %td= employee['row']
+              
+              - if position_types_data.present?
+                %h6 Position Types (#{position_types_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_position_types', '1', true, class: 'form-check-input', data: { target: 'position-types-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th External Title
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - position_types_data.each do |position_type|
+                        %tr
+                          %td
+                            = check_box_tag "selected_position_types[]", position_type['row'], true, class: 'form-check-input position-types-checkbox'
+                          %td= position_type['external_title']
+                          %td
+                            - if position_type['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if position_type['existing_id']
+                              %span.text-muted Existing position type
+                            - else
+                              %span.text-muted None
+                          %td= position_type['row']
+              
+              - if positions_data.present?
+                %h6 Positions (#{positions_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_positions', '1', true, class: 'form-check-input', data: { target: 'positions-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Position Type
+                        %th Level
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - positions_data.each do |position|
+                        %tr
+                          %td
+                            = check_box_tag "selected_positions[]", position['row'], true, class: 'form-check-input positions-checkbox'
+                          %td= position['position_type_title']
+                          %td= position['position_level']
+                          %td
+                            - if position['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if position['existing_id']
+                              %span.text-muted Existing position
+                            - else
+                              %span.text-muted None
+                          %td= position['row']
               
               .d-flex.gap-2.mt-4
                 = form.submit 'Process Selected Items', class: 'btn btn-success btn-lg', data: { confirm: 'Are you sure you want to process the selected items? This action cannot be undone.' }

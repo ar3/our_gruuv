@@ -84,6 +84,7 @@ class Person < ApplicationRecord
     end
   end
   has_many :teammates, dependent: :destroy
+  has_many :addresses, dependent: :destroy
   belongs_to :current_organization, class_name: 'Organization', optional: true
   
   # Callbacks
@@ -92,6 +93,14 @@ class Person < ApplicationRecord
   # Validations
   validates :unique_textable_phone_number, uniqueness: true, allow_blank: true
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :gender_identity, inclusion: { 
+    in: %w[man woman non_binary genderqueer genderfluid agender two_spirit prefer_not_to_say other], 
+    allow_blank: true 
+  }
+  validates :pronouns, inclusion: { 
+    in: %w[he/him she/her they/them he/they she/they other prefer_not_to_say], 
+    allow_blank: true 
+  }
   validate :ensure_valid_timezone
 
   

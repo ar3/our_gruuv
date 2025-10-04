@@ -1,0 +1,11 @@
+.container.mt-4
+  .row
+    .col-12
+      .card
+        .card-body.text-center
+          %h1.text-danger
+            %i.bi.bi-exclamation-triangle.me-2
+            Something went wrong
+          %p.lead We're sorry, but an unexpected error occurred.
+          %p Please try again, or contact support if the problem persists.
+          = link_to 'Go Back', :back, class: 'btn btn-primary'

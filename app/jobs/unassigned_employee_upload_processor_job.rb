@@ -22,6 +22,7 @@ class UnassignedEmployeeUploadProcessorJob < ApplicationJob
   rescue => e
     # Mark as failed with error details
     error_message = "Unexpected error: #{e.message}"
+    upload_event.reload
     upload_event.mark_as_failed!(error_message)
     
     # Log the error for debugging

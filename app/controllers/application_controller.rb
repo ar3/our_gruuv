@@ -8,6 +8,27 @@ class ApplicationController < ActionController::Base
   
   layout :determine_layout
   
+  # Global exception handler to prevent silent failures
+  rescue_from StandardError, with: :handle_unexpected_error
+  
+  private
+  
+  def handle_unexpected_error(exception)
+    Rails.logger.error "ApplicationController: Unexpected error in #{controller_name}##{action_name}: #{exception.class.name}: #{exception.message}"
+    Rails.logger.error exception.backtrace.join("\n")
+    
+    # Don't handle errors in development/test - let them bubble up for debugging
+    if Rails.env.development? || Rails.env.test?
+      raise exception
+    end
+    
+    # In production, show a generic error page
+    respond_to do |format|
+      format.html { render 'shared/error', status: :internal_server_error }
+      format.json { render json: { error: 'An unexpected error occurred' }, status: :internal_server_error }
+    end
+  end
+  
   def logout
     session.clear
     redirect_to root_path, notice: 'You have been logged out successfully!'

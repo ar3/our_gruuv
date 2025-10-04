@@ -1,13 +1,25 @@
-class UploadEventsController < ApplicationController
+class UploadEventsController < Organizations::OrganizationNamespaceBaseController
   layout 'authenticated-v2-0'
   before_action :require_login
   before_action :set_upload_event, only: [:show, :destroy, :process_upload]
-  before_action :ensure_employment_management_permission, only: [:index, :new, :create, :process_upload]
+  before_action :authorize_upload_events, only: [:index, :new, :create, :process_upload]
 
   def index
-    @upload_events = current_organization.upload_events
-                                   .includes(:creator, :initiator)
-                                   .order(created_at: :desc)
+    @upload_events = policy_scope(UploadEvent)
+                     .includes(:creator, :initiator)
+                     .order(created_at: :desc)
+    
+    # Spotlight statistics
+    @spotlight_stats = {
+      total_uploads: @upload_events.count,
+      completed_uploads: @upload_events.completed.count,
+      ready_for_preview: @upload_events.preview.count,
+      failed_uploads: @upload_events.failed.count,
+      processing_uploads: @upload_events.processing.count,
+      recent_uploads: @upload_events.where('created_at > ?', 7.days.ago).count,
+      assignment_checkins: @upload_events.where(type: ['UploadAssignmentCheckins', 'UploadEvent::UploadAssignmentCheckins']).count,
+      employee_uploads: @upload_events.where(type: ['UploadEmployees', 'UploadEvent::UploadEmployees']).count
+    }
   end
 
   def show
@@ -99,17 +111,15 @@ class UploadEventsController < ApplicationController
   end
 
   def set_upload_event
-    @upload_event = current_organization.upload_events.find(params[:id])
+    @upload_event = organization.upload_events.find(params[:id])
   end
 
   def upload_event_params
     params.require(:upload_event).permit()
   end
 
-  def ensure_employment_management_permission
-    unless current_person.can_manage_employment?(current_organization)
-      redirect_to root_path, alert: 'You do not have permission to manage employment data.'
-    end
+  def authorize_upload_events
+    authorize UploadEvent
   end
 
   def filter_preview_actions_by_selection(preview_actions, params)

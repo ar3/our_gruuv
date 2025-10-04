@@ -38,8 +38,8 @@ class UnassignedEmployeeUploadParser
   # Valid employment types
   VALID_EMPLOYMENT_TYPES = %w[full_time part_time contract intern].freeze
 
-  # Valid genders
-  VALID_GENDERS = %w[male female non_binary other prefer_not_to_say].freeze
+  # Valid gender identities
+  VALID_GENDER_IDENTITIES = %w[man woman non_binary genderqueer genderfluid agender two_spirit prefer_not_to_say other].freeze
 
   # Valid job title levels
   VALID_JOB_TITLE_LEVELS = %w[entry mid senior lead director executive].freeze
@@ -68,7 +68,9 @@ class UnassignedEmployeeUploadParser
       @parsed_data = {
         unassigned_employees: [],
         departments: [],
-        managers: []
+        managers: [],
+        position_types: [],
+        positions: []
       }
       
       # Parse each row
@@ -77,9 +79,11 @@ class UnassignedEmployeeUploadParser
         parse_row(row, row_num)
       end
 
-      # Deduplicate departments and managers
+      # Deduplicate departments, managers, and position types
       @parsed_data[:departments] = @parsed_data[:departments].uniq { |d| d['name'] }
       @parsed_data[:managers] = @parsed_data[:managers].uniq { |m| m['name'] }
+      @parsed_data[:position_types] = @parsed_data[:position_types].uniq { |pt| pt['external_title'] }
+      @parsed_data[:positions] = @parsed_data[:positions].uniq { |p| "#{p['position_type_title']}_#{p['position_level']}" }
       
       true
     rescue => e
@@ -94,7 +98,9 @@ class UnassignedEmployeeUploadParser
     {
       unassigned_employees: @parsed_data[:unassigned_employees] || [],
       departments: @parsed_data[:departments] || [],
-      managers: @parsed_data[:managers] || []
+      managers: @parsed_data[:managers] || [],
+      position_types: @parsed_data[:position_types] || [],
+      positions: @parsed_data[:positions] || []
     }
   end
 
@@ -104,7 +110,9 @@ class UnassignedEmployeeUploadParser
     {
       unassigned_employees: enhance_unassigned_employees_preview(@parsed_data[:unassigned_employees] || []),
       departments: enhance_departments_preview(@parsed_data[:departments] || []),
-      managers: enhance_managers_preview(@parsed_data[:managers] || [])
+      managers: enhance_managers_preview(@parsed_data[:managers] || []),
+      position_types: enhance_position_types_preview(@parsed_data[:position_types] || []),
+      positions: enhance_positions_preview(@parsed_data[:positions] || [])
     }
   end
 
@@ -181,6 +189,18 @@ class UnassignedEmployeeUploadParser
       manager_data = parse_manager_data(row_hash, row_num)
       @parsed_data[:managers] << manager_data if manager_data
     end
+
+    # Parse position type data
+    if position_type_data_present?(row_hash)
+      position_type_data = parse_position_type_data(row_hash, row_num)
+      @parsed_data[:position_types] << position_type_data if position_type_data
+    end
+
+    # Parse position data
+    if position_data_present?(row_hash)
+      position_data = parse_position_data(row_hash, row_num)
+      @parsed_data[:positions] << position_data if position_data
+    end
   end
 
   def unassigned_employee_data_present?(row_hash)
@@ -195,13 +215,21 @@ class UnassignedEmployeeUploadParser
     row_hash['Manager'].present? || row_hash['Manager Email'].present?
   end
 
+  def position_type_data_present?(row_hash)
+    row_hash['Job Title'].present?
+  end
+
+  def position_data_present?(row_hash)
+    row_hash['Job Title'].present? && row_hash['Job Title Level'].present?
+  end
+
   def parse_unassigned_employee_data(row_hash, row_num)
     name = row_hash['Name']&.strip
     preferred_name = row_hash['Preferred Name']&.strip
     email = row_hash['Email']&.strip&.downcase
     start_date = parse_date(row_hash['Start Date'])
     location = row_hash['Location']&.strip
-    gender = parse_gender(row_hash['Gender'])
+    gender_identity = parse_gender(row_hash['Gender'])
     department = row_hash['Department']&.strip
     employment_type = parse_employment_type(row_hash['Employment Type'])
     manager_name = row_hash['Manager']&.strip
@@ -232,7 +260,7 @@ class UnassignedEmployeeUploadParser
       'email' => email,
       'start_date' => start_date,
       'location' => location,
-      'gender' => gender,
+      'gender_identity' => gender_identity,
       'department' => department,
       'employment_type' => employment_type,
       'manager_name' => manager_name,
@@ -274,6 +302,30 @@ class UnassignedEmployeeUploadParser
     {
       'name' => manager_name,
       'email' => manager_email,
+      'row' => row_num
+    }
+  end
+
+  def parse_position_type_data(row_hash, row_num)
+    job_title = row_hash['Job Title']&.strip
+    
+    return nil if job_title.blank?
+
+    {
+      'external_title' => job_title,
+      'row' => row_num
+    }
+  end
+
+  def parse_position_data(row_hash, row_num)
+    job_title = row_hash['Job Title']&.strip
+    job_title_level = parse_job_title_level(row_hash['Job Title Level'])
+    
+    return nil if job_title.blank? || job_title_level.blank?
+
+    {
+      'position_type_title' => job_title,
+      'position_level' => job_title_level,
       'row' => row_num
     }
   end
@@ -387,6 +439,72 @@ class UnassignedEmployeeUploadParser
     end
   end
 
+  def enhance_position_types_preview(position_types_data)
+    return [] if position_types_data.blank?
+    
+    position_types_data.map do |position_type_data|
+      # Try to find existing position type by external_title
+      existing_position_type = nil
+      action = 'create'
+      
+      if position_type_data['external_title'].present?
+        # We need to find the organization context - this would need to be passed in
+        # For now, we'll assume it's a create action
+        existing_position_type = nil
+      end
+      
+      if existing_position_type
+        action = 'update'
+        position_type_data.merge(
+          'action' => action,
+          'existing_id' => existing_position_type.id,
+          'existing_name' => existing_position_type.external_title,
+          'will_create' => false
+        )
+      else
+        position_type_data.merge(
+          'action' => action,
+          'existing_id' => nil,
+          'existing_name' => nil,
+          'will_create' => true
+        )
+      end
+    end
+  end
+
+  def enhance_positions_preview(positions_data)
+    return [] if positions_data.blank?
+    
+    positions_data.map do |position_data|
+      # Try to find existing position by position_type and position_level
+      existing_position = nil
+      action = 'create'
+      
+      if position_data['position_type_title'].present? && position_data['position_level'].present?
+        # We need to find the organization context and position type - this would need to be passed in
+        # For now, we'll assume it's a create action
+        existing_position = nil
+      end
+      
+      if existing_position
+        action = 'update'
+        position_data.merge(
+          'action' => action,
+          'existing_id' => existing_position.id,
+          'existing_name' => existing_position.display_name,
+          'will_create' => false
+        )
+      else
+        position_data.merge(
+          'action' => action,
+          'existing_id' => nil,
+          'existing_name' => nil,
+          'will_create' => true
+        )
+      end
+    end
+  end
+
   def parse_date(value)
     return nil if value.blank?
     
@@ -412,22 +530,57 @@ class UnassignedEmployeeUploadParser
   def parse_gender(value)
     return nil if value.blank?
     
-    gender = value.to_s.strip.downcase
-    VALID_GENDERS.include?(gender) ? gender : nil
+    # Map common gender values to our valid options
+    gender_mapping = {
+      'm' => 'man',
+      'f' => 'woman',
+      'male' => 'man',
+      'female' => 'woman',
+      'non_binary' => 'non_binary',
+      'other' => 'other'
+    }
+    
+    normalized_value = value.to_s.strip.downcase
+    gender_mapping[normalized_value] || normalized_value
   end
 
   def parse_employment_type(value)
     return nil if value.blank?
     
-    employment_type = value.to_s.strip.downcase.gsub(' ', '_')
-    VALID_EMPLOYMENT_TYPES.include?(employment_type) ? employment_type : nil
+    # Map common employment type formats to our valid types
+    employment_type_mapping = {
+      'regular full time' => 'full_time',
+      'regular part time' => 'part_time',
+      'full time' => 'full_time',
+      'part time' => 'part_time',
+      'contract' => 'contract',
+      'intern' => 'intern',
+      'internship' => 'intern'
+    }
+    
+    normalized_value = value.to_s.strip.downcase
+    employment_type_mapping[normalized_value] || normalized_value.gsub(' ', '_')
   end
 
   def parse_job_title_level(value)
     return nil if value.blank?
     
-    level = value.to_s.strip.downcase
-    VALID_JOB_TITLE_LEVELS.include?(level) ? level : nil
+    # Map numeric levels to our position level format (major level 1)
+    level_mapping = {
+      '1' => '1.1',
+      '2' => '1.2', 
+      '3' => '1.3',
+      '4' => '1.4',
+      '5' => '1.5',
+      '6' => '1.6',
+      '7' => '1.7',
+      '8' => '1.8',
+      '9' => '1.9',
+      '10' => '1.10'
+    }
+    
+    level = value.to_s.strip
+    level_mapping[level] || level
   end
 
   def generate_email_from_name(name)
