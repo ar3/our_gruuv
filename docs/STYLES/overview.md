@@ -13,6 +13,7 @@ This document provides a comprehensive overview of all styling patterns used in 
 | **Navigation** | [navigation.md](./navigation.md) | Navigation and back link patterns |
 | **Forms** | [forms.md](./forms.md) | Form layout and HAML best practices |
 | **Responsive** | [responsive.md](./responsive.md) | Responsive design patterns |
+| **Accessibility** | [accessibility.md](./accessibility.md) | Accessibility standards and responsive design |
 
 ## Page Type Quick Start
 

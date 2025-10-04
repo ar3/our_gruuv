@@ -18,6 +18,19 @@ This document defines the standard button patterns used throughout the OurGruuv 
 
 ## Authorization UX Patterns
 
+### Permission Display Principles
+- **Don't hide things**: Show all actions but disable unauthorized ones
+- **Clear feedback**: Use warning icons next to disabled buttons/links with tooltips
+- **Helpful tooltips**: Explain what permission is needed for each action on hover over warning icon
+- **Consistent patterns**: Use the same UI patterns across all permission checks
+- **Visual indicators**: Use consistent icons and colors for permission states
+
+### Disabled Button Styling
+- **Disabled button styling**: Use `btn-outline-secondary` class for disabled buttons to clearly indicate they're not actionable
+- **Secondary action styling**: Use `btn-outline-primary` for secondary actions and navigation links to distinguish from disabled buttons
+- **Button layout**: Use `.flex-grow-1` wrapper with `.w-100` on disabled buttons to maintain full-width appearance minus warning icon space
+- **Tooltip implementation**: Use Bootstrap tooltips with `data-bs-toggle="tooltip"` and `data-bs-title` for permission messages
+
 ### Index Page Header with Create Button
 For index pages, use this header structure with conditional create button:
 
@@ -45,6 +58,15 @@ For index pages, use this header structure with conditional create button:
 - **Clear messaging**: Tooltip explains exactly what permission is needed
 - **Visual hierarchy**: Disabled button shows the action, warning icon explains the restriction
 - **Consistent styling**: Use `opacity: 0.6` and `cursor: not-allowed` for disabled state
+
+### Permission-Based UI Implementation
+- **Controller authorization**: Use permissive authorization for views (e.g., `authorize @resource, :show?`) and handle specific permissions in the view
+- **View-level permission checks**: Use helper methods like `current_person&.can_create_employment?(@organization)` in views
+- **Conditional UI rendering**: Show enabled buttons for authorized actions, disabled buttons with tooltips for unauthorized actions
+- **Consistent permission patterns**: Use the same `if authorized / else disabled + tooltip` pattern across all actions
+- **Policy logic belongs in Pundit policies**: Never implement complex authorization logic directly in views - use `policy(@record).action?` instead
+- **Avoid multi-line conditionals in views**: Keep view logic simple by delegating complex checks to policy methods
+- **Use semantic policy method names**: Create descriptive policy methods like `view_employment_history?` instead of complex inline checks
 
 ## Standard Actions
 
