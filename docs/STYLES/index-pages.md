@@ -174,7 +174,7 @@ This document defines the standard style guide for all index pages in the OurGru
 ## Examples
 
 - **Seats Index**: `/app/views/organizations/seats/index.html.haml`
-- **Aspirations Index**: `/app/views/organizations/aspirations/index.html.haml`
+- **Positions Index**: `/app/views/organizations/positions/index.html.haml`
 
 ## Future Enhancements
 

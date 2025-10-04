@@ -213,6 +213,21 @@ This document contains all the rules and conventions we follow in this project t
 ### Code Changes
 - Ask for confirmation before making any changes to existing code changes
 
+### Test-Driven Development (TDD) for Bug Fixes
+- **When user says "TDD this bug"**: Follow strict TDD approach
+- **Step 1**: Write spec(s) that reproduce the exact exception and fail because of the exception
+- **Step 2**: Only then modify the code to fix the exception
+- **Step 3**: Run the specs again to ensure the issue is actually fixed
+- **Never skip Step 1**: Always reproduce the bug in tests before attempting to fix it
+
+### Silent Failure Prevention
+- **NEVER write code that might lead to silent failures** - they are the most costly to debug
+- **Always handle error conditions explicitly** - use explicit error messages, redirects, or exceptions
+- **Avoid methods that return nil/false silently** - prefer methods that raise exceptions or return explicit error objects
+- **Use `dig` for safe parameter access** - but always check the result explicitly
+- **Log errors when they occur** - don't let errors disappear into the void
+- **Test error conditions** - ensure every error path is tested and produces visible feedback
+
 ### Deployment
 - Use Railway exclusively for deployment
 - Remove all other deployment options and focus on the Railway deploy flow
