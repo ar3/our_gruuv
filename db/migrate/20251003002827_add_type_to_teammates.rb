@@ -1,5 +1,15 @@
 class AddTypeToTeammates < ActiveRecord::Migration[8.0]
-  def change
-    add_column :teammates, :type, :string
+  def up
+    # Only add the column if the table exists and the column doesn't already exist
+    if table_exists?(:teammates) && !column_exists?(:teammates, :type)
+      add_column :teammates, :type, :string
+    end
+  end
+
+  def down
+    # Only remove the column if it exists
+    if table_exists?(:teammates) && column_exists?(:teammates, :type)
+      remove_column :teammates, :type
+    end
   end
 end
