@@ -1,5 +1,9 @@
 class AddTeammateIdToPersonMilestonesAssignmentCheckInsAssignmentTenuresEmploymentTenuresHuddleFeedbacksHuddleParticipants < ActiveRecord::Migration[8.0]
   def up
+    if table_exists?(:person_organization_accesses) && !table_exists?(:teammates)
+      rename_table :person_organization_accesses, :teammates
+    end
+    
     # Add teammate_id to person_milestones
     add_reference :person_milestones, :teammate, null: true, foreign_key: true
     # Check if index exists before adding
