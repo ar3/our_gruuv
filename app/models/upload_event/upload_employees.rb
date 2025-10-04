@@ -11,8 +11,9 @@ class UploadEvent::UploadEmployees < UploadEvent
         preview_actions: parser.enhanced_preview_actions,
         attempted_at: Time.current
       )
-      true
+      parser
     else
+      @parser = parser
       false
     end
   end
@@ -29,8 +30,9 @@ class UploadEvent::UploadEmployees < UploadEvent
     'csv'
   end
 
-  def parse_error_message(parser)
-    "Upload failed: #{parser.errors.join(', ')}"
+  def parse_error_message
+    return "Upload failed: Please check your file format." unless @parser
+    "Upload failed: #{@parser.errors.join(', ')}"
   end
 
   def process_file_content_for_storage(file)

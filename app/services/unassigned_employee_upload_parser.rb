@@ -70,7 +70,9 @@ class UnassignedEmployeeUploadParser
         departments: [],
         managers: [],
         position_types: [],
-        positions: []
+        positions: [],
+        teammates: [],
+        employment_tenures: []
       }
       
       # Parse each row
@@ -79,11 +81,13 @@ class UnassignedEmployeeUploadParser
         parse_row(row, row_num)
       end
 
-      # Deduplicate departments, managers, and position types
+      # Deduplicate departments, managers, position types, teammates, and employment tenures
       @parsed_data[:departments] = @parsed_data[:departments].uniq { |d| d['name'] }
       @parsed_data[:managers] = @parsed_data[:managers].uniq { |m| m['name'] }
       @parsed_data[:position_types] = @parsed_data[:position_types].uniq { |pt| pt['external_title'] }
       @parsed_data[:positions] = @parsed_data[:positions].uniq { |p| "#{p['position_type_title']}_#{p['position_level']}" }
+      @parsed_data[:teammates] = @parsed_data[:teammates].uniq { |t| "#{t['person_name']}_#{t['organization_name']}" }
+      @parsed_data[:employment_tenures] = @parsed_data[:employment_tenures].uniq { |et| "#{et['person_name']}_#{et['position_title']}" }
       
       true
     rescue => e
@@ -100,7 +104,9 @@ class UnassignedEmployeeUploadParser
       departments: @parsed_data[:departments] || [],
       managers: @parsed_data[:managers] || [],
       position_types: @parsed_data[:position_types] || [],
-      positions: @parsed_data[:positions] || []
+      positions: @parsed_data[:positions] || [],
+      teammates: @parsed_data[:teammates] || [],
+      employment_tenures: @parsed_data[:employment_tenures] || []
     }
   end
 
@@ -112,7 +118,9 @@ class UnassignedEmployeeUploadParser
       departments: enhance_departments_preview(@parsed_data[:departments] || []),
       managers: enhance_managers_preview(@parsed_data[:managers] || []),
       position_types: enhance_position_types_preview(@parsed_data[:position_types] || []),
-      positions: enhance_positions_preview(@parsed_data[:positions] || [])
+      positions: enhance_positions_preview(@parsed_data[:positions] || []),
+      teammates: enhance_teammates_preview(@parsed_data[:teammates] || []),
+      employment_tenures: enhance_employment_tenures_preview(@parsed_data[:employment_tenures] || [])
     }
   end
 
@@ -201,6 +209,18 @@ class UnassignedEmployeeUploadParser
       position_data = parse_position_data(row_hash, row_num)
       @parsed_data[:positions] << position_data if position_data
     end
+
+    # Parse teammate data
+    if teammate_data_present?(row_hash)
+      teammate_data = parse_teammate_data(row_hash, row_num)
+      @parsed_data[:teammates] << teammate_data if teammate_data
+    end
+
+    # Parse employment tenure data
+    if employment_tenure_data_present?(row_hash)
+      employment_tenure_data = parse_employment_tenure_data(row_hash, row_num)
+      @parsed_data[:employment_tenures] << employment_tenure_data if employment_tenure_data
+    end
   end
 
   def unassigned_employee_data_present?(row_hash)
@@ -221,6 +241,14 @@ class UnassignedEmployeeUploadParser
 
   def position_data_present?(row_hash)
     row_hash['Job Title'].present? && row_hash['Job Title Level'].present?
+  end
+
+  def teammate_data_present?(row_hash)
+    row_hash['Name'].present? || row_hash['Email'].present?
+  end
+
+  def employment_tenure_data_present?(row_hash)
+    row_hash['Name'].present? && row_hash['Job Title'].present?
   end
 
   def parse_unassigned_employee_data(row_hash, row_num)
@@ -326,6 +354,63 @@ class UnassignedEmployeeUploadParser
     {
       'position_type_title' => job_title,
       'position_level' => job_title_level,
+      'row' => row_num
+    }
+  end
+
+  def parse_teammate_data(row_hash, row_num)
+    name = row_hash['Name']&.strip
+    email = row_hash['Email']&.strip&.downcase
+    start_date = parse_date(row_hash['Start Date'])
+
+    # Auto-generate email from name if not provided
+    if email.blank? && name.present?
+      email = generate_email_from_name(name)
+    end
+
+    # Auto-generate name from email if not provided
+    if name.blank? && email.present?
+      name = generate_name_from_email(email)
+    end
+
+    return nil if name.blank? || email.blank?
+
+    {
+      'person_name' => name,
+      'person_email' => email,
+      'organization_name' => 'Company', # This will be set by the processor
+      'type' => 'CompanyTeammate',
+      'first_employed_at' => start_date,
+      'row' => row_num
+    }
+  end
+
+  def parse_employment_tenure_data(row_hash, row_num)
+    name = row_hash['Name']&.strip
+    email = row_hash['Email']&.strip&.downcase
+    job_title = row_hash['Job Title']&.strip
+    manager_name = row_hash['Manager']&.strip
+    start_date = parse_date(row_hash['Start Date'])
+
+    # Auto-generate email from name if not provided
+    if email.blank? && name.present?
+      email = generate_email_from_name(name)
+    end
+
+    # Auto-generate name from email if not provided
+    if name.blank? && email.present?
+      name = generate_name_from_email(email)
+    end
+
+    return nil if name.blank? || job_title.blank?
+
+    {
+      'person_name' => name,
+      'person_email' => email,
+      'company_name' => 'Company', # This will be set by the processor
+      'position_title' => job_title,
+      'manager_name' => manager_name,
+      'started_at' => start_date,
       'row' => row_num
     }
   end
@@ -496,6 +581,78 @@ class UnassignedEmployeeUploadParser
         )
       else
         position_data.merge(
+          'action' => action,
+          'existing_id' => nil,
+          'existing_name' => nil,
+          'will_create' => true
+        )
+      end
+    end
+  end
+
+  def enhance_teammates_preview(teammates_data)
+    return [] if teammates_data.blank?
+    
+    teammates_data.map do |teammate_data|
+      # Try to find existing teammate by person and organization
+      existing_teammate = nil
+      action = 'create'
+      
+      if teammate_data['person_email'].present?
+        person = Person.find_by(email: teammate_data['person_email'])
+        if person
+          # We need organization context - this would need to be passed in
+          # For now, we'll assume it's a create action
+          existing_teammate = nil
+        end
+      end
+      
+      if existing_teammate
+        action = 'update'
+        teammate_data.merge(
+          'action' => action,
+          'existing_id' => existing_teammate.id,
+          'existing_name' => existing_teammate.person.display_name,
+          'will_create' => false
+        )
+      else
+        teammate_data.merge(
+          'action' => action,
+          'existing_id' => nil,
+          'existing_name' => nil,
+          'will_create' => true
+        )
+      end
+    end
+  end
+
+  def enhance_employment_tenures_preview(employment_tenures_data)
+    return [] if employment_tenures_data.blank?
+    
+    employment_tenures_data.map do |employment_tenure_data|
+      # Try to find existing employment tenure by person and company
+      existing_employment_tenure = nil
+      action = 'create'
+      
+      if employment_tenure_data['person_email'].present?
+        person = Person.find_by(email: employment_tenure_data['person_email'])
+        if person
+          # We need company context - this would need to be passed in
+          # For now, we'll assume it's a create action
+          existing_employment_tenure = nil
+        end
+      end
+      
+      if existing_employment_tenure
+        action = 'update'
+        employment_tenure_data.merge(
+          'action' => action,
+          'existing_id' => existing_employment_tenure.id,
+          'existing_name' => existing_employment_tenure.person.display_name,
+          'will_create' => false
+        )
+      else
+        employment_tenure_data.merge(
           'action' => action,
           'existing_id' => nil,
           'existing_name' => nil,

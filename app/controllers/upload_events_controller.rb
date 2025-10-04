@@ -27,11 +27,47 @@ class UploadEventsController < Organizations::OrganizationNamespaceBaseControlle
   end
 
   def new
-    @upload_event = UploadEvent.new
+    type_param = params.dig(:upload_event, :type)
+    
+    if type_param.blank?
+      redirect_to organization_upload_events_path(current_organization), alert: 'Please select an upload type from the dropdown.'
+      return
+    end
+    
+    begin
+      @upload_event = type_param.constantize.new
+    rescue NameError
+      redirect_to organization_upload_events_path(current_organization), alert: 'Invalid upload type selected.'
+      return
+    end
   end
 
   def create
-    @upload_event = current_organization.upload_events.build
+    # Validate required parameters
+    unless params[:upload_event].present?
+      redirect_to organization_upload_events_path(current_organization), alert: 'Type can\'t be blank'
+      return
+    end
+
+    type_param = params[:upload_event][:type]
+    unless type_param.present?
+      redirect_to organization_upload_events_path(current_organization), alert: 'Type can\'t be blank'
+      return
+    end
+
+    unless type_param.in?(['UploadEvent::UploadAssignmentCheckins', 'UploadEvent::UploadEmployees'])
+      redirect_to organization_upload_events_path(current_organization), alert: 'Type is not included in the list'
+      return
+    end
+
+    begin
+      @upload_event = type_param.constantize.new
+    rescue NameError
+      redirect_to organization_upload_events_path(current_organization), alert: 'Invalid upload type selected.'
+      return
+    end
+
+    @upload_event.organization = current_organization
     @upload_event.creator = current_person
     @upload_event.initiator = current_person
 
@@ -39,32 +75,28 @@ class UploadEventsController < Organizations::OrganizationNamespaceBaseControlle
     if params[:upload_event][:file].present?
       file = params[:upload_event][:file]
       
-      # Validate file type
-      unless file.content_type.in?(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])
-        redirect_to new_organization_upload_event_path(current_organization), alert: 'Please upload a valid Excel file (.xlsx or .xls)'
+      # Validate file type using the subclass method
+      unless @upload_event.validate_file_type(file)
+        redirect_to organization_upload_events_path(current_organization), alert: "Please upload a valid #{@upload_event.file_extension.upcase} file."
         return
       end
       
       # Save the filename and read file content
       @upload_event.filename = file.original_filename
-      binary_content = file.read
-      @upload_event.file_content = Base64.strict_encode64(binary_content)
+      @upload_event.file_content = @upload_event.process_file_content_for_storage(file)
+    else
+      @upload_event.errors.add(:file, 'is required')
+      render :new, status: :unprocessable_entity
+      return
     end
 
     if @upload_event.save
       # Parse the uploaded file to generate preview actions
-      parser = EmploymentDataUploadParser.new(@upload_event.file_content)
-      
-      if parser.parse
-        @upload_event.update!(
-          preview_actions: parser.enhanced_preview_actions,
-          attempted_at: Time.current
-        )
-        
+      if @upload_event.process_file_for_preview
         redirect_to organization_upload_event_path(current_organization, @upload_event), notice: 'Upload created successfully. Please review the preview before processing.'
       else
         @upload_event.destroy
-        redirect_to new_organization_upload_event_path(current_organization), alert: "Upload failed: #{parser.errors.join(', ')}"
+        redirect_to organization_upload_events_path(current_organization), alert: @upload_event.parse_error_message
       end
     else
       render :new, status: :unprocessable_entity

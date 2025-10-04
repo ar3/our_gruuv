@@ -199,7 +199,10 @@ class UnassignedEmployeeUploadProcessor
           update_employee_information(existing_employee, employee_data)
           
           # Ensure teammate relationship exists
-          ensure_teammate_relationship(existing_employee, organization, start_date)
+          teammate = ensure_teammate_relationship(existing_employee, organization, start_date)
+          
+          # Create or update employment tenure
+          process_employment_tenure(existing_employee, teammate, employee_data)
           
           results[:successes] << {
             type: 'unassigned_employee',
@@ -220,7 +223,11 @@ class UnassignedEmployeeUploadProcessor
           )
 
           # Create teammate relationship as unassigned employee
-          create_teammate_relationship(employee, organization, 'unassigned_employee', start_date)
+          teammate = create_teammate_relationship(employee, organization, 'unassigned_employee', start_date)
+
+          # Create employment tenure
+          Rails.logger.debug "Processing employment tenure for new employee: #{employee.id}"
+          process_employment_tenure(employee, teammate, employee_data)
 
           results[:successes] << {
             type: 'unassigned_employee',
@@ -288,6 +295,142 @@ class UnassignedEmployeeUploadProcessor
         # Additional attributes like preferred_name, location, gender, country would need to be added
         # to the Person model or stored elsewhere if needed
       end
+
+  def process_employment_tenure(person, teammate, employee_data)
+    begin
+      job_title = employee_data['job_title']
+      manager_name = employee_data['manager_name']
+      start_date = employee_data['start_date']
+
+      # Find or create position type and position
+      position = find_or_create_position(job_title)
+      
+      if position.nil?
+        # Position could not be created, record failure
+        results[:failures] << {
+          type: 'employment_tenure',
+          action: 'create',
+          person_name: employee_data['name'],
+          error: "Position could not be created for job title: '#{job_title}'",
+          row: employee_data['row']
+        }
+        results[:summary][:failed_operations] += 1
+        return
+      end
+
+      # Find manager if specified
+      manager = find_manager_by_name(manager_name) if manager_name.present?
+
+      # Check if employment tenure already exists
+      existing_tenure = person.employment_tenures.find_by(company: organization)
+      
+      
+      if existing_tenure
+        # Employment tenure already exists
+        results[:successes] << {
+          type: 'employment_tenure',
+          action: 'exists',
+          person_name: person.display_name,
+          position_title: existing_tenure.position.position_type.external_title,
+          id: existing_tenure.id
+        }
+        results[:summary][:successful_creates] += 1
+      else
+        # Create new employment tenure
+        employment_tenure = create_employment_tenure(person, teammate, employee_data)
+        
+        results[:successes] << {
+          type: 'employment_tenure',
+          action: 'created',
+          person_name: person.display_name,
+          position_title: employment_tenure.position.position_type.external_title,
+          id: employment_tenure.id
+        }
+        results[:summary][:successful_creates] += 1
+      end
+    rescue => e
+      results[:failures] << {
+        type: 'employment_tenure',
+        action: 'create',
+        person_name: employee_data['name'],
+        error: e.message,
+        row: employee_data['row']
+      }
+      results[:summary][:failed_operations] += 1
+    end
+  end
+
+  def find_or_create_position(job_title)
+    return nil if job_title.blank?
+
+    # Find existing position type
+    position_type = PositionType.find_by(external_title: job_title, organization: organization)
+    
+    if position_type.nil?
+      # Create new position type
+      position_major_level = PositionMajorLevel.first || PositionMajorLevel.create!(set_name: 'Engineering', major_level: 'Standard')
+      position_type = PositionType.create!(
+        external_title: job_title,
+        organization: organization,
+        position_major_level: position_major_level
+      )
+    end
+
+    # Find existing position for this position type
+    position = Position.find_by(position_type: position_type)
+    
+    if position.nil?
+      # Create new position
+      position_level = PositionLevel.find_by(position_major_level: position_type.position_major_level) || 
+                      PositionLevel.create!(position_major_level: position_type.position_major_level, level: '1.0')
+      
+      position = Position.create!(
+        position_type: position_type,
+        position_level: position_level
+      )
+    end
+
+    position
+  end
+
+  def find_manager_by_name(manager_name)
+    return nil if manager_name.blank?
+
+    # Try to find manager by name
+    name_parts = manager_name.split(' ', 2)
+    if name_parts.length >= 2
+      Person.find_by(
+        first_name: name_parts.first,
+        last_name: name_parts.last
+      )
+    else
+      # If only one name part, try to find by first name
+      Person.find_by(first_name: manager_name)
+    end
+  end
+
+  def create_employment_tenure(person, teammate, employee_data)
+    job_title = employee_data['job_title']
+    manager_name = employee_data['manager_name']
+    
+    # Find or create position
+    position = find_or_create_position(job_title)
+    if position.nil?
+      raise ActiveRecord::RecordInvalid.new(EmploymentTenure.new)
+    end
+    
+    # Find manager if specified
+    manager = find_manager_by_name(manager_name) if manager_name.present?
+    
+    EmploymentTenure.create!(
+      person: person,
+      teammate: teammate,
+      company: organization,
+      position: position,
+      manager: manager,
+      started_at: employee_data['start_date'] || Time.current
+    )
+  end
 
   def update_summary
     results[:summary][:total_processed] = results[:successes].count + results[:failures].count

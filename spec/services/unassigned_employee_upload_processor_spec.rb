@@ -57,6 +57,12 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         expect { processor.process }.to change(Teammate, :count).by(3)
       end
 
+      it 'creates employment tenures for employees' do
+        # Creates employment tenures for John Doe and Jane Smith (not Bob Johnson as he's only a manager)
+        # Total: 2 employment tenures
+        expect { processor.process }.to change(EmploymentTenure, :count).by(2)
+      end
+
       it 'sets correct teammate information' do
         processor.process
         
@@ -75,12 +81,43 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         expect(jane_teammate.first_employed_at).to eq(Date.parse('2024-01-10'))
       end
 
+      it 'sets correct employment tenure information' do
+        processor.process
+        
+        john = Person.find_by(email: 'john.doe@company.com')
+        jane = Person.find_by(email: 'jane.smith@company.com')
+        bob = Person.find_by(email: 'bob.johnson@company.com')
+        
+        john_tenure = john.employment_tenures.find_by(company: organization)
+        jane_tenure = jane.employment_tenures.find_by(company: organization)
+        bob_tenure = bob.employment_tenures.find_by(company: organization)
+        
+        # John should have employment tenure
+        expect(john_tenure).to be_present
+        expect(john_tenure.started_at).to eq(Date.parse('2024-01-15'))
+        expect(john_tenure.company).to be_a(Organization)
+        expect(john_tenure.position).to be_present
+        expect(john_tenure.position.position_type.external_title).to eq('Software Engineer')
+        expect(john_tenure.manager).to eq(jane) # Jane is John's manager
+        
+        # Jane should have employment tenure
+        expect(jane_tenure).to be_present
+        expect(jane_tenure.started_at).to eq(Date.parse('2024-01-10'))
+        expect(jane_tenure.company).to be_a(Organization)
+        expect(jane_tenure.position).to be_present
+        expect(jane_tenure.position.position_type.external_title).to eq('Senior Engineer')
+        expect(jane_tenure.manager).to eq(bob) # Bob is Jane's manager
+        
+        # Bob should NOT have employment tenure (he's only a manager, not an employee)
+        expect(bob_tenure).to be_nil
+      end
+
       it 'updates summary correctly' do
         processor.process
         
         summary = processor.results[:summary]
-        expect(summary[:total_processed]).to eq(5) # 3 people + 1 department + 1 update
-        expect(summary[:successful_creates]).to eq(4)
+        expect(summary[:total_processed]).to eq(7) # 3 people + 1 department + 2 employment tenures + 1 update
+        expect(summary[:successful_creates]).to eq(6) # 3 people + 1 department + 2 employment tenures
         expect(summary[:successful_updates]).to eq(1)
         expect(summary[:failed_operations]).to eq(0)
       end
@@ -104,12 +141,40 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
             expect(existing_teammate.first_employed_at.to_date).to eq(Date.parse('2024-01-15'))
       end
 
+      it 'creates employment tenure for existing person' do
+        # Creates employment tenures for John (existing) and Jane Smith (not Bob Johnson as he's only a manager)
+        expect { processor.process }.to change(EmploymentTenure, :count).by(2)
+        
+        existing_tenure = existing_person.employment_tenures.find_by(company: organization)
+        expect(existing_tenure).to be_present
+        expect(existing_tenure.started_at).to eq(Date.parse('2024-01-15'))
+        expect(existing_tenure.position.position_type.external_title).to eq('Software Engineer')
+      end
+
       it 'includes update action in results' do
         processor.process
         
         update_success = processor.results[:successes].find { |s| s[:type] == 'unassigned_employee' && s[:action] == 'updated' }
         expect(update_success).to be_present
         expect(update_success[:name]).to eq('John Doe')
+      end
+
+      it 'includes employment tenure actions in results' do
+        processor.process
+        
+        employment_tenure_successes = processor.results[:successes].select { |s| s[:type] == 'employment_tenure' }
+        expect(employment_tenure_successes.count).to eq(2)
+        
+        john_tenure_success = employment_tenure_successes.find { |s| s[:person_name] == 'John Doe' }
+        jane_tenure_success = employment_tenure_successes.find { |s| s[:person_name] == 'Jane Smith' }
+        
+        expect(john_tenure_success).to be_present
+        expect(john_tenure_success[:action]).to eq('created')
+        expect(john_tenure_success[:position_title]).to eq('Software Engineer')
+        
+        expect(jane_tenure_success).to be_present
+        expect(jane_tenure_success[:action]).to eq('created')
+        expect(jane_tenure_success[:position_title]).to eq('Senior Engineer')
       end
     end
 
@@ -126,6 +191,28 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         department_success = processor.results[:successes].find { |s| s[:type] == 'department' && s[:action] == 'exists' }
         expect(department_success).to be_present
         expect(department_success[:name]).to eq('Engineering')
+      end
+    end
+
+    context 'with existing employment tenures' do
+      let!(:existing_person) { create(:person, email: 'john.doe@company.com', first_name: 'John', last_name: 'Doe') }
+      let!(:existing_position_type) { create(:position_type, organization: organization, external_title: 'Software Engineer') }
+      let!(:existing_position_level) { create(:position_level, position_major_level: existing_position_type.position_major_level) }
+      let!(:existing_position) { create(:position, position_type: existing_position_type, position_level: existing_position_level) }
+      let!(:existing_employment_tenure) { create(:employment_tenure, person: existing_person, company: organization, position: existing_position, started_at: Date.parse('2023-01-01')) }
+
+      it 'handles existing employment tenures correctly' do
+        # Should not create new employment tenure for John since he already has one
+        # But should create one for Jane Smith since she doesn't have one
+        expect { processor.process }.to change(EmploymentTenure, :count).by(1)
+      end
+
+      it 'includes exists action for employment tenure in results' do
+        processor.process
+        
+        employment_tenure_success = processor.results[:successes].find { |s| s[:type] == 'employment_tenure' && s[:person_name] == 'John Doe' }
+        expect(employment_tenure_success).to be_present
+        expect(employment_tenure_success[:action]).to eq('exists')
       end
     end
 
@@ -150,6 +237,26 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         failure = processor.results[:failures].first
         expect(failure[:type]).to eq('unassigned_employee')
         expect(failure[:error]).to be_present
+      end
+    end
+
+    context 'with employment tenure creation errors' do
+      let(:csv_with_invalid_position) do
+        <<~CSV
+          Name,Preferred Name,Email,Start Date,Location,Gender,Department,Employment Type,Manager,Country,Manager Email,Job Title,Job Title Level
+          John Doe,John,john.doe@company.com,2024-01-15,New York,male,Engineering,full_time,Jane Smith,USA,jane.smith@company.com,,mid
+        CSV
+      end
+
+      let(:upload_event) { create(:upload_event, organization: organization, file_content: csv_with_invalid_position, filename: 'test.csv') }
+
+      it 'handles employment tenure creation errors gracefully' do
+        expect(processor.process).to be true # Still returns true, but with failures
+        expect(processor.results[:failures]).not_to be_empty
+        
+        employment_tenure_failure = processor.results[:failures].find { |f| f[:type] == 'employment_tenure' }
+        expect(employment_tenure_failure).to be_present
+        expect(employment_tenure_failure[:error]).to be_present
       end
     end
 
@@ -234,6 +341,49 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
           expect(result.person).to eq(person)
           expect(result.organization).to eq(organization)
         end
+      end
+    end
+
+    describe '#create_employment_tenure' do
+      let(:person) { create(:person, first_name: 'John', last_name: 'Doe') }
+      let!(:teammate) { create(:teammate, person: person, organization: organization, type: 'CompanyTeammate') }
+      let!(:position_type) { create(:position_type, organization: organization, external_title: 'Software Engineer') }
+      let!(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
+      let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+      let!(:manager) { create(:person, first_name: 'Jane', last_name: 'Smith') }
+      let(:employee_data) do
+        {
+          'start_date' => Date.parse('2024-01-15'),
+          'job_title' => 'Software Engineer',
+          'manager_name' => 'Jane Smith'
+        }
+      end
+
+      it 'creates employment tenure with correct attributes' do
+        employment_tenure = processor.send(:create_employment_tenure, person, teammate, employee_data)
+        
+        expect(employment_tenure).to be_persisted
+        expect(employment_tenure.person).to eq(person)
+        expect(employment_tenure.company).to eq(organization)
+        expect(employment_tenure.teammate).to eq(teammate)
+        expect(employment_tenure.position).to eq(position)
+        expect(employment_tenure.started_at).to eq(Date.parse('2024-01-15'))
+        expect(employment_tenure.manager).to eq(manager)
+      end
+
+      it 'handles missing manager gracefully' do
+        employee_data_without_manager = employee_data.except('manager_name')
+        
+        employment_tenure = processor.send(:create_employment_tenure, person, teammate, employee_data_without_manager)
+        
+        expect(employment_tenure).to be_persisted
+        expect(employment_tenure.manager).to be_nil
+      end
+
+      it 'handles missing position gracefully' do
+        employee_data_without_position = employee_data.except('job_title')
+        
+        expect { processor.send(:create_employment_tenure, person, teammate, employee_data_without_position) }.to raise_error(ActiveRecord::RecordInvalid)
       end
     end
 
