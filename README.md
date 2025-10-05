@@ -74,6 +74,7 @@ This is your central guide to understanding OurGruuv's architecture, patterns, a
 - [Slack Integration](docs/SLACK_INTEGRATION.md) - Slack setup and implementation
 - [Slack Debug Improvements](docs/SLACK_DEBUG_IMPROVEMENTS.md) - Recent Slack fixes
 - [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- [PostgreSQL Troubleshooting](docs/postgres_troubleshooting.md) - Database connection issues and fixes
 - [Seeding](docs/SEEDING.md) - Database seeding information
 
 ### 🏗️ Architecture Overview
