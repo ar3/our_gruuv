@@ -45,8 +45,8 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     
     # Get all check-ins ready for finalization
     ready_check_ins = AssignmentCheckIn
-      .joins(:assignment)
-      .where(person: @person)
+      .joins(:assignment, :teammate)
+      .where(teammates: { person: @person })
       .where(assignments: { company: @organization })
       .where.not(employee_completed_at: nil)
       .where.not(manager_completed_at: nil)
@@ -146,13 +146,13 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     # Filter by assignments within the current organization
     # Only show in-progress check-ins (exclude completed ones)
     @check_ins_in_progress = AssignmentCheckIn
-      .joins(:assignment)
-      .where(person: @person)
+      .joins(:assignment, :teammate)
+      .where(teammates: { person: @person })
       .where(assignments: { company: @organization })
       .where.not(employee_completed_at: nil)
       .or(AssignmentCheckIn
-        .joins(:assignment)
-        .where(person: @person)
+        .joins(:assignment, :teammate)
+        .where(teammates: { person: @person })
         .where(assignments: { company: @organization })
         .where.not(manager_completed_at: nil))
       .where(official_check_in_completed_at: nil) # Exclude completed check-ins

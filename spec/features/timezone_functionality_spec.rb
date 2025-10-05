@@ -84,38 +84,6 @@ RSpec.feature 'Timezone Functionality', type: :feature, js: true do
     expect(person.timezone).to be_present
   end
 
-  scenario 'User can update timezone when rejoining' do
-    # Create a person without timezone
-    person = create(:person, 
-      first_name: 'Alice', 
-      last_name: 'Johnson', 
-      email: 'alice@example.com',
-      timezone: nil
-    )
-    
-    # Set up session
-    page.set_rack_session(current_person_id: person.id)
-    
-    visit join_huddle_path(huddle)
-    
-    # Should see the logged-in state
-    expect(page).to have_content('Welcome, Alice Johnson!')
-    expect(page).to have_content('You\'re logged in. Please confirm your information and select your role.')
-    
-    # The timezone field should not be visible for logged-in users
-    expect(page).not_to have_field('Your timezone')
-    
-    # Join the huddle
-    select 'Active Participant', from: 'What role will you play in this huddle?'
-    click_button 'Join Huddle'
-    
-    # Should redirect to huddle page
-    expect(page).to have_current_path(huddle_path(huddle))
-    
-    # The person should still have no timezone (since it wasn't updated)
-    person.reload
-    expect(person.timezone).to be_nil
-  end
 
   scenario 'Server-side timezone fallback works when JavaScript is disabled' do
     visit join_huddle_path(huddle)

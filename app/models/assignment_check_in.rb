@@ -1,6 +1,5 @@
 class AssignmentCheckIn < ApplicationRecord
-  belongs_to :person
-  belongs_to :teammate, optional: true
+  belongs_to :teammate
   belongs_to :assignment
   belongs_to :manager_completed_by, class_name: 'Person', optional: true
   belongs_to :finalized_by, class_name: 'Person', optional: true
@@ -43,12 +42,12 @@ class AssignmentCheckIn < ApplicationRecord
   validates :official_rating, inclusion: { in: official_ratings.keys }, allow_nil: true
   validates :employee_personal_alignment, inclusion: { in: employee_personal_alignments.keys }, allow_nil: true
   
-  # Custom validation to prevent multiple open check-ins per person per assignment
-  validate :only_one_open_check_in_per_person_assignment
+  # Custom validation to prevent multiple open check-ins per teammate per assignment
+  validate :only_one_open_check_in_per_teammate_assignment
 
   # Scopes
   scope :recent, -> { order(check_in_started_on: :desc) }
-  scope :for_person, ->(person) { where(person: person) }
+  scope :for_teammate, ->(teammate) { where(teammate: teammate) }
   scope :for_assignment, ->(assignment) { where(assignment: assignment) }
   scope :open, -> { where(official_check_in_completed_at: nil) }
   scope :closed, -> { where.not(official_check_in_completed_at: nil) }
@@ -93,8 +92,8 @@ class AssignmentCheckIn < ApplicationRecord
     !open?
   end
 
-  def self.average_days_between_check_ins(person)
-    check_ins = for_person(person).order(:check_in_started_on)
+  def self.average_days_between_check_ins(teammate)
+    check_ins = for_teammate(teammate).order(:check_in_started_on)
     return nil if check_ins.count < 2
     
     total_days = 0
@@ -107,21 +106,21 @@ class AssignmentCheckIn < ApplicationRecord
 
   # Find the associated assignment tenure for this check-in
   def assignment_tenure
-    @assignment_tenure ||= AssignmentTenure.most_recent_for(person, assignment)
+    @assignment_tenure ||= AssignmentTenure.most_recent_for(teammate.person, assignment)
   end
 
-  # Find or create open check-in for a person and assignment
-  def self.find_or_create_open_for(person, assignment)
-    tenure = AssignmentTenure.most_recent_for(person, assignment)
+  # Find or create open check-in for a teammate and assignment
+  def self.find_or_create_open_for(teammate, assignment)
+    tenure = AssignmentTenure.most_recent_for(teammate.person, assignment)
     return nil unless tenure
     
-    # Find existing open check-in for this person/assignment
-    open_check_in = where(person: person, assignment: assignment).open.first
+    # Find existing open check-in for this teammate/assignment
+    open_check_in = where(teammate: teammate, assignment: assignment).open.first
     return open_check_in if open_check_in
     
     # Create new open check-in if none exists
     create!(
-      person: person,
+      teammate: teammate,
       assignment: assignment,
       check_in_started_on: Date.current,
       actual_energy_percentage: tenure.anticipated_energy_percentage
@@ -191,16 +190,16 @@ class AssignmentCheckIn < ApplicationRecord
 
   private
 
-  def only_one_open_check_in_per_person_assignment
+  def only_one_open_check_in_per_teammate_assignment
     return unless open? # Only validate for open check-ins
     
     existing_open = AssignmentCheckIn
-      .where(person: person, assignment: assignment)
+      .where(teammate: teammate, assignment: assignment)
       .open
       .where.not(id: id)
     
     if existing_open.exists?
-      errors.add(:base, "Only one open check-in allowed per person per assignment")
+      errors.add(:base, "Only one open check-in allowed per teammate per assignment")
     end
   end
 end

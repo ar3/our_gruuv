@@ -1,5 +1,5 @@
-- participant = current_person.present? && huddle.huddle_participants.find_by(person: current_person)
-- existing_feedback = current_person.present? && huddle.huddle_feedbacks.find_by(person: current_person)
+- participant = current_person.present? && huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: current_person })
+- existing_feedback = current_person.present? && huddle.huddle_feedbacks.joins(:teammate).find_by(teammates: { person: current_person })
 .col-md-6.col-lg-4.mb-3
   .card.h-100
     .card-body.position-relative

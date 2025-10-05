@@ -9,24 +9,26 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     session[:current_person_id] = manager.id
     manager_access
     # Ensure the manager has an active employment tenure in the organization
-    create(:employment_tenure, person: manager, company: organization, started_at: 1.year.ago, ended_at: nil)
+    create(:employment_tenure, teammate: manager_access, company: organization, started_at: 1.year.ago, ended_at: nil)
   end
 
   describe 'GET #complete_picture' do
     context 'when person has an active employment tenure' do
       let(:person) { create(:person) }
+      let(:person_teammate) { create(:teammate, person: person, organization: organization) }
       let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
       let(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
       let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position) { create(:position, position_type: position_type, position_level: position_level) }
-      let(:active_employment) { create(:employment_tenure, person: person, company: organization, position: position, started_at: 6.months.ago, ended_at: nil) }
-      let(:past_employment) { create(:employment_tenure, person: person, company: organization, position: position, started_at: 1.year.ago, ended_at: 8.months.ago) }
+      let(:active_employment) { create(:employment_tenure, teammate: person_teammate, company: organization, position: position, started_at: 6.months.ago, ended_at: nil) }
+      let(:past_employment) { create(:employment_tenure, teammate: person_teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: 8.months.ago) }
       
       # Add assignments for this organization
       let(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
-      let(:assignment_tenure) { create(:assignment_tenure, person: person, assignment: assignment, started_at: 3.months.ago, ended_at: nil) }
+      let(:assignment_tenure) { create(:assignment_tenure, teammate: person_teammate, assignment: assignment, started_at: 3.months.ago, ended_at: nil) }
 
       before do
+        person_teammate
         active_employment
         past_employment
         assignment_tenure
@@ -84,17 +86,21 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
     context 'when person has no active employment tenure but has past employment' do
       let(:person) { create(:person) }
+      let(:person_teammate) { create(:teammate, person: person, organization: organization) }
+      let(:other_organization_teammate) { create(:teammate, person: person, organization: other_organization) }
       let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
       let(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
       let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position) { create(:position, position_type: position_type, position_level: position_level) }
-      let(:past_employment1) { create(:employment_tenure, person: person, company: organization, position: position, started_at: 1.year.ago, ended_at: 6.months.ago) }
+      let(:past_employment1) { create(:employment_tenure, teammate: person_teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: 6.months.ago) }
       let(:other_organization) { create(:organization, :company) }
       let(:other_position_type) { create(:position_type, organization: other_organization, position_major_level: position_major_level) }
       let(:other_position) { create(:position, position_type: other_position_type, position_level: position_level) }
-      let(:past_employment2) { create(:employment_tenure, person: person, company: other_organization, position: other_position, started_at: 2.years.ago, ended_at: 1.year.ago) }
+      let(:past_employment2) { create(:employment_tenure, teammate: other_organization_teammate, company: other_organization, position: other_position, started_at: 2.years.ago, ended_at: 1.year.ago) }
 
       before do
+        person_teammate
+        other_organization_teammate
         past_employment1
         past_employment2
       end
@@ -154,6 +160,8 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
     context 'when person has multiple active employment tenures' do
       let(:person) { create(:person) }
+      let(:person_teammate) { create(:teammate, person: person, organization: organization) }
+      let(:other_organization_teammate) { create(:teammate, person: person, organization: other_organization) }
       let(:other_organization) { create(:organization, :company) }
       let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
       let(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
@@ -161,10 +169,12 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
       let(:position1) { create(:position, position_type: position_type, position_level: position_level) }
       let(:position2) { create(:position, position_type: other_position_type, position_level: position_level) }
-      let(:active_employment1) { create(:employment_tenure, person: person, company: organization, position: position1, started_at: 6.months.ago, ended_at: nil) }
-      let(:active_employment2) { create(:employment_tenure, person: person, company: other_organization, position: position2, started_at: 3.months.ago, ended_at: nil) }
+      let(:active_employment1) { create(:employment_tenure, teammate: person_teammate, company: organization, position: position1, started_at: 6.months.ago, ended_at: nil) }
+      let(:active_employment2) { create(:employment_tenure, teammate: other_organization_teammate, company: other_organization, position: position2, started_at: 3.months.ago, ended_at: nil) }
 
       before do
+        person_teammate
+        other_organization_teammate
         active_employment1
         active_employment2
       end

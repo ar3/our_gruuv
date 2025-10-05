@@ -19,9 +19,11 @@ RSpec.feature "Weekly Notification", type: :feature do
     
     person1 = create(:person)
     person2 = create(:person)
+    teammate1 = create(:teammate, person: person1, organization: company)
+    teammate2 = create(:teammate, person: person2, organization: company)
     
-    create(:huddle_feedback, huddle: huddle1, person: person1, created_at: 1.week.ago)
-    create(:huddle_feedback, huddle: huddle2, person: person2, created_at: 1.week.ago)
+    create(:huddle_feedback, huddle: huddle1, teammate: teammate1, created_at: 1.week.ago)
+    create(:huddle_feedback, huddle: huddle2, teammate: teammate2, created_at: 1.week.ago)
     
     # Sign in as the person using session
     page.set_rack_session(current_person_id: person.id)

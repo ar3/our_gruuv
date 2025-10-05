@@ -74,7 +74,7 @@ class Teammate < ApplicationRecord
   
   def has_active_employment_tenure?
     # Check if person has active employment tenure in this organization
-    person.employment_tenures.active.exists?(company: organization)
+    employment_tenures.active.exists?(company: organization)
   end
   
   # Class methods for permission checking

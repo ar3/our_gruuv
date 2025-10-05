@@ -68,7 +68,7 @@ class PersonPolicy < ApplicationPolicy
     
     # User can access if they have employment management permissions for any organization
     # Check all organizations where user has employment management permissions
-    user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
+    user_employment_orgs = actual_user.teammates.includes(:organization).map(&:organization)
     user_has_employment_management = user_employment_orgs.any? { |org| actual_user.can_manage_employment?(org) }
     
     Rails.logger.debug "Manager check: User #{actual_user.id} has employment management: #{user_has_employment_management}"

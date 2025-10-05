@@ -39,10 +39,11 @@ class AssignmentTenureService
   end
 
   def active_tenure
-    @active_tenure ||= person.assignment_tenures
-                            .where(assignment: assignment)
-                            .active
-                            .first
+    teammate = person.teammates.find_by(organization: assignment.company)
+    @active_tenure ||= teammate&.assignment_tenures
+                            &.where(assignment: assignment)
+                            &.active
+                            &.first
   end
 
   def end_active_tenure
@@ -80,8 +81,11 @@ class AssignmentTenureService
   end
 
   def create_new_tenure
+    teammate = person.teammates.find_by(organization: assignment.company)
+    raise TenureLifecycleError, "No teammate found for person #{person.id} in organization #{assignment.company.id}" if teammate.nil?
+    
     AssignmentTenure.create!(
-      person: person,
+      teammate: teammate,
       assignment: assignment,
       anticipated_energy_percentage: @anticipated_energy_percentage,
       started_at: @started_at

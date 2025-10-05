@@ -16,24 +16,38 @@ class PeopleController < ApplicationController
 
   def show
     authorize person
-    @employment_tenures = person.employment_tenures.includes(:company, :position, :manager)
-                                 .order(started_at: :desc)
-                                 .decorate
-    @assignment_tenures = person.assignment_tenures.includes(:assignment)
-                                 .order(started_at: :desc)
+    # Get all employment tenures across all organizations through teammates
+    @employment_tenures = EmploymentTenure.joins(:teammate)
+                                        .where(teammates: { person: person })
+                                        .includes(:company, :position, :manager)
+                                        .order(started_at: :desc)
+                                        .decorate
+    # Get all assignment tenures across all organizations through teammates
+    @assignment_tenures = AssignmentTenure.joins(:teammate)
+                                         .where(teammates: { person: person })
+                                         .includes(:assignment)
+                                         .order(started_at: :desc)
     @teammates = person.teammates.includes(:organization)
     
     # Preload huddle associations to avoid N+1 queries
-    person.huddle_participants.includes(:huddle, huddle: :huddle_playbook).load
-    person.huddle_feedbacks.includes(:huddle).load
+    HuddleParticipant.joins(:teammate)
+                    .where(teammates: { person: person })
+                    .includes(:huddle, huddle: :huddle_playbook)
+                    .load
+    HuddleFeedback.joins(:teammate)
+                  .where(teammates: { person: person })
+                  .includes(:huddle)
+                  .load
   end
 
   def public
     authorize person
     # Public view - minimal data, no sensitive information
-    @employment_tenures = person.employment_tenures.includes(:company)
-                                 .order(started_at: :desc)
-                                 .decorate
+    @employment_tenures = EmploymentTenure.joins(:teammate)
+                                         .where(teammates: { person: person })
+                                         .includes(:company)
+                                         .order(started_at: :desc)
+                                         .decorate
   end
 
   def edit
@@ -124,14 +138,21 @@ class PeopleController < ApplicationController
   end
 
   def load_assignments_and_check_ins
-    # Load assignments where the person has ever had a tenure
-    assignment_ids = person.assignment_tenures.distinct.pluck(:assignment_id)
+    # Load assignments where the person has ever had a tenure across all organizations
+    assignment_ids = AssignmentTenure.joins(:teammate)
+                                   .where(teammates: { person: person })
+                                   .distinct
+                                   .pluck(:assignment_id)
     assignments = Assignment.where(id: assignment_ids).includes(:assignment_tenures)
     
     @assignment_data = assignments.map do |assignment|
-      active_tenure = person.assignment_tenures.where(assignment: assignment).active.first
-      most_recent_tenure = person.assignment_tenures.where(assignment: assignment).order(:started_at).last
-      open_check_in = AssignmentCheckIn.where(person: person, assignment: assignment).open.first
+      # Find teammate for this assignment's company
+      teammate = person.teammates.find_by(organization: assignment.company)
+      next unless teammate
+      
+      active_tenure = teammate.assignment_tenures.where(assignment: assignment).active.first
+      most_recent_tenure = teammate.assignment_tenures.where(assignment: assignment).order(:started_at).last
+      open_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
       
       {
         assignment: assignment,
@@ -139,13 +160,16 @@ class PeopleController < ApplicationController
         most_recent_tenure: most_recent_tenure,
         open_check_in: open_check_in
       }
-    end.sort_by { |data| -(data[:active_tenure]&.anticipated_energy_percentage || 0) }
+    end.compact.sort_by { |data| -(data[:active_tenure]&.anticipated_energy_percentage || 0) }
   end
 
-  def load_current_maap_data
-    @current_employment = person.employment_tenures.active.first
-    @current_assignments = person.assignment_tenures.active.includes(:assignment)
-    @current_milestones = person.person_milestones.includes(:ability)
+  def load_current_maap_data(organization)
+    teammate = person.teammates.find_by(organization: organization)
+    return unless teammate
+    
+    @current_employment = teammate.employment_tenures.active.first
+    @current_assignments = teammate.assignment_tenures.active.includes(:assignment)
+    @current_milestones = teammate.person_milestones.includes(:ability)
     @current_aspirations = [] # TODO: Implement when aspiration model exists
   end
 
@@ -168,7 +192,8 @@ class PeopleController < ApplicationController
   end
 
   def check_in_has_changes?(assignment, proposed_data)
-    current_check_in = AssignmentCheckIn.where(person: person, assignment: assignment).open.first
+    teammate = person.teammates.find_by(organization: assignment.company)
+    current_check_in = teammate ? AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first : nil
     
     # Only check for changes in fields the current user is authorized to modify
     
@@ -285,7 +310,8 @@ class PeopleController < ApplicationController
   end
 
   def update_assignment_check_in(assignment, check_in_data)
-    check_in = AssignmentCheckIn.where(person: person, assignment: assignment).open.first
+    teammate = person.teammates.find_by(organization: assignment.company)
+    check_in = teammate ? AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first : nil
     
     if check_in
       # Update existing check-in
@@ -296,7 +322,6 @@ class PeopleController < ApplicationController
       teammate = person.teammates.find_by(organization: assignment.company)
       
       check_in = AssignmentCheckIn.create!(
-        person: person,
         teammate: teammate,
         assignment: assignment,
         check_in_started_on: Date.current
@@ -333,7 +358,7 @@ class PeopleController < ApplicationController
 
   def can_update_employee_check_in_fields?(check_in)
     # Employee can update their own check-in fields
-    current_person == check_in.person || admin_bypass?
+    current_person == check_in.teammate.person || admin_bypass?
   end
 
   def can_update_manager_check_in_fields?(check_in)
@@ -341,10 +366,10 @@ class PeopleController < ApplicationController
     return true if admin_bypass?
     
     # Employee cannot update their own manager fields
-    return false if current_person == check_in.person
+    return false if current_person == check_in.teammate.person
     
     # Check if current user can manage this person's assignments
-    policy(check_in.person).manage_assignments?
+    policy(check_in.teammate.person).manage_assignments?
   end
 
   def can_finalize_check_in?(check_in)
@@ -352,7 +377,7 @@ class PeopleController < ApplicationController
     return true if admin_bypass?
     
     # Check if current user can manage this person's assignments
-    policy(check_in.person).manage_assignments?
+    policy(check_in.teammate.person).manage_assignments?
   end
 
   def update_employee_check_in_fields(check_in, employee_data)

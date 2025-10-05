@@ -9,7 +9,7 @@
           %p.mb-0.mt-2= "Join #{@huddle.display_name}"
         
         .card-body
-          - current_participant = @huddle.huddle_participants.find_by(person: @current_person) if @current_person
+          - current_participant = @huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: @current_person }) if @current_person
           
           - if @current_person && current_participant
             / State 3: Already logged in and associated with huddle

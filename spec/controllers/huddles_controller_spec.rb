@@ -6,7 +6,8 @@ RSpec.describe HuddlesController, type: :controller do
   let(:playbook) { create(:huddle_playbook, organization: organization) }
   let(:huddle) { create(:huddle, huddle_playbook: playbook, started_at: Time.current) }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
-  let!(:participant) { create(:huddle_participant, huddle: huddle, person: person, role: 'active') }
+  let!(:teammate) { create(:teammate, person: person, organization: organization) }
+  let!(:participant) { create(:huddle_participant, huddle: huddle, teammate: teammate, role: 'active') }
 
   before do
     session[:current_person_id] = person.id
@@ -76,7 +77,7 @@ RSpec.describe HuddlesController, type: :controller do
         post :submit_feedback, params: { id: huddle.id }.merge(valid_feedback_params)
         
         feedback = HuddleFeedback.last
-        expect(feedback.person).to eq(person)
+        expect(feedback.teammate.person).to eq(person)
         expect(feedback.huddle).to eq(huddle)
         expect(feedback.informed_rating).to eq(4)
         expect(feedback.connected_rating).to eq(5)
@@ -149,7 +150,7 @@ RSpec.describe HuddlesController, type: :controller do
       let!(:existing_feedback) do
         create(:huddle_feedback, 
           huddle: huddle, 
-          person: person,
+          teammate: teammate,
           informed_rating: 3,
           connected_rating: 4,
           goals_rating: 2,
@@ -306,7 +307,7 @@ RSpec.describe HuddlesController, type: :controller do
         started_at: Time.current.beginning_of_week(:monday) + 1.day,
         expires_at: 1.day.from_now
       )
-      participant = create(:huddle_participant, huddle: huddle, person: person)
+      participant = create(:huddle_participant, huddle: huddle, teammate: teammate)
       
       # Set up the controller instance variables that the view needs
       controller.instance_variable_set(:@huddles, [])
@@ -338,7 +339,7 @@ RSpec.describe HuddlesController, type: :controller do
         started_at: Time.current.beginning_of_week(:monday) + 1.day,
         expires_at: 1.day.from_now
       )
-      participant = create(:huddle_participant, huddle: huddle, person: person)
+      participant = create(:huddle_participant, huddle: huddle, teammate: teammate)
       
       expect { get :index }.not_to raise_error
       expect(response).to have_http_status(:success)
@@ -464,6 +465,7 @@ RSpec.describe HuddlesController, type: :controller do
   describe 'POST #create' do
     let(:company) { create(:organization, :company) }
     let(:team) { create(:organization, :team, parent: company) }
+    let!(:team_teammate) { create(:teammate, person: person, organization: team) }
     
     before do
       allow(controller).to receive(:find_or_create_organization).and_return(team)
@@ -491,7 +493,7 @@ RSpec.describe HuddlesController, type: :controller do
         post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
         
         huddle = Huddle.last
-        participant = huddle.huddle_participants.find_by(person: person)
+        participant = huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: person })
         expect(participant).to be_present
         expect(participant.role).to eq('facilitator')
       end
@@ -527,7 +529,7 @@ RSpec.describe HuddlesController, type: :controller do
         create(:huddle, 
           huddle_playbook: default_playbook,
           started_at: week_start + 1.day,
-          expires_at: week_start + 6.days
+          expires_at: 1.day.from_now
         )
       end
 
@@ -542,7 +544,7 @@ RSpec.describe HuddlesController, type: :controller do
           post :create, params: { company_selection: company.name, team_name: team.name, email: person.email }
         }.to change(HuddleParticipant, :count).by(1)
         
-        participant = existing_huddle.huddle_participants.find_by(person: person)
+        participant = existing_huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: person })
         expect(participant).to be_present
         expect(participant.role).to eq('facilitator')
       end
@@ -610,7 +612,7 @@ RSpec.describe HuddlesController, type: :controller do
         create(:huddle, 
           huddle_playbook: new_playbook,
           started_at: week_start + 1.day,
-          expires_at: week_start + 6.days
+          expires_at: 1.day.from_now
         )
       end
 
@@ -625,7 +627,7 @@ RSpec.describe HuddlesController, type: :controller do
           post :start_huddle_from_playbook, params: { playbook_id: new_playbook.id }
         }.to change(HuddleParticipant, :count).by(1)
         
-        participant = existing_huddle.huddle_participants.find_by(person: person)
+        participant = existing_huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: person })
         expect(participant).to be_present
         expect(participant.role).to eq('active')
       end
@@ -777,7 +779,7 @@ RSpec.describe HuddlesController, type: :controller do
           expires_at: 1.day.from_now
         )
         
-        participant = create(:huddle_participant, huddle: huddle, person: person)
+        participant = create(:huddle_participant, huddle: huddle, teammate: teammate)
         
         result = controller.send(:get_playbook_active_huddles, [playbook])
         
@@ -793,8 +795,8 @@ RSpec.describe HuddlesController, type: :controller do
           expires_at: 1.day.from_now
         )
         
-        participant = create(:huddle_participant, huddle: huddle, person: person)
-        create(:huddle_feedback, huddle: huddle, person: person)
+        participant = create(:huddle_participant, huddle: huddle, teammate: teammate)
+        create(:huddle_feedback, huddle: huddle, teammate: teammate)
         
         result = controller.send(:get_playbook_active_huddles, [playbook])
         

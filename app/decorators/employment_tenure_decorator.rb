@@ -2,7 +2,7 @@ class EmploymentTenureDecorator < Draper::Decorator
   delegate_all
 
   def display_name
-    "#{person.display_name} at #{company.display_name} (#{position.display_name})"
+    "#{teammate.person.display_name} at #{company.display_name} (#{position.display_name})"
   end
 
   def status_badge

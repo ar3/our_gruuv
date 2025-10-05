@@ -2,8 +2,10 @@ require 'rails_helper'
 
 RSpec.describe AssignmentCheckIn, type: :model do
   let(:person) { create(:person) }
-  let(:assignment) { create(:assignment) }
-  let(:check_in) { create(:assignment_check_in, person: person, assignment: assignment) }
+  let(:organization) { create(:organization) }
+  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:assignment) { create(:assignment, company: organization) }
+  let(:check_in) { create(:assignment_check_in, teammate: teammate, assignment: assignment) }
 
   describe 'validations' do
     it 'validates check_in_started_on presence' do
@@ -41,26 +43,27 @@ RSpec.describe AssignmentCheckIn, type: :model do
       }.to raise_error(ArgumentError, "'invalid' is not a valid employee_personal_alignment")
     end
 
-    it 'prevents multiple open check-ins per person per assignment' do
-      create(:assignment_check_in, person: person, assignment: assignment)
-      duplicate_check_in = build(:assignment_check_in, person: person, assignment: assignment)
+    it 'prevents multiple open check-ins per teammate per assignment' do
+      create(:assignment_check_in, teammate: teammate, assignment: assignment)
+      duplicate_check_in = build(:assignment_check_in, teammate: teammate, assignment: assignment)
       
       expect(duplicate_check_in).not_to be_valid
-      expect(duplicate_check_in.errors[:base]).to include('Only one open check-in allowed per person per assignment')
+      expect(duplicate_check_in.errors[:base]).to include('Only one open check-in allowed per teammate per assignment')
     end
 
     it 'allows multiple check-ins for different assignments' do
-      other_assignment = create(:assignment)
-      create(:assignment_check_in, person: person, assignment: assignment)
-      other_check_in = build(:assignment_check_in, person: person, assignment: other_assignment)
+      other_assignment = create(:assignment, company: organization)
+      create(:assignment_check_in, teammate: teammate, assignment: assignment)
+      other_check_in = build(:assignment_check_in, teammate: teammate, assignment: other_assignment)
       
       expect(other_check_in).to be_valid
     end
 
-    it 'allows multiple check-ins for different people' do
+    it 'allows multiple check-ins for different teammates' do
       other_person = create(:person)
-      create(:assignment_check_in, person: person, assignment: assignment)
-      other_check_in = build(:assignment_check_in, person: other_person, assignment: assignment)
+      other_teammate = create(:teammate, person: other_person, organization: organization)
+      create(:assignment_check_in, teammate: teammate, assignment: assignment)
+      other_check_in = build(:assignment_check_in, teammate: other_teammate, assignment: assignment)
       
       expect(other_check_in).to be_valid
     end

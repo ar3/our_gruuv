@@ -3,23 +3,24 @@ require 'rails_helper'
 RSpec.describe MaapSnapshot, type: :model do
   let(:organization) { create(:organization) }
   let(:employee) { create(:person) }
+  let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
 
   before do
     # Set up employment tenure
-    create(:employment_tenure, person: employee, company: organization)
+    create(:employment_tenure, teammate: employee_teammate, company: organization)
     
     # Set up assignment tenure
-    create(:assignment_tenure, person: employee, assignment: assignment, anticipated_energy_percentage: 50)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 50)
     
     # Set up check-in with existing data
-    create(:assignment_check_in, person: employee, assignment: assignment, shared_notes: 'Existing shared notes', official_rating: 'exceeding')
+    create(:assignment_check_in, teammate: employee_teammate, assignment: assignment, shared_notes: 'Existing shared notes', official_rating: 'exceeding')
   end
 
   describe 'build_official_check_in_data_with_changes method' do
     context 'when there are no form changes' do
       it 'should return the current check-in data instead of nil' do
-        check_in = AssignmentCheckIn.where(person: employee, assignment: assignment).first
+        check_in = AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment).first
         
         # Test with empty form params
         result = MaapSnapshot.build_official_check_in_data_with_changes(check_in, {}, assignment.id)

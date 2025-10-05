@@ -134,8 +134,11 @@ module PeopleHelper
 
   def last_completed_check_in(assignment_data, person)
     # Find the most recent completed check-in for this assignment
+    teammate = person.teammates.find_by(organization: assignment_data[:assignment].company)
+    return nil unless teammate
+    
     recent_check_ins = AssignmentCheckIn
-      .where(person: person, assignment: assignment_data[:assignment])
+      .where(teammate: teammate, assignment: assignment_data[:assignment])
       .where.not(official_check_in_completed_at: nil)
       .order(official_check_in_completed_at: :desc)
       .limit(1)

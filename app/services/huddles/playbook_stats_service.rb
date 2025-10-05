@@ -19,25 +19,26 @@ module Huddles
       participant_ids = huddle_playbook.huddles
         .joins(:huddle_participants)
         .distinct
-        .pluck('huddle_participants.person_id').uniq
+        .pluck('huddle_participants.teammate_id').uniq
       
-      participant_ids.map do |person_id|
-        person = Person.find(person_id)
+      participant_ids.map do |teammate_id|
+        teammate = Teammate.find(teammate_id)
+        person = teammate.person
         
-        # Get huddles for this person
+        # Get huddles for this teammate
         person_huddles = huddle_playbook.huddles
           .joins(:huddle_participants)
-          .where(huddle_participants: { person_id: person_id })
+          .where(huddle_participants: { teammate_id: teammate_id })
         
-        # Get feedback count for this person
+        # Get feedback count for this teammate
         feedback_count = HuddleFeedback
           .joins(:huddle)
           .where(huddles: { huddle_playbook: huddle_playbook })
-          .where(person_id: person_id)
+          .where(teammate_id: teammate_id)
           .count
         
         OpenStruct.new(
-          person_id: person_id,
+          person_id: person.id,
           first_name: person.first_name,
           last_name: person.last_name,
           email: person.email,

@@ -7,13 +7,13 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     authorize @organization, :show?
     
     # Get active employees (people with active employment tenures)
-    @active_employees = @organization.employees.includes(:employment_tenures)
+    @active_employees = @organization.employees.includes(teammates: :employment_tenures)
     
     # Get huddle participants from this organization and all child organizations
-    @huddle_participants = @organization.huddle_participants.includes(:employment_tenures)
+    @huddle_participants = @organization.huddle_participants.includes(teammates: :employment_tenures)
     
     # Get just huddle participants (non-employees)
-    @just_huddle_participants = @organization.just_huddle_participants.includes(:employment_tenures)
+    @just_huddle_participants = @organization.just_huddle_participants.includes(teammates: :employment_tenures)
   end
 
   def new_employee
@@ -40,7 +40,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         type: 'CompanyTeammate'
       )
       
-      @employment_tenure = @person.employment_tenures.build(employment_tenure_params)
+      @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)
       @employment_tenure.company = @organization
       @employment_tenure.teammate = teammate
       @employment_tenure.save!

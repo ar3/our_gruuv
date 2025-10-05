@@ -3,13 +3,14 @@ require 'rails_helper'
 RSpec.describe "EmploymentTenures", type: :request do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
+  let(:person_teammate) { create(:teammate, person: person, organization: company) }
   let(:position) do
     position_major_level = create(:position_major_level)
     position_type = create(:position_type, organization: company, position_major_level: position_major_level)
     position_level = create(:position_level, position_major_level: position_major_level)
     create(:position, position_type: position_type, position_level: position_level)
   end
-  let(:employment_tenure) { create(:employment_tenure, person: person, company: company, position: position) }
+  let(:employment_tenure) { create(:employment_tenure, teammate: person_teammate, company: company, position: position) }
 
   before do
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
@@ -40,7 +41,7 @@ RSpec.describe "EmploymentTenures", type: :request do
     end
 
     context "when creating a job change" do
-      let!(:active_tenure) { create(:employment_tenure, person: person, company: company, position: position, started_at: 6.months.ago) }
+      let!(:active_tenure) { create(:employment_tenure, teammate: person_teammate, company: company, position: position, started_at: 6.months.ago) }
       let(:new_position) do
         position_major_level = create(:position_major_level)
         position_type = create(:position_type, organization: company, position_major_level: position_major_level)
@@ -60,13 +61,13 @@ RSpec.describe "EmploymentTenures", type: :request do
             },
             effective_date: effective_date
           }
-        }.to change { person.employment_tenures.count }.by(1)
+        }.to change { EmploymentTenure.joins(:teammate).where(teammates: { person: person }).count }.by(1)
 
         # Check that the old tenure is now inactive
         expect(active_tenure.reload.ended_at).to eq(effective_date)
         
         # Check that the new tenure is active
-        new_tenure = person.employment_tenures.order(:created_at).last
+        new_tenure = EmploymentTenure.joins(:teammate).where(teammates: { person: person }).order(:created_at).last
         expect(new_tenure.active?).to be true
         expect(new_tenure.started_at).to eq(effective_date)
       end

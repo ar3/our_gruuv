@@ -15,7 +15,10 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   
   def dashboard
     @current_person = current_person
-    @recent_huddles = current_person.huddles.recent.limit(5)
+    @recent_huddles = Huddle.joins(huddle_participants: :teammate)
+                            .where(teammates: { person: current_person })
+                            .recent
+                            .limit(5)
     
     # Organization-specific dashboard content will go here
     load_organization_dashboard_stats
@@ -64,7 +67,10 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   
   def dashboard
     @current_person = current_person
-    @recent_huddles = current_person.huddles.recent.limit(5)
+    @recent_huddles = Huddle.joins(huddle_participants: :teammate)
+                            .where(teammates: { person: current_person })
+                            .recent
+                            .limit(5)
     
     # Organization-specific dashboard content will go here
     load_organization_dashboard_stats
@@ -183,14 +189,14 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
 
   def celebrate_milestones
     # Get milestones attained in the last 90 days within this organization
-    @recent_milestones = PersonMilestone.joins(:ability, :person, :certified_by)
+    @recent_milestones = PersonMilestone.joins(:ability, :teammate, :certified_by)
                                        .where(abilities: { organization: @organization })
                                        .where(attained_at: 90.days.ago..Time.current)
-                                       .includes(:ability, :person, :certified_by)
+                                       .includes(:ability, :teammate, :certified_by)
                                        .order(attained_at: :desc)
     
     # Group by person for easier display
-    @milestones_by_person = @recent_milestones.group_by(&:person)
+    @milestones_by_person = @recent_milestones.group_by { |milestone| milestone.teammate.person }
     
     # Get counts for the page
     @total_milestones = @recent_milestones.count

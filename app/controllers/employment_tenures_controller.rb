@@ -19,7 +19,8 @@ class EmploymentTenuresController < ApplicationController
     
     if @company
       # Pre-populate from most recent employment at this company
-      most_recent = EmploymentTenure.most_recent_for(@person, @company)
+      teammate = @person.teammates.find_by(organization: @company)
+      most_recent = teammate ? EmploymentTenure.most_recent_for(teammate, @company) : nil
       if most_recent
         @employment_tenure.assign_attributes(
           company: @company,
@@ -46,12 +47,12 @@ class EmploymentTenuresController < ApplicationController
       t.type = 'CompanyTeammate'
     end
     
-    @employment_tenure = @person.employment_tenures.build(employment_tenure_params)
+    @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)
     @employment_tenure.teammate = teammate
     authorize @employment_tenure
     
     # Check if this is a job change (there's an active employment at the same company)
-    active_tenure = @person.employment_tenures.for_company(@employment_tenure.company).active.first
+    active_tenure = teammate.employment_tenures.for_company(@employment_tenure.company).active.first
     
     if active_tenure
       # This is a job change - check if anything actually changed
@@ -139,9 +140,11 @@ class EmploymentTenuresController < ApplicationController
 
   def employment_summary
     authorize @person, policy_class: PersonPolicy
-    @employment_tenures = @person.employment_tenures.includes(:company, :position, :manager)
-                                 .order(started_at: :desc)
-                                 .decorate
+    @employment_tenures = EmploymentTenure.joins(:teammate)
+                                          .where(teammates: { person: @person })
+                                          .includes(:company, :position, :manager)
+                                          .order(started_at: :desc)
+                                          .decorate
   end
 
   private
@@ -151,7 +154,9 @@ class EmploymentTenuresController < ApplicationController
   end
 
   def set_employment_tenure
-    @employment_tenure = @person.employment_tenures.find(params[:id])
+    @employment_tenure = EmploymentTenure.joins(:teammate)
+                                        .where(teammates: { person: @person })
+                                        .find(params[:id])
   end
 
   def employment_tenure_params

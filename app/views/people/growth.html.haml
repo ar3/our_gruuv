@@ -54,7 +54,8 @@
         %p.mb-0 This person does not have an active employment tenure with a position.
 
 / Active Assignment Tenures Section
-- if @person.assignment_tenures.active.any?
+- teammate = @person.teammates.find_by(organization: @current_organization)
+- if teammate&.assignment_tenures&.active&.any?
   .card.mb-4{ role: "region", "aria-labelledby": "assignments-section" }
     .card-header
       %h5.mb-0{ id: "assignments-section" }
@@ -66,13 +67,13 @@
             %small.text-muted (Hide assignments)
           %span#assignmentsCollapseText.collapsed
             %i.bi.bi-chevron-down
-            %small.text-muted="(Show #{pluralize(@person.assignment_tenures.active.count, 'assignment')})"
+            %small.text-muted="(Show #{pluralize(teammate.assignment_tenures.active.count, 'assignment')})"
     .card-body
       .collapse.show#assignmentsCollapse
         %p.text-muted.mb-3
           %em These are the specific assignments this person is currently working on.
         
-        - @person.assignment_tenures.active.includes(:assignment).each_with_index do |tenure, index|
+        - teammate.assignment_tenures.active.includes(:assignment).each_with_index do |tenure, index|
           - if index > 0
             %hr.my-4
           
@@ -91,7 +92,7 @@
                       %small.text-muted= "for #{distance_of_time_in_words(tenure.started_at, Date.current)}"
                   
                   / Last Check-in Rating
-                  - latest_check_in = AssignmentCheckIn.where(person: @person, assignment: tenure.assignment).recent.first
+                  - latest_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: tenure.assignment).recent.first
                   - if latest_check_in && (latest_check_in.employee_rating.present? || latest_check_in.manager_rating.present?)
                     .me-3
                       - rating = latest_check_in.manager_rating.presence || latest_check_in.employee_rating
@@ -195,7 +196,7 @@
                                 %small Anticipated energy (#{tenure.anticipated_energy_percentage}%) is within the expected range (#{min_energy}%-#{max_energy}%)
                       
                       / Check-in Information
-                      - latest_check_in = AssignmentCheckIn.where(person: @person, assignment: tenure.assignment).recent.first
+                      - latest_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: tenure.assignment).recent.first
                       - if latest_check_in
                         .mb-3
                           %h6.mb-2
@@ -229,11 +230,11 @@
                           Statistics
                         %p.mb-1
                           %strong Total Check-ins:
-                          = AssignmentCheckIn.where(person: @person, assignment: tenure.assignment).count
+                          = AssignmentCheckIn.where(teammate: teammate, assignment: tenure.assignment).count
                         
                         %p.mb-1
                           %strong Open Check-ins:
-                          = AssignmentCheckIn.where(person: @person, assignment: tenure.assignment).open.count
+                          = AssignmentCheckIn.where(teammate: teammate, assignment: tenure.assignment).open.count
                       
                       / Actions
                       = link_to organization_assignment_path(@current_organization, tenure.assignment), class: "btn btn-outline-primary" do
@@ -245,7 +246,7 @@
                         Manage Tenures
 
 / Milestones Section
-- if @person.person_milestones.any?
+- if teammate&.person_milestones&.any?
   .card.mb-4{ role: "region", "aria-labelledby": "milestones-section" }
     .card-header
       %h5.mb-0{ id: "milestones-section" }
@@ -257,7 +258,7 @@
             %small.text-muted (Hide milestones)
           %span#milestonesCollapseText.collapsed
             %i.bi.bi-chevron-down
-            %small.text-muted="(Show #{pluralize(@person.person_milestones.count, 'milestone')})"
+            %small.text-muted="(Show #{pluralize(teammate.person_milestones.count, 'milestone')})"
     .card-body
       .collapse.show#milestonesCollapse
         %p.text-muted.mb-3
@@ -265,7 +266,7 @@
         
         .row
           .col-md-8
-            - @person.person_milestones.includes(:ability).each_with_index do |milestone, index|
+            - teammate.person_milestones.includes(:ability).each_with_index do |milestone, index|
               - if index > 0
                 %hr.my-3
               
@@ -286,7 +287,7 @@
                 Create New Ability
 
 / No Data State
-- if @current_employment&.position&.position_assignments&.empty? && @person.person_milestones.empty? && @person.assignment_tenures.active.empty?
+- if @current_employment&.position&.position_assignments&.empty? && teammate&.person_milestones&.empty? && teammate&.assignment_tenures&.active&.empty?
   .alert.alert-info
     %h6.mb-2
       %i.bi.bi-info-circle.me-2

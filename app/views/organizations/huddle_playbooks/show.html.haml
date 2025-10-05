@@ -70,7 +70,7 @@
                       %td= huddle.started_at.strftime("%B %d, %Y at %I:%M %p")
                       %td
                         - participant_count = huddle.huddle_participants.count
-                        - participant_names = huddle.huddle_participants.includes(:person).map { |hp| hp.person.full_name }.join(", ")
+                        - participant_names = huddle.huddle_participants.includes(teammate: :person).map { |hp| hp.teammate.person.full_name }.join(", ")
                         - if participant_names.present?
                           %span{title: participant_names, data: {bs_toggle: "tooltip", bs_placement: "top"}, style: "cursor: pointer"}
                             = participant_count

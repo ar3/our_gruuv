@@ -8,6 +8,7 @@ RSpec.describe HuddleFeedback, type: :model do
     Huddle.create!(huddle_playbook: playbook, started_at: Time.current)
   end
   let(:person) { Person.create!(full_name: 'John Doe', email: 'john@example.com') }
+  let(:teammate) { Teammate.create!(person: person, organization: team) }
 
   before do
     # Clear any existing test data
@@ -18,20 +19,20 @@ RSpec.describe HuddleFeedback, type: :model do
 
   describe 'associations' do
     it 'belongs to a huddle' do
-      feedback = HuddleFeedback.new(huddle: huddle, person: person)
+      feedback = HuddleFeedback.new(huddle: huddle, teammate: teammate)
       expect(feedback.huddle).to eq(huddle)
     end
 
-    it 'belongs to a person' do
-      feedback = HuddleFeedback.new(huddle: huddle, person: person)
-      expect(feedback.person).to eq(person)
+    it 'belongs to a teammate' do
+      feedback = HuddleFeedback.new(huddle: huddle, teammate: teammate)
+      expect(feedback.teammate).to eq(teammate)
     end
   end
 
   let(:valid_attributes) do
     {
       huddle: huddle,
-      person: person,
+      teammate: teammate,
       informed_rating: 4,
       connected_rating: 5,
       goals_rating: 4,
@@ -52,10 +53,10 @@ RSpec.describe HuddleFeedback, type: :model do
       expect(feedback.errors[:huddle]).to include('must exist')
     end
 
-    it 'requires a person' do
-      feedback = HuddleFeedback.new(valid_attributes.except(:person))
+    it 'requires a teammate' do
+      feedback = HuddleFeedback.new(valid_attributes.except(:teammate))
       expect(feedback).not_to be_valid
-      expect(feedback.errors[:person]).to include('must exist')
+      expect(feedback.errors[:teammate]).to include('must exist')
     end
 
     it 'requires informed_rating' do
@@ -97,21 +98,22 @@ RSpec.describe HuddleFeedback, type: :model do
       end
     end
 
-    it 'prevents duplicate feedback from the same person for the same huddle' do
+    it 'prevents duplicate feedback from the same teammate for the same huddle' do
       HuddleFeedback.create!(valid_attributes)
       duplicate = HuddleFeedback.new(valid_attributes)
       expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:person_id]).to include('has already been taken')
+      expect(duplicate.errors[:teammate_id]).to include('has already been taken')
     end
 
-    it 'allows feedback from different people for the same huddle' do
+    it 'allows feedback from different teammates for the same huddle' do
       person2 = Person.create!(full_name: 'Jane Smith', email: 'jane@example.com')
+      teammate2 = Teammate.create!(person: person2, organization: team)
       HuddleFeedback.create!(valid_attributes)
-      feedback2 = HuddleFeedback.new(valid_attributes.merge(person: person2))
+      feedback2 = HuddleFeedback.new(valid_attributes.merge(teammate: teammate2))
       expect(feedback2).to be_valid
     end
 
-    it 'allows feedback from the same person for different huddles' do
+    it 'allows feedback from the same teammate for different huddles' do
       team2 = Team.create!(name: 'Test Team 2', parent: company)
       playbook2 = create(:huddle_playbook, organization: team2, special_session_name: 'test-huddle-2')
             huddle2 = Huddle.create!(huddle_playbook: playbook2, started_at: Time.current)
@@ -154,7 +156,11 @@ RSpec.describe HuddleFeedback, type: :model do
 
   describe 'scopes' do
     let!(:anonymous_feedback) { HuddleFeedback.create!(valid_attributes.merge(anonymous: true)) }
-    let!(:named_feedback) { HuddleFeedback.create!(valid_attributes.merge(person: Person.create!(full_name: 'Jane', email: 'jane@example.com'), anonymous: false)) }
+    let!(:named_feedback) { 
+      person2 = Person.create!(full_name: 'Jane', email: 'jane@example.com')
+      teammate2 = Teammate.create!(person: person2, organization: team)
+      HuddleFeedback.create!(valid_attributes.merge(teammate: teammate2, anonymous: false)) 
+    }
 
     describe '.anonymous' do
       it 'returns only anonymous feedback' do

@@ -209,7 +209,8 @@ RSpec.describe Person, type: :model do
   describe 'employment tenure associations' do
     let(:person) { create(:person) }
     let(:company) { create(:organization, :company) }
-    let!(:employment_tenure) { create(:employment_tenure, person: person, company: company) }
+    let(:teammate) { create(:teammate, person: person, organization: company) }
+    let!(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: company) }
 
     it 'can access employment tenures through company association' do
       # This test ensures we use the right association name
@@ -233,8 +234,9 @@ RSpec.describe Person, type: :model do
     let(:person) { create(:person) }
     let(:huddle_playbook) { create(:huddle_playbook, special_session_name: 'Daily Standup') }
     let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook) }
-    let!(:huddle_participant) { create(:huddle_participant, person: person, huddle: huddle) }
-    let!(:huddle_feedback) { create(:huddle_feedback, person: person, huddle: huddle) }
+    let(:teammate) { create(:teammate, person: person, organization: huddle_playbook.organization) }
+    let!(:huddle_participant) { create(:huddle_participant, teammate: teammate, huddle: huddle) }
+    let!(:huddle_feedback) { create(:huddle_feedback, teammate: teammate, huddle: huddle) }
 
     describe '#huddle_playbook_stats' do
       it 'groups huddle participations by playbook' do
@@ -265,7 +267,8 @@ RSpec.describe Person, type: :model do
       it 'handles multiple playbooks correctly' do
         second_playbook = create(:huddle_playbook, special_session_name: 'Weekly Retro')
         second_huddle = create(:huddle, huddle_playbook: second_playbook)
-        create(:huddle_participant, person: person, huddle: second_huddle)
+        second_teammate = create(:teammate, person: person, organization: second_playbook.organization)
+        create(:huddle_participant, teammate: second_teammate, huddle: second_huddle)
         
         expect(person.total_huddle_playbooks).to eq(2)
       end

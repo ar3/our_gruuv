@@ -60,7 +60,8 @@ class MaapSnapshot < ApplicationRecord
   end
   
   def self.build_for_employee_with_changes(employee:, created_by:, change_type:, reason:, request_info: {}, form_params: {})
-    company = employee.employment_tenures.active.first&.company
+    # Find the company from the employee's teammates
+    company = employee.teammates.joins(:employment_tenures).where(employment_tenures: { ended_at: nil }).first&.organization
     new(
       employee: employee,
       created_by: created_by,
@@ -74,7 +75,7 @@ class MaapSnapshot < ApplicationRecord
   end
 
   def self.build_for_employee_without_maap_data(employee:, created_by:, change_type:, reason:, request_info: {}, form_params: {})
-    company = employee.employment_tenures.active.first&.company
+    company = employee.teammates.joins(:employment_tenures).where(employment_tenures: { ended_at: nil }).first&.employment_tenures&.active&.first&.company
     new(
       employee: employee,
       created_by: created_by,
@@ -128,7 +129,9 @@ class MaapSnapshot < ApplicationRecord
   end
   
   def self.build_employment_tenure_data(employee, company)
-    employment = employee.employment_tenures.active.where(company: company).first
+    teammate = employee.teammates.find_by(organization: company)
+    return nil unless teammate
+    employment = EmploymentTenure.where(teammate: teammate).active.where(company: company).first
     return nil unless employment
     
     {
@@ -140,8 +143,11 @@ class MaapSnapshot < ApplicationRecord
   end
   
   def self.build_assignments_data(employee, company)
-    employee.assignment_tenures.active.includes(:assignment).joins(:assignment).where(assignments: { company: company }).map do |tenure|
-      check_in = AssignmentCheckIn.where(person: employee, assignment: tenure.assignment).open.first
+    teammate = employee.teammates.find_by(organization: company)
+    return [] unless teammate
+    
+    teammate.assignment_tenures.active.includes(:assignment).joins(:assignment).where(assignments: { company: company }).map do |tenure|
+      check_in = AssignmentCheckIn.where(teammate: teammate, assignment: tenure.assignment).open.first
       
       {
         id: tenure.assignment_id,
@@ -174,12 +180,14 @@ class MaapSnapshot < ApplicationRecord
   
   def self.build_assignments_data_with_changes(employee, company, form_params)
     # Get all assignments where the person has ever had a tenure, filtered by company
-    assignment_ids = employee.assignment_tenures.joins(:assignment).where(assignments: { company: company }).distinct.pluck(:assignment_id)
+    teammate = employee.teammates.find_by(organization: company)
+    return [] unless teammate
+    assignment_ids = AssignmentTenure.where(teammate: teammate).joins(:assignment).where(assignments: { company: company }).distinct.pluck(:assignment_id)
     assignments = Assignment.where(id: assignment_ids, company: company).includes(:assignment_tenures)
     
     assignments.map do |assignment|
-      current_tenure = employee.assignment_tenures.where(assignment: assignment).active.first
-      current_check_in = AssignmentCheckIn.where(person: employee, assignment: assignment).open.first
+      current_tenure = AssignmentTenure.where(teammate: teammate, assignment: assignment).active.first
+      current_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
       
       # Extract form parameters for this assignment
       assignment_id = assignment.id
@@ -203,11 +211,13 @@ class MaapSnapshot < ApplicationRecord
   end
   
   def self.build_milestones_data(employee, company)
-    employee.person_milestones.joins(:ability).where(abilities: { organization: company }).includes(:ability).map do |milestone|
+    teammate = employee.teammates.find_by(organization: company)
+    return [] unless teammate
+    PersonMilestone.where(teammate: teammate).joins(:ability).where(abilities: { organization: company }).includes(:ability).map do |milestone|
       {
         ability_id: milestone.ability_id,
         milestone_level: milestone.milestone_level,
-        person_id: milestone.person_id,
+        teammate_id: milestone.teammate_id,
         certified_by_id: milestone.certified_by_id,
         attained_at: milestone.attained_at
       }

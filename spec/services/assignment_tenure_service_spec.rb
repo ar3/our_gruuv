@@ -1,8 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe AssignmentTenureService, type: :service do
+  let(:organization) { create(:organization) }
   let(:person) { create(:person) }
-  let(:assignment) { create(:assignment) }
+  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:assignment) { create(:assignment, company: organization) }
   let(:created_by) { create(:person) }
   let(:service) { described_class.new(person: person, assignment: assignment, created_by: created_by) }
 
@@ -10,7 +12,7 @@ RSpec.describe AssignmentTenureService, type: :service do
     context 'when setting energy to 0%' do
       it 'ends the active tenure' do
         active_tenure = create(:assignment_tenure, 
-          person: person, 
+          teammate: teammate, 
           assignment: assignment, 
           anticipated_energy_percentage: 50,
           started_at: 1.month.ago,
@@ -38,7 +40,7 @@ RSpec.describe AssignmentTenureService, type: :service do
     context 'when energy changes from existing tenure' do
       let!(:active_tenure) do
         create(:assignment_tenure,
-          person: person,
+          teammate: teammate,
           assignment: assignment,
           anticipated_energy_percentage: 25,
           started_at: 1.month.ago,
@@ -60,7 +62,7 @@ RSpec.describe AssignmentTenureService, type: :service do
         expect(active_tenure.ended_at.to_date).to eq(new_start_date)
 
         # Check new tenure was created
-        new_tenure = AssignmentTenure.where(person: person, assignment: assignment).active.first
+        new_tenure = AssignmentTenure.where(teammate: teammate, assignment: assignment).active.first
         expect(new_tenure.anticipated_energy_percentage).to eq(75)
         expect(new_tenure.started_at).to eq(new_start_date)
       end
@@ -80,7 +82,7 @@ RSpec.describe AssignmentTenureService, type: :service do
         expect(active_tenure.ended_at.to_date).to eq(same_day)
 
         # New tenure should start on the same day
-        new_tenure = AssignmentTenure.where(person: person, assignment: assignment).active.first
+        new_tenure = AssignmentTenure.where(teammate: teammate, assignment: assignment).active.first
         expect(new_tenure.started_at).to eq(same_day)
       end
     end
@@ -88,7 +90,7 @@ RSpec.describe AssignmentTenureService, type: :service do
     context 'when energy is the same as existing tenure' do
       let!(:active_tenure) do
         create(:assignment_tenure,
-          person: person,
+          teammate: teammate,
           assignment: assignment,
           anticipated_energy_percentage: 50,
           started_at: 1.month.ago,
@@ -111,6 +113,9 @@ RSpec.describe AssignmentTenureService, type: :service do
     context 'when no active tenure exists' do
       it 'creates a new tenure' do
         start_date = Date.current
+        
+        # Ensure teammate exists
+        teammate
 
         expect {
           service.update_tenure(
@@ -119,7 +124,7 @@ RSpec.describe AssignmentTenureService, type: :service do
           )
         }.to change { AssignmentTenure.count }.by(1)
 
-        new_tenure = AssignmentTenure.where(person: person, assignment: assignment).active.first
+        new_tenure = AssignmentTenure.where(teammate: teammate, assignment: assignment).active.first
         expect(new_tenure.anticipated_energy_percentage).to eq(30)
         expect(new_tenure.started_at).to eq(start_date)
       end
@@ -170,7 +175,7 @@ RSpec.describe AssignmentTenureService, type: :service do
     context 'edge cases' do
       it 'handles end date being in the past' do
         active_tenure = create(:assignment_tenure,
-          person: person,
+          teammate: teammate,
           assignment: assignment,
           anticipated_energy_percentage: 25,
           started_at: 1.month.ago,
@@ -191,7 +196,7 @@ RSpec.describe AssignmentTenureService, type: :service do
       it 'handles multiple tenures for same person and assignment' do
         # Create an old ended tenure
         old_tenure = create(:assignment_tenure,
-          person: person,
+          teammate: teammate,
           assignment: assignment,
           anticipated_energy_percentage: 25,
           started_at: 2.months.ago,
@@ -199,7 +204,7 @@ RSpec.describe AssignmentTenureService, type: :service do
 
         # Create current active tenure
         active_tenure = create(:assignment_tenure,
-          person: person,
+          teammate: teammate,
           assignment: assignment,
           anticipated_energy_percentage: 50,
           started_at: 1.month.ago,

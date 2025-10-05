@@ -62,8 +62,10 @@ RSpec.describe Huddles::StatsService, type: :service do
     let!(:huddle) { create(:huddle, huddle_playbook: playbook, started_at: 1.day.ago) }
     let!(:person1) { create(:person) }
     let!(:person2) { create(:person) }
-    let!(:feedback1) { create(:huddle_feedback, huddle: huddle, person: person1, created_at: 1.day.ago) }
-    let!(:feedback2) { create(:huddle_feedback, huddle: huddle, person: person2, created_at: 1.day.ago) }
+    let!(:teammate1) { create(:teammate, person: person1, organization: company) }
+    let!(:teammate2) { create(:teammate, person: person2, organization: company) }
+    let!(:feedback1) { create(:huddle_feedback, huddle: huddle, teammate: teammate1, created_at: 1.day.ago) }
+    let!(:feedback2) { create(:huddle_feedback, huddle: huddle, teammate: teammate2, created_at: 1.day.ago) }
 
     it 'returns correct feedback count' do
       stats = service.calculate_feedback_stats
@@ -90,9 +92,11 @@ RSpec.describe Huddles::StatsService, type: :service do
     let!(:huddle) { create(:huddle, huddle_playbook: playbook, started_at: 1.day.ago) }
     let!(:person1) { create(:person) }
     let!(:person2) { create(:person) }
-    let!(:participant1) { create(:huddle_participant, huddle: huddle, person: person1) }
-    let!(:participant2) { create(:huddle_participant, huddle: huddle, person: person2) }
-    let!(:feedback1) { create(:huddle_feedback, huddle: huddle, person: person1) }
+    let!(:teammate1) { create(:teammate, person: person1, organization: company) }
+    let!(:teammate2) { create(:teammate, person: person2, organization: company) }
+    let!(:participant1) { create(:huddle_participant, huddle: huddle, teammate: teammate1) }
+    let!(:participant2) { create(:huddle_participant, huddle: huddle, teammate: teammate2) }
+    let!(:feedback1) { create(:huddle_feedback, huddle: huddle, teammate: teammate1) }
 
     it 'calculates total participants correctly' do
       stats = service.calculate_participation_stats
@@ -124,8 +128,10 @@ RSpec.describe Huddles::StatsService, type: :service do
     let!(:huddle) { create(:huddle, huddle_playbook: playbook, started_at: 1.day.ago) }
     let!(:person1) { create(:person) }
     let!(:person2) { create(:person) }
-    let!(:feedback1) { create(:huddle_feedback, huddle: huddle, person: person1, informed_rating: 4, connected_rating: 5, goals_rating: 3, valuable_rating: 4) }
-    let!(:feedback2) { create(:huddle_feedback, huddle: huddle, person: person2, informed_rating: 5, connected_rating: 5, goals_rating: 5, valuable_rating: 5) }
+    let!(:teammate1) { create(:teammate, person: person1, organization: company) }
+    let!(:teammate2) { create(:teammate, person: person2, organization: company) }
+    let!(:feedback1) { create(:huddle_feedback, huddle: huddle, teammate: teammate1, informed_rating: 4, connected_rating: 5, goals_rating: 3, valuable_rating: 4) }
+    let!(:feedback2) { create(:huddle_feedback, huddle: huddle, teammate: teammate2, informed_rating: 5, connected_rating: 5, goals_rating: 5, valuable_rating: 5) }
 
     it 'calculates average rating correctly' do
       stats = service.calculate_rating_stats

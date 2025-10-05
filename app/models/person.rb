@@ -1,66 +1,70 @@
 class Person < ApplicationRecord
   # Associations
-  has_many :huddle_participants, dependent: :destroy
-  has_many :huddles, through: :huddle_participants
-  has_many :huddle_feedbacks, dependent: :destroy
   has_many :person_identities, dependent: :destroy
-  has_many :employment_tenures, dependent: :destroy
-  has_many :assignment_tenures, dependent: :destroy
-  has_many :assignments, through: :assignment_tenures
-  has_many :assignment_check_ins, dependent: :destroy
-  has_many :person_milestones, dependent: :destroy
-  has_many :abilities, through: :person_milestones
 
   # Milestone-related methods
-  def milestone_attainments
-    person_milestones.by_milestone_level.includes(:ability)
+  def milestone_attainments(organization)
+    teammate = teammates.find_by(organization: organization)
+    teammate&.person_milestones&.by_milestone_level&.includes(:ability) || []
   end
 
-  def milestone_attainments_count
-    person_milestones.count
+  def milestone_attainments_count(organization)
+    teammate = teammates.find_by(organization: organization)
+    teammate&.person_milestones&.count || 0
   end
 
-  def has_milestone_attainments?
-    person_milestones.exists?
+  def has_milestone_attainments?(organization)
+    teammate = teammates.find_by(organization: organization)
+    teammate&.person_milestones&.exists? || false
   end
 
-  def highest_milestone_for_ability(ability)
-    person_milestones.where(ability: ability).maximum(:milestone_level)
+  def highest_milestone_for_ability(ability, organization)
+    teammate = teammates.find_by(organization: organization)
+    teammate&.person_milestones&.where(ability: ability)&.maximum(:milestone_level)
   end
 
-  def has_milestone_for_ability?(ability, level)
-    person_milestones.where(ability: ability, milestone_level: level).exists?
+  def has_milestone_for_ability?(ability, level, organization)
+    teammate = teammates.find_by(organization: organization)
+    teammate&.person_milestones&.where(ability: ability, milestone_level: level)&.exists? || false
   end
 
-  def add_milestone_attainment(ability, level, certified_by)
-    person_milestones.create!(ability: ability, milestone_level: level, certified_by: certified_by, attained_at: Date.current)
+  def add_milestone_attainment(ability, level, certified_by, organization)
+    teammate = teammates.find_by(organization: organization)
+    teammate&.person_milestones&.create!(ability: ability, milestone_level: level, certified_by: certified_by, attained_at: Date.current)
   end
 
-  def remove_milestone_attainment(ability, level)
-    person_milestones.where(ability: ability, milestone_level: level).destroy_all
+  def remove_milestone_attainment(ability, level, organization)
+    teammate = teammates.find_by(organization: organization)
+    teammate&.person_milestones&.where(ability: ability, milestone_level: level)&.destroy_all
   end
 
 
   def active_assignment_tenures(company=nil)
     company = current_organization&.root_company if company.nil?
+    teammate = teammates.find_by(organization: company)
+    return [] unless teammate
+    
     if company.nil?
-      return assignment_tenures.active
+      return teammate.assignment_tenures.active
     else
-      assignment_tenures.active.where(assignments: { company: company })
+      teammate.assignment_tenures.active.where(assignments: { company: company })
     end
   end
 
   # Scopes for active assignments in a specific company
   def assignments_ready_for_finalization_count(company=nil)
     company = current_organization&.root_company if company.nil?
+    teammate = teammates.find_by(organization: company)
+    return 0 unless teammate
+    
     if company.nil?
       AssignmentCheckIn.joins(:assignment)
-                       .where(person: self)
+                       .where(teammate: teammate)
                        .ready_for_finalization
                        .count
     else
       AssignmentCheckIn.joins(:assignment)
-                       .where(person: self, assignments: { company: company })
+                       .where(teammate: teammate, assignments: { company: company })
                        .ready_for_finalization
                        .count
     end
@@ -68,13 +72,16 @@ class Person < ApplicationRecord
 
   def active_assignments(company=nil)
     company = current_organization&.root_company if company.nil?
+    teammate = teammates.find_by(organization: company)
+    return [] unless teammate
+    
     if company.nil?
-      return assignments.joins(:assignment_tenures)
+      return teammate.assignments.joins(:assignment_tenures)
                          .where('assignment_tenures.anticipated_energy_percentage > 0')
                          .where(assignment_tenures: { ended_at: nil })
                          .distinct
     else
-      assignments.joins(:assignment_tenures)
+      teammate.assignments.joins(:assignment_tenures)
                 .where(assignment_tenures: { 
                   assignments: { company: company }, 
                   ended_at: nil 
@@ -86,6 +93,11 @@ class Person < ApplicationRecord
   has_many :teammates, dependent: :destroy
   has_many :addresses, dependent: :destroy
   belongs_to :current_organization, class_name: 'Organization', optional: true
+  
+  # Associations through teammates
+  has_many :huddle_participants, through: :teammates, source: :huddle_participants
+  has_many :huddle_feedbacks, through: :teammates, source: :huddle_feedbacks
+  has_many :employment_tenures, through: :teammates, source: :employment_tenures
   
   # Callbacks
   before_save :normalize_phone_number
@@ -211,7 +223,10 @@ class Person < ApplicationRecord
   end
   
   def last_huddle
-    huddles.recent.first
+    Huddle.joins(huddle_participants: :teammate)
+          .where(teammates: { person: self })
+          .recent
+          .first
   end
   
   def last_huddle_company
@@ -233,22 +248,22 @@ class Person < ApplicationRecord
 
   # Employment tenure checking methods
   def active_employment_tenure_in?(organization)
-    employment_tenures.active.where(company: organization).exists?
+    teammate = teammates.find_by(organization: organization)
+    teammate&.employment_tenures&.active&.where(company: organization)&.exists? || false
   end
 
   def employment_status_text_for(organization)
-    # Check if person has any employment tenure with this organization
-    tenures = employment_tenures.where(company: organization).order(started_at: :desc)
+    teammate = teammates.find_by(organization: organization)
+    return "Never been employed at #{organization.display_name}" unless teammate
+    
+    tenures = teammate.employment_tenures.where(company: organization).order(started_at: :desc)
     
     if tenures.empty?
-      # Never been employed
       "Never been employed at #{organization.display_name}"
     elsif active_employment_tenure_in?(organization)
-      # Currently employed
       current_tenure = tenures.active.first
       "#{current_tenure.position.display_name}"
     else
-      # Previously employed but not currently
       last_tenure = tenures.first
       "Last employed #{time_ago_in_words(last_tenure.ended_at)} as a #{last_tenure.position.display_name}"
     end
@@ -257,9 +272,10 @@ class Person < ApplicationRecord
   def in_managerial_hierarchy_of?(other_person)
     return false unless current_organization
     
-    # Check if this person manages the other person through employment tenures
-    # This is a simplified version - you might want to expand this logic
-    other_person.employment_tenures.active.where(company: current_organization).exists?
+    other_teammate = other_person.teammates.find_by(organization: current_organization)
+    return false unless other_teammate
+    
+    other_teammate.employment_tenures.active.where(company: current_organization).exists?
   end
 
   # Huddle participation methods
@@ -290,7 +306,6 @@ class Person < ApplicationRecord
   end
 
   def huddle_stats_for_playbook(playbook)
-    playbook_huddles = huddles.where(huddle_playbook: playbook)
     playbook_participations = huddle_participants.joins(:huddle).where(huddles: { huddle_playbook: playbook })
     
     total_huddles_held = playbook.huddles.count

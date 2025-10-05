@@ -3,6 +3,7 @@ require 'rails_helper'
 RSpec.describe 'BulkCheckInFinalizationProcessor UI Duplication Bug', type: :model do
   let(:organization) { create(:organization) }
   let(:employee) { create(:person) }
+  let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   
   # Create assignments with specific IDs to match the scenario
   let(:lifeline_assignment) { create(:assignment, company: organization, title: 'Lifeline Interview Facilitator', id: 84) }
@@ -11,16 +12,16 @@ RSpec.describe 'BulkCheckInFinalizationProcessor UI Duplication Bug', type: :mod
 
   before do
     # Set up employment tenure
-    create(:employment_tenure, person: employee, company: organization)
+    create(:employment_tenure, teammate: employee_teammate, company: organization)
     
     # Set up assignment tenures
-    create(:assignment_tenure, person: employee, assignment: lifeline_assignment, anticipated_energy_percentage: 20)
-    create(:assignment_tenure, person: employee, assignment: emp_growth_assignment, anticipated_energy_percentage: 50)
-    create(:assignment_tenure, person: employee, assignment: quarterly_assignment, anticipated_energy_percentage: 30)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: lifeline_assignment, anticipated_energy_percentage: 20)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: emp_growth_assignment, anticipated_energy_percentage: 50)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: quarterly_assignment, anticipated_energy_percentage: 30)
     
     # Set up check-ins with existing data (ready for finalization)
     create(:assignment_check_in, 
-           person: employee, 
+           teammate: employee_teammate, 
            assignment: lifeline_assignment, 
            employee_completed_at: Time.current, 
            manager_completed_at: Time.current,
@@ -28,7 +29,7 @@ RSpec.describe 'BulkCheckInFinalizationProcessor UI Duplication Bug', type: :mod
            official_rating: 'exceeding')
            
     create(:assignment_check_in, 
-           person: employee, 
+           teammate: employee_teammate, 
            assignment: emp_growth_assignment, 
            employee_completed_at: Time.current, 
            manager_completed_at: Time.current,
@@ -36,7 +37,7 @@ RSpec.describe 'BulkCheckInFinalizationProcessor UI Duplication Bug', type: :mod
            official_rating: 'exceeding')
            
     create(:assignment_check_in, 
-           person: employee, 
+           teammate: employee_teammate, 
            assignment: quarterly_assignment, 
            employee_completed_at: Time.current, 
            manager_completed_at: Time.current,

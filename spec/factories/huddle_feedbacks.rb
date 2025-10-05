@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :huddle_feedback do
     association :huddle
-    association :person
+    association :teammate
     informed_rating { rand(1..5) }
     connected_rating { rand(1..5) }
     goals_rating { rand(1..5) }

@@ -10,14 +10,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     # Set up session for authentication
     session[:current_person_id] = manager.id
     
-    # Create employment tenure for manager in the organization
-    create(:employment_tenure, person: manager, company: organization)
-    
     # Grant manager permissions
-    create(:teammate, 
+    manager_teammate = create(:teammate, 
            person: manager, 
            organization: organization,
            can_manage_employment: true)
+    
+    # Create employment tenure for manager in the organization
+    create(:employment_tenure, teammate: manager_teammate, company: organization)
   end
 
   describe 'POST #update_permission' do

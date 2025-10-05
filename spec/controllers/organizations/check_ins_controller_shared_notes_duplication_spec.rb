@@ -4,22 +4,24 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
   let(:organization) { create(:organization) }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
+  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let!(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let(:assignment1) { create(:assignment, company: organization, title: 'Employee Growth Plan Champion') }
   let(:assignment2) { create(:assignment, company: organization, title: 'Quarterly Conversation Coordinator') }
-  let(:check_in1) { create(:assignment_check_in, person: employee, assignment: assignment1, id: 80) }
-  let(:check_in2) { create(:assignment_check_in, person: employee, assignment: assignment2, id: 81) }
+  let(:check_in1) { create(:assignment_check_in, teammate: employee_teammate, assignment: assignment1, id: 80) }
+  let(:check_in2) { create(:assignment_check_in, teammate: employee_teammate, assignment: assignment2, id: 81) }
 
   before do
     # Set up employment tenures
-    create(:employment_tenure, person: manager, company: organization)
-    create(:employment_tenure, person: employee, company: organization)
+    create(:employment_tenure, teammate: manager_teammate, company: organization)
+    create(:employment_tenure, teammate: employee_teammate, company: organization)
     
     # Set up manager permissions
-    create(:person_organization_access, person: manager, organization: organization, can_manage_employment: true)
+    manager_teammate.update!(can_manage_employment: true)
     
     # Set up assignment tenures
-    create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 50)
-    create(:assignment_tenure, person: employee, assignment: assignment2, anticipated_energy_percentage: 30)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 50)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment2, anticipated_energy_percentage: 30)
     
     # Set up check-ins with employee and manager completed
     check_in1.update!(

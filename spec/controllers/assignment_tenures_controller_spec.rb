@@ -8,7 +8,9 @@ RSpec.describe Organizations::AssignmentTenuresController, type: :controller do
   let!(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let!(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
   let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
-  let!(:employment) { create(:employment_tenure, person: employee, position: position, company: organization) }
+  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization, can_manage_maap: true, can_manage_employment: true) }
+  let!(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
+  let!(:employment) { create(:employment_tenure, teammate: employee_teammate, position: position, company: organization) }
   let!(:assignment1) { create(:assignment, title: 'Assignment 1', company: organization) }
   let!(:assignment2) { create(:assignment, title: 'Assignment 2', company: organization) }
   let!(:assignment3) { create(:assignment, title: 'Assignment 3', company: organization) }
@@ -21,10 +23,10 @@ RSpec.describe Organizations::AssignmentTenuresController, type: :controller do
     
     # Set up employment for both manager and employee
     employment # Employee employment
-    create(:employment_tenure, person: manager, position: position, company: organization) # Manager employment
+    create(:employment_tenure, teammate: manager_teammate, position: position, company: organization) # Manager employment
     
     # Set up organization access for manager
-    create(:teammate, person: manager, organization: organization, can_manage_maap: true, can_manage_employment: true)
+    # manager_teammate already created above
     
     # Mock authentication
     allow(controller).to receive(:current_person).and_return(manager)
@@ -40,8 +42,8 @@ RSpec.describe Organizations::AssignmentTenuresController, type: :controller do
 
     it 'loads assignments and check-ins data' do
       # Create some test data
-      create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20)
-      create(:assignment_check_in, person: employee, assignment: assignment1, actual_energy_percentage: 25)
+      create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 20)
+      create(:assignment_check_in, teammate: employee_teammate, assignment: assignment1, actual_energy_percentage: 25)
       
       get :show, params: { organization_id: organization.id, id: employee.id }
       
@@ -97,8 +99,8 @@ RSpec.describe Organizations::AssignmentTenuresController, type: :controller do
 
       it 'includes current MAAP data in snapshot' do
         # Create some test data
-        create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20)
-        create(:assignment_check_in, person: employee, assignment: assignment1, actual_energy_percentage: 25, employee_rating: 'meeting')
+        create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 20)
+        create(:assignment_check_in, teammate: employee_teammate, assignment: assignment1, actual_energy_percentage: 25, employee_rating: 'meeting')
         
         patch :update, params: valid_params
         
@@ -116,7 +118,7 @@ RSpec.describe Organizations::AssignmentTenuresController, type: :controller do
     end
 
     context 'as a manager with tenure changes' do
-      let!(:assignment_tenure) { create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20) }
+      let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 20) }
       
       let(:tenure_change_params) do
         {
@@ -152,8 +154,8 @@ RSpec.describe Organizations::AssignmentTenuresController, type: :controller do
     end
 
     context 'as a manager with check-in changes' do
-      let!(:assignment_tenure) { create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20) }
-      let!(:check_in) { create(:assignment_check_in, person: employee, assignment: assignment1, actual_energy_percentage: 15, employee_rating: 'meeting') }
+      let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 20) }
+      let!(:check_in) { create(:assignment_check_in, teammate: employee_teammate, assignment: assignment1, actual_energy_percentage: 15, employee_rating: 'meeting') }
       
       let(:check_in_change_params) do
         {

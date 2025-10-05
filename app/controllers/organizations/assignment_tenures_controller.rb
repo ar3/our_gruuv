@@ -55,7 +55,7 @@ class Organizations::AssignmentTenuresController < ApplicationController
     authorize @person, :manager?, policy_class: PersonPolicy
     
     @person_position = load_person_current_position
-    @current_employment = @person.employment_tenures.active.first
+    @current_employment = @person_position ? EmploymentTenure.where(teammate: @person.teammates.find_by(organization: @organization)).active.first : nil
     
     if @current_employment.nil?
       # No active employment tenure - redirect to create one
@@ -112,7 +112,8 @@ class Organizations::AssignmentTenuresController < ApplicationController
 
   def load_assignments_and_check_ins
     # Get current employment for position info
-    @current_employment = @person.employment_tenures.active.first
+    teammate = @person.teammates.find_by(organization: @organization)
+    @current_employment = teammate ? EmploymentTenure.where(teammate: teammate).active.first : nil
     
     # Get all assignments for this person (both active and inactive)
     all_assignments = load_person_assignments
@@ -123,12 +124,12 @@ class Organizations::AssignmentTenuresController < ApplicationController
     # For each assignment, get the active tenure and open check-in
     @assignment_data = @assignments.map do |assignment|
       # Get active tenure specifically (for energy values)
-      active_tenure = @person.assignment_tenures.where(assignment: assignment).active.first
+      active_tenure = teammate ? AssignmentTenure.where(teammate: teammate, assignment: assignment).active.first : nil
       
       # Get most recent tenure (for general info like start date)
-      most_recent_tenure = AssignmentTenure.most_recent_for(@person, assignment)
+      most_recent_tenure = teammate ? AssignmentTenure.most_recent_for(teammate, assignment) : nil
       
-      open_check_in = AssignmentCheckIn.where(person: @person, assignment: assignment).open.first
+      open_check_in = teammate ? AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first : nil
       
       # If there's a completed check-in, treat it as empty for the assignment tenures page
       # This prevents users from updating completed check-ins
@@ -150,7 +151,9 @@ class Organizations::AssignmentTenuresController < ApplicationController
 
   def load_person_assignments
     # Get assignments that the person actually has tenures for
-    @person.assignment_tenures.includes(:assignment).map(&:assignment).uniq
+    teammate = @person.teammates.find_by(organization: @organization)
+    return [] unless teammate
+    AssignmentTenure.where(teammate: teammate).includes(:assignment).map(&:assignment).uniq
   end
 
   def load_available_assignments
@@ -183,16 +186,16 @@ class Organizations::AssignmentTenuresController < ApplicationController
     selected_assignment_ids.each do |assignment_id|
       assignment = Assignment.find(assignment_id)
       
+      # Find teammate for this person and assignment's company
+      teammate = @person.teammates.find_by(organization: assignment.company)
+      return false unless teammate
+      
       # Check if person already has an active tenure for this assignment
-      existing_tenure = @person.assignment_tenures.where(assignment: assignment).active.first
+      existing_tenure = teammate.assignment_tenures.where(assignment: assignment).active.first
       
       if existing_tenure.nil?
-        # Find teammate for this person and assignment's company
-        teammate = @person.teammates.find_by(organization: assignment.company)
-        
         # Create new tenure
-        @person.assignment_tenures.create!(
-          teammate: teammate,
+        teammate.assignment_tenures.create!(
           assignment: assignment,
           started_at: Date.current,
           anticipated_energy_percentage: assignment.default_energy_percentage
@@ -208,7 +211,8 @@ class Organizations::AssignmentTenuresController < ApplicationController
 
   def load_person_current_position
     # Get the person's current position from their active employment
-    @current_employment = @person.employment_tenures.active.first
+    teammate = @person.teammates.find_by(organization: @organization)
+    @current_employment = teammate ? EmploymentTenure.where(teammate: teammate).active.first : nil
     @current_employment&.position
   end
 

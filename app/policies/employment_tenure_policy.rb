@@ -4,11 +4,11 @@ class EmploymentTenurePolicy < ApplicationPolicy
   end
 
   def show?
-    admin_bypass? || record.person == actual_user
+    admin_bypass? || record.teammate.person == actual_user
   end
 
   def create?
-    admin_bypass? || record.person == actual_user
+    admin_bypass? || record.teammate.person == actual_user
   end
 
   def new?
@@ -18,15 +18,15 @@ class EmploymentTenurePolicy < ApplicationPolicy
   end
 
   def update?
-    admin_bypass? || record.person == actual_user
+    admin_bypass? || record.teammate.person == actual_user
   end
 
   def destroy?
-    admin_bypass? || record.person == actual_user
+    admin_bypass? || record.teammate.person == actual_user
   end
 
   def change?
-    admin_bypass? || record.person == actual_user
+    admin_bypass? || record.teammate.person == actual_user
   end
 
   def add_history?
@@ -34,7 +34,7 @@ class EmploymentTenurePolicy < ApplicationPolicy
   end
 
   def employment_summary?
-    admin_bypass? || record.person == actual_user
+    admin_bypass? || record.teammate.person == actual_user
   end
 
   class Scope < Scope
@@ -42,7 +42,7 @@ class EmploymentTenurePolicy < ApplicationPolicy
       if actual_user&.admin?
         scope.all
       else
-        scope.where(person: actual_user)
+        scope.joins(:teammate).where(teammates: { person: actual_user })
       end
     end
   end

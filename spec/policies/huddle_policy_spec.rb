@@ -8,10 +8,12 @@ RSpec.describe HuddlePolicy, type: :policy do
   let(:person) { create(:person) }
   let(:facilitator) { create(:person) }
   let(:participant) { create(:person) }
+  let(:facilitator_teammate) { create(:teammate, person: facilitator, organization: organization) }
+  let(:participant_teammate) { create(:teammate, person: participant, organization: organization) }
 
   before do
-    create(:huddle_participant, huddle: huddle, person: facilitator, role: 'facilitator')
-    create(:huddle_participant, huddle: huddle, person: participant, role: 'active')
+    create(:huddle_participant, huddle: huddle, teammate: facilitator_teammate, role: 'facilitator')
+    create(:huddle_participant, huddle: huddle, teammate: participant_teammate, role: 'active')
   end
 
   permissions :show? do
@@ -100,7 +102,8 @@ RSpec.describe HuddlePolicy, type: :policy do
     let(:organization2) { create(:organization, name: 'Test Org 2') }
     let!(:huddle1) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization)) }
     let!(:huddle2) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization2)) }
-    let!(:participant1) { create(:huddle_participant, huddle: huddle1, person: person, role: 'active') }
+    let!(:person_teammate) { create(:teammate, person: person, organization: organization) }
+    let!(:participant1) { create(:huddle_participant, huddle: huddle1, teammate: person_teammate, role: 'active') }
 
     context "when user is logged in" do
       it "shows only huddles the user participated in" do

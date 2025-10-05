@@ -35,9 +35,11 @@ RSpec.describe Companies::WeeklyHuddlesReviewNotificationJob, type: :job do
         huddle2 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
         person1 = create(:person)
         person2 = create(:person)
+        teammate1 = create(:teammate, person: person1, organization: company)
+        teammate2 = create(:teammate, person: person2, organization: company)
         
-        create(:huddle_feedback, huddle: huddle1, person: person1, created_at: 1.week.ago)
-        create(:huddle_feedback, huddle: huddle2, person: person2, created_at: 1.week.ago)
+        create(:huddle_feedback, huddle: huddle1, teammate: teammate1, created_at: 1.week.ago)
+        create(:huddle_feedback, huddle: huddle2, teammate: teammate2, created_at: 1.week.ago)
 
         # Test the job directly
         job = described_class.new
@@ -56,8 +58,10 @@ RSpec.describe Companies::WeeklyHuddlesReviewNotificationJob, type: :job do
         huddle2 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
         person1 = create(:person)
         person2 = create(:person)
-        create(:huddle_feedback, huddle: huddle1, person: person1, created_at: 1.week.ago)
-        create(:huddle_feedback, huddle: huddle2, person: person2, created_at: 1.week.ago)
+        teammate1 = create(:teammate, person: person1, organization: company)
+        teammate2 = create(:teammate, person: person2, organization: company)
+        create(:huddle_feedback, huddle: huddle1, teammate: teammate1, created_at: 1.week.ago)
+        create(:huddle_feedback, huddle: huddle2, teammate: teammate2, created_at: 1.week.ago)
 
         # Create an existing notification for this week
         week_start = Date.current.beginning_of_week(:monday)
@@ -126,11 +130,13 @@ RSpec.describe Companies::WeeklyHuddlesReviewNotificationJob, type: :job do
       huddle3 = create(:huddle, huddle_playbook: create(:huddle_playbook, organization: company), started_at: 1.week.ago)
       person1 = create(:person)
       person2 = create(:person)
+      teammate1 = create(:teammate, person: person1, organization: company)
+      teammate2 = create(:teammate, person: person2, organization: company)
       
       # Create feedback for the past week (not current week)
-      create(:huddle_feedback, huddle: huddle1, person: person1, created_at: 1.week.ago)
-      create(:huddle_feedback, huddle: huddle2, person: person1, created_at: 1.week.ago)
-      create(:huddle_feedback, huddle: huddle3, person: person2, created_at: 1.week.ago)
+      create(:huddle_feedback, huddle: huddle1, teammate: teammate1, created_at: 1.week.ago)
+      create(:huddle_feedback, huddle: huddle2, teammate: teammate1, created_at: 1.week.ago)
+      create(:huddle_feedback, huddle: huddle3, teammate: teammate2, created_at: 1.week.ago)
 
       # Test the job directly
       job = described_class.new

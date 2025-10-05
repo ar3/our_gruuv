@@ -6,19 +6,20 @@ RSpec.describe Organizations::PeopleController, type: :controller do
   let(:employee) { create(:person, current_organization: organization) }
 
   let(:assignment) { create(:assignment, company: organization) }
-  let(:assignment_tenure) { create(:assignment_tenure, person: employee, assignment: assignment, anticipated_energy_percentage: 50) }
+  let(:employee_teammate) { employee.teammates.find_by(organization: organization) }
+  let(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 50) }
 
   before do
     session[:current_person_id] = manager.id
     allow(controller).to receive(:current_person).and_return(manager)
-    # Set up employment for manager
-    create(:employment_tenure, person: manager, company: organization)
-    # Set up employment for employee
-    create(:employment_tenure, person: employee, company: organization)
     # Set up organization access for manager
-    create(:teammate, person: manager, organization: organization, can_manage_employment: true)
+    manager_teammate = create(:teammate, person: manager, organization: organization, can_manage_employment: true)
     # Set up organization access for employee
-    create(:teammate, person: employee, organization: organization)
+    employee_teammate = create(:teammate, person: employee, organization: organization)
+    # Set up employment for manager
+    create(:employment_tenure, teammate: manager_teammate, company: organization)
+    # Set up employment for employee
+    create(:employment_tenure, teammate: employee_teammate, company: organization)
     
     # Create assignment tenure to ensure @assignment_data is populated
     assignment_tenure

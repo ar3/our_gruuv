@@ -5,8 +5,9 @@ RSpec.describe Huddles::PostFeedbackJob, type: :job do
   let!(:slack_config) { create(:slack_configuration, organization: organization) }
   let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization), started_at: Time.current) }
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
-  let!(:participant) { create(:huddle_participant, huddle: huddle, person: person, role: 'active') }
-  let(:feedback) { create(:huddle_feedback, huddle: huddle, person: person) }
+  let!(:teammate) { create(:teammate, person: person, organization: organization) }
+  let!(:participant) { create(:huddle_participant, huddle: huddle, teammate: teammate, role: 'active') }
+  let(:feedback) { create(:huddle_feedback, huddle: huddle, teammate: teammate) }
 
   before do
     # Mock SlackService to avoid actual API calls

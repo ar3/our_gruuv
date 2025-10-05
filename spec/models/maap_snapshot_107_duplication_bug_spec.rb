@@ -3,23 +3,24 @@ require 'rails_helper'
 RSpec.describe MaapSnapshot, type: :model do
   let(:organization) { create(:organization) }
   let(:employee) { create(:person) }
+  let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let(:assignment1) { create(:assignment, company: organization, title: 'Employee Growth Plan Champion', id: 80) }
   let(:assignment2) { create(:assignment, company: organization, title: 'Quarterly Conversation Coordinator', id: 81) }
   let(:assignment3) { create(:assignment, company: organization, title: 'Lifeline Interview Facilitator', id: 84) }
 
   before do
     # Set up employment tenure
-    create(:employment_tenure, person: employee, company: organization)
+    create(:employment_tenure, teammate: employee_teammate, company: organization)
     
     # Set up assignment tenures
-    create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 50)
-    create(:assignment_tenure, person: employee, assignment: assignment2, anticipated_energy_percentage: 30)
-    create(:assignment_tenure, person: employee, assignment: assignment3, anticipated_energy_percentage: 20)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 50)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment2, anticipated_energy_percentage: 30)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment3, anticipated_energy_percentage: 20)
     
     # Set up check-ins
-    create(:assignment_check_in, person: employee, assignment: assignment1)
-    create(:assignment_check_in, person: employee, assignment: assignment2)
-    create(:assignment_check_in, person: employee, assignment: assignment3)
+    create(:assignment_check_in, teammate: employee_teammate, assignment: assignment1)
+    create(:assignment_check_in, teammate: employee_teammate, assignment: assignment2)
+    create(:assignment_check_in, teammate: employee_teammate, assignment: assignment3)
   end
 
   describe 'build_official_check_in_data_with_changes' do

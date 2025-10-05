@@ -1,8 +1,7 @@
 class HuddleParticipant < ApplicationRecord
   # Associations
   belongs_to :huddle
-  belongs_to :person
-  belongs_to :teammate, optional: true
+  belongs_to :teammate
   
   # Constants
   ROLES = HuddleConstants::ROLES
@@ -10,7 +9,7 @@ class HuddleParticipant < ApplicationRecord
   
   # Validations
   validates :role, presence: true, inclusion: { in: ROLES }
-  validates :person_id, uniqueness: { scope: :huddle_id }
+  validates :teammate_id, uniqueness: { scope: :huddle_id }
   
   # Scopes
   scope :facilitators, -> { where(role: 'facilitator') }

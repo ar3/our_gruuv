@@ -3,21 +3,22 @@ require 'rails_helper'
 RSpec.describe 'BulkCheckInFinalizationProcessor Error Reproduction', type: :model do
   let(:organization) { create(:organization) }
   let(:employee) { create(:person) }
+  let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let(:ability) { create(:ability, organization: organization, name: 'Test Ability') }
   let(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
 
   before do
     # Set up employment tenure
-    create(:employment_tenure, person: employee, company: organization)
+    create(:employment_tenure, teammate: employee_teammate, company: organization)
     
     # Set up assignment tenure
-    create(:assignment_tenure, person: employee, assignment: assignment, anticipated_energy_percentage: 50)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 50)
     
     # Set up check-in
-    create(:assignment_check_in, person: employee, assignment: assignment, employee_completed_at: Time.current, manager_completed_at: Time.current)
+    create(:assignment_check_in, teammate: employee_teammate, assignment: assignment, employee_completed_at: Time.current, manager_completed_at: Time.current)
     
     # Set up person milestone (this will cause the error)
-    create(:person_milestone, person: employee, ability: ability, milestone_level: 1)
+    create(:person_milestone, teammate: employee_teammate, ability: ability, milestone_level: 1)
   end
 
   describe 'BulkCheckInFinalizationProcessor' do
@@ -33,7 +34,7 @@ RSpec.describe 'BulkCheckInFinalizationProcessor Error Reproduction', type: :mod
         )
 
         # Verify we have milestones to process
-        expect(employee.person_milestones.count).to be > 0
+        expect(employee_teammate.person_milestones.count).to be > 0
 
         # This should now work correctly after fixing the attribute names
         expect {

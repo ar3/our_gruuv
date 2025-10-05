@@ -49,7 +49,7 @@ RSpec.describe UnassignedEmployeeUploadParser, type: :service do
         expect(first_employee['email']).to eq('john.doe@company.com')
         expect(first_employee['start_date']).to eq(Date.parse('2024-01-15'))
         expect(first_employee['location']).to eq('New York')
-        expect(first_employee['gender']).to eq('male')
+        expect(first_employee['gender']).to eq('man')
         expect(first_employee['department']).to eq('Engineering')
         expect(first_employee['employment_type']).to eq('full_time')
         expect(first_employee['manager_name']).to eq('Jane Smith')
@@ -226,8 +226,8 @@ RSpec.describe UnassignedEmployeeUploadParser, type: :service do
     describe '#parse_gender' do
       it 'parses valid genders correctly' do
         parser = described_class.new('')
-        expect(parser.send(:parse_gender, 'male')).to eq('male')
-        expect(parser.send(:parse_gender, 'female')).to eq('female')
+        expect(parser.send(:parse_gender, 'male')).to eq('man')
+        expect(parser.send(:parse_gender, 'female')).to eq('woman')
         expect(parser.send(:parse_gender, 'non_binary')).to eq('non_binary')
       end
 

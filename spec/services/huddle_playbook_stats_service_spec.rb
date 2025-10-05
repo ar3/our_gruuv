@@ -15,9 +15,10 @@ RSpec.describe Huddles::PlaybookStatsService do
       huddle2 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 2.days.ago)
       
       participant = create(:person, first_name: 'John', last_name: 'Doe')
-      create(:huddle_participant, huddle: huddle1, person: participant)
-      create(:huddle_participant, huddle: huddle2, person: participant)
-      create(:huddle_feedback, huddle: huddle1, person: participant)
+      participant_teammate = create(:teammate, person: participant, organization: organization)
+      create(:huddle_participant, huddle: huddle1, teammate: participant_teammate)
+      create(:huddle_participant, huddle: huddle2, teammate: participant_teammate)
+      create(:huddle_feedback, huddle: huddle1, teammate: participant_teammate)
       
       stats = service.participant_statistics
       
@@ -37,14 +38,16 @@ RSpec.describe Huddles::PlaybookStatsService do
       
       participant1 = create(:person, first_name: 'John', last_name: 'Doe')
       participant2 = create(:person, first_name: 'Jane', last_name: 'Smith')
+      participant1_teammate = create(:teammate, person: participant1, organization: organization)
+      participant2_teammate = create(:teammate, person: participant2, organization: organization)
       
-      create(:huddle_participant, huddle: huddle1, person: participant1)
-      create(:huddle_participant, huddle: huddle2, person: participant1)
-      create(:huddle_participant, huddle: huddle1, person: participant2)
+      create(:huddle_participant, huddle: huddle1, teammate: participant1_teammate)
+      create(:huddle_participant, huddle: huddle2, teammate: participant1_teammate)
+      create(:huddle_participant, huddle: huddle1, teammate: participant2_teammate)
       
-      create(:huddle_feedback, huddle: huddle1, person: participant1)
-      create(:huddle_feedback, huddle: huddle2, person: participant1)
-      create(:huddle_feedback, huddle: huddle1, person: participant2)
+      create(:huddle_feedback, huddle: huddle1, teammate: participant1_teammate)
+      create(:huddle_feedback, huddle: huddle2, teammate: participant1_teammate)
+      create(:huddle_feedback, huddle: huddle1, teammate: participant2_teammate)
       
       stats = service.participant_statistics
       
@@ -70,12 +73,13 @@ RSpec.describe Huddles::PlaybookStatsService do
       huddle2 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 2.days.ago)
       
       participant = create(:person, first_name: 'John', last_name: 'Doe')
+      participant_teammate = create(:teammate, person: participant, organization: organization)
       
       # Same participant in multiple huddles with multiple feedbacks
-      create(:huddle_participant, huddle: huddle1, person: participant)
-      create(:huddle_participant, huddle: huddle2, person: participant)
-      create(:huddle_feedback, huddle: huddle1, person: participant)
-      create(:huddle_feedback, huddle: huddle2, person: participant)
+      create(:huddle_participant, huddle: huddle1, teammate: participant_teammate)
+      create(:huddle_participant, huddle: huddle2, teammate: participant_teammate)
+      create(:huddle_feedback, huddle: huddle1, teammate: participant_teammate)
+      create(:huddle_feedback, huddle: huddle2, teammate: participant_teammate)
       
       stats = service.participant_statistics
       
@@ -97,32 +101,36 @@ RSpec.describe Huddles::PlaybookStatsService do
       bob = create(:person, first_name: 'Bob', last_name: 'Brown')
       charlie = create(:person, first_name: 'Charlie', last_name: 'Clark')
       diana = create(:person, first_name: 'Diana', last_name: 'Davis')
+      alice_teammate = create(:teammate, person: alice, organization: organization)
+      bob_teammate = create(:teammate, person: bob, organization: organization)
+      charlie_teammate = create(:teammate, person: charlie, organization: organization)
+      diana_teammate = create(:teammate, person: diana, organization: organization)
       
       # Alice joins all huddles and gives feedback to all
-      create(:huddle_participant, huddle: huddle1, person: alice)
-      create(:huddle_participant, huddle: huddle2, person: alice)
-      create(:huddle_participant, huddle: huddle3, person: alice)
-      create(:huddle_participant, huddle: huddle4, person: alice)
-      create(:huddle_feedback, huddle: huddle1, person: alice)
-      create(:huddle_feedback, huddle: huddle2, person: alice)
-      create(:huddle_feedback, huddle: huddle3, person: alice)
-      create(:huddle_feedback, huddle: huddle4, person: alice)
+      create(:huddle_participant, huddle: huddle1, teammate: alice_teammate)
+      create(:huddle_participant, huddle: huddle2, teammate: alice_teammate)
+      create(:huddle_participant, huddle: huddle3, teammate: alice_teammate)
+      create(:huddle_participant, huddle: huddle4, teammate: alice_teammate)
+      create(:huddle_feedback, huddle: huddle1, teammate: alice_teammate)
+      create(:huddle_feedback, huddle: huddle2, teammate: alice_teammate)
+      create(:huddle_feedback, huddle: huddle3, teammate: alice_teammate)
+      create(:huddle_feedback, huddle: huddle4, teammate: alice_teammate)
       
       # Bob joins huddles 1, 2, and 4, gives feedback to 1 and 2
-      create(:huddle_participant, huddle: huddle1, person: bob)
-      create(:huddle_participant, huddle: huddle2, person: bob)
-      create(:huddle_participant, huddle: huddle4, person: bob)
-      create(:huddle_feedback, huddle: huddle1, person: bob)
-      create(:huddle_feedback, huddle: huddle2, person: bob)
+      create(:huddle_participant, huddle: huddle1, teammate: bob_teammate)
+      create(:huddle_participant, huddle: huddle2, teammate: bob_teammate)
+      create(:huddle_participant, huddle: huddle4, teammate: bob_teammate)
+      create(:huddle_feedback, huddle: huddle1, teammate: bob_teammate)
+      create(:huddle_feedback, huddle: huddle2, teammate: bob_teammate)
       
       # Charlie joins huddles 1 and 3, gives feedback to 1
-      create(:huddle_participant, huddle: huddle1, person: charlie)
-      create(:huddle_participant, huddle: huddle3, person: charlie)
-      create(:huddle_feedback, huddle: huddle1, person: charlie)
+      create(:huddle_participant, huddle: huddle1, teammate: charlie_teammate)
+      create(:huddle_participant, huddle: huddle3, teammate: charlie_teammate)
+      create(:huddle_feedback, huddle: huddle1, teammate: charlie_teammate)
       
       # Diana joins only huddle 2, gives feedback
-      create(:huddle_participant, huddle: huddle2, person: diana)
-      create(:huddle_feedback, huddle: huddle2, person: diana)
+      create(:huddle_participant, huddle: huddle2, teammate: diana_teammate)
+      create(:huddle_feedback, huddle: huddle2, teammate: diana_teammate)
       
       stats = service.participant_statistics
       

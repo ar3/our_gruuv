@@ -8,10 +8,11 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:position) { create(:position, position_type: position_type, position_level: position_level) }
   let(:manager) { create(:person) }
+  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
   
   before do
     # Set up organization with positions and managers
-    create(:employment_tenure, person: manager, company: organization, position: position)
+    create(:employment_tenure, teammate: manager_teammate, company: organization, position: position)
     
     # Set up person organization access for current user
     create(:teammate, 
@@ -102,7 +103,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
             person_id: existing_person.id,
             employment_tenure: valid_employment_params
           }
-        }.to change { existing_person.employment_tenures.count }.by(1)
+        }.to change { existing_person.teammates.joins(:employment_tenures).count }.by(1)
         
         expect(response).to redirect_to(person_path(existing_person))
       end
@@ -114,7 +115,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
           employment_tenure: valid_employment_params
         }
         
-        employment = existing_person.employment_tenures.last
+        employment = existing_person.teammates.joins(:employment_tenures).first.employment_tenures.last
         expect(employment.company.id).to eq(organization.id)
       end
     end
@@ -224,7 +225,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
         huddle_person = create(:person)
         huddle_playbook = create(:huddle_playbook, organization: organization)
         huddle = create(:huddle, huddle_playbook: huddle_playbook)
-        create(:huddle_participant, person: huddle_person, huddle: huddle)
+        create(:huddle_participant, teammate: create(:teammate, person: huddle_person, organization: organization), huddle: huddle)
         
         # Set up the organization instance variable
         controller.instance_variable_set(:@organization, organization)
@@ -235,7 +236,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
       
       it 'excludes people who already have employment' do
         employed_person = create(:person)
-        create(:employment_tenure, person: employed_person, company: organization, position: position)
+        create(:employment_tenure, teammate: create(:teammate, person: employed_person, organization: organization), company: organization, position: position)
         
         # Set up the organization instance variable
         controller.instance_variable_set(:@organization, organization)

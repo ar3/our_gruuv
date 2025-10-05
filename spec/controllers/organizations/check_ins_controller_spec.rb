@@ -5,21 +5,23 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
   let(:employee) { create(:person) }
   let(:company) { create(:organization, :company) }
   let(:team) { create(:organization, :team, parent: company) }
+  let!(:manager_teammate) { create(:teammate, person: manager, organization: company) }
+  let!(:employee_teammate) { create(:teammate, person: employee, organization: company) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
   let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:position) { create(:position, position_type: position_type, position_level: position_level) }
-  let(:manager_employment) { create(:employment_tenure, person: manager, company: company, position: position, started_at: 1.year.ago, ended_at: nil) }
-  let(:employee_employment) { create(:employment_tenure, person: employee, company: company, position: position, started_at: 6.months.ago, ended_at: nil) }
+  let(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, company: company, position: position, started_at: 1.year.ago, ended_at: nil) }
+  let(:employee_employment) { create(:employment_tenure, teammate: employee_teammate, company: company, position: position, started_at: 6.months.ago, ended_at: nil) }
   let(:assignment1) { create(:assignment, company: company, title: 'Assignment 1') }
   let(:assignment2) { create(:assignment, company: company, title: 'Assignment 2') }
-  let(:assignment_tenure1) { create(:assignment_tenure, person: employee, assignment: assignment1, started_at: 3.months.ago, ended_at: nil) }
-  let(:assignment_tenure2) { create(:assignment_tenure, person: employee, assignment: assignment2, started_at: 2.months.ago, ended_at: nil) }
+  let(:assignment_tenure1) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, started_at: 3.months.ago, ended_at: nil) }
+  let(:assignment_tenure2) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment2, started_at: 2.months.ago, ended_at: nil) }
   
   # Create check-ins ready for finalization
   let(:check_in1) do
     create(:assignment_check_in, 
-           person: employee, 
+           teammate: employee_teammate, 
            assignment: assignment1, 
            check_in_started_on: 1.week.ago,
            employee_completed_at: 3.days.ago,
@@ -33,7 +35,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
   
   let(:check_in2) do
     create(:assignment_check_in, 
-           person: employee, 
+           teammate: employee_teammate, 
            assignment: assignment2, 
            check_in_started_on: 1.week.ago,
            employee_completed_at: 2.days.ago,

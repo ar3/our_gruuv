@@ -2,12 +2,13 @@ require 'rails_helper'
 
 RSpec.describe MaapSnapshot, type: :model do
   let!(:employee) { create(:person) }
+  let!(:employee_teammate) { create(:teammate, person: employee, organization: company) }
   let!(:created_by) { create(:person) }
   let!(:company) { create(:organization) }
   
   before do
     # Set up employment tenure for the employee
-    create(:employment_tenure, person: employee, company: company)
+    create(:employment_tenure, teammate: employee_teammate, company: company)
   end
   
   describe 'validations' do
@@ -139,7 +140,7 @@ RSpec.describe MaapSnapshot, type: :model do
     
     describe '.build_for_employee_with_changes' do
       let(:assignment) { create(:assignment, company: company) }
-      let!(:assignment_tenure) { create(:assignment_tenure, person: employee, assignment: assignment, anticipated_energy_percentage: 20) }
+      let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 20) }
       
       it 'creates a snapshot with form changes' do
         form_params = {

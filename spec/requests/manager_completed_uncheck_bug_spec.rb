@@ -4,6 +4,8 @@ RSpec.describe 'Manager Completed Uncheck Bug', type: :request do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:manager) { create(:person) }
+  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let(:person_teammate) { create(:teammate, person: person, organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
   
   describe 'executing changes that uncheck manager_completed' do
@@ -13,22 +15,22 @@ RSpec.describe 'Manager Completed Uncheck Bug', type: :request do
       allow_any_instance_of(ApplicationController).to receive(:authenticate_person!)
       
       # Set up employment tenures
-      create(:employment_tenure, person: manager, company: organization)
-      create(:employment_tenure, person: person, company: organization)
+      create(:employment_tenure, teammate: manager_teammate, company: organization)
+      create(:employment_tenure, teammate: person_teammate, company: organization)
       
       # Grant manager permissions
-      create(:teammate, person: manager, organization: organization, can_manage_employment: true, can_manage_maap: true)
+      manager_teammate.update!(can_manage_employment: true, can_manage_maap: true)
       
       # Set up current state: manager has completed the check-in
       create(:assignment_tenure, 
-             person: person, 
+             teammate: person_teammate, 
              assignment: assignment, 
              anticipated_energy_percentage: 50,
              started_at: Date.current)
       
       # Create a check-in that is currently manager_completed
       @check_in = create(:assignment_check_in,
-                        person: person,
+                        teammate: person_teammate,
                         assignment: assignment,
                         manager_rating: 'meeting',
                         manager_private_notes: 'Good work',

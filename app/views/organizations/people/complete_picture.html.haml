@@ -91,7 +91,7 @@
                       %small.text-muted= "for #{distance_of_time_in_words(tenure.started_at, Date.current)}"
                   
                   / Last Check-in Rating
-                  - latest_check_in = AssignmentCheckIn.where(person: @person, assignment: tenure.assignment).recent.first
+                  - latest_check_in = AssignmentCheckIn.where(teammate: @teammate, assignment: tenure.assignment).recent.first
                   - if latest_check_in && (latest_check_in.employee_rating.present? || latest_check_in.manager_rating.present?)
                     .me-3
                       - rating = latest_check_in.manager_rating.presence || latest_check_in.employee_rating
@@ -195,7 +195,7 @@
                                 %small Anticipated energy (#{tenure.anticipated_energy_percentage}%) is within the expected range (#{min_energy}%-#{max_energy}%)
                       
                       / Check-in Information
-                      - latest_check_in = AssignmentCheckIn.where(person: @person, assignment: tenure.assignment).recent.first
+                      - latest_check_in = AssignmentCheckIn.where(teammate: @teammate, assignment: tenure.assignment).recent.first
                       - if latest_check_in
                         .mb-3
                           %h6.mb-2
@@ -229,11 +229,11 @@
                           Statistics
                         %p.mb-1
                           %strong Total Check-ins:
-                          = AssignmentCheckIn.where(person: @person, assignment: tenure.assignment).count
+                          = AssignmentCheckIn.where(teammate: @teammate, assignment: tenure.assignment).count
                         
                         %p.mb-1
                           %strong Open Check-ins:
-                          = AssignmentCheckIn.where(person: @person, assignment: tenure.assignment).open.count
+                          = AssignmentCheckIn.where(teammate: @teammate, assignment: tenure.assignment).open.count
                       
                       / Actions
                       = link_to organization_assignment_path(@current_organization, tenure.assignment), class: "btn btn-outline-primary" do

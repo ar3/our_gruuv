@@ -50,7 +50,7 @@ module Huddles
                                          .where(huddles: { huddle_playbooks: { organization: organization.self_and_descendants } })
                                          .where(created_at: date_range.begin..date_range.end)
                                          .distinct
-                                         .count(:person_id)
+                                         .count(:teammate_id)
 
       {
         feedback_count: feedback_count,
@@ -65,7 +65,7 @@ module Huddles
       total_feedbacks = huddles_in_range.sum { |h| h.huddle_feedbacks.count }
       
       # Calculate distinct participants
-      distinct_participants = huddles_in_range.flat_map(&:huddle_participants).map(&:person).uniq(&:id)
+      distinct_participants = huddles_in_range.flat_map(&:huddle_participants).map(&:teammate).map(&:person).uniq(&:id)
       distinct_participant_count = distinct_participants.count
       distinct_participant_names = distinct_participants.map(&:display_name).sort
       
@@ -164,7 +164,7 @@ module Huddles
       total_participants = huddles.sum { |h| h.huddle_participants.count }
       total_feedbacks = huddles.sum { |h| h.huddle_feedbacks.count }
       
-      distinct_participants = huddles.flat_map(&:huddle_participants).map(&:person).uniq(&:id)
+      distinct_participants = huddles.flat_map(&:huddle_participants).map(&:teammate).map(&:person).uniq(&:id)
       distinct_participant_count = distinct_participants.count
       distinct_participant_names = distinct_participants.map(&:display_name).sort
       

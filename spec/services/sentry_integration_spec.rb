@@ -26,7 +26,7 @@ RSpec.describe 'Sentry Integration', type: :service do
         block.call(event)
       end
       
-      controller.capture_error_in_sentry(error, { test: 'context' })
+      controller.send(:capture_error_in_sentry, error, { test: 'context' })
     end
   end
 
@@ -66,7 +66,7 @@ RSpec.describe 'Sentry Integration', type: :service do
       expect(Sentry).to receive(:capture_exception).with(error)
       
       # Just test the Sentry capture part
-      controller.capture_error_in_sentry(error, {
+      controller.send(:capture_error_in_sentry, error, {
         method: 'global_error_handler',
         controller: 'test',
         action: 'index'

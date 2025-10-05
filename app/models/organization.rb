@@ -84,7 +84,7 @@ class Organization < ApplicationRecord
   
   def employees
     # People employed at this organization
-    Person.joins(:employment_tenures).where(employment_tenures: { company: self })
+    Person.joins(teammates: :employment_tenures).where(employment_tenures: { company: self })
   end
   
   def positions
@@ -103,7 +103,7 @@ class Organization < ApplicationRecord
   def huddle_participants
     # People who have participated in huddles within this organization and all child organizations
     Person
-      .joins(huddle_participants: { huddle: :huddle_playbook })
+      .joins(teammates: { huddle_participants: { huddle: :huddle_playbook } })
       .where(huddle_playbooks: { organization_id: self_and_descendants })
       .distinct(:id).order(:last_name)
   end
@@ -130,8 +130,11 @@ class Organization < ApplicationRecord
   end
 
   def person_milestones_for_person(person)
-    PersonMilestone.joins(:ability)
-                   .where(person: person, abilities: { organization: self })
+    teammate = person.teammates.find_by(organization: self)
+    return PersonMilestone.none unless teammate
+    
+    teammate.person_milestones.joins(:ability)
+            .where(abilities: { organization: self })
   end
 
   def descendants_count

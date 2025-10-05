@@ -81,9 +81,8 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
       t.type = 'CompanyTeammate'
     end
     
-    @employment_tenure = @person.employment_tenures.build(employment_tenure_params)
+    @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)
     @employment_tenure.company = @organization
-    @employment_tenure.teammate = teammate
     
     if @employment_tenure.save
       redirect_to person_path(@person), notice: 'Employment was successfully created.'
@@ -104,9 +103,8 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
         type: 'CompanyTeammate'
       )
       
-      @employment_tenure = @person.employment_tenures.build(employment_tenure_params)
+      @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)
       @employment_tenure.company = @organization
-      @employment_tenure.teammate = teammate
       @employment_tenure.save!
       
       if params[:save_and_continue] == 'true'

@@ -4,18 +4,19 @@ RSpec.describe PersonMilestone, type: :model do
   let(:organization) { create(:organization) }
   let(:ability) { create(:ability, organization: organization) }
   let(:person) { create(:person) }
+  let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:certifier) { create(:person) }
-  let(:person_milestone) { create(:person_milestone, person: person, ability: ability, certified_by: certifier) }
+  let(:person_milestone) { create(:person_milestone, teammate: teammate, ability: ability, certified_by: certifier) }
 
   describe 'validations' do
     it 'is valid with valid attributes' do
       expect(person_milestone).to be_valid
     end
 
-    it 'requires a person' do
-      person_milestone.person = nil
+    it 'requires a teammate' do
+      person_milestone.teammate = nil
       expect(person_milestone).not_to be_valid
-      expect(person_milestone.errors[:person]).to include('must exist')
+      expect(person_milestone.errors[:teammate]).to include('must exist')
     end
 
     it 'requires an ability' do
@@ -56,33 +57,34 @@ RSpec.describe PersonMilestone, type: :model do
     end
 
     it 'enforces unique person-ability-milestone combinations' do
-      create(:person_milestone, person: person, ability: ability, milestone_level: 3)
-      duplicate = build(:person_milestone, person: person, ability: ability, milestone_level: 3)
+      create(:person_milestone, teammate: teammate, ability: ability, milestone_level: 3)
+      duplicate = build(:person_milestone, teammate: teammate, ability: ability, milestone_level: 3)
       
       expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:milestone_level]).to include('has already been taken for this person and ability')
+      expect(duplicate.errors[:milestone_level]).to include('has already been taken for this teammate and ability')
     end
 
     it 'allows same milestone level for different abilities' do
       other_ability = create(:ability, organization: organization)
-      create(:person_milestone, person: person, ability: ability, milestone_level: 3)
-      other_milestone = build(:person_milestone, person: person, ability: other_ability, milestone_level: 3)
+      create(:person_milestone, teammate: teammate, ability: ability, milestone_level: 3)
+      other_milestone = build(:person_milestone, teammate: teammate, ability: other_ability, milestone_level: 3)
       
       expect(other_milestone).to be_valid
     end
 
     it 'allows same milestone level for different people' do
       other_person = create(:person)
-      create(:person_milestone, person: person, ability: ability, milestone_level: 3)
-      other_milestone = build(:person_milestone, person: other_person, ability: ability, milestone_level: 3)
+      other_teammate = create(:teammate, person: other_person, organization: organization)
+      create(:person_milestone, teammate: teammate, ability: ability, milestone_level: 3)
+      other_milestone = build(:person_milestone, teammate: other_teammate, ability: ability, milestone_level: 3)
       
       expect(other_milestone).to be_valid
     end
   end
 
   describe 'associations' do
-    it 'belongs to a person' do
-      expect(person_milestone).to belong_to(:person)
+    it 'belongs to a teammate' do
+      expect(person_milestone).to belong_to(:teammate)
     end
 
     it 'belongs to an ability' do
@@ -95,9 +97,9 @@ RSpec.describe PersonMilestone, type: :model do
   end
 
   describe 'scopes' do
-    let!(:milestone_1) { create(:person_milestone, person: person, ability: ability, milestone_level: 1) }
-    let!(:milestone_3) { create(:person_milestone, person: person, ability: ability, milestone_level: 3) }
-    let!(:milestone_5) { create(:person_milestone, person: person, ability: ability, milestone_level: 5) }
+    let!(:milestone_1) { create(:person_milestone, teammate: teammate, ability: ability, milestone_level: 1) }
+    let!(:milestone_3) { create(:person_milestone, teammate: teammate, ability: ability, milestone_level: 3) }
+    let!(:milestone_5) { create(:person_milestone, teammate: teammate, ability: ability, milestone_level: 5) }
 
     describe '.by_milestone_level' do
       it 'orders by milestone level ascending' do
@@ -106,12 +108,13 @@ RSpec.describe PersonMilestone, type: :model do
       end
     end
 
-    describe '.for_person' do
-      it 'returns milestones for specific person' do
+    describe '.for_teammate' do
+      it 'returns milestones for specific teammate' do
         other_person = create(:person)
-        other_milestone = create(:person_milestone, person: other_person, ability: ability, milestone_level: 2)
+        other_teammate = create(:teammate, person: other_person, organization: organization)
+        other_milestone = create(:person_milestone, teammate: other_teammate, ability: ability, milestone_level: 2)
 
-        result = PersonMilestone.for_person(person)
+        result = PersonMilestone.for_teammate(teammate)
         expect(result).to include(milestone_1, milestone_3, milestone_5)
         expect(result).not_to include(other_milestone)
       end
@@ -120,7 +123,7 @@ RSpec.describe PersonMilestone, type: :model do
     describe '.for_ability' do
       it 'returns milestones for specific ability' do
         other_ability = create(:ability, organization: organization)
-        other_milestone = create(:person_milestone, person: person, ability: other_ability, milestone_level: 2)
+        other_milestone = create(:person_milestone, teammate: teammate, ability: other_ability, milestone_level: 2)
 
         result = PersonMilestone.for_ability(ability)
         expect(result).to include(milestone_1, milestone_3, milestone_5)

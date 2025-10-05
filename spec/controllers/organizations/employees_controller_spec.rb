@@ -7,15 +7,17 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
   let(:employee1) { create(:person) }
   let(:employee2) { create(:person) }
   let(:huddle_participant) { create(:person) }
+  let!(:employee1_teammate) { create(:teammate, person: employee1, organization: company) }
+  let!(:employee2_teammate) { create(:teammate, person: employee2, organization: company) }
   let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
   let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:position) { create(:position, position_type: position_type, position_level: position_level) }
-  let(:employment_tenure1) { create(:employment_tenure, person: employee1, company: company, position: position, started_at: 1.year.ago) }
-  let(:employment_tenure2) { create(:employment_tenure, person: employee2, company: company, position: position, started_at: 6.months.ago) }
+  let(:employment_tenure1) { create(:employment_tenure, teammate: employee1_teammate, company: company, position: position, started_at: 1.year.ago) }
+  let(:employment_tenure2) { create(:employment_tenure, teammate: employee2_teammate, company: company, position: position, started_at: 6.months.ago) }
   let(:huddle_playbook) { create(:huddle_playbook, organization: team) }
   let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook) }
-  let(:huddle_participation) { create(:huddle_participant, huddle: huddle, person: huddle_participant) }
+  let(:huddle_participation) { create(:huddle_participant, huddle: huddle, teammate: create(:teammate, person: huddle_participant, organization: team)) }
 
   before do
     session[:current_person_id] = person.id

@@ -4,6 +4,7 @@ RSpec.describe MaapChangeDetectionService do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:manager) { create(:person) }
+  let(:person_teammate) { create(:teammate, person: person, organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
   
   describe '#assignment_changes_count' do
@@ -60,14 +61,14 @@ RSpec.describe MaapChangeDetectionService do
         
         # Create current state that differs from proposed state
         create(:assignment_tenure, 
-               person: person, 
+               teammate: person_teammate, 
                assignment: assignment, 
                anticipated_energy_percentage: 40, # Different from proposed 50
                started_at: Date.parse('2025-09-20'))
         
         # Create current check-in that differs from proposed state
         create(:assignment_check_in,
-               person: person,
+               teammate: person_teammate,
                assignment: assignment,
                manager_rating: 'working_to_meet',
                manager_private_notes: '40-50\nworking\ncomplete',

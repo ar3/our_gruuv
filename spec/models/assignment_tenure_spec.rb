@@ -3,6 +3,7 @@ require 'rails_helper'
 RSpec.describe AssignmentTenure, type: :model do
   let(:person) { create(:person) }
   let(:assignment) { create(:assignment) }
+  let(:teammate) { create(:teammate, person: person, organization: assignment.company) }
 
   describe 'validations' do
     it 'requires started_at' do
@@ -37,7 +38,7 @@ RSpec.describe AssignmentTenure, type: :model do
   describe 'overlapping tenures validation' do
     let!(:existing_tenure) do
       create(:assignment_tenure, 
-        person: person, 
+        teammate: teammate, 
         assignment: assignment, 
         started_at: 1.month.ago, 
         ended_at: nil)
@@ -45,19 +46,20 @@ RSpec.describe AssignmentTenure, type: :model do
 
     it 'prevents overlapping active tenures for same person and assignment' do
       overlapping_tenure = build(:assignment_tenure, 
-        person: person, 
+        teammate: teammate, 
         assignment: assignment, 
         started_at: 2.weeks.ago, 
         ended_at: nil)
       
       expect(overlapping_tenure).not_to be_valid
-      expect(overlapping_tenure.errors[:base]).to include('Cannot have overlapping active assignment tenures for the same person and assignment')
+      expect(overlapping_tenure.errors[:base]).to include('Cannot have overlapping active assignment tenures for the same teammate and assignment')
     end
 
     it 'allows overlapping tenures for different people' do
       other_person = create(:person)
+      other_teammate = create(:teammate, person: other_person, organization: assignment.company)
       overlapping_tenure = build(:assignment_tenure, 
-        person: other_person, 
+        teammate: other_teammate, 
         assignment: assignment, 
         started_at: 2.weeks.ago, 
         ended_at: nil)
@@ -68,7 +70,7 @@ RSpec.describe AssignmentTenure, type: :model do
     it 'allows overlapping tenures for different assignments' do
       other_assignment = create(:assignment)
       overlapping_tenure = build(:assignment_tenure, 
-        person: person, 
+        teammate: teammate, 
         assignment: other_assignment, 
         started_at: 2.weeks.ago, 
         ended_at: nil)
@@ -80,7 +82,7 @@ RSpec.describe AssignmentTenure, type: :model do
       existing_tenure.update!(ended_at: 1.week.ago)
       
       new_tenure = build(:assignment_tenure, 
-        person: person, 
+        teammate: teammate, 
         assignment: assignment, 
         started_at: 3.days.ago, 
         ended_at: nil)
@@ -107,14 +109,15 @@ RSpec.describe AssignmentTenure, type: :model do
       end
     end
 
-    describe '.most_recent_for_person_and_assignment' do
+    describe '.most_recent_for_teammate_and_assignment' do
       let(:person) { create(:person) }
       let(:assignment) { create(:assignment) }
-      let!(:old_tenure) { create(:assignment_tenure, person: person, assignment: assignment, started_at: 2.years.ago, ended_at: 1.year.ago) }
-      let!(:new_tenure) { create(:assignment_tenure, person: person, assignment: assignment, started_at: 1.year.ago) }
+      let(:teammate) { create(:teammate, person: person, organization: assignment.company) }
+      let!(:old_tenure) { create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 2.years.ago, ended_at: 1.year.ago) }
+      let!(:new_tenure) { create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 1.year.ago) }
 
-      it 'returns the most recent assignment tenure for a person and assignment' do
-        result = AssignmentTenure.most_recent_for_person_and_assignment(person, assignment)
+      it 'returns the most recent assignment tenure for a teammate and assignment' do
+        result = AssignmentTenure.most_recent_for_teammate_and_assignment(teammate, assignment)
         expect(result.first).to eq(new_tenure)
       end
     end
@@ -123,17 +126,19 @@ RSpec.describe AssignmentTenure, type: :model do
   describe '.most_recent_for' do
     let(:person) { create(:person) }
     let(:assignment) { create(:assignment) }
-    let!(:old_tenure) { create(:assignment_tenure, person: person, assignment: assignment, started_at: 2.years.ago, ended_at: 1.year.ago) }
-    let!(:new_tenure) { create(:assignment_tenure, person: person, assignment: assignment, started_at: 1.year.ago) }
+    let(:teammate) { create(:teammate, person: person, organization: assignment.company) }
+    let!(:old_tenure) { create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 2.years.ago, ended_at: 1.year.ago) }
+    let!(:new_tenure) { create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 1.year.ago) }
 
-    it 'returns the most recent assignment tenure for a person and assignment' do
-      result = AssignmentTenure.most_recent_for(person, assignment)
+    it 'returns the most recent assignment tenure for a teammate and assignment' do
+      result = AssignmentTenure.most_recent_for(teammate, assignment)
       expect(result).to eq(new_tenure)
     end
 
     it 'returns nil when no assignment tenures exist' do
       other_person = create(:person)
-      result = AssignmentTenure.most_recent_for(other_person, assignment)
+      other_teammate = create(:teammate, person: other_person, organization: assignment.company)
+      result = AssignmentTenure.most_recent_for(other_teammate, assignment)
       expect(result).to be_nil
     end
   end

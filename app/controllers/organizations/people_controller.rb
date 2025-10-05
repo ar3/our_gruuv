@@ -7,53 +7,63 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   def show
     authorize @person
     # Organization-scoped person view - filtered by the organization from the route
-    @employment_tenures = @person.employment_tenures.includes(:company, :position, :manager)
-                                 .where(company: organization)
-                                 .order(started_at: :desc)
-                                 .decorate
-    @assignment_tenures = @person.assignment_tenures.includes(:assignment)
-                                 .joins(:assignment)
-                                 .where(assignments: { company: organization })
-                                 .order(started_at: :desc)
+    teammate = @person.teammates.find_by(organization: organization)
+    @employment_tenures = teammate&.employment_tenures&.includes(:company, :position, :manager)
+                                 &.where(company: organization)
+                                 &.order(started_at: :desc)
+                                 &.decorate || []
+    @assignment_tenures = teammate&.assignment_tenures&.includes(:assignment)
+                                 &.joins(:assignment)
+                                 &.where(assignments: { company: organization })
+                                 &.order(started_at: :desc) || []
     @teammates = @person.teammates.includes(:organization)
     
     # Preload huddle associations to avoid N+1 queries
-    @person.huddle_participants.includes(:huddle, huddle: :huddle_playbook).load
-    @person.huddle_feedbacks.includes(:huddle).load
+    teammate = @person.teammates.find_by(organization: organization)
+    HuddleParticipant.joins(:teammate)
+                    .where(teammates: { person: @person, organization: organization })
+                    .includes(:huddle, huddle: :huddle_playbook)
+                    .load
+    HuddleFeedback.joins(:teammate)
+                  .where(teammates: { person: @person, organization: organization })
+                  .includes(:huddle)
+                  .load
   end
 
   def complete_picture
     authorize @person, :manager?
     # Complete picture view - detailed view for managers to see person's position, assignments, and milestones
     # Filter by the organization from the route
-    @employment_tenures = @person.employment_tenures.includes(:company, :position, :manager)
-                                 .where(company: organization)
-                                 .order(started_at: :desc)
-                                 .decorate
+    teammate = @person.teammates.find_by(organization: organization)
+    @employment_tenures = teammate&.employment_tenures&.includes(:company, :position, :manager)
+                                 &.where(company: organization)
+                                 &.order(started_at: :desc)
+                                 &.decorate || []
     @current_employment = @employment_tenures.find { |t| t.ended_at.nil? }
     @current_organization = organization
     
     # Filter assignments to only show those for this organization
-    @assignment_tenures = @person.assignment_tenures.active
-                                .joins(:assignment)
-                                .where(assignments: { company: organization })
-                                .includes(:assignment)
+    @assignment_tenures = teammate&.assignment_tenures&.active
+                                &.joins(:assignment)
+                                &.where(assignments: { company: organization })
+                                &.includes(:assignment) || []
     
     # Filter milestones to only show those for abilities in this organization
-    @person_milestones = @person.person_milestones
-                                .joins(:ability)
-                                .where(abilities: { organization: organization })
-                                .includes(:ability)
+    @person_milestones = teammate&.person_milestones
+                                &.joins(:ability)
+                                &.where(abilities: { organization: organization })
+                                &.includes(:ability) || []
   end
 
   def teammate
     authorize @person
     # Teammate view - organization-specific data for active employees
     @current_organization = organization
-    @employment_tenures = @person.employment_tenures.includes(:company, :position, position: :position_type)
-                                 .where(company: organization)
-                                 .order(started_at: :desc)
-                                 .decorate
+    teammate = @person.teammates.find_by(organization: organization)
+    @employment_tenures = teammate&.employment_tenures&.includes(:company, :position, position: :position_type)
+                                 &.where(company: organization)
+                                 &.order(started_at: :desc)
+                                 &.decorate || []
     @teammates = @person.teammates.includes(:organization)
   end
 
@@ -205,26 +215,31 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
 
   def load_current_maap_data
     # Load current MAAP data for comparison
-    @current_employment = @person.employment_tenures.active.first
-    @current_assignments = @person.assignment_tenures.active.includes(:assignment)
-    @current_milestones = @person.person_milestones.includes(:ability)
+    teammate = @person.teammates.find_by(organization: organization)
+    @current_employment = teammate&.employment_tenures&.active&.first
+    @current_assignments = teammate&.assignment_tenures&.active&.includes(:assignment) || []
+    @current_milestones = teammate&.person_milestones&.includes(:ability) || []
     @current_maap_data = {
-      assignments: @person.assignment_tenures.active.includes(:assignment),
-      check_ins: AssignmentCheckIn.where(person: @person).includes(:assignment),
-      milestones: @person.person_milestones.includes(:ability),
+      assignments: teammate&.assignment_tenures&.active&.includes(:assignment) || [],
+      check_ins: AssignmentCheckIn.joins(:teammate).where(teammates: { person: @person, organization: organization }).includes(:assignment),
+      milestones: teammate&.person_milestones&.includes(:ability) || [],
       aspirations: organization.aspirations.includes(:ability) # Aspirations belong to organization, not person
     }
   end
 
   def load_assignments_and_check_ins
     # Load assignments where the person has ever had a tenure, filtered by organization
-    assignment_ids = @person.assignment_tenures.distinct.pluck(:assignment_id)
+    teammate = @person.teammates.find_by(organization: organization)
+    return unless teammate
+    
+    assignment_ids = teammate.assignment_tenures.distinct.pluck(:assignment_id)
     assignments = Assignment.where(id: assignment_ids, company: organization).includes(:assignment_tenures)
     
     @assignment_data = assignments.map do |assignment|
-      active_tenure = @person.assignment_tenures.where(assignment: assignment).active.first
-      most_recent_tenure = @person.assignment_tenures.where(assignment: assignment).order(:started_at).last
-      open_check_in = AssignmentCheckIn.where(person: @person, assignment: assignment).open.first
+      active_tenure = teammate.assignment_tenures.where(assignment: assignment).active.first
+      most_recent_tenure = teammate.assignment_tenures.where(assignment: assignment).order(:started_at).last
+      
+      open_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
       
       {
         assignment: assignment,
@@ -235,13 +250,13 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
     end.sort_by { |data| -(data[:active_tenure]&.anticipated_energy_percentage || 0) }
     
     # Load assignments and check-ins for the organization
-    @assignments = @person.assignment_tenures.active
+    @assignments = teammate.assignment_tenures.active
                          .joins(:assignment)
                          .where(assignments: { company: organization })
                          .includes(:assignment)
     
     @check_ins = AssignmentCheckIn.joins(:assignment)
-                                  .where(person: @person, assignments: { company: organization })
+                                  .where(teammate: teammate, assignments: { company: organization })
                                   .includes(:assignment)
   end
 
@@ -309,7 +324,8 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   end
 
   def check_in_has_changes?(assignment, proposed_data)
-    current_check_in = AssignmentCheckIn.where(person: @person, assignment: assignment).open.first
+    teammate = @person.teammates.find_by(organization: organization)
+    current_check_in = teammate ? AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first : nil
     
     # Only check for changes in fields the current user is authorized to modify
     

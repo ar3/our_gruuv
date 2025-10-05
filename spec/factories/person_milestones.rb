@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :person_milestone do
-    association :person
+    association :teammate
     association :ability
     association :certified_by, factory: :person
     milestone_level { rand(1..5) }

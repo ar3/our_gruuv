@@ -2,7 +2,7 @@ class Huddle < ApplicationRecord
   # Associations
   belongs_to :huddle_playbook, optional: true
   has_many :huddle_participants, dependent: :destroy
-  has_many :participants, through: :huddle_participants, source: :person
+  has_many :participants, through: :huddle_participants, source: :teammate
   has_many :huddle_feedbacks, dependent: :destroy
   has_many :notifications, as: :notifiable, dependent: :destroy
   
@@ -17,7 +17,7 @@ class Huddle < ApplicationRecord
   }
   scope :recent, -> { order(started_at: :desc) }
   scope :participated_by, ->(person) {
-    joins(:huddle_participants).where(huddle_participants: { person: person })
+    joins(huddle_participants: :teammate).where(teammates: { person: person })
   }
   
   # Instance methods
@@ -83,7 +83,7 @@ class Huddle < ApplicationRecord
   end
   
   def facilitators
-    huddle_participants.facilitators.includes(:person)
+    huddle_participants.facilitators.includes(teammate: :person)
   end
   
   def department_head_name
@@ -92,7 +92,7 @@ class Huddle < ApplicationRecord
   end
   
   def facilitator_names
-    facilitators.map { |p| p.person.display_name }
+    facilitators.map { |p| p.teammate.person.display_name }
   end
   
   def nat_20_score

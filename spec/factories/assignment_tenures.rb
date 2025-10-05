@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :assignment_tenure do
-    association :person
+    association :teammate
     association :assignment
     started_at { Date.current }
     ended_at { nil } # Active by default

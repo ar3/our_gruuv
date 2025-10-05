@@ -8,19 +8,20 @@ RSpec.describe Organizations::PeopleController, type: :controller do
   before do
     session[:current_person_id] = manager.id
     allow(controller).to receive(:current_person).and_return(manager)
-    # Set up employment for manager
-    create(:employment_tenure, person: manager, company: organization)
-    # Set up employment for employee
-    create(:employment_tenure, person: employee, company: organization)
     # Set up organization access for manager
-    create(:teammate, person: manager, organization: organization, can_manage_employment: true)
+    manager_teammate = create(:teammate, person: manager, organization: organization, can_manage_employment: true)
     # Set up organization access for employee
-    create(:teammate, person: employee, organization: organization)
+    employee_teammate = create(:teammate, person: employee, organization: organization)
+    # Set up employment for manager
+    create(:employment_tenure, teammate: manager_teammate, company: organization)
+    # Set up employment for employee
+    create(:employment_tenure, teammate: employee_teammate, company: organization)
   end
 
   describe 'MAAP Snapshot Creation and Execute Changes Flow' do
     let(:assignment) { create(:assignment, company: organization) }
-    let(:assignment_tenure) { create(:assignment_tenure, person: employee, assignment: assignment, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil) }
+    let(:employee_teammate) { employee.teammates.find_by(organization: organization) }
+    let(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil) }
     let(:maap_snapshot) { create(:maap_snapshot, employee: employee, created_by: manager, company: organization) }
 
     before do
@@ -101,8 +102,8 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       end
 
       it 'handles MAAP snapshot with milestone changes' do
-        # Skip this test due to PaperTrail issues in test environment
-        skip "PaperTrail current_person_id issue in test environment"
+        # Temporarily disable PaperTrail for this test to avoid controller_info issues
+        PaperTrail.enabled = false
         
         # Create a MAAP snapshot with milestone changes
         ability = create(:ability)
@@ -122,6 +123,9 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         
         expect(response).to have_http_status(:success)
         expect(response).to render_template(:execute_changes)
+        
+        # Re-enable PaperTrail after the test
+        PaperTrail.enabled = true
       end
     end
 

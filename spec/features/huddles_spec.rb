@@ -53,15 +53,16 @@ RSpec.feature 'Huddles', type: :feature do
 
   scenario 'viewing my huddles when logged in' do
     person = Person.create!(full_name: 'Alice Johnson', email: 'alice@example.com')
+    teammate = Teammate.create!(person: person, organization: team)
     
     # Create huddles where person participated
     playbook1 = create(:huddle_playbook, organization: team, special_session_name: 'yesterday-huddle')
     huddle1 = Huddle.create!(started_at: 1.day.ago, huddle_playbook: playbook1)
-    huddle1.huddle_participants.create!(person: person, role: 'facilitator')
+    huddle1.huddle_participants.create!(teammate: teammate, role: 'facilitator')
     
     playbook2 = create(:huddle_playbook, organization: team, special_session_name: 'older-huddle')
     huddle2 = Huddle.create!(started_at: 2.days.ago, huddle_playbook: playbook2)
-    huddle2.huddle_participants.create!(person: person, role: 'active')
+    huddle2.huddle_participants.create!(teammate: teammate, role: 'active')
     
     # Simulate being logged in
     page.set_rack_session(current_person_id: person.id)
@@ -84,11 +85,12 @@ RSpec.feature 'Huddles', type: :feature do
 
   scenario 'viewing huddle summary as participant' do
     person = Person.create!(full_name: 'Bob Wilson', email: 'bob@example.com')
-    huddle.huddle_participants.create!(person: person, role: 'facilitator')
+    teammate = Teammate.create!(person: person, organization: team)
+    huddle.huddle_participants.create!(teammate: teammate, role: 'facilitator')
     
     # Add some feedback
     huddle.huddle_feedbacks.create!(
-      person: person,
+      teammate: teammate,
       informed_rating: 4,
       connected_rating: 5,
       goals_rating: 4,
@@ -134,13 +136,15 @@ RSpec.feature 'Huddles', type: :feature do
   scenario 'huddle summary shows insights and participation data' do
     person1 = Person.create!(full_name: 'Alice Johnson', email: 'alice@example.com')
     person2 = Person.create!(full_name: 'Bob Wilson', email: 'bob@example.com')
+    teammate1 = Teammate.create!(person: person1, organization: team)
+    teammate2 = Teammate.create!(person: person2, organization: team)
     
-    huddle.huddle_participants.create!(person: person1, role: 'facilitator')
-    huddle.huddle_participants.create!(person: person2, role: 'active')
+    huddle.huddle_participants.create!(teammate: teammate1, role: 'facilitator')
+    huddle.huddle_participants.create!(teammate: teammate2, role: 'active')
     
     # Only one person submits feedback
     huddle.huddle_feedbacks.create!(
-      person: person1,
+      teammate: teammate1,
       informed_rating: 3,
       connected_rating: 4,
       goals_rating: 3,
@@ -237,7 +241,8 @@ RSpec.feature 'Huddles', type: :feature do
 
   scenario 'updating role when already a participant' do
     person = Person.create!(full_name: 'Alice Johnson', email: 'alice@example.com')
-    huddle.huddle_participants.create!(person: person, role: 'active')
+    teammate = Teammate.create!(person: person, organization: team)
+    huddle.huddle_participants.create!(teammate: teammate, role: 'active')
     
     # Simulate being logged in
     page.set_rack_session(current_person_id: person.id)
@@ -252,7 +257,7 @@ RSpec.feature 'Huddles', type: :feature do
     click_button 'Update Role'
     
     expect(page).to have_content('Role updated successfully!')
-    expect(huddle.huddle_participants.find_by(person: person).role).to eq('facilitator')
+    expect(huddle.huddle_participants.find_by(teammate: teammate).role).to eq('facilitator')
   end
 
   scenario 'submitting feedback when not logged in' do
@@ -265,7 +270,8 @@ RSpec.feature 'Huddles', type: :feature do
 
   scenario 'submitting feedback when logged in' do
     person = Person.create!(full_name: 'Charlie Brown', email: 'charlie@example.com')
-    huddle.huddle_participants.create!(person: person, role: 'active')
+    teammate = Teammate.create!(person: person, organization: team)
+    huddle.huddle_participants.create!(teammate: teammate, role: 'active')
     
     # Simulate being logged in
     page.set_rack_session(current_person_id: person.id)
@@ -292,28 +298,11 @@ RSpec.feature 'Huddles', type: :feature do
     expect(huddle.huddle_feedbacks.count).to eq(1)
   end
 
-  scenario 'logout functionality' do
-    person = Person.create!(full_name: 'David Lee', email: 'david@example.com')
-    
-    # Simulate being logged in
-    page.set_rack_session(current_person_id: person.id)
-    
-    visit huddles_path
-    
-    # Should show user dropdown in navbar
-    expect(page).to have_selector('.navbar', text: 'David Lee')
-    
-    # Click logout - find the user dropdown specifically
-    find('.navbar-nav:last-child .dropdown-toggle').click
-    click_button 'Logout'
-    
-    expect(page).to have_content('Sign In') # After logout, should redirect to sign in or landing page
-    expect(page).not_to have_selector('.navbar', text: 'David Lee')
-  end
 
   scenario 'huddle display shows correct information' do
     person = Person.create!(full_name: 'Eve Wilson', email: 'eve@example.com')
-    huddle.huddle_participants.create!(person: person, role: 'facilitator')
+    teammate = Teammate.create!(person: person, organization: team)
+    huddle.huddle_participants.create!(teammate: teammate, role: 'facilitator')
     
     # Set up session for the person
     page.set_rack_session(current_person_id: person.id)

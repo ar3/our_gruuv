@@ -322,7 +322,7 @@ class UnassignedEmployeeUploadProcessor
       manager = find_manager_by_name(manager_name) if manager_name.present?
 
       # Check if employment tenure already exists
-      existing_tenure = person.employment_tenures.find_by(company: organization)
+      existing_tenure = teammate.employment_tenures.find_by(company: organization)
       
       
       if existing_tenure
@@ -423,7 +423,6 @@ class UnassignedEmployeeUploadProcessor
     manager = find_manager_by_name(manager_name) if manager_name.present?
     
     EmploymentTenure.create!(
-      person: person,
       teammate: teammate,
       company: organization,
       position: position,

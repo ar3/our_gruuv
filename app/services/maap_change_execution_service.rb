@@ -86,7 +86,8 @@ class MaapChangeExecutionService
   end
 
   def update_assignment_check_in(assignment, check_in_data)
-    check_in = AssignmentCheckIn.where(person: person, assignment: assignment).open.first
+    teammate = person.teammates.find_by(organization: assignment.company)
+    check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
     
     if check_in
       # Update existing check-in
@@ -94,7 +95,7 @@ class MaapChangeExecutionService
     else
       # Create new check-in
       check_in = AssignmentCheckIn.create!(
-        person: person,
+        teammate: teammate,
         assignment: assignment,
         check_in_started_on: Date.current
       )
@@ -157,7 +158,7 @@ class MaapChangeExecutionService
 
   def can_update_employee_check_in_fields?(check_in)
     # Employee can update their own check-in fields
-    current_user == check_in.person || admin_bypass?
+    current_user == check_in.teammate.person || admin_bypass?
   end
 
   def can_update_manager_check_in_fields?(check_in)
@@ -165,10 +166,10 @@ class MaapChangeExecutionService
     return true if admin_bypass?
     
     # Employee cannot update their own manager fields
-    return false if current_user == check_in.person
+    return false if current_user == check_in.teammate.person
     
     # Check if current user can manage this person's assignments
-    policy(check_in.person).manage_assignments?
+    policy(check_in.teammate.person).manage_assignments?
   end
 
   def can_finalize_check_in?(check_in)
@@ -176,7 +177,7 @@ class MaapChangeExecutionService
     return true if admin_bypass?
     
     # Check if current user can manage this person's assignments
-    policy(check_in.person).manage_assignments?
+    policy(check_in.teammate.person).manage_assignments?
   end
 
   def update_employee_check_in_fields(check_in, employee_data)

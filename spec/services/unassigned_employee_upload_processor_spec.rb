@@ -196,10 +196,11 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
 
     context 'with existing employment tenures' do
       let!(:existing_person) { create(:person, email: 'john.doe@company.com', first_name: 'John', last_name: 'Doe') }
+      let!(:existing_person_teammate) { create(:teammate, person: existing_person, organization: organization) }
       let!(:existing_position_type) { create(:position_type, organization: organization, external_title: 'Software Engineer') }
       let!(:existing_position_level) { create(:position_level, position_major_level: existing_position_type.position_major_level) }
       let!(:existing_position) { create(:position, position_type: existing_position_type, position_level: existing_position_level) }
-      let!(:existing_employment_tenure) { create(:employment_tenure, person: existing_person, company: organization, position: existing_position, started_at: Date.parse('2023-01-01')) }
+      let!(:existing_employment_tenure) { create(:employment_tenure, teammate: existing_person_teammate, company: organization, position: existing_position, started_at: Date.parse('2023-01-01')) }
 
       it 'handles existing employment tenures correctly' do
         # Should not create new employment tenure for John since he already has one
@@ -363,7 +364,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         employment_tenure = processor.send(:create_employment_tenure, person, teammate, employee_data)
         
         expect(employment_tenure).to be_persisted
-        expect(employment_tenure.person).to eq(person)
+        expect(employment_tenure.teammate.person).to eq(person)
         expect(employment_tenure.company).to eq(organization)
         expect(employment_tenure.teammate).to eq(teammate)
         expect(employment_tenure.position).to eq(position)

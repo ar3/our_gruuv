@@ -30,7 +30,8 @@ class MaapChangeDetectionService
     proposed_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment.id }
     return false unless proposed_data
     
-    current_tenure = person.assignment_tenures.where(assignment: assignment).active.first
+    teammate = person.teammates.find_by(organization: assignment.company)
+    current_tenure = teammate&.assignment_tenures&.where(assignment: assignment)&.active&.first
     proposed_tenure = proposed_data['tenure']
     
     # Check tenure changes
@@ -74,13 +75,15 @@ class MaapChangeDetectionService
   def milestone_changes_count
     return 0 unless maap_snapshot&.maap_data&.dig('milestones')
     
-    person.person_milestones.count { |milestone| milestone_has_changes?(milestone) }
+    teammate = person.teammates.find_by(organization: maap_snapshot.company)
+    teammate&.person_milestones&.count { |milestone| milestone_has_changes?(milestone) } || 0
   end
 
   def employment_changes_detail
     return { has_changes: false, details: [] } unless maap_snapshot&.maap_data&.dig('employment_tenure')
     
-    current = person.employment_tenures.active.first
+    teammate = person.teammates.find_by(organization: maap_snapshot.company)
+    current = teammate&.employment_tenures&.active&.first
     proposed = maap_snapshot.maap_data['employment_tenure']
     
     changes = []
@@ -119,7 +122,8 @@ class MaapChangeDetectionService
       assignment_changes = []
       
       # Check tenure changes
-      current_tenure = person.assignment_tenures.where(assignment: assignment).active.first
+      teammate = person.teammates.find_by(organization: assignment.company)
+    current_tenure = teammate&.assignment_tenures&.where(assignment: assignment)&.active&.first
       proposed_tenure = proposed_data['tenure']
       
       if current_tenure
@@ -168,7 +172,8 @@ class MaapChangeDetectionService
   end
 
   def check_in_changes_detail(assignment, proposed_data)
-    current_check_in = AssignmentCheckIn.where(person: person, assignment: assignment).open.first
+    teammate = person.teammates.find_by(organization: assignment.company)
+    current_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
     changes = []
     
     # Employee check-in changes
@@ -254,7 +259,8 @@ class MaapChangeDetectionService
     
     changes = []
     
-    person.person_milestones.each do |milestone|
+    teammate = person.teammates.find_by(organization: maap_snapshot.company)
+    teammate&.person_milestones&.each do |milestone|
       proposed_data = maap_snapshot.maap_data['milestones'].find { |m| m['ability_id'] == milestone.ability_id }
       next unless proposed_data
       
@@ -284,7 +290,8 @@ class MaapChangeDetectionService
 
   def load_assignment_data
     # Get all assignments that have tenures OR are in the snapshot
-    assignment_ids_from_tenures = person.assignment_tenures.distinct.pluck(:assignment_id)
+    teammate = person.teammates.find_by(organization: maap_snapshot.company)
+    assignment_ids_from_tenures = teammate&.assignment_tenures&.distinct&.pluck(:assignment_id) || []
     assignment_ids_from_snapshot = maap_snapshot.maap_data['assignments'].map { |a| a['id'] }
     all_assignment_ids = (assignment_ids_from_tenures + assignment_ids_from_snapshot).uniq
     
@@ -293,8 +300,8 @@ class MaapChangeDetectionService
     assignments.map do |assignment|
       {
         assignment: assignment,
-        active_tenure: person.assignment_tenures.where(assignment: assignment).active.first,
-        open_check_in: AssignmentCheckIn.where(person: person, assignment: assignment).open.first
+        active_tenure: teammate&.assignment_tenures&.where(assignment: assignment)&.active&.first,
+        open_check_in: AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
       }
     end
   end
@@ -302,7 +309,8 @@ class MaapChangeDetectionService
   def employment_has_changes?
     return false unless maap_snapshot&.maap_data&.dig('employment_tenure')
     
-    current = person.employment_tenures.active.first
+    teammate = person.teammates.find_by(organization: maap_snapshot.company)
+    current = teammate&.employment_tenures&.active&.first
     proposed = maap_snapshot.maap_data['employment_tenure']
     
     return true unless current
@@ -315,7 +323,8 @@ class MaapChangeDetectionService
 
 
   def check_in_has_changes?(assignment, proposed_data)
-    current_check_in = AssignmentCheckIn.where(person: person, assignment: assignment).open.first
+    teammate = person.teammates.find_by(organization: assignment.company)
+    current_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
     
     # Only check for changes in fields the current user is authorized to modify
     
@@ -374,8 +383,8 @@ class MaapChangeDetectionService
     return true if check_in.nil? && current_user == person
     
     # If check_in exists, check if employee can update their own fields
-    return false unless check_in&.person
-    current_user == check_in.person || admin_bypass?
+    return false unless check_in&.teammate
+    current_user == check_in.teammate.person || admin_bypass?
   end
 
   def can_update_manager_check_in_fields?(check_in)
@@ -394,11 +403,11 @@ class MaapChangeDetectionService
     end
     
     # If check_in exists, check if manager can update manager fields
-    return false unless check_in&.person
+    return false unless check_in&.teammate
     
     # Check if current user can manage this person's assignments
     # We need to create a policy instance to check permissions
-    policy = PersonPolicy.new(current_user, check_in.person)
+    policy = PersonPolicy.new(current_user, check_in.teammate.person)
     policy.manage_assignments?
   end
 
@@ -418,10 +427,10 @@ class MaapChangeDetectionService
     end
     
     # If check_in exists, check if manager can finalize
-    return false unless check_in&.person
+    return false unless check_in&.teammate
     
     # Check if current user can manage this person's assignments
-    policy = PersonPolicy.new(current_user, check_in.person)
+    policy = PersonPolicy.new(current_user, check_in.teammate.person)
     policy.manage_assignments?
   end
 

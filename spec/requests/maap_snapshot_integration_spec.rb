@@ -11,11 +11,13 @@ RSpec.describe 'MaapSnapshot Integration', type: :request do
   let!(:organization) { create(:organization) }
   let!(:manager) { create(:person, current_organization: organization) }
   let!(:employee) { create(:person, current_organization: organization) }
+  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let!(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let!(:position_major_level) { create(:position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let!(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
   let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
-  let!(:employment) { create(:employment_tenure, person: employee, position: position, company: organization) }
+  let!(:employment) { create(:employment_tenure, teammate: employee_teammate, position: position, company: organization) }
   let!(:assignment1) { create(:assignment, title: 'Assignment 1', company: organization) }
   
   before do
@@ -23,13 +25,13 @@ RSpec.describe 'MaapSnapshot Integration', type: :request do
     create(:position_assignment, position: position, assignment: assignment1)
     
     # Set up employment for manager
-    create(:employment_tenure, person: manager, position: position, company: organization)
+    create(:employment_tenure, teammate: manager_teammate, position: position, company: organization)
     
     # Set up organization access for manager
-    create(:teammate, person: manager, organization: organization, can_manage_maap: true, can_manage_employment: true)
+    manager_teammate.update!(can_manage_maap: true, can_manage_employment: true)
     
     # Set up initial data
-    create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 20)
     
     # Mock authentication
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)

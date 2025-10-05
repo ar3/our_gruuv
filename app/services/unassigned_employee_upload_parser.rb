@@ -288,7 +288,7 @@ class UnassignedEmployeeUploadParser
       'email' => email,
       'start_date' => start_date,
       'location' => location,
-      'gender_identity' => gender_identity,
+      'gender' => gender_identity,
       'department' => department,
       'employment_type' => employment_type,
       'manager_name' => manager_name,
@@ -698,7 +698,10 @@ class UnassignedEmployeeUploadParser
     }
     
     normalized_value = value.to_s.strip.downcase
-    gender_mapping[normalized_value] || normalized_value
+    mapped_value = gender_mapping[normalized_value]
+    
+    # Only return mapped values, return nil for invalid genders
+    mapped_value
   end
 
   def parse_employment_type(value)
@@ -712,18 +715,31 @@ class UnassignedEmployeeUploadParser
       'part time' => 'part_time',
       'contract' => 'contract',
       'intern' => 'intern',
-      'internship' => 'intern'
+      'internship' => 'intern',
+      # Add exact matches for valid types
+      'full_time' => 'full_time',
+      'part_time' => 'part_time'
     }
     
     normalized_value = value.to_s.strip.downcase
-    employment_type_mapping[normalized_value] || normalized_value.gsub(' ', '_')
+    mapped_value = employment_type_mapping[normalized_value]
+    
+    # Only return mapped values, return nil for invalid employment types
+    mapped_value
   end
 
   def parse_job_title_level(value)
     return nil if value.blank?
     
-    # Map numeric levels to our position level format (major level 1)
+    # Map text levels to our position level format
     level_mapping = {
+      'entry' => 'entry',
+      'mid' => 'mid', 
+      'senior' => 'senior',
+      'lead' => 'lead',
+      'director' => 'director',
+      'executive' => 'executive',
+      # Map numeric levels to our position level format (major level 1)
       '1' => '1.1',
       '2' => '1.2', 
       '3' => '1.3',
@@ -737,7 +753,10 @@ class UnassignedEmployeeUploadParser
     }
     
     level = value.to_s.strip
-    level_mapping[level] || level
+    mapped_level = level_mapping[level]
+    
+    # Only return mapped values, return nil for invalid job title levels
+    mapped_level
   end
 
   def generate_email_from_name(name)

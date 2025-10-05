@@ -110,7 +110,7 @@
                     %strong Current Nat 20 Score:
                     = nat_20_badge(@huddle.nat_20_score)
                 - if current_person
-                  - participant = @huddle.huddle_participants.find_by(person: current_person)
+                  - participant = @huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: current_person })
                   - if participant
                     %hr
                     %p
@@ -438,14 +438,14 @@
                                 %th Rating
                                 %th Private Notes
                             %tbody
-                              - @huddle.huddle_participants.includes(:person).each do |participant|
-                                - feedback = @huddle.huddle_feedbacks.find_by(person: participant.person)
+                              - @huddle.huddle_participants.includes(teammate: :person).each do |participant|
+                                - feedback = @huddle.huddle_feedbacks.joins(:teammate).find_by(teammates: { person: participant.teammate.person })
                                 - has_facilitator_note = feedback&.private_facilitator.present?
                                 - has_dept_head_note = feedback&.private_department_head.present?
                                 - rating_score = feedback ? feedback.nat_20_score : nil
                                 %tr{class: feedback ? '' : 'table-secondary'}
                                   %td
-                                    %strong= participant.person.full_name
+                                    %strong= participant.teammate.person.full_name
                                     %br
                                     %small.text-muted= participant.role_label || 'Participant'
                                   %td
@@ -455,7 +455,7 @@
                                              style: "cursor: pointer;", 
                                              data: {bs_toggle: "popover", 
                                                     bs_placement: "top", 
-                                                    bs_title: "#{participant.person.full_name}'s Ratings",
+                                                    bs_title: "#{participant.teammate.person.full_name}'s Ratings",
                                                     bs_content: "<ul class='list-unstyled mb-0'><li><strong>Informed:</strong> #{feedback.informed_rating}/5</li><li><strong>Connected:</strong> #{feedback.connected_rating}/5</li><li><strong>Goals:</strong> #{feedback.goals_rating}/5</li><li><strong>Valuable:</strong> #{feedback.valuable_rating}/5</li><li><strong>Personal Conflict:</strong> #{feedback.personal_conflict_style || 'Not specified'}</li><li><strong>Team Conflict:</strong> #{feedback.team_conflict_style || 'Not specified'}</li></ul>"}}
                                           = nat_20_badge(rating_score)
                                       - else
@@ -513,7 +513,7 @@
       .mt-4
         .d-flex.justify-content-between
           = link_to "← Back to All Huddles", huddles_path, class: "btn btn-outline-secondary"
-          - if current_person && @huddle.huddle_participants.find_by(person: current_person)
+          - if current_person && @huddle.huddle_participants.joins(:teammate).find_by(teammates: { person: current_person })
             = link_to "View All My Huddles", my_huddles_path, class: "btn btn-outline-primary"
 
 :javascript

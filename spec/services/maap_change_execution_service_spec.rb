@@ -4,12 +4,14 @@ RSpec.describe MaapChangeExecutionService do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:manager) { create(:person) }
+  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let(:person_teammate) { create(:teammate, person: person, organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
   let(:service) { described_class.new(maap_snapshot: maap_snapshot, current_user: current_user) }
 
   before do
-    create(:employment_tenure, person: manager, company: organization)
-    create(:employment_tenure, person: person, company: organization)
+    create(:employment_tenure, teammate: manager_teammate, company: organization)
+    create(:employment_tenure, teammate: person_teammate, company: organization)
   end
 
   describe '#execute!' do
@@ -51,7 +53,7 @@ RSpec.describe MaapChangeExecutionService do
       context 'when updating manager check-in fields' do
         let(:check_in) do
           create(:assignment_check_in,
-                 person: person,
+                 teammate: person_teammate,
                  assignment: assignment,
                  manager_rating: 'exceeding',
                  manager_private_notes: 'Old notes')
@@ -91,7 +93,7 @@ RSpec.describe MaapChangeExecutionService do
       context 'when unchecking manager completion' do
         let(:check_in) do
           create(:assignment_check_in,
-                 person: person,
+                 teammate: person_teammate,
                  assignment: assignment,
                  manager_rating: 'meeting',
                  manager_private_notes: 'Good work',
@@ -135,7 +137,7 @@ RSpec.describe MaapChangeExecutionService do
         let(:current_user) { person }
         let(:check_in) do
           create(:assignment_check_in,
-                 person: person,
+                 teammate: person_teammate,
                  assignment: assignment,
                  actual_energy_percentage: 50,
                  employee_rating: 'exceeding')
@@ -178,7 +180,7 @@ RSpec.describe MaapChangeExecutionService do
         let(:current_user) { person }
         let(:check_in) do
           create(:assignment_check_in,
-                 person: person,
+                 teammate: person_teammate,
                  assignment: assignment,
                  actual_energy_percentage: 75,
                  employee_rating: 'meeting',
@@ -220,7 +222,7 @@ RSpec.describe MaapChangeExecutionService do
         let(:current_user) { manager }
         let(:check_in) do
           create(:assignment_check_in,
-                 person: person,
+                 teammate: person_teammate,
                  assignment: assignment,
                  official_rating: 'exceeding',
                  shared_notes: 'Old notes')
@@ -282,7 +284,7 @@ RSpec.describe MaapChangeExecutionService do
           expect { service.execute! }.to change(AssignmentCheckIn, :count).by(1)
 
           check_in = AssignmentCheckIn.last
-          expect(check_in.person).to eq(person)
+          expect(check_in.teammate.person).to eq(person)
           expect(check_in.assignment).to eq(assignment)
           expect(check_in.manager_rating).to eq('meeting')
           expect(check_in.manager_private_notes).to eq('New check-in')
@@ -294,7 +296,7 @@ RSpec.describe MaapChangeExecutionService do
         let(:current_user) { person } # Employee trying to update manager fields
         let(:check_in) do
           create(:assignment_check_in,
-                 person: person,
+                 teammate: person_teammate,
                  assignment: assignment,
                  manager_rating: 'exceeding')
         end
@@ -330,7 +332,7 @@ RSpec.describe MaapChangeExecutionService do
         let(:current_user) { create(:person, og_admin: true) }
         let(:check_in) do
           create(:assignment_check_in,
-                 person: person,
+                 teammate: person_teammate,
                  assignment: assignment,
                  manager_rating: 'exceeding')
         end

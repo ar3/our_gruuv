@@ -9,24 +9,20 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     session[:current_person_id] = manager.id
     allow(controller).to receive(:current_person).and_return(manager)
     # Set up employment for manager
-    create(:employment_tenure, person: manager, company: organization)
+    manager_teammate = create(:teammate, person: manager, organization: organization, can_manage_employment: true)
+    create(:employment_tenure, teammate: manager_teammate, company: organization)
     # Set up employment for employee
-    create(:employment_tenure, person: employee, company: organization)
-    # Set up organization access for manager
-    create(:teammate, person: manager, organization: organization, can_manage_employment: true)
-    # Set up organization access for employee
-    create(:teammate, person: employee, organization: organization)
+    employee_teammate = create(:teammate, person: employee, organization: organization)
+    create(:employment_tenure, teammate: employee_teammate, company: organization)
   end
-
-  let(:maap_snapshot) { create(:maap_snapshot, employee: employee, created_by: manager, company: organization) }
 
   describe 'GET #execute_changes' do
     context 'when user has proper authorization' do
+      let(:maap_snapshot) { create(:maap_snapshot, employee: employee, created_by: manager, company: organization) }
+      
       before do
         # Set up proper authorization by allowing the policy method
         allow_any_instance_of(PersonPolicy).to receive(:manager?).and_return(true)
-        # Make sure the maap_snapshot was created by the current person to avoid redirect
-        allow(maap_snapshot).to receive(:created_by).and_return(manager)
       end
 
       it 'successfully loads current MAAP data without NoMethodError' do

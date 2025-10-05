@@ -8,18 +8,19 @@ RSpec.describe Organizations::PeopleController, type: :controller do
   let!(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let!(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
   let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
-  let!(:employment) { create(:employment_tenure, person: employee, position: position, company: organization) }
+  let!(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
+  let!(:employment) { create(:employment_tenure, teammate: employee_teammate, position: position, company: organization) }
   let!(:assignment1) { create(:assignment, title: 'Assignment 1', company: organization) }
   
   before do
     # Set up position assignments
     create(:position_assignment, position: position, assignment: assignment1)
     
-    # Set up employment for manager
-    create(:employment_tenure, person: manager, position: position, company: organization)
-    
     # Set up organization access for manager
-    create(:teammate, person: manager, organization: organization, can_manage_maap: true, can_manage_employment: true)
+    manager_teammate = create(:teammate, person: manager, organization: organization, can_manage_maap: true, can_manage_employment: true)
+    
+    # Set up employment for manager
+    create(:employment_tenure, teammate: manager_teammate, position: position, company: organization)
     
     # Mock authentication
     allow(controller).to receive(:current_person).and_return(manager)
@@ -64,14 +65,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     end
 
     context 'with mixed check-in states' do
-      let!(:tenure1) { create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 30) }
-      let!(:tenure2) { create(:assignment_tenure, person: employee, assignment: assignment2, anticipated_energy_percentage: 40) }
-      let!(:tenure3) { create(:assignment_tenure, person: employee, assignment: assignment3, anticipated_energy_percentage: 20) }
+      let!(:tenure1) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 30) }
+      let!(:tenure2) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment2, anticipated_energy_percentage: 40) }
+      let!(:tenure3) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment3, anticipated_energy_percentage: 20) }
       
       # Assignment 1: Has open check-in with employee data
       let!(:check_in1) do
         create(:assignment_check_in, 
-          person: employee, 
+          teammate: employee_teammate, 
           assignment: assignment1, 
           check_in_started_on: Date.current,
           actual_energy_percentage: 25,
@@ -84,7 +85,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       # Assignment 2: Has open check-in with manager data
       let!(:check_in2) do
         create(:assignment_check_in, 
-          person: employee, 
+          teammate: employee_teammate, 
           assignment: assignment2, 
           check_in_started_on: Date.current,
           manager_rating: 'exceeding',
@@ -182,7 +183,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         tenure1.reload
         expect(tenure1.ended_at).to be_present
         
-        new_tenure1 = employee.assignment_tenures.where(assignment: assignment1).active.first
+        new_tenure1 = employee_teammate.assignment_tenures.where(assignment: assignment1).active.first
         expect(new_tenure1.anticipated_energy_percentage).to eq(35)
         
         # Verify check-in changes for assignment with open check-in
@@ -200,7 +201,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         
         # Verify check-in was created for assignment3 (since it has proposed check-in data)
         # But manager can't update employee fields, so they should remain nil
-        check_in3 = AssignmentCheckIn.where(person: employee, assignment: assignment3).open.first
+        check_in3 = AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment3).open.first
         expect(check_in3).to be_present
         expect(check_in3.actual_energy_percentage).to be_nil # Manager can't update employee fields
         expect(check_in3.employee_rating).to be_nil # Manager can't update employee fields
@@ -242,7 +243,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         controller.instance_variable_set(:@maap_snapshot, maap_snapshot_with_mixed_data)
         
         # Verify no check-in exists for assignment3
-        existing_check_in = AssignmentCheckIn.where(person: employee, assignment: assignment3).open.first
+        existing_check_in = AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment3).open.first
         expect(existing_check_in).to be_nil
         
         # Execute changes - this should create a new check-in for assignment3
@@ -250,7 +251,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         expect(result).to be true
         
         # Verify new check-in was created with employee data
-        new_check_in = AssignmentCheckIn.where(person: employee, assignment: assignment3).open.first
+        new_check_in = AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment3).open.first
         expect(new_check_in).to be_present
         expect(new_check_in.actual_energy_percentage).to eq(20)
         expect(new_check_in.employee_rating).to eq('exceeding')
@@ -291,7 +292,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
     describe '#load_assignments_and_check_ins' do
       it 'loads assignment data sorted by energy percentage' do
-        create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20)
+        create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 20)
         
         controller.instance_variable_set(:@person, employee)
         controller.instance_variable_set(:@maap_snapshot, maap_snapshot)
@@ -360,7 +361,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     end
 
     describe '#update_assignment_tenure' do
-      let!(:existing_tenure) { create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 20) }
+      let!(:existing_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 20) }
 
       it 'creates new tenure when energy changes' do
         controller.instance_variable_set(:@person, employee)
@@ -385,7 +386,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         expect(existing_tenure.ended_at).to eq(Date.current)
         
         # Check that new tenure was created
-        new_tenure = employee.assignment_tenures.where(assignment: assignment1).active.first
+        new_tenure = employee_teammate.assignment_tenures.where(assignment: assignment1).active.first
         expect(new_tenure.anticipated_energy_percentage).to eq(35)
         expect(new_tenure.started_at).to eq(Date.current)
       end
@@ -433,7 +434,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         }.to change(AssignmentTenure, :count).by(1)
         
         # Check that new tenure was created
-        new_tenure = employee.assignment_tenures.where(assignment: assignment1).active.first
+        new_tenure = employee_teammate.assignment_tenures.where(assignment: assignment1).active.first
         expect(new_tenure.anticipated_energy_percentage).to eq(35)
         expect(new_tenure.started_at).to eq(Date.current)
       end

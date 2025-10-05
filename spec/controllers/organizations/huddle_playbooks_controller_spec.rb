@@ -33,7 +33,8 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
 
     it 'handles huddles with feedback correctly' do
       huddle = create(:huddle, huddle_playbook: huddle_playbook)
-      feedback = create(:huddle_feedback, huddle: huddle, person: person, 
+      teammate = create(:teammate, person: person, organization: organization)
+      feedback = create(:huddle_feedback, huddle: huddle, teammate: teammate, 
                        informed_rating: 4, connected_rating: 4, goals_rating: 4, valuable_rating: 4)
       
       get :show, params: { organization_id: organization.id, id: huddle_playbook.id }
@@ -56,9 +57,10 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
       huddle2 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 2.weeks.ago)
       
       participant = create(:person, first_name: 'John', last_name: 'Doe')
-      create(:huddle_participant, huddle: huddle1, person: participant)
-      create(:huddle_participant, huddle: huddle2, person: participant)
-      create(:huddle_feedback, huddle: huddle1, person: participant)
+      teammate = create(:teammate, person: participant, organization: organization)
+      create(:huddle_participant, huddle: huddle1, teammate: teammate)
+      create(:huddle_participant, huddle: huddle2, teammate: teammate)
+      create(:huddle_feedback, huddle: huddle1, teammate: teammate)
       
       get :show, params: { organization_id: organization.id, id: huddle_playbook.id }
       
@@ -77,17 +79,20 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
       participant1 = create(:person, first_name: 'John', last_name: 'Doe')
       participant2 = create(:person, first_name: 'Jane', last_name: 'Smith')
       
+      teammate1 = create(:teammate, person: participant1, organization: organization)
+      teammate2 = create(:teammate, person: participant2, organization: organization)
+      
       # Participant 1 attends all huddles and gives feedback
-      create(:huddle_participant, huddle: huddle1, person: participant1)
-      create(:huddle_participant, huddle: huddle2, person: participant1)
-      create(:huddle_participant, huddle: huddle3, person: participant1)
-      create(:huddle_feedback, huddle: huddle1, person: participant1)
-      create(:huddle_feedback, huddle: huddle2, person: participant1)
+      create(:huddle_participant, huddle: huddle1, teammate: teammate1)
+      create(:huddle_participant, huddle: huddle2, teammate: teammate1)
+      create(:huddle_participant, huddle: huddle3, teammate: teammate1)
+      create(:huddle_feedback, huddle: huddle1, teammate: teammate1)
+      create(:huddle_feedback, huddle: huddle2, teammate: teammate1)
       
       # Participant 2 attends only first two huddles and gives one feedback
-      create(:huddle_participant, huddle: huddle1, person: participant2)
-      create(:huddle_participant, huddle: huddle2, person: participant2)
-      create(:huddle_feedback, huddle: huddle1, person: participant2)
+      create(:huddle_participant, huddle: huddle1, teammate: teammate2)
+      create(:huddle_participant, huddle: huddle2, teammate: teammate2)
+      create(:huddle_feedback, huddle: huddle1, teammate: teammate2)
       
       expect {
         get :show, params: { organization_id: organization.id, id: huddle_playbook.id }
@@ -103,12 +108,13 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
       huddle2 = create(:huddle, huddle_playbook: huddle_playbook, started_at: 2.weeks.ago)
       
       participant = create(:person, first_name: 'John', last_name: 'Doe')
+      teammate = create(:teammate, person: participant, organization: organization)
       
       # Same participant in multiple huddles with multiple feedbacks
-      create(:huddle_participant, huddle: huddle1, person: participant)
-      create(:huddle_participant, huddle: huddle2, person: participant)
-      create(:huddle_feedback, huddle: huddle1, person: participant)
-      create(:huddle_feedback, huddle: huddle2, person: participant)
+      create(:huddle_participant, huddle: huddle1, teammate: teammate)
+      create(:huddle_participant, huddle: huddle2, teammate: teammate)
+      create(:huddle_feedback, huddle: huddle1, teammate: teammate)
+      create(:huddle_feedback, huddle: huddle2, teammate: teammate)
       
       get :show, params: { organization_id: organization.id, id: huddle_playbook.id }
       

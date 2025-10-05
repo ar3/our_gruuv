@@ -13,10 +13,11 @@ class People::AssignmentsController < ApplicationController
 
   def check_in_history
     authorize @person, :manager?, policy_class: PersonPolicy
-    @check_ins = AssignmentCheckIn
-      .where(person: @person, assignment: @assignment)
+    teammate = @person.teammates.find_by(organization: @assignment.company)
+    @check_ins = teammate ? AssignmentCheckIn
+      .where(teammate: teammate, assignment: @assignment)
       .includes(:manager_completed_by, :finalized_by)
-      .order(check_in_started_on: :desc)
+      .order(check_in_started_on: :desc) : []
   end
 
   private
@@ -30,18 +31,22 @@ class People::AssignmentsController < ApplicationController
   end
 
   def load_assignment_data
-    @tenure = AssignmentTenure.most_recent_for(@person, @assignment)
-    @open_check_in = AssignmentCheckIn.where(person: @person, assignment: @assignment).open.first
-    @recent_check_ins = AssignmentCheckIn
-      .where(person: @person, assignment: @assignment)
+    teammate = @person.teammates.find_by(organization: @assignment.company)
+    @tenure = teammate ? AssignmentTenure.most_recent_for(teammate, @assignment) : nil
+    @open_check_in = teammate ? AssignmentCheckIn.where(teammate: teammate, assignment: @assignment).open.first : nil
+    @recent_check_ins = teammate ? AssignmentCheckIn
+      .where(teammate: teammate, assignment: @assignment)
       .includes(:manager_completed_by, :finalized_by)
       .order(check_in_started_on: :desc)
-      .limit(5)
+      .limit(5) : []
     
     # Load assignment details
     @assignment_outcomes = @assignment.assignment_outcomes.ordered
     @assignment_abilities = @assignment.assignment_abilities.includes(:ability)
-    @current_employment = @person.employment_tenures.active.first
+    
+    # Get current employment for this assignment's company
+    teammate = @person.teammates.find_by(organization: @assignment.company)
+    @current_employment = teammate&.employment_tenures&.active&.first
     @position_assignment = nil
     
     # Check if this assignment is connected to the person's current position
@@ -54,7 +59,8 @@ class People::AssignmentsController < ApplicationController
   end
 
   def load_tenure_history
-    @tenure_history = AssignmentTenure.where(person: @person, assignment: @assignment).order(started_at: :desc)
+    teammate = @person.teammates.find_by(organization: @assignment.company)
+    @tenure_history = teammate ? AssignmentTenure.where(teammate: teammate, assignment: @assignment).order(started_at: :desc) : []
   end
 
   def require_authentication

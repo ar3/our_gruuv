@@ -3,10 +3,13 @@ require 'rails_helper'
 RSpec.feature 'Huddle Playbooks Show Tooltip', type: :feature do
   let(:person) { create(:person) }
   let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
+  let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:huddle_playbook) { create(:huddle_playbook, organization: organization) }
   let(:huddle) { create(:huddle, huddle_playbook: huddle_playbook) }
   let(:participant1) { create(:person, first_name: 'John', last_name: 'Doe') }
   let(:participant2) { create(:person, first_name: 'Jane', last_name: 'Smith') }
+  let(:participant1_teammate) { create(:teammate, person: participant1, organization: organization) }
+  let(:participant2_teammate) { create(:teammate, person: participant2, organization: organization) }
 
   before do
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
@@ -14,8 +17,8 @@ RSpec.feature 'Huddle Playbooks Show Tooltip', type: :feature do
 
   scenario 'shows participant names in tooltip' do
     # Create huddle participants
-    create(:huddle_participant, huddle: huddle, person: participant1)
-    create(:huddle_participant, huddle: huddle, person: participant2)
+    create(:huddle_participant, huddle: huddle, teammate: participant1_teammate)
+    create(:huddle_participant, huddle: huddle, teammate: participant2_teammate)
 
     visit organization_huddle_playbook_path(organization, huddle_playbook)
 

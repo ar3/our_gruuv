@@ -4,27 +4,29 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
   let(:organization) { create(:organization) }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
+  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let!(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let(:assignment1) { create(:assignment, company: organization, title: 'Employee Growth Plan Champion', id: 80) }
   let(:assignment2) { create(:assignment, company: organization, title: 'Quarterly Conversation Coordinator', id: 81) }
   let(:assignment3) { create(:assignment, company: organization, title: 'Lifeline Interview Facilitator', id: 84) }
 
   before do
     # Set up employment tenure
-    create(:employment_tenure, person: manager, company: organization)
-    create(:employment_tenure, person: employee, company: organization)
+    create(:employment_tenure, teammate: manager_teammate, company: organization)
+    create(:employment_tenure, teammate: employee_teammate, company: organization)
     
     # Set up assignment tenures
-    create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 50)
-    create(:assignment_tenure, person: employee, assignment: assignment2, anticipated_energy_percentage: 30)
-    create(:assignment_tenure, person: employee, assignment: assignment3, anticipated_energy_percentage: 20)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 50)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment2, anticipated_energy_percentage: 30)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment3, anticipated_energy_percentage: 20)
     
     # Set up check-ins with existing data and completion timestamps
-    create(:assignment_check_in, person: employee, assignment: assignment1, shared_notes: 'Something that we both can see - another change - yet another one', official_rating: 'exceeding', employee_completed_at: Time.current, manager_completed_at: Time.current)
-    create(:assignment_check_in, person: employee, assignment: assignment2, shared_notes: '', official_rating: 'exceeding', employee_completed_at: Time.current, manager_completed_at: Time.current)
-    create(:assignment_check_in, person: employee, assignment: assignment3, shared_notes: '', official_rating: '', employee_completed_at: Time.current, manager_completed_at: Time.current)
+    create(:assignment_check_in, teammate: employee_teammate, assignment: assignment1, shared_notes: 'Something that we both can see - another change - yet another one', official_rating: 'exceeding', employee_completed_at: Time.current, manager_completed_at: Time.current)
+    create(:assignment_check_in, teammate: employee_teammate, assignment: assignment2, shared_notes: '', official_rating: 'exceeding', employee_completed_at: Time.current, manager_completed_at: Time.current)
+    create(:assignment_check_in, teammate: employee_teammate, assignment: assignment3, shared_notes: '', official_rating: '', employee_completed_at: Time.current, manager_completed_at: Time.current)
     
     # Set up authorization
-    create(:teammate, person: manager, organization: organization, can_manage_employment: true)
+    manager_teammate.update!(can_manage_employment: true)
     
     # Set up session
     session[:current_person_id] = manager.id

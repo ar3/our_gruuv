@@ -3,23 +3,24 @@ require 'rails_helper'
 RSpec.describe MaapSnapshot, type: :model do
   let(:organization) { create(:organization) }
   let(:employee) { create(:person) }
+  let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let(:assignment1) { create(:assignment, company: organization, title: 'Employee Growth Plan Champion', id: 80) }
   let(:assignment2) { create(:assignment, company: organization, title: 'Quarterly Conversation Coordinator', id: 81) }
   let(:assignment3) { create(:assignment, company: organization, title: 'Lifeline Interview Facilitator', id: 84) }
 
   before do
     # Set up employment tenure
-    create(:employment_tenure, person: employee, company: organization)
+    create(:employment_tenure, teammate: employee_teammate, company: organization)
     
     # Set up assignment tenures
-    create(:assignment_tenure, person: employee, assignment: assignment1, anticipated_energy_percentage: 50)
-    create(:assignment_tenure, person: employee, assignment: assignment2, anticipated_energy_percentage: 30)
-    create(:assignment_tenure, person: employee, assignment: assignment3, anticipated_energy_percentage: 20)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, anticipated_energy_percentage: 50)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment2, anticipated_energy_percentage: 30)
+    create(:assignment_tenure, teammate: employee_teammate, assignment: assignment3, anticipated_energy_percentage: 20)
     
     # Set up check-ins with existing data matching snapshot 108
-    create(:assignment_check_in, person: employee, assignment: assignment1, shared_notes: 'Something that we both can see - another change - yet another one', official_rating: 'exceeding', employee_completed_at: Time.current, manager_completed_at: Time.current)
-    create(:assignment_check_in, person: employee, assignment: assignment2, shared_notes: '', official_rating: 'exceeding', employee_completed_at: Time.current, manager_completed_at: Time.current)
-    create(:assignment_check_in, person: employee, assignment: assignment3, shared_notes: '', official_rating: '', employee_completed_at: Time.current, manager_completed_at: Time.current)
+    create(:assignment_check_in, teammate: employee_teammate, assignment: assignment1, shared_notes: 'Something that we both can see - another change - yet another one', official_rating: 'exceeding', employee_completed_at: Time.current, manager_completed_at: Time.current)
+    create(:assignment_check_in, teammate: employee_teammate, assignment: assignment2, shared_notes: '', official_rating: 'exceeding', employee_completed_at: Time.current, manager_completed_at: Time.current)
+    create(:assignment_check_in, teammate: employee_teammate, assignment: assignment3, shared_notes: '', official_rating: '', employee_completed_at: Time.current, manager_completed_at: Time.current)
   end
 
   describe 'build_official_check_in_data_with_changes' do
@@ -27,9 +28,9 @@ RSpec.describe MaapSnapshot, type: :model do
       it 'should fail by producing the buggy behavior from snapshot 108' do
         # Simulate the exact form params that the controller passes to MaapSnapshot
         # This includes both the original form params AND the check_in_data hash
-        check_in1 = AssignmentCheckIn.where(person: employee, assignment: assignment1).first
-        check_in2 = AssignmentCheckIn.where(person: employee, assignment: assignment2).first
-        check_in3 = AssignmentCheckIn.where(person: employee, assignment: assignment3).first
+        check_in1 = AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment1).first
+        check_in2 = AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment2).first
+        check_in3 = AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment3).first
         
         check_in_data = {
           check_in1.id => {

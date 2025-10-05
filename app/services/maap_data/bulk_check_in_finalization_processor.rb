@@ -27,7 +27,8 @@ module MaapData
     def build_employment_tenure_data
       # For bulk check-in finalization, we typically don't change employment
       # Return current active employment tenure data
-      current_employment = @employee.employment_tenures.active.first
+      teammate = @employee.teammates.joins(:employment_tenures).where(employment_tenures: { ended_at: nil }).first
+      current_employment = teammate&.employment_tenures&.active&.first
       return nil unless current_employment
 
       {
@@ -40,13 +41,16 @@ module MaapData
 
     def build_assignments_data
       # Get all assignments where the person has ever had a tenure, filtered by company
-      assignment_ids = @employee.assignment_tenures.distinct.pluck(:assignment_id)
+      teammate = @employee.teammates.find_by(organization: @company)
+      return [] unless teammate
+      
+      assignment_ids = teammate.assignment_tenures.distinct.pluck(:assignment_id)
       assignments = Assignment.where(id: assignment_ids, company: @company).includes(:assignment_tenures)
       
       assignments.map do |assignment|
-        active_tenure = @employee.assignment_tenures.where(assignment: assignment).active.first
-        most_recent_tenure = @employee.assignment_tenures.where(assignment: assignment).order(:started_at).last
-        current_check_in = AssignmentCheckIn.where(person: @employee, assignment: assignment).open.first
+        active_tenure = teammate.assignment_tenures.where(assignment: assignment).active.first
+        most_recent_tenure = teammate.assignment_tenures.where(assignment: assignment).order(:started_at).last
+        current_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
         
         assignment_data = {
           id: assignment.id,
@@ -55,12 +59,12 @@ module MaapData
         }
         
         # Add check-in data if there's a current check-in OR if there are form changes for this assignment
-        current_check_in = AssignmentCheckIn.where(person: @employee, assignment: assignment).open.first
+        current_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
         has_form_changes = @form_params["check_in_data"].present? && @form_params["check_in_data"][assignment.id.to_s].present?
         
         # If no open check-in but there are form changes, look for any check-in for this assignment
         if !current_check_in && has_form_changes
-          current_check_in = AssignmentCheckIn.where(person: @employee, assignment: assignment).order(:created_at).last
+          current_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).order(:created_at).last
         end
         
         if current_check_in
@@ -267,7 +271,10 @@ module MaapData
 
     def build_milestones_data
       # Get all person milestones for abilities in this company
-      milestones = @employee.person_milestones.includes(:ability)
+      teammate = @employee.teammates.find_by(organization: @company)
+      return [] unless teammate
+      
+      milestones = teammate.person_milestones.includes(:ability)
                .joins(:ability)
                .where(abilities: { organization: @company })
       

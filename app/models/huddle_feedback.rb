@@ -1,15 +1,14 @@
 class HuddleFeedback < ApplicationRecord
   # Associations
   belongs_to :huddle
-  belongs_to :person
-  belongs_to :teammate, optional: true
+  belongs_to :teammate
   
   # Validations
   validates :informed_rating, :connected_rating, :goals_rating, :valuable_rating,
             presence: true, inclusion: { in: 0..5 }
   validates :personal_conflict_style, :team_conflict_style,
             inclusion: { in: %w[Collaborative Competing Compromising Accommodating Avoiding], allow_blank: true }
-  validates :person_id, uniqueness: { scope: :huddle_id }
+  validates :teammate_id, uniqueness: { scope: :huddle_id }
   
   # Constants
   CONFLICT_STYLES = %w[Collaborative Competing Compromising Accommodating Avoiding].freeze
@@ -38,6 +37,6 @@ class HuddleFeedback < ApplicationRecord
   end
   
   def display_name
-    anonymous ? 'Anonymous' : person.full_name
+    anonymous ? 'Anonymous' : teammate.person.full_name
   end
 end 

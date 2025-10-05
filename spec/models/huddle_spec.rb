@@ -9,7 +9,7 @@ RSpec.describe Huddle, type: :model do
   describe 'associations' do
     it { should belong_to(:huddle_playbook).optional }
     it { should have_many(:huddle_participants).dependent(:destroy) }
-    it { should have_many(:participants).through(:huddle_participants).source(:person) }
+    it { should have_many(:participants).through(:huddle_participants).source(:teammate) }
     it { should have_many(:huddle_feedbacks).dependent(:destroy) }
   end
 
@@ -138,9 +138,10 @@ RSpec.describe Huddle, type: :model do
     context 'with feedback from today' do
       before do
         person = Person.create!(email: 'test@example.com', full_name: 'Test User', unique_textable_phone_number: '+12345678900')
+        teammate = create(:teammate, person: person, organization: huddle.organization)
         HuddleFeedback.create!(
           huddle: huddle,
-          person: person,
+          teammate: teammate,
           informed_rating: 5,
           connected_rating: 5,
           goals_rating: 5,
@@ -158,9 +159,10 @@ RSpec.describe Huddle, type: :model do
 
       before do
         person = Person.create!(email: 'test@example.com', full_name: 'Test User', unique_textable_phone_number: '+12345678902')
+        teammate = create(:teammate, person: person, organization: expired_huddle.organization)
         HuddleFeedback.create!(
           huddle: expired_huddle,
-          person: person,
+          teammate: teammate,
           informed_rating: 5,
           connected_rating: 5,
           goals_rating: 5,
@@ -190,11 +192,12 @@ RSpec.describe Huddle, type: :model do
 
     context 'with feedback' do
       let(:person) { Person.create!(email: 'test@example.com', full_name: 'Test User', unique_textable_phone_number: '+12345678903') }
+      let(:teammate) { create(:teammate, person: person, organization: huddle.organization) }
 
       before do
         HuddleFeedback.create!(
           huddle: huddle,
-          person: person,
+          teammate: teammate,
           informed_rating: 5,
           connected_rating: 4,
           goals_rating: 5,
@@ -208,9 +211,10 @@ RSpec.describe Huddle, type: :model do
 
       it 'handles multiple feedback submissions' do
         person2 = Person.create!(email: 'test2@example.com', full_name: 'Test User 2', unique_textable_phone_number: '+12345678901')
+        teammate2 = create(:teammate, person: person2, organization: huddle.organization)
         HuddleFeedback.create!(
           huddle: huddle,
-          person: person2,
+          teammate: teammate2,
           informed_rating: 5,
           connected_rating: 5,
           goals_rating: 5,
@@ -231,11 +235,12 @@ RSpec.describe Huddle, type: :model do
 
     context 'with anonymous feedback' do
       let(:person) { Person.create!(email: 'test@example.com', full_name: 'Test User') }
+      let(:teammate) { create(:teammate, person: person, organization: huddle.organization) }
 
       before do
         HuddleFeedback.create!(
           huddle: huddle,
-          person: person,
+          teammate: teammate,
           informed_rating: 5,
           connected_rating: 5,
           goals_rating: 5,
@@ -251,11 +256,12 @@ RSpec.describe Huddle, type: :model do
 
     context 'with non-anonymous feedback' do
       let(:person) { Person.create!(email: 'test@example.com', full_name: 'Test User') }
+      let(:teammate) { create(:teammate, person: person, organization: huddle.organization) }
 
       before do
         HuddleFeedback.create!(
           huddle: huddle,
-          person: person,
+          teammate: teammate,
           informed_rating: 5,
           connected_rating: 5,
           goals_rating: 5,
@@ -277,11 +283,14 @@ RSpec.describe Huddle, type: :model do
     let(:person1) { create(:person, first_name: 'John', last_name: 'Doe') }
     let(:person2) { create(:person, first_name: 'Jane', last_name: 'Smith') }
     let(:person3) { create(:person, first_name: 'Bob', last_name: 'Johnson') }
+    let(:teammate1) { create(:teammate, person: person1, organization: organization) }
+    let(:teammate2) { create(:teammate, person: person2, organization: organization) }
+    let(:teammate3) { create(:teammate, person: person3, organization: organization) }
 
     before do
-      create(:huddle_participant, huddle: huddle, person: person1)
-      create(:huddle_participant, huddle: huddle, person: person2)
-      create(:huddle_participant, huddle: huddle, person: person3)
+      create(:huddle_participant, huddle: huddle, teammate: teammate1)
+      create(:huddle_participant, huddle: huddle, teammate: teammate2)
+      create(:huddle_participant, huddle: huddle, teammate: teammate3)
     end
 
     describe '#team_conflict_style_distribution' do
@@ -290,9 +299,9 @@ RSpec.describe Huddle, type: :model do
       end
 
       it 'returns distribution of team conflict styles' do
-        create(:huddle_feedback, huddle: huddle, person: person1, team_conflict_style: 'Collaborative')
-        create(:huddle_feedback, huddle: huddle, person: person2, team_conflict_style: 'Collaborative')
-        create(:huddle_feedback, huddle: huddle, person: person3, team_conflict_style: 'Competing')
+        create(:huddle_feedback, huddle: huddle, teammate: teammate1, team_conflict_style: 'Collaborative')
+        create(:huddle_feedback, huddle: huddle, teammate: teammate2, team_conflict_style: 'Collaborative')
+        create(:huddle_feedback, huddle: huddle, teammate: teammate3, team_conflict_style: 'Competing')
 
         expect(huddle.team_conflict_style_distribution).to eq({
           'Collaborative' => 2,
@@ -301,9 +310,9 @@ RSpec.describe Huddle, type: :model do
       end
 
       it 'excludes nil and empty values' do
-        create(:huddle_feedback, huddle: huddle, person: person1, team_conflict_style: 'Collaborative')
-        create(:huddle_feedback, huddle: huddle, person: person2, team_conflict_style: nil)
-        create(:huddle_feedback, huddle: huddle, person: person3, team_conflict_style: '')
+        create(:huddle_feedback, huddle: huddle, teammate: teammate1, team_conflict_style: 'Collaborative')
+        create(:huddle_feedback, huddle: huddle, teammate: teammate2, team_conflict_style: nil)
+        create(:huddle_feedback, huddle: huddle, teammate: teammate3, team_conflict_style: '')
 
         expect(huddle.team_conflict_style_distribution).to eq({
           'Collaborative' => 1
@@ -317,9 +326,9 @@ RSpec.describe Huddle, type: :model do
       end
 
       it 'returns distribution of personal conflict styles' do
-        create(:huddle_feedback, huddle: huddle, person: person1, personal_conflict_style: 'Compromising')
-        create(:huddle_feedback, huddle: huddle, person: person2, personal_conflict_style: 'Accommodating')
-        create(:huddle_feedback, huddle: huddle, person: person3, personal_conflict_style: 'Compromising')
+        create(:huddle_feedback, huddle: huddle, teammate: teammate1, personal_conflict_style: 'Compromising')
+        create(:huddle_feedback, huddle: huddle, teammate: teammate2, personal_conflict_style: 'Accommodating')
+        create(:huddle_feedback, huddle: huddle, teammate: teammate3, personal_conflict_style: 'Compromising')
 
         expect(huddle.personal_conflict_style_distribution).to eq({
           'Compromising' => 2,

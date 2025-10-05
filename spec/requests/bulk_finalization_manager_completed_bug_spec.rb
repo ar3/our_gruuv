@@ -4,37 +4,39 @@ RSpec.describe 'Bulk Finalization Manager Completed Bug', type: :request do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:manager) { create(:person) }
+  let(:person_teammate) { create(:teammate, person: person, organization: organization) }
+  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
   let(:assignment1) { create(:assignment, company: organization) }
   let(:assignment2) { create(:assignment, company: organization) }
 
   before do
-    create(:employment_tenure, person: manager, company: organization)
-    create(:employment_tenure, person: person, company: organization)
-    create(:teammate, person: manager, organization: organization, can_manage_employment: true, can_manage_maap: true)
+    create(:employment_tenure, teammate: manager_teammate, company: organization)
+    create(:employment_tenure, teammate: person_teammate, company: organization)
+    manager_teammate.update!(can_manage_employment: true, can_manage_maap: true)
 
     # Create assignment tenures so the processor can find the assignments
-    create(:assignment_tenure, person: person, assignment: assignment1, anticipated_energy_percentage: 50)
-    create(:assignment_tenure, person: person, assignment: assignment2, anticipated_energy_percentage: 75)
+    create(:assignment_tenure, teammate: person_teammate, assignment: assignment1, anticipated_energy_percentage: 50)
+    create(:assignment_tenure, teammate: person_teammate, assignment: assignment2, anticipated_energy_percentage: 75)
   end
 
   describe 'bulk finalization should not unset manager_completed fields' do
     before do
       # Create check-ins that are ready for finalization (both employee and manager completed)
       @check_in1 = create(:assignment_check_in,
-                          person: person,
+                          teammate: person_teammate,
                           assignment: assignment1,
                           employee_completed_at: Time.current,
                           manager_completed_at: Time.current,
-                          manager_completed_by: manager,
+                          manager_completed_by_id: manager.id,
                           manager_rating: 'meeting',
                           manager_private_notes: 'Good work on assignment 1')
 
       @check_in2 = create(:assignment_check_in,
-                          person: person,
+                          teammate: person_teammate,
                           assignment: assignment2,
                           employee_completed_at: Time.current,
                           manager_completed_at: Time.current,
-                          manager_completed_by: manager,
+                          manager_completed_by_id: manager.id,
                           manager_rating: 'exceeding',
                           manager_private_notes: 'Excellent work on assignment 2')
 

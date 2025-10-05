@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :assignment_check_in do
-    association :person
+    association :teammate
     association :assignment
     check_in_started_on { Date.current }
     actual_energy_percentage { 50 }

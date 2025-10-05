@@ -5,7 +5,7 @@
     %small.text-muted
       - if data[:tenure]
         - # Check if there's a previous inactive tenure for this assignment
-        - previous_tenure = data[:assignment].assignment_tenures.where(person: @person).inactive.order(:ended_at).last
+        - previous_tenure = data[:assignment].assignment_tenures.joins(:teammate).where(teammates: { person: @person }).inactive.order(:ended_at).last
         - if previous_tenure
           Went from #{previous_tenure.anticipated_energy_percentage || 0}% to #{data[:tenure].anticipated_energy_percentage || 0}% on #{previous_tenure.ended_at.strftime('%m/%d/%Y')}
         - else
