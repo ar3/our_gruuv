@@ -9,26 +9,89 @@
       %i.bi.bi-trophy.me-2
       Recent Milestones
     .d-flex.align-items-center
-      = link_to organization_abilities_path(@organization), class: "btn btn-primary ml-2" do
-        %i.bi.bi-plus.me-2
-        Manage Abilities
+      - if policy(Ability).create?
+        .dropdown.ml-2
+          %button.btn.btn-primary.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button"}
+            %i.bi.bi-plus
+          %ul.dropdown-menu
+            %li
+              = link_to milestones_overview_path, class: "dropdown-item" do
+                %i.bi.bi-award.me-2
+                Award Milestone
+            %li
+              = link_to organization_abilities_path(@organization), class: "dropdown-item" do
+                %i.bi.bi-eye.me-2
+                View Abilities
+      - else
+        .dropdown.ml-2
+          %button.btn.btn-primary.dropdown-toggle.disabled{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button", style: "opacity: 0.6; cursor: not-allowed;"}
+            %i.bi.bi-plus
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need ability management permissions for this organization to manage abilities"}
 
 - content_for :header_action do
   %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#milestonesFilterModal", type: "button"}
     %i.bi.bi-funnel.me-2
     Filter & Sort
 
+/ Spotlight Section
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            .row.text-center
+              .col-3
+                .h3.text-primary= @total_milestones
+                %small.text-muted Total Milestones
+              .col-3
+                .h3.text-success= @unique_people
+                %small.text-muted People Celebrated
+              .col-3
+                .h3.text-info= @recent_milestones.count { |m| m.attained_at >= 30.days.ago }
+                %small.text-muted Recent (30 days)
+              .col-3
+                .h3.text-warning= @recent_milestones.count { |m| m.milestone_level == 5 }
+                %small.text-muted Level 5 Achievements
+            .row.mt-3
+              .col-12
+                %h6.text-muted.mb-2 Top Abilities
+                .row
+                  - @recent_milestones.group_by(&:ability).sort_by { |ability, milestones| -milestones.count }.first(3).each do |ability, milestones|
+                    .col-4
+                      .d-flex.align-items-center
+                        %span.badge.bg-primary.me-2= milestones.count
+                        %small= ability.name
+          .col-md-4
+            .text-center
+              - if @recent_milestones.any?
+                .alert.alert-success.small
+                  %i.bi.bi-celebration.me-2
+                  %strong #{pluralize(@unique_people, 'person')} achieved milestones!
+              - else
+                .alert.alert-info.small
+                  %i.bi.bi-info-circle.me-2
+                  %strong No recent milestones - encourage your team!
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-funnel.me-1
+              Filters: Last 90 Days
+              %br
+              %i.bi.bi-sort-down.me-1
+              Sort: Most Recent
+          .col-md-6.text-end
+            %small.text-muted
+              %i.bi.bi-table.me-1
+              View: Table
+              %br
+              %i.bi.bi-eye.me-1
+              Spotlight: Milestone Overview
+
 .row.justify-content-center
   .col-lg-12
     - if @recent_milestones.any?
-      .alert.alert-success.mb-4
-        %h6.mb-2
-          %i.bi.bi-celebration.me-2
-          #{pluralize(@total_milestones, 'Milestone')} Achieved!
-        %p.mb-0 
-          #{pluralize(@unique_people, 'person')} have reached new milestones in the past 90 days. 
-          Let's celebrate their growth and achievement!
-      
       .table-responsive
         %table.table.table-hover
           %thead
@@ -38,12 +101,13 @@
               %th Milestone Level
               %th Attained Date
               %th Certified By
+              %th Actions
           %tbody
             - @recent_milestones.each do |milestone|
               %tr
                 %td
-                  = link_to complete_picture_organization_person_path(@organization, milestone.person), class: "text-decoration-none" do
-                    %strong= milestone.person.display_name
+                  = link_to complete_picture_organization_person_path(@organization, milestone.teammate.person), class: "text-decoration-none" do
+                    %strong= milestone.teammate.person.display_name
                 %td
                   = milestone.ability.name
                 %td
@@ -52,6 +116,12 @@
                   = milestone.attained_at.strftime('%B %d, %Y')
                 %td
                   = milestone.certified_by.display_name
+                %td
+                  .btn-group.btn-group-sm
+                    = link_to complete_picture_organization_person_path(@organization, milestone.teammate.person), class: "btn btn-outline-primary", title: "View Person" do
+                      %i.bi.bi-eye
+                    = link_to organization_ability_path(@organization, milestone.ability), class: "btn btn-outline-secondary", title: "View Ability" do
+                      %i.bi.bi-eye
     - else
       .alert.alert-info
         %h6.mb-2
@@ -60,7 +130,13 @@
         %p.mb-2 
           No milestones have been achieved in the past 90 days. 
           Encourage your team to work toward their next ability milestones!
-        = link_to "Manage Abilities", organization_abilities_path(@organization), class: "btn btn-primary btn-sm"
+        - if policy(Ability).create?
+          = link_to "Manage Abilities", organization_abilities_path(@organization), class: "btn btn-primary btn-sm"
+        - else
+          .d-flex.align-items-center
+            .btn.btn-primary.btn-sm.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+              Manage Abilities
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need ability management permissions for this organization to manage abilities"}
 
 / Modal for Filter & Sort
 #milestonesFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "milestonesFilterModalLabel", tabindex: "-1"}
@@ -135,16 +211,16 @@
                   %i.bi.bi-grid.me-2
                   Card View
               .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "timeline"}
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
                 %label.form-check-label
-                  %i.bi.bi-clock-history.me-2
-                  Timeline View
+                  %i.bi.bi-list.me-2
+                  List View
             .mb-3
               %label.form-label Spotlight
               %select.form-select
                 %option No Spotlight
+                %option Milestone Overview
                 %option High Achievers
-                %option New Milestones
                 %option Level 5 Achievements
       .modal-footer
         %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
