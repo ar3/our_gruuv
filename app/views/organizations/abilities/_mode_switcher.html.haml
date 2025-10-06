@@ -1,0 +1,31 @@
+.dropdown
+  %button.btn.btn-outline-primary.btn-sm.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button"}
+    %i.bi.bi-eye.me-2
+    = abilities_current_view_name
+  %ul.dropdown-menu
+    %li
+      - if action_name == 'show'
+        .dropdown-item.text-muted
+          %i.bi.bi-eye.me-2
+          View Mode (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - else
+        = link_to organization_ability_path(@organization, @ability), class: 'dropdown-item' do
+          %i.bi.bi-eye.me-2
+          View Mode
+      
+    %li
+      - if action_name == 'edit'
+        .dropdown-item.text-muted
+          %i.bi.bi-pencil.me-2
+          Edit Mode (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif policy(@ability).update?
+        = link_to edit_organization_ability_path(@organization, @ability), class: 'dropdown-item' do
+          %i.bi.bi-pencil.me-2
+          Edit Mode
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-pencil.me-2
+          Edit Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to edit abilities"}

@@ -1,0 +1,11 @@
+.d-flex.align-items-center
+  %h1.mb-0.me-2.mr-2
+    = header_name
+  .d-flex.align-items-center
+    - if header_quick_action_is_enabled
+      = link_to header_quick_action_url, class: "btn btn-primary ml-2" do
+        = header_quick_action_content
+    - else
+      %button.btn.btn-primary.ml-2.disabled{"data-bs-toggle" => "tooltip", "data-bs-title" => header_quick_action_disabled_tooltip}
+        = header_quick_action_content
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2

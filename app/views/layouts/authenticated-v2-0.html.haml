@@ -153,9 +153,14 @@
             .d-flex.justify-content-between.align-items-center
               .flex-grow-1
                 = yield :header
-              .ms-3
-                - if content_for?(:header_action)
+              -# TODO: Remove this once we have a consistent way to handle header actions
+              - if content_for?(:header_action)
+                .ms-3
                   = yield :header_action
+              / Action Area - Top-right actions (optional, designed for 1 button but flexible)
+              - if content_for?(:top_actions)
+                .ms-3
+                  = yield :top_actions
       
       / Navigation Area - "Back to X" links (optional)
       - if content_for?(:go_back_link)
@@ -163,12 +168,6 @@
           .col-12
             = yield :go_back_link
       
-      / Action Area - Top-right actions (optional, designed for 1 button but flexible)
-      - if content_for?(:top_actions)
-        .row.mb-3
-          .col-12
-            .d-flex.justify-content-end
-              = yield :top_actions
       
       / Impersonation Warning Banner
       - if impersonating?

@@ -1,19 +1,18 @@
-= content_for :header do
-  .d-flex.justify-content-between.align-items-center.mb-2
-    %h1.mb-0{id: "page-title"}
-      %i.bi.bi-lightning.me-2
-      = @ability.name
-    .d-flex.align-items-center
-      = content_for :top_actions do
-        = link_to edit_organization_ability_path(@organization, @ability), class: "btn btn-warning" do
-          %i.bi.bi-pencil.me-2
-          Edit
+- content_for :header do
+  = render 'shared/header', 
+    header_name: content_tag(:i, '', class: 'bi bi-lightning me-2') + @ability.name,
+    header_quick_action_url: edit_organization_ability_path(@organization, @ability),
+    header_quick_action_content: content_tag(:i, '', class: 'bi bi-pencil me-2'),
+    header_quick_action_is_enabled: policy(@ability).update?,
+    header_quick_action_disabled_tooltip: "You need MAAP management permissions for this organization to edit abilities"
+      
+- content_for :go_back_link do
+  = link_to organization_abilities_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Abilities
 
-.mb-4
-  = content_for :go_back_link do
-    = link_to organization_abilities_path(@organization), class: "text-muted text-decoration-none" do
-      %i.bi.bi-arrow-left.me-2
-      Back to Abilities
+- content_for :header_action do
+  = render 'mode_switcher'
 
 .row
   .col-md-8
@@ -91,14 +90,5 @@
           %p.small
             %i.bi.bi-list-ol.text-info.me-1
             #{milestone_count} of 5 milestones defined
-        
-        .mb-3
-          %h6.text-muted.small.mb-2 Quick Actions
-          .d-grid.gap-2
-            = link_to edit_organization_ability_path(@organization, @ability), class: "btn btn-outline-warning btn-sm" do
-              %i.bi.bi-pencil.me-1
-              Edit Ability
-            = link_to organization_abilities_path(@organization), class: "btn btn-outline-secondary btn-sm" do
-              %i.bi.bi-arrow-left.me-1
-              Back to Abilities
+
 

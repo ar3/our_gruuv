@@ -90,6 +90,11 @@ h4, h5, h6 {
   display: none;
 }
 
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 // Custom styles for readonly fields
 .form-control[readonly],
 .form-select[readonly] {

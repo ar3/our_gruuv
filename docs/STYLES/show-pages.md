@@ -13,19 +13,66 @@ All show pages should follow this consistent header layout:
     %h1.mb-0{id: "page-title"}
       Page Title
     .d-flex.align-items-center
-      = content_for :top_actions  # Edit button and other primary actions
+      = content_for :header_action  # Mode switcher and other header actions
 
 .mb-4
   = content_for :go_back_link  # Single back link to index page
 ```
 
+### Required Content For Sections
+All show pages MUST use these three content_for sections:
+
+#### 1. `content_for :header`
+- Contains the main page title and primary actions
+- Title should include appropriate icon and object name
+- Actions should be right-aligned in the header row
+
+#### 2. `content_for :header_action`
+- Contains the mode switcher partial and other header actions
+- Mode switcher should be included for show/edit page pairs
+- Other header-specific actions can be included here
+
+#### 3. `content_for :go_back_link`
+- Contains single back link to the index page
+- Should be styled as muted text (no button styling)
+- Should use appropriate icon and descriptive text
+
 ### Key Principles:
 - **Header row**: Title on left, primary actions on right
 - **Margin**: Use `mb-2` for header, `mb-4` for back link section
 - **Back link**: Always below header as muted text (no button styling)
-- **Primary actions**: Right-aligned in header row (edit button, view switcher, etc.)
-- **Single edit button**: Only one edit button per page, placed in `top_actions` content_for
+- **Primary actions**: Right-aligned in header row (edit button, mode switcher)
+- **Single edit button**: Only one edit button per page, placed in `header` content_for
 - **Single back link**: Only one "back to [plural]" link, placed in `go_back_link` content_for
+- **Authorization**: Edit buttons must check policy and show tooltip when disabled
+- **Mode switcher**: Required for show/edit page pairs, shows current mode and available modes
+
+## Reusable Header Partial
+
+### Global Header Partial (`app/views/shared/_header.html.haml`)
+For consistent header implementation across all show pages, use the shared header partial:
+
+```haml
+= render 'shared/header', 
+  header_name: content_tag(:i, '', class: 'bi bi-icon me-2') + @resource.name,
+  header_quick_action_url: edit_resource_path(@resource),
+  header_quick_action_content: content_tag(:i, '', class: 'bi bi-pencil me-2'),
+  header_quick_action_is_enabled: policy(@resource).update?,
+  header_quick_action_disabled_tooltip: "You need [specific permission] to edit [resource]"
+```
+
+### Header Partial Parameters
+- **`header_name`**: The complete header content including icon and title
+- **`header_quick_action_url`**: URL for the edit action (when enabled)
+- **`header_quick_action_content`**: Content for the edit button (usually icon)
+- **`header_quick_action_is_enabled`**: Boolean for authorization check
+- **`header_quick_action_disabled_tooltip`**: Tooltip text when action is disabled
+
+### Benefits of Using the Header Partial
+- **Consistency**: Ensures all headers follow the same structure
+- **Maintainability**: Changes to header structure only need to be made in one place
+- **Authorization**: Built-in support for disabled states with tooltips
+- **Reusability**: Can be used across all show pages with different parameters
 
 ## Section Layout
 
@@ -82,6 +129,73 @@ The spotlight section should contain:
 - **Simple headers**: No colored backgrounds, just clean card headers
 - **Consistent spacing**: `mb-4` between sections
 - **Spotlight content**: Analytics, tidbits, and secondary actions in right sidebar
+
+## Mode Switchers
+
+### Standard Mode Switcher Pattern
+For show/edit page pairs, use a mode switcher partial that follows this pattern:
+
+```haml
+.dropdown
+  %button.btn.btn-outline-primary.btn-sm.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button"}
+    %i.bi.bi-eye.me-2
+    = [resource]_current_view_name
+  %ul.dropdown-menu
+    %li
+      - if action_name == 'show'
+        .dropdown-item.text-muted
+          %i.bi.bi-eye.me-2
+          View Mode (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - else
+        = link_to [resource]_path(@[resource]), class: 'dropdown-item' do
+          %i.bi.bi-eye.me-2
+          View Mode
+      
+    %li
+      - if action_name == 'edit'
+        .dropdown-item.text-muted
+          %i.bi.bi-pencil.me-2
+          Edit Mode (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif policy(@[resource]).update?
+        = link_to edit_[resource]_path(@[resource]), class: 'dropdown-item' do
+          %i.bi.bi-pencil.me-2
+          Edit Mode
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-pencil.me-2
+          Edit Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need [specific permission] to edit [resource]"}
+```
+
+### Mode Switcher Requirements
+- **Three states per mode**: Active (current), Available (clickable), Disabled (with tooltip)
+- **Authorization checks**: Each mode should check appropriate policy methods
+- **Tooltip messages**: Disabled modes must explain what permission is needed
+- **Helper method**: Create `[resource]_current_view_name` helper method
+- **Consistent icons**: Use `bi-eye` for view mode, `bi-pencil` for edit mode
+- **Status indicators**: Active mode shows check circle, disabled shows warning triangle
+
+### Helper Method Pattern
+Create a helper method for each resource:
+
+```ruby
+module [Resource]Helper
+  def [resource]_current_view_name
+    return 'View Mode' unless action_name
+    
+    case action_name
+    when 'show'
+      'View Mode'
+    when 'edit'
+      'Edit Mode'
+    else
+      action_name.titleize
+    end
+  end
+end
+```
 
 ## Interactive Components
 
@@ -142,12 +256,17 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
 
 When creating or updating show pages, ensure:
 - [ ] Header follows standard layout (title left, actions right)
-- [ ] Single edit button placed in `top_actions` content_for
+- [ ] Uses all three required content_for sections (`:header`, `:header_action`, `:go_back_link`)
+- [ ] Single edit button placed in `header` content_for with authorization check
 - [ ] Single back link placed in `go_back_link` content_for
-- [ ] Sections use 8:4 column split with spotlight sidebar
+- [ ] Mode switcher included in `header_action` for show/edit page pairs
+- [ ] Mode switcher shows three states: active, available, disabled with tooltips
+- [ ] Helper method created for `[resource]_current_view_name`
+- [ ] Sections use 8:4 column split with spotlight sidebar (when appropriate)
 - [ ] Spotlight section contains analytics and interesting tidbits
 - [ ] No colored headers - clean and simple
 - [ ] Consistent button patterns and spacing
 - [ ] Collapse elements use standard pattern (anchor tag + two spans + two icons)
 - [ ] Responsive design considerations
 - [ ] Semantic color usage only
+- [ ] Authorization properly implemented with tooltips for disabled actions
