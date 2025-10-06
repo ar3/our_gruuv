@@ -9,8 +9,13 @@
           %p.mb-0.mt-2= "Share your thoughts on #{@huddle.display_name}"
         
         .card-body
+          .d-flex.justify-content-between.align-items-center.mb-3
+            %h5.mb-0 
+            %button.btn.btn-outline-secondary.btn-sm#help-text-toggle
+              %span#help-text-label= @is_first_time_feedback ? "Hide Help Text" : "Show Help Text"
+          
           = form_with url: submit_feedback_huddle_path(@huddle), method: :post, local: true do |form|
-            .row
+            .row.help-text
               .col-12
                 - teammate = @current_person&.teammates&.find_by(organization: @huddle.organization)
                 - if teammate&.follower?
@@ -27,7 +32,7 @@
             
             .row.mb-4
               .col-12
-                %h5.text-primary
+                %h5.text-primary.help-text
                   %i.bi.bi-person-circle.me-2
                   Your Role: #{HuddleConstants::ROLE_LABELS[@existing_participant.role]}
                 
@@ -40,7 +45,7 @@
             
             .row.mb-4
               .col-12
-                %h5.text-primary
+                %h5.text-primary.help-text
                   %i.bi.bi-star.me-2
                   Nat 20 Rating System
                   %small.text-muted.ms-2 (Rate your agreement with each statement)
@@ -49,8 +54,12 @@
                   .col-md-12
                     .mb-5.mt-5
                       .d-flex.align-items-center.mb-2
-                        = form.label :informed_rating, "I am more informed (about how we are pursuing our goals) than I was before the huddle", class: "form-label fw-bold mb-0 me-2"
-                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "If you felt maximally informed before, and you still feel that way, put strongly agree here."}
+                        - more_informed_label = capture do 
+                          I am more informed 
+                          %span.help-text (about how we are pursuing our goals)
+                          than I was before the huddle
+                        = form.label :informed_rating, more_informed_label.html_safe, class: "form-label fw-bold mb-0 me-2"
+                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "When thinkig about this... think in terms of you all in pursuit of your goals. If you felt maximally informed before, and you still feel that way, put strongly agree here."}
                       .rating-slider-container
                         .d-flex.justify-content-between.mb-2
                           %small.text-muted Strongly Disagree
@@ -64,8 +73,12 @@
                   .col-md-12
                     .mb-5.mt-5
                       .d-flex.align-items-center.mb-2
-                        = form.label :connected_rating, "I am more connected & supported (to/by my teammates I'm standing shoulder to shoulder with as we pursue these goals) than I was before the huddle", class: "form-label fw-bold mb-0 me-2"
-                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "If you felt maximally connected before, and you still feel that way, put strongly agree here."}
+                        - more_connected_label = capture do 
+                          I am more connected & supported 
+                          %span.help-text to/by my teammates I'm standing shoulder to shoulder with as we pursue these goals
+                          than I was before the huddle
+                        = form.label :connected_rating, more_connected_label.html_safe, class: "form-label fw-bold mb-0 me-2"
+                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "When thinkig about this... think in terms of you all in pursuit of your goals. If you felt maximally connected before, and you still feel that way, put strongly agree here."}
                       .rating-slider-container
                         .d-flex.justify-content-between.mb-2
                           %small.text-muted Strongly Disagree
@@ -80,7 +93,7 @@
                     .mb-5.mt-5
                       .d-flex.align-items-center.mb-2
                         = form.label :goals_rating, "This huddle helped us in pursuit of our goals", class: "form-label fw-bold mb-0 me-2"
-                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "Huddles are one of the most powerful and most expensive tactics we can take. Therefore it is vital that when we do them, they are helping us achieve our goals in some major way."}
+                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "When thinkig about this... think in terms of you all in pursuit of your goals. Huddles are one of the most powerful and most expensive tactics we can take. Therefore it is vital that when we do them, they are helping us achieve our goals in some major way."}
                       .rating-slider-container
                         .d-flex.justify-content-between.mb-2
                           %small.text-muted Strongly Disagree
@@ -95,7 +108,7 @@
                     .mb-5.mt-5
                       .d-flex.align-items-center.mb-2
                         = form.label :valuable_rating, "If I could have seen what this meeting was before going, and I had a choice... it was so valuable, that I'd still attend", class: "form-label fw-bold mb-0 me-2"
-                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "You know the saying 'This meeting could have been an email'... We must combat this at all costs. Our time and energy is precious, let's aim to not waste it."}
+                        %i.bi.bi-info-circle.text-muted{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "When thinkig about this... think in terms of you all in pursuit of your goals. You know the saying 'This meeting could have been an email'... We must combat this at all costs. Our time and energy is precious, let's aim to not waste it."}
                       .rating-slider-container
                         .d-flex.justify-content-between.mb-2
                           %small.text-muted Strongly Disagree
@@ -106,7 +119,7 @@
                           - 0.upto(5) do |rating|
                             %small.text-muted{class: rating == 5 ? "fw-bold #{text_class(rating_color(rating))}" : ""}= rating
             
-            .row.mb-4
+            .row.mb-4.help-text
               .col-12
                 .alert.alert-success.text-center
                   %h6.mb-2
@@ -123,9 +136,9 @@
                 %h5.text-primary
                   %i.bi.bi-people.me-2
                   Conflict Styles
-                  %small.text-muted.ms-2 - Understanding how we handle disagreements
+                  %small.text-muted.ms-2.help-text - Understanding how we handle disagreements
                 
-                .alert.alert-info
+                .alert.alert-info.help-text
                   %strong Understanding Conflict Styles:
                   %br
                   %small Conflict styles are based on two dimensions: assertiveness (how much you focus on your own concerns) and cooperativeness (how much you focus on others' concerns).
@@ -133,23 +146,25 @@
                 .row
                   .col-md-6
                     .mb-3
-                      = form.label :personal_conflict_style, "How did YOU think you showed up during conflicts or disagreements in this huddle?", class: "form-label fw-bold"
-                      %small.text-muted.d-block.mb-2
+                      .help-text
+                        = form.label :personal_conflict_style, "How did YOU think you showed up during conflicts or disagreements in this huddle?", class: "form-label fw-bold"
+                      %small.text-muted.d-block.mb-2.help-text
                         In this huddle,
                         %b I WAS:
                       = form.select :personal_conflict_style, options_for_select(HuddleConstants::CONFLICT_STYLES.map { |style| ["#{style} - #{HuddleConstants::CONFLICT_STYLE_DESCRIPTIONS[style]}", style] }, selected: @existing_feedback&.personal_conflict_style), { prompt: 'Select your personal conflict style...' }, { class: 'form-select' }
-                  
+                    
                   .col-md-6
                     .mb-3
-                      = form.label :team_conflict_style, "How did you think the TEAM showed up during conflicts or disagreements?", class: "form-label fw-bold"
-                      %small.text-muted.d-block.mb-2
+                      .help-text
+                        = form.label :team_conflict_style, "How did you think the TEAM showed up during conflicts or disagreements?", class: "form-label fw-bold"
+                      %small.text-muted.d-block.mb-2.help-text
                         In this huddle,
                         %b WE WERE:
                       = form.select :team_conflict_style, options_for_select(HuddleConstants::CONFLICT_STYLES.map { |style| ["#{style} - #{HuddleConstants::CONFLICT_STYLE_DESCRIPTIONS[style]}", style] }, selected: @existing_feedback&.team_conflict_style), { prompt: 'Select the team\'s conflict style...' }, { class: 'form-select' }
             
             .row.mb-4
               .col-12
-                %h5.text-primary
+                %h5.text-primary.help-text
                   %i.bi.bi-chat-text.me-2
                   Detailed Feedback (Optional)
                   %small.text-muted.ms-2 - Share the "why" behind your ratings
@@ -164,7 +179,7 @@
             
             .row.mb-4
               .col-12
-                %h5.text-primary
+                %h5.text-primary.help-text
                   %i.bi.bi-shield.me-2
                   Private Feedback (Optional)
                 
@@ -207,4 +222,33 @@
                   = form.submit @existing_feedback ? "Update Complete Feedback" : "Submit Complete Feedback", class: "btn btn-success btn-lg"
                   %small.text-muted.mt-2.d-block
                     %i.bi.bi-shield-check.me-1
-                    Your feedback helps improve future huddles and achieve Nat 20 scores! 
+                    Your feedback helps improve future huddles and achieve Nat 20 scores!
+
+          :javascript
+            document.addEventListener('DOMContentLoaded', function() {
+              const toggleButton = document.getElementById('help-text-toggle');
+              const helpTextLabel = document.getElementById('help-text-label');
+              const helpTextElements = document.querySelectorAll('.help-text');
+              
+              // Set initial state based on server-side variable
+              const isFirstTime = #{@is_first_time_feedback ? 'true' : 'false'};
+              
+              if (!isFirstTime) {
+                // Hide help text for returning users
+                helpTextElements.forEach(element => {
+                  element.style.display = 'none';
+                });
+                helpTextLabel.textContent = 'Show Help Text';
+              }
+              
+              // Handle toggle click
+              toggleButton.addEventListener('click', function() {
+                const isVisible = helpTextElements[0].style.display !== 'none';
+                
+                helpTextElements.forEach(element => {
+                  element.style.display = isVisible ? 'none' : '';
+                });
+                
+                helpTextLabel.textContent = isVisible ? 'Show Help Text' : 'Hide Help Text';
+              });
+            }); 

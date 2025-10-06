@@ -16,6 +16,27 @@ RSpec.describe OrganizationsController, type: :controller do
     end
   end
 
+  describe 'GET #switch_page' do
+    let!(:company1) { create(:organization, :company, name: 'Test Company 1') }
+    let!(:company2) { create(:organization, :company, name: 'Test Company 2') }
+
+    it 'renders successfully without NoMethodError' do
+      # This test verifies that the fix works - no more NoMethodError for person.huddles
+      expect {
+        get :switch_page
+      }.not_to raise_error
+      
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'assigns organizations and current organization' do
+      get :switch_page
+      
+      expect(assigns(:organizations)).to be_present
+      expect(assigns(:current_organization)).to be_present
+    end
+  end
+
   describe 'GET #show' do
     it 'returns http success' do
       get :show, params: { id: organization.id }

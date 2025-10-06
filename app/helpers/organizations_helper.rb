@@ -8,7 +8,7 @@ module OrganizationsHelper
     end
     
     # Check huddle participation
-    if person.huddles.joins(:huddle_playbook).where(huddle_playbooks: { organization: organization }).exists?
+    if person.huddle_participants.joins(huddle: :huddle_playbook).where(huddle_playbooks: { organization: organization }).exists?
       reasons << "Huddle"
     end
     

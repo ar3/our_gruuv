@@ -1,6 +1,6 @@
 class HuddlesController < ApplicationController
   layout 'authenticated-v2-0'
-  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :post_start_announcement_to_slack, :notifications_debug]
+  before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :direct_feedback, :post_start_announcement_to_slack, :notifications_debug]
 
   def index
     @huddles = Huddle.active.recent.includes(huddle_playbook: :organization).decorate
@@ -163,20 +163,32 @@ class HuddlesController < ApplicationController
     
     # Set existing participant if user is logged in
     @existing_participant = HuddleParticipant.joins(:teammate).find_by(huddle: @huddle, teammates: { person: @current_person }) if @current_person
+    
+    # Store return path for post-auth redirect
+    if @current_person.nil?
+      session[:return_to] = join_huddle_path(@huddle)
+    end
   end
 
   def join_huddle
     authorize @huddle, :join_huddle?
     
-    # Get the person - either from session or create from params
-    person = get_or_create_person_from_session_or_params(:join)
+    # Require authentication
+    unless current_person
+      redirect_to join_huddle_path(@huddle), alert: 'Please sign in to join this huddle.'
+      return
+    end
     
-    # Find teammate for this person and organization
-    teammate = person.teammates.find_by(organization: @huddle.organization)
+    # Find or create teammate for this person and organization
+    teammate = current_person.teammates.find_by(organization: @huddle.organization)
     
-    # Create teammate if it doesn't exist
+    # Create follower teammate if it doesn't exist
     unless teammate
-      teammate = person.teammates.create!(organization: @huddle.organization, type: 'CompanyTeammate')
+      teammate = current_person.teammates.create!(
+        organization: @huddle.organization, 
+        type: 'CompanyTeammate'
+        # No employment dates = follower status
+      )
     end
     
     # Add or update the person as a participant to the huddle
@@ -194,7 +206,7 @@ class HuddlesController < ApplicationController
     participant.update!(role: join_params[:role]) if role_changed
     
     # Store only the person ID in session
-    session[:current_person_id] = person.id
+    session[:current_person_id] = current_person.id
     
     # Run required jobs when someone joins
     if @huddle.huddle_playbook&.organization&.root_company
@@ -227,6 +239,45 @@ class HuddlesController < ApplicationController
     raise e
   end
 
+  def direct_feedback
+    authorize @huddle, :direct_feedback?
+    
+    # Require authentication
+    unless current_person
+      session[:return_to] = direct_feedback_huddle_path(@huddle)
+      redirect_to '/auth/google_oauth2', alert: 'Please sign in to give feedback.'
+      return
+    end
+    
+    # Check if user is already a participant
+    @existing_participant = HuddleParticipant.joins(:teammate).find_by(huddle: @huddle, teammates: { person: current_person })
+    
+    unless @existing_participant
+      # Find or create follower teammate for this person and organization
+      teammate = current_person.teammates.find_by(organization: @huddle.organization)
+      
+      # Create follower teammate if it doesn't exist
+      unless teammate
+        teammate = current_person.teammates.create!(
+          organization: @huddle.organization, 
+          type: 'CompanyTeammate'
+          # No employment dates = follower status
+        )
+      end
+      
+      # Auto-create participant with role "active"
+      @existing_participant = @huddle.huddle_participants.create!(
+        teammate: teammate,
+        role: 'active'
+      )
+      
+      flash[:notice] = "You've been added to the huddle. Please share your feedback!"
+    end
+    
+    # Redirect to regular feedback page
+    redirect_to feedback_huddle_path(@huddle)
+  end
+
   def feedback
     authorize @huddle, :feedback?
     # Get current person from session
@@ -237,6 +288,9 @@ class HuddlesController < ApplicationController
     
     # Check if user has already submitted feedback
     @existing_feedback = @huddle.huddle_feedbacks.joins(:teammate).find_by(teammates: { person: @current_person })
+    
+    # Check if this is first time giving feedback
+    @is_first_time_feedback = @current_person.total_feedback_given == 0
   end
 
   def submit_feedback

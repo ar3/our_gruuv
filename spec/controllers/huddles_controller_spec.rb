@@ -694,6 +694,27 @@ RSpec.describe HuddlesController, type: :controller do
     end
   end
 
+  describe 'GET #direct_feedback' do
+    it 'redirects to huddles index when huddle is not found' do
+      # When huddle is not found, set_huddle raises ActiveRecord::RecordNotFound
+      # which should be handled by the ApplicationController's error handling
+      expect {
+        get :direct_feedback, params: { id: 99999 } # Non-existent huddle ID
+      }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+
+    it 'redirects to feedback page when huddle exists and user is authenticated' do
+      get :direct_feedback, params: { id: huddle.id }
+      expect(response).to redirect_to(feedback_huddle_path(huddle))
+    end
+
+    it 'redirects to auth when user is not logged in' do
+      session[:current_person_id] = nil
+      get :direct_feedback, params: { id: huddle.id }
+      expect(response).to redirect_to('/auth/google_oauth2')
+    end
+  end
+
   describe 'private methods' do
     describe '#get_weekly_summary_status' do
       let(:company) { create(:organization, :company) }

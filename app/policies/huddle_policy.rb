@@ -20,7 +20,11 @@ class HuddlePolicy < ApplicationPolicy
   end
 
   def join_huddle?
-    true
+    user.present?
+  end
+
+  def direct_feedback?
+    user.present?
   end
 
   def feedback?

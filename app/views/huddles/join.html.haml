@@ -70,40 +70,17 @@
                 = form.submit "Join Huddle", class: "btn btn-success btn-lg"
           
           - else
-            / State 1: Not logged in
-            .alert.alert-info
-              %i.bi.bi-person-plus.me-2
-              %strong Welcome!
+            / State 1: Not logged in - require authentication
+            .alert.alert-info.text-center
+              %i.bi.bi-shield-check.me-2
+              %strong Authentication Required
               %br
-              %small Please provide your email to join this huddle and submit feedback. Your name will be auto-generated from your email.
+              %small Please sign in with Google to join this huddle and participate in feedback.
             
-            = form_with url: join_huddle_huddle_path(@huddle), method: :post, local: true do |form|
-              .mb-3
-                = form.label :email, "Your email", class: "form-label"
-                = form.email_field :email, class: "form-control", placeholder: "Enter your email address", required: true
+            .text-center.mt-4
+              = link_to '/auth/google_oauth2', class: "btn btn-primary btn-lg" do
+                %i.bi.bi-google.me-2
+                Sign in with Google
               
-              .mb-3
-                = form.label :role, "What role will you play in this huddle?", class: "form-label"
-                = form.select :role, role_options_for_select, { class: "form-select", required: true }
-              
-              .d-grid.gap-2.d-md-flex.justify-content-md-end
-                = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary me-md-2"
-                = form.submit "Join Huddle", class: "btn btn-success btn-lg"
-              
-              :javascript
-                document.addEventListener('DOMContentLoaded', function() {
-                  // Auto-detect timezone and add it to the form
-                  try {
-                    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                    if (timezone) {
-                      const timezoneInput = document.createElement('input');
-                      timezoneInput.type = 'hidden';
-                      timezoneInput.name = 'timezone';
-                      timezoneInput.value = timezone;
-                      document.querySelector('form').appendChild(timezoneInput);
-                    }
-                  } catch (e) {
-                    // If JavaScript timezone detection fails, we'll use server-side fallback
-                    console.log('Timezone detection failed, using server fallback');
-                  }
-                }); 
+              .mt-3
+                = link_to "Cancel", huddles_path, class: "btn btn-outline-secondary" 

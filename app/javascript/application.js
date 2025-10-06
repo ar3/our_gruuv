@@ -143,6 +143,7 @@ function initializeShareHuddle() {
       e.stopPropagation()
       
       const joinUrl = button.dataset.joinUrl
+      const linkType = button.dataset.type || 'join'
       console.log('Copying URL to clipboard:', joinUrl)
       
       try {
@@ -157,13 +158,18 @@ function initializeShareHuddle() {
         
         // Reset after 2 seconds
         setTimeout(() => {
-          button.innerHTML = '<i class="bi bi-link-45deg"></i>'
+          if (linkType === 'join') {
+            button.innerHTML = '<i class="bi bi-people me-2"></i>Share Join Link'
+          } else {
+            button.innerHTML = '<i class="bi bi-star me-2"></i>Share Feedback Link'
+          }
           button.classList.remove('text-success')
           button.classList.add('text-muted')
         }, 2000)
         
         // Show toast notification
-        showToast('Huddle link copied to clipboard!', 'success')
+        const message = linkType === 'join' ? 'Join link copied to clipboard!' : 'Feedback link copied to clipboard!'
+        showToast(message, 'success')
       } catch (err) {
         console.error('Failed to copy URL to clipboard:', err)
         

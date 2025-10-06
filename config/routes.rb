@@ -182,7 +182,7 @@ get '/login', to: 'auth#login', as: :login
       post :submit_feedback
       get :join
       post :join_huddle
-
+      get :direct_feedback
 
       
       post :post_start_announcement_to_slack

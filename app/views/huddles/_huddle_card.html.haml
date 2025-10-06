@@ -4,8 +4,18 @@
   .card.h-100
     .card-body.position-relative
       .position-absolute.top-0.end-0.p-2
-        %button.btn.btn-link.btn-sm.text-muted.share-huddle-btn{data: {huddle_id: huddle.id, join_url: join_huddle_url(huddle)}, title: "Share this huddle"}
-          %i.bi.bi-link-45deg
+        .dropdown
+          %button.btn.btn-link.btn-sm.text-muted.dropdown-toggle{data: {bs_toggle: "dropdown"}, title: "Share this huddle"}
+            %i.bi.bi-link-45deg
+          %ul.dropdown-menu
+            %li
+              %button.btn.btn-link.dropdown-item.share-huddle-btn{data: {huddle_id: huddle.id, join_url: join_huddle_url(huddle), type: "join"}}
+                %i.bi.bi-people.me-2
+                Share Join Link
+            %li
+              %button.btn.btn-link.dropdown-item.share-huddle-btn{data: {huddle_id: huddle.id, join_url: direct_feedback_huddle_url(huddle), type: "feedback"}}
+                %i.bi.bi-star.me-2
+                Share Feedback Link
       %h5.card-title{data: {bs_toggle: "tooltip", bs_placement: "top"}, title: "Started at #{format_time_in_user_timezone(huddle.started_at)}"}
         = huddle.display_name_without_organization
       %p.card-text
