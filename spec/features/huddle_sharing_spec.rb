@@ -18,8 +18,15 @@ RSpec.feature 'Huddle Sharing', type: :feature, js: true do
   scenario 'Share button shows link icon' do
     visit huddles_path
     
-    share_button = find('.share-huddle-btn')
-    expect(share_button).to have_css('.bi-link-45deg')
+    # Find the dropdown toggle button which has the link icon
+    dropdown_toggle = find('button[data-bs-toggle="dropdown"]')
+    expect(dropdown_toggle).to have_css('.bi-link-45deg')
+    
+    # Click the dropdown toggle to open the share menu
+    dropdown_toggle.click
+    
+    # Verify the share buttons are present
+    expect(page).to have_css('.share-huddle-btn', count: 2)
   end
 
 end 

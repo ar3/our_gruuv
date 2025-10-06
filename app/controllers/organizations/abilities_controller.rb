@@ -39,6 +39,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
       redirect_to organization_ability_path(@form.model.organization, @form.model), 
                   notice: 'Ability was successfully created.'
     else
+      @ability_decorator = AbilityDecorator.new(@form.model)
       render :new, status: :unprocessable_entity
     end
   end

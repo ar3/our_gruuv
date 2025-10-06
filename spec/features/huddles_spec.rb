@@ -116,7 +116,8 @@ RSpec.feature 'Huddles', type: :feature do
     visit huddle_path(huddle)
     
     expect(page).to have_content('Join Huddle')
-    expect(page).to have_content('Please provide your email to join this huddle')
+    expect(page).to have_content('Authentication Required')
+    expect(page).to have_content('Please sign in with Google to join this huddle and participate in feedback')
     expect(current_path).to eq(join_huddle_path(huddle))
   end
 
@@ -204,19 +205,11 @@ RSpec.feature 'Huddles', type: :feature do
   scenario 'joining an existing huddle when not logged in' do
     visit join_huddle_path(huddle)
     
-    # Should show the join form asking for email and role (name auto-generated)
+    # Should show the authentication required message
     expect(page).to have_content("Join #{huddle.display_name}")
-    expect(page).to have_field('email')
-    expect(page).to have_select('role')
-    expect(page).to have_content('Your name will be auto-generated from your email')
-    
-    fill_in 'Your email', with: 'jane@example.com'
-    select 'Active Participant', from: 'What role will you play in this huddle?'
-    
-    click_button 'Join Huddle'
-    
-    expect(page).to have_content('Welcome to the huddle!')
-    expect(page).to have_content('Jane') # Auto-generated name from email
+    expect(page).to have_content('Authentication Required')
+    expect(page).to have_content('Please sign in with Google to join this huddle and participate in feedback')
+    expect(page).to have_link('Sign in with Google')
   end
 
   scenario 'joining an existing huddle when already logged in' do
@@ -346,12 +339,17 @@ RSpec.feature 'Huddles', type: :feature do
       full_name: 'John Smith'
     )
     
+    # Simulate being logged in as this person
+    page.set_rack_session(current_person_id: existing_person.id)
+    
     visit join_huddle_path(huddle)
     
-    # Join with email (name should NOT be auto-generated since person already has a name)
-    fill_in 'Your email', with: 'john.doe@example.com'
-    select 'Active Participant', from: 'What role will you play in this huddle?'
+    # Should show the logged-in user form with their existing name
+    expect(page).to have_content('Welcome, John Smith!')
+    expect(page).to have_field('Your name', with: 'John Smith')
+    expect(page).to have_field('Your email', with: 'john.doe@example.com')
     
+    select 'Active Participant', from: 'What role will you play in this huddle?'
     click_button 'Join Huddle'
     
     expect(page).to have_content('Welcome to the huddle!')
