@@ -14,35 +14,59 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
   end
 
   def new
-    @ability = @organization.abilities.build
+    @ability = Ability.new(organization: @organization)
+    @ability_decorator = AbilityDecorator.new(@ability)
+    @form = AbilityForm.new(@ability)
+    @form.current_person = current_person
     authorize @ability
   end
 
   def create
-    @ability = @organization.abilities.build(ability_params)
-    @ability.created_by = current_person
-    @ability.updated_by = current_person
+    # Always authorize first
+    authorize Ability.new(organization: @organization)
     
-    authorize @ability
-
-    if @ability.save
-      redirect_to organization_ability_path(@organization, @ability), notice: 'Ability was successfully created.'
+    # Reform handles validation and parameter extraction
+    # Handle case where no ability parameters are provided
+    ability_params = params[:ability] || {}
+    
+    @form = AbilityForm.new(Ability.new(organization: @organization))
+    @form.current_person = current_person
+    
+    # Set flag for empty form data validation
+    @form.instance_variable_set(:@form_data_empty, ability_params.empty?)
+    
+    if @form.validate(ability_params) && @form.save
+      redirect_to organization_ability_path(@form.model.organization, @form.model), 
+                  notice: 'Ability was successfully created.'
     else
       render :new, status: :unprocessable_entity
     end
   end
 
   def edit
+    @ability_decorator = AbilityDecorator.new(@ability)
+    @form = AbilityForm.new(@ability)
+    @form.current_person = current_person
     authorize @ability
   end
 
   def update
+    # Always authorize first
     authorize @ability
     
-    @ability.updated_by = current_person
+    @form = AbilityForm.new(@ability)
+    @form.current_person = current_person
     
-    if @ability.update(ability_params)
-      redirect_to organization_ability_path(@organization, @ability), notice: 'Ability was successfully updated.'
+    # Reform handles validation and parameter extraction
+    # Handle case where no ability parameters are provided
+    ability_params = params[:ability] || {}
+    
+    # Set flag for empty form data validation
+    @form.instance_variable_set(:@form_data_empty, ability_params.empty?)
+    
+    if @form.validate(ability_params) && @form.save
+      redirect_to organization_ability_path(@form.model.organization, @form.model), 
+                  notice: 'Ability was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
     end
@@ -59,9 +83,5 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
 
   def set_ability
     @ability = @organization.abilities.find(params[:id])
-  end
-
-  def ability_params
-    params.require(:ability).permit(:name, :description, :version)
   end
 end

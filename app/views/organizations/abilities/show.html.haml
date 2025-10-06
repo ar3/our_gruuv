@@ -1,30 +1,104 @@
-- content_for :header do
-  %h1.mb-0= @ability.name
+= content_for :header do
+  .d-flex.justify-content-between.align-items-center.mb-2
+    %h1.mb-0{id: "page-title"}
+      %i.bi.bi-lightning.me-2
+      = @ability.name
+    .d-flex.align-items-center
+      = content_for :top_actions do
+        = link_to edit_organization_ability_path(@organization, @ability), class: "btn btn-warning" do
+          %i.bi.bi-pencil.me-2
+          Edit
 
-- content_for :header_action do
-  .btn-group
-    = link_to edit_organization_ability_path(@organization, @ability), class: "btn btn-warning" do
-      %i.bi.bi-pencil.me-2
-      Edit
-    = link_to organization_abilities_path(@organization), class: "btn btn-secondary" do
+.mb-4
+  = content_for :go_back_link do
+    = link_to organization_abilities_path(@organization), class: "text-muted text-decoration-none" do
       %i.bi.bi-arrow-left.me-2
       Back to Abilities
 
 .row
-  .col-12
-    .card
+  .col-md-8
+    .card.mb-4{ role: "region", "aria-labelledby": "ability-details" }
       .card-header
-        %h5.mb-0 Ability Details
+        %h5.mb-0{ id: "ability-details" }
+          %i.bi.bi-info-circle.me-2
+          Ability Details
       .card-body
         %dl.row
           %dt.col-sm-3 Name:
           %dd.col-sm-9= @ability.name
           %dt.col-sm-3 Description:
-          %dd.col-sm-9= @ability.description
+          %dd.col-sm-9
+            - if @ability.description.present?
+              = render_markdown(@ability.description)
+            - else
+              %em.text-muted No description provided
           %dt.col-sm-3 Version:
-          %dd.col-sm-9= @ability.version
+          %dd.col-sm-9
+            %span.badge.bg-primary= @ability.semantic_version
+          %dt.col-sm-3 Department:
+          %dd.col-sm-9= @ability.organization.display_name
           %dt.col-sm-3 Created:
           %dd.col-sm-9= @ability.created_at.strftime("%B %d, %Y at %I:%M %p")
           %dt.col-sm-3 Updated:
           %dd.col-sm-9= @ability.updated_at.strftime("%B %d, %Y at %I:%M %p")
+
+    .card.mb-4{ role: "region", "aria-labelledby": "milestone-descriptions" }
+      .card-header
+        %h5.mb-0{ id: "milestone-descriptions" }
+          %i.bi.bi-list-ol.me-2
+          Milestone Descriptions
+      .card-body
+        - (1..5).each do |level|
+          - description = @ability.send("milestone_#{level}_description")
+          - if description.present?
+            .mb-3
+              %h6.text-primary Milestone #{level}
+              = render_markdown(description)
+        - if (1..5).all? { |level| @ability.send("milestone_#{level}_description").blank? }
+          %em.text-muted No milestone descriptions provided
+
+  .col-md-4
+    .card.mb-4
+      .card-header
+        %h6.mb-0
+          %i.bi.bi-star.me-2
+          Spotlight
+      .card-body
+        .mb-3
+          %h6.text-muted.small.mb-2 Analytics
+          .d-flex.justify-content-between
+            %span Version:
+            %strong= @ability.semantic_version
+          .d-flex.justify-content-between
+            %span Department:
+            %strong= @ability.organization.display_name
+          .d-flex.justify-content-between
+            %span Created:
+            %strong= @ability.created_at.strftime("%b %d, %Y")
+        
+        .mb-3
+          %h6.text-muted.small.mb-2 Interesting Tidbits
+          - if @ability.description.present?
+            %p.small
+              %i.bi.bi-check-circle.text-success.me-1
+              Has detailed description
+          - else
+            %p.small
+              %i.bi.bi-exclamation-circle.text-warning.me-1
+              Missing description
+          
+          - milestone_count = (1..5).count { |level| @ability.send("milestone_#{level}_description").present? }
+          %p.small
+            %i.bi.bi-list-ol.text-info.me-1
+            #{milestone_count} of 5 milestones defined
+        
+        .mb-3
+          %h6.text-muted.small.mb-2 Quick Actions
+          .d-grid.gap-2
+            = link_to edit_organization_ability_path(@organization, @ability), class: "btn btn-outline-warning btn-sm" do
+              %i.bi.bi-pencil.me-1
+              Edit Ability
+            = link_to organization_abilities_path(@organization), class: "btn btn-outline-secondary btn-sm" do
+              %i.bi.bi-arrow-left.me-1
+              Back to Abilities
 

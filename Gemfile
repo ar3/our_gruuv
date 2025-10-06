@@ -91,6 +91,12 @@ gem "rack_session_access", "~> 0.2", group: :test
 gem "pundit", "~> 2.5"
 gem "draper", "~> 4.0"
 
+# Form validation with Reform and dry-validation
+gem "reform"
+gem "reform-rails"
+gem "dry-validation", "~> 1.11"
+gem "dry-schema", "~> 1.11"
+
 # Slack API integration
 gem "slack-ruby-client", "~> 2.0"
 

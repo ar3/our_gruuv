@@ -1,0 +1,62 @@
+/ Shared form partial for abilities (new and edit)
+= form_with model: @form, url: form_url, local: true, id: "ability-form" do |form|
+  - if @form.errors.any?
+    .alert.alert-danger
+      %h6 Please fix the following errors:
+      %ul.mb-0
+        - @form.errors.full_messages.each do |message|
+          %li= message
+  
+  .col-12
+    .mb-3
+      = form.label :name, class: "form-label"
+      = form.text_field :name, class: "form-control", placeholder: "e.g., Ruby Programming"
+    
+    .mb-3
+      = form.label :description, class: "form-label"
+      = form.text_area :description, class: "form-control", rows: 3, placeholder: "Describe what this ability covers..."
+  
+    .mb-3
+      = form.label :organization_id, "Department", class: "form-label"
+      = form.select :organization_id, options_from_collection_for_select(@organization.self_and_descendants, :id, :display_name, @ability&.organization_id || @organization.id), {}, { class: "form-select" }
+      %small.form-text.text-muted The department this ability belongs to
+    
+    .mb-4
+      %h6.mb-3
+        %i.bi.bi-list-ol.me-2
+        Milestone Descriptions
+      %p.text-muted.small Define what each milestone level means for this ability:
+      
+      - (1..5).each do |level|
+        .mb-3
+          = form.label "milestone_#{level}_description", "Milestone #{level}", class: "form-label"
+          - if @ability&.persisted?
+            = form.text_area "milestone_#{level}_description", class: "form-control", rows: 2, placeholder: "Describe what Milestone #{level} means for this ability...", value: @ability.send("milestone_#{level}_description")
+          - else
+            = form.text_area "milestone_#{level}_description", class: "form-control", rows: 2, placeholder: "Describe what Milestone #{level} means for this ability..."
+    
+    .card.mt-4
+      .card-header
+        %h6.mb-0
+          %i.bi.bi-flag.me-2
+          = version_section_title
+      .card-body
+        %p.text-muted.small.mb-3= version_section_description
+        
+        .row
+          - version_options.each do |option|
+            .col-md-4
+              .form-check
+                = form.radio_button :version_type, option[:value], class: "form-check-input", id: "version_type_#{option[:value]}", checked: option[:checked]
+                = form.label "version_type_#{option[:value]}", class: "form-check-label" do
+                  %strong= option[:label]
+                  %br
+                  %small{class: option[:text_class]}= option[:version_text]
+                  %br
+                  %small.text-muted= option[:description]
+  
+  .d-flex.justify-content-end.gap-2.mt-4
+    %button.btn.btn-primary{type: "submit"}
+      %i.bi.bi-check.me-2
+      = submit_button_text
+    = link_to "Cancel", cancel_path, class: "btn btn-outline-secondary"

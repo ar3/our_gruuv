@@ -8,49 +8,80 @@ This document defines the standard style guide for all show pages in the OurGruu
 All show pages should follow this consistent header layout:
 
 ```haml
-.d-flex.justify-content-between.align-items-center.mb-2
-  %h1.mb-0{id: "page-title"}
-    Page Title
-  .d-flex.align-items-center
-    = render 'action_component'  # Primary action component
+= content_for :header do
+  .d-flex.justify-content-between.align-items-center.mb-2
+    %h1.mb-0{id: "page-title"}
+      Page Title
+    .d-flex.align-items-center
+      = content_for :top_actions  # Edit button and other primary actions
 
 .mb-4
-  = link_to back_path, class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Previous
+  = content_for :go_back_link  # Single back link to index page
 ```
 
 ### Key Principles:
-- **Header row**: Title on left, primary action on right
+- **Header row**: Title on left, primary actions on right
 - **Margin**: Use `mb-2` for header, `mb-4` for back link section
 - **Back link**: Always below header as muted text (no button styling)
-- **Primary action**: Right-aligned in header row (e.g., view switcher, create button)
+- **Primary actions**: Right-aligned in header row (edit button, view switcher, etc.)
+- **Single edit button**: Only one edit button per page, placed in `top_actions` content_for
+- **Single back link**: Only one "back to [plural]" link, placed in `go_back_link` content_for
 
 ## Section Layout
 
-### Standard Section Structure
-All content sections should use this pattern:
+### Standard Show Page Structure
+All show pages should use this pattern with content on left and spotlight on right:
 
 ```haml
-.card.mb-4{ role: "region", "aria-labelledby": "section-name" }
-  .card-header
-    %h5.mb-0{ id: "section-name" }
-      %i.bi.bi-icon.me-2
-      Section Title
-  .card-body
-    .row
-      .col-md-8
-        / Stats, content, tables
-      .col-md-4.border-start.border-secondary
-        .d-grid.gap-2
-          / Action buttons
+.row
+  .col-md-8
+    / Main content sections
+    .card.mb-4{ role: "region", "aria-labelledby": "section-name" }
+      .card-header
+        %h5.mb-0{ id: "section-name" }
+          %i.bi.bi-icon.me-2
+          Section Title
+      .card-body
+        / Content goes here
+  
+  .col-md-4
+    / Spotlight section with analytics and interesting tidbits
+    .card.mb-4
+      .card-header
+        %h6.mb-0
+          %i.bi.bi-star.me-2
+          Spotlight
+      .card-body
+        / Analytics, stats, interesting tidbits about the object
 ```
 
+### Spotlight Section
+The spotlight section should contain:
+- **Analytics**: Key metrics, counts, statistics
+- **Interesting tidbits**: Fun facts, related data, contextual information
+- **Quick actions**: Secondary actions that don't belong in the header
+- **Related objects**: Links to related resources
+
+### When to Use 8:4 Column Split
+**IMPORTANT:** The 8:4 column split should ONLY be used when explicitly specified for specific page types:
+
+**✅ Use 8:4 split for:**
+- Show pages with content + spotlight sidebar
+- Index pages with filters/sort sidebar
+- Dashboard pages with stats + quick actions
+- Pages explicitly designed with content/action separation
+
+**❌ DON'T use 8:4 split for:**
+- Edit forms (use full width with buttons at bottom)
+- New forms (use full width with buttons at bottom)
+- Simple show pages without spotlight sidebars
+- Standard CRUD pages
+
 ### Key Principles:
-- **8:4 column split**: Content on left (8 cols), actions on right (4 cols)
+- **8:4 column split**: Content on left (8 cols), spotlight on right (4 cols) - ONLY when explicitly specified
 - **Simple headers**: No colored backgrounds, just clean card headers
 - **Consistent spacing**: `mb-4` between sections
-- **Action grouping**: Right sidebar with `.d-grid.gap-2` for button stacks
+- **Spotlight content**: Analytics, tidbits, and secondary actions in right sidebar
 
 ## Interactive Components
 
@@ -110,9 +141,11 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
 ## Implementation Checklist
 
 When creating or updating show pages, ensure:
-- [ ] Header follows standard layout (title left, action right)
-- [ ] Back link is below header as muted text
-- [ ] Sections use 8:4 column split
+- [ ] Header follows standard layout (title left, actions right)
+- [ ] Single edit button placed in `top_actions` content_for
+- [ ] Single back link placed in `go_back_link` content_for
+- [ ] Sections use 8:4 column split with spotlight sidebar
+- [ ] Spotlight section contains analytics and interesting tidbits
 - [ ] No colored headers - clean and simple
 - [ ] Consistent button patterns and spacing
 - [ ] Collapse elements use standard pattern (anchor tag + two spans + two icons)
