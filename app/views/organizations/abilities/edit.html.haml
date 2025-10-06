@@ -1,17 +1,14 @@
-.d-flex.justify-content-between.align-items-center.mb-2
-  %h1.mb-0{id: "page-title"}
-    %i.bi.bi-lightning.me-2
-    Edit #{@ability.name}
-  .d-flex.align-items-center
-    .btn-group
-      = link_to organization_ability_path(@organization, @ability), class: "btn btn-info" do
-        %i.bi.bi-eye.me-2
-        View
+- content_for :header do
+  = render 'shared/header', 
+    header_name: content_tag(:i, '', class: 'bi bi-lightning me-2') + "Edit #{@ability.name}"
 
-.mb-4
+- content_for :go_back_link do
   = link_to organization_ability_path(@organization, @ability), class: "text-muted text-decoration-none" do
     %i.bi.bi-arrow-left.me-2
     Back to #{@ability.name}
+
+- content_for :header_action do
+  = render 'mode_switcher'
 
 .card
   .card-header

@@ -74,6 +74,43 @@ For consistent header implementation across all show pages, use the shared heade
 - **Authorization**: Built-in support for disabled states with tooltips
 - **Reusability**: Can be used across all show pages with different parameters
 
+## Edit Page Standards
+
+### Edit Page Structure
+Edit pages should follow the same content_for structure as show pages but with different content:
+
+```haml
+- content_for :header do
+  = render 'shared/header', 
+    header_name: content_tag(:i, '', class: 'bi bi-icon me-2') + "Edit #{@resource.name}",
+    header_quick_action_url: resource_path(@resource),
+    header_quick_action_content: content_tag(:i, '', class: 'bi bi-eye me-2'),
+    header_quick_action_is_enabled: true,
+    header_quick_action_disabled_tooltip: ""
+
+- content_for :go_back_link do
+  = link_to resource_path(@resource), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@resource.name}
+
+- content_for :header_action do
+  = render 'mode_switcher'
+```
+
+### Edit Page Key Differences
+- **Header title**: Prefixed with "Edit " + resource name
+- **Quick action**: Links back to show page (view action) instead of edit
+- **Back link**: Goes back to show page, not index page
+- **Mode switcher**: Same as show page, shows current edit mode
+- **Form content**: Full-width form below the header sections
+
+### Edit Page Requirements
+- **Same content_for structure**: Uses `:header`, `:go_back_link`, and `:header_action`
+- **Mode switcher**: Required for show/edit page pairs
+- **View action**: Quick action should link to show page
+- **Consistent navigation**: Back link goes to show page, not index
+- **Form layout**: Use full width for forms (no 8:4 column split)
+
 ## Section Layout
 
 ### Standard Show Page Structure
@@ -270,3 +307,12 @@ When creating or updating show pages, ensure:
 - [ ] Responsive design considerations
 - [ ] Semantic color usage only
 - [ ] Authorization properly implemented with tooltips for disabled actions
+
+When creating or updating edit pages, ensure:
+- [ ] Uses same content_for structure as show pages (`:header`, `:header_action`, `:go_back_link`)
+- [ ] Header title prefixed with "Edit " + resource name
+- [ ] Quick action links to show page (view action)
+- [ ] Back link goes to show page, not index page
+- [ ] Mode switcher included in `header_action`
+- [ ] Form uses full width (no 8:4 column split)
+- [ ] Uses shared header partial with appropriate parameters

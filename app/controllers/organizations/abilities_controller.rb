@@ -54,6 +54,7 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
     # Always authorize first
     authorize @ability
     
+    @ability_decorator = AbilityDecorator.new(@ability)
     @form = AbilityForm.new(@ability)
     @form.current_person = current_person
     

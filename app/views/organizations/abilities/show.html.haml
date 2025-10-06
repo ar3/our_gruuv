@@ -74,6 +74,14 @@
           .d-flex.justify-content-between
             %span Created:
             %strong= @ability.created_at.strftime("%b %d, %Y")
+          .d-flex.justify-content-between
+            %span Required by:
+            %strong= @ability.required_by_assignments_count
+            %small.text-muted assignments
+          .d-flex.justify-content-between
+            %span People with milestones:
+            %strong= @ability.person_attainments_count
+            %small.text-muted people
         
         .mb-3
           %h6.text-muted.small.mb-2 Interesting Tidbits
@@ -90,5 +98,23 @@
           %p.small
             %i.bi.bi-list-ol.text-info.me-1
             #{milestone_count} of 5 milestones defined
+          
+          - if @ability.is_required_by_assignments?
+            %p.small
+              %i.bi.bi-clipboard-check.text-primary.me-1
+              Required by #{@ability.required_by_assignments_count} assignment#{'s' if @ability.required_by_assignments_count != 1}
+          - else
+            %p.small
+              %i.bi.bi-clipboard.text-muted.me-1
+              Not required by any assignments
+          
+          - if @ability.has_person_attainments?
+            %p.small
+              %i.bi.bi-people.text-success.me-1
+              #{@ability.person_attainments_count} person#{'s' if @ability.person_attainments_count != 1} have milestone#{'s' if @ability.person_attainments_count != 1}
+          - else
+            %p.small
+              %i.bi.bi-person.text-muted.me-1
+              No milestone attainments yet
 
 

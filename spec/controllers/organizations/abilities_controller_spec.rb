@@ -367,5 +367,35 @@ RSpec.describe Organizations::AbilitiesController, type: :controller do
       expect(response).to render_template(:edit)
       expect(assigns(:form).errors[:version_type]).to include("can't be blank")
     end
+
+    it 'sets up ability_decorator when validation fails and renders edit template' do
+      # This test ensures that @ability_decorator is available when update fails validation
+      # and renders the edit template, preventing NoMethodError
+      patch :update, params: { 
+        organization_id: organization.id, 
+        id: existing_ability.id, 
+        ability: { 
+          name: '', # Invalid: empty name to trigger validation failure
+          description: 'Updated Description',
+          organization_id: organization.id,
+          version_type: 'clarifying',
+          milestone_1_description: 'Basic understanding',
+          milestone_2_description: 'Intermediate skills'
+        }
+      }
+      
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to render_template(:edit)
+      
+      # Ensure @ability_decorator is set up properly
+      expect(assigns(:ability_decorator)).to be_present
+      expect(assigns(:ability_decorator)).to be_a(AbilityDecorator)
+      expect(assigns(:ability_decorator).id).to eq(existing_ability.id)
+      
+      # Ensure the decorator methods are available (this would fail with NoMethodError if not set up)
+      expect { assigns(:ability_decorator).version_section_title_for_context }.not_to raise_error
+      expect { assigns(:ability_decorator).version_section_description_for_context }.not_to raise_error
+      expect { assigns(:ability_decorator).edit_version_options }.not_to raise_error
+    end
   end
 end

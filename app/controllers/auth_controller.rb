@@ -38,8 +38,16 @@ class AuthController < ApplicationController
         person = find_or_create_person_from_google_auth(auth)
         create_or_update_google_identity(person, auth)
         session[:current_person_id] = person.id
-        current_org = person.current_organization_or_default
-        redirect_to dashboard_organization_path(current_org), notice: 'Successfully signed in with Google!'
+        
+        # Check for return path
+        if session[:return_to].present?
+          return_path = session[:return_to]
+          session[:return_to] = nil
+          redirect_to return_path, notice: 'Successfully signed in with Google!'
+        else
+          current_org = person.current_organization_or_default
+          redirect_to dashboard_organization_path(current_org), notice: 'Successfully signed in with Google!'
+        end
       end
       
     rescue => e
