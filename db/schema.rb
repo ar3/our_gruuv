@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_06_011145) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_07_025649) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -282,6 +282,49 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_06_011145) do
     t.index ["main_thread_id"], name: "index_notifications_on_main_thread_id"
     t.index ["notifiable_type", "notifiable_id"], name: "index_notifications_on_notifiable"
     t.index ["original_message_id"], name: "index_notifications_on_original_message_id"
+  end
+
+  create_table "observation_ratings", force: :cascade do |t|
+    t.bigint "observation_id", null: false
+    t.string "rateable_type", null: false
+    t.bigint "rateable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "rating", default: "na", null: false
+    t.index ["observation_id", "rateable_type", "rateable_id"], name: "index_observation_ratings_unique", unique: true
+    t.index ["observation_id"], name: "index_observation_ratings_on_observation_id"
+    t.index ["rateable_type", "rateable_id"], name: "index_observation_ratings_on_rateable"
+    t.index ["rateable_type", "rateable_id"], name: "index_observation_ratings_on_rateable_type_and_rateable_id"
+  end
+
+  create_table "observations", force: :cascade do |t|
+    t.bigint "observer_id", null: false
+    t.bigint "company_id", null: false
+    t.text "story", null: false
+    t.string "primary_feeling"
+    t.string "secondary_feeling"
+    t.datetime "observed_at"
+    t.string "custom_slug"
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "privacy_level", default: "observer_only", null: false
+    t.index ["company_id"], name: "index_observations_on_company_id"
+    t.index ["custom_slug"], name: "index_observations_on_custom_slug", unique: true
+    t.index ["deleted_at"], name: "index_observations_on_deleted_at"
+    t.index ["observed_at", "id"], name: "index_observations_on_observed_at_and_id"
+    t.index ["observed_at"], name: "index_observations_on_observed_at"
+    t.index ["observer_id"], name: "index_observations_on_observer_id"
+  end
+
+  create_table "observees", force: :cascade do |t|
+    t.bigint "observation_id", null: false
+    t.bigint "teammate_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["observation_id", "teammate_id"], name: "index_observees_on_observation_id_and_teammate_id", unique: true
+    t.index ["observation_id"], name: "index_observees_on_observation_id"
+    t.index ["teammate_id"], name: "index_observees_on_teammate_id"
   end
 
   create_table "organizations", force: :cascade do |t|
@@ -557,6 +600,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_06_011145) do
   add_foreign_key "maap_snapshots", "people", column: "employee_id"
   add_foreign_key "notifications", "notifications", column: "main_thread_id"
   add_foreign_key "notifications", "notifications", column: "original_message_id"
+  add_foreign_key "observation_ratings", "observations"
+  add_foreign_key "observations", "organizations", column: "company_id"
+  add_foreign_key "observations", "people", column: "observer_id"
+  add_foreign_key "observees", "observations"
+  add_foreign_key "observees", "teammates"
   add_foreign_key "organizations", "organizations", column: "parent_id"
   add_foreign_key "people", "organizations", column: "current_organization_id"
   add_foreign_key "person_identities", "people"

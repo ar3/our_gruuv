@@ -142,6 +142,174 @@ Before committing partials:
 - **Log errors appropriately** for debugging and monitoring
 - **Handle edge cases gracefully** - don't let unexpected errors crash the application
 
+## Enums
+
+### Use Descriptive String Values, Not Integers
+
+**✅ Good:**
+```ruby
+enum :privacy_level, {
+  observer_only: 'observer_only',
+  observed_only: 'observed_only',
+  managers_only: 'managers_only',
+  observed_and_managers: 'observed_and_managers',
+  public_observation: 'public_observation'
+}
+```
+
+**❌ Avoid:**
+```ruby
+enum :privacy_level, {
+  observer_only: 0,
+  observed_only: 1,
+  managers_only: 2,
+  observed_and_managers: 3,
+  public_observation: 4
+}
+```
+
+### Why Descriptive Enums Are Better
+
+1. **Readability**: Database values are self-documenting
+2. **Debugging**: Easier to understand what values mean in logs/queries
+3. **Maintenance**: No need to remember what integer 3 means
+4. **Database Queries**: More readable when writing raw SQL
+5. **API Responses**: JSON responses are more meaningful
+6. **Migration Safety**: Adding new values doesn't require careful ordering
+
+### Migration Pattern
+
+When converting from integer to descriptive enums:
+
+```ruby
+class ChangeEnumToDescriptive < ActiveRecord::Migration[8.0]
+  def up
+    # Add temporary string column
+    add_column :table_name, :column_name_string, :string
+    
+    # Migrate data
+    execute <<-SQL
+      UPDATE table_name 
+      SET column_name_string = CASE column_name
+        WHEN 0 THEN 'value_one'
+        WHEN 1 THEN 'value_two'
+        WHEN 2 THEN 'value_three'
+        ELSE 'default_value'
+      END
+    SQL
+    
+    # Remove old column and rename new one
+    remove_column :table_name, :column_name
+    rename_column :table_name, :column_name_string, :column_name
+    
+    # Add constraints
+    change_column_null :table_name, :column_name, false
+    change_column_default :table_name, :column_name, 'default_value'
+  end
+
+  def down
+    # Reverse migration...
+  end
+end
+```
+
+### Testing Descriptive Enums
+
+```ruby
+describe 'enums' do
+  it 'defines enum with descriptive values' do
+    expect(Model.enum_name).to eq({
+      'value_one' => 'value_one',
+      'value_two' => 'value_two',
+      'value_three' => 'value_three'
+    })
+  end
+end
+```
+
+### Exception: Performance-Critical Enums
+
+Only use integer enums when:
+- The enum has 10+ values
+- Database performance is critical
+- Storage space is a major concern
+
+Even then, consider if the readability benefits outweigh the performance costs.
+
+## Policies
+
+### Always Use `actual_user` Instead of `user`
+
+**✅ Good:**
+```ruby
+class ObservationPolicy < ApplicationPolicy
+  def show?
+    actual_user == record.observer
+  end
+
+  def create?
+    actual_user.present?
+  end
+
+  private
+
+  def user_in_observees?
+    return false unless actual_user.is_a?(Person)
+    record.observed_teammates.any? { |teammate| teammate.person == actual_user }
+  end
+end
+```
+
+**❌ Avoid:**
+```ruby
+class ObservationPolicy < ApplicationPolicy
+  def show?
+    user == record.observer  # Wrong - bypasses impersonation
+  end
+
+  def create?
+    user.present?  # Wrong - bypasses impersonation
+  end
+end
+```
+
+### Why Use `actual_user`?
+
+1. **Impersonation Support**: The `user` parameter may be a wrapper object that supports impersonation
+2. **Consistency**: All existing policies use `actual_user` (99+ instances across codebase)
+3. **Admin Bypass**: The `admin_bypass?` method uses `real_user` to prevent impersonation bypass
+4. **Future-Proof**: Supports authentication system changes without breaking policies
+
+### Policy Pattern
+
+```ruby
+class ApplicationPolicy
+  # Helper method to get the actual user from pundit_user
+  def actual_user
+    user.respond_to?(:user) ? user.user : user
+  end
+
+  # Admin bypass - og_admin users get all permissions
+  def admin_bypass?
+    # Check if the real user (not impersonated) is an admin
+    real_user = user.respond_to?(:real_user) ? user.real_user : actual_user
+    real_user&.admin?
+  end
+end
+```
+
+### Testing Policies
+
+When testing policies, use the actual user object, not wrapper objects:
+
+```ruby
+# ✅ Good
+expect(subject).to permit(actual_person, record)
+
+# ❌ Avoid
+expect(subject).to permit(wrapper_user, record)
+```
+
 ## Testing Standards
 
 ### Framework
