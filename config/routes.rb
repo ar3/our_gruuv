@@ -142,6 +142,13 @@ get '/login', to: 'auth#login', as: :login
     # Aspirations management
     resources :aspirations, module: :organizations
     
+    # Observations management
+    resources :observations, module: :organizations do
+      collection do
+        get :journal  # Shortcut to apply "My Journal" workspace
+      end
+    end
+    
     # Seats management
     resources :seats, module: :organizations do
       member do
@@ -262,6 +269,9 @@ delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconn
   get '/milestones', to: 'pages#milestones_overview', as: :milestones_overview
   get '/huddles-overview', to: 'pages#huddles_overview', as: :huddles_overview
   get '/accountability', to: 'pages#accountability', as: :accountability
+
+  # Kudos permalinks (public observation links)
+  get '/kudos/:date/:id', to: 'kudos#show', as: :kudos
 
   # Defines the root path route ("/")
   # root "posts#index"

@@ -1,6 +1,7 @@
 class Person < ApplicationRecord
   # Associations
   has_many :person_identities, dependent: :destroy
+  has_many :observations, foreign_key: :observer_id, dependent: :destroy
 
   # Milestone-related methods
   def milestone_attainments(organization)

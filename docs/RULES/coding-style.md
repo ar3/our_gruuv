@@ -310,6 +310,147 @@ expect(subject).to permit(actual_person, record)
 expect(subject).to permit(wrapper_user, record)
 ```
 
+## Form Objects & Controller Actions
+
+### Use Form Objects for Create/Update Actions
+
+**✅ Good - Use Reform Forms:**
+```ruby
+class ObservationForm < Reform::Form
+  property :story
+  property :privacy_level
+  property :primary_feeling
+  property :secondary_feeling
+  property :observed_at
+  property :custom_slug
+  
+  validates :story, presence: true
+  validates :privacy_level, presence: true
+  validates :primary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }
+  
+  def save
+    return false unless valid?
+    super
+    model.save
+  end
+end
+
+# In controller:
+def create
+  authorize Observation.new(company: @company)
+  
+  @form = ObservationForm.new(Observation.new(company: @company))
+  @form.current_person = current_person
+  
+  if @form.validate(observation_params) && @form.save
+    redirect_to organization_observation_path(@company, @form.model)
+  else
+    render :new, status: :unprocessable_entity
+  end
+end
+```
+
+**✅ Good - Use ActiveModel Forms for Simpler Cases:**
+```ruby
+class SimpleForm
+  include ActiveModel::Model
+  include ActiveModel::Attributes
+  
+  attribute :name, :string
+  attribute :description, :string
+  
+  validates :name, presence: true
+  validates :description, presence: true
+  
+  def save
+    return false unless valid?
+    # Custom save logic here
+    true
+  end
+end
+```
+
+**❌ Avoid - Direct Model Updates in Controllers:**
+```ruby
+def create
+  @observation = Observation.new(observation_params)
+  if @observation.save
+    # Complex logic mixed in controller
+    create_observees
+    create_ratings
+    send_notifications
+    redirect_to @observation
+  else
+    render :new
+  end
+end
+```
+
+### Form Object Benefits
+
+1. **Separation of Concerns**: Form logic separated from controller logic
+2. **Reusability**: Forms can be used in multiple contexts (web, API, etc.)
+3. **Testability**: Forms can be tested independently
+4. **Complex Validation**: Handle multi-step validation and nested attributes
+5. **Clean Controllers**: Controllers focus on HTTP concerns, not business logic
+
+### When to Use Each Type
+
+**Use Reform Forms when:**
+- Complex nested attributes (has_many, belongs_to)
+- Multi-step validation logic
+- Need to sync multiple models
+- Complex form state management
+
+**Use ActiveModel Forms when:**
+- Simple single-model forms
+- Basic validation needs
+- Custom save logic that doesn't fit Reform patterns
+
+### Controller Pattern
+
+```ruby
+class ObservationsController < ApplicationController
+  def new
+    @form = ObservationForm.new(Observation.new(company: @company))
+    @form.current_person = current_person
+    authorize @form.model
+  end
+
+  def create
+    authorize Observation.new(company: @company)
+    
+    @form = ObservationForm.new(Observation.new(company: @company))
+    @form.current_person = current_person
+    
+    if @form.validate(observation_params) && @form.save
+      redirect_to organization_observation_path(@company, @form.model)
+    else
+      render :new, status: :unprocessable_entity
+    end
+  end
+
+  def edit
+    @form = ObservationForm.new(@observation)
+    @form.current_person = current_person
+    authorize @observation
+  end
+
+  def update
+    authorize @observation
+    
+    @form = ObservationForm.new(@observation)
+    @form.current_person = current_person
+    
+    if @form.validate(observation_params) && @form.save
+      redirect_to organization_observation_path(@company, @observation)
+    else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+end
+```
+
 ## Testing Standards
 
 ### Framework

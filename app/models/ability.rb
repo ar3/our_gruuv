@@ -8,6 +8,8 @@ class Ability < ApplicationRecord
   has_many :assignments, through: :assignment_abilities
   has_many :person_milestones, dependent: :destroy
   has_many :people, through: :person_milestones
+  has_many :observation_ratings, as: :rateable, dependent: :destroy
+  has_many :observations, through: :observation_ratings
 
   # Scopes
   scope :publicly_available, -> { where.not(became_public_at: nil) }

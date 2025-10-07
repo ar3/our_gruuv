@@ -17,6 +17,7 @@ class Organization < ApplicationRecord
   has_many :third_party_object_associations, as: :associatable, dependent: :destroy
   has_many :teammates, dependent: :destroy
   has_many :upload_events, dependent: :destroy
+  has_many :observations, foreign_key: :company_id, dependent: :destroy
   
   # Validations
   validates :name, presence: true

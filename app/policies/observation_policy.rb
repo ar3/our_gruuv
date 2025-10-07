@@ -73,6 +73,10 @@ class ObservationPolicy < ApplicationPolicy
     actual_user == record.observer
   end
 
+  def journal?
+    index?
+  end
+
   def view_change_history?
     # Observer, observed, and those with can_manage_employment can see change history
     actual_user == record.observer || 

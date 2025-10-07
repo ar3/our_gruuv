@@ -22,15 +22,15 @@ RSpec.describe ObservationDecorator, type: :decorator do
 
   describe '#permalink_url' do
     it 'returns correct URL' do
-      # Skip this test until routes are defined
-      skip 'Routes not yet defined'
+      expected_url = Rails.application.routes.url_helpers.kudos_url(date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id)
+      expect(decorated_observation.permalink_url).to eq(expected_url)
     end
   end
 
   describe '#permalink_path' do
     it 'returns correct path' do
-      # Skip this test until routes are defined
-      skip 'Routes not yet defined'
+      expected_path = Rails.application.routes.url_helpers.kudos_path(date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id)
+      expect(decorated_observation.permalink_path).to eq(expected_path)
     end
   end
 
@@ -155,8 +155,17 @@ RSpec.describe ObservationDecorator, type: :decorator do
     end
 
     it 'returns correct summary for single channel post' do
-      # This would need notification records to test properly
-      skip 'Requires notification setup'
+      # Create a successful channel notification
+      observation.notifications.create!(
+        notification_type: 'observation_channel',
+        status: 'sent_successfully',
+        message_id: '1234567890.123456',
+        rich_message: 'Test message',
+        fallback_text: 'Test message',
+        metadata: { channel: 'C123456' }
+      )
+      
+      expect(decorated_observation.channel_posts_summary).to eq('Posted to 1 channel')
     end
   end
 

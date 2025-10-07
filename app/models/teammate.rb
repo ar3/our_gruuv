@@ -12,6 +12,8 @@ class Teammate < ApplicationRecord
   has_many :employment_tenures, dependent: :nullify
   has_many :huddle_feedbacks, dependent: :nullify
   has_many :huddle_participants, dependent: :nullify
+  has_many :observees, dependent: :destroy
+  has_many :observations, through: :observees
   
   # Validations
   validates :person_id, uniqueness: { scope: :organization_id }

@@ -10,6 +10,10 @@ class Observation < ApplicationRecord
   has_many :abilities, through: :observation_ratings, source: :rateable, source_type: 'Ability'
   has_many :assignments, through: :observation_ratings, source: :rateable, source_type: 'Assignment'
   has_many :aspirations, through: :observation_ratings, source: :rateable, source_type: 'Aspiration'
+  has_many :notifications, as: :notifiable, dependent: :destroy
+
+  accepts_nested_attributes_for :observees, allow_destroy: true
+  accepts_nested_attributes_for :observation_ratings, allow_destroy: true
   
   enum :privacy_level, {
     observer_only: 'observer_only',              # 🔒 Only observer (private notes/journal)
@@ -78,13 +82,24 @@ class Observation < ApplicationRecord
   def soft_delete!
     update!(deleted_at: Time.current)
   end
-  
+
+  def restore!
+    update!(deleted_at: nil)
+  end
+
   def soft_deleted?
     deleted_at.present?
   end
   
-  def restore!
-    update!(deleted_at: nil)
+  def can_post_to_slack?
+    # Only public observations can be posted to channels
+    # DMs can be sent for any observation where observees have Slack identities
+    return true if privacy_level == 'public_observation'
+    
+    # For non-public observations, check if any observees have Slack identities
+    observed_teammates.any? do |teammate|
+      teammate.person.person_identities.exists?(provider: 'slack')
+    end
   end
   
   private

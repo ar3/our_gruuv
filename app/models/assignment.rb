@@ -7,6 +7,8 @@ class Assignment < ApplicationRecord
   has_many :assignment_tenures, dependent: :destroy
   has_many :assignment_abilities, dependent: :destroy
   has_many :abilities, through: :assignment_abilities
+  has_many :observation_ratings, as: :rateable, dependent: :destroy
+  has_many :observations, through: :observation_ratings
   has_one :published_external_reference, -> { where(reference_type: 'published') }, 
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
   has_one :draft_external_reference, -> { where(reference_type: 'draft') }, 
