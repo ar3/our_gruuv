@@ -11,8 +11,14 @@ class TeammatesQuery
     teammates = filter_by_organization(teammates)
     teammates = filter_by_permissions(teammates)
     teammates = apply_sort(teammates)
-    teammates = filter_by_status(teammates) # Apply status filter last since it converts to Array
+    # Note: Status filtering is complex and requires Array conversion
+    # This should be applied after pagination in the controller
     teammates
+  end
+  
+  def call_with_status_filter
+    teammates = call
+    filter_by_status(teammates)
   end
 
   def current_filters
@@ -35,13 +41,6 @@ class TeammatesQuery
     current_filters.any?
   end
 
-  private
-
-  def base_scope
-    Teammate.for_organization_hierarchy(organization)
-            .includes(:person, :employment_tenures, :organization)
-  end
-
   def filter_by_status(teammates)
     return teammates unless params[:status].present?
 
@@ -55,11 +54,19 @@ class TeammatesQuery
     end
   end
 
+  private
+
+  def base_scope
+    Teammate.for_organization_hierarchy(organization)
+            .includes(:person, :employment_tenures, :organization)
+  end
+
   def filter_by_organization(teammates)
     return teammates unless params[:organization_id].present?
 
     org_id = params[:organization_id].to_i
-    teammates.where(organization_id: org_id)
+    organization = Organization.find(org_id)
+    teammates.where(organization: organization.self_and_descendants)
   end
 
   def filter_by_permissions(teammates)

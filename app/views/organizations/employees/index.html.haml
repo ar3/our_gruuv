@@ -45,11 +45,9 @@
 .row.justify-content-center.mb-2
   .col-lg-12
     .d-flex.justify-content-between.align-items-center
-      %small.text-muted== pagy_info(@pagy)
+      %small.text-muted= raw pagy_info(@pagy)
       - if @teammates.count > 0
         %small.text-muted Showing #{@current_view.humanize} view
-        %br
-        %small.text-muted Debug: Pages: #{@pagy.pages}, Current: #{@pagy.page}, Items: #{@pagy.items}
 
 / Main Content Area
 .row.justify-content-center
@@ -66,16 +64,7 @@
       / Pagination
       .d-flex.justify-content-center.mt-4
         - if @pagy.pages > 1
-          .pagination-debug
-            %small.text-muted Debug: About to render pagination
-            %br
-            %small.text-muted Raw pagy_nav output:
-            %pre.border.p-2.mt-2= pagy_nav(@pagy)
-            %br
-            %small.text-muted Rendered pagy_nav:
-            == pagy_nav(@pagy)
-        - else
-          %small.text-muted No pagination needed (only 1 page)
+          = raw pagy_nav(@pagy)
     - else
       .alert.alert-info
         %h6.mb-2

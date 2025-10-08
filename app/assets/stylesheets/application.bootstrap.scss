@@ -388,15 +388,3 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   opacity: 0.6;
   cursor: not-allowed;
 }
-
-// ===== PAGINATION DEBUG STYLES =====
-.pagination-debug {
-  border: 2px solid #007bff;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  margin: 1rem 0;
-  
-  .pagination {
-    margin: 0;
-  }
-}

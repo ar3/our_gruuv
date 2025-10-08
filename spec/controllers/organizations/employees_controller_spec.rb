@@ -48,6 +48,23 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
     it 'includes huddle participants from child organizations' do
       get :index, params: { organization_id: company.id }
       
+      # Debug: Check what's actually in the spotlight stats
+      puts "Spotlight stats: #{assigns(:spotlight_stats)}"
+      puts "Huddle participants count: #{assigns(:spotlight_stats)[:huddle_participants]}"
+      puts "Total teammates: #{assigns(:spotlight_stats)[:total_teammates]}"
+      
+      # Debug: Check if huddle participation was created
+      puts "Huddle participation exists: #{HuddleParticipant.exists?}"
+      puts "Huddle participants count: #{HuddleParticipant.count}"
+      
+      # Debug: Check organization hierarchy
+      puts "Company descendants: #{company.self_and_descendants.map(&:id)}"
+      puts "All teammates in hierarchy: #{Teammate.for_organization_hierarchy(company).count}"
+      puts "Teammates by organization:"
+      Teammate.for_organization_hierarchy(company).each do |t|
+        puts "  - #{t.person.display_name} (#{t.organization.name})"
+      end
+      
       # Should include participants from child organizations (team)
       expect(assigns(:spotlight_stats)[:huddle_participants]).to be > 0
     end

@@ -9,6 +9,7 @@ class Teammate < ApplicationRecord
   has_many :person_milestones, dependent: :nullify
   has_many :assignment_check_ins, dependent: :nullify
   has_many :assignment_tenures, dependent: :nullify
+  has_many :assignments, through: :assignment_tenures
   has_many :employment_tenures, dependent: :nullify
   has_many :huddle_feedbacks, dependent: :nullify
   has_many :huddle_participants, dependent: :nullify

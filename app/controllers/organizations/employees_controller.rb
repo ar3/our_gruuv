@@ -9,12 +9,19 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Use TeammatesQuery for filtering and sorting
     query = TeammatesQuery.new(@organization, params)
     
-    # Get paginated teammates
-    @pagy, @teammates = pagy(query.call, items: 25)
-    
-    # Calculate spotlight statistics from filtered teammates (not paginated)
+    # Get teammates with all filters except status (to keep ActiveRecord relation)
     filtered_teammates = query.call
-    @spotlight_stats = calculate_spotlight_stats(filtered_teammates)
+    
+    # Apply status filter (converts to Array)
+    status_filtered_teammates = query.filter_by_status(filtered_teammates)
+    
+    # Paginate the status-filtered teammates using Kaminari-style pagination
+    @pagy = Pagy.new(count: status_filtered_teammates.count, page: params[:page] || 1, items: 25)
+    @teammates = status_filtered_teammates[@pagy.offset, @pagy.items]
+    
+    # Calculate spotlight statistics from all teammates (not filtered, not paginated)
+    all_teammates = query.call
+    @spotlight_stats = calculate_spotlight_stats(all_teammates)
     
     # Store current filter/sort state for view
     @current_filters = query.current_filters
@@ -76,19 +83,28 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   
   private
 
-  def calculate_spotlight_stats(teammates)
-    {
-      total_teammates: teammates.count,
-      followers: teammates.select { |t| TeammateStatus.new(t).status == :follower }.count,
-      huddlers: teammates.select { |t| TeammateStatus.new(t).status == :huddler }.count,
-      unassigned_employees: teammates.select { |t| TeammateStatus.new(t).status == :unassigned_employee }.count,
-      assigned_employees: teammates.select { |t| TeammateStatus.new(t).status == :assigned_employee }.count,
-      terminated: teammates.select { |t| TeammateStatus.new(t).status == :terminated }.count,
-      unknown: teammates.select { |t| TeammateStatus.new(t).status == :unknown }.count,
-      huddle_participants: teammates.joins(:huddle_participants).distinct.count,
-      non_employee_participants: teammates.joins(:huddle_participants).where(first_employed_at: nil).distinct.count
-    }
-  end
+    def calculate_spotlight_stats(teammates)
+      # Always use ActiveRecord relation for spotlight stats to ensure proper joins
+      if teammates.is_a?(Array)
+        # Convert Array back to ActiveRecord relation for proper joins
+        teammate_ids = teammates.map(&:id)
+        teammates_relation = Teammate.where(id: teammate_ids)
+      else
+        teammates_relation = teammates
+      end
+
+      {
+        total_teammates: teammates.count,
+        followers: teammates.select { |t| TeammateStatus.new(t).status == :follower }.count,
+        huddlers: teammates.select { |t| TeammateStatus.new(t).status == :huddler }.count,
+        unassigned_employees: teammates.select { |t| TeammateStatus.new(t).status == :unassigned_employee }.count,
+        assigned_employees: teammates.select { |t| TeammateStatus.new(t).status == :assigned_employee }.count,
+        terminated: teammates.select { |t| TeammateStatus.new(t).status == :terminated }.count,
+        unknown: teammates.select { |t| TeammateStatus.new(t).status == :unknown }.count,
+        huddle_participants: teammates_relation.joins(:huddle_participants).distinct.count,
+        non_employee_participants: teammates_relation.joins(:huddle_participants).where(first_employed_at: nil).distinct.count
+      }
+    end
 
   def require_authentication
     unless current_person

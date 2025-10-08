@@ -133,3 +133,5 @@ class TeammateStatus
     teammate.employment_tenures.active.exists?(company: teammate.organization)
   end
 end
+
+
