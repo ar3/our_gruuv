@@ -19,6 +19,9 @@ gem "cssbundling-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
 
+# HAML templating engine for Rails
+gem "haml-rails"
+
 # Pagination gem - fast and lightweight
 gem 'pagy', '~> 6.0'
 

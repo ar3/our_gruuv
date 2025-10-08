@@ -50,6 +50,8 @@ class HealthcheckController < ApplicationController
       @db_status = "Failed"
       @db_error = "#{e.class}: #{e.message}"
     end
+    
+    render :index
   end
   
   def oauth_test
