@@ -1,4 +1,6 @@
 class Person < ApplicationRecord
+  include PgSearch::Model
+  
   # Associations
   has_many :person_identities, dependent: :destroy
   has_many :observations, foreign_key: :observer_id, dependent: :destroy
@@ -401,4 +403,18 @@ class Person < ApplicationRecord
     self.last_name = name_parts.last_name
     self.suffix = name_parts.suffix
   end
+  
+  # pg_search configuration
+  pg_search_scope :search_by_full_text,
+    against: {
+      first_name: 'A',
+      last_name: 'A',
+      middle_name: 'B',
+      email: 'C'
+    },
+    using: {
+      tsearch: { prefix: true, any_word: true }
+    }
+  
+  multisearchable against: [:first_name, :last_name, :email]
 end

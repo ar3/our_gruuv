@@ -1,5 +1,6 @@
 class Observation < ApplicationRecord
   include Notifiable
+  include PgSearch::Model
   has_paper_trail
   
   belongs_to :observer, class_name: 'Person'
@@ -118,4 +119,16 @@ class Observation < ApplicationRecord
     end
   end
   
+  # pg_search configuration
+  pg_search_scope :search_by_full_text,
+    against: {
+      story: 'A',
+      primary_feeling: 'B',
+      secondary_feeling: 'B'
+    },
+    using: {
+      tsearch: { prefix: true, any_word: true }
+    }
+  
+  multisearchable against: [:story, :primary_feeling, :secondary_feeling]
 end

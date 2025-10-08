@@ -1,4 +1,6 @@
 class Assignment < ApplicationRecord
+  include PgSearch::Model
+  
   # Associations
   belongs_to :company, class_name: 'Organization'
   has_many :assignment_outcomes, dependent: :destroy
@@ -115,4 +117,18 @@ class Assignment < ApplicationRecord
       assignment_outcomes.create!(description: description, outcome_type: type)
     end
   end
+  
+  # pg_search configuration
+  pg_search_scope :search_by_full_text,
+    against: {
+      title: 'A',
+      tagline: 'B',
+      required_activities: 'B',
+      handbook: 'B'
+    },
+    using: {
+      tsearch: { prefix: true, any_word: true }
+    }
+  
+  multisearchable against: [:title, :tagline, :required_activities, :handbook]
 end

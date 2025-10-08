@@ -15,6 +15,9 @@ Rails.application.routes.draw do
   get "/healthcheck", to: "healthcheck#index"
   get "/healthcheck/oauth_test", to: "healthcheck#oauth_test"
   
+  # Global search
+  get "/search", to: "search#index"
+  
   # OAuth debug route
   get "/auth/debug", to: "auth#oauth_debug"
   

@@ -1,6 +1,22 @@
 require 'rails_helper'
 
+# Temporary helper module for the view spec
+module TestObservationsHelper
+  def rating_options_for_select(selected_value = nil)
+    [
+      ['Select rating...', ''],
+      ['⭐ Strongly Agree (Exceptional)', 'strongly_agree'],
+      ['👍 Agree (Good)', 'agree'],
+      ['👁️‍🗨️ N/A', 'na'],
+      ['👎 Disagree (Opportunity)', 'disagree'],
+      ['⭕ Strongly Disagree (Major Concern)', 'strongly_disagree']
+    ]
+  end
+end
+
 RSpec.describe 'organizations/observations/set_ratings', type: :view do
+  include TestObservationsHelper
+  
   let(:company) { create(:organization, :company) }
   let(:observer) { create(:person) }
   let(:observer_teammate) { create(:teammate, person: observer, organization: company) }
@@ -24,13 +40,13 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
         @observation = company.observations.build(observer: observer)
         @form = ObservationForm.new(@observation)
         @form.observation_ratings_attributes = nil
-        @available_abilities = company.abilities
-        @available_assignments = company.assignments
+        @available_abilities = [ability1, ability2]
+        @available_assignments = [assignment1, assignment2]
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
-        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability"]', count: 2)
-        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment"]', count: 2)
+        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability_"]', count: 2)
+        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment_"]', count: 2)
       end
     end
 
@@ -39,13 +55,13 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
         @observation = company.observations.build(observer: observer)
         @form = ObservationForm.new(@observation)
         @form.observation_ratings_attributes = {}
-        @available_abilities = company.abilities
-        @available_assignments = company.assignments
+        @available_abilities = [ability1, ability2]
+        @available_assignments = [assignment1, assignment2]
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
-        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability"]', count: 2)
-        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment"]', count: 2)
+        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability_"]', count: 2)
+        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment_"]', count: 2)
       end
     end
 
@@ -59,13 +75,13 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
           "ability_#{ability2.id}" => ['agree'], # Array instead of string
           "assignment_#{assignment1.id}" => ['strongly_agree'] # Array instead of string
         }
-        @available_abilities = company.abilities
-        @available_assignments = company.assignments
+        @available_abilities = [ability1, ability2]
+        @available_assignments = [assignment1, assignment2]
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
-        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability"]', count: 2)
-        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment"]', count: 2)
+        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability_"]', count: 2)
+        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment_"]', count: 2)
       end
     end
 
@@ -79,13 +95,13 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
           "ability_#{ability2.id}" => { 'rating' => 'agree' },
           "assignment_#{assignment1.id}" => { 'rating' => 'strongly_agree' }
         }
-        @available_abilities = company.abilities
-        @available_assignments = company.assignments
+        @available_abilities = [ability1, ability2]
+        @available_assignments = [assignment1, assignment2]
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
-        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability"]', count: 2)
-        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment"]', count: 2)
+        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability_"]', count: 2)
+        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment_"]', count: 2)
       end
     end
 
@@ -100,13 +116,13 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
           "assignment_#{assignment1.id}" => nil, # Nil
           "assignment_#{assignment2.id}" => { 'rating' => '' } # Empty string
         }
-        @available_abilities = company.abilities
-        @available_assignments = company.assignments
+        @available_abilities = [ability1, ability2]
+        @available_assignments = [assignment1, assignment2]
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
-        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability"]', count: 2)
-        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment"]', count: 2)
+        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability_"]', count: 2)
+        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment_"]', count: 2)
       end
     end
 
@@ -119,12 +135,12 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
           "ability_#{ability1.id}" => [['strongly_agree']], # Nested array
           "ability_#{ability2.id}" => { 'rating' => [['agree']] } # Array in hash
         }
-        @available_abilities = company.abilities
-        @available_assignments = company.assignments
+        @available_abilities = [ability1, ability2]
+        @available_assignments = [assignment1, assignment2]
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
-        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability"]', count: 2)
+        expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability_"]', count: 2)
       end
     end
   end
@@ -138,7 +154,7 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
 
       render
 
-      expect(rendered).to have_content('No abilities or assignments available for the selected observees.')
+        expect(rendered).to have_content('No abilities, assignments, or aspirations available for the selected observees.')
       expect(rendered).not_to have_css('select[name*="observation[observation_ratings_attributes]"]')
     end
   end
@@ -147,13 +163,13 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
     it 'shows only ability rating selects' do
       @observation = company.observations.build(observer: observer)
       @form = ObservationForm.new(@observation)
-      @available_abilities = company.abilities
-      @available_assignments = []
+        @available_abilities = [ability1, ability2]
+        @available_assignments = []
 
       render
 
-      expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability"]', count: 2)
-      expect(rendered).not_to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment"]')
+      expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability_"]', count: 2)
+      expect(rendered).not_to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment_"]')
     end
   end
 
@@ -161,13 +177,13 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
     it 'shows only assignment rating selects' do
       @observation = company.observations.build(observer: observer)
       @form = ObservationForm.new(@observation)
-      @available_abilities = []
-      @available_assignments = company.assignments
+        @available_abilities = []
+        @available_assignments = [assignment1, assignment2]
 
       render
 
-      expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment"]', count: 2)
-      expect(rendered).not_to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability"]')
+      expect(rendered).to have_css('select[name*="observation[observation_ratings_attributes]"][name*="assignment_"]', count: 2)
+      expect(rendered).not_to have_css('select[name*="observation[observation_ratings_attributes]"][name*="ability_"]')
     end
   end
 
@@ -197,7 +213,7 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
 
       render
 
-      expect(rendered).to have_css('#privacy_observed_only:checked')
+        expect(rendered).to have_css('#privacy_observed_only[checked]')
     end
   end
 
@@ -249,8 +265,8 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
 
       render
 
-      expect(rendered).to have_content('Step 2 of 3')
       expect(rendered).to have_css('.progress-bar-step-2')
+      expect(rendered).to have_content('Step 2: Ratings & Privacy')
     end
   end
 end

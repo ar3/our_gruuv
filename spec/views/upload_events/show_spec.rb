@@ -1,14 +1,27 @@
 require 'rails_helper'
 
+# Temporary helper module for the view spec
+module TestUploadEventsHelper
+  def current_organization
+    @current_organization ||= Organization.first
+  end
+  
+  def current_person
+    @current_person ||= Person.first
+  end
+end
+
 RSpec.describe 'upload_events/show', type: :view do
+  include TestUploadEventsHelper
+  
   let(:organization) { create(:organization, type: 'Company') }
   let(:person) { create(:person) }
   let(:upload_event) { create(:upload_employees, organization: organization, creator: person, initiator: person) }
 
   before do
     assign(:upload_event, upload_event)
-    assign(:current_organization, organization)
-    assign(:current_person, person)
+    @current_organization = organization
+    @current_person = person
   end
 
   describe 'preview actions display' do

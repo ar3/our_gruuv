@@ -1,4 +1,5 @@
 class Ability < ApplicationRecord
+  include PgSearch::Model
   has_paper_trail
 
   belongs_to :organization
@@ -161,4 +162,16 @@ class Ability < ApplicationRecord
   def make_private!
     update!(became_public_at: nil)
   end
+  
+  # pg_search configuration
+  pg_search_scope :search_by_full_text,
+    against: {
+      name: 'A',
+      description: 'B'
+    },
+    using: {
+      tsearch: { prefix: true, any_word: true }
+    }
+  
+  multisearchable against: [:name, :description]
 end

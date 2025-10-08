@@ -1,4 +1,6 @@
 class Position < ApplicationRecord
+  include PgSearch::Model
+  
   # Associations
   belongs_to :position_type
   belongs_to :position_level
@@ -71,4 +73,20 @@ class Position < ApplicationRecord
   def make_private!
     update!(became_public_at: nil)
   end
+  
+  # pg_search configuration
+  pg_search_scope :search_by_full_text,
+    associated_against: {
+      position_type: [:external_title],
+      position_level: [:level]
+    },
+    using: {
+      tsearch: { prefix: true, any_word: true }
+    }
+  
+  multisearchable against: [],
+    associated_against: {
+      position_type: [:external_title],
+      position_level: [:level]
+    }
 end 

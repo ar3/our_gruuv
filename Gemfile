@@ -122,3 +122,6 @@ gem "omniauth-google-oauth2", "~> 1.1"
 gem "omniauth-rails_csrf_protection", "~> 1.0"
 
 gem "paper_trail", "~> 16.0"
+
+# Full-text search with PostgreSQL
+gem "pg_search", "~> 2.3"

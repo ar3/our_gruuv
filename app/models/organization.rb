@@ -1,4 +1,6 @@
 class Organization < ApplicationRecord
+  include PgSearch::Model
+  
   # Single Table Inheritance
   self.inheritance_column = 'type'
   
@@ -161,4 +163,16 @@ class Organization < ApplicationRecord
   def can_create_employment?(person)
     Teammate.can_create_employment?(person, self)
   end
+  
+  # pg_search configuration
+  pg_search_scope :search_by_full_text,
+    against: {
+      name: 'A',
+      type: 'B'
+    },
+    using: {
+      tsearch: { prefix: true, any_word: true }
+    }
+  
+  multisearchable against: [:name, :type]
 end 
