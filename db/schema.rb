@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_08_015133) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_08_112431) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -490,6 +490,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_08_015133) do
     t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true
   end
 
+  create_table "teammate_identities", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.string "provider", null: false
+    t.string "uid", null: false
+    t.string "email"
+    t.string "name"
+    t.string "profile_image_url"
+    t.jsonb "raw_data", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["provider", "uid"], name: "index_teammate_identities_on_provider_and_uid", unique: true
+    t.index ["teammate_id", "provider"], name: "index_teammate_identities_on_teammate_and_provider"
+    t.index ["teammate_id"], name: "index_teammate_identities_on_teammate_id"
+  end
+
   create_table "teammates", force: :cascade do |t|
     t.bigint "person_id", null: false
     t.bigint "organization_id", null: false
@@ -620,6 +635,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_08_015133) do
   add_foreign_key "positions", "position_types"
   add_foreign_key "seats", "position_types"
   add_foreign_key "slack_configurations", "organizations"
+  add_foreign_key "teammate_identities", "teammates"
   add_foreign_key "teammates", "organizations"
   add_foreign_key "teammates", "people"
   add_foreign_key "third_party_object_associations", "third_party_objects"

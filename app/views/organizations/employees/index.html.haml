@@ -45,9 +45,11 @@
 .row.justify-content-center.mb-2
   .col-lg-12
     .d-flex.justify-content-between.align-items-center
-      %small.text-muted= pagy_info(@pagy)
+      %small.text-muted== pagy_info(@pagy)
       - if @teammates.count > 0
         %small.text-muted Showing #{@current_view.humanize} view
+        %br
+        %small.text-muted Debug: Pages: #{@pagy.pages}, Current: #{@pagy.page}, Items: #{@pagy.items}
 
 / Main Content Area
 .row.justify-content-center
@@ -63,7 +65,17 @@
       
       / Pagination
       .d-flex.justify-content-center.mt-4
-        == pagy_nav(@pagy)
+        - if @pagy.pages > 1
+          .pagination-debug
+            %small.text-muted Debug: About to render pagination
+            %br
+            %small.text-muted Raw pagy_nav output:
+            %pre.border.p-2.mt-2= pagy_nav(@pagy)
+            %br
+            %small.text-muted Rendered pagy_nav:
+            == pagy_nav(@pagy)
+        - else
+          %small.text-muted No pagination needed (only 1 page)
     - else
       .alert.alert-info
         %h6.mb-2
@@ -130,13 +142,7 @@
                 Sort Options
               .mb-3
                 %label.form-label Sort By
-                = select_tag 'sort', options_for_select([
-                  ['Name (A-Z)', 'name_asc'],
-                  ['Name (Z-A)', 'name_desc'],
-                  ['Employment Status', 'status'],
-                  ['Organization', 'organization'],
-                  ['Employment Date', 'employment_date']
-                ], @current_sort), class: 'form-select'
+                = select_tag 'sort', options_for_select([['Name (A-Z)', 'name_asc'], ['Name (Z-A)', 'name_desc'], ['Employment Status', 'status'], ['Organization', 'organization'], ['Employment Date', 'employment_date']], @current_sort), class: 'form-select'
               .mb-3
                 %label.form-label View Style
                 .form-check

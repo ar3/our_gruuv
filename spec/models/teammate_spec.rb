@@ -8,6 +8,7 @@ RSpec.describe Teammate, type: :model do
   describe 'associations' do
     it { should belong_to(:person) }
     it { should belong_to(:organization) }
+    it { should have_many(:teammate_identities).dependent(:destroy) }
   end
   
   describe 'validations' do
@@ -95,6 +96,171 @@ RSpec.describe Teammate, type: :model do
       it 'returns false when can_manage_maap is nil' do
         access.update!(can_manage_maap: nil)
         expect(access.can_manage_maap?).to be false
+      end
+    end
+    
+    describe 'TeammateIdentity helper methods' do
+      let(:teammate) { create(:teammate, person: person, organization: company) }
+      
+      describe '#slack_identity' do
+        it 'returns the Slack identity when it exists' do
+          slack_identity = create(:teammate_identity, :slack, teammate: teammate)
+          expect(teammate.slack_identity).to eq(slack_identity)
+        end
+        
+        it 'returns nil when no Slack identity exists' do
+          expect(teammate.slack_identity).to be_nil
+        end
+      end
+      
+      describe '#slack_user_id' do
+        it 'returns the Slack user ID when Slack identity exists' do
+          slack_identity = create(:teammate_identity, :slack, teammate: teammate, uid: 'U1234567890')
+          expect(teammate.slack_user_id).to eq('U1234567890')
+        end
+        
+        it 'returns nil when no Slack identity exists' do
+          expect(teammate.slack_user_id).to be_nil
+        end
+      end
+      
+      describe '#has_slack_identity?' do
+        it 'returns true when Slack identity exists' do
+          create(:teammate_identity, :slack, teammate: teammate)
+          expect(teammate.has_slack_identity?).to be true
+        end
+        
+        it 'returns false when no Slack identity exists' do
+          expect(teammate.has_slack_identity?).to be false
+        end
+      end
+      
+      describe '#jira_identity' do
+        it 'returns the Jira identity when it exists' do
+          jira_identity = create(:teammate_identity, :jira, teammate: teammate)
+          expect(teammate.jira_identity).to eq(jira_identity)
+        end
+        
+        it 'returns nil when no Jira identity exists' do
+          expect(teammate.jira_identity).to be_nil
+        end
+      end
+      
+      describe '#jira_user_id' do
+        it 'returns the Jira user ID when Jira identity exists' do
+          jira_identity = create(:teammate_identity, :jira, teammate: teammate, uid: 'jira_user_123')
+          expect(teammate.jira_user_id).to eq('jira_user_123')
+        end
+        
+        it 'returns nil when no Jira identity exists' do
+          expect(teammate.jira_user_id).to be_nil
+        end
+      end
+      
+      describe '#has_jira_identity?' do
+        it 'returns true when Jira identity exists' do
+          create(:teammate_identity, :jira, teammate: teammate)
+          expect(teammate.has_jira_identity?).to be true
+        end
+        
+        it 'returns false when no Jira identity exists' do
+          expect(teammate.has_jira_identity?).to be false
+        end
+      end
+      
+      describe '#linear_identity' do
+        it 'returns the Linear identity when it exists' do
+          linear_identity = create(:teammate_identity, :linear, teammate: teammate)
+          expect(teammate.linear_identity).to eq(linear_identity)
+        end
+        
+        it 'returns nil when no Linear identity exists' do
+          expect(teammate.linear_identity).to be_nil
+        end
+      end
+      
+      describe '#linear_user_id' do
+        it 'returns the Linear user ID when Linear identity exists' do
+          linear_identity = create(:teammate_identity, :linear, teammate: teammate, uid: 'linear_user_123')
+          expect(teammate.linear_user_id).to eq('linear_user_123')
+        end
+        
+        it 'returns nil when no Linear identity exists' do
+          expect(teammate.linear_user_id).to be_nil
+        end
+      end
+      
+      describe '#has_linear_identity?' do
+        it 'returns true when Linear identity exists' do
+          create(:teammate_identity, :linear, teammate: teammate)
+          expect(teammate.has_linear_identity?).to be true
+        end
+        
+        it 'returns false when no Linear identity exists' do
+          expect(teammate.has_linear_identity?).to be false
+        end
+      end
+      
+      describe '#asana_identity' do
+        it 'returns the Asana identity when it exists' do
+          asana_identity = create(:teammate_identity, :asana, teammate: teammate)
+          expect(teammate.asana_identity).to eq(asana_identity)
+        end
+        
+        it 'returns nil when no Asana identity exists' do
+          expect(teammate.asana_identity).to be_nil
+        end
+      end
+      
+      describe '#asana_user_id' do
+        it 'returns the Asana user ID when Asana identity exists' do
+          asana_identity = create(:teammate_identity, :asana, teammate: teammate, uid: 'asana_user_123')
+          expect(teammate.asana_user_id).to eq('asana_user_123')
+        end
+        
+        it 'returns nil when no Asana identity exists' do
+          expect(teammate.asana_user_id).to be_nil
+        end
+      end
+      
+      describe '#has_asana_identity?' do
+        it 'returns true when Asana identity exists' do
+          create(:teammate_identity, :asana, teammate: teammate)
+          expect(teammate.has_asana_identity?).to be true
+        end
+        
+        it 'returns false when no Asana identity exists' do
+          expect(teammate.has_asana_identity?).to be false
+        end
+      end
+      
+      describe '#identity_for' do
+        it 'returns the identity for a specific provider' do
+          slack_identity = create(:teammate_identity, :slack, teammate: teammate)
+          jira_identity = create(:teammate_identity, :jira, teammate: teammate)
+          
+          expect(teammate.identity_for('slack')).to eq(slack_identity)
+          expect(teammate.identity_for('jira')).to eq(jira_identity)
+          expect(teammate.identity_for('linear')).to be_nil
+        end
+        
+        it 'handles string and symbol providers' do
+          slack_identity = create(:teammate_identity, :slack, teammate: teammate)
+          
+          expect(teammate.identity_for('slack')).to eq(slack_identity)
+          expect(teammate.identity_for(:slack)).to eq(slack_identity)
+        end
+      end
+      
+      describe 'cascade deletion' do
+        it 'destroys teammate identities when teammate is destroyed' do
+          slack_identity = create(:teammate_identity, :slack, teammate: teammate)
+          jira_identity = create(:teammate_identity, :jira, teammate: teammate)
+          
+          expect { teammate.destroy }.to change { TeammateIdentity.count }.by(-2)
+          expect(TeammateIdentity.exists?(slack_identity.id)).to be false
+          expect(TeammateIdentity.exists?(jira_identity.id)).to be false
+        end
       end
     end
   end

@@ -14,6 +14,7 @@ class Teammate < ApplicationRecord
   has_many :huddle_participants, dependent: :nullify
   has_many :observees, dependent: :destroy
   has_many :observations, through: :observees
+  has_many :teammate_identities, dependent: :destroy
   
   # Validations
   validates :person_id, uniqueness: { scope: :organization_id }
@@ -88,6 +89,60 @@ class Teammate < ApplicationRecord
   def has_active_employment_tenure?
     # Check if person has active employment tenure in this organization
     employment_tenures.active.exists?(company: organization)
+  end
+  
+  # TeammateIdentity helper methods
+  def slack_identity
+    teammate_identities.slack.first
+  end
+
+  def slack_user_id
+    slack_identity&.uid
+  end
+
+  def has_slack_identity?
+    teammate_identities.slack.exists?
+  end
+
+  def jira_identity
+    teammate_identities.jira.first
+  end
+
+  def jira_user_id
+    jira_identity&.uid
+  end
+
+  def has_jira_identity?
+    teammate_identities.jira.exists?
+  end
+
+  def linear_identity
+    teammate_identities.linear.first
+  end
+
+  def linear_user_id
+    linear_identity&.uid
+  end
+
+  def has_linear_identity?
+    teammate_identities.linear.exists?
+  end
+
+  def asana_identity
+    teammate_identities.asana.first
+  end
+
+  def asana_user_id
+    asana_identity&.uid
+  end
+
+  def has_asana_identity?
+    teammate_identities.asana.exists?
+  end
+
+  # Generic finder
+  def identity_for(provider)
+    teammate_identities.find_by(provider: provider.to_s)
   end
   
   private

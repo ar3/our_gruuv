@@ -22,4 +22,15 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     get organization_employees_path(organization)
     expect(response).to be_successful
   end
+
+  it 'sets up all required instance variables' do
+    get organization_employees_path(organization)
+    expect(assigns(:organization)).to be_a(Organization)
+    expect(assigns(:teammates)).to be_a(ActiveRecord::Relation)
+    expect(assigns(:spotlight_stats)).to be_present
+    expect(assigns(:current_filters)).to be_present
+    expect(assigns(:current_sort)).to be_present
+    expect(assigns(:current_view)).to be_present
+    expect(assigns(:has_active_filters)).to be_present
+  end
 end

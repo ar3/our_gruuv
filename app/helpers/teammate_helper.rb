@@ -96,7 +96,7 @@ module TeammateHelper
   end
 
   def clear_filter_url(filter_name, filter_value)
-    current_params = params.dup
+    current_params = params.to_unsafe_h.dup
     case filter_name.to_s
     when 'status'
       current_params[:status] = Array(current_params[:status]) - [filter_value]

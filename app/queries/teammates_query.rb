@@ -3,7 +3,7 @@ class TeammatesQuery
 
   def initialize(organization, params = {})
     @organization = organization
-    @params = params.with_indifferent_access
+    @params = params
   end
 
   def call
