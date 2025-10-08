@@ -480,3 +480,202 @@ end
 - **Test wrong association names fail** - ensure using incorrect names raises `StatementInvalid` with column errors
 - **Test association queries** - verify `Model.where(association: record)` works correctly
 - **Execute queries in tests** - association errors only appear when queries are executed (`.count`, `.first`, etc.)
+
+### Integration Testing (Critical for Controller Parameter Issues)
+- **Always write integration tests for form submissions** - test actual browser parameter behavior, not just unit tests
+- **Test array parameters correctly** - ensure `teammate_ids: []` is permitted as `teammate_ids: []`, not `:teammate_ids`
+- **Test Rails checkbox behavior** - verify empty checkbox arrays (`[""]`) are handled correctly
+- **Test form value preservation** - ensure form values persist on validation failure
+- **Test the complete user flow** - from form submission through controller to model creation
+- **Use request specs for integration testing** - not controller specs which bypass parameter processing
+
+### Integration Testing Anti-Patterns to Avoid
+- **Don't rely only on unit tests** - they bypass the actual controller parameter processing
+- **Don't test with different parameters than the browser sends** - use `observees_attributes` when browser sends `teammate_ids[]`
+- **Don't skip parameter permitting tests** - Rails silently filters out unpermitted parameters
+- **Don't assume form objects work the same as direct model assignment** - test the actual form submission flow
+
+### Integration Testing Pattern
+```ruby
+# ✅ Good - Test actual browser behavior
+RSpec.describe 'Observation Form Submission', type: :request do
+  let(:params) do
+    {
+      organization_id: company.id,
+      observation: {
+        story: 'Great work!',
+        teammate_ids: [teammate1.id.to_s, teammate2.id.to_s]  # Array as browser sends
+      }
+    }
+  end
+
+  it 'creates observation with observees' do
+    expect {
+      post organization_observations_path(company), params: params
+    }.to change(Observation, :count).by(1)
+     .and change(Observee, :count).by(2)
+  end
+end
+
+# ❌ Avoid - Testing different parameters than browser sends
+RSpec.describe 'Observation Creation', type: :controller do
+  let(:params) do
+    {
+      observation: {
+        observees_attributes: { '0' => { teammate_id: teammate.id } }  # Different from browser
+      }
+    }
+  end
+end
+```
+
+## Form Testing Requirements (Critical for All Forms)
+
+### Mandatory Feature Specs for All Forms
+
+**Every form in the application MUST have comprehensive feature specs that follow these requirements:**
+
+#### 1. **Complete User Flow Testing**
+- **Test the full user journey**: Index → Create → Show → Back to Index
+- **Test all form steps**: Multi-step forms must test each step explicitly
+- **Test navigation**: Verify all links and buttons work correctly
+- **Test form state persistence**: Values should persist across steps and validation failures
+
+#### 2. **Explicit Assertions (No Conditional Logic)**
+- **NEVER use conditional logic** (`if`, `unless`, `any?`) in feature specs
+- **Always assert expected state** before interacting with elements
+- **Fail loudly** when expected elements are missing
+- **Verify page state** at each step before proceeding
+
+```ruby
+# ✅ Good - Explicit assertions
+expect(page).to have_css('select[name*="observation[observation_ratings_attributes]"]', count: 2)
+ability_selects = page.all('select[name*="observation[observation_ratings_attributes]"]')
+ability_selects.first.select('Strongly Agree (Exceptional)')
+
+# ❌ Bad - Conditional logic masks failures
+ability_selects = page.all('select[name*="observation[observation_ratings_attributes]"]')
+if ability_selects.any?
+  ability_selects.first.select('Strongly Agree (Exceptional)')
+end
+```
+
+#### 3. **Form Validation Testing**
+- **Test validation errors**: Submit invalid data and verify error messages
+- **Test form value preservation**: Values should persist on validation failure
+- **Test required field validation**: Ensure required fields are enforced
+- **Test custom validations**: Test business logic validations
+
+#### 4. **Multiple Data Scenarios**
+- **Test with no data**: Empty state, no related records
+- **Test with minimal data**: Single record scenarios
+- **Test with multiple data**: Multiple records, complex scenarios
+- **Test edge cases**: Boundary conditions, special characters
+
+#### 5. **UI Element Verification**
+- **Verify all form elements**: Inputs, selects, checkboxes, buttons
+- **Verify navigation elements**: Links, back buttons, action buttons
+- **Verify modal elements**: If forms use modals, test modal behavior
+- **Verify responsive elements**: Mobile-friendly interactions
+
+### Form Testing Anti-Patterns to Avoid
+
+#### ❌ **Never Use Conditional Logic**
+```ruby
+# ❌ Bad - Masks real failures
+if page.has_css?('.error')
+  expect(page).to have_content('Error message')
+end
+
+# ✅ Good - Fails loudly if element missing
+expect(page).to have_css('.error')
+expect(page).to have_content('Error message')
+```
+
+#### ❌ **Never Skip Assertions**
+```ruby
+# ❌ Bad - Assumes elements exist
+click_button 'Submit'
+
+# ✅ Good - Verifies elements exist first
+expect(page).to have_button('Submit')
+click_button 'Submit'
+```
+
+#### ❌ **Never Test Different Data Than Browser Sends**
+```ruby
+# ❌ Bad - Tests different parameters than browser
+let(:params) { { observation: { observees_attributes: {...} } } }
+
+# ✅ Good - Tests actual browser parameters
+let(:params) { { observation: { teammate_ids: [...] } } }
+```
+
+### Required Feature Spec Structure
+
+Every form must have at least these feature specs:
+
+```ruby
+RSpec.feature 'FormName Complete Flow', type: :feature do
+  describe 'Complete form flow scenarios' do
+    it 'creates record with no related data available' do
+      # Test empty state scenario
+    end
+
+    it 'creates record with related data and selects some' do
+      # Test with data available scenario
+    end
+
+    it 'creates record with all optional fields filled' do
+      # Test complete form scenario
+    end
+
+    it 'creates record with minimal required fields only' do
+      # Test minimal scenario
+    end
+  end
+
+  describe 'Form validation and error handling' do
+    it 'shows validation errors and preserves form values' do
+      # Test validation failure scenario
+    end
+  end
+
+  describe 'Navigation and UI elements' do
+    it 'navigates correctly between all pages' do
+      # Test navigation flow
+    end
+
+    it 'shows all expected UI elements' do
+      # Test UI element presence
+    end
+  end
+end
+```
+
+### Form Testing Checklist
+
+Before considering any form complete, verify:
+
+- [ ] **Complete user flow tested** (Index → Create → Show → Back to Index)
+- [ ] **All form steps tested** (for multi-step forms)
+- [ ] **No conditional logic** in feature specs
+- [ ] **Explicit assertions** before all interactions
+- [ ] **Validation error testing** with form value preservation
+- [ ] **Multiple data scenarios** tested
+- [ ] **UI elements verified** (buttons, links, modals)
+- [ ] **Navigation tested** (all links and buttons work)
+- [ ] **Edge cases covered** (empty state, minimal data, complex data)
+- [ ] **Integration tests** for parameter processing
+- [ ] **Form object specs** for validation logic
+
+### Enforcement
+
+**This rule is MANDATORY for all forms.** Any form without comprehensive feature specs following these patterns will be rejected in code review.
+
+**Why This Matters:**
+- **Catches real bugs** instead of masking them
+- **Ensures consistent user experience** across all forms
+- **Prevents production issues** by testing actual browser behavior
+- **Maintains code quality** through explicit testing patterns
+- **Reduces debugging time** by failing fast with clear error messages

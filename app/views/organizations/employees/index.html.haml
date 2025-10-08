@@ -1,150 +1,179 @@
-.container.mt-4
-  .row
-    .col-12
-      .d-flex.justify-content-between.align-items-center.mb-4
-        %h1.mb-0 Employees & Participants - #{@organization.display_name}
-        = link_to organization_path(@organization), class: "btn btn-outline-secondary" do
-          %i.bi.bi-arrow-left.me-2
-          Back to Organization
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-people.me-2
+      Teammates
+    .d-flex.align-items-center
+      - if current_person.can_manage_employment?(@organization)
+        = link_to new_employee_organization_employees_path(@organization), class: "btn btn-primary ml-2" do
+          %i.bi.bi-plus
+      - else
+        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+          %i.bi.bi-plus
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permission to add teammates"}
 
-  .row
-    .col-md-8
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-briefcase.me-2
-            Active Employees
-            %span.badge.bg-success.ms-2= @active_employees.count
-        .card-body
-          - if @active_employees.any?
-            .table-responsive
-              %table.table.table-hover
-                %thead
-                  %tr
-                    %th Name
-                    %th Position
-                    %th Started
-                    %th Huddles
-                    %th Actions
-                %tbody
-                  - @active_employees.each do |employee|
-                    - current_tenure = employee.employment_tenures.active.first
-                    - if current_tenure
-                      %tr
-                        %td
-                          = link_to employee.display_name, teammate_organization_person_path(@organization, employee), class: "text-decoration-none", data: { bs_toggle: "tooltip", bs_title: "ID: #{employee.id} | Name: #{employee.display_name} | Email: #{employee.email}" }
-                        %td
-                          - if current_tenure.position
-                            = current_tenure.position.display_name
-                          - else
-                            %span.text-muted No position
-                        %td
-                          %small.text-muted= current_tenure.started_at.strftime('%b %Y')
-                        %td
-                          %span.badge.bg-info= @organization.huddle_participants.where(id: employee.id).count
-                        %td
-                          .btn-group.btn-group-sm
-                            = link_to teammate_organization_person_path(@organization, employee), class: "btn btn-outline-primary" do
-                              %i.bi.bi-eye
-                            = link_to organization_assignment_tenure_path(employee.current_organization_or_default, employee), class: "btn btn-outline-info" do
-                              %i.bi.bi-list-task
-                    - else
-                      %tr
-                        %td{colspan: 5}
-                          %p.text-muted.text-center No active employees found
-          - else
-            .text-center.py-4
-              %p.text-muted No active employees found for this organization.
+.mb-4
+  = content_for :go_back_link  # Single back link to dashboard
 
-      .card
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-people.me-2
-            Huddle Participants (Non-Employees)
-            %span.badge.bg-warning.ms-2= @just_huddle_participants.count
-        .card-body
-          - if @just_huddle_participants.any?
-            .table-responsive
-              %table.table.table-hover
-                %thead
-                  %tr
-                    %th Name
-                    %th Huddles Participated
-                    %th Last Participation
-                    %th Actions
-                %tbody
-                  - @just_huddle_participants.each do |participant|
-                    - huddle_count = @organization.huddle_participants.where(id: participant.id).count
-                    - last_huddle = participant.huddle_participants.joins(:huddle).order('huddles.started_at DESC').first
-                    %tr
-                      %td
-                        = link_to participant.display_name, public_person_path(participant), class: "text-decoration-none", data: { bs_toggle: "tooltip", bs_title: "ID: #{participant.id} | Name: #{participant.display_name} | Email: #{participant.email}" }
-                      %td
-                        %span.badge.bg-info= huddle_count
-                      %td
-                        - if last_huddle
-                          %small.text-muted= last_huddle.huddle.started_at.strftime('%b %Y')
-                        - else
-                          %span.text-muted Unknown
-                      %td
-                        .btn-group.btn-group-sm
-                          = link_to public_person_path(participant), class: "btn btn-outline-primary" do
-                            %i.bi.bi-eye
-          - else
-            .text-center.py-4
-              %p.text-muted No additional huddle participants found.
+- content_for :go_back_link do
+  = link_to organization_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@organization.display_name}
 
-    .col-md-4
-      .card.mb-4
-        .card-header
-          %h5.mb-0 Quick Stats
-        .card-body
-          .row.text-center
-            .col-6
-              .h4.text-success= @active_employees.count
-              %small.text-muted Active Employees
-            .col-6
-              .h4.text-info= @organization.positions.count
-              %small.text-muted Total Positions
-          .row.text-center.mt-3
-            .col-12
-              .h4.text-warning= @huddle_participants.count
-              %small.text-muted Total Participants
-          .row.text-center.mt-3
-            .col-12
-              .h4.text-primary= @just_huddle_participants.count
-              %small.text-muted Non-Employee Participants
+- content_for :header_action do
+  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#teammates-filter-modal", type: "button"}
+    %i.bi.bi-funnel.me-2
+    Filter & Sort
 
-      .card
-        .card-header
-          %h5.mb-0 Quick Actions
-        .card-body
-          .d-grid.gap-2
-            = link_to organization_employment_management_index_path(@organization), class: "btn btn-success" do
-              %i.bi.bi-person-plus.me-2
-              Add Employee
+/ Spotlight Section
+= render 'organizations/employees/spotlights/teammates_overview'
 
-            - if current_person.can_manage_employment?(@organization)
-              = link_to organization_upload_events_path(@organization), class: "btn btn-info" do
-                %i.bi.bi-upload.me-2
-                Employment Data Upload
-            - else
-              .btn.btn-info.disabled{data: { bs_toggle: "tooltip", bs_title: "Requires employment management permission" }}
-                %i.bi.bi-upload.me-2
-                Employment Data Upload
+/ Main Content Area
+.row.justify-content-center
+  .col-lg-12
+    - if @teammates.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Name
+              %th Organization
+              %th Employment Status
+              %th Position
+              %th Permissions
+              %th Employment Dates
+              %th Actions
+          %tbody
+            - @teammates.each do |teammate|
+              %tr
+                %td
+                  = link_to teammate.person.display_name, teammate_organization_person_path(@organization, teammate.person), class: "text-decoration-none fw-bold"
+                  %br
+                  %small.text-muted= teammate.person.email
+                %td
+                  = teammate_organization_display(teammate)
+                %td
+                  = employment_status_badge(teammate)
+                  %br
+                  = employment_status_progress_bar(teammate)
+                %td
+                  = teammate_current_position(teammate)
+                %td
+                  = teammate_permissions_badges(teammate)
+                %td
+                  %small.text-muted= teammate_employment_dates(teammate)
+                %td
+                  .btn-group.btn-group-sm
+                    = link_to teammate_organization_person_path(@organization, teammate.person), class: "btn btn-outline-primary" do
+                      %i.bi.bi-eye
+                    - if current_person.can_manage_employment?(@organization)
+                      = link_to organization_assignment_tenure_path(@organization, teammate.person), class: "btn btn-outline-secondary" do
+                        %i.bi.bi-list-task
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Teammates Found
+        %p.mb-2 
+          This organization doesn't have any teammates yet. Teammates include employees, followers, and other people with access to the organization.
+        = link_to "Add First Teammate", new_employee_organization_employees_path(@organization), class: "btn btn-primary btn-sm"
 
-            - if current_person.can_manage_employment?(@organization)
-              = link_to new_organization_upload_event_path(@organization, upload_event: {type: 'UploadEvent::UploadEmployees'}), class: "btn btn-outline-info" do
-                %i.bi.bi-upload.me-2
-                Bulk Upload Employees
-            - else
-              .btn.btn-outline-info.disabled{data: { bs_toggle: "tooltip", bs_title: "Requires employment management permission" }}
-                %i.bi.bi-upload.me-2
-                Bulk Upload Employees
-
-            = link_to new_organization_path(parent_id: @organization.id), class: "btn btn-primary" do
-              %i.bi.bi-plus-circle.me-2
-              Add Team/Department
-            = link_to organization_path(@organization), class: "btn btn-outline-secondary" do
+/ Modal for Filter & Sort
+.modal.fade#teammates-filter-modal{"aria-hidden" => "true", "aria-labelledby" => "teammates-filter-modal-label", tabindex: "-1"}
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        %h5.modal-title#teammates-filter-modal-label
+          %i.bi.bi-funnel.me-2
+          Filter & Sort Teammates (coming soon)
+        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+      .modal-body
+        .row
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-funnel.me-2
+              Filters
+            .form-check
+              %input.form-check-input{type: "checkbox", name: "statusFilter", value: "followers", id: "filter_followers"}
+              %label.form-check-label{for: "filter_followers"}
+                %i.bi.bi-person-follow.me-2
+                Followers
+            .form-check
+              %input.form-check-input{type: "checkbox", name: "statusFilter", value: "huddlers", id: "filter_huddlers"}
+              %label.form-check-label{for: "filter_huddlers"}
+                %i.bi.bi-people.me-2
+                Huddlers
+            .form-check
+              %input.form-check-input{type: "checkbox", name: "statusFilter", value: "unassigned", id: "filter_unassigned"}
+              %label.form-check-label{for: "filter_unassigned"}
+                %i.bi.bi-person-exclamation.me-2
+                Unassigned Employees
+            .form-check
+              %input.form-check-input{type: "checkbox", name: "statusFilter", value: "assigned", id: "filter_assigned"}
+              %label.form-check-label{for: "filter_assigned"}
+                %i.bi.bi-person-check.me-2
+                Active Employees
+            .form-check
+              %input.form-check-input{type: "checkbox", name: "statusFilter", value: "terminated", id: "filter_terminated"}
+              %label.form-check-label{for: "filter_terminated"}
+                %i.bi.bi-person-x.me-2
+                Terminated
+            .mb-3
+              %label.form-label Organization
+              %select.form-select
+                %option All Organizations
+                %option= @organization.name
+                - @organization.descendants.each do |descendant|
+                  %option= descendant.name
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-sort-down.me-2
+              Sort Options
+            .form-check
+              %input.form-check-input{checked: "checked", type: "radio", name: "sortBy", value: "name_asc"}
+              %label.form-check-label
+                %i.bi.bi-sort-alpha-down.me-2
+                Name (A-Z)
+            .form-check
+              %input.form-check-input{type: "radio", name: "sortBy", value: "name_desc"}
+              %label.form-check-label
+                %i.bi.bi-sort-alpha-up.me-2
+                Name (Z-A)
+            .form-check
+              %input.form-check-input{type: "radio", name: "sortBy", value: "status"}
+              %label.form-check-label
+                %i.bi.bi-sort-down.me-2
+                Employment Status
+            .form-check
+              %input.form-check-input{type: "radio", name: "sortBy", value: "organization"}
+              %label.form-check-label
               %i.bi.bi-building.me-2
-              Back to Organization
+                Organization
+            .mb-3
+              %label.form-label View Style
+              .form-check
+                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
+                %label.form-check-label
+                  %i.bi.bi-table.me-2
+                  Table View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
+                %label.form-check-label
+                  %i.bi.bi-grid.me-2
+                  Card View
+              .form-check
+                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
+                %label.form-check-label
+                  %i.bi.bi-list.me-2
+                  List View
+            .mb-3
+              %label.form-label Spotlight
+              %select.form-select
+                %option Teammates Overview
+                %option Employment Status Breakdown
+                %option Permission Analysis
+      .modal-footer
+        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+        %button.btn.btn-primary.disabled{type: "button"}
+          %i.bi.bi-check.me-2
+          Apply Filters

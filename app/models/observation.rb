@@ -29,7 +29,6 @@ class Observation < ApplicationRecord
   validates :secondary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true
   
   validate :observer_and_observees_in_same_company
-  validate :at_least_one_observee
   
   scope :recent, -> { order(observed_at: :desc) }
   scope :journal, -> { where(privacy_level: :observer_only) }
@@ -119,7 +118,4 @@ class Observation < ApplicationRecord
     end
   end
   
-  def at_least_one_observee
-    errors.add(:observees, "must have at least one observee") if observees.empty?
-  end
 end

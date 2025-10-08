@@ -1,182 +1,134 @@
 class Observations::PostNotificationJob < ApplicationJob
   queue_as :default
 
-  def perform(observation_id, notification_options = {})
-    @observation = Observation.find(observation_id)
-    @notification_options = notification_options.with_defaults(
-      send_dms: true,
-      send_to_channels: false,
-      channel_ids: []
-    )
-
-    return unless @observation.can_post_to_slack?
-
-    send_dm_notifications if @notification_options[:send_dms]
-    send_channel_notifications if @notification_options[:send_to_channels]
+  def perform(observation_id, notify_teammate_ids = [])
+    observation = Observation.find(observation_id)
+    
+    # Send DMs to selected teammates
+    notify_teammate_ids.each do |teammate_id|
+      teammate = Teammate.find(teammate_id)
+      send_dm_to_teammate(observation, teammate)
+    end
+    
+    # TODO: Add channel posting logic here
   end
 
   private
 
-  def send_dm_notifications
-    @observation.observed_teammates.each do |teammate|
-      slack_identity = teammate.person.person_identities.find_by(provider: 'slack')
-      next unless slack_identity&.uid.present?
+  def send_dm_to_teammate(observation, teammate)
+    return unless teammate.person.slack_user_id.present?
+    
+    message = build_dm_message(observation)
+    
+    # Use existing SlackService
+    SlackService.post_message(
+      channel: teammate.person.slack_user_id,
+      text: message[:fallback_text],
+      blocks: message[:blocks],
+      notifiable_type: 'Observation',
+      notifiable_id: observation.id,
+      notification_type: 'observation_dm'
+    )
+  end
 
-      message = build_dm_message(teammate)
-      
-      notification = @observation.notifications.create!(
-        notification_type: 'observation_dm',
-        message_id: nil, # Will be set after Slack API call
-        rich_message: message,
-        fallback_text: strip_markdown(message),
-        status: 'preparing_to_send',
-        metadata: {
-          teammate_id: teammate.id,
-          person_id: teammate.person.id,
-          slack_user_id: slack_identity.uid,
-          channel: slack_identity.uid # For DMs, channel is the user ID
+  def build_dm_message(observation)
+    observer_name = observation.observer.preferred_name || observation.observer.first_name
+    feelings_text = build_feelings_text(observation)
+    privacy_text = build_privacy_text(observation)
+    ratings_text = build_ratings_text(observation)
+    
+    fallback_text = "🎯 New Observation from #{observer_name}\n\n#{feelings_text}\n\n#{observation.story[0..200]}...\n\n#{privacy_text}\n#{ratings_text}\n\nView Kudos: #{observation.permalink_url}"
+    
+    blocks = [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: "🎯 New Observation from #{observer_name}"
         }
-      )
-
-      begin
-        # Use SlackService to post the message
-        slack_service = SlackService.new(@observation.company)
-        response = slack_service.post_message(notification.id)
-        
-        if response[:success]
-          # Update notification with success
-          notification.update!(
-            status: 'sent_successfully',
-            message_id: response[:message_id],
-            metadata: notification.metadata.merge(response)
-          )
-        else
-          # Update notification with failure
-          notification.update!(
-            status: 'send_failed',
-            metadata: notification.metadata.merge({ error: response[:error] })
-          )
-        end
-      rescue => e
-        # Update notification with failure
-        notification.update!(
-          status: 'send_failed',
-          metadata: notification.metadata.merge({ error: e.message, backtrace: e.backtrace.first(5) })
-        )
-        Rails.logger.error "Failed to send DM to #{teammate.person.email}: #{e.message}"
-      end
-    end
-  end
-
-  def send_channel_notifications
-    @notification_options[:channel_ids].each do |channel_id|
-      message = build_channel_message
-      
-      notification = @observation.notifications.create!(
-        notification_type: 'observation_channel',
-        message_id: nil, # Will be set after Slack API call
-        rich_message: message,
-        fallback_text: strip_markdown(message),
-        status: 'preparing_to_send',
-        metadata: {
-          channel_id: channel_id,
-          observation_id: @observation.id,
-          channel: channel_id # SlackService expects 'channel' key
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: feelings_text
         }
-      )
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: observation.story
+        }
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: "#{privacy_text} | #{ratings_text}"
+          }
+        ]
+      },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "View Kudos"
+            },
+            url: observation.permalink_url
+          }
+        ]
+      }
+    ]
+    
+    {
+      fallback_text: fallback_text,
+      blocks: blocks
+    }
+  end
 
-      begin
-        # Use SlackService to post the message
-        slack_service = SlackService.new(@observation.company)
-        response = slack_service.post_message(notification.id)
-        
-        if response[:success]
-          # Update notification with success
-          notification.update!(
-            status: 'sent_successfully',
-            message_id: response[:message_id],
-            metadata: notification.metadata.merge(response)
-          )
-        else
-          # Update notification with failure
-          notification.update!(
-            status: 'send_failed',
-            metadata: notification.metadata.merge({ error: response[:error] })
-          )
-        end
-      rescue => e
-        # Update notification with failure
-        notification.update!(
-          status: 'send_failed',
-          metadata: notification.metadata.merge({ error: e.message, backtrace: e.backtrace.first(5) })
-        )
-        Rails.logger.error "Failed to post to channel #{channel_id}: #{e.message}"
+  def build_feelings_text(observation)
+    feelings = []
+    feelings << observation.primary_feeling&.humanize if observation.primary_feeling.present?
+    feelings << observation.secondary_feeling&.humanize if observation.secondary_feeling.present?
+    
+    if feelings.any?
+      "Feeling: #{feelings.join(' + ')}"
+    else
+      ""
+    end
+  end
+
+  def build_privacy_text(observation)
+    case observation.privacy_level
+    when 'observer_only'
+      "Privacy: 🔒 Just for me (Journal)"
+    when 'observed_only'
+      "Privacy: 👤 Just for you"
+    when 'managers_only'
+      "Privacy: 👔 For your managers"
+    when 'observed_and_managers'
+      "Privacy: 👥 For you and your managers"
+    when 'public_observation'
+      "Privacy: 🌍 Public to organization"
+    else
+      "Privacy: #{observation.privacy_level.humanize}"
+    end
+  end
+
+  def build_ratings_text(observation)
+    positive_ratings = observation.observation_ratings.positive
+    if positive_ratings.any?
+      rating_texts = positive_ratings.map do |rating|
+        "#{rating.rating.humanize} on #{rating.rateable.name}"
       end
+      "Ratings: #{rating_texts.join(', ')}"
+    else
+      ""
     end
-  end
-
-  def build_dm_message(teammate)
-    feelings_text = @observation.decorate.feelings_display_html
-    ratings_summary = build_ratings_summary(positive_only: true)
-    
-    <<~MESSAGE
-      🎯 New Observation from #{@observation.observer.preferred_name || @observation.observer.first_name}
-      
-      #{feelings_text}
-      
-      #{@observation.story.truncate(200)}
-      
-      Privacy: #{@observation.decorate.visibility_text}
-      #{ratings_summary}
-      
-      [View Kudos] → #{kudos_url(@observation.permalink_id)}
-    MESSAGE
-  end
-
-  def build_channel_message
-    feelings_text = @observation.decorate.feelings_display_html
-    observees_text = @observation.observed_teammates.map(&:person).map { |p| p.preferred_name || p.first_name }.join(', ')
-    ratings_summary = build_ratings_summary(positive_only: true)
-    
-    <<~MESSAGE
-      🎯 #{@observation.observer.preferred_name || @observation.observer.first_name} recognized #{observees_text}
-      
-      #{feelings_text}
-      
-      #{@observation.story}
-      
-      #{ratings_summary}
-      
-      [View Kudos] → #{kudos_url(@observation.permalink_id)}
-    MESSAGE
-  end
-
-  def build_ratings_summary(positive_only: false)
-    ratings = @observation.observation_ratings.includes(:rateable)
-    ratings = ratings.positive if positive_only
-    
-    return '' if ratings.empty?
-    
-    rating_texts = ratings.map do |rating|
-      "#{rating.decorate.rating_icon} #{rating.rateable.name}"
-    end
-    
-    "Ratings: #{rating_texts.join(', ')}"
-  end
-
-  def strip_markdown(text)
-    text.gsub(/\*\*(.*?)\*\*/, '\1')
-        .gsub(/\*(.*?)\*/, '\1')
-        .gsub(/\[([^\]]+)\]\([^)]+\)/, '\1')
-  end
-
-  def kudos_url(permalink_id)
-    # Parse the permalink_id to extract date and id
-    # Format: "2025-10-05-142" or "2025-10-05-142-custom-slug"
-    parts = permalink_id.split('-')
-    date_part = "#{parts[0]}-#{parts[1]}-#{parts[2]}"
-    id_part = parts[3]
-    
-    Rails.application.routes.url_helpers.kudos_url(date: date_part, id: id_part)
   end
 end

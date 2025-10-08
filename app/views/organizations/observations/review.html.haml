@@ -1,0 +1,131 @@
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center.mb-2
+    %h1.mb-0{id: "page-title"}
+      %i.bi.bi-eye.me-2
+      Review & Manage
+    .d-flex.align-items-center
+      = content_for :header_action
+
+.mb-4
+  = content_for :go_back_link
+
+- content_for :go_back_link do
+  = link_to set_ratings_organization_observation_path(@organization, 'new'), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Step 2
+
+- content_for :header_action do
+  .text-muted
+    Step 3 of 3
+
+/ Progress indicator
+.card.mb-4
+  .card-body
+    .progress.mb-3.progress-thin
+      .progress-bar.progress-bar-step-3{role: "progressbar", 'aria-valuenow': "100", 'aria-valuemin': "0", 'aria-valuemax': "100"}
+    .d-flex.justify-content-between
+      .text-muted Step 1: Who, When, What, How
+      .text-muted Step 2: Ratings & Privacy
+      .text-primary.fw-bold Step 3: Review & Manage
+
+.row
+  .col-md-8
+    / Observation preview
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-eye.me-2
+          Review Observation
+      .card-body
+        .row
+          .col-md-6
+            %p
+              %strong Observer: 
+              = @form.model.observer.preferred_name || @form.model.observer.first_name
+            %p
+              %strong Observed: 
+              = @form.observed_at&.strftime('%B %d, %Y at %l:%M %p') || 'Not set'
+            %p
+              %strong Privacy: 
+              %span{class: privacy_level_class(@form.privacy_level)}
+                = privacy_level_text(@form.privacy_level)
+          .col-md-6
+            - if @form.primary_feeling.present?
+              %p
+                %strong Feelings: 
+                = feelings_display(@form.primary_feeling, @form.secondary_feeling)
+            %p
+              %strong Observed People: 
+              - @observees_for_notifications.each do |teammate|
+                %span.badge.bg-primary.me-1
+                  = teammate.person.preferred_name || teammate.person.first_name
+        
+        %hr
+        
+        %h6 Story:
+        .border.p-3.rounded.bg-light
+          = simple_format(@form.story)
+        
+        - if @form.observation_ratings_attributes.present? && @form.observation_ratings_attributes.any? { |k, v| v['rating'].present? }
+          %hr
+          %h6 Ratings:
+          - @form.observation_ratings_attributes.each do |key, rating_attrs|
+            - next if rating_attrs['rating'].blank?
+            .d-flex.align-items-center.mb-2
+              = rating_icon(rating_attrs['rating'])
+              %span.ms-2
+                %strong= rating_attrs['rating'].humanize
+                on 
+                %strong= rating_attrs['rateable_type'].constantize.find(rating_attrs['rateable_id']).send(rating_attrs['rateable_type'] == 'Assignment' ? 'title' : 'name')
+        - else
+          %hr
+          %h6 Ratings:
+          %p.text-muted No ratings
+
+  .col-md-4
+    / Notification controls
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-bell.me-2
+          Send Notifications
+      .card-body
+        = form_with model: @form, url: create_observation_organization_observation_path(@organization, 'new'), method: :post, local: true do |form|
+          .form-check.mb-3
+            = check_box_tag 'observation[send_notifications]', '1', true, class: 'form-check-input', id: 'send_notifications'
+            = label_tag 'send_notifications', 'Send notifications', class: 'form-check-label'
+          
+          #notification-options
+            %h6.text-muted Send DMs to:
+            - @observees_for_notifications.each do |teammate|
+              .form-check.mb-2
+                = check_box_tag 'observation[notify_teammate_ids][]', teammate.id, true, class: 'form-check-input', id: "notify_#{teammate.id}"
+                = label_tag "notify_#{teammate.id}", teammate.person.preferred_name || teammate.person.first_name, class: 'form-check-label'
+                %small.text-muted.ms-2
+                  = teammate.person.email
+            
+            %small.text-muted.mt-2
+              %i.bi.bi-info-circle.me-1
+              Slack integration is not yet implemented.
+          
+          .d-grid.gap-2.mt-4
+            = form.submit 'Create Observation', class: 'btn btn-success btn-lg'
+            = link_to 'Back to Step 2', set_ratings_organization_observation_path(@organization, 'new'), class: 'btn btn-outline-secondary'
+
+:javascript
+  document.addEventListener('DOMContentLoaded', function() {
+    // Toggle notification options
+    var sendNotificationsCheckbox = document.getElementById('send_notifications');
+    var notificationOptions = document.getElementById('notification-options');
+    
+    function toggleNotificationOptions() {
+      if (sendNotificationsCheckbox.checked) {
+        notificationOptions.style.display = 'block';
+      } else {
+        notificationOptions.style.display = 'none';
+      }
+    }
+    
+    sendNotificationsCheckbox.addEventListener('change', toggleNotificationOptions);
+    toggleNotificationOptions(); // Initial state
+  });

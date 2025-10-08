@@ -288,6 +288,29 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       @total_positions = @organization.positions.count + @organization.children.sum { |child| child.positions.count }
       @total_assignments = @organization.assignments.count + @organization.children.sum { |child| child.assignments.count }
       @total_abilities = @organization.abilities.count
+      
+      # Observation statistics for dashboard
+      load_observation_dashboard_stats
     end
+  end
+  
+  def load_observation_dashboard_stats
+    # Get all observations for this organization (not soft deleted)
+    all_observations = @organization.observations.where(deleted_at: nil)
+    
+    # Recent observations (this week)
+    @recent_observations_count = all_observations.where(observed_at: 1.week.ago..).count
+    
+    # Journal entries (private observations)
+    @journal_observations_count = all_observations.where(privacy_level: :observer_only).count
+    
+    # Public observations
+    @public_observations_count = all_observations.where(privacy_level: :public_observation).count
+    
+    # Observations with ratings
+    @observations_with_ratings_count = all_observations.joins(:observation_ratings).distinct.count
+    
+    # Observations posted to Slack
+    @observations_posted_to_slack_count = all_observations.joins(:notifications).where(notifications: { status: 'sent_successfully' }).distinct.count
   end
 end

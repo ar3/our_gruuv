@@ -6,14 +6,23 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Basic authorization - user should be able to view the organization
     authorize @organization, :show?
     
-    # Get active employees (people with active employment tenures)
-    @active_employees = @organization.employees.includes(teammates: :employment_tenures)
+    # Get all teammates from this organization and its descendants
+    @teammates = Teammate.for_organization_hierarchy(@organization)
+                        .includes(:person, :employment_tenures, :organization)
+                        .order('people.last_name, people.first_name')
     
-    # Get huddle participants from this organization and all child organizations
-    @huddle_participants = @organization.huddle_participants.includes(teammates: :employment_tenures)
-    
-    # Get just huddle participants (non-employees)
-    @just_huddle_participants = @organization.just_huddle_participants.includes(teammates: :employment_tenures)
+    # Calculate spotlight statistics
+    @spotlight_stats = {
+      total_teammates: @teammates.count,
+      followers: @teammates.select { |t| TeammateStatus.new(t).status == :follower }.count,
+      huddlers: @teammates.select { |t| TeammateStatus.new(t).status == :huddler }.count,
+      unassigned_employees: @teammates.select { |t| TeammateStatus.new(t).status == :unassigned_employee }.count,
+      assigned_employees: @teammates.select { |t| TeammateStatus.new(t).status == :assigned_employee }.count,
+      terminated: @teammates.select { |t| TeammateStatus.new(t).status == :terminated }.count,
+      unknown: @teammates.select { |t| TeammateStatus.new(t).status == :unknown }.count,
+      huddle_participants: @organization.huddle_participants.count,
+      non_employee_participants: @organization.just_huddle_participants.count
+    }
   end
 
   def new_employee

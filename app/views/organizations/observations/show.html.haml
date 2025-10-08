@@ -1,2 +1,165 @@
-%h1 Observation Details
-%p Placeholder for observation show view
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center.mb-2
+    %h1.mb-0{id: "page-title"}
+      %i.bi.bi-eye.me-2
+      Observation Details
+    .d-flex.align-items-center
+      = content_for :header_action
+
+- content_for :go_back_link do
+  = link_to organization_observations_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Observations
+
+- content_for :header_action do
+  = render 'mode_switcher', organization: @organization, observation: @observation
+
+.mb-4
+  = content_for :go_back_link
+
+.row
+  .col-md-8
+    / Main content sections
+    .card.mb-4{ role: "region", "aria-labelledby": "observation-story" }
+      .card-header
+        %h5.mb-0{ id: "observation-story" }
+          %i.bi.bi-chat-text.me-2
+          Story
+      .card-body
+        = @observation.decorate.story_html
+        
+    .card.mb-4{ role: "region", "aria-labelledby": "observation-details" }
+      .card-header
+        %h5.mb-0{ id: "observation-details" }
+          %i.bi.bi-info-circle.me-2
+          Details
+      .card-body
+        .row
+          .col-md-6
+            %p
+              %strong Observer: 
+              = @observation.observer.preferred_name || @observation.observer.first_name
+            %p
+              %strong Observed: 
+              = @observation.observed_at.strftime('%B %d, %Y at %l:%M %p')
+            %p
+              %strong Privacy: 
+              %span{class: @observation.decorate.visibility_text_style}
+                = @observation.decorate.visibility_icon
+                = @observation.decorate.visibility_text
+          .col-md-6
+            - if @observation.primary_feeling.present?
+              %p
+                %strong Feelings: 
+                = @observation.decorate.feelings_display_html
+            %p
+              %strong Permalink: 
+              = link_to @observation.decorate.permalink_url, @observation.decorate.permalink_url, target: '_blank', class: 'text-decoration-none'
+              %i.bi.bi-box-arrow-up-right.ms-1
+
+    - if @observation.observed_teammates.any?
+      .card.mb-4{ role: "region", "aria-labelledby": "observation-observees" }
+        .card-header
+          %h5.mb-0{ id: "observation-observees" }
+            %i.bi.bi-people.me-2
+            Observed People
+        .card-body
+          - @observation.observed_teammates.each do |teammate|
+            .d-flex.align-items-center.mb-2
+              %i.bi.bi-person-circle.me-2
+              = teammate.person.preferred_name || teammate.person.first_name
+              %small.text-muted.ms-2
+                = teammate.person.email
+
+    - if @observation.observation_ratings.any?
+      .card.mb-4{ role: "region", "aria-labelledby": "observation-ratings" }
+        .card-header
+          %h5.mb-0{ id: "observation-ratings" }
+            %i.bi.bi-star.me-2
+            Ratings
+        .card-body
+          - @observation.observation_ratings.each do |rating|
+            .d-flex.align-items-center.mb-2
+              = rating.decorate.to_descriptive_html
+
+    - if @observation.notifications.successful.any?
+      .card.mb-4{ role: "region", "aria-labelledby": "notification-history" }
+        .card-header
+          %h5.mb-0{ id: "notification-history" }
+            %i.bi.bi-bell.me-2
+            Notification History
+        .card-body
+          - @observation.notifications.successful.each do |notification|
+            .d-flex.align-items-center.mb-2
+              %i.bi.bi-check-circle.text-success.me-2
+              %span
+                Sent to 
+                %strong= notification.notification_type.humanize
+                - if notification.metadata['channel'].present?
+                  %span.text-muted
+                    (#{notification.metadata['channel']})
+              %small.text-muted.ms-auto
+                = notification.created_at.strftime('%m/%d/%y %l:%M %p')
+
+    / Slack posting section
+    .card.mb-4{ role: "region", "aria-labelledby": "slack-posting" }
+      .card-header
+        %h5.mb-0{ id: "slack-posting" }
+          %i.bi.bi-slack.me-2
+          Send Notifications
+      .card-body
+        = form_with url: post_to_slack_organization_observation_path(@organization, @observation), method: :post, local: true do |form|
+          .mb-3
+            %h6.text-muted Send DMs to observees:
+            - @observation.observed_teammates.includes(:person).each do |teammate|
+              .form-check.mb-2
+                = check_box_tag 'notify_teammate_ids[]', teammate.id, false, class: 'form-check-input', id: "notify_#{teammate.id}"
+                = label_tag "notify_#{teammate.id}", teammate.person.preferred_name || teammate.person.first_name, class: 'form-check-label'
+                %small.text-muted.ms-2
+                  = teammate.person.email
+                  %i.bi.bi-exclamation-triangle.text-warning.ms-1{title: "Slack integration not yet implemented"}
+          
+          .d-grid
+            = form.submit 'Send Slack Notifications', class: 'btn btn-primary'
+          
+          %small.text-muted.mt-2
+            %i.bi.bi-info-circle.me-1
+            Only teammates with connected Slack accounts will receive notifications.
+
+  .col-md-4
+    / Spotlight section with analytics and interesting tidbits
+    .card.mb-4
+      .card-header
+        %h6.mb-0
+          %i.bi.bi-star.me-2
+          Spotlight
+      .card-body
+        %p
+          %strong Total Ratings: 
+          = @observation.observation_ratings.count
+        - if @observation.observation_ratings.positive.any?
+          %p
+            %strong Positive Ratings: 
+            = @observation.observation_ratings.positive.count
+        - if @observation.has_negative_ratings?
+          %p
+            %strong Negative Ratings: 
+            = @observation.observation_ratings.negative.count
+            %small.text-muted.ms-1 (Restricted visibility)
+        
+        %hr
+        
+        %p
+          %strong Created: 
+          = @observation.created_at.strftime('%B %d, %Y')
+        - if @observation.updated_at != @observation.created_at
+          %p
+            %strong Last Updated: 
+            = @observation.updated_at.strftime('%B %d, %Y')
+        
+        %hr
+        
+        - if policy(@observation).view_change_history?
+          = link_to '#', class: 'btn btn-outline-secondary btn-sm' do
+            %i.bi.bi-clock-history.me-2
+            View Change History

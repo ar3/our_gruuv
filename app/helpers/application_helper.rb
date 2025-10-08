@@ -169,4 +169,14 @@ module ApplicationHelper
     rendered = markdown.render(text)
     rendered.gsub(/\n/, '<br/>').gsub(/<br\/>$/, '').html_safe
   end
+
+  # Observation sort options helper
+  def observation_sort_options
+    [
+      ['Most Recent', 'observed_at_desc'],
+      ['Oldest First', 'observed_at_asc'],
+      ['Most Ratings', 'ratings_count_desc'],
+      ['Alphabetical', 'story_asc']
+    ]
+  end
 end

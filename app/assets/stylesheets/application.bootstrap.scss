@@ -381,3 +381,10 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
     color: var(--bs-warning);
   }
 }
+
+// ===== DISABLED BUTTON STYLES =====
+// For buttons that should appear disabled but still be clickable
+.disabled-button {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

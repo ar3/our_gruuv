@@ -1,2 +1,86 @@
-%h1 Edit Observation
-%p Placeholder for edit observation form
+- content_for :header do
+  = render 'shared/header', 
+    header_name: content_tag(:i, '', class: 'bi bi-pencil me-2') + "Edit Observation",
+    header_quick_action_url: organization_observation_path(@organization, @observation),
+    header_quick_action_content: content_tag(:i, '', class: 'bi bi-eye me-2'),
+    header_quick_action_is_enabled: true,
+    header_quick_action_disabled_tooltip: ""
+
+.mb-4
+  = content_for :go_back_link  # Single back link to show page
+
+- content_for :go_back_link do
+  = link_to organization_observation_path(@organization, @observation), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Observation Details
+
+- content_for :header_action do
+  = render 'organizations/observations/mode_switcher', organization: @organization, observation: @observation
+
+/ Edit form - full width (no 8:4 column split)
+.card
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-pencil.me-2
+      Edit Observation
+  .card-body
+    = form_with model: @form, url: organization_observation_path(@organization, @observation), local: true, class: 'needs-validation', novalidate: true do |form|
+      - if @form.errors.any?
+        .alert.alert-danger
+          %h6 Please correct the following errors:
+          %ul.mb-0
+            - @form.errors.full_messages.each do |message|
+              %li= message
+      
+      .row
+        .col-md-8
+          .mb-3
+            = form.label :story, "Story", class: 'form-label'
+            = form.text_area :story, class: 'form-control', rows: 6, placeholder: 'Tell the story of what happened...'
+            .form-text Markdown is supported for formatting.
+          
+          .mb-3
+            = form.label :primary_feeling, "Primary Feeling", class: 'form-label'
+            = form.select :primary_feeling, options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, @observation.primary_feeling), { prompt: 'Select a feeling...' }, { class: 'form-select' }
+          
+          .mb-3
+            = form.label :secondary_feeling, "Secondary Feeling (Optional)", class: 'form-label'
+            = form.select :secondary_feeling, options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, @observation.secondary_feeling), { prompt: 'Select a secondary feeling...', include_blank: 'None' }, { class: 'form-select' }
+          
+          .mb-3
+            = form.label :privacy_level, "Privacy Level", class: 'form-label'
+            = form.select :privacy_level, options_for_select([['🔒 Just for me (Journal)', 'observer_only'], ['👤 Just for them', 'observed_only'], ['👔 For their managers', 'managers_only'], ['👥 For them and their managers', 'observed_and_managers'], ['🌍 Public to organization', 'public_observation']], @observation.privacy_level), {}, { class: 'form-select' }
+            .form-text Choose who can see this observation.
+          
+          .mb-3
+            = form.label :observed_at, "Observed Date", class: 'form-label'
+            = form.datetime_local_field :observed_at, class: 'form-control'
+          
+          .mb-3
+            = form.label :custom_slug, "Custom URL Slug (Optional)", class: 'form-label'
+            = form.text_field :custom_slug, class: 'form-control', placeholder: 'awesome-work'
+            .form-text Leave blank for automatic URL generation.
+        
+        .col-md-4
+          .card.bg-light
+            .card-header
+              %h6.mb-0
+                %i.bi.bi-info-circle.me-2
+                Editing Tips
+            .card-body
+              %p.small
+                %strong Story: 
+                Be specific about what happened and why it matters.
+              %p.small
+                %strong Feelings: 
+                Capture the emotional context of the observation.
+              %p.small
+                %strong Privacy: 
+                Choose the right audience for your feedback.
+              %p.small
+                %strong Ratings: 
+                Add ratings in the next step after saving.
+      
+      .d-flex.justify-content-between
+        = link_to 'Cancel', organization_observation_path(@organization, @observation), class: 'btn btn-secondary'
+        = form.submit 'Update Observation', class: 'btn btn-primary'

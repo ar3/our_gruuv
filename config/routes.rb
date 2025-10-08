@@ -147,6 +147,13 @@ get '/login', to: 'auth#login', as: :login
       collection do
         get :journal  # Shortcut to apply "My Journal" workspace
       end
+      member do
+        get :set_ratings, action: :set_ratings
+        post :set_ratings, action: :set_ratings
+        get :review, action: :review
+        post :create_observation, action: :create_observation
+        post :post_to_slack, action: :post_to_slack
+      end
     end
     
     # Seats management

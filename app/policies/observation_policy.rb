@@ -77,6 +77,19 @@ class ObservationPolicy < ApplicationPolicy
     index?
   end
 
+  # Wizard actions - all require create permission
+  def set_ratings?
+    create?
+  end
+
+  def review?
+    create?
+  end
+
+  def create_observation?
+    create?
+  end
+
   def view_change_history?
     # Observer, observed, and those with can_manage_employment can see change history
     actual_user == record.observer || 

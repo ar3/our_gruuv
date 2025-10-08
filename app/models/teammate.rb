@@ -34,6 +34,7 @@ class Teammate < ApplicationRecord
   
   # Employment state scopes
   scope :followers, -> { where(first_employed_at: nil, last_terminated_at: nil) }
+  scope :huddlers, -> { where(first_employed_at: nil, last_terminated_at: nil) }
   scope :unassigned_employees, -> { where.not(first_employed_at: nil).where(last_terminated_at: nil) }
   scope :assigned_employees, -> { where.not(first_employed_at: nil).where(last_terminated_at: nil) }
   scope :terminated, -> { where.not(last_terminated_at: nil) }
@@ -52,8 +53,12 @@ class Teammate < ApplicationRecord
   end
   
   # Employment state methods
+  def huddler?
+    follower? && has_huddle_participation?
+  end
+  
   def follower?
-    first_employed_at.nil? && last_terminated_at.nil?
+    first_employed_at.nil? && last_terminated_at.nil? && !has_huddle_participation?
   end
   
   def unassigned_employee?
@@ -72,12 +77,20 @@ class Teammate < ApplicationRecord
     first_employed_at.present? && last_terminated_at.nil?
   end
   
-  private
+  def has_huddle_participation?
+    # Check if person has participated in huddles within this organization or its descendants
+    organizations_to_check = organization.company? ? organization.self_and_descendants : [organization, organization.parent].compact
+    person.huddle_participants.joins(huddle: :huddle_playbook)
+          .where(huddle_playbooks: { organization_id: organizations_to_check })
+          .exists?
+  end
   
   def has_active_employment_tenure?
     # Check if person has active employment tenure in this organization
     employment_tenures.active.exists?(company: organization)
   end
+  
+  private
   
   # Class methods for permission checking
   def self.can_manage_employment?(person, organization)

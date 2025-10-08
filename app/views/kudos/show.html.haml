@@ -1,2 +1,147 @@
-%h1 Kudos
-%p Placeholder for kudos permalink view
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center.mb-2
+    %h1.mb-0{id: "page-title"}
+      %i.bi.bi-gift.me-2
+      Kudos
+    .d-flex.align-items-center
+      - if current_person
+        = link_to organization_observations_path(@observation.company), class: 'btn btn-outline-primary btn-sm' do
+          %i.bi.bi-arrow-left.me-2
+          Back to Observations
+
+.mb-4
+  = content_for :go_back_link
+
+- content_for :go_back_link do
+  - if current_person
+    = link_to organization_observations_path(@observation.company), class: "text-muted text-decoration-none" do
+      %i.bi.bi-arrow-left.me-2
+      Back to Observations
+  - else
+    .text-muted
+      %i.bi.bi-info-circle.me-2
+      This is a public kudos link
+
+.row
+  .col-md-8
+    / Main observation content
+    .card.mb-4
+      .card-header
+        .d-flex.justify-content-between.align-items-center
+          %h5.mb-0
+            %i.bi.bi-gift.me-2
+            Kudos
+          %span{class: "badge #{@observation.decorate.visibility_text_style}"}
+            = @observation.decorate.visibility_icon
+            = @observation.decorate.visibility_text
+      .card-body
+        .mb-4
+          = @observation.decorate.story_html
+        
+        - if @observation.primary_feeling.present?
+          .mb-4
+            %h6 Feelings
+            = @observation.decorate.feelings_display_html
+        
+        .row.mb-4
+          .col-md-6
+            %p
+              %strong From: 
+              = @observation.observer.preferred_name || @observation.observer.first_name
+            %p
+              %strong Date: 
+              = @observation.observed_at.strftime('%B %d, %Y at %l:%M %p')
+          .col-md-6
+            - if @observation.observed_teammates.any?
+              %p
+                %strong Recognizing: 
+                - @observation.observed_teammates.each_with_index do |teammate, index|
+                  = teammate.person.preferred_name || teammate.person.first_name
+                  - unless index == @observation.observed_teammates.count - 1
+                    %span.text-muted , 
+    
+    - if @observation.observation_ratings.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-star.me-2
+            Ratings
+        .card-body
+          - @observation.observation_ratings.each do |rating|
+            .d-flex.align-items-center.mb-2
+              = rating.decorate.to_descriptive_html
+              - if rating.negative? && !policy(@observation).view_negative_ratings?
+                %small.text-muted.ms-2 (Restricted visibility)
+    
+    - if @observation.notifications.successful.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-bell.me-2
+            Shared Via
+        .card-body
+          - @observation.notifications.successful.each do |notification|
+            .d-flex.align-items-center.mb-2
+              %i.bi.bi-check-circle.text-success.me-2
+              %span
+                = notification.notification_type.humanize
+                - if notification.metadata['channel'].present?
+                  %span.text-muted
+                    (#{notification.metadata['channel']})
+              %small.text-muted.ms-auto
+                = notification.created_at.strftime('%m/%d/%y %l:%M %p')
+
+  .col-md-4
+    / Sidebar with branding or additional info
+    - if current_person
+      .card.mb-4
+        .card-header
+          %h6.mb-0
+            %i.bi.bi-info-circle.me-2
+            About This Kudos
+        .card-body
+          %p.small
+            This kudos was created using OurGruuv's observation system for continuous feedback and recognition.
+          %p.small
+            %strong Privacy: 
+            = @observation.decorate.visibility_text
+          - if @observation.observation_ratings.any?
+            %p.small
+              %strong Ratings: 
+              = pluralize(@observation.observation_ratings.count, 'rating')
+          %p.small
+            %strong Created: 
+            = @observation.created_at.strftime('%B %d, %Y')
+    - else
+      .card.mb-4
+        .card-header
+          %h6.mb-0
+            %i.bi.bi-heart.me-2
+            Powered by OurGruuv
+        .card-body
+          %p.small
+            This kudos was created using OurGruuv's observation system for continuous feedback and recognition.
+          %p.small
+            Join OurGruuv to create your own observations and build a culture of continuous feedback.
+          = link_to 'Learn More', '#', class: 'btn btn-outline-primary btn-sm'
+      
+      .card.mb-4
+        .card-header
+          %h6.mb-0
+            %i.bi.bi-star.me-2
+            Spotlight
+        .card-body
+          %p.small
+            %strong Total Ratings: 
+            = @observation.observation_ratings.count
+          - if @observation.observation_ratings.positive.any?
+            %p.small
+              %strong Positive Ratings: 
+              = @observation.observation_ratings.positive.count
+          - if @observation.has_negative_ratings? && policy(@observation).view_negative_ratings?
+            %p.small
+              %strong Negative Ratings: 
+              = @observation.observation_ratings.negative.count
+          %p.small
+            %strong People Recognized: 
+            = @observation.observed_teammates.count

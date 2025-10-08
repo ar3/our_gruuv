@@ -22,7 +22,7 @@ class ObservationVisibilityQuery
     # observed_only: Observer + all observees
     if @person.teammates.exists?(organization: @company)
       teammate_ids = @person.teammates.where(organization: @company).pluck(:id)
-      conditions << "(privacy_level = ? AND (observer_id = ? OR id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?))))"
+      conditions << "(privacy_level = ? AND (observer_id = ? OR observations.id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?))))"
       params << 'observed_only'
       params << @person.id
       params << teammate_ids
@@ -35,7 +35,7 @@ class ObservationVisibilityQuery
     # managers_only: Observer + management hierarchy of all observees
     managed_teammate_ids = managed_teammate_ids_for_person
     if managed_teammate_ids.any?
-      conditions << "(privacy_level = ? AND (observer_id = ? OR id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?))))"
+      conditions << "(privacy_level = ? AND (observer_id = ? OR observations.id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?))))"
       params << 'managers_only'
       params << @person.id
       params << managed_teammate_ids
@@ -51,13 +51,13 @@ class ObservationVisibilityQuery
       managed_teammate_ids = managed_teammate_ids_for_person
       
       if managed_teammate_ids.any?
-        conditions << "(privacy_level = ? AND (observer_id = ? OR id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?)) OR id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?))))"
+        conditions << "(privacy_level = ? AND (observer_id = ? OR observations.id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?)) OR observations.id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?))))"
         params << 'observed_and_managers'
         params << @person.id
         params << teammate_ids
         params << managed_teammate_ids
       else
-        conditions << "(privacy_level = ? AND (observer_id = ? OR id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?))))"
+        conditions << "(privacy_level = ? AND (observer_id = ? OR observations.id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?))))"
         params << 'observed_and_managers'
         params << @person.id
         params << teammate_ids
@@ -65,7 +65,7 @@ class ObservationVisibilityQuery
     else
       managed_teammate_ids = managed_teammate_ids_for_person
       if managed_teammate_ids.any?
-        conditions << "(privacy_level = ? AND (observer_id = ? OR id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?))))"
+        conditions << "(privacy_level = ? AND (observer_id = ? OR observations.id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?))))"
         params << 'observed_and_managers'
         params << @person.id
         params << managed_teammate_ids

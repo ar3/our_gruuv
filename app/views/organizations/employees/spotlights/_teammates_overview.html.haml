@@ -1,0 +1,74 @@
+/ Spotlight Section
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            / Main statistics/metrics area
+            .row.text-center
+              .col-3
+                .h3.text-primary= @spotlight_stats[:total_teammates]
+                %small.text-muted Total Teammates
+              .col-3
+                .h3.text-success= @spotlight_stats[:assigned_employees]
+                %small.text-muted Active Employees
+              .col-3
+                .h3.text-warning= @spotlight_stats[:unassigned_employees]
+                %small.text-muted Unassigned
+              .col-3
+                .h3.text-info= @spotlight_stats[:huddlers]
+                %small.text-muted Huddlers
+            
+            .row.text-center.mt-3
+              .col-3
+                .h5.text-secondary= @spotlight_stats[:followers]
+                %small.text-muted Followers
+              .col-3
+                .h5.text-danger= @spotlight_stats[:terminated]
+                %small.text-muted Terminated
+              .col-3
+                .h5.text-light.text-dark= @spotlight_stats[:unknown]
+                %small.text-muted Unknown
+              .col-3
+                .h5.text-info= @spotlight_stats[:huddle_participants]
+                %small.text-muted Huddle Participants
+          
+          .col-md-4
+            / Action alerts or status messages
+            - if @spotlight_stats[:unknown] > 0
+              .alert.alert-danger.small
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong #{@spotlight_stats[:unknown]} teammate#{'s' if @spotlight_stats[:unknown] != 1} with unknown status - check tooltips for details
+            
+            - if @spotlight_stats[:unassigned_employees] > 0
+              .alert.alert-warning.small
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong #{@spotlight_stats[:unassigned_employees]} teammate#{'s' if @spotlight_stats[:unassigned_employees] != 1} need#{'s' if @spotlight_stats[:unassigned_employees] == 1} position assignment
+            
+            - if @spotlight_stats[:huddlers] > 0
+              .alert.alert-info.small
+                %i.bi.bi-people.me-2
+                %strong #{@spotlight_stats[:huddlers]} huddler#{'s' if @spotlight_stats[:huddlers] != 1} participating in team activities
+            
+            - if @spotlight_stats[:followers] > 0
+              .alert.alert-secondary.small
+                %i.bi.bi-info-circle.me-2
+                %strong #{@spotlight_stats[:followers]} follower#{'s' if @spotlight_stats[:followers] != 1} with organization access
+      
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-building.me-1
+              Organization: #{@organization.display_name}
+              %br
+              %i.bi.bi-people.me-1
+              Showing teammates from company and descendants
+          .col-md-6.text-end
+            %small.text-muted
+              %i.bi.bi-table.me-1
+              View: Table View
+              %br
+              %i.bi.bi-eye.me-1
+              Spotlight: Teammates Overview

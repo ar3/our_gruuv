@@ -1,0 +1,154 @@
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center.mb-2
+    %h1.mb-0{id: "page-title"}
+      %i.bi.bi-star.me-2
+      Ratings & Privacy
+    .d-flex.align-items-center
+      = content_for :header_action
+
+.mb-4
+  = content_for :go_back_link
+
+- content_for :go_back_link do
+  = link_to new_organization_observation_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Step 1
+
+- content_for :header_action do
+  .text-muted
+    Step 2 of 3
+
+/ Progress indicator
+.card.mb-4
+  .card-body
+    .progress.mb-3.progress-thin
+      .progress-bar.progress-bar-step-2{role: "progressbar", 'aria-valuenow': "66", 'aria-valuemin': "0", 'aria-valuemax': "100"}
+    .d-flex.justify-content-between
+      .text-muted Step 1: Who, When, What, How
+      .text-primary.fw-bold Step 2: Ratings & Privacy
+      .text-muted Step 3: Review & Manage
+
+.card
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-star.me-2
+      Ratings & Privacy
+  .card-body
+    = form_with model: @form, url: set_ratings_organization_observation_path(@organization, 'new'), method: :post, local: true, class: 'needs-validation', novalidate: true do |form|
+      - if @form.errors.any?
+        .alert.alert-danger
+          %h6 Please correct the following errors:
+          %ul.mb-0
+            - @form.errors.full_messages.each do |message|
+              %li= message
+      
+      .row
+        .col-md-6
+          .mb-4
+            %h6.text-muted Ratings (Optional)
+            %p.small.text-muted Add ratings for abilities, assignments, or aspirations related to this observation.
+            
+            - if @available_abilities.any?
+              .mb-3
+                %h6.text-primary Abilities
+                - @available_abilities.each do |ability|
+                  .form-group.mb-2
+                    = label_tag "ability_#{ability.id}", ability.name, class: 'form-label small'
+                    = select_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rating]", 
+                      options_for_select(rating_options_for_select, @form.observation_ratings_attributes&.dig("ability_#{ability.id}", 'rating')&.to_s), 
+                      { class: 'form-select form-select-sm', include_blank: true, 'data-rateable-type': 'Ability', 'data-rateable-id': ability.id, 'data-rating-key': "ability_#{ability.id}" }
+                    = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_type]", 'Ability'
+                    = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_id]", ability.id
+            
+            - if @available_assignments.any?
+              .mb-3
+                %h6.text-primary Assignments
+                - @available_assignments.each do |assignment|
+                  .form-group.mb-2
+                    = label_tag "assignment_#{assignment.id}", assignment.title, class: 'form-label small'
+                    = select_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]", 
+                      options_for_select(rating_options_for_select, @form.observation_ratings_attributes&.dig("assignment_#{assignment.id}", 'rating')&.to_s), 
+                      { class: 'form-select form-select-sm', include_blank: true, 'data-rateable-type': 'Assignment', 'data-rateable-id': assignment.id, 'data-rating-key': "assignment_#{assignment.id}" }
+                    = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
+                    = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
+            
+                    - if @available_aspirations.any?
+                      .mb-3
+                        %h6.text-primary Aspirations
+                        - @available_aspirations.each do |aspiration|
+                          .form-group.mb-2
+                            = label_tag "aspiration_#{aspiration.id}", aspiration.name, class: 'form-label small'
+                            = select_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rating]", 
+                              options_for_select(rating_options_for_select, @form.observation_ratings_attributes&.dig("aspiration_#{aspiration.id}", 'rating')&.to_s), 
+                              { class: 'form-select form-select-sm', include_blank: true, 'data-rateable-type': 'Aspiration', 'data-rateable-id': aspiration.id, 'data-rating-key': "aspiration_#{aspiration.id}" }
+                            = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_type]", 'Aspiration'
+                            = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_id]", aspiration.id
+                    
+                    - if @available_abilities.empty? && @available_assignments.empty? && @available_aspirations.empty?
+                      .text-muted.small
+                        %i.bi.bi-info-circle.me-1
+                        No abilities, assignments, or aspirations available for the selected observees.
+        
+        .col-md-6
+          .mb-4
+            %h6.text-muted Privacy Level
+            %p.small.text-muted Choose who can see this observation.
+            
+            .form-check.mb-2
+              = radio_button_tag 'observation[privacy_level]', 'observer_only', @form.privacy_level == 'observer_only', class: 'form-check-input', id: 'privacy_observer_only'
+              = label_tag 'privacy_observer_only', class: 'form-check-label' do
+                %i.bi.bi-lock.me-2
+                %strong Just for me (Journal)
+                %br
+                %small.text-muted Private notes for your own reference
+            .form-check.mb-2
+              = radio_button_tag 'observation[privacy_level]', 'observed_only', @form.privacy_level == 'observed_only', class: 'form-check-input', id: 'privacy_observed_only'
+              = label_tag 'privacy_observed_only', class: 'form-check-label' do
+                %i.bi.bi-person.me-2
+                %strong Just for them
+                %br
+                %small.text-muted 1-on-1 feedback between you and the observees
+            .form-check.mb-2
+              = radio_button_tag 'observation[privacy_level]', 'managers_only', @form.privacy_level == 'managers_only', class: 'form-check-input', id: 'privacy_managers_only'
+              = label_tag 'privacy_managers_only', class: 'form-check-label' do
+                %i.bi.bi-briefcase.me-2
+                %strong For their managers
+                %br
+                %small.text-muted Only managers can see this (not the observees)
+            .form-check.mb-2
+              = radio_button_tag 'observation[privacy_level]', 'observed_and_managers', @form.privacy_level == 'observed_and_managers', class: 'form-check-input', id: 'privacy_observed_and_managers'
+              = label_tag 'privacy_observed_and_managers', class: 'form-check-label' do
+                %i.bi.bi-people.me-2
+                %strong For them and their managers
+                %br
+                %small.text-muted Full transparency with observees and managers
+            .form-check.mb-2
+              = radio_button_tag 'observation[privacy_level]', 'public_observation', @form.privacy_level == 'public_observation', class: 'form-check-input', id: 'privacy_public'
+              = label_tag 'privacy_public', class: 'form-check-label' do
+                %i.bi.bi-globe.me-2
+                %strong Public to organization
+                %br
+                %small.text-muted Anyone in the organization can see this
+      
+      .d-flex.justify-content-between
+        = link_to 'Back to Step 1', new_organization_observation_path(@organization), class: 'btn btn-secondary'
+        = form.submit 'Next: Review & Manage', class: 'btn btn-primary', name: 'step', value: '3'
+
+:javascript
+  document.addEventListener('DOMContentLoaded', function() {
+    // Handle rating selection
+    document.querySelectorAll('select[data-rateable-type]').forEach(function(select) {
+      select.addEventListener('change', function() {
+        var rateableType = this.dataset.rateableType;
+        var rateableId = this.dataset.rateableId;
+        var ratingKey = this.dataset.ratingKey;
+        
+        // Update hidden fields
+        var hiddenTypeField = document.querySelector('input[name="observation[observation_ratings_attributes][' + ratingKey + '][rateable_type]"]');
+        var hiddenIdField = document.querySelector('input[name="observation[observation_ratings_attributes][' + ratingKey + '][rateable_id]"]');
+        
+        if (hiddenTypeField) hiddenTypeField.value = rateableType;
+        if (hiddenIdField) hiddenIdField.value = rateableId;
+      });
+    });
+  });
