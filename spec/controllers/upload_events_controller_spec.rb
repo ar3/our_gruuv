@@ -275,4 +275,125 @@ RSpec.describe UploadEventsController, type: :controller do
       end
     end
   end
+
+  describe 'POST #process_upload for UploadEmployees' do
+    let(:employee_upload_event) { create(:upload_employees, organization: organization, creator: person, initiator: person) }
+
+    context 'when processing employee upload successfully' do
+      before do
+        allow(person).to receive(:can_manage_employment?).and_return(true)
+        allow(employee_upload_event).to receive(:can_process?).and_return(true)
+        allow(UnassignedEmployeeUploadProcessorJob).to receive(:perform_and_get_result).and_return(true)
+      end
+
+      it 'calls UnassignedEmployeeUploadProcessorJob for employee uploads' do
+        expect(UnassignedEmployeeUploadProcessorJob).to receive(:perform_and_get_result).with(employee_upload_event.id, organization.id).and_return(true)
+        
+        post :process_upload, params: { organization_id: organization.id, id: employee_upload_event.id }
+      end
+
+      it 'redirects to show with success message' do
+        post :process_upload, params: { organization_id: organization.id, id: employee_upload_event.id }
+        
+        expect(response).to redirect_to(organization_upload_event_path(organization, employee_upload_event))
+        expect(flash[:notice]).to eq('Upload processed successfully!')
+      end
+
+      it 'filters employee-specific preview actions' do
+        # Set up employee-specific preview actions
+        employee_upload_event.update!(
+          preview_actions: {
+            'unassigned_employees' => [
+              { 'row' => 1, 'name' => 'John Doe', 'email' => 'john@example.com' },
+              { 'row' => 2, 'name' => 'Jane Smith', 'email' => 'jane@example.com' }
+            ],
+            'departments' => [
+              { 'row' => 1, 'name' => 'Engineering' },
+              { 'row' => 2, 'name' => 'Marketing' }
+            ],
+            'managers' => [
+              { 'row' => 1, 'name' => 'Bob Johnson', 'email' => 'bob@example.com' }
+            ]
+          }
+        )
+
+        expect(UnassignedEmployeeUploadProcessorJob).to receive(:perform_and_get_result).with(employee_upload_event.id, organization.id).and_return(true)
+
+        # Process with only some items selected
+        post :process_upload, params: {
+          organization_id: organization.id,
+          id: employee_upload_event.id,
+          selected_unassigned_employees: ['1'],
+          selected_departments: ['2'],
+          selected_managers: ['1']
+        }
+
+        # Check that the preview actions were filtered
+        employee_upload_event.reload
+        expect(employee_upload_event.preview_actions['unassigned_employees'].length).to eq(1)
+        expect(employee_upload_event.preview_actions['unassigned_employees'].first['row']).to eq(1)
+        expect(employee_upload_event.preview_actions['departments'].length).to eq(1)
+        expect(employee_upload_event.preview_actions['departments'].first['row']).to eq(2)
+        expect(employee_upload_event.preview_actions['managers'].length).to eq(1)
+        expect(employee_upload_event.preview_actions['managers'].first['row']).to eq(1)
+      end
+    end
+
+    context 'when employee upload processing fails' do
+      before do
+        allow(person).to receive(:can_manage_employment?).and_return(true)
+        allow(employee_upload_event).to receive(:can_process?).and_return(true)
+        allow(UnassignedEmployeeUploadProcessorJob).to receive(:perform_and_get_result).and_return(false)
+      end
+
+      it 'redirects to show with error message' do
+        post :process_upload, params: { organization_id: organization.id, id: employee_upload_event.id }
+        
+        expect(response).to redirect_to(organization_upload_event_path(organization, employee_upload_event))
+        expect(flash[:alert]).to eq('Upload processing failed. Please check the logs for details.')
+      end
+    end
+
+    context 'when employee upload cannot be processed' do
+      before do
+        allow(person).to receive(:can_manage_employment?).and_return(true)
+        employee_upload_event.update!(status: 'completed') # Completed uploads cannot be processed
+      end
+
+      it 'redirects to show with error' do
+        post :process_upload, params: { organization_id: organization.id, id: employee_upload_event.id }
+        
+        expect(response).to redirect_to(organization_upload_event_path(organization, employee_upload_event))
+        expect(flash[:alert]).to eq('This upload cannot be processed.')
+      end
+    end
+
+    context 'with real job integration' do
+      let(:valid_csv_content) do
+        <<~CSV
+          Name,Preferred Name,Email,Start Date,Location,Gender,Department,Employment Type,Manager,Country,Manager Email,Job Title,Job Title Level
+          John Doe,John,john.doe@company.com,2024-01-15,New York,male,Engineering,full_time,Jane Smith,USA,jane.smith@company.com,Software Engineer,mid
+        CSV
+      end
+
+      let(:employee_upload_event) { create(:upload_employees, organization: organization, creator: person, initiator: person, file_content: valid_csv_content) }
+
+      before do
+        allow(person).to receive(:can_manage_employment?).and_return(true)
+        allow(employee_upload_event).to receive(:can_process?).and_return(true)
+      end
+
+      it 'actually processes employee data through the job' do
+        expect {
+          post :process_upload, params: { organization_id: organization.id, id: employee_upload_event.id }
+        }.to change(Person, :count).by_at_least(1)
+         .and change(Organization.departments, :count).by(1)
+         .and change(Teammate, :count).by_at_least(1)
+         .and change(EmploymentTenure, :count).by(1)
+
+        expect(response).to redirect_to(organization_upload_event_path(organization, employee_upload_event))
+        expect(flash[:notice]).to eq('Upload processed successfully!')
+      end
+    end
+  end
 end

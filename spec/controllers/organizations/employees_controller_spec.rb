@@ -24,6 +24,10 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
     employment_tenure1
     employment_tenure2
     huddle_participation
+    
+    # Set first_employed_at on teammates to make them assigned employees
+    employee1_teammate.update!(first_employed_at: 1.year.ago)
+    employee2_teammate.update!(first_employed_at: 6.months.ago)
   end
 
   describe 'GET #index' do
@@ -36,25 +40,24 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       get :index, params: { organization_id: company.id }
       
       expect(assigns(:organization).id).to eq(company.id)
-      expect(assigns(:active_employees)).to include(employee1, employee2)
-      expect(assigns(:huddle_participants)).to include(huddle_participant)
-      expect(assigns(:just_huddle_participants)).to include(huddle_participant)
+      expect(assigns(:teammates)).to include(employee1_teammate, employee2_teammate)
+      expect(assigns(:spotlight_stats)).to be_present
+      expect(assigns(:spotlight_stats)[:assigned_employees]).to eq(2)
     end
 
     it 'includes huddle participants from child organizations' do
       get :index, params: { organization_id: company.id }
       
       # Should include participants from child organizations (team)
-      expect(assigns(:huddle_participants)).to include(huddle_participant)
+      expect(assigns(:spotlight_stats)[:huddle_participants]).to be > 0
     end
 
     it 'separates active employees from huddle-only participants' do
       get :index, params: { organization_id: company.id }
       
       # Active employees should not be in just_huddle_participants
-      expect(assigns(:just_huddle_participants)).not_to include(employee1, employee2)
-      # Huddle-only participants should not be in active_employees
-      expect(assigns(:active_employees)).not_to include(huddle_participant)
+      expect(assigns(:spotlight_stats)[:assigned_employees]).to eq(2)
+      expect(assigns(:spotlight_stats)[:non_employee_participants]).to eq(1) # huddle_participant
     end
 
     it 'handles organizations with no employees gracefully' do
@@ -63,8 +66,8 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       get :index, params: { organization_id: empty_company.id }
       
       expect(response).to have_http_status(:success)
-      expect(assigns(:active_employees)).to be_empty
-      expect(assigns(:huddle_participants)).to be_empty
+      expect(assigns(:teammates)).to be_empty
+      expect(assigns(:spotlight_stats)[:assigned_employees]).to eq(0)
     end
   end
 

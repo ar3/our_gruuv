@@ -8,8 +8,9 @@ RSpec.describe 'organizations/observations/new', type: :view do
   let(:observee2) { create(:teammate, organization: company) }
 
   before do
-    allow(view).to receive(:current_person).and_return(observer)
-    allow(view).to receive(:organization).and_return(company)
+    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(observer)
+    allow_any_instance_of(Organizations::OrganizationNamespaceBaseController).to receive(:organization).and_return(company)
+    @organization = company
     observer_teammate # Ensure observer teammate is created
   end
 
