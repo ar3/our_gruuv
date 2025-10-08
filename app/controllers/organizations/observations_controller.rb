@@ -367,7 +367,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   end
 
   # Helper methods for views
-  helper_method :privacy_level_class, :privacy_level_text, :feelings_display, :rating_icon, :rating_options_for_select
+  helper_method :privacy_level_text, :feelings_display, :rating_icon, :rating_options_for_select
 
   def rating_options_for_select(selected_value = nil)
     [
