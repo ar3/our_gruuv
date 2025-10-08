@@ -6,9 +6,6 @@
     .d-flex.align-items-center
       = content_for :header_action
 
-.mb-4
-  = content_for :go_back_link
-
 - content_for :go_back_link do
   = link_to organization_observations_path(@organization), class: "text-muted text-decoration-none" do
     %i.bi.bi-arrow-left.me-2
@@ -43,7 +40,7 @@
               %li= message
       
       .row
-        .col-md-6
+        .col-12
           .mb-4
             = form.label :observees, "Who are you observing?", class: 'form-label'
             .card.border
@@ -61,18 +58,20 @@
           
           .mb-4
             = form.label :observed_at, "When did this happen?", class: 'form-label'
-            = form.datetime_local_field :observed_at, class: 'form-control', value: Time.current.strftime('%Y-%m-%dT%H:%M')
+            = form.datetime_local_field :observed_at, class: 'form-control', value: @form.observed_at&.strftime('%Y-%m-%dT%H:%M') || Time.current.strftime('%Y-%m-%dT%H:%M'), required: true
         
-        .col-md-6
+        .col-md-12
           .mb-4
             = form.label :story, "What happened?", class: 'form-label'
-            = form.text_area :story, class: 'form-control', rows: 8, placeholder: 'Tell the story of what happened... Be specific about what you observed and why it matters.'
+            = form.text_area :story, class: "form-control #{'is-invalid' if @form.errors[:story].any?}", rows: 8, placeholder: 'Tell the story of what happened... Be specific about what you observed and why it matters.', required: true
             .form-text Markdown is supported for formatting.
-          
+      .row
+        .col-6
           .mb-4
             = form.label :primary_feeling, "How did this make you feel?", class: 'form-label'
             = form.select :primary_feeling, options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, @form.primary_feeling), { prompt: 'Select a feeling...' }, { class: 'form-select' }
           
+        .col-6
           .mb-4
             = form.label :secondary_feeling, "Secondary feeling (optional)", class: 'form-label'
             = form.select :secondary_feeling, options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, @form.secondary_feeling), { prompt: 'Select a secondary feeling...', include_blank: 'None' }, { class: 'form-select' }

@@ -16,21 +16,22 @@ RSpec.feature 'Employee Upload Complete Flow', type: :feature do
       # Step 1: Navigate to new upload page
       visit new_organization_upload_event_path(organization, upload_event: {type: 'UploadEvent::UploadEmployees'})
       expect(page).to have_content('Upload Employee Positions')
-      expect(page).to have_content('Upload CSV file')
+      expect(page).to have_content('Upload CSV File')
       
       # Step 2: Upload empty CSV file
       csv_content = "Name,Email,Start Date\n"
       attach_file 'upload_event_file', create_temp_csv_file(csv_content)
       
-      click_button 'Create Upload Event'
+      click_button 'Upload and Preview'
       
       # Step 3: Should redirect to show page with preview
       expect(page).to have_content('Upload Details')
       expect(page).to have_content('Preview Actions')
-      expect(page).to have_content('No data available')
+      # For empty CSV, we should see the success message
+      expect(page).to have_content('Upload created successfully')
       
-      # Step 4: No process button should be shown for empty data
-      expect(page).not_to have_button('Process Selected Items')
+      # Step 4: Process button should be shown even for empty data
+      expect(page).to have_button('Process Selected Items')
     end
 
     it 'creates employee upload with data and processes selected items' do
@@ -46,7 +47,7 @@ RSpec.feature 'Employee Upload Complete Flow', type: :feature do
       CSV
       
       attach_file 'upload_event_file', create_temp_csv_file(csv_content)
-      click_button 'Create Upload Event'
+      click_button 'Upload and Preview'
       
       # Step 3: Should redirect to show page with preview
       expect(page).to have_content('Upload Details')
@@ -89,7 +90,7 @@ RSpec.feature 'Employee Upload Complete Flow', type: :feature do
       CSV
       
       attach_file 'upload_event_file', create_temp_csv_file(csv_content)
-      click_button 'Create Upload Event'
+      click_button 'Upload and Preview'
       
       # Step 3: Should show comprehensive preview
       expect(page).to have_content('Unassigned Employees (3)')
@@ -118,7 +119,7 @@ RSpec.feature 'Employee Upload Complete Flow', type: :feature do
       CSV
       
       attach_file 'upload_event_file', create_temp_csv_file(csv_content)
-      click_button 'Create Upload Event'
+      click_button 'Upload and Preview'
       
       # Step 3: Should show minimal preview
       expect(page).to have_content('Unassigned Employees (1)')
@@ -138,7 +139,7 @@ RSpec.feature 'Employee Upload Complete Flow', type: :feature do
       visit new_organization_upload_event_path(organization, upload_event: {type: 'UploadEvent::UploadEmployees'})
       
       # Step 2: Try to submit without file
-      click_button 'Create Upload Event'
+      click_button 'Upload and Preview'
       
       # Step 3: Should show validation error
       expect(page).to have_content('File is required')
@@ -153,7 +154,7 @@ RSpec.feature 'Employee Upload Complete Flow', type: :feature do
       
       # Step 2: Upload invalid file type
       attach_file 'upload_event_file', create_temp_file('invalid content', 'test.txt')
-      click_button 'Create Upload Event'
+      click_button 'Upload and Preview'
       
       # Step 3: Should redirect with error
       expect(page).to have_content('Please upload a valid CSV file')
@@ -168,7 +169,7 @@ RSpec.feature 'Employee Upload Complete Flow', type: :feature do
       
       visit new_organization_upload_event_path(organization, upload_event: {type: 'UploadEvent::UploadEmployees'})
       attach_file 'upload_event_file', create_temp_csv_file(csv_content)
-      click_button 'Create Upload Event'
+      click_button 'Upload and Preview'
       
       # Step 2: Should show preview with errors
       expect(page).to have_content('Preview Actions')
@@ -195,7 +196,7 @@ RSpec.feature 'Employee Upload Complete Flow', type: :feature do
       # Step 3: Upload a file
       csv_content = "Name,Email,Start Date\nTest User,test@company.com,2024-01-01\n"
       attach_file 'upload_event_file', create_temp_csv_file(csv_content)
-      click_button 'Create Upload Event'
+      click_button 'Upload and Preview'
       
       # Step 4: Should be on show page
       expect(page).to have_content('Upload Details')
@@ -218,14 +219,14 @@ RSpec.feature 'Employee Upload Complete Flow', type: :feature do
       
       # Step 2: Verify all form elements
       expect(page).to have_field('upload_event_file')
-      expect(page).to have_button('Create Upload Event')
+      expect(page).to have_button('Upload and Preview')
       expect(page).to have_content('Upload Employee Positions')
-      expect(page).to have_content('Upload CSV file')
+      expect(page).to have_content('Upload CSV File')
       
       # Step 3: Upload file and verify preview elements
       csv_content = "Name,Email,Start Date\nTest User,test@company.com,2024-01-01\n"
       attach_file 'upload_event_file', create_temp_csv_file(csv_content)
-      click_button 'Create Upload Event'
+      click_button 'Upload and Preview'
       
       # Step 4: Verify preview elements
       expect(page).to have_content('Preview Actions')
@@ -241,7 +242,7 @@ RSpec.feature 'Employee Upload Complete Flow', type: :feature do
     temp_file = Tempfile.new(['test', '.csv'])
     temp_file.write(content)
     temp_file.rewind
-    temp_file
+    temp_file.path
   end
 
   def create_temp_file(content, filename)

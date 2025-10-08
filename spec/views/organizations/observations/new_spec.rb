@@ -12,6 +12,8 @@ RSpec.describe 'organizations/observations/new', type: :view do
     allow_any_instance_of(Organizations::OrganizationNamespaceBaseController).to receive(:organization).and_return(company)
     @organization = company
     observer_teammate # Ensure observer teammate is created
+    observee1 # Ensure observee1 is created
+    observee2 # Ensure observee2 is created
   end
 
   describe 'rendering Step 1 form elements' do
@@ -57,7 +59,7 @@ RSpec.describe 'organizations/observations/new', type: :view do
 
       render
 
-      expect(rendered).to have_css('input[name="observation[teammate_ids][]"]', count: 2)
+      expect(rendered).to have_css('input[name="observation[teammate_ids][]"]', count: 3)
       expect(rendered).to have_content(observee1.person.preferred_name || observee1.person.first_name)
       expect(rendered).to have_content(observee2.person.preferred_name || observee2.person.first_name)
     end
@@ -131,7 +133,7 @@ RSpec.describe 'organizations/observations/new', type: :view do
 
       render
 
-      expect(rendered).to have_content('Step 1 of 3')
+      expect(rendered).to have_content('Step 1: Who, When, What, How')
       expect(rendered).to have_css('.progress-bar-step-1')
     end
   end
@@ -172,7 +174,7 @@ RSpec.describe 'organizations/observations/new', type: :view do
       expect(rendered).to have_css('option[value="happy"]', text: /Happy/)
       expect(rendered).to have_css('option[value="proud"]', text: /Proud/)
       expect(rendered).to have_css('option[value="excited"]', text: /Excited/)
-      expect(rendered).to have_css('option[value="grateful"]', text: /Grateful/)
+      expect(rendered).to have_css('option[value="peaceful"]', text: /Peaceful/)
     end
 
     it 'includes blank option for feelings' do

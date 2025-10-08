@@ -12,6 +12,8 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
   before do
     session[:current_person_id] = observer.id
     observer_teammate # Ensure observer teammate is created
+    ability # Ensure ability is created
+    assignment # Ensure assignment is created
   end
 
   describe 'Wizard Flow' do
@@ -177,6 +179,8 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
             organization_id: company.id,
             id: 'new',
             observation: {
+              story: 'Great work!',
+              privacy_level: 'observed_only',
               send_notifications: '1',
               notify_teammate_ids: [observee1.id.to_s, observee2.id.to_s]
             }

@@ -341,25 +341,26 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   end
 
   def handle_ratings(observation, wizard_data)
-    Rails.logger.debug "handle_ratings called with wizard_data: #{wizard_data.inspect}"
-    Rails.logger.debug "observation_ratings_attributes: #{wizard_data['observation_ratings_attributes'].inspect}"
-    
     return unless wizard_data['observation_ratings_attributes'].present?
     
     wizard_data['observation_ratings_attributes'].each do |key, rating_attrs|
-      Rails.logger.debug "Processing rating key: #{key}, attrs: #{rating_attrs.inspect}"
-      next if rating_attrs['_destroy'] == '1' || rating_attrs['rateable_id'].blank?
+      next if rating_attrs[:_destroy] == '1' || rating_attrs[:rateable_id].blank?
       
-      Rails.logger.debug "Creating rating: #{rating_attrs.inspect}"
+      # Check if the rateable object exists
+      rateable_class = rating_attrs[:rateable_type].constantize
+      rateable_id = rating_attrs[:rateable_id].to_i
+      rateable_object = rateable_class.find_by(id: rateable_id)
+      
+      next if rateable_object.nil?
+      
       begin
         observation.observation_ratings.create!(
-          rateable_type: rating_attrs['rateable_type'],
-          rateable_id: rating_attrs['rateable_id'],
-          rating: rating_attrs['rating']
+          rateable_type: rating_attrs[:rateable_type],
+          rateable_id: rateable_id,
+          rating: rating_attrs[:rating]
         )
-        Rails.logger.debug "Successfully created rating for #{rating_attrs['rateable_type']} #{rating_attrs['rateable_id']}"
       rescue ActiveRecord::RecordInvalid => e
-        Rails.logger.debug "Failed to create rating: #{e.message}"
+        Rails.logger.error "Failed to create rating: #{e.message}"
         raise e
       end
     end
