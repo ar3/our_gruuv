@@ -1,0 +1,37 @@
+.table-responsive
+  %table.table.table-hover
+    %thead
+      %tr
+        %th Name
+        %th Organization
+        %th Employment Status
+        %th Position
+        %th Permissions
+        %th Employment Dates
+        %th Actions
+    %tbody
+      - @teammates.each do |teammate|
+        %tr
+          %td
+            = link_to teammate.person.display_name, teammate_organization_person_path(@organization, teammate.person), class: "text-decoration-none fw-bold"
+            %br
+            %small.text-muted= teammate.person.email
+          %td
+            = teammate_organization_display(teammate)
+          %td
+            = employment_status_badge(teammate)
+            %br
+            = employment_status_progress_bar(teammate)
+          %td
+            = teammate_current_position(teammate)
+          %td
+            = teammate_permissions_badges(teammate)
+          %td
+            %small.text-muted= teammate_employment_dates(teammate)
+          %td
+            .btn-group.btn-group-sm
+              = link_to teammate_organization_person_path(@organization, teammate.person), class: "btn btn-outline-primary" do
+                %i.bi.bi-eye
+              - if current_person.can_manage_employment?(@organization)
+                = link_to organization_assignment_tenure_path(@organization, teammate.person), class: "btn btn-outline-secondary" do
+                  %i.bi.bi-list-task

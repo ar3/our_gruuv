@@ -1,5 +1,6 @@
 module ApplicationHelper
   include HuddleConstants
+  include Pagy::Frontend
 
   # Color helper methods for consistent UI
   def rating_color(rating)
@@ -178,5 +179,22 @@ module ApplicationHelper
       ['Most Ratings', 'ratings_count_desc'],
       ['Alphabetical', 'story_asc']
     ]
+  end
+
+  def privacy_level_class(privacy_level)
+    case privacy_level
+    when 'observer_only'
+      'text-muted'
+    when 'observed_only'
+      'text-info'
+    when 'managers_only'
+      'text-warning'
+    when 'observed_and_managers'
+      'text-primary'
+    when 'public_observation'
+      'text-success'
+    else
+      'text-muted'
+    end
   end
 end

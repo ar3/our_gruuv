@@ -2,17 +2,10 @@ class PeopleController < ApplicationController
   layout 'authenticated-v2-0'
   before_action :require_login, except: [:public]
   before_action :authorize_maap_snapshot_actions
-  after_action :verify_authorized, except: [:index]
-  after_action :verify_policy_scoped, only: :index
+  after_action :verify_authorized
   
   helper_method :real_current_person, :person, :maap_snapshot
 
-  def index
-    authorize Person
-    @people = policy_scope(Person).includes(:employment_tenures, :huddles)
-                    .order(:first_name, :last_name)
-                    .decorate
-  end
 
   def show
     authorize person

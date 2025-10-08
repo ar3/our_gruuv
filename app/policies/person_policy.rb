@@ -186,10 +186,6 @@ class PersonPolicy < ApplicationPolicy
     true
   end
 
-  def index?
-    # Only admins can see the people index
-    admin_bypass?
-  end
 
   def destroy?
     # Users cannot delete their own profile (for now)
@@ -218,16 +214,6 @@ class PersonPolicy < ApplicationPolicy
     admin_bypass?
   end
 
-  class Scope < Scope
-    def resolve
-      # Users can only see themselves, admins can see all people
-      if actual_user&.admin?
-        scope.all
-      else
-        scope.where(id: actual_user.id)
-      end
-    end
-  end
 
 
 end

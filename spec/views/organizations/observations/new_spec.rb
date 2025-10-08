@@ -18,26 +18,18 @@ RSpec.describe 'organizations/observations/new', type: :view do
 
   describe 'rendering Step 1 form elements' do
     it 'renders story textarea' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
-
       render
 
       expect(rendered).to have_css('textarea[name="observation[story]"]')
     end
 
     it 'renders primary feeling select' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
-
       render
 
       expect(rendered).to have_css('select[name="observation[primary_feeling]"]')
     end
 
     it 'renders secondary feeling select' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
 
       render
 
@@ -45,8 +37,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
     end
 
     it 'renders observed_at datetime input' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
 
       render
 
@@ -54,8 +44,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
     end
 
     it 'renders teammate checkboxes' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
 
       render
 
@@ -65,8 +53,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
     end
 
     it 'renders submit button with correct value' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
 
       render
 
@@ -76,8 +62,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
 
   describe 'form value preservation' do
     it 'preserves story value' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
       @form.story = 'Test story'
 
       render
@@ -86,8 +70,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
     end
 
     it 'preserves primary feeling selection' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
       @form.primary_feeling = 'happy'
 
       render
@@ -96,8 +78,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
     end
 
     it 'preserves secondary feeling selection' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
       @form.secondary_feeling = 'proud'
 
       render
@@ -106,8 +86,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
     end
 
     it 'preserves observed_at value' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
       @form.observed_at = Time.zone.parse('2024-01-15 14:30')
 
       render
@@ -116,8 +94,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
     end
 
     it 'preserves teammate selections' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
       @form.teammate_ids = [observee1.id.to_s]
 
       render
@@ -128,8 +104,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
 
   describe 'progress indicator' do
     it 'shows correct step progress' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
 
       render
 
@@ -140,8 +114,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
 
   describe 'error handling' do
     it 'renders form errors when present' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
       @form.errors.add(:story, "can't be blank")
       @form.errors.add(:observees, "must have at least one observee")
 
@@ -153,8 +125,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
     end
 
     it 'renders field-specific errors' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
       @form.errors.add(:story, "can't be blank")
 
       render
@@ -165,8 +135,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
 
   describe 'feelings options' do
     it 'renders all feeling options' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
 
       render
 
@@ -178,8 +146,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
     end
 
     it 'includes blank option for feelings' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
 
       render
 
@@ -190,8 +156,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
 
   describe 'teammate display' do
     it 'shows teammate names and emails' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
 
       render
 
@@ -203,8 +167,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
       observee1.person.update!(preferred_name: nil)
       observee2.person.update!(preferred_name: nil)
 
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
 
       render
 
@@ -215,8 +177,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
 
   describe 'form validation' do
     it 'includes required attributes' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
 
       render
 
@@ -225,8 +185,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
     end
 
     it 'includes form validation classes' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
 
       render
 
@@ -236,8 +194,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
 
   describe 'edge cases' do
     it 'handles nil form values gracefully' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
       @form.story = nil
       @form.primary_feeling = nil
       @form.secondary_feeling = nil
@@ -250,8 +206,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
     end
 
     it 'handles empty teammate_ids array' do
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
       @form.teammate_ids = []
 
       render
@@ -261,8 +215,6 @@ RSpec.describe 'organizations/observations/new', type: :view do
 
     it 'handles large story text' do
       large_story = 'A' * 10000
-      @observation = company.observations.build(observer: observer)
-      @form = ObservationForm.new(@observation)
       @form.story = large_story
 
       render

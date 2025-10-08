@@ -1,8 +1,10 @@
 # PaperTrail configuration
 # Ensure controller info is stored in meta JSONB column, not as direct attributes
 Rails.application.config.after_initialize do
-  # Override PaperTrail's controller_info handling to use meta column
-  PaperTrail::Version.class_eval do
+  # Only modify PaperTrail::Version if it exists (skip during asset precompilation)
+  if defined?(PaperTrail::Version)
+    # Override PaperTrail's controller_info handling to use meta column
+    PaperTrail::Version.class_eval do
     # Override the controller_info setter to store in meta instead of as direct attributes
     def controller_info=(info)
       self.meta = (meta || {}).merge(info.stringify_keys)
@@ -36,6 +38,7 @@ Rails.application.config.after_initialize do
     
     def impersonating_person_id
       meta&.dig('impersonating_person_id')
+    end
     end
   end
 end

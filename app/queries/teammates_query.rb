@@ -1,0 +1,110 @@
+class TeammatesQuery
+  attr_reader :organization, :params
+
+  def initialize(organization, params = {})
+    @organization = organization
+    @params = params.with_indifferent_access
+  end
+
+  def call
+    teammates = base_scope
+    teammates = filter_by_organization(teammates)
+    teammates = filter_by_permissions(teammates)
+    teammates = apply_sort(teammates)
+    teammates = filter_by_status(teammates) # Apply status filter last since it converts to Array
+    teammates
+  end
+
+  def current_filters
+    filters = {}
+    filters[:status] = params[:status] if params[:status].present?
+    filters[:organization_id] = params[:organization_id] if params[:organization_id].present?
+    filters[:permission] = params[:permission] if params[:permission].present?
+    filters
+  end
+
+  def current_sort
+    params[:sort] || 'name_asc'
+  end
+
+  def current_view
+    params[:view] || 'table'
+  end
+
+  def has_active_filters?
+    current_filters.any?
+  end
+
+  private
+
+  def base_scope
+    Teammate.for_organization_hierarchy(organization)
+            .includes(:person, :employment_tenures, :organization)
+  end
+
+  def filter_by_status(teammates)
+    return teammates unless params[:status].present?
+
+    statuses = Array(params[:status])
+    return teammates if statuses.empty?
+
+    # Filter teammates based on their status using TeammateStatus
+    teammates.select do |teammate|
+      status = TeammateStatus.new(teammate).status
+      statuses.include?(status.to_s)
+    end
+  end
+
+  def filter_by_organization(teammates)
+    return teammates unless params[:organization_id].present?
+
+    org_id = params[:organization_id].to_i
+    teammates.where(organization_id: org_id)
+  end
+
+  def filter_by_permissions(teammates)
+    return teammates unless params[:permission].present?
+
+    permissions = Array(params[:permission])
+    return teammates if permissions.empty?
+
+    filtered_teammates = teammates
+
+    permissions.each do |permission|
+      case permission
+      when 'employment_mgmt'
+        filtered_teammates = filtered_teammates.where(can_manage_employment: true)
+      when 'employment_create'
+        filtered_teammates = filtered_teammates.where(can_create_employment: true)
+      when 'maap_mgmt'
+        filtered_teammates = filtered_teammates.where(can_manage_maap: true)
+      end
+    end
+
+    filtered_teammates
+  end
+
+  def apply_sort(teammates)
+    case params[:sort]
+    when 'name_desc'
+      teammates.joins(:person).order('people.last_name DESC, people.first_name DESC')
+    when 'status'
+      # Sort by status in meaningful order: assigned_employee, unassigned_employee, huddler, follower, terminated
+      teammates.joins(:person).order(
+        Arel.sql("CASE 
+          WHEN last_terminated_at IS NOT NULL THEN 5
+          WHEN first_employed_at IS NOT NULL AND last_terminated_at IS NULL THEN 1
+          WHEN first_employed_at IS NULL AND last_terminated_at IS NULL THEN 3
+          ELSE 4
+        END"),
+        'people.last_name ASC, people.first_name ASC'
+      )
+    when 'organization'
+      teammates.joins(:organization).order('organizations.name ASC, people.last_name ASC, people.first_name ASC')
+    when 'employment_date'
+      teammates.joins(:person).order('first_employed_at DESC NULLS LAST, people.last_name ASC, people.first_name ASC')
+    else # 'name_asc' or default
+      teammates.joins(:person).order('people.last_name ASC, people.first_name ASC')
+    end
+  end
+end

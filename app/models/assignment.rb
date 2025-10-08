@@ -32,6 +32,10 @@ class Assignment < ApplicationRecord
     title
   end
   
+  def name
+    title
+  end
+  
   def company_name
     company&.display_name
   end

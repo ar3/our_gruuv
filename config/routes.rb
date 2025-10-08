@@ -213,7 +213,7 @@ get '/login', to: 'auth#login', as: :login
   get '/my-huddles', to: 'huddles#my_huddles', as: :my_huddles
   
   # People routes
-  resources :people, only: [:index, :show, :edit, :update] do
+  resources :people, only: [:show, :edit, :update] do
     member do
       get :public
     end

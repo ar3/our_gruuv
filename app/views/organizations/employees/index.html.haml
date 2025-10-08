@@ -28,55 +28,54 @@
 / Spotlight Section
 = render 'organizations/employees/spotlights/teammates_overview'
 
+/ Active Filters Display
+- if @has_active_filters
+  .row.justify-content-center.mb-3
+    .col-lg-12
+      .d-flex.flex-wrap.gap-2.align-items-center
+        %span.text-muted.me-2 Active Filters:
+        - @current_filters.each do |filter_name, filter_value|
+          - Array(filter_value).each do |value|
+            %span.badge.bg-primary.d-flex.align-items-center.gap-1
+              = filter_display_name(filter_name, value)
+              = link_to "×", clear_filter_url(filter_name, value), class: "text-white text-decoration-none ms-1"
+        = link_to "Clear All", organization_employees_path(@organization), class: "btn btn-sm btn-outline-secondary"
+
+/ Pagination Info
+.row.justify-content-center.mb-2
+  .col-lg-12
+    .d-flex.justify-content-between.align-items-center
+      %small.text-muted= pagy_info(@pagy)
+      - if @teammates.count > 0
+        %small.text-muted Showing #{@current_view.humanize} view
+
 / Main Content Area
 .row.justify-content-center
   .col-lg-12
     - if @teammates.any?
-      .table-responsive
-        %table.table.table-hover
-          %thead
-            %tr
-              %th Name
-              %th Organization
-              %th Employment Status
-              %th Position
-              %th Permissions
-              %th Employment Dates
-              %th Actions
-          %tbody
-            - @teammates.each do |teammate|
-              %tr
-                %td
-                  = link_to teammate.person.display_name, teammate_organization_person_path(@organization, teammate.person), class: "text-decoration-none fw-bold"
-                  %br
-                  %small.text-muted= teammate.person.email
-                %td
-                  = teammate_organization_display(teammate)
-                %td
-                  = employment_status_badge(teammate)
-                  %br
-                  = employment_status_progress_bar(teammate)
-                %td
-                  = teammate_current_position(teammate)
-                %td
-                  = teammate_permissions_badges(teammate)
-                %td
-                  %small.text-muted= teammate_employment_dates(teammate)
-                %td
-                  .btn-group.btn-group-sm
-                    = link_to teammate_organization_person_path(@organization, teammate.person), class: "btn btn-outline-primary" do
-                      %i.bi.bi-eye
-                    - if current_person.can_manage_employment?(@organization)
-                      = link_to organization_assignment_tenure_path(@organization, teammate.person), class: "btn btn-outline-secondary" do
-                        %i.bi.bi-list-task
+      - case @current_view
+      - when 'cards'
+        = render 'organizations/employees/card_view'
+      - when 'list'
+        = render 'organizations/employees/list_view'
+      - else
+        = render 'organizations/employees/table_view'
+      
+      / Pagination
+      .d-flex.justify-content-center.mt-4
+        == pagy_nav(@pagy)
     - else
       .alert.alert-info
         %h6.mb-2
           %i.bi.bi-info-circle.me-2
           No Teammates Found
         %p.mb-2 
-          This organization doesn't have any teammates yet. Teammates include employees, followers, and other people with access to the organization.
-        = link_to "Add First Teammate", new_employee_organization_employees_path(@organization), class: "btn btn-primary btn-sm"
+          - if @has_active_filters
+            No teammates match your current filters. Try adjusting your filter settings.
+          - else
+            This organization doesn't have any teammates yet. Teammates include employees, followers, and other people with access to the organization.
+        - unless @has_active_filters
+          = link_to "Add First Teammate", new_employee_organization_employees_path(@organization), class: "btn btn-primary btn-sm"
 
 / Modal for Filter & Sort
 .modal.fade#teammates-filter-modal{"aria-hidden" => "true", "aria-labelledby" => "teammates-filter-modal-label", tabindex: "-1"}
@@ -85,95 +84,72 @@
       .modal-header
         %h5.modal-title#teammates-filter-modal-label
           %i.bi.bi-funnel.me-2
-          Filter & Sort Teammates (coming soon)
+          Filter & Sort Teammates
         %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-      .modal-body
-        .row
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-funnel.me-2
-              Filters
-            .form-check
-              %input.form-check-input{type: "checkbox", name: "statusFilter", value: "followers", id: "filter_followers"}
-              %label.form-check-label{for: "filter_followers"}
-                %i.bi.bi-person-follow.me-2
-                Followers
-            .form-check
-              %input.form-check-input{type: "checkbox", name: "statusFilter", value: "huddlers", id: "filter_huddlers"}
-              %label.form-check-label{for: "filter_huddlers"}
-                %i.bi.bi-people.me-2
-                Huddlers
-            .form-check
-              %input.form-check-input{type: "checkbox", name: "statusFilter", value: "unassigned", id: "filter_unassigned"}
-              %label.form-check-label{for: "filter_unassigned"}
-                %i.bi.bi-person-exclamation.me-2
-                Unassigned Employees
-            .form-check
-              %input.form-check-input{type: "checkbox", name: "statusFilter", value: "assigned", id: "filter_assigned"}
-              %label.form-check-label{for: "filter_assigned"}
-                %i.bi.bi-person-check.me-2
-                Active Employees
-            .form-check
-              %input.form-check-input{type: "checkbox", name: "statusFilter", value: "terminated", id: "filter_terminated"}
-              %label.form-check-label{for: "filter_terminated"}
-                %i.bi.bi-person-x.me-2
-                Terminated
-            .mb-3
-              %label.form-label Organization
-              %select.form-select
-                %option All Organizations
-                %option= @organization.name
-                - @organization.descendants.each do |descendant|
-                  %option= descendant.name
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-sort-down.me-2
-              Sort Options
-            .form-check
-              %input.form-check-input{checked: "checked", type: "radio", name: "sortBy", value: "name_asc"}
-              %label.form-check-label
-                %i.bi.bi-sort-alpha-down.me-2
-                Name (A-Z)
-            .form-check
-              %input.form-check-input{type: "radio", name: "sortBy", value: "name_desc"}
-              %label.form-check-label
-                %i.bi.bi-sort-alpha-up.me-2
-                Name (Z-A)
-            .form-check
-              %input.form-check-input{type: "radio", name: "sortBy", value: "status"}
-              %label.form-check-label
+      = form_tag organization_employees_path(@organization), method: :get, local: true do
+        .modal-body
+          .row
+            .col-md-6
+              %h6.mb-3
+                %i.bi.bi-funnel.me-2
+                Filters
+              .mb-3
+                %label.form-label Employment Status
+                .form-check
+                  = check_box_tag 'status[]', 'follower', @current_filters[:status]&.include?('follower'), class: 'form-check-input', id: 'filter_followers'
+                  = label_tag 'filter_followers', 'Followers', class: 'form-check-label'
+                .form-check
+                  = check_box_tag 'status[]', 'huddler', @current_filters[:status]&.include?('huddler'), class: 'form-check-input', id: 'filter_huddlers'
+                  = label_tag 'filter_huddlers', 'Huddlers', class: 'form-check-label'
+                .form-check
+                  = check_box_tag 'status[]', 'unassigned_employee', @current_filters[:status]&.include?('unassigned_employee'), class: 'form-check-input', id: 'filter_unassigned'
+                  = label_tag 'filter_unassigned', 'Unassigned Employees', class: 'form-check-label'
+                .form-check
+                  = check_box_tag 'status[]', 'assigned_employee', @current_filters[:status]&.include?('assigned_employee'), class: 'form-check-input', id: 'filter_assigned'
+                  = label_tag 'filter_assigned', 'Active Employees', class: 'form-check-label'
+                .form-check
+                  = check_box_tag 'status[]', 'terminated', @current_filters[:status]&.include?('terminated'), class: 'form-check-input', id: 'filter_terminated'
+                  = label_tag 'filter_terminated', 'Terminated', class: 'form-check-label'
+              .mb-3
+                %label.form-label Organization
+                = select_tag 'organization_id', options_from_collection_for_select([@organization] + @organization.descendants, :id, :name, @current_filters[:organization_id]), { include_blank: 'All Organizations', class: 'form-select' }
+              .mb-3
+                %label.form-label Permissions
+                .form-check
+                  = check_box_tag 'permission[]', 'employment_mgmt', @current_filters[:permission]&.include?('employment_mgmt'), class: 'form-check-input', id: 'perm_employment_mgmt'
+                  = label_tag 'perm_employment_mgmt', 'Employment Management', class: 'form-check-label'
+                .form-check
+                  = check_box_tag 'permission[]', 'employment_create', @current_filters[:permission]&.include?('employment_create'), class: 'form-check-input', id: 'perm_employment_create'
+                  = label_tag 'perm_employment_create', 'Employment Creation', class: 'form-check-label'
+                .form-check
+                  = check_box_tag 'permission[]', 'maap_mgmt', @current_filters[:permission]&.include?('maap_mgmt'), class: 'form-check-input', id: 'perm_maap_mgmt'
+                  = label_tag 'perm_maap_mgmt', 'MAAP Management', class: 'form-check-label'
+            .col-md-6
+              %h6.mb-3
                 %i.bi.bi-sort-down.me-2
-                Employment Status
-            .form-check
-              %input.form-check-input{type: "radio", name: "sortBy", value: "organization"}
-              %label.form-check-label
-              %i.bi.bi-building.me-2
-                Organization
-            .mb-3
-              %label.form-label View Style
-              .form-check
-                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
-                %label.form-check-label
-                  %i.bi.bi-table.me-2
-                  Table View
-              .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
-                %label.form-check-label
-                  %i.bi.bi-grid.me-2
-                  Card View
-              .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
-                %label.form-check-label
-                  %i.bi.bi-list.me-2
-                  List View
-            .mb-3
-              %label.form-label Spotlight
-              %select.form-select
-                %option Teammates Overview
-                %option Employment Status Breakdown
-                %option Permission Analysis
-      .modal-footer
-        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
-        %button.btn.btn-primary.disabled{type: "button"}
-          %i.bi.bi-check.me-2
-          Apply Filters
+                Sort Options
+              .mb-3
+                %label.form-label Sort By
+                = select_tag 'sort', options_for_select([
+                  ['Name (A-Z)', 'name_asc'],
+                  ['Name (Z-A)', 'name_desc'],
+                  ['Employment Status', 'status'],
+                  ['Organization', 'organization'],
+                  ['Employment Date', 'employment_date']
+                ], @current_sort), class: 'form-select'
+              .mb-3
+                %label.form-label View Style
+                .form-check
+                  = radio_button_tag 'view', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
+                  = label_tag 'view_table', 'Table View', class: 'form-check-label'
+                .form-check
+                  = radio_button_tag 'view', 'cards', @current_view == 'cards', class: 'form-check-input', id: 'view_cards'
+                  = label_tag 'view_cards', 'Card View', class: 'form-check-label'
+                .form-check
+                  = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
+                  = label_tag 'view_list', 'List View', class: 'form-check-label'
+        .modal-footer
+          = link_to "Clear Filters", organization_employees_path(@organization), class: "btn btn-secondary"
+          %button.btn.btn-primary{type: "submit"}
+            %i.bi.bi-check.me-2
+            Apply Filters

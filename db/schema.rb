@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_07_025649) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_08_015133) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -351,6 +351,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_07_025649) do
     t.string "preferred_name"
     t.string "gender_identity"
     t.string "pronouns"
+    t.string "slack_user_id"
     t.index ["current_organization_id"], name: "index_people_on_current_organization_id"
     t.index ["og_admin"], name: "index_people_on_og_admin"
     t.index ["unique_textable_phone_number"], name: "index_people_on_unique_textable_phone_number", unique: true

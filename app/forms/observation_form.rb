@@ -59,6 +59,19 @@ class ObservationForm < Reform::Form
     @observation_ratings_attributes = value
   end
   
+  # Helper method to safely format observed_at for datetime input
+  def observed_at_for_input
+    return Time.current.strftime('%Y-%m-%dT%H:%M') if observed_at.blank?
+    
+    if observed_at.is_a?(Time)
+      observed_at.strftime('%Y-%m-%dT%H:%M')
+    else
+      Time.parse(observed_at.to_s).strftime('%Y-%m-%dT%H:%M')
+    end
+  rescue
+    Time.current.strftime('%Y-%m-%dT%H:%M')
+  end
+  
   private
   
   def custom_slug_uniqueness

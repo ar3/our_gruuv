@@ -6,23 +6,21 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Basic authorization - user should be able to view the organization
     authorize @organization, :show?
     
-    # Get all teammates from this organization and its descendants
-    @teammates = Teammate.for_organization_hierarchy(@organization)
-                        .includes(:person, :employment_tenures, :organization)
-                        .order('people.last_name, people.first_name')
+    # Use TeammatesQuery for filtering and sorting
+    query = TeammatesQuery.new(@organization, params)
     
-    # Calculate spotlight statistics
-    @spotlight_stats = {
-      total_teammates: @teammates.count,
-      followers: @teammates.select { |t| TeammateStatus.new(t).status == :follower }.count,
-      huddlers: @teammates.select { |t| TeammateStatus.new(t).status == :huddler }.count,
-      unassigned_employees: @teammates.select { |t| TeammateStatus.new(t).status == :unassigned_employee }.count,
-      assigned_employees: @teammates.select { |t| TeammateStatus.new(t).status == :assigned_employee }.count,
-      terminated: @teammates.select { |t| TeammateStatus.new(t).status == :terminated }.count,
-      unknown: @teammates.select { |t| TeammateStatus.new(t).status == :unknown }.count,
-      huddle_participants: @organization.huddle_participants.count,
-      non_employee_participants: @organization.just_huddle_participants.count
-    }
+    # Get paginated teammates
+    @pagy, @teammates = pagy(query.call, items: 25)
+    
+    # Calculate spotlight statistics from filtered teammates (not paginated)
+    filtered_teammates = query.call
+    @spotlight_stats = calculate_spotlight_stats(filtered_teammates)
+    
+    # Store current filter/sort state for view
+    @current_filters = query.current_filters
+    @current_sort = query.current_sort
+    @current_view = query.current_view
+    @has_active_filters = query.has_active_filters?
   end
 
   def new_employee
@@ -77,14 +75,26 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   end
   
   private
-  
+
+  def calculate_spotlight_stats(teammates)
+    {
+      total_teammates: teammates.count,
+      followers: teammates.select { |t| TeammateStatus.new(t).status == :follower }.count,
+      huddlers: teammates.select { |t| TeammateStatus.new(t).status == :huddler }.count,
+      unassigned_employees: teammates.select { |t| TeammateStatus.new(t).status == :unassigned_employee }.count,
+      assigned_employees: teammates.select { |t| TeammateStatus.new(t).status == :assigned_employee }.count,
+      terminated: teammates.select { |t| TeammateStatus.new(t).status == :terminated }.count,
+      unknown: teammates.select { |t| TeammateStatus.new(t).status == :unknown }.count,
+      huddle_participants: teammates.joins(:huddle_participants).distinct.count,
+      non_employee_participants: teammates.joins(:huddle_participants).where(first_employed_at: nil).distinct.count
+    }
+  end
+
   def require_authentication
     unless current_person
       redirect_to root_path, alert: 'Please log in to access organizations.'
     end
   end
-
-  private
 
   def person_params
     params.require(:person).permit(:first_name, :last_name, :email, :phone_number, :timezone)

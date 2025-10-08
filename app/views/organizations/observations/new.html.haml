@@ -58,7 +58,7 @@
           
           .mb-4
             = form.label :observed_at, "When did this happen?", class: 'form-label'
-            = form.datetime_local_field :observed_at, class: 'form-control', value: @form.observed_at&.strftime('%Y-%m-%dT%H:%M') || Time.current.strftime('%Y-%m-%dT%H:%M'), required: true
+            = form.datetime_local_field :observed_at, class: 'form-control', value: @form.observed_at_for_input, required: true
         
         .col-md-12
           .mb-4

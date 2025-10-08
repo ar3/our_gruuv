@@ -68,6 +68,76 @@ module TeammateHelper
     end
   end
 
+  # Filter and sort helper methods
+  def filter_display_name(filter_name, filter_value)
+    case filter_name.to_s
+    when 'status'
+      case filter_value.to_s
+      when 'follower' then 'Followers'
+      when 'huddler' then 'Huddlers'
+      when 'unassigned_employee' then 'Unassigned'
+      when 'assigned_employee' then 'Active Employees'
+      when 'terminated' then 'Terminated'
+      else filter_value.to_s.humanize
+      end
+    when 'organization_id'
+      org = Organization.find_by(id: filter_value)
+      org ? org.name : "Organization #{filter_value}"
+    when 'permission'
+      case filter_value.to_s
+      when 'employment_mgmt' then 'Employment Management'
+      when 'employment_create' then 'Employment Creation'
+      when 'maap_mgmt' then 'MAAP Management'
+      else filter_value.to_s.humanize
+      end
+    else
+      filter_value.to_s.humanize
+    end
+  end
+
+  def clear_filter_url(filter_name, filter_value)
+    current_params = params.dup
+    case filter_name.to_s
+    when 'status'
+      current_params[:status] = Array(current_params[:status]) - [filter_value]
+      current_params[:status] = nil if current_params[:status].empty?
+    when 'organization_id'
+      current_params[:organization_id] = nil
+    when 'permission'
+      current_params[:permission] = Array(current_params[:permission]) - [filter_value]
+      current_params[:permission] = nil if current_params[:permission].empty?
+    end
+    organization_employees_path(@organization, current_params.except(:controller, :action))
+  end
+
+  def sort_icon(sort_field)
+    case sort_field
+    when 'name_asc', 'name_desc'
+      'bi-sort-alpha-down'
+    when 'status'
+      'bi-sort-down'
+    when 'organization'
+      'bi-building'
+    when 'employment_date'
+      'bi-calendar'
+    else
+      'bi-sort-down'
+    end
+  end
+
+  def view_type_icon(view_type)
+    case view_type
+    when 'table'
+      'bi-table'
+    when 'cards'
+      'bi-grid'
+    when 'list'
+      'bi-list'
+    else
+      'bi-table'
+    end
+  end
+
   def teammate_employment_dates(teammate)
     if teammate.first_employed_at
       started = teammate.first_employed_at.strftime('%b %Y')

@@ -1,0 +1,45 @@
+.row
+  - @teammates.each do |teammate|
+    .col-md-6.col-lg-4.mb-4
+      .card.h-100
+        .card-body.d-flex.flex-column
+          .d-flex.align-items-start.mb-3
+            .flex-shrink-0.me-3
+              .bg-primary.rounded-circle.d-flex.align-items-center.justify-content-center{style: "width: 48px; height: 48px;"}
+                %span.text-white.fw-bold= teammate.person.first_name&.first&.upcase || teammate.person.email.first.upcase
+            .flex-grow-1
+              %h6.card-title.mb-1
+                = link_to teammate.person.display_name, teammate_organization_person_path(@organization, teammate.person), class: "text-decoration-none fw-bold"
+              %small.text-muted= teammate.person.email
+              %br
+              %small.text-muted= teammate_organization_display(teammate)
+          
+          .mb-3
+            = employment_status_badge(teammate)
+            %br
+            = employment_status_progress_bar(teammate)
+          
+          .mb-3
+            %strong Position:
+            %br
+            = teammate_current_position(teammate)
+          
+          .mb-3
+            %strong Permissions:
+            %br
+            = teammate_permissions_badges(teammate)
+          
+          .mb-3
+            %strong Employment Dates:
+            %br
+            %small.text-muted= teammate_employment_dates(teammate)
+          
+          .mt-auto
+            .btn-group.w-100
+              = link_to teammate_organization_person_path(@organization, teammate.person), class: "btn btn-outline-primary btn-sm" do
+                %i.bi.bi-eye.me-1
+                View
+              - if current_person.can_manage_employment?(@organization)
+                = link_to organization_assignment_tenure_path(@organization, teammate.person), class: "btn btn-outline-secondary btn-sm" do
+                  %i.bi.bi-list-task.me-1
+                  Assignments
