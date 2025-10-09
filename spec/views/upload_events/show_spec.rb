@@ -1,18 +1,6 @@
 require 'rails_helper'
 
-# Temporary helper module for the view spec
-module TestUploadEventsHelper
-  def current_organization
-    @current_organization ||= Organization.first
-  end
-  
-  def current_person
-    @current_person ||= Person.first
-  end
-end
-
 RSpec.describe 'upload_events/show', type: :view do
-  include TestUploadEventsHelper
   
   let(:organization) { create(:organization, type: 'Company') }
   let(:person) { create(:person) }
@@ -20,6 +8,16 @@ RSpec.describe 'upload_events/show', type: :view do
 
   before do
     assign(:upload_event, upload_event)
+    
+    # Define helper methods directly in the view context
+    def view.current_organization
+      @current_organization
+    end
+    
+    def view.current_person
+      @current_person
+    end
+    
     @current_organization = organization
     @current_person = person
   end
@@ -152,7 +150,8 @@ RSpec.describe 'upload_events/show', type: :view do
       before do
         upload_event.update!(
           status: 'preview',
-          preview_actions: {}
+          preview_actions: nil,
+          results: nil
         )
       end
 
@@ -286,8 +285,8 @@ RSpec.describe 'upload_events/show', type: :view do
     before do
       upload_event.update!(
         filename: 'employees.csv',
-        created_at: Time.parse('2024-01-15 10:30:00'),
-        attempted_at: Time.parse('2024-01-15 10:35:00')
+        created_at: Time.parse('2024-01-15 10:30:00 UTC'),
+        attempted_at: Time.parse('2024-01-15 10:35:00 UTC')
       )
     end
 

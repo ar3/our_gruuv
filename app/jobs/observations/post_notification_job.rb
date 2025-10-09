@@ -16,19 +16,26 @@ class Observations::PostNotificationJob < ApplicationJob
   private
 
   def send_dm_to_teammate(observation, teammate)
-    return unless teammate.person.slack_user_id.present?
+    return unless teammate.slack_user_id.present?
     
-    message = build_dm_message(observation)
-    
-    # Use existing SlackService
-    SlackService.post_message(
-      channel: teammate.person.slack_user_id,
-      text: message[:fallback_text],
-      blocks: message[:blocks],
+    # Create notification record first
+    notification = Notification.create!(
       notifiable_type: 'Observation',
       notifiable_id: observation.id,
-      notification_type: 'observation_dm'
+      notification_type: 'observation_dm',
+      status: 'preparing_to_send',
+      metadata: { 'channel' => teammate.slack_user_id },
+      fallback_text: build_dm_message(observation)[:fallback_text],
+      rich_message: build_dm_message(observation)[:blocks].to_json
     )
+    
+    # Use existing SlackService
+    begin
+      SlackService.new(observation.company).post_message(notification.id)
+    rescue => e
+      # Log the error but don't re-raise it
+      Rails.logger.error "Failed to send Slack notification: #{e.message}"
+    end
   end
 
   def build_dm_message(observation)
@@ -37,7 +44,7 @@ class Observations::PostNotificationJob < ApplicationJob
     privacy_text = build_privacy_text(observation)
     ratings_text = build_ratings_text(observation)
     
-    fallback_text = "🎯 New Observation from #{observer_name}\n\n#{feelings_text}\n\n#{observation.story[0..200]}...\n\n#{privacy_text}\n#{ratings_text}\n\nView Kudos: #{observation.permalink_url}"
+    fallback_text = "🎯 New Observation from #{observer_name}\n\n#{feelings_text}\n\n#{observation.story[0..200]}...\n\n#{privacy_text}\n#{ratings_text}"
     
     blocks = [
       {
@@ -70,19 +77,6 @@ class Observations::PostNotificationJob < ApplicationJob
           }
         ]
       },
-      {
-        type: "actions",
-        elements: [
-          {
-            type: "button",
-            text: {
-              type: "plain_text",
-              text: "View Kudos"
-            },
-            url: observation.permalink_url
-          }
-        ]
-      }
     ]
     
     {

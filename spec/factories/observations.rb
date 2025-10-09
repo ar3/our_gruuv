@@ -10,6 +10,13 @@ FactoryBot.define do
     custom_slug { nil }
     deleted_at { nil }
 
+    # Include at least one observee by default to satisfy validation
+    after(:build) do |observation|
+      # Create a teammate in the same company as the observation
+      teammate = create(:teammate, organization: observation.company)
+      observation.observees.build(teammate: teammate)
+    end
+
     trait :observer_only do
       privacy_level { :observer_only }
     end

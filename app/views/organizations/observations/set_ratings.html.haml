@@ -55,7 +55,7 @@
                   .form-group.mb-2
                     = label_tag "ability_#{ability.id}", ability.name, class: 'form-label small'
                     = select_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rating]", 
-                      options_for_select(rating_options_for_select, @form.observation_ratings_attributes&.dig("ability_#{ability.id}", 'rating')&.to_s), 
+                      options_for_select(rating_options_for_select, (@form.observation_ratings_attributes&.dig("ability_#{ability.id}", 'rating')&.to_s rescue '')), 
                       { class: 'form-select form-select-sm', include_blank: true, 'data-rateable-type': 'Ability', 'data-rateable-id': ability.id, 'data-rating-key': "ability_#{ability.id}" }
                     = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_type]", 'Ability'
                     = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_id]", ability.id
@@ -67,27 +67,27 @@
                   .form-group.mb-2
                     = label_tag "assignment_#{assignment.id}", assignment.title, class: 'form-label small'
                     = select_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]", 
-                      options_for_select(rating_options_for_select, @form.observation_ratings_attributes&.dig("assignment_#{assignment.id}", 'rating')&.to_s), 
+                      options_for_select(rating_options_for_select, (@form.observation_ratings_attributes&.dig("assignment_#{assignment.id}", 'rating')&.to_s rescue '')), 
                       { class: 'form-select form-select-sm', include_blank: true, 'data-rateable-type': 'Assignment', 'data-rateable-id': assignment.id, 'data-rating-key': "assignment_#{assignment.id}" }
                     = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
                     = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
             
-                    - if @available_aspirations.any?
-                      .mb-3
-                        %h6.text-primary Aspirations
-                        - @available_aspirations.each do |aspiration|
-                          .form-group.mb-2
-                            = label_tag "aspiration_#{aspiration.id}", aspiration.name, class: 'form-label small'
-                            = select_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rating]", 
-                              options_for_select(rating_options_for_select, @form.observation_ratings_attributes&.dig("aspiration_#{aspiration.id}", 'rating')&.to_s), 
-                              { class: 'form-select form-select-sm', include_blank: true, 'data-rateable-type': 'Aspiration', 'data-rateable-id': aspiration.id, 'data-rating-key': "aspiration_#{aspiration.id}" }
-                            = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_type]", 'Aspiration'
-                            = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_id]", aspiration.id
-                    
-                    - if @available_abilities.empty? && @available_assignments.empty? && @available_aspirations.empty?
-                      .text-muted.small
-                        %i.bi.bi-info-circle.me-1
-                        No abilities, assignments, or aspirations available for the selected observees.
+            - if @available_aspirations.any?
+              .mb-3
+                %h6.text-primary Aspirations
+                - @available_aspirations.each do |aspiration|
+                  .form-group.mb-2
+                    = label_tag "aspiration_#{aspiration.id}", aspiration.name, class: 'form-label small'
+                    = select_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rating]", 
+                      options_for_select(rating_options_for_select, (@form.observation_ratings_attributes&.dig("aspiration_#{aspiration.id}", 'rating')&.to_s rescue '')), 
+                      { class: 'form-select form-select-sm', include_blank: true, 'data-rateable-type': 'Aspiration', 'data-rateable-id': aspiration.id, 'data-rating-key': "aspiration_#{aspiration.id}" }
+                    = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_type]", 'Aspiration'
+                    = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_id]", aspiration.id
+            
+            - if @available_abilities.empty? && @available_assignments.empty? && @available_aspirations.empty?
+              .text-muted.small
+                %i.bi.bi-info-circle.me-1
+                No abilities, assignments, or aspirations available for the selected observees.
         
         .col-md-6
           .mb-4

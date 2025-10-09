@@ -26,7 +26,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
   it 'sets up all required instance variables' do
     get organization_employees_path(organization)
     expect(assigns(:organization)).to be_a(Organization)
-    expect(assigns(:teammates)).to be_a(ActiveRecord::Relation)
+    expect(assigns(:teammates)).to be_an(Array) # After pagination, teammates is an Array
     expect(assigns(:spotlight_stats)).to be_present
     expect(assigns(:current_filters)).to be_present
     expect(assigns(:current_sort)).to be_present

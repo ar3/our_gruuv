@@ -139,7 +139,7 @@ class UploadEvent < ApplicationRecord
     return 'Unknown record' unless success_record.is_a?(Hash)
     
     case success_record['type']
-    when 'person'
+    when 'person', 'unassigned_employee'
       name = success_record['name'] || 'Unknown person'
       if success_record['id']
         "<a href='/people/#{success_record['id']}'>#{name}</a>"
@@ -153,10 +153,17 @@ class UploadEvent < ApplicationRecord
       else
         title
       end
+    when 'department'
+      name = success_record['name'] || 'Unknown department'
+      name
     when 'assignment_tenure'
       person_name = success_record['person_name'] || 'Unknown person'
       assignment_title = success_record['assignment_title'] || 'Unknown assignment'
       "#{person_name} - #{assignment_title}"
+    when 'employment_tenure'
+      person_name = success_record['person_name'] || 'Unknown person'
+      position_title = success_record['position_title'] || 'Unknown position'
+      "#{person_name} - #{position_title}"
     when 'assignment_check_in'
       person_name = success_record['person_name'] || 'Unknown person'
       assignment_title = success_record['assignment_title'] || 'Unknown assignment'

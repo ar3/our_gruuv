@@ -14,19 +14,28 @@ class UnassignedEmployeeUploadProcessorJob < ApplicationJob
     if processor.process
       # Mark as completed with results
       upload_event.mark_as_completed!(processor.results)
+      true
     else
       # Mark as failed
       error_message = "Processing failed: #{processor.parser.errors.join(', ')}"
       upload_event.mark_as_failed!(error_message)
+      false
     end
+  rescue ActiveRecord::RecordNotFound => e
+    # Re-raise RecordNotFound errors
+    raise e
   rescue => e
     # Mark as failed with error details
     error_message = "Unexpected error: #{e.message}"
-    upload_event.reload
-    upload_event.mark_as_failed!(error_message)
+    if upload_event
+      upload_event.reload
+      upload_event.mark_as_failed!(error_message)
+    end
     
     # Log the error for debugging
     Rails.logger.error "UnassignedEmployeeUploadProcessorJob failed: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
+    
+    false
   end
 end

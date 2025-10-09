@@ -1,21 +1,6 @@
 require 'rails_helper'
 
-# Temporary helper module for the view spec
-module TestObservationsHelper
-  def rating_options_for_select(selected_value = nil)
-    [
-      ['Select rating...', ''],
-      ['⭐ Strongly Agree (Exceptional)', 'strongly_agree'],
-      ['👍 Agree (Good)', 'agree'],
-      ['👁️‍🗨️ N/A', 'na'],
-      ['👎 Disagree (Opportunity)', 'disagree'],
-      ['⭕ Strongly Disagree (Major Concern)', 'strongly_disagree']
-    ]
-  end
-end
-
 RSpec.describe 'organizations/observations/set_ratings', type: :view do
-  include TestObservationsHelper
   
   let(:company) { create(:organization, :company) }
   let(:observer) { create(:person) }
@@ -30,6 +15,19 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
   before do
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(observer)
     allow_any_instance_of(Organizations::OrganizationNamespaceBaseController).to receive(:organization).and_return(company)
+    
+    # Define helper methods directly in the view context
+    def view.rating_options_for_select(selected_value = nil)
+      [
+        ['Select rating...', ''],
+        ['⭐ Strongly Agree (Exceptional)', 'strongly_agree'],
+        ['👍 Agree (Good)', 'agree'],
+        ['👁️‍🗨️ N/A', 'na'],
+        ['👎 Disagree (Opportunity)', 'disagree'],
+        ['⭕ Strongly Disagree (Major Concern)', 'strongly_disagree']
+      ]
+    end
+    
     @organization = company
     observer_teammate # Ensure observer teammate is created
   end
@@ -42,6 +40,7 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
         @form.observation_ratings_attributes = nil
         @available_abilities = [ability1, ability2]
         @available_assignments = [assignment1, assignment2]
+        @available_aspirations = []
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
@@ -57,6 +56,7 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
         @form.observation_ratings_attributes = {}
         @available_abilities = [ability1, ability2]
         @available_assignments = [assignment1, assignment2]
+        @available_aspirations = []
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
@@ -77,6 +77,7 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
         }
         @available_abilities = [ability1, ability2]
         @available_assignments = [assignment1, assignment2]
+        @available_aspirations = []
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
@@ -97,6 +98,7 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
         }
         @available_abilities = [ability1, ability2]
         @available_assignments = [assignment1, assignment2]
+        @available_aspirations = []
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
@@ -118,6 +120,7 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
         }
         @available_abilities = [ability1, ability2]
         @available_assignments = [assignment1, assignment2]
+        @available_aspirations = []
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
@@ -137,6 +140,7 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
         }
         @available_abilities = [ability1, ability2]
         @available_assignments = [assignment1, assignment2]
+        @available_aspirations = []
 
         expect { render }.not_to raise_error
         expect(rendered).to have_content('Ratings & Privacy')
@@ -149,8 +153,9 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
     it 'shows appropriate message when no abilities or assignments exist' do
       @observation = company.observations.build(observer: observer)
       @form = ObservationForm.new(@observation)
-      @available_abilities = []
-      @available_assignments = []
+        @available_abilities = []
+        @available_assignments = []
+        @available_aspirations = []
 
       render
 
@@ -165,6 +170,7 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
       @form = ObservationForm.new(@observation)
         @available_abilities = [ability1, ability2]
         @available_assignments = []
+        @available_aspirations = []
 
       render
 
@@ -179,6 +185,7 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
       @form = ObservationForm.new(@observation)
         @available_abilities = []
         @available_assignments = [assignment1, assignment2]
+        @available_aspirations = []
 
       render
 
@@ -191,8 +198,9 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
     it 'renders all privacy level options' do
       @observation = company.observations.build(observer: observer)
       @form = ObservationForm.new(@observation)
-      @available_abilities = []
-      @available_assignments = []
+        @available_abilities = []
+        @available_assignments = []
+        @available_aspirations = []
 
       render
 
@@ -208,8 +216,9 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
       @observation = company.observations.build(observer: observer)
       @form = ObservationForm.new(@observation)
       @form.privacy_level = 'observed_only'
-      @available_abilities = []
-      @available_assignments = []
+        @available_abilities = []
+        @available_assignments = []
+        @available_aspirations = []
 
       render
 
@@ -221,8 +230,9 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
     it 'renders submit button with correct value' do
       @observation = company.observations.build(observer: observer)
       @form = ObservationForm.new(@observation)
-      @available_abilities = []
-      @available_assignments = []
+        @available_abilities = []
+        @available_assignments = []
+        @available_aspirations = []
 
       render
 
@@ -232,8 +242,9 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
     it 'renders back button' do
       @observation = company.observations.build(observer: observer)
       @form = ObservationForm.new(@observation)
-      @available_abilities = []
-      @available_assignments = []
+        @available_abilities = []
+        @available_assignments = []
+        @available_aspirations = []
 
       render
 
@@ -246,8 +257,9 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
       @observation = company.observations.build(observer: observer)
       @form = ObservationForm.new(@observation)
       @form.errors.add(:privacy_level, "can't be blank")
-      @available_abilities = []
-      @available_assignments = []
+        @available_abilities = []
+        @available_assignments = []
+        @available_aspirations = []
 
       render
 
@@ -260,8 +272,9 @@ RSpec.describe 'organizations/observations/set_ratings', type: :view do
     it 'shows correct step progress' do
       @observation = company.observations.build(observer: observer)
       @form = ObservationForm.new(@observation)
-      @available_abilities = []
-      @available_assignments = []
+        @available_abilities = []
+        @available_assignments = []
+        @available_aspirations = []
 
       render
 

@@ -302,8 +302,9 @@ RSpec.describe OrganizationsController, type: :controller do
       other_teammate = create(:teammate, person: person, organization: other_org)
       create(:person_milestone, teammate: other_teammate, ability: other_ability, certified_by: certifier, attained_at: 30.days.ago)
       
-      # Create an old milestone outside the 90-day range
-      create(:person_milestone, teammate: teammate, ability: ability, certified_by: certifier, attained_at: 100.days.ago)
+      # Create an old milestone outside the 90-day range with a different ability
+      old_ability = create(:ability, organization: organization, created_by: person, updated_by: person)
+      create(:person_milestone, teammate: teammate, ability: old_ability, certified_by: certifier, attained_at: 100.days.ago)
       
       get :celebrate_milestones, params: { id: organization.id }
       

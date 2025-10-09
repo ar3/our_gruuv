@@ -10,7 +10,38 @@ RSpec.describe 'organizations/observations/new', type: :view do
   before do
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(observer)
     allow_any_instance_of(Organizations::OrganizationNamespaceBaseController).to receive(:organization).and_return(company)
+    
+    # Define helper methods directly in the view context
+    def view.privacy_level_text(level)
+      case level
+      when 'observer_only' then 'Just for me (Journal)'
+      when 'observed_only' then 'Just for them'
+      when 'managers_only' then 'For their managers'
+      when 'observed_and_managers' then 'For them and their managers'
+      when 'public_observation' then 'Public to organization'
+      else 'Unknown'
+      end
+    end
+    
+    def view.privacy_level_class(level)
+      case level
+      when 'observer_only' then 'badge bg-secondary'
+      when 'observed_only' then 'badge bg-info'
+      when 'managers_only' then 'badge bg-warning'
+      when 'observed_and_managers' then 'badge bg-primary'
+      when 'public_observation' then 'badge bg-success'
+      else 'badge bg-secondary'
+      end
+    end
+    
+    def view.feelings_display(primary, secondary = nil)
+      result = primary.to_s.humanize
+      result += " & #{secondary.to_s.humanize}" if secondary.present?
+      result
+    end
+    
     @organization = company
+    @form = ObservationForm.new(company.observations.build(observer: observer))
     observer_teammate # Ensure observer teammate is created
     observee1 # Ensure observee1 is created
     observee2 # Ensure observee2 is created

@@ -214,6 +214,11 @@ class PersonPolicy < ApplicationPolicy
     admin_bypass?
   end
 
-
+  class Scope < ApplicationPolicy::Scope
+    def resolve
+      # Users can only see their own profile
+      scope.where(id: user.id)
+    end
+  end
 
 end

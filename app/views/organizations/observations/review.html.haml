@@ -91,6 +91,13 @@
           Send Notifications
       .card-body
         = form_with model: @form, url: create_observation_organization_observation_path(@organization, 'new'), method: :post, local: true do |form|
+          - if @form.errors.any?
+            .alert.alert-danger
+              %h6 Please correct the following errors:
+              %ul.mb-0
+                - @form.errors.full_messages.each do |message|
+                  %li= message
+          
           .form-check.mb-3
             = check_box_tag 'observation[send_notifications]', '1', true, class: 'form-check-input', id: 'send_notifications'
             = label_tag 'send_notifications', 'Send notifications', class: 'form-check-label'

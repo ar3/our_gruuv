@@ -105,8 +105,12 @@ RSpec.describe Observation, type: :model do
     end
 
     it 'validates at least one observee' do
-      expect(observation).not_to be_valid
-      expect(observation.errors[:observees]).to include('must have at least one observee')
+      # Create an observation without observees to test the validation
+      observation_without_observees = build(:observation, observer: observer, company: company)
+      observation_without_observees.observees.clear
+      
+      expect(observation_without_observees).not_to be_valid
+      expect(observation_without_observees.errors[:observees]).to include('must have at least one observee')
     end
 
     it 'validates observer and observees are in same company' do

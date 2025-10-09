@@ -61,9 +61,13 @@ RSpec.describe ObservationForm, type: :form do
     end
 
     it 'validates at least one observee' do
-      # This should fail the custom validation
-      expect(form).not_to be_valid
-      expect(form.errors[:observees]).to include('must have at least one observee')
+      # Create a form without observees to test the validation
+      observation_without_observees = build(:observation, observer: observer, company: company)
+      observation_without_observees.observees.clear
+      form_without_observees = ObservationForm.new(observation_without_observees)
+      
+      expect(form_without_observees).not_to be_valid
+      expect(form_without_observees.errors[:observees]).to include('must have at least one observee')
     end
   end
 
