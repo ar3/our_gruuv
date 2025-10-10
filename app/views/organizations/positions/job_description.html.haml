@@ -56,7 +56,7 @@
       %i.bi.bi-exclamation-triangle.me-2
       No Assignments Defined
     %p.mb-2 This position has no required or suggested assignments.
-    = link_to "Add Assignments", edit_position_path(@position), class: "btn btn-warning btn-sm"
+    = link_to "Add Assignments", edit_organization_position_path(@position.company, @position), class: "btn btn-warning btn-sm"
 
 .mt-5
   %p.text-muted
