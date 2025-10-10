@@ -1,4 +1,4 @@
-class PersonMilestone < ApplicationRecord
+class TeammateMilestone < ApplicationRecord
   # Associations
   belongs_to :teammate
   belongs_to :ability

@@ -162,7 +162,7 @@ class PeopleController < ApplicationController
     
     @current_employment = teammate.employment_tenures.active.first
     @current_assignments = teammate.assignment_tenures.active.includes(:assignment)
-    @current_milestones = teammate.person_milestones.includes(:ability)
+    @current_milestones = teammate.teammate_milestones.includes(:ability)
     @current_aspirations = [] # TODO: Implement when aspiration model exists
   end
 

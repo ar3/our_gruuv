@@ -29,6 +29,13 @@ This document defines how the AI agent should behave when working on this projec
 - **Step 3**: Run the specs again to ensure the issue is actually fixed
 - **Never skip Step 1**: Always reproduce the bug in tests before attempting to fix it
 
+### Testing Requirements
+- **When creating new forms**: MUST write 2 system specs (simple + complex), MUST tag with `:critical`
+- **When creating new pages**: MUST write 1 system spec (navigation + rendering), MUST tag with `:critical`
+- **When creating new controllers**: MUST write request specs for all actions (authorization, validations, redirects)
+- **System specs are sacred**: Never delete, always update when features change
+- **Use testing pyramid**: Unit specs (many) → Request specs (moderate) → System specs (few)
+
 ### Debugging & Development
 - **Use `rails runner` instead of `rails console`** for quick debugging and testing
 - **Avoid opening interactive consoles** unless actually needed for manual testing

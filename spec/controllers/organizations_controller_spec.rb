@@ -256,6 +256,30 @@ RSpec.describe OrganizationsController, type: :controller do
     end
   end
 
+  describe 'GET #dashboard' do
+    let!(:teammate) { create(:teammate, person: person, organization: organization) }
+
+    it 'renders successfully without NoMethodError' do
+      expect {
+        get :dashboard, params: { id: organization.id }
+      }.not_to raise_error
+      
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'assigns the organization' do
+      get :dashboard, params: { id: organization.id }
+      
+      expect(assigns(:organization).id).to eq(organization.id)
+    end
+
+    it 'confirms the method exists and works' do
+      expect(organization.respond_to?(:teammate_milestones_for_person)).to be true
+      result = organization.teammate_milestones_for_person(person)
+      expect(result).to be_an(ActiveRecord::Relation)
+    end
+  end
+
   describe 'GET #celebrate_milestones' do
     before do
       # Temporarily disable PaperTrail for this test to avoid controller_info issues
@@ -270,7 +294,7 @@ RSpec.describe OrganizationsController, type: :controller do
     let!(:ability) { create(:ability, organization: organization, created_by: person, updated_by: person) }
     let!(:teammate) { create(:teammate, person: person, organization: organization) }
     let!(:certifier) { create(:person) }
-    let!(:person_milestone) { create(:person_milestone, teammate: teammate, ability: ability, certified_by: certifier, attained_at: 30.days.ago) }
+    let!(:teammate_milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, certified_by: certifier, attained_at: 30.days.ago) }
 
     it 'returns http success' do
       get :celebrate_milestones, params: { id: organization.id }
@@ -300,11 +324,11 @@ RSpec.describe OrganizationsController, type: :controller do
       other_org = create(:organization)
       other_ability = create(:ability, organization: other_org)
       other_teammate = create(:teammate, person: person, organization: other_org)
-      create(:person_milestone, teammate: other_teammate, ability: other_ability, certified_by: certifier, attained_at: 30.days.ago)
+      create(:teammate_milestone, teammate: other_teammate, ability: other_ability, certified_by: certifier, attained_at: 30.days.ago)
       
       # Create an old milestone outside the 90-day range with a different ability
       old_ability = create(:ability, organization: organization, created_by: person, updated_by: person)
-      create(:person_milestone, teammate: teammate, ability: old_ability, certified_by: certifier, attained_at: 100.days.ago)
+      create(:teammate_milestone, teammate: teammate, ability: old_ability, certified_by: certifier, attained_at: 100.days.ago)
       
       get :celebrate_milestones, params: { id: organization.id }
       

@@ -245,7 +245,7 @@
                         Manage Tenures
 
 / Milestones Section
-- if @person_milestones.any?
+- if @teammate_milestones.any?
   .card.mb-4{ role: "region", "aria-labelledby": "milestones-section" }
     .card-header
       %h5.mb-0{ id: "milestones-section" }
@@ -257,7 +257,7 @@
             %small.text-muted (Hide milestones)
           %span#milestonesCollapseText.collapsed
             %i.bi.bi-chevron-down
-            %small.text-muted="(Show #{pluralize(@person_milestones.count, 'milestone')})"
+            %small.text-muted="(Show #{pluralize(@teammate_milestones.count, 'milestone')})"
     .card-body
       .collapse.show#milestonesCollapse
         %p.text-muted.mb-3
@@ -265,7 +265,7 @@
         
         .row
           .col-md-8
-            - @person_milestones.each_with_index do |milestone, index|
+            - @teammate_milestones.each_with_index do |milestone, index|
               - if index > 0
                 %hr.my-3
               
@@ -286,7 +286,7 @@
                 Create New Ability
 
 / No Data State
-- if @current_employment&.position&.position_assignments&.empty? && @person_milestones.empty? && @assignment_tenures.empty?
+- if @current_employment&.position&.position_assignments&.empty? && @teammate_milestones.empty? && @assignment_tenures.empty?
   .alert.alert-info
     %h6.mb-2
       %i.bi.bi-info-circle.me-2

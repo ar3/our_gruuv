@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_08_231926) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_09_225126) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -373,21 +373,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_08_231926) do
     t.index ["provider", "uid"], name: "index_person_identities_on_provider_and_uid", unique: true
   end
 
-  create_table "person_milestones", force: :cascade do |t|
-    t.bigint "ability_id", null: false
-    t.integer "milestone_level", null: false
-    t.bigint "certified_by_id", null: false
-    t.date "attained_at", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.bigint "teammate_id"
-    t.index ["ability_id"], name: "index_person_milestones_on_ability_id"
-    t.index ["attained_at"], name: "index_person_milestones_on_attained_at"
-    t.index ["certified_by_id"], name: "index_person_milestones_on_certified_by_id"
-    t.index ["milestone_level"], name: "index_person_milestones_on_milestone_level"
-    t.index ["teammate_id"], name: "index_person_milestones_on_teammate_id"
-  end
-
   create_table "pg_search_documents", force: :cascade do |t|
     t.text "content"
     t.string "searchable_type"
@@ -514,6 +499,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_08_231926) do
     t.index ["teammate_id"], name: "index_teammate_identities_on_teammate_id"
   end
 
+  create_table "teammate_milestones", force: :cascade do |t|
+    t.bigint "ability_id", null: false
+    t.integer "milestone_level", null: false
+    t.bigint "certified_by_id", null: false
+    t.date "attained_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "teammate_id"
+    t.index ["ability_id"], name: "index_teammate_milestones_on_ability_id"
+    t.index ["attained_at"], name: "index_teammate_milestones_on_attained_at"
+    t.index ["certified_by_id"], name: "index_teammate_milestones_on_certified_by_id"
+    t.index ["milestone_level"], name: "index_teammate_milestones_on_milestone_level"
+    t.index ["teammate_id"], name: "index_teammate_milestones_on_teammate_id"
+  end
+
   create_table "teammates", force: :cascade do |t|
     t.bigint "person_id", null: false
     t.bigint "organization_id", null: false
@@ -633,8 +633,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_08_231926) do
   add_foreign_key "organizations", "organizations", column: "parent_id"
   add_foreign_key "people", "organizations", column: "current_organization_id"
   add_foreign_key "person_identities", "people"
-  add_foreign_key "person_milestones", "abilities"
-  add_foreign_key "person_milestones", "teammates"
   add_foreign_key "position_assignments", "assignments"
   add_foreign_key "position_assignments", "positions"
   add_foreign_key "position_levels", "position_major_levels"
@@ -645,6 +643,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_08_231926) do
   add_foreign_key "seats", "position_types"
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "teammate_identities", "teammates"
+  add_foreign_key "teammate_milestones", "abilities"
+  add_foreign_key "teammate_milestones", "teammates"
   add_foreign_key "teammates", "organizations"
   add_foreign_key "teammates", "people"
   add_foreign_key "third_party_object_associations", "third_party_objects"

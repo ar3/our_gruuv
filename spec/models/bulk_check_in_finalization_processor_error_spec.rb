@@ -18,7 +18,7 @@ RSpec.describe 'BulkCheckInFinalizationProcessor Error Reproduction', type: :mod
     create(:assignment_check_in, teammate: employee_teammate, assignment: assignment, employee_completed_at: Time.current, manager_completed_at: Time.current)
     
     # Set up person milestone (this will cause the error)
-    create(:person_milestone, teammate: employee_teammate, ability: ability, milestone_level: 1)
+    create(:teammate_milestone, teammate: employee_teammate, ability: ability, milestone_level: 1)
   end
 
   describe 'BulkCheckInFinalizationProcessor' do
@@ -34,7 +34,7 @@ RSpec.describe 'BulkCheckInFinalizationProcessor Error Reproduction', type: :mod
         )
 
         # Verify we have milestones to process
-        expect(employee_teammate.person_milestones.count).to be > 0
+        expect(employee_teammate.teammate_milestones.count).to be > 0
 
         # This should now work correctly after fixing the attribute names
         expect {

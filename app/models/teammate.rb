@@ -6,7 +6,7 @@ class Teammate < ApplicationRecord
   belongs_to :organization
   
   # Reverse associations
-  has_many :person_milestones, dependent: :nullify
+  has_many :teammate_milestones, dependent: :nullify
   has_many :assignment_check_ins, dependent: :nullify
   has_many :assignment_tenures, dependent: :nullify
   has_many :assignments, through: :assignment_tenures

@@ -34,22 +34,22 @@
                 .h3.text-primary= @abilities.count
                 %small.text-muted Total Abilities
               .col-3
-                .h3.text-success= @abilities.count { |a| a.person_milestones.exists? }
+                .h3.text-success= @abilities.count { |a| a.teammate_milestones.exists? }
                 %small.text-muted With Milestones
               .col-3
                 .h3.text-info= @abilities.count { |a| a.created_at >= 30.days.ago }
                 %small.text-muted Recent (30 days)
               .col-3
-                .h3.text-warning= @abilities.joins(:person_milestones).distinct.count
+                .h3.text-warning= @abilities.joins(:teammate_milestones).distinct.count
                 %small.text-muted Active Abilities
             .row.mt-3
               .col-12
                 %h6.text-muted.mb-2 Top Abilities by Milestones
                 .row
-                  - @abilities.sort_by { |a| -a.person_milestones.count }.first(3).each do |ability|
+                  - @abilities.sort_by { |a| -a.teammate_milestones.count }.first(3).each do |ability|
                     .col-4
                       .d-flex.align-items-center
-                        %span.badge.bg-primary.me-2= ability.person_milestones.count
+                        %span.badge.bg-primary.me-2= ability.teammate_milestones.count
                         %small= ability.name
           .col-md-4
             .text-center
@@ -100,7 +100,7 @@
                 %td
                   %span.badge.bg-secondary= ability.semantic_version
                 %td
-                  %span.badge.bg-primary= ability.person_milestones.count
+                  %span.badge.bg-primary= ability.teammate_milestones.count
                 %td
                   .btn-group.btn-group-sm
                     = link_to organization_ability_path(@organization, ability), class: "btn btn-outline-primary", title: "View" do

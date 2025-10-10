@@ -1,5 +1,5 @@
 FactoryBot.define do
-  factory :person_milestone do
+  factory :teammate_milestone do
     association :teammate
     association :ability
     association :certified_by, factory: :person

@@ -7,8 +7,8 @@ class Ability < ApplicationRecord
   belongs_to :updated_by, class_name: 'Person'
   has_many :assignment_abilities, dependent: :destroy
   has_many :assignments, through: :assignment_abilities
-  has_many :person_milestones, dependent: :destroy
-  has_many :people, through: :person_milestones
+  has_many :teammate_milestones, dependent: :destroy
+  has_many :people, through: :teammate_milestones
   has_many :observation_ratings, as: :rateable, dependent: :destroy
   has_many :observations, through: :observation_ratings
 
@@ -18,26 +18,26 @@ class Ability < ApplicationRecord
 
   # Person milestone-related methods
   def person_attainments
-    person_milestones.by_milestone_level.includes(:person)
+    teammate_milestones.by_milestone_level.includes(:person)
   end
 
   def person_attainments_count
-    person_milestones.count
+    teammate_milestones.count
   end
 
   def has_person_attainments?
-    person_milestones.exists?
+    teammate_milestones.exists?
   end
 
   def people_with_milestone(level)
-    person_milestones.where(milestone_level: level).includes(:person).map(&:person)
+    teammate_milestones.where(milestone_level: level).includes(:person).map(&:person)
   end
 
   def people_with_highest_milestone
-    max_level = person_milestones.maximum(:milestone_level)
+    max_level = teammate_milestones.maximum(:milestone_level)
     return [] unless max_level
     
-    person_milestones.where(milestone_level: max_level).includes(:person).map(&:person)
+    teammate_milestones.where(milestone_level: max_level).includes(:person).map(&:person)
   end
 
   validates :name, presence: true, uniqueness: { scope: :organization_id }

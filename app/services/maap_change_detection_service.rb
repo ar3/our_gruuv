@@ -76,7 +76,7 @@ class MaapChangeDetectionService
     return 0 unless maap_snapshot&.maap_data&.dig('milestones')
     
     teammate = person.teammates.find_by(organization: maap_snapshot.company)
-    teammate&.person_milestones&.count { |milestone| milestone_has_changes?(milestone) } || 0
+    teammate&.teammate_milestones&.count { |milestone| milestone_has_changes?(milestone) } || 0
   end
 
   def employment_changes_detail
@@ -260,7 +260,7 @@ class MaapChangeDetectionService
     changes = []
     
     teammate = person.teammates.find_by(organization: maap_snapshot.company)
-    teammate&.person_milestones&.each do |milestone|
+    teammate&.teammate_milestones&.each do |milestone|
       proposed_data = maap_snapshot.maap_data['milestones'].find { |m| m['ability_id'] == milestone.ability_id }
       next unless proposed_data
       

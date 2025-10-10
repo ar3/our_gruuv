@@ -23,7 +23,7 @@
     All #{pluralize(organization.abilities_count, 'Ability')}
   - milestones_tertiary_html = capture do
     %i.bi.bi-person.me-1
-    My #{pluralize(organization.person_milestones_for_person(current_person).count, 'Milestone')}
+    My #{pluralize(organization.teammate_milestones_for_person(current_person).count, 'Milestone')}
   
   = render 'organizations/dashboard/dashboard_card',
     header_html: milestones_header_html,

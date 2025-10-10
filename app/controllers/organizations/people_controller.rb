@@ -49,7 +49,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
                                 &.includes(:assignment) || []
     
     # Filter milestones to only show those for abilities in this organization
-    @person_milestones = teammate&.person_milestones
+    @teammate_milestones = teammate&.teammate_milestones
                                 &.joins(:ability)
                                 &.where(abilities: { organization: organization })
                                 &.includes(:ability) || []
@@ -218,11 +218,11 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
     teammate = @person.teammates.find_by(organization: organization)
     @current_employment = teammate&.employment_tenures&.active&.first
     @current_assignments = teammate&.assignment_tenures&.active&.includes(:assignment) || []
-    @current_milestones = teammate&.person_milestones&.includes(:ability) || []
+    @current_milestones = teammate&.teammate_milestones&.includes(:ability) || []
     @current_maap_data = {
       assignments: teammate&.assignment_tenures&.active&.includes(:assignment) || [],
       check_ins: AssignmentCheckIn.joins(:teammate).where(teammates: { person: @person, organization: organization }).includes(:assignment),
-      milestones: teammate&.person_milestones&.includes(:ability) || [],
+      milestones: teammate&.teammate_milestones&.includes(:ability) || [],
       aspirations: organization.aspirations.includes(:ability) # Aspirations belong to organization, not person
     }
   end

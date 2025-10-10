@@ -274,7 +274,7 @@ module MaapData
       teammate = @employee.teammates.find_by(organization: @company)
       return [] unless teammate
       
-      milestones = teammate.person_milestones.includes(:ability)
+      milestones = teammate.teammate_milestones.includes(:ability)
                .joins(:ability)
                .where(abilities: { organization: @company })
       

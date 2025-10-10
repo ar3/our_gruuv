@@ -8,37 +8,37 @@ class Person < ApplicationRecord
   # Milestone-related methods
   def milestone_attainments(organization)
     teammate = teammates.find_by(organization: organization)
-    teammate&.person_milestones&.by_milestone_level&.includes(:ability) || []
+    teammate&.teammate_milestones&.by_milestone_level&.includes(:ability) || []
   end
 
   def milestone_attainments_count(organization)
     teammate = teammates.find_by(organization: organization)
-    teammate&.person_milestones&.count || 0
+    teammate&.teammate_milestones&.count || 0
   end
 
   def has_milestone_attainments?(organization)
     teammate = teammates.find_by(organization: organization)
-    teammate&.person_milestones&.exists? || false
+    teammate&.teammate_milestones&.exists? || false
   end
 
   def highest_milestone_for_ability(ability, organization)
     teammate = teammates.find_by(organization: organization)
-    teammate&.person_milestones&.where(ability: ability)&.maximum(:milestone_level)
+    teammate&.teammate_milestones&.where(ability: ability)&.maximum(:milestone_level)
   end
 
   def has_milestone_for_ability?(ability, level, organization)
     teammate = teammates.find_by(organization: organization)
-    teammate&.person_milestones&.where(ability: ability, milestone_level: level)&.exists? || false
+    teammate&.teammate_milestones&.where(ability: ability, milestone_level: level)&.exists? || false
   end
 
   def add_milestone_attainment(ability, level, certified_by, organization)
     teammate = teammates.find_by(organization: organization)
-    teammate&.person_milestones&.create!(ability: ability, milestone_level: level, certified_by: certified_by, attained_at: Date.current)
+    teammate&.teammate_milestones&.create!(ability: ability, milestone_level: level, certified_by: certified_by, attained_at: Date.current)
   end
 
   def remove_milestone_attainment(ability, level, organization)
     teammate = teammates.find_by(organization: organization)
-    teammate&.person_milestones&.where(ability: ability, milestone_level: level)&.destroy_all
+    teammate&.teammate_milestones&.where(ability: ability, milestone_level: level)&.destroy_all
   end
 
 

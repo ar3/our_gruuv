@@ -189,7 +189,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
 
   def celebrate_milestones
     # Get milestones attained in the last 90 days within this organization
-    @recent_milestones = TeammateMilestone.joins(:ability, :teammate, :certified_by)
+    @recent_milestones = PersonMilestone.joins(:ability, :teammate, :certified_by)
                                        .where(abilities: { organization: @organization })
                                        .where(attained_at: 90.days.ago..Time.current)
                                        .includes(:ability, :teammate, :certified_by)

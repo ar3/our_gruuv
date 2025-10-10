@@ -122,7 +122,7 @@ class Organization < ApplicationRecord
 
   # Milestone-related methods
   def recent_milestones_count(days_back: 90)
-    PersonMilestone.joins(:ability)
+    TeammateMilestone.joins(:ability)
                    .where(abilities: { organization: self })
                    .where(attained_at: days_back.days.ago..Time.current)
                    .count
@@ -132,11 +132,11 @@ class Organization < ApplicationRecord
     abilities.count
   end
 
-  def person_milestones_for_person(person)
+  def teammate_milestones_for_person(person)
     teammate = person.teammates.find_by(organization: self)
-    return PersonMilestone.none unless teammate
+    return TeammateMilestone.none unless teammate
     
-    teammate.person_milestones.joins(:ability)
+    teammate.teammate_milestones.joins(:ability)
             .where(abilities: { organization: self })
   end
 

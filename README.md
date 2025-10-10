@@ -31,6 +31,7 @@ This is your central guide to understanding OurGruuv's architecture, patterns, a
 - [Integrations](docs/RULES/integrations.md) - Gateway pattern for external APIs
 - [Queries & Value Objects](docs/RULES/queries-value-objects.md) - Complex reads and domain types
 - [Events & Handlers](docs/RULES/events-handlers.md) - Wisper pub/sub patterns
+- [Testing Strategy](docs/RULES/testing-strategy.md) - Testing pyramid and critical path coverage
 
 ### 🎨 For Design & Styling
 
@@ -142,12 +143,23 @@ bin/dev
 
 ### Testing
 ```bash
-# Run tests
-bundle exec rspec
+# Fast development (excludes critical system specs)
+bundle exec rspec --tag ~critical
+
+# Pre-deployment (runs all tests including critical paths)
+bundle exec rspec --tag critical
+bundle exec rspec  # or run all
 
 # Run specific test
 bundle exec rspec spec/path/to/test_spec.rb
 ```
+
+**Testing Pyramid:**
+- **Unit Specs** (many): Models, services, decorators, policies
+- **Request Specs** (moderate): Controller actions, HTTP responses, authorization
+- **System Specs** (few): Critical end-to-end user workflows only
+
+**Critical System Specs**: Tagged with `:critical`, excluded by default for fast development.
 
 ### Deployment
 - **Platform**: Railway
