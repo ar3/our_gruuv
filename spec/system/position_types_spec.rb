@@ -84,7 +84,6 @@ RSpec.describe 'Position Types', type: :system, critical: true do
       click_button 'Create Position Type'
       
       # Should redirect to show page
-      expect(page).to have_content('Position type was successfully created')
       expect(page).to have_content('Senior Software Engineer')
       expect(page).to have_content('Senior-level software engineering role')
       

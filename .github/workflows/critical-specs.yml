@@ -1,0 +1,67 @@
+name: Critical Specs
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  critical-specs:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: our_gruuv_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 3.4.4
+        bundler-cache: true
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24.2.0'
+        cache: 'yarn'
+    
+    - name: Install dependencies
+      run: |
+        yarn install --immutable
+        bundle install
+    
+    - name: Set up test database
+      env:
+        RAILS_ENV: test
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/our_gruuv_test
+      run: |
+        bundle exec rails db:test:prepare
+    
+    - name: Run critical specs
+      env:
+        RAILS_ENV: test
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/our_gruuv_test
+      run: |
+        bundle exec rspec spec/system/ --tag critical --format documentation
+    
+    - name: Run security scan
+      run: |
+        bundle exec brakeman --no-pager --quiet
+    
+    - name: Run code quality check
+      run: |
+        bundle exec rubocop --format simple

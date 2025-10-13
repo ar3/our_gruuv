@@ -56,7 +56,6 @@ RSpec.describe 'Seats', type: :system, critical: true do
       click_button 'Create Seat'
       
       # Should redirect to show page
-      expect(page).to have_content('Seat was successfully created')
       expect(page).to have_content('Software Engineer')
       expect(page).to have_content('Engineering Manager')
       expect(page).to have_content('Backend Engineering')

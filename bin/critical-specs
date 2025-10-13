@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+# Run critical system specs before deployment
+# This script runs the most important tests to ensure core functionality works
+
+echo "Running critical system specs..."
+
+# Set up test environment
+export RAILS_ENV=test
+export RACK_ENV=test
+
+# Run database setup for tests
+echo "Setting up test database..."
+./bin/rails db:test:prepare
+
+# Run only the critical specs we've created (not all system specs)
+echo "Running critical system specs..."
+bundle exec rspec spec/system/ability_form_spec.rb spec/system/observation_form_spec.rb spec/system/people_management_spec.rb spec/system/position_types_spec.rb spec/system/positions_spec.rb spec/system/seats_spec.rb spec/system/assignments_spec.rb spec/system/abilities_milestones_spec.rb spec/system/milestone_earning_spec.rb spec/system/assignment_tenures_spec.rb spec/system/check_ins_employee_flow_spec.rb spec/system/check_ins_manager_flow_spec.rb spec/system/check_ins_end_to_end_spec.rb spec/system/organization_dashboard_spec.rb spec/system/people_complete_picture_spec.rb spec/system/observations_workflow_spec.rb --format documentation --tag critical
+
+echo "Critical specs completed successfully!"

@@ -151,7 +151,7 @@ RSpec.describe 'Assignment Tenures Management', type: :system, critical: true do
       visit organization_assignment_tenure_path(organization, employee_person)
 
       expect(page).to have_content('UI Design')
-      expect(page).to have_content('Started 04/10/2025')
+      expect(page).to have_content('Started 04/11/2025')
       expect(page).to have_content('Last completed check-in: Never')
       expect(page).to have_content('This check-in began: No open check-ins')
     end

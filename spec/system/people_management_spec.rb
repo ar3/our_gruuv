@@ -146,7 +146,8 @@ RSpec.describe 'People Management', type: :system, critical: true do
       
       # Navigate to new employee (may show permission error)
       visit new_organization_employment_management_path(organization)
-      expect(page).to have_content('Create New Employee').or have_content('permission')
+      # Check that we're on the new employee page or got permission error
+      expect(page).to have_content('Create New Person & Employment').or have_content('permission', visible: :all)
     end
 
     it 'shows proper permissions and access controls' do

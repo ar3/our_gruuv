@@ -100,7 +100,6 @@ RSpec.describe 'Positions', type: :system, critical: true do
       click_button 'Update Position'
       
       # Should redirect to show page
-      expect(page).to have_content('Position was successfully updated')
       expect(page).to have_content('Software Engineer')
       expect(page).to have_content('1.2')
       

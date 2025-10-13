@@ -15,6 +15,18 @@ ngrok http --domain=crappie-saved-absolutely.ngrok-free.app 3000
 git push origin main && railway up
 ```
 
+# Run critical specs before deployment
+./bin/critical-specs
+
+# Full pre-deployment check
+./bin/pre-deploy-check
+
+# Regular development (excludes critical specs)
+bundle exec rspec
+
+# Run only critical specs
+bundle exec rspec --tag critical
+
 ## 📚 Documentation Hub
 
 This is your central guide to understanding OurGruuv's architecture, patterns, and conventions.

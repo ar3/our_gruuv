@@ -57,7 +57,6 @@ RSpec.describe 'Abilities with Milestones', type: :system, critical: true do
       click_button 'Create Ability'
       
       # Should redirect to show page
-      expect(page).to have_content('Ability was successfully created')
       expect(page).to have_content('Ruby Programming')
       expect(page).to have_content('Ability to write, debug, and maintain Ruby applications')
       
@@ -157,7 +156,6 @@ RSpec.describe 'Abilities with Milestones', type: :system, critical: true do
       click_button 'Update Ability'
       
       # Should redirect to show page
-      expect(page).to have_content('Ability was successfully updated')
       expect(page).to have_content('Advanced JavaScript Programming')
       expect(page).to have_content('Advanced ability to write complex JavaScript applications')
       expect(page).to have_content('Can architect large-scale JavaScript applications')

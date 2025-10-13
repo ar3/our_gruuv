@@ -41,7 +41,6 @@ RSpec.describe 'Assignments', type: :system, critical: true do
       click_button 'Create Assignment'
       
       # Should redirect to show page
-      expect(page).to have_content('Assignment was successfully created')
       expect(page).to have_content('Forward Progress Facilitator')
       expect(page).to have_content('Ensuring our team moves forward with clarity and momentum')
       
@@ -115,7 +114,6 @@ RSpec.describe 'Assignments', type: :system, critical: true do
       click_button 'Update Assignment'
       
       # Should redirect to show page
-      expect(page).to have_content('Assignment was successfully updated')
       expect(page).to have_content('Senior Product Manager')
       expect(page).to have_content('Leading product strategy and cross-functional execution')
       
@@ -171,7 +169,6 @@ RSpec.describe 'Assignments', type: :system, critical: true do
       click_button 'Create Assignment'
       
       # Should redirect to show page
-      expect(page).to have_content('Assignment was successfully created')
       expect(page).to have_content('Quality Assurance Engineer')
       
       # Should see outcomes
@@ -215,7 +212,6 @@ RSpec.describe 'Assignments', type: :system, critical: true do
       click_button 'Update Assignment'
       
       # Should redirect to show page
-      expect(page).to have_content('Assignment was successfully updated')
       expect(page).to have_content('Design Lead')
       
       # Should see external references

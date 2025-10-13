@@ -1,0 +1,27 @@
+#!/bin/bash -e
+
+# Pre-deployment check script
+# Runs critical tests and checks before deployment
+
+echo "Starting pre-deployment checks..."
+
+# Run critical system specs
+echo "1. Running critical system specs..."
+./bin/critical-specs
+
+# Run security check with Brakeman
+echo "2. Running security scan..."
+bundle exec brakeman --no-pager --quiet
+
+# Run code quality check with RuboCop
+echo "3. Running code quality check..."
+bundle exec rubocop --format simple
+
+# Check for pending migrations
+echo "4. Checking for pending migrations..."
+if bundle exec rails db:migrate:status | grep -q "^\s*down"; then
+    echo "ERROR: There are pending migrations!"
+    exit 1
+fi
+
+echo "All pre-deployment checks passed! ✅"
