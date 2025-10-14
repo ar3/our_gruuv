@@ -74,6 +74,7 @@ get '/login', to: 'auth#login', as: :login
       end
       member do
         get :audit
+        patch :acknowledge_snapshots
       end
     end
     

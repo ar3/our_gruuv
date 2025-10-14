@@ -36,28 +36,6 @@ class Organizations::FinalizationsController < ApplicationController
     end
   end
   
-  def acknowledge
-    # Find the most recent snapshot for this employee that needs acknowledgment
-    snapshot = MaapSnapshot.where(employee: @person)
-                          .where.not(effective_date: nil)
-                          .where(employee_acknowledged_at: nil)
-                          .order(:created_at)
-                          .last
-    
-    if snapshot
-      snapshot.update!(
-        employee_acknowledged_at: Time.current,
-        employee_acknowledgement_request_info: build_request_info
-      )
-      
-      redirect_to organization_person_check_ins_path(@organization, @person),
-                  notice: 'You have acknowledged the finalized check-ins.'
-    else
-      redirect_to organization_person_check_ins_path(@organization, @person),
-                  alert: 'No finalized check-ins found to acknowledge.'
-    end
-  end
-  
   private
   
   def set_organization

@@ -1,7 +1,7 @@
 - content_for :header do
   %h1.mb-0 Finalize Check-Ins for #{@person.display_name}
   - if @position_check_in&.officially_completed?
-    %p.text-muted.mb-0 Review finalized check-ins and acknowledge changes
+    %p.text-muted.mb-0 Review finalized check-ins
   - elsif current_person == @person
     %p.text-muted.mb-0 Review your check-ins that are ready for finalization
   - else
@@ -50,11 +50,10 @@
             .card-header Shared Notes
             .card-body= simple_format(@position_check_in.shared_notes)
         
-        .row.mt-4
-          .col-12
-            = form_with url: acknowledge_organization_person_finalization_path(@organization, @person), method: :patch do |f|
-              = f.submit 'Acknowledge Finalized Check-Ins', class: 'btn btn-success btn-lg',
-                         data: { confirm: 'Are you sure you want to acknowledge these finalized check-ins?' }
+        .alert.alert-info.mt-4
+          %i.bi.bi-info-circle.me-2
+          %strong This check-in has been finalized.
+          = link_to 'View all your check-ins and acknowledgements', audit_organization_employee_path(@organization, @person), class: 'btn btn-sm btn-outline-info ms-2'
   
   - elsif current_person == @person
     -# Employee Read-Only View

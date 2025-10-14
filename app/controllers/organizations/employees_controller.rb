@@ -79,6 +79,57 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
                                   .for_company(@organization)
                                   .recent
                                   .includes(:created_by)
+    
+    # Separate acknowledged and pending snapshots for employee view
+    if current_person == @person
+      @acknowledged_snapshots = @maap_snapshots.where.not(employee_acknowledged_at: nil)
+      @pending_snapshots = @maap_snapshots.where(employee_acknowledged_at: nil).where.not(effective_date: nil)
+    end
+  end
+  
+  def acknowledge_snapshots
+    # Find the person/employee
+    @person = @organization.employees.find(params[:id])
+    
+    # Authorize access to audit view
+    authorize @person, :audit?
+    
+    # Only allow employees to acknowledge their own snapshots
+    unless current_person == @person
+      redirect_to audit_organization_employee_path(@organization, @person), 
+                  alert: 'You can only acknowledge your own check-ins.'
+      return
+    end
+    
+    # Get selected snapshot IDs
+    snapshot_ids = params[:snapshot_ids] || []
+    
+    if snapshot_ids.empty?
+      redirect_to audit_organization_employee_path(@organization, @person), 
+                  alert: 'Please select at least one check-in to acknowledge.'
+      return
+    end
+    
+    # Find and acknowledge the snapshots
+    snapshots = MaapSnapshot.where(id: snapshot_ids, employee: @person).where.not(effective_date: nil)
+    
+    acknowledged_count = 0
+    snapshots.each do |snapshot|
+      unless snapshot.acknowledged?
+        snapshot.update!(
+          employee_acknowledged_at: Time.current,
+          employee_acknowledgement_request_info: {
+            acknowledged_by: current_person.id,
+            acknowledged_at: Time.current,
+            request_source: 'audit_page'
+          }
+        )
+        acknowledged_count += 1
+      end
+    end
+    
+    redirect_to audit_organization_employee_path(@organization, @person), 
+                notice: "Successfully acknowledged #{acknowledged_count} check-in#{'s' if acknowledged_count != 1}."
   end
   
   private

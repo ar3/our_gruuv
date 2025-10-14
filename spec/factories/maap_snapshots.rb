@@ -7,7 +7,7 @@ FactoryBot.define do
     change_type { 'assignment_management' }
     reason { 'Testing assignment changes' }
     maap_data { {} }
-    request_info { { ip_address: '127.0.0.1', user_agent: 'Test Agent' } }
+    manager_request_info { { ip_address: '127.0.0.1', user_agent: 'Test Agent' } }
     effective_date { nil }
     
     trait :exploration do
