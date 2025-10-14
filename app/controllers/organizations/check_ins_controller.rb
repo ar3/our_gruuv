@@ -49,27 +49,23 @@ class Organizations::CheckInsController < ApplicationController
   end
 
   def load_or_build_position_check_in
-    return nil unless @teammate
     PositionCheckIn.find_or_create_open_for(@teammate)
   end
-  
+
   def load_or_build_assignment_check_ins
-    return [] unless @teammate
-    @teammate.assignment_tenures.active.map do |tenure|
-      AssignmentCheckIn.find_or_create_open_for(@teammate, tenure.assignment)
-    end
-  end
-  
-  def load_or_build_aspiration_check_ins
-    return [] unless @teammate
-    # Placeholder for Phase 3 - AspirationCheckIn doesn't exist yet
+    # Implemented in Phase 2
     []
   end
-  
+
+  def load_or_build_aspiration_check_ins
+    # Implemented in Phase 3
+    []
+  end
+
   def update_assignment_check_ins
     # Implemented in Phase 2
   end
-  
+
   def update_aspiration_check_ins
     # Implemented in Phase 3
   end
