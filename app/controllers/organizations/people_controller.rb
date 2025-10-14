@@ -134,13 +134,13 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
         original_org_id = maap_snapshot.form_params&.dig('original_organization_id')
         redirect_org = original_org_id ? Organization.find(original_org_id) : organization
         Rails.logger.info "BULK_FINALIZE: 24 - Using organization for redirect: #{redirect_org.id} (#{redirect_org.name})"
-        organization_check_in_path(redirect_org, @person)
+        organization_person_check_ins_path(redirect_org, @person)
       else
         case maap_snapshot.change_type
         when 'assignment_management'
           organization_assignment_tenure_path(organization, @person)
         when 'bulk_check_in_finalization', 'individual_check_in_finalization'
-          organization_check_in_path(organization, @person)
+          organization_person_check_ins_path(organization, @person)
         when 'position_tenure'
           organization_person_path(organization, @person) # TODO: Update when position tenure page exists
         when 'milestone_management'

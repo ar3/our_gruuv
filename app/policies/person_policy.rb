@@ -169,6 +169,20 @@ class PersonPolicy < ApplicationPolicy
     admin_bypass? || actual_user == record
   end
 
+  def view_check_ins?
+    # Users can view check-ins if they are:
+    # 1. The person themselves
+    # 2. In their managerial hierarchy 
+    # 3. Have employment management permissions for any organization
+    return true if admin_bypass? || actual_user == record || actual_user.in_managerial_hierarchy_of?(record)
+    
+    # Check if user has employment management permissions in any organization
+    user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
+    user_has_employment_management = user_employment_orgs.any? { |org| actual_user.can_manage_employment?(org) }
+    
+    user_has_employment_management
+  end
+
 
 
   def edit?

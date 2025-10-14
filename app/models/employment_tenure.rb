@@ -4,6 +4,8 @@ class EmploymentTenure < ApplicationRecord
   belongs_to :position
   belongs_to :manager, class_name: 'Person', optional: true
   belongs_to :seat, optional: true
+  
+  has_many :position_check_ins, dependent: :nullify
 
   validates :started_at, presence: true
   validates :ended_at, comparison: { greater_than: :started_at }, allow_nil: true
@@ -13,6 +15,17 @@ class EmploymentTenure < ApplicationRecord
   }
   validate :no_overlapping_active_tenures_for_same_teammate_and_company
   validate :seat_position_type_matches_position, if: :seat
+
+  POSITION_RATINGS = {
+    -3 => { key: :monitoring_pip, emoji: '🔴', label: 'Performance Improvement Plan', description: 'Monitoring after PIP' },
+    -2 => { key: :monitoring_after_written_warning, emoji: '⭕️', label: 'Written Warning', description: 'Monitoring after written warning' },
+    -1 => { key: :monitoring_after_verbal_warning, emoji: '🟠', label: 'Verbal Warning', description: 'Monitoring after verbal warning' },
+     1 => { key: :actively_coaching, emoji: '🟡', label: 'Actively Coaching', description: 'Mostly meeting expectations... Working on specific improvements' },
+     2 => { key: :actively_trusting, emoji: '🔵', label: 'Praising/Trusting', description: 'Consistent strong performance' },
+     3 => { key: :looking_to_reward, emoji: '🟢', label: 'Looking to Reward', description: 'Exceptional, seeking to increase responsibility' }
+  }.freeze
+
+  validates :official_position_rating, inclusion: { in: POSITION_RATINGS.keys }, allow_nil: true
 
   # Callbacks
   after_create :update_seat_state_to_filled
@@ -36,6 +49,20 @@ class EmploymentTenure < ApplicationRecord
 
   def self.most_recent_for(teammate, company)
     most_recent_for_teammate_and_company(teammate, company).first
+  end
+
+  def position_rating_display
+    return 'Not Rated' if official_position_rating.nil?
+    data = POSITION_RATINGS[official_position_rating]
+    "#{data[:emoji]} #{data[:label]}"
+  end
+
+  def position_rating_emoji
+    POSITION_RATINGS.dig(official_position_rating, :emoji)
+  end
+
+  def position_rating_label
+    POSITION_RATINGS.dig(official_position_rating, :label)
   end
 
   private

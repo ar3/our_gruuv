@@ -1,0 +1,106 @@
+.container
+  .row
+    .col-12
+      %h1= "Finalize Check-Ins for #{@person.display_name}"
+      - if @position_check_in&.officially_completed?
+        %p.lead Review finalized check-ins and acknowledge changes
+      - else
+        %p.lead Review ready check-ins and finalize selected ones
+  
+  - if @position_check_in&.officially_completed?
+    -# Employee Acknowledgment View
+    .card.mb-4
+      .card-header
+        %h3 Position Check-In - Finalized
+        %p.text-muted Completed on #{@position_check_in.official_check_in_completed_at.to_date}
+      
+      .card-body
+        .row
+          .col-md-4
+            .card
+              .card-header Employee Perspective
+              .card-body
+                %p= position_rating_display(@position_check_in.employee_rating)
+                %p.small= simple_format(@position_check_in.employee_private_notes)
+          
+          .col-md-4
+            .card
+              .card-header Manager Perspective
+              .card-body
+                %p= position_rating_display(@position_check_in.manager_rating)
+                %p.small= simple_format(@position_check_in.manager_private_notes)
+          
+          .col-md-4
+            .card.border-success
+              .card-header.bg-success.text-white Official Rating
+              .card-body
+                %h3= position_rating_display(@position_check_in.official_rating)
+                %p.small Finalized by #{@position_check_in.finalized_by.display_name}
+        
+        - if @position_check_in.shared_notes.present?
+          .card.mt-3
+            .card-header Shared Notes
+            .card-body= simple_format(@position_check_in.shared_notes)
+        
+        .row.mt-4
+          .col-12
+            = form_with url: acknowledge_organization_person_finalization_path(@organization, @person), method: :patch do |f|
+              = f.submit 'Acknowledge Finalized Check-Ins', class: 'btn btn-success btn-lg',
+                         data: { confirm: 'Are you sure you want to acknowledge these finalized check-ins?' }
+  
+  - else
+    -# Manager Finalization View
+    = form_with url: organization_person_finalization_path(@organization, @person), method: :post do |f|
+      
+      -# Position Finalization
+      - if @position_check_in
+        .card.mb-4
+          .card-header
+            %h3 Position Check-In
+            = check_box_tag 'finalize_position', '1', true
+            = label_tag 'finalize_position', 'Finalize Position'
+          
+          .card-body
+            .row
+              .col-md-6
+                %h5 Employee Perspective
+                %p= position_rating_display(@position_check_in.employee_rating)
+                %p.small= simple_format(@position_check_in.employee_private_notes)
+              
+              .col-md-6
+                %h5 Manager Perspective
+                %p= position_rating_display(@position_check_in.manager_rating)
+                %p.small= simple_format(@position_check_in.manager_private_notes)
+            
+            .row.mt-3
+              .col-12
+                .form-group
+                  = label_tag :position_official_rating, "Official Rating"
+                  = select_tag :position_official_rating,
+                              options_for_select(position_rating_options, @position_check_in.manager_rating),
+                              class: 'form-control'
+                
+                .form-group
+                  = label_tag :position_shared_notes, "Shared Notes"
+                  = text_area_tag :position_shared_notes, nil, rows: 3, class: 'form-control',
+                                 placeholder: 'Summary, action items, career development plans...'
+      
+      -# Assignment Finalizations (Phase 2)
+      -# Aspiration Finalizations (Phase 3)
+      
+      .row.mt-4
+        .col-12
+          .alert.alert-warning
+            %strong ⚠️ This will:
+            %ul
+              %li Create MAAP snapshot with complete ratings
+              %li Close selected tenures and open new ones
+              %li Make all notes visible to #{@person.first_name}
+              %li Send notification to #{@person.first_name}
+          
+          = f.submit 'Finalize Selected Check-Ins', class: 'btn btn-success btn-lg',
+                     data: { confirm: 'Are you sure you want to finalize these check-ins?' }
+
+
+
+

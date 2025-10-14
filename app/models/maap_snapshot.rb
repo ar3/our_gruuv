@@ -10,6 +10,7 @@ class MaapSnapshot < ApplicationRecord
   }
   validates :reason, presence: true
   validates :company, presence: true
+  validates :maap_data, presence: true
   
   # Full MAAP data as JSONB (structured for easy querying)
   # maap_data contains: employment_tenure, assignments, milestones, aspirations
@@ -107,6 +108,15 @@ class MaapSnapshot < ApplicationRecord
     save!
   end
   
+
+  # Acknowledgement methods
+  def acknowledged?
+    employee_acknowledged_at.present?
+  end
+
+  def pending_acknowledgement?
+    effective_date.present? && employee_acknowledged_at.nil?
+  end
 
   private
   
@@ -374,4 +384,27 @@ class MaapSnapshot < ApplicationRecord
       nil
     end
   end
+  
+  # Helper methods to extract full rating data (with context like IDs)
+  def position_data
+    maap_data['position']
+  end
+
+  def assignment_ratings_data
+    maap_data['assignments'] || []
+  end
+
+  def milestone_attainments_data
+    maap_data['milestones'] || []
+  end
+
+  def aspiration_ratings_data
+    maap_data['aspirations'] || []
+  end
+
+  # Convenience method for counts
+  def milestone_count
+    milestone_attainments_data.count
+  end
+
 end

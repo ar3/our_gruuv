@@ -4,6 +4,7 @@ class Person < ApplicationRecord
   # Associations
   has_many :person_identities, dependent: :destroy
   has_many :observations, foreign_key: :observer_id, dependent: :destroy
+  has_many :maap_snapshots, foreign_key: :employee_id, dependent: :destroy
 
   # Milestone-related methods
   def milestone_attainments(organization)
@@ -375,6 +376,15 @@ class Person < ApplicationRecord
     return false if identity.email? # Don't allow disconnecting email identity
     return false if identity.google? && person_identities.google.count == 1
     true
+  end
+  
+  # Active employment tenure convenience methods
+  def active_employment_tenure_for(organization)
+    ActiveEmploymentTenureQuery.new(person: self, organization: organization).first
+  end
+
+  def current_manager_for(organization)
+    active_employment_tenure_for(organization)&.manager
   end
   
   private

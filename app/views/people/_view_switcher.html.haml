@@ -53,7 +53,7 @@
           Check-In Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).can_view_manage_mode?
-        = link_to organization_check_in_path(@person.current_organization_or_default, @person), class: 'dropdown-item' do
+        = link_to organization_person_check_ins_path(@person.current_organization_or_default, @person), class: 'dropdown-item' do
           %i.bi.bi-chat-square-text.me-2
           Check-In Mode
       - else

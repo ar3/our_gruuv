@@ -1,116 +1,28 @@
-- content_for :go_back_link do
-  = link_to organization_assignment_tenure_path(@organization, @person), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Assignment Mode
-
-- content_for :header do
-  %h1.mb-0 Check-In Mode for #{@person.display_name} within #{@organization.name}
-
-- content_for :header_action do
-  = render 'people/view_switcher'
-
-- content_for :head do
-  :css
-    .check-in-header {
-      transition: background-color 0.2s ease;
-    }
-    .check-in-header:hover {
-      background-color: #f8f9fa;
-    }
-    .cursor-pointer {
-      cursor: pointer;
-    }
-
-.row.justify-content-center
-  .col-lg-12
-    / Assignment Check-ins Section
-    .card.mb-4
-      .card-header
-        .row.align-items-center
-          .col-md-8
-            %h5.mb-0
-              %i.bi.bi-clipboard-check.me-2
-              Assignment Check-ins
-          .col-md-4.text-end
-            - if @is_manager && @check_ins_in_progress.any? { |ci| ci.ready_for_finalization? }
-              %span.btn.btn-success.btn-sm#top-save-button{style: "cursor: pointer;", onclick: "console.log('Top save button clicked'); var form = document.getElementById('bulk-finalize-form'); console.log('Form found:', form); console.log('Form action:', form ? form.action : 'no form'); form && form.submit();"} Save Check-ins
-      - if @check_ins_in_progress.any?
-        = form_with url: bulk_finalize_check_ins_organization_check_in_path(@organization, @person), method: :patch, local: true, html: { id: "bulk-finalize-form", onsubmit: "console.log('Form submitting to:', this.action); console.log('Form method:', this.method); return true;" } do |form|
-          .card-body
-            - @check_ins_in_progress.each do |check_in|
-              .assignment-check-in-card.mb-4.border.rounded
-                / Collapsed Header
-                .check-in-header.p-3.cursor-pointer
-                  .row.align-items-center
-                    .col-md-8
-                      = render 'organizations/check_ins/check_in_header', check_in: check_in
-                    .col-md-4.text-end
-                      %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#check-in-#{check_in.id}", "aria-expanded" => "false", "aria-controls" => "check-in-#{check_in.id}", style: "cursor: pointer;"}
-                        %span.not-collapsed
-                          %i.bi.bi-chevron-up.me-2
-                          %small.text-muted (Hide details)
-                        %span.collapsed
-                          %i.bi.bi-chevron-down.me-2
-                          %small.text-muted (Show details)
-                
-                / Expanded Content
-                .collapse{"id" => "check-in-#{check_in.id}"}
-                  .p-3.border-top
-                    .row
-                      = render 'organizations/check_ins/employee_input', check_in: check_in
-                      = render 'organizations/check_ins/manager_input', check_in: check_in
-                      
-                = render 'organizations/check_ins/finalization_form', check_in: check_in, form: form
-            
-            / Bottom action bar
-            - if @is_manager && @check_ins_in_progress.any? { |ci| ci.ready_for_finalization? }
-              .row.mt-3
-                .col-md-8
-                .col-md-4.text-end
-                  = form.submit "Save Check-ins", class: "btn btn-success btn-sm"
-      - else
-        .card-body
-          .alert.alert-info
-            %h6.mb-2
-              %i.bi.bi-info-circle.me-2
-              No Check-ins in Progress
-            %p.mb-2 No assignment check-ins are currently in progress. Check-ins appear here once either the employee or manager has started their review.
-            = link_to "Manage Assignments", organization_assignment_tenure_path(@organization, @person), class: "btn btn-primary btn-sm"
-
-    / Coming Soon Sections
-    .row
-      .col-md-4
-        .card.mb-4
-          .card-header
-            %h5.mb-0
-              %i.bi.bi-chat-dots.me-2
-              Discussion Topics
-          .card-body
-            .text-center.py-4
-              %i.bi.bi-construction.text-muted{style: "font-size: 2rem;"}
-              %p.text-muted.mt-2 Coming Soon
-              %small.text-muted Discussion topics for 1:1 meetings
-
-      .col-md-4
-        .card.mb-4
-          .card-header
-            %h5.mb-0
-              %i.bi.bi-target.me-2
-              Personal Goals
-          .card-body
-            .text-center.py-4
-              %i.bi.bi-construction.text-muted{style: "font-size: 2rem;"}
-              %p.text-muted.mt-2 Coming Soon
-              %small.text-muted Personal development goals
-
-      .col-md-4
-        .card.mb-4
-          .card-header
-            %h5.mb-0
-              %i.bi.bi-list-check.me-2
-              TODOs
-          .card-body
-            .text-center.py-4
-              %i.bi.bi-construction.text-muted{style: "font-size: 2rem;"}
-              %p.text-muted.mt-2 Coming Soon
-              %small.text-muted Action items and follow-ups
+.container
+  .row
+    .col-12
+      %h1= "Check-Ins for #{@person.display_name}"
+      %p.text-muted= "View Mode: #{@view_mode.to_s.titleize}"
+      
+      -# Show pending acknowledgement banner if applicable
+      - if @view_mode == :employee && @person.maap_snapshots.executed.where(employee_acknowledged_at: nil).any?
+        .alert.alert-warning
+          %strong ⚠️ Your manager has finalized check-ins.
+          = link_to 'Review and Acknowledge', organization_person_finalization_path(@organization, @person), class: 'btn btn-sm btn-warning'
+  
+  = form_with url: organization_person_check_ins_path(@organization, @person), method: :patch do |f|
+    
+    -# Position Section
+    .row.mt-4
+      .col-12
+        = render 'position_check_in_form', 
+                 form: f,
+                 check_in: @position_check_in, 
+                 view_mode: @view_mode
+    
+    -# Assignment Sections (Phase 2)
+    -# Aspiration Sections (Phase 3)
+    
+    .row.mt-4
+      .col-12
+        = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'

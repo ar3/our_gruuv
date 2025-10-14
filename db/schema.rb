@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_09_225126) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_13_171943) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -164,11 +164,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_09_225126) do
     t.bigint "seat_id"
     t.bigint "teammate_id"
     t.string "employment_type", default: "full_time"
+    t.integer "official_position_rating"
     t.index ["company_id"], name: "index_employment_tenures_on_company_id"
     t.index ["manager_id"], name: "index_employment_tenures_on_manager_id"
     t.index ["position_id"], name: "index_employment_tenures_on_position_id"
     t.index ["seat_id"], name: "index_employment_tenures_on_seat_id"
     t.index ["teammate_id"], name: "index_employment_tenures_on_teammate_id"
+    t.check_constraint "official_position_rating IS NULL OR official_position_rating >= '-3'::integer AND official_position_rating <= 3", name: "valid_position_rating_range"
   end
 
   create_table "external_references", force: :cascade do |t|
@@ -252,18 +254,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_09_225126) do
     t.string "change_type", null: false
     t.text "reason", null: false
     t.jsonb "maap_data", default: {}
-    t.jsonb "request_info", default: {}, null: false
+    t.jsonb "manager_request_info", default: {}, null: false
     t.date "effective_date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "form_params"
+    t.datetime "employee_acknowledged_at"
+    t.jsonb "employee_acknowledgement_request_info", default: {}
     t.index ["change_type"], name: "index_maap_snapshots_on_change_type"
     t.index ["company_id"], name: "index_maap_snapshots_on_company_id"
     t.index ["created_by_id"], name: "index_maap_snapshots_on_created_by_id"
     t.index ["effective_date"], name: "index_maap_snapshots_on_effective_date"
+    t.index ["employee_acknowledged_at"], name: "index_maap_snapshots_on_employee_acknowledged_at"
     t.index ["employee_id"], name: "index_maap_snapshots_on_employee_id"
     t.index ["maap_data"], name: "index_maap_snapshots_on_maap_data", using: :gin
-    t.index ["request_info"], name: "index_maap_snapshots_on_request_info", using: :gin
+    t.index ["manager_request_info"], name: "index_maap_snapshots_on_manager_request_info", using: :gin
   end
 
   create_table "notifications", force: :cascade do |t|
@@ -396,6 +401,38 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_09_225126) do
     t.index ["position_id", "assignment_id"], name: "index_position_assignments_on_position_and_assignment_unique", unique: true
     t.index ["position_id"], name: "index_position_assignments_on_position_id"
     t.check_constraint "anticipated_energy_percentage IS NULL OR anticipated_energy_percentage >= 0 AND anticipated_energy_percentage <= 100", name: "check_anticipated_energy_percentage_range"
+  end
+
+  create_table "position_check_ins", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.bigint "employment_tenure_id", null: false
+    t.date "check_in_started_on", null: false
+    t.integer "employee_rating"
+    t.text "employee_private_notes"
+    t.datetime "employee_completed_at"
+    t.integer "manager_rating"
+    t.text "manager_private_notes"
+    t.datetime "manager_completed_at"
+    t.bigint "manager_completed_by_id"
+    t.integer "official_rating"
+    t.text "shared_notes"
+    t.datetime "official_check_in_completed_at"
+    t.bigint "finalized_by_id"
+    t.bigint "maap_snapshot_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["employee_completed_at"], name: "index_position_check_ins_on_employee_completed_at"
+    t.index ["employment_tenure_id"], name: "index_position_check_ins_on_employment_tenure_id"
+    t.index ["finalized_by_id"], name: "index_position_check_ins_on_finalized_by_id"
+    t.index ["maap_snapshot_id"], name: "index_position_check_ins_on_maap_snapshot_id"
+    t.index ["manager_completed_at"], name: "index_position_check_ins_on_manager_completed_at"
+    t.index ["manager_completed_by_id"], name: "index_position_check_ins_on_manager_completed_by_id"
+    t.index ["official_check_in_completed_at"], name: "index_position_check_ins_on_official_check_in_completed_at"
+    t.index ["teammate_id", "check_in_started_on"], name: "idx_on_teammate_id_check_in_started_on_52d3f0832c"
+    t.index ["teammate_id"], name: "index_position_check_ins_on_teammate_id"
+    t.check_constraint "employee_rating IS NULL OR employee_rating >= '-3'::integer AND employee_rating <= 3", name: "valid_employee_rating_range"
+    t.check_constraint "manager_rating IS NULL OR manager_rating >= '-3'::integer AND manager_rating <= 3", name: "valid_manager_rating_range"
+    t.check_constraint "official_rating IS NULL OR official_rating >= '-3'::integer AND official_rating <= 3", name: "valid_official_rating_range"
   end
 
   create_table "position_levels", force: :cascade do |t|
@@ -635,6 +672,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_09_225126) do
   add_foreign_key "person_identities", "people"
   add_foreign_key "position_assignments", "assignments"
   add_foreign_key "position_assignments", "positions"
+  add_foreign_key "position_check_ins", "employment_tenures"
+  add_foreign_key "position_check_ins", "maap_snapshots"
+  add_foreign_key "position_check_ins", "people", column: "finalized_by_id"
+  add_foreign_key "position_check_ins", "people", column: "manager_completed_by_id"
+  add_foreign_key "position_check_ins", "teammates"
   add_foreign_key "position_levels", "position_major_levels"
   add_foreign_key "position_types", "organizations"
   add_foreign_key "position_types", "position_major_levels"

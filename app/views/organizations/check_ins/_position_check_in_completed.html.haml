@@ -1,0 +1,33 @@
+.alert.alert-success
+  %h5 🎉 Check-in completed on #{check_in.official_check_in_completed_at.to_date}
+
+.row
+  .col-md-4
+    .card
+      .card-header Employee Perspective
+      .card-body
+        %p= position_rating_display(check_in.employee_rating)
+        %p.small= simple_format(check_in.employee_private_notes)
+  
+  .col-md-4
+    .card
+      .card-header Manager Perspective
+      .card-body
+        %p= position_rating_display(check_in.manager_rating)
+        %p.small= simple_format(check_in.manager_private_notes)
+  
+  .col-md-4
+    .card.border-success
+      .card-header.bg-success.text-white Official Rating
+      .card-body
+        %h3= position_rating_display(check_in.official_rating)
+        %p.small Finalized by #{check_in.finalized_by.display_name}
+
+- if check_in.shared_notes.present?
+  .card.mt-3
+    .card-header Shared Notes
+    .card-body= simple_format(check_in.shared_notes)
+
+
+
+

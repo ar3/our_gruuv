@@ -113,14 +113,6 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
-    # Check-in management
-    resources :check_ins, module: :organizations, only: [:show] do
-      member do
-        patch :finalize_check_in
-        patch :bulk_finalize_check_ins
-      end
-    end
-    
     # People management
     resources :people, module: :organizations, only: [:show] do
       member do
@@ -129,6 +121,14 @@ get '/login', to: 'auth#login', as: :login
         get 'execute_changes/:maap_snapshot_id', action: :execute_changes, as: :execute_changes
         post 'process_changes/:maap_snapshot_id', action: :process_changes, as: :process_changes
         post :update_permission
+      end
+      
+      # Unified check-ins page (spreadsheet-style giant form)
+      resource :check_ins, only: [:show, :update]
+      
+      # Finalization flow (separate from check-ins)
+      resource :finalization, only: [:show, :create] do
+        patch :acknowledge, on: :member
       end
     end
     

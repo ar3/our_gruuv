@@ -1,0 +1,59 @@
+.card.mb-4
+  .card-header
+    %h3 Position: #{@person.active_employment_tenure_for(@organization)&.position&.display_name}
+    = check_in_status_badge(check_in)
+  
+  .card-body
+    - if check_in.officially_completed?
+      = render 'position_check_in_completed', check_in: check_in
+    - else
+      = form.fields_for :position_check_in, check_in do |pf|
+        - if view_mode == :employee
+          .form-group
+            = pf.label :employee_rating, "Where do you feel you stand?"
+            = pf.select :employee_rating,
+                       position_rating_options,
+                       { include_blank: 'Select your perspective' },
+                       class: 'form-control'
+          
+          .form-group
+            = pf.label :employee_private_notes, "Your private notes"
+            = pf.text_area :employee_private_notes, rows: 3, class: 'form-control'
+          
+          .form-group
+            %label Status
+            .form-check
+              = pf.radio_button :status, 'draft', checked: !check_in.employee_completed?
+              = pf.label :status_draft, 'Save as Draft'
+            .form-check
+              = pf.radio_button :status, 'complete'
+              = pf.label :status_complete, 'Mark Ready for Manager'
+          
+          - if check_in.manager_completed?
+            .alert.alert-info.mt-2
+              ✅ Manager has completed their assessment
+        
+        - elsif view_mode == :manager
+          - if check_in.employee_completed?
+            .alert.alert-info
+              ✅ #{@person.first_name} has completed their perspective (hidden until you complete yours)
+          
+          .form-group
+            = pf.label :manager_rating, "Where do you think #{@person.first_name} stands?"
+            = pf.select :manager_rating,
+                       position_rating_options,
+                       { include_blank: 'Select your assessment' },
+                       class: 'form-control'
+          
+          .form-group
+            = pf.label :manager_private_notes, "Your private notes"
+            = pf.text_area :manager_private_notes, rows: 3, class: 'form-control'
+          
+          .form-group
+            %label Status
+            .form-check
+              = pf.radio_button :status, 'draft', checked: !check_in.manager_completed?
+              = pf.label :status_draft, 'Save as Draft'
+            .form-check
+              = pf.radio_button :status, 'complete'
+              = pf.label :status_complete, 'Mark Ready for Finalization'
