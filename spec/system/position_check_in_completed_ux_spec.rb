@@ -50,9 +50,10 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       expect(page).to have_content('Check-ins saved successfully.')
       
       # Step 2: Verify view-only mode is shown
-      expect(page).to have_content('Your assessment is complete and ready for finalization')
+      expect(page).to have_content('Your Assessment')
       expect(page).to have_content('🔵 Praising/Trusting')
       expect(page).to have_content('John is doing excellent work on the frontend features')
+      expect(page).to have_content('John is not ready to finalize this check-in')
       
       # Should NOT show form fields
       expect(page).not_to have_select('_position_check_in_manager_rating')
@@ -99,9 +100,10 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       expect(page).to have_content('Check-ins saved successfully.')
       
       # Step 2: Verify view-only mode is shown
-      expect(page).to have_content('Your assessment is complete and ready for manager review')
+      expect(page).to have_content('Your Assessment')
       expect(page).to have_content('🟡 Actively Coaching')
       expect(page).to have_content('I feel I am meeting expectations but want to improve')
+      expect(page).to have_content('Your manager is not ready to finalize this check-in')
       
       # Should NOT show form fields
       expect(page).not_to have_select('_position_check_in_employee_rating')

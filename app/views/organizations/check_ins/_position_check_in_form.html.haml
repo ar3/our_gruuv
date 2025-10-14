@@ -4,11 +4,11 @@
     = check_in_status_badge(check_in)
   
   .card-body
-    - if check_in.officially_completed?
+    - if check_in&.officially_completed?
       = render 'position_check_in_completed', check_in: check_in
-    - elsif check_in.manager_completed? && view_mode == :manager
-      = render 'position_check_in_manager_completed', check_in: check_in, form: form
-    - elsif check_in.employee_completed? && view_mode == :employee
-      = render 'position_check_in_employee_completed', check_in: check_in, form: form
+    - elsif view_mode == :manager
+      = render 'position_check_in_manager_view', check_in: check_in, form: form
+    - elsif view_mode == :employee
+      = render 'position_check_in_employee_view', check_in: check_in, form: form
     - else
       = render 'position_check_in_in_progress', check_in: check_in, form: form, view_mode: view_mode

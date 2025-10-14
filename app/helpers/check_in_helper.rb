@@ -31,6 +31,8 @@ module CheckInHelper
   end
   
   def check_in_status_badge(check_in)
+    return content_tag(:span, '📝 In Progress', class: 'badge badge-secondary') unless check_in
+    
     if check_in.officially_completed?
       content_tag(:span, '✅ Complete', class: 'badge badge-success')
     elsif check_in.ready_for_finalization?

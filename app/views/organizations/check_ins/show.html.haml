@@ -1,28 +1,39 @@
-.container
-  .row
-    .col-12
-      %h1= "Check-Ins for #{@person.display_name}"
-      %p.text-muted= "View Mode: #{@view_mode.to_s.titleize}"
-      
-      -# Show pending acknowledgement banner if applicable
-      - if @view_mode == :employee && @person.maap_snapshots.executed.where(employee_acknowledged_at: nil).any?
-        .alert.alert-warning
-          %strong ⚠️ Your manager has finalized check-ins.
-          = link_to 'Review and Acknowledge', organization_person_finalization_path(@organization, @person), class: 'btn btn-sm btn-warning'
+- content_for :header do
+  %h1.mb-0 Check-Ins for #{@person.display_name}
+  %p.text-muted.mb-0= "View Mode: #{@view_mode.to_s.titleize}"
+        
+- content_for :header_action do
+  = render 'people/view_switcher'
+
+- content_for :go_back_link do
+  - if @person.active_employment_tenure_for(@organization)
+    = link_to organization_assignment_tenure_path(@organization, @person), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Back to Assignments
+  - else
+    = link_to organization_person_path(@organization, @person), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Back to Profile
+
+-# Show pending acknowledgement banner if applicable
+- if @view_mode == :employee && @person.maap_snapshots.executed.where(employee_acknowledged_at: nil).any?
+  .alert.alert-warning
+    %strong ⚠️ Your manager has finalized check-ins.
+    = link_to 'Review and Acknowledge', organization_person_finalization_path(@organization, @person), class: 'btn btn-sm btn-warning'
+
+= form_with url: organization_person_check_ins_path(@organization, @person), method: :patch do |f|
   
-  = form_with url: organization_person_check_ins_path(@organization, @person), method: :patch do |f|
-    
-    -# Position Section
-    .row.mt-4
-      .col-12
-        = render 'position_check_in_form', 
-                 form: f,
-                 check_in: @position_check_in, 
-                 view_mode: @view_mode
-    
-    -# Assignment Sections (Phase 2)
-    -# Aspiration Sections (Phase 3)
-    
-    .row.mt-4
-      .col-12
-        = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
+  -# Position Section
+  .row.mt-4
+    .col-12
+      = render 'position_check_in_form', 
+               form: f,
+               check_in: @position_check_in, 
+               view_mode: @view_mode
+  
+  -# Assignment Sections (Phase 2)
+  -# Aspiration Sections (Phase 3)
+  
+  .row.mt-4
+    .col-12
+      = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'

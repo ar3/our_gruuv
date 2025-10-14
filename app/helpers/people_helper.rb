@@ -93,6 +93,11 @@ module PeopleHelper
       return 'Check-In Mode'
     end
     
+    # Check for finalizations controller
+    if controller_name == 'finalizations' && action_name == 'show'
+      return 'Finalization Mode'
+    end
+    
     case action_name
     when 'show'
       'Management Mode'

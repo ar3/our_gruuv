@@ -61,6 +61,22 @@
           %i.bi.bi-chat-square-text.me-2
           Check-In Mode
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
+    
+    %li
+      - if action_name == 'show' && controller_name == 'finalizations'
+        .dropdown-item.text-muted
+          %i.bi.bi-check-circle.me-2
+          Finalization Mode (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif policy(@person).can_view_manage_mode?
+        = link_to organization_person_finalization_path(@person.current_organization_or_default, @person), class: 'dropdown-item' do
+          %i.bi.bi-check-circle.me-2
+          Finalization Mode
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-check-circle.me-2
+          Finalization Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access finalization features"}
       
     %li
       - if action_name == 'show' && controller_name == 'assignment_tenures'
