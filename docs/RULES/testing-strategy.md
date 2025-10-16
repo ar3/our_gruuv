@@ -82,6 +82,123 @@ bundle exec rspec  # or run all
 5. **Testing critical paths** - End-to-end flows users MUST be able to complete
 6. **Testing integrations** - OAuth flows, external services
 
+## Authentication in System Tests
+
+### The Problem
+System tests with JavaScript (`js: true`) run in a separate browser process (Selenium), so `rack_session_access` doesn't work for authentication. Users get redirected to login pages instead of accessing protected routes.
+
+### The Solution
+We use a **hybrid authentication approach** that automatically detects the test type and uses the appropriate method:
+
+**For JavaScript Tests (Selenium):**
+- Uses HTTP endpoint `/test/auth/sign_in` with redirect
+- Session persists across all page visits
+- Supports user switching mid-test
+
+**For Non-JavaScript Tests (Rack):**
+- Uses `rack_session_access` (faster)
+- Direct session manipulation
+
+### Authentication Helpers
+
+#### Basic Authentication
+```ruby
+# For non-JS tests (fast)
+sign_in_as(person, organization)
+
+# For JS tests (automatic detection)
+sign_in_as(person, organization)
+```
+
+#### Authentication + Navigation (Recommended for JS tests)
+```ruby
+# Signs in AND navigates to target page in one step
+sign_in_and_visit(person, organization, target_path)
+```
+
+#### User Switching Mid-Test
+```ruby
+# Switch from manager to employee view
+switch_to_user(employee_person, organization)
+```
+
+### Implementation Details
+
+**Test Authentication Controller** (`/app/controllers/test/auth_controller.rb`):
+- Only available in test environment
+- Sets session and redirects to target page
+- Maintains session continuity
+
+**Authentication Helpers** (`/spec/support/authentication_helpers.rb`):
+- Auto-detects JavaScript tests
+- Uses appropriate authentication method
+- Provides seamless user switching
+
+**Database Configuration** (`/spec/rails_helper.rb`):
+- Shared database connection for system tests
+- Ensures both test thread and Capybara see same data
+
+### Migration Guide
+
+**❌ Old Way (Broken for JS tests):**
+```ruby
+# This doesn't work with JavaScript tests
+allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
+visit some_path
+```
+
+**✅ New Way (Works for all tests):**
+```ruby
+# For JavaScript tests
+sign_in_and_visit(person, organization, some_path)
+
+# For non-JavaScript tests  
+sign_in_as(person, organization)
+visit some_path
+```
+
+### Best Practices
+
+1. **Use `sign_in_and_visit()` for JavaScript tests** - Ensures session persistence
+2. **Use `sign_in_as()` for non-JavaScript tests** - Faster execution
+3. **Use `switch_to_user()` for multi-user scenarios** - Clean user switching
+4. **Always set organization context** - Required for authorization
+5. **Test both manager and employee views** - Different permissions and UI
+
+### Examples
+
+#### JavaScript Test with Authentication
+```ruby
+RSpec.describe 'Assignment Check-In', type: :system, js: true do
+  it 'allows manager to complete check-ins' do
+    sign_in_and_visit(manager_person, organization, 
+                     organization_person_check_ins_path(organization, employee_person))
+    
+    expect(page).to have_content('Assignment Management')
+    # Authentication persists across all interactions
+  end
+end
+```
+
+#### Multi-User Test Scenario
+```ruby
+it 'allows both manager and employee to complete their sides' do
+  # Manager completes their side
+  sign_in_and_visit(manager_person, organization, check_ins_path)
+  select 'Exceeding', from: 'manager_rating'
+  click_button 'Save'
+  
+  # Switch to employee view
+  switch_to_user(employee_person, organization)
+  select 'Meeting', from: 'employee_rating'
+  click_button 'Save'
+  
+  # Switch back to manager for finalization
+  switch_to_user(manager_person, organization)
+  expect(page).to have_content('Ready for Finalization')
+end
+```
+
 ## Examples
 
 ### Request Spec Example

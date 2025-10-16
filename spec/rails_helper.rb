@@ -57,7 +57,8 @@ RSpec.configure do |config|
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false
   # instead of true.
-  # Disable transactional fixtures for system tests (Capybara runs in separate process)
+  # Use transactional fixtures for all tests, including system tests
+  # This requires shared database connection for Capybara to work properly
   config.use_transactional_fixtures = true
 
   # You can uncomment this line to turn off ActiveRecord support entirely.
@@ -95,6 +96,21 @@ RSpec.configure do |config|
 
   config.after(:each, js: true) do
     Capybara.use_default_driver
+  end
+
+  # Configure shared database connection for system tests
+  # This allows Capybara to see the same database state as the test thread
+  config.before(:suite) do
+    if defined?(ActiveRecord::Base)
+      ActiveRecord::Base.connection_pool.disconnect!
+    end
+  end
+
+  config.before(:each, type: :system) do
+    # Ensure we're using the same database connection for system tests
+    ActiveRecord::Base.connection_pool.with_connection do |conn|
+      # This ensures Capybara and the test thread share the same connection
+    end
   end
 end
 

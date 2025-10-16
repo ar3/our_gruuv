@@ -1,0 +1,5 @@
+class AddMaapSnapshotToAssignmentCheckIns < ActiveRecord::Migration[8.0]
+  def change
+    add_reference :assignment_check_ins, :maap_snapshot, null: true, foreign_key: true
+  end
+end

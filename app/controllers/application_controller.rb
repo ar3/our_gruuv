@@ -166,6 +166,11 @@ class ApplicationController < ActionController::Base
   def current_person
     return @current_person if defined?(@current_person)
     
+    # In test environment, allow RSpec mocks to override
+    if Rails.env.test? && respond_to?(:current_person_mock)
+      return current_person_mock if current_person_mock
+    end
+    
     # Check if we're impersonating someone
     if session[:impersonating_person_id]
       begin

@@ -8,16 +8,20 @@ class Organizations::CheckInsController < ApplicationController
   def show
     authorize @person, :view_check_ins?
     
+    puts "DEBUG: Loading check-ins for #{@person.display_name}"
+    
     # Load or build all check-in types (spreadsheet-style)
     @position_check_in = load_or_build_position_check_in
     @assignment_check_ins = load_or_build_assignment_check_ins
     @aspiration_check_ins = load_or_build_aspiration_check_ins
+    
+    puts "DEBUG: Loaded #{@assignment_check_ins.count} assignment check-ins"
   end
   
   def update
     # Parse giant form and update all check-ins
     update_position_check_in if params[:position_check_in] || params['[position_check_in]']
-    update_assignment_check_ins if params[:assignment_check_ins]
+    update_assignment_check_ins if params[:assignment_check_ins] || params['[assignment_check_ins]']
     update_aspiration_check_ins if params[:aspiration_check_ins]
     
     redirect_to organization_person_check_ins_path(@organization, @person),
@@ -53,8 +57,16 @@ class Organizations::CheckInsController < ApplicationController
   end
 
   def load_or_build_assignment_check_ins
-    # Implemented in Phase 2
-    []
+    # Get all active assignment tenures for this teammate
+    active_tenures = AssignmentTenure.joins(:assignment)
+                                    .where(teammate: @teammate)
+                                    .where(ended_at: nil)
+                                    .includes(:assignment)
+    
+    # Find or create check-ins for each active assignment
+    active_tenures.map do |tenure|
+      AssignmentCheckIn.find_or_create_open_for(@teammate, tenure.assignment)
+    end.compact
   end
 
   def load_or_build_aspiration_check_ins
@@ -63,7 +75,44 @@ class Organizations::CheckInsController < ApplicationController
   end
 
   def update_assignment_check_ins
-    # Implemented in Phase 2
+    assignment_check_ins_params = params[:assignment_check_ins] || params['[assignment_check_ins]']
+    return unless assignment_check_ins_params
+
+    assignment_check_ins_params.each do |check_in_id, check_in_params|
+      assignment_id = check_in_params[:assignment_id]
+      next unless assignment_id
+
+      assignment = Assignment.find(assignment_id)
+      check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
+      next unless check_in
+
+      # Update check-in fields
+      check_in.assign_attributes(
+        employee_rating: check_in_params[:employee_rating],
+        manager_rating: check_in_params[:manager_rating],
+        employee_private_notes: check_in_params[:employee_private_notes],
+        manager_private_notes: check_in_params[:manager_private_notes],
+        actual_energy_percentage: check_in_params[:actual_energy_percentage],
+        employee_personal_alignment: check_in_params[:employee_personal_alignment]
+      )
+
+      # Handle completion status
+      if check_in_params[:status] == 'complete'
+        if @view_mode == :employee
+          check_in.complete_employee_side!
+        elsif @view_mode == :manager
+          check_in.complete_manager_side!(completed_by: current_person)
+        end
+      elsif check_in_params[:status] == 'draft'
+        if @view_mode == :employee
+          check_in.uncomplete_employee_side!
+        elsif @view_mode == :manager
+          check_in.uncomplete_manager_side!
+        end
+      end
+
+      check_in.save!
+    end
   end
 
   def update_aspiration_check_ins

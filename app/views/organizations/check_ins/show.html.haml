@@ -31,7 +31,18 @@
                check_in: @position_check_in, 
                view_mode: @view_mode
   
-  -# Assignment Sections (Phase 2)
+  -# Assignment Sections
+  - if @assignment_check_ins&.any?
+    - puts "DEBUG: Rendering #{@assignment_check_ins.count} assignment check-ins"
+    - @assignment_check_ins.each do |check_in|
+      .row.mt-4
+        .col-12
+          = render 'assignment_check_in_form',
+                   form: f,
+                   check_in: check_in,
+                   view_mode: @view_mode
+  - else
+    - puts "DEBUG: No assignment check-ins to render"
   -# Aspiration Sections (Phase 3)
   
   .row.mt-4

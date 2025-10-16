@@ -18,9 +18,11 @@ class CheckInFinalizationService
         results[:position] = position_result.value
       end
       
-      # Finalize assignments if selected (Phase 2)
+      # Finalize assignments if selected
       if @params[:finalize_assignments]
-        # Implementation in Phase 2
+        assignment_results = finalize_assignments
+        return assignment_results unless assignment_results.ok?
+        results[:assignments] = assignment_results.value
       end
       
       # Finalize aspirations if selected (Phase 3)
@@ -41,6 +43,32 @@ class CheckInFinalizationService
   end
   
   private
+  
+  def finalize_assignments
+    assignment_results = []
+    
+    return Result.ok([]) unless @params[:assignment_check_ins]
+    
+    @params[:assignment_check_ins].each do |check_in_id, assignment_params|
+      assignment_id = assignment_params[:assignment_id]
+      next unless assignment_id
+      
+      check_in = AssignmentCheckIn.find(check_in_id)
+      next unless check_in.ready_for_finalization?
+      
+      result = Finalizers::AssignmentCheckInFinalizer.new(
+        check_in: check_in,
+        official_rating: assignment_params[:official_rating],
+        shared_notes: assignment_params[:shared_notes],
+        finalized_by: @finalized_by
+      ).finalize
+      
+      return result unless result.ok?
+      assignment_results << result.value
+    end
+    
+    Result.ok(assignment_results)
+  end
   
   def finalize_position
     check_in = PositionCheckIn.where(teammate: @teammate).ready_for_finalization.first
@@ -93,7 +121,7 @@ class CheckInFinalizationService
       {
         assignment_id: tenure.assignment_id,
         anticipated_energy: tenure.anticipated_energy_percentage,
-        official_rating: tenure.official_assignment_rating,
+        official_rating: tenure.official_rating,
         rated_at: tenure.updated_at.to_date.to_s
       }
     end
@@ -117,6 +145,12 @@ class CheckInFinalizationService
   
   def link_snapshot_to_check_ins(results, snapshot)
     results[:position][:check_in].update!(maap_snapshot: snapshot) if results[:position]
-    # Link assignments and aspirations in later phases
+    
+    # Link assignment check-ins
+    if results[:assignments]
+      results[:assignments].each do |assignment_result|
+        assignment_result[:check_in].update!(maap_snapshot: snapshot)
+      end
+    end
   end
 end

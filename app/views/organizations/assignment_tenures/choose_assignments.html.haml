@@ -17,7 +17,7 @@
 
 - content_for :top_actions do
   - if @available_assignments.any?
-    = form_with url: update_assignments_organization_assignment_tenure_path(@organization, @person), method: :post, local: true, id: "assignments-form" do |form|
+    = form_with url: update_assignments_organization_assignment_tenure_path(@organization, @person), method: :post, local: true, id: "assignments-form-top" do |form|
       = form.submit "Add Selected Assignments", class: "btn btn-primary"
 
 .row

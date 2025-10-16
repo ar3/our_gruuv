@@ -61,17 +61,17 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
 
   describe 'GET #show' do
     it 'returns http success' do
-      get :show, params: { organization_id: company.id, id: employee.id }
+      get :show, params: { organization_id: company.id, person_id: employee.id }
       expect(response).to have_http_status(:success)
     end
 
     it 'loads check-ins in progress' do
-      get :show, params: { organization_id: company.id, id: employee.id }
+      get :show, params: { organization_id: company.id, person_id: employee.id }
       expect(assigns(:check_ins_in_progress)).to include(check_in1, check_in2)
     end
 
     it 'sets is_manager correctly' do
-      get :show, params: { organization_id: company.id, id: employee.id }
+      get :show, params: { organization_id: company.id, person_id: employee.id }
       expect(assigns(:is_manager)).to be true
     end
   end
@@ -80,7 +80,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
     let(:valid_params) do
       {
         organization_id: company.id,
-        id: employee.id,
+        person_id: employee.id,
         "check_in_#{check_in1.id}_final_rating" => 'exceeding',
         "check_in_#{check_in1.id}_shared_notes" => 'Great work on this assignment!',
         "check_in_#{check_in1.id}_close_rating" => 'true',
@@ -258,7 +258,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
     let(:valid_params) do
       {
         organization_id: company.id,
-        id: employee.id,
+        person_id: employee.id,
         check_in_id: check_in1.id,
         final_rating: 'exceeding',
         shared_notes: 'Great work!',

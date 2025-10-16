@@ -8,7 +8,7 @@ class Organizations::FinalizationsController < ApplicationController
   def show
     # Load all ready-to-finalize check-ins (for managers)
     @position_check_in = PositionCheckIn.where(teammate: @teammate).ready_for_finalization.first
-    @assignment_check_ins = [] # Placeholder for Phase 2
+    @assignment_check_ins = AssignmentCheckIn.where(teammate: @teammate).ready_for_finalization
     
     # If no ready check-ins, load the most recent finalized ones (for employees to acknowledge)
     if @position_check_in.nil?
@@ -22,8 +22,7 @@ class Organizations::FinalizationsController < ApplicationController
     result = CheckInFinalizationService.new(
       teammate: @teammate,
       finalization_params: finalization_params,
-      finalized_by: current_person,
-      request_info: build_request_info
+      finalized_by: current_person
     ).call
     
     if result.ok?
@@ -58,9 +57,10 @@ class Organizations::FinalizationsController < ApplicationController
   def finalization_params
     params.permit(
       :finalize_position,
+      :finalize_assignments,
       :position_official_rating,
       :position_shared_notes,
-      finalize_assignments: [],
+      assignment_check_ins: [:assignment_id, :official_rating, :shared_notes],
       finalize_aspirations: []
       # Add more params in later phases
     )

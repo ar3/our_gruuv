@@ -1,8 +1,9 @@
 class AssignmentCheckIn < ApplicationRecord
-  belongs_to :teammate
+  include CheckInBehavior
+  
   belongs_to :assignment
   belongs_to :manager_completed_by, class_name: 'Person', optional: true
-  belongs_to :finalized_by, class_name: 'Person', optional: true
+  belongs_to :maap_snapshot, optional: true
 
   # Enums for ratings
   enum :employee_rating, {
@@ -45,19 +46,8 @@ class AssignmentCheckIn < ApplicationRecord
   # Custom validation to prevent multiple open check-ins per teammate per assignment
   validate :only_one_open_check_in_per_teammate_assignment
 
-  # Scopes
-  scope :recent, -> { order(check_in_started_on: :desc) }
-  scope :for_teammate, ->(teammate) { where(teammate: teammate) }
-  scope :for_assignment, ->(assignment) { where(assignment: assignment) }
-  scope :open, -> { where(official_check_in_completed_at: nil) }
-  scope :closed, -> { where.not(official_check_in_completed_at: nil) }
-  
-  # Completion tracking scopes
-  scope :employee_completed, -> { where.not(employee_completed_at: nil) }
-  scope :manager_completed, -> { where.not(manager_completed_at: nil) }
-  scope :officially_completed, -> { where.not(official_check_in_completed_at: nil) }
-  scope :ready_for_finalization, -> { where.not(employee_completed_at: nil).where.not(manager_completed_at: nil).where(official_check_in_completed_at: nil) }
-  scope :not_ready_for_finalization, -> { where(employee_completed_at: nil).or(where(manager_completed_at: nil)) }
+  # Virtual attribute for form handling
+  attr_accessor :status
 
   # Instance methods
   def rating_display
@@ -84,13 +74,6 @@ class AssignmentCheckIn < ApplicationRecord
     (check_in_started_on - assignment_tenure.started_at.to_date).to_i
   end
 
-  def open?
-    official_check_in_completed_at.nil?
-  end
-
-  def closed?
-    !open?
-  end
 
   def self.average_days_between_check_ins(teammate)
     check_ins = for_teammate(teammate).order(:check_in_started_on)
@@ -106,12 +89,12 @@ class AssignmentCheckIn < ApplicationRecord
 
   # Find the associated assignment tenure for this check-in
   def assignment_tenure
-    @assignment_tenure ||= AssignmentTenure.most_recent_for(teammate.person, assignment)
+    @assignment_tenure ||= AssignmentTenure.most_recent_for(teammate, assignment)
   end
 
   # Find or create open check-in for a teammate and assignment
   def self.find_or_create_open_for(teammate, assignment)
-    tenure = AssignmentTenure.most_recent_for(teammate.person, assignment)
+    tenure = AssignmentTenure.most_recent_for(teammate, assignment)
     return nil unless tenure
     
     # Find existing open check-in for this teammate/assignment
@@ -128,21 +111,6 @@ class AssignmentCheckIn < ApplicationRecord
   end
 
   # Completion tracking methods
-  def employee_completed?
-    employee_completed_at.present?
-  end
-
-  def manager_completed?
-    manager_completed_at.present?
-  end
-
-  def officially_completed?
-    official_check_in_completed_at.present?
-  end
-
-  def ready_for_finalization?
-    employee_completed? && manager_completed? && !officially_completed?
-  end
 
   def employee_started?
     actual_energy_percentage.present? || employee_personal_alignment.present? || employee_rating.present? || employee_private_notes.present?
@@ -152,31 +120,6 @@ class AssignmentCheckIn < ApplicationRecord
     manager_rating.present? || manager_private_notes.present?
   end
 
-  def complete_employee_side!(completed_by: nil)
-    update!(
-      employee_completed_at: Time.current
-    )
-  end
-
-  def complete_manager_side!(completed_by: nil)
-    update!(
-      manager_completed_at: Time.current,
-      manager_completed_by: completed_by
-    )
-  end
-
-  def uncomplete_employee_side!
-    update!(
-      employee_completed_at: nil
-    )
-  end
-
-  def uncomplete_manager_side!
-    update!(
-      manager_completed_at: nil,
-      manager_completed_by: nil
-    )
-  end
 
   def finalize_check_in!(final_rating: nil, finalized_by: nil)
     raise ArgumentError, "Final rating is required for check-in finalization" if final_rating.blank?

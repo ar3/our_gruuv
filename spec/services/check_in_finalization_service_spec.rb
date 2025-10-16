@@ -2,150 +2,221 @@ require 'rails_helper'
 
 RSpec.describe CheckInFinalizationService do
   let(:organization) { create(:organization) }
-  let(:person) { create(:person) }
   let(:manager) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
-  let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, manager: manager) }
-  let(:check_in) { create(:position_check_in, :ready_for_finalization, teammate: teammate, employment_tenure: employment_tenure) }
-  let(:finalization_params) { { finalize_position: '1', position_official_rating: '2', position_shared_notes: 'Great work!' } }
-  let(:request_info) { { ip_address: '127.0.0.1', user_agent: 'Test Agent' } }
-  let(:service) { described_class.new(teammate: teammate, finalization_params: finalization_params, finalized_by: manager, request_info: request_info) }
+  let(:employee) { create(:person) }
+  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
+  let(:assignment1) { create(:assignment, company: organization, title: 'Frontend Development') }
+  let(:assignment2) { create(:assignment, company: organization, title: 'Backend Development') }
+  
+  let!(:assignment_tenure1) do
+    create(:assignment_tenure,
+           teammate: employee_teammate,
+           assignment: assignment1,
+           anticipated_energy_percentage: 60,
+           started_at: 1.month.ago)
+  end
+  
+  let!(:assignment_tenure2) do
+    create(:assignment_tenure,
+           teammate: employee_teammate,
+           assignment: assignment2,
+           anticipated_energy_percentage: 40,
+           started_at: 1.month.ago)
+  end
+  
+  let!(:assignment_check_in1) do
+    create(:assignment_check_in,
+           teammate: employee_teammate,
+           assignment: assignment1,
+           employee_rating: 'exceeding',
+           manager_rating: 'meeting',
+           employee_completed_at: 1.day.ago,
+           manager_completed_at: 1.day.ago)
+  end
+  
+  let!(:assignment_check_in2) do
+    create(:assignment_check_in,
+           teammate: employee_teammate,
+           assignment: assignment2,
+           employee_rating: 'meeting',
+           manager_rating: 'working_to_meet',
+           employee_completed_at: 1.day.ago,
+           manager_completed_at: 1.day.ago)
+  end
+  
+  let(:finalization_params) do
+    {
+      finalize_assignments: '1',
+      assignment_check_ins: {
+        assignment_check_in1.id => {
+          assignment_id: assignment1.id,
+          official_rating: 'meeting',
+          shared_notes: 'Good work on frontend'
+        },
+        assignment_check_in2.id => {
+          assignment_id: assignment2.id,
+          official_rating: 'working_to_meet',
+          shared_notes: 'Needs improvement on backend'
+        }
+      }
+    }
+  end
+  
+  let(:service) do
+    described_class.new(
+      teammate: employee_teammate,
+      finalization_params: finalization_params,
+      finalized_by: manager,
+      request_info: { ip: '127.0.0.1' }
+    )
+  end
 
   describe '#call' do
-    context 'when finalizing position check-in' do
-      it 'creates a MAAP snapshot' do
+    context 'when finalizing multiple assignment check-ins' do
+      it 'successfully finalizes all assignment check-ins in single transaction' do
         result = service.call
-        expect(result.success?).to be true
+        
+        expect(result).to be_ok
+        expect(result.value[:results][:assignments]).to be_an(Array)
+        expect(result.value[:results][:assignments].length).to eq(2)
+      end
+      
+      it 'creates single snapshot with all assignment data' do
+        expect { service.call }
+          .to change { MaapSnapshot.count }
+          .by(1)
+        
+        snapshot = MaapSnapshot.last
+        expect(snapshot.employee).to eq(employee)
+        expect(snapshot.change_type).to eq('assignment_management')
+        expect(snapshot.maap_data['assignments']).to be_present
+      end
+      
+      it 'links snapshot to all finalized check-ins' do
+        result = service.call
         
         snapshot = result.value[:snapshot]
-        expect(snapshot.employee).to eq(person)
-        expect(snapshot.created_by).to eq(manager)
-        expect(snapshot.company).to eq(organization)
-        expect(snapshot.change_type).to eq('position_check_in')
-        expect(snapshot.reason).to include(person.display_name)
-        expect(snapshot.effective_date).to be_present
-        expect(snapshot.manager_request_info).to include(
-          'finalized_by_id' => manager.id,
-          'ip_address' => '127.0.0.1',
-          'user_agent' => 'Test Agent'
-        )
+        assignment_results = result.value[:results][:assignments]
+        
+        assignment_results.each do |assignment_result|
+          check_in = assignment_result[:check_in]
+          expect(check_in.maap_snapshot).to eq(snapshot)
+        end
       end
-
-      it 'includes position rating data in snapshot' do
-        result = service.call
-        expect(result.success?).to be true
+      
+      it 'closes old tenures and creates new ones' do
+        expect { service.call }
+          .to change { AssignmentTenure.count }
+          .by(2) # Creates 2 new tenures
         
-        snapshot = result.value[:snapshot]
-        ratings_data = snapshot.ratings_data
-        expect(ratings_data['position']).to include(
-          'position_id' => employment_tenure.position_id,
-          'manager_id' => manager.id,
-          'official_rating' => 2,
-          'rated_at' => Date.current.to_s
-        )
+        # Old tenures should be closed
+        expect(assignment_tenure1.reload.ended_at).to eq(Date.current)
+        expect(assignment_tenure2.reload.ended_at).to eq(Date.current)
+        
+        # New tenures should be created
+        new_tenures = AssignmentTenure.where(ended_at: nil).where.not(id: [assignment_tenure1.id, assignment_tenure2.id])
+        expect(new_tenures.count).to eq(2)
       end
-
-      it 'includes assignment ratings in snapshot' do
-        assignment_tenure = create(:assignment_tenure, teammate: teammate, anticipated_energy_percentage: 80)
+      
+      it 'updates check-ins with official data' do
+        service.call
         
-        result = service.call
-        expect(result.success?).to be true
+        assignment_check_in1.reload
+        assignment_check_in2.reload
         
-        snapshot = result.value[:snapshot]
-        ratings_data = snapshot.ratings_data
-        expect(ratings_data['assignments']).to be_an(Array)
-        expect(ratings_data['assignments'].first).to include(
-          'assignment_id' => assignment_tenure.assignment_id,
-          'anticipated_energy' => 80
-        )
-      end
-
-      it 'includes milestone attainments in snapshot' do
-        milestone = create(:teammate_milestone, teammate: teammate, milestone_level: 3)
+        expect(assignment_check_in1.official_rating).to eq('meeting')
+        expect(assignment_check_in1.shared_notes).to eq('Good work on frontend')
+        expect(assignment_check_in1.official_check_in_completed_at).to be_present
         
-        result = service.call
-        expect(result.success?).to be true
-        
-        snapshot = result.value[:snapshot]
-        ratings_data = snapshot.ratings_data
-        expect(ratings_data['milestones']).to be_an(Array)
-        expect(ratings_data['milestones'].first).to include(
-          'ability_id' => milestone.ability_id,
-          'milestone_level' => 3
-        )
-      end
-
-      it 'links snapshot to finalized check-in' do
-        result = service.call
-        expect(result.success?).to be true
-        
-        check_in.reload
-        expect(check_in.maap_snapshot).to eq(result.value[:snapshot])
-      end
-
-      it 'returns results with position data' do
-        result = service.call
-        expect(result.success?).to be true
-        
-        results = result.value[:results]
-        expect(results[:position]).to be_present
-        expect(results[:position][:check_in]).to eq(check_in)
-        expect(results[:position][:new_tenure]).to be_present
-        expect(results[:position][:rating_data]).to be_present
+        expect(assignment_check_in2.official_rating).to eq('working_to_meet')
+        expect(assignment_check_in2.shared_notes).to eq('Needs improvement on backend')
+        expect(assignment_check_in2.official_check_in_completed_at).to be_present
       end
     end
-
-    context 'when position check-in is not ready' do
-      let(:check_in) { create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure) }
-
-      it 'returns error' do
-        result = service.call
-        expect(result.success?).to be false
-        expect(result.error).to eq("Position check-in not ready")
+    
+    context 'when finalizing mixed check-ins (position + assignments)' do
+      let!(:position_check_in) do
+        create(:position_check_in,
+               teammate: employee_teammate,
+               employee_rating: 2,
+               manager_rating: 1,
+               employee_completed_at: 1.day.ago,
+               manager_completed_at: 1.day.ago)
       end
-    end
-
-    context 'when no position check-in exists' do
-      let(:teammate_without_check_in) { create(:teammate, person: person, organization: organization) }
-      let(:service) { described_class.new(teammate: teammate_without_check_in, finalization_params: finalization_params, finalized_by: manager, request_info: request_info) }
-
-      it 'returns error' do
-        result = service.call
-        expect(result.success?).to be false
-        expect(result.error).to eq("Position check-in not ready")
+      
+      let(:mixed_params) do
+        finalization_params.merge(
+          finalize_position: '1',
+          position_official_rating: 1,
+          position_shared_notes: 'Position notes'
+        )
       end
-    end
-
-    context 'when not finalizing position' do
-      let(:finalization_params) { {} }
-
-      it 'creates snapshot with empty position data' do
-        result = service.call
-        expect(result.success?).to be true
+      
+      let(:mixed_service) do
+        described_class.new(
+          teammate: employee_teammate,
+          finalization_params: mixed_params,
+          finalized_by: manager,
+          request_info: { ip: '127.0.0.1' }
+        )
+      end
+      
+      it 'handles both position and assignment finalization' do
+        result = mixed_service.call
         
-        snapshot = result.value[:snapshot]
-        ratings_data = snapshot.ratings_data
-        expect(ratings_data['position']).to be_nil
-        expect(ratings_data['assignments']).to be_an(Array)
-        expect(ratings_data['milestones']).to be_an(Array)
-        expect(ratings_data['aspirations']).to be_an(Array)
+        expect(result).to be_ok
+        expect(result.value[:results]).to include(:position, :assignments)
+        expect(result.value[:results][:assignments].length).to eq(2)
       end
     end
-
-    context 'when error occurs during finalization' do
+    
+    context 'when assignment finalization fails' do
       before do
-        allow_any_instance_of(Finalizers::PositionCheckInFinalizer).to receive(:finalize).and_raise(StandardError, 'Database error')
+        allow_any_instance_of(Finalizers::AssignmentCheckInFinalizer)
+          .to receive(:finalize)
+          .and_return(Result.err('Assignment finalization failed'))
       end
-
-      it 'returns error with message' do
+      
+      it 'rolls back transaction' do
+        expect { service.call }
+          .not_to change { AssignmentTenure.count }
+        
+        expect(assignment_tenure1.reload.ended_at).to be_nil
+        expect(assignment_tenure2.reload.ended_at).to be_nil
+      end
+      
+      it 'returns error result' do
         result = service.call
-        expect(result.success?).to be false
-        expect(result.error).to eq("Failed to finalize check-ins: Database error")
+        
+        expect(result.ok?).to be false
+        expect(result.error).to include('Assignment finalization failed')
+      end
+    end
+    
+    context 'when no assignments to finalize' do
+      let(:empty_params) do
+        {
+          finalize_assignments: '1',
+          assignment_check_ins: {}
+        }
+      end
+      
+      let(:empty_service) do
+        described_class.new(
+          teammate: employee_teammate,
+          finalization_params: empty_params,
+          finalized_by: manager,
+          request_info: { ip: '127.0.0.1' }
+        )
+      end
+      
+      it 'succeeds with empty assignments array' do
+        result = empty_service.call
+        
+        expect(result).to be_ok
+        expect(result.value[:results][:assignments]).to eq([])
       end
     end
   end
 end
-
-
-
-

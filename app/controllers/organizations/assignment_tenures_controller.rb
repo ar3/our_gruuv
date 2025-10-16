@@ -8,6 +8,8 @@ class Organizations::AssignmentTenuresController < ApplicationController
   after_action :verify_authorized
   before_action :log_request_info
 
+  helper_method :assignment_type_for_position, :has_assignment_history?
+
   def show
     authorize @person, :manager?, policy_class: PersonPolicy
     load_assignments_and_check_ins
@@ -70,12 +72,16 @@ class Organizations::AssignmentTenuresController < ApplicationController
   end
 
   def update_assignments
+    Rails.logger.info "DEBUG: update_assignments action called"
+    Rails.logger.info "DEBUG: params: #{params.inspect}"
     authorize @person, :manager?, policy_class: PersonPolicy
     
     if update_person_assignments
-      redirect_to organization_assignment_tenure_path(@organization, @person), notice: 'Assignments updated successfully.'
+      redirect_to organization_person_check_ins_path(@organization, @person), notice: 'Assignments updated successfully.'
     else
       @available_assignments = load_available_assignments
+      @current_assignments = load_person_assignments
+      @assignments_by_organization = group_assignments_by_organization
       render :choose_assignments, status: :unprocessable_entity
     end
   end
@@ -178,9 +184,13 @@ class Organizations::AssignmentTenuresController < ApplicationController
   end
 
   def update_person_assignments
-    return false unless params[:selected_assignments].present?
+    Rails.logger.info "DEBUG: update_person_assignments called with params: #{params.inspect}"
+    Rails.logger.info "DEBUG: params[:assignments]: #{params[:assignments].inspect}"
     
-    selected_assignment_ids = params[:selected_assignments].map(&:to_i)
+    return false unless params[:assignments].present?
+    
+    selected_assignment_ids = params[:assignments].map(&:to_i)
+    Rails.logger.info "DEBUG: selected_assignment_ids: #{selected_assignment_ids.inspect}"
     
     # Create new assignment tenures for selected assignments
     selected_assignment_ids.each do |assignment_id|
@@ -194,11 +204,11 @@ class Organizations::AssignmentTenuresController < ApplicationController
       existing_tenure = teammate.assignment_tenures.where(assignment: assignment).active.first
       
       if existing_tenure.nil?
-        # Create new tenure
+        # Create new tenure with default energy percentage
         teammate.assignment_tenures.create!(
           assignment: assignment,
           started_at: Date.current,
-          anticipated_energy_percentage: assignment.default_energy_percentage
+          anticipated_energy_percentage: 50  # Default fallback since Assignment doesn't have default_energy_percentage
         )
       end
     end
@@ -229,5 +239,23 @@ class Organizations::AssignmentTenuresController < ApplicationController
     Rails.logger.info "Params: #{params.inspect}"
     Rails.logger.info "Current person: #{current_person.inspect}"
     Rails.logger.info "=== END REQUEST INFO ==="
+  end
+
+  # Helper method for views
+  def assignment_type_for_position(assignment)
+    return 'not_applicable' unless @current_employment&.position
+    
+    position_assignment = @current_employment.position.position_assignments.find_by(assignment: assignment)
+    return 'not_applicable' unless position_assignment
+    
+    position_assignment.assignment_type
+  end
+
+  def has_assignment_history?(assignment)
+    # Check if the person has any assignment tenures for this assignment
+    teammate = @person.teammates.find_by(organization: @organization)
+    return false unless teammate
+    
+    teammate.assignment_tenures.where(assignment: assignment).exists?
   end
 end

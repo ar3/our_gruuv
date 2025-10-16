@@ -279,7 +279,11 @@ class Person < ApplicationRecord
     other_teammate = other_person.teammates.find_by(organization: current_organization)
     return false unless other_teammate
     
-    other_teammate.employment_tenures.active.where(company: current_organization).exists?
+    # Check if this person is the manager of the other person's active employment tenure
+    other_teammate.employment_tenures.active
+                  .where(company: current_organization)
+                  .where(manager: self)
+                  .exists?
   end
 
   # Huddle participation methods

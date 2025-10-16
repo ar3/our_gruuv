@@ -1,0 +1,450 @@
+Run options:
+  include {locations: {"./spec/system/assignment_check_in_integration_spec.rb" => [177]}}
+  exclude {critical: true}
+
+Assignment Check-In Integration
+  Assignment Check-In Completion Flow
+DEBUG: Loading check-ins for John Doe
+DEBUG: Loaded 1 assignment check-ins
+DEBUG: Rendering 1 assignment check-ins
+Page HTML for uncompleting test:
+<html><head><style type="text/css">.turbo-progress-bar {
+  position: fixed;
+  display: block;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: #0076ff;
+  z-index: 2147483647;
+  transition:
+    width 300ms ease-out,
+    opacity 150ms 150ms ease-in;
+  transform: translate3d(0, 0, 0);
+}
+</style>
+<title>OurGruuv</title>
+<meta content="width=device-width,initial-scale=1" name="viewport">
+<meta content="yes" name="apple-mobile-web-app-capable">
+<meta content="yes" name="mobile-web-app-capable">
+
+
+
+<!-- Enable PWA manifest for installable apps -->
+<link rel="manifest" href="/manifest.json">
+<!-- Favicon links for all devices and browsers -->
+<link href="/favicon.ico" rel="icon" type="image/x-icon">
+<link href="/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png">
+<link href="/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png">
+<link href="/apple-touch-icon.png" rel="apple-touch-icon">
+<link href="/android-chrome-192x192.png" rel="icon" sizes="192x192" type="image/png">
+<link href="/android-chrome-512x512.png" rel="icon" sizes="512x512" type="image/png">
+<!-- Includes all stylesheet files in app/assets/stylesheets -->
+<link rel="stylesheet" href="/assets/application-2935ba19.css" data-turbo-track="reload">
+<script type="importmap" data-turbo-track="reload">{
+  "imports": {
+    "application": "/assets/application-6df8b64a.js",
+    "@hotwired/turbo-rails": "/assets/turbo.min-3a2e143f.js",
+    "@hotwired/stimulus": "/assets/stimulus.min-4b1e420e.js",
+    "@hotwired/stimulus-loading": "/assets/stimulus-loading-1fc53fe7.js",
+    "bootstrap": "/assets/bootstrap.bundle.min-7e180834.js",
+    "highcharts": "https://ga.jspm.io/npm:highcharts@11.3.0/highcharts.js",
+    "controllers/application": "/assets/controllers/application-f43e3a1a.js",
+    "controllers/employment_form_controller": "/assets/controllers/employment_form_controller-e89d0d08.js",
+    "controllers/hello_controller": "/assets/controllers/hello_controller-708796bd.js",
+    "controllers": "/assets/controllers/index-ee64e1f1.js",
+    "controllers/login_controller": "/assets/controllers/login_controller-3e1f5c4e.js",
+    "controllers/organization_selection_controller": "/assets/controllers/organization_selection_controller-4e5b1770.js",
+    "controllers/position_assignments_controller": "/assets/controllers/position_assignments_controller-c5d0cdd2.js",
+    "controllers/slack_test_controller": "/assets/controllers/slack_test_controller-db85d432.js"
+  }
+}</script>
+<link rel="modulepreload" href="/assets/application-6df8b64a.js">
+<link rel="modulepreload" href="/assets/turbo.min-3a2e143f.js">
+<link rel="modulepreload" href="/assets/stimulus.min-4b1e420e.js">
+<link rel="modulepreload" href="/assets/stimulus-loading-1fc53fe7.js">
+<link rel="modulepreload" href="/assets/bootstrap.bundle.min-7e180834.js">
+<link rel="modulepreload" href="https://ga.jspm.io/npm:highcharts@11.3.0/highcharts.js">
+<link rel="modulepreload" href="/assets/controllers/application-f43e3a1a.js">
+<link rel="modulepreload" href="/assets/controllers/employment_form_controller-e89d0d08.js">
+<link rel="modulepreload" href="/assets/controllers/hello_controller-708796bd.js">
+<link rel="modulepreload" href="/assets/controllers/index-ee64e1f1.js">
+<link rel="modulepreload" href="/assets/controllers/login_controller-3e1f5c4e.js">
+<link rel="modulepreload" href="/assets/controllers/organization_selection_controller-4e5b1770.js">
+<link rel="modulepreload" href="/assets/controllers/position_assignments_controller-c5d0cdd2.js">
+<link rel="modulepreload" href="/assets/controllers/slack_test_controller-db85d432.js">
+<script type="module">import "application"</script>
+<!-- Highcharts for charts -->
+<script defer="" src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.3.0/highcharts.js"></script>
+</head>
+<body>
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+</div>
+<!-- Main Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand fw-bold" href="/organizations/409/dashboard">Organization 1's Gruuv
+</a><button aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbarMain" data-bs-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<div class="collapse navbar-collapse" id="navbarMain">
+<ul class="navbar-nav me-auto">
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+Align
+</a>
+<ul class="dropdown-menu">
+<li><a class="dropdown-item" href="/organizations/409/abilities">Milestones</a></li>
+<li><a class="dropdown-item" href="/accountability">Accountability</a></li>
+<li><a class="dropdown-item" href="/organizations/409/positions">Positions</a></li>
+</ul>
+</li>
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+Collab
+</a>
+<ul class="dropdown-menu">
+<li><a class="dropdown-item" href="/good-issues">Oppties</a></li>
+<li><a class="dropdown-item" href="/diverge-converge">D&lt;=&gt;C</a></li>
+<li><a class="dropdown-item" href="/huddles">Huddles</a></li>
+</ul>
+</li>
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+Transform
+</a>
+<ul class="dropdown-menu">
+<li><a class="dropdown-item" href="/team-signals">Signals</a></li>
+<li><a class="dropdown-item" href="/hypothesis-management">Hypotheses</a></li>
+<li><a class="dropdown-item" href="/okr3-management">OKR3s</a></li>
+</ul>
+</li>
+</ul>
+<ul class="navbar-nav">
+<li class="nav-item me-3">
+<a class="nav-link" title="Search" href="/search"><i class="bi bi-search"></i>
+</a></li>
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+<i class="bi bi-person-circle me-1"></i>
+Manager Guy
+</a>
+<ul class="dropdown-menu dropdown-menu-end">
+<li><a class="dropdown-item" href="/profile">My Profile</a></li>
+<li><a class="dropdown-item" href="/organizations/409/dashboard">Home / Dashboard</a></li>
+<li>
+<hr class="dropdown-divider">
+</li>
+<li class="dropdown-header">
+<small class="text-muted">Current Organization</small>
+</li>
+<li>
+<a class="dropdown-item text-primary" href="/organizations/409"><i class="bi bi-building me-2"></i>
+Organization 1
+</a></li>
+<li>
+<hr class="dropdown-divider">
+</li>
+<li><a class="dropdown-item" href="/organizations/409/employees">View Teammates</a></li>
+<li><a class="dropdown-item" href="/organizations/switch">Switch Organization</a></li>
+<li>
+<hr class="dropdown-divider">
+</li>
+<li><form style="display: inline;" class="button_to" method="post" action="/logout"><input type="hidden" name="_method" value="delete" autocomplete="off"><button class="dropdown-item" type="submit">Logout</button></form></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<!-- Main Content Container with Structured Areas -->
+<div class="container mt-4">
+<!-- Header Area - Title (left) + Primary Action/View Switcher (right) -->
+<div class="row mb-1">
+<div class="col-12">
+<div class="d-flex justify-content-between align-items-center">
+<div class="flex-grow-1">
+<h1 class="mb-0">Check-Ins for John Doe</h1>
+<p class="text-muted mb-0">View Mode: Manager</p>
+
+</div>
+<div class="ms-3">
+<div class="dropdown">
+<button aria-expanded="false" class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<i class="bi bi-eye me-2"></i>
+Check-In Mode
+</button>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="/people/654/public"><i class="bi bi-globe me-2"></i>
+Public Mode
+</a></li>
+<li>
+<div class="dropdown-item text-muted disabled">
+<i class="bi bi-people me-2"></i>
+Teammate Mode
+<i class="bi bi-exclamation-triangle text-warning ms-2" data-bs-title="You must be an active employee in the same organization to view the teammate version" data-bs-toggle="tooltip"></i>
+</div>
+</li>
+<li>
+<a class="dropdown-item" href="/organizations/409/people/654/complete_picture"><i class="bi bi-graph-up me-2"></i>
+Complete Picture
+</a></li>
+<li>
+<div class="dropdown-item text-muted">
+<i class="bi bi-chat-square-text me-2"></i>
+Check-In Mode (Active)
+<i class="bi bi-check-circle text-success ms-2"></i>
+</div>
+</li>
+<li>
+<a class="dropdown-item" href="/organizations/409/people/654/finalization"><i class="bi bi-check-circle me-2"></i>
+Finalization Mode
+</a></li>
+<li>
+<a class="dropdown-item" href="/organizations/409/assignment_tenures/654"><i class="bi bi-clipboard-check me-2"></i>
+Assignment Mode
+</a></li>
+<li>
+<a class="dropdown-item" href="/people/654"><i class="bi bi-gear me-2"></i>
+Management Mode
+</a></li>
+<li>
+<a class="dropdown-item" href="/organizations/409/employees/654/audit"><i class="bi bi-clock-history me-2"></i>
+Audit View
+</a></li>
+</ul>
+</div>
+
+
+</div>
+<!-- Action Area - Top-right actions (optional, designed for 1 button but flexible) -->
+</div>
+</div>
+</div>
+<!-- Navigation Area - "Back to X" links (optional) -->
+<div class="row mb-3">
+<div class="col-12">
+<a class="go-back-link" href="/organizations/409/assignment_tenures/654"><i class="bi bi-arrow-left me-2"></i>
+Back to Assignments
+</a>
+</div>
+</div>
+<!-- Impersonation Warning Banner -->
+<!-- Content Area - Main page content -->
+<form action="/organizations/409/people/654/check_ins" accept-charset="UTF-8" method="post"><input type="hidden" name="_method" value="patch" autocomplete="off"><div class="row mt-4">
+<div class="col-12">
+<div class="card mb-4">
+<div class="card-header">
+<h3>Position: Software Engineer - 2.0</h3>
+<span class="badge badge-secondary">📝 In Progress</span>
+</div>
+<div class="card-body">
+<div class="form-group">
+<label for="_position_check_in_manager_rating">Where do you think John stands?</label>
+<select class="form-control" name="[position_check_in][manager_rating]" id="_position_check_in_manager_rating"><option value="">Select your assessment</option>
+<option value="-3">🔴 Performance Improvement Plan - Monitoring after PIP</option>
+<option value="-2">⭕️ Written Warning - Monitoring after written warning</option>
+<option value="-1">🟠 Verbal Warning - Monitoring after verbal warning</option>
+<option value="1">🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements</option>
+<option value="2">🔵 Praising/Trusting - Consistent strong performance</option>
+<option value="3">🟢 Looking to Reward - Exceptional, seeking to increase responsibility</option></select>
+</div>
+<div class="form-group">
+<label for="_position_check_in_manager_private_notes">Your private notes</label>
+<textarea rows="3" class="form-control" name="[position_check_in][manager_private_notes]" id="_position_check_in_manager_private_notes"></textarea>
+</div>
+<div class="form-group">
+<label>Status</label>
+<div class="form-check">
+<input type="radio" value="draft" checked="checked" name="[position_check_in][status]" id="_position_check_in_status_draft">
+<label for="_position_check_in_status_draft">Save as Draft</label>
+</div>
+<div class="form-check">
+<input type="radio" value="complete" name="[position_check_in][status]" id="_position_check_in_status_complete">
+<label for="_position_check_in_status_complete">Mark Ready for Finalization</label>
+</div>
+</div>
+
+
+</div>
+</div>
+
+</div>
+</div>
+<div class="row mt-4">
+<div class="col-12">
+<div class="card mb-4">
+<div class="card-header">
+<h3>Assignment: Frontend Development</h3>
+<span class="badge badge-warning">⏳ Ready to Finalize</span>
+</div>
+<div class="card-body">
+<div class="row">
+<div class="col-md-8">
+<div class="card border-primary">
+<div class="card-header bg-primary text-white">
+<h5 class="mb-0">Your Assessment</h5>
+</div>
+<div class="card-body">
+<p class="mb-2">
+<strong>Rating:</strong>
+Exceeding
+</p>
+<p class="mb-2">
+<strong>Notes:</strong>
+</p><p>John is exceeding expectations</p>
+<p></p>
+</div>
+</div>
+</div>
+<div class="col-md-4">
+<div class="card border-info">
+<div class="card-header bg-info text-white">
+<h5 class="mb-0">Status</h5>
+</div>
+<div class="card-body text-center">
+<p class="mb-3">John is ready to finalize this check-in</p>
+<a class="btn btn-success btn-sm" data-confirm="Are you ready to finalize this check-in? This will create the official rating." href="/organizations/409/people/654/finalization">Go to Finalization</a>
+</div>
+</div>
+</div>
+</div>
+<div class="form-group mt-3">
+<label>Status</label>
+<div class="form-check">
+<input type="radio" value="complete" checked="checked" name="[assignment_check_in][status]" id="_assignment_check_in_status_complete">
+<label class="form-check-label" for="_assignment_check_in_status_complete">Ready for Finalization</label>
+</div>
+<div class="form-check">
+<input type="radio" value="draft" name="[assignment_check_in][status]" id="_assignment_check_in_status_draft">
+<label class="form-check-label" for="_assignment_check_in_status_draft">Make Changes</label>
+</div>
+<div class="small text-muted mt-1">
+Select "Make Changes" to edit your assessment and notes
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+</div>
+<div class="row mt-4">
+<div class="col-12">
+<input type="submit" name="commit" value="Save All Check-Ins" class="btn btn-primary btn-lg" data-disable-with="Save All Check-Ins">
+</div>
+</div>
+</form>
+</div>
+<!-- Participant Detail Modal -->
+<div aria-hidden="true" aria-labelledby="participantDetailModalLabel" class="modal fade" id="participantDetailModal" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title" id="participantDetailModalLabel">Participant Details</h5>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<div class="row">
+<div class="col-md-6">
+<p>
+<strong>Name:</strong>
+<span id="modalParticipantName"></span>
+</p>
+<p>
+<strong>Role:</strong>
+<span id="modalParticipantRole"></span>
+</p>
+<p>
+<strong>Status:</strong>
+<span id="modalParticipantStatus"></span>
+</p>
+</div>
+<div class="col-md-6">
+<h6>Ratings</h6>
+<p>
+<strong>Informed:</strong>
+<span id="modalInformedRating"></span>
+</p>
+<p>
+<strong>Connected:</strong>
+<span id="modalConnectedRating"></span>
+</p>
+<p>
+<strong>Goals:</strong>
+<span id="modalGoalsRating"></span>
+</p>
+<p>
+<strong>Valuable:</strong>
+<span id="modalValuableRating"></span>
+</p>
+<p>
+<strong>Total Score:</strong>
+<span id="modalTotalScore"></span>
+</p>
+</div>
+</div>
+<div class="row mt-3">
+<div class="col-md-6">
+<h6>Personal Conflict Style</h6>
+<div id="modalPersonalConflict"></div>
+</div>
+<div class="col-md-6">
+<h6>Team Conflict Style</h6>
+<div id="modalTeamConflict"></div>
+</div>
+</div>
+<div class="row mt-3">
+<div class="col-12">
+<h6>Appreciation</h6>
+<div id="modalAppreciation"></div>
+</div>
+</div>
+<div class="row mt-3">
+<div class="col-12">
+<h6>Change Suggestion</h6>
+<div id="modalChangeSuggestion"></div>
+</div>
+</div>
+<div class="row mt-3">
+<div class="col-12">
+<h6>Private Feedback</h6>
+<div id="modalPrivateFeedback"></div>
+</div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Close</button>
+</div>
+</div>
+</div>
+</div>
+<!-- JavaScript content area -->
+
+
+
+</body></html>
+Looking for radio button: assignment_check_ins_34_status_draft
+    allows uncompleting and making changes (FAILED - 1)
+
+Failures:
+
+  1) Assignment Check-In Integration Assignment Check-In Completion Flow allows uncompleting and making changes
+     Failure/Error: choose "assignment_check_ins_#{assignment_check_in.id}_status_draft"
+
+     Capybara::ElementNotFound:
+       Unable to find radio button "assignment_check_ins_34_status_draft" that is not disabled
+
+     [Screenshot Image]: /Users/ar3/Create/our_gruuv/tmp/capybara/failures_r_spec_example_groups_assignment_check_in_integration_assignment_check_in_completion_flow_allows_uncompleting_and_making_changes_850.png
+
+
+     # ./spec/system/assignment_check_in_integration_spec.rb:197:in 'block (3 levels) in <top (required)>'
+
+Finished in 10.72 seconds (files took 6.46 seconds to load)
+1 example, 1 failure
+
+Failed examples:
+
+rspec ./spec/system/assignment_check_in_integration_spec.rb:177 # Assignment Check-In Integration Assignment Check-In Completion Flow allows uncompleting and making changes
+

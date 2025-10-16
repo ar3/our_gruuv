@@ -106,11 +106,11 @@ get '/login', to: 'auth#login', as: :login
     # Assignment tenures - unified interface for managing assignments and check-ins
     resources :assignment_tenures, module: :organizations, only: [:show, :update] do
       collection do
-        post :update_assignments
         get :changes_confirmation
       end
       member do
         get :choose_assignments
+        post :update_assignments
       end
     end
     
@@ -250,6 +250,17 @@ resources :interest_submissions, path: 'interest', only: [:index, :new, :create,
 # Identity management
 post '/profile/identities/connect_google', to: 'people#connect_google_identity', as: :connect_google_identity
 delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconnect_identity
+  
+  # Test-only routes (only loaded in test environment)
+  if Rails.env.test?
+    namespace :test do
+      get 'auth/sign_in', to: 'auth#sign_in'
+      post 'auth/sign_in', to: 'auth#sign_in'
+      get 'auth/sign_out', to: 'auth#sign_out'
+      post 'auth/sign_out', to: 'auth#sign_out'
+      get 'auth/current_user', to: 'auth#current_user'
+    end
+  end
   
   # Session management
   delete '/logout', to: 'application#logout', as: :logout

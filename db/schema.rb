@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_13_171943) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_16_202942) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -95,10 +95,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_13_171943) do
     t.integer "manager_completed_by_id"
     t.integer "finalized_by_id"
     t.bigint "teammate_id"
+    t.bigint "maap_snapshot_id"
     t.index ["assignment_id", "check_in_started_on"], name: "idx_on_assignment_id_check_in_started_on_9b32849637"
     t.index ["assignment_id"], name: "index_assignment_check_ins_on_assignment_id"
     t.index ["employee_completed_at"], name: "index_assignment_check_ins_on_employee_completed_at"
     t.index ["finalized_by_id"], name: "index_assignment_check_ins_on_finalized_by_id"
+    t.index ["maap_snapshot_id"], name: "index_assignment_check_ins_on_maap_snapshot_id"
     t.index ["manager_completed_at"], name: "index_assignment_check_ins_on_manager_completed_at"
     t.index ["manager_completed_by_id"], name: "index_assignment_check_ins_on_manager_completed_by_id"
     t.index ["official_check_in_completed_at"], name: "index_assignment_check_ins_on_official_check_in_completed_at"
@@ -123,6 +125,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_13_171943) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "teammate_id"
+    t.string "official_rating"
     t.index ["assignment_id"], name: "index_assignment_tenures_on_assignment_id"
     t.index ["teammate_id"], name: "index_assignment_tenures_on_teammate_id"
     t.check_constraint "anticipated_energy_percentage IS NULL OR anticipated_energy_percentage >= 0 AND anticipated_energy_percentage <= 100", name: "check_anticipated_energy_percentage_range"
@@ -639,6 +642,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_13_171943) do
   add_foreign_key "assignment_abilities", "abilities"
   add_foreign_key "assignment_abilities", "assignments"
   add_foreign_key "assignment_check_ins", "assignments"
+  add_foreign_key "assignment_check_ins", "maap_snapshots"
   add_foreign_key "assignment_check_ins", "people", column: "finalized_by_id"
   add_foreign_key "assignment_check_ins", "teammates"
   add_foreign_key "assignment_outcomes", "assignments"
