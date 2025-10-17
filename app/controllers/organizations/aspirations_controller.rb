@@ -1,5 +1,5 @@
-class Organizations::AspirationsController < ApplicationController
-  before_action :set_organization
+class Organizations::AspirationsController < Organizations::OrganizationNamespaceBaseController
+  before_action :authenticate_person!
   before_action :set_aspiration, only: [:show, :edit, :update, :destroy]
 
   def index
@@ -17,6 +17,8 @@ class Organizations::AspirationsController < ApplicationController
 
   def new
     @aspiration = @organization.aspirations.build
+    @form = AspirationForm.new(@aspiration)
+    @form.current_person = current_person
     authorize @aspiration
     render layout: 'authenticated-v2-0'
   end
@@ -26,10 +28,12 @@ class Organizations::AspirationsController < ApplicationController
     selected_org_id = aspiration_params[:organization_id] || @organization.id
     selected_org = Organization.find(selected_org_id)
     
-    @aspiration = selected_org.aspirations.build(aspiration_params.except(:organization_id))
+    @aspiration = selected_org.aspirations.build
+    @form = AspirationForm.new(@aspiration)
+    @form.current_person = current_person
     authorize @aspiration
 
-    if @aspiration.save
+    if @form.validate(aspiration_params) && @form.save
       redirect_to organization_aspirations_path(@organization), notice: 'Aspiration was successfully created.'
     else
       render :new, status: :unprocessable_entity
@@ -37,11 +41,15 @@ class Organizations::AspirationsController < ApplicationController
   end
 
   def edit
+    @form = AspirationForm.new(@aspiration)
+    @form.current_person = current_person
     authorize @aspiration
     render layout: 'authenticated-v2-0'
   end
 
   def update
+    @form = AspirationForm.new(@aspiration)
+    @form.current_person = current_person
     authorize @aspiration
 
     # Get the selected organization from params
@@ -49,12 +57,11 @@ class Organizations::AspirationsController < ApplicationController
     selected_org = Organization.find(selected_org_id)
     
     # Update the aspiration with new organization if changed
-    update_params = aspiration_params.except(:organization_id)
     if selected_org_id != @aspiration.organization_id
       @aspiration.organization = selected_org
     end
 
-    if @aspiration.update(update_params)
+    if @form.validate(aspiration_params) && @form.save
       redirect_to organization_aspirations_path(@organization), notice: 'Aspiration was successfully updated.'
     else
       render :edit, status: :unprocessable_entity

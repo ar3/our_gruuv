@@ -11,12 +11,12 @@
       
       %div.card
         %div.card-body
-          = form_with model: [@organization, @aspiration], url: organization_aspiration_path(@organization, @aspiration), local: true do |form|
-            - if @aspiration.errors.any?
+          = form_with model: [@organization, @form], url: organization_aspiration_path(@organization, @aspiration), local: true do |form|
+            - if @form.errors.any?
               %div.alert.alert-danger
-                %h4= "#{pluralize(@aspiration.errors.count, "error")} prohibited this aspiration from being saved:"
+                %h4= "#{pluralize(@form.errors.count, "error")} prohibited this aspiration from being saved:"
                 %ul.mb-0
-                  - @aspiration.errors.full_messages.each do |message|
+                  - @form.errors.full_messages.each do |message|
                     %li= message
             
             = render 'shared/organization_dropdown', form: form, selected_organization: @aspiration.organization
