@@ -79,6 +79,18 @@ class GlobalSearchQuery
   end
 
   def can_view_person?(person)
+    # For search, allow teammates to see each other within the same organization
+    # This is more permissive than the standard show? policy
+    
+    # Users can always see themselves
+    return true if @current_person == person
+    
+    # Users can see others if they're in the same organization
+    return true if @current_organization && 
+                   person.employment_tenures.where(company: @current_organization).exists? &&
+                   @current_person.active_employment_tenure_in?(@current_organization)
+    
+    # Fall back to standard policy for other cases (admins, etc.)
     policy = PersonPolicy.new(@current_person, person)
     policy.show?
   end
