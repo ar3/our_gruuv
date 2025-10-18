@@ -6,7 +6,7 @@
         .card-header.bg-primary.text-white
           %h5.mb-0 Your Assessment
         .card-body
-          = render 'shared/check_ins_and_finalizations/assignment_manager_perspective', check_in: check_in
+          = render 'shared/check_ins_and_finalizations/aspiration_manager_perspective', check_in: check_in
 
     .col-md-4
       - if check_in&.employee_completed?
@@ -27,7 +27,8 @@
 
   .form-group.mt-3
     %label Status
-    = form.fields_for :assignment_check_in, check_in do |af|
+    = form.fields_for :aspiration_check_ins, check_in, index: check_in.id do |af|
+      = af.hidden_field :aspiration_id, value: check_in.aspiration.id
       .form-check
         = af.radio_button :status, 'complete', checked: true
         = af.label :status_complete, 'Ready for Finalization', class: 'form-check-label'
@@ -40,6 +41,6 @@
 
 - else
   -# Manager has not completed their side - show the form
-  = render 'assignment_check_in_in_progress', check_in: check_in, form: form, view_mode: :manager
+  = render 'aspiration_check_in_in_progress', check_in: check_in, form: form, view_mode: :manager
 
 

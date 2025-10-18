@@ -15,7 +15,13 @@ class Organizations::FinalizationsController < ApplicationController
       @position_check_in = PositionCheckIn.where(teammate: @teammate).closed.order(:official_check_in_completed_at).last
     end
     
-    # @aspiration_check_ins = [] # Placeholder for Phase 3 - commented out to avoid NameError
+    # Load aspiration check-ins ready for finalization
+    @aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate).ready_for_finalization
+    
+    # If no ready aspiration check-ins, load the most recent finalized ones (for employees to acknowledge)
+    if @aspiration_check_ins.empty?
+      @aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate).closed.order(:official_check_in_completed_at).last(5)
+    end
   end
   
   def create
@@ -58,10 +64,11 @@ class Organizations::FinalizationsController < ApplicationController
     params.permit(
       :finalize_position,
       :finalize_assignments,
+      :finalize_aspirations,
       :position_official_rating,
       :position_shared_notes,
       assignment_check_ins: [:assignment_id, :official_rating, :shared_notes],
-      finalize_aspirations: []
+      aspiration_check_ins: [:aspiration_id, :official_rating, :shared_notes]
       # Add more params in later phases
     )
   end

@@ -43,7 +43,7 @@ RSpec.describe 'Assignment Tenures Management', type: :system, critical: true do
     end
 
     it 'loads assignment tenure management page' do
-      visit organization_assignment_tenure_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
       expect(page).to have_content('Assignment Mode for John Doe')
       expect(page).to have_content('Current Position')
@@ -57,7 +57,7 @@ RSpec.describe 'Assignment Tenures Management', type: :system, critical: true do
     end
 
     it 'shows energy allocation component' do
-      visit organization_assignment_tenure_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
       expect(page).to have_content('Frontend Development')
       expect(page).to have_content('50%')
@@ -66,7 +66,7 @@ RSpec.describe 'Assignment Tenures Management', type: :system, critical: true do
     end
 
     it 'shows position details link' do
-      visit organization_assignment_tenure_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
       expect(page).to have_link('View Position Details')
     end
@@ -89,7 +89,7 @@ RSpec.describe 'Assignment Tenures Management', type: :system, critical: true do
     end
 
     it 'navigates to choose assignments page' do
-      visit organization_assignment_tenure_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
       expect(page).to have_content('Assignment Mode for Jane Smith')
       expect(page).to have_content('No Assignments Found')
@@ -102,7 +102,7 @@ RSpec.describe 'Assignment Tenures Management', type: :system, critical: true do
     end
 
     it 'shows proper back navigation' do
-      visit organization_assignment_tenure_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
       expect(page).to have_link("Back to #{employee_person.display_name}'s Profile")
     end
@@ -140,7 +140,7 @@ RSpec.describe 'Assignment Tenures Management', type: :system, critical: true do
     end
 
     it 'shows assignment with energy allocation' do
-      visit organization_assignment_tenure_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
       expect(page).to have_content('UI Design')
       expect(page).to have_content('30%')
@@ -148,7 +148,7 @@ RSpec.describe 'Assignment Tenures Management', type: :system, critical: true do
     end
 
     it 'shows assignment details and check-in status' do
-      visit organization_assignment_tenure_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
       expect(page).to have_content('UI Design')
       expect(page).to have_content('Started 04/11/2025')
@@ -209,7 +209,7 @@ RSpec.describe 'Assignment Tenures Management', type: :system, critical: true do
     end
 
     it 'navigates between assignment tenure pages' do
-      visit organization_assignment_tenure_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
       expect(page).to have_content('Assignment Mode for Charlie Brown')
 
       click_link 'Add your first assignment'
@@ -220,7 +220,7 @@ RSpec.describe 'Assignment Tenures Management', type: :system, critical: true do
     end
 
     it 'shows view switcher in header' do
-      visit organization_assignment_tenure_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
       expect(page).to have_content('Assignment Mode for Charlie Brown')
       # View switcher should be present in header_action

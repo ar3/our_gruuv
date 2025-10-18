@@ -41,7 +41,7 @@ RSpec.describe 'MaapSnapshot Integration', type: :request do
   describe 'MaapSnapshot Creation' do
     it 'creates MaapSnapshot when form is submitted' do
       # Submit the form
-      patch organization_assignment_tenure_path(organization, employee), params: { person_id: employee.id, reason: 'Test snapshot' }
+      patch organization_person_check_ins_path(organization, employee), params: { person_id: employee.id, reason: 'Test snapshot' }
       
       expect(response).to have_http_status(:redirect)
       
@@ -60,7 +60,7 @@ RSpec.describe 'MaapSnapshot Integration', type: :request do
     end
 
     it 'includes current MAAP data in snapshot' do
-      patch organization_assignment_tenure_path(organization, employee), params: { person_id: employee.id }
+      patch organization_person_check_ins_path(organization, employee), params: { person_id: employee.id }
       
       maap_snapshot = MaapSnapshot.last
       expect(maap_snapshot.maap_data['employment_tenure']).to be_present

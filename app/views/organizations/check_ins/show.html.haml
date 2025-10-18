@@ -7,9 +7,9 @@
 
 - content_for :go_back_link do
   - if @person.active_employment_tenure_for(@organization)
-    = link_to organization_assignment_tenure_path(@organization, @person), class: "go-back-link" do
+    = link_to organization_person_check_ins_path(@organization, @person), class: "go-back-link" do
       %i.bi.bi-arrow-left.me-2
-      Back to Assignments
+      Back to Check-Ins
   - else
     = link_to organization_person_path(@organization, @person), class: "go-back-link" do
       %i.bi.bi-arrow-left.me-2
@@ -43,7 +43,19 @@
                    view_mode: @view_mode
   - else
     - puts "DEBUG: No assignment check-ins to render"
-  -# Aspiration Sections (Phase 3)
+  
+  -# Aspiration Sections
+  - if @aspiration_check_ins&.any?
+    - puts "DEBUG: Rendering #{@aspiration_check_ins.count} aspiration check-ins"
+    - @aspiration_check_ins.each do |check_in|
+      .row.mt-4
+        .col-12
+          = render 'aspiration_check_in_form',
+                   form: f,
+                   check_in: check_in,
+                   view_mode: @view_mode
+  - else
+    - puts "DEBUG: No aspiration check-ins to render"
   
   .row.mt-4
     .col-12

@@ -47,7 +47,7 @@
         
         .row.mt-3
           .col-6
-            = link_to "Add more assignments", choose_assignments_organization_assignment_tenure_path(@organization, @person), class: "btn btn-outline-primary"
+            = link_to "Add more assignments", organization_assignments_path(@organization), class: "btn btn-outline-primary"
           .col-6.text-end
             %small.text-muted Total Energy: 
             %span#energy-total 0%
@@ -58,7 +58,7 @@
           No Assignments Found
         %p.mb-0 No assignments found for #{@person.display_name}.
         %p.mb-0
-          = link_to "Add your first assignment", choose_assignments_organization_assignment_tenure_path(@organization, @person), class: "btn btn-primary"
+          = link_to "Add your first assignment", organization_assignments_path(@organization), class: "btn btn-primary"
 
 -# Hidden field for selected assignments (used when adding new assignments)
 = form.fields_for :assignment_management do |amf|

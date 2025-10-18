@@ -18,319 +18,42 @@
     %i.bi.bi-arrow-left.me-2
     Back to Check-Ins
   
-  - if @position_check_in&.officially_completed?
-    -# Employee Acknowledgment View
-    .card.mb-4
-      .card-header
-        %h3 Position Check-In - Finalized
-        %p.text-muted Completed on #{@position_check_in.official_check_in_completed_at.to_date}
-      
-      .card-body
-        .row
-          .col-md-4
-            .card
-              .card-header Employee Perspective
-              .card-body
-                %p= position_rating_display(@position_check_in.employee_rating)
-                %p.small= simple_format(@position_check_in.employee_private_notes)
-          
-          .col-md-4
-            .card
-              .card-header Manager Perspective
-              .card-body
-                %p= position_rating_display(@position_check_in.manager_rating)
-                %p.small= simple_format(@position_check_in.manager_private_notes)
-          
-          .col-md-4
-            .card.border-success
-              .card-header.bg-success.text-white Official Rating
-              .card-body
-                %h3= position_rating_display(@position_check_in.official_rating)
-                %p.small Finalized by #{@position_check_in.finalized_by.display_name}
-        
-        - if @position_check_in.shared_notes.present?
-          .card.mt-3
-            .card-header Shared Notes
-            .card-body= simple_format(@position_check_in.shared_notes)
-        
-        .alert.alert-info.mt-4
-          %i.bi.bi-info-circle.me-2
-          %strong This check-in has been finalized.
-          = link_to 'View all your check-ins and acknowledgements', audit_organization_employee_path(@organization, @person), class: 'btn btn-sm btn-outline-info ms-2'
+- if @position_check_in&.officially_completed?
+  = render 'position_finalization_section'
+  
+  = render 'assignment_finalization_section'
+
+- elsif current_person == @person
+  = render 'position_finalization_section'
+  
+  = render 'assignment_finalization_section'
+
+- else
+  -# Manager Finalization View
+  = form_with url: organization_person_finalization_path(@organization, @person), method: :post do |f|
+    = render 'position_finalization_section', form: f
     
-    -# Show assignment check-ins if they exist (even when position is finalized)
-    - if @assignment_check_ins&.any?
-      - if current_person == @person
-        -# Employee view of ready assignment check-ins
-        .card.mb-4
-          .card-header
-            %h3 Assignment Check-Ins - Ready for Finalization
-            %p.text-muted Your manager will review and finalize these check-ins
+    = render 'assignment_finalization_section'
+    
+    = render 'aspiration_finalization_section', form: f
+    
+    -# Only show the finalization button if there are check-ins to finalize
+    - if @position_check_in || @assignment_check_ins&.any? || @aspiration_check_ins&.any?
+      .row.mt-4
+        .col-12
+          .alert.alert-warning
+            %strong ⚠️ This will:
+            %ul
+              %li Create MAAP snapshot with complete ratings
+              %li Close selected tenures and open new ones
+              %li Make all notes visible to #{@person.first_name}
+              %li Send notification to #{@person.first_name}
           
-          .card-body
-            - @assignment_check_ins.each do |check_in|
-              .assignment-finalization.mb-4.p-3.border.rounded
-                %h5= check_in.assignment.title
-                
-                .row
-                  .col-md-6
-                    .card.border-primary
-                      .card-header.bg-primary.text-white
-                        %h6.mb-0 Your Assessment
-                      .card-body
-                        %p.mb-1
-                          %strong Rating:
-                          = assignment_rating_display(check_in.employee_rating)
-                        %p.mb-1
-                          %strong Energy:
-                          = "#{check_in.actual_energy_percentage}%"
-                        %p.mb-1
-                          %strong Alignment:
-                          = check_in.employee_personal_alignment&.humanize
-                        %p.mb-0
-                          %strong Notes:
-                          = simple_format(check_in.employee_private_notes)
-                  
-                  .col-md-6
-                    .card.border-info
-                      .card-header.bg-info.text-white
-                        %h6.mb-0 Manager's Assessment
-                      .card-body
-                        %p.mb-1
-                          %strong Rating:
-                          = assignment_rating_display(check_in.manager_rating)
-                        %p.mb-0
-                          %strong Notes:
-                          = simple_format(check_in.manager_private_notes)
-                
-                .alert.alert-info.mt-3
-                  %i.bi.bi-info-circle.me-2
-                  %strong Your manager will review both assessments and set the official rating.
-                  You will be notified when the finalization is complete.
-      - else
-        -# Manager view of ready assignment check-ins
-        = form_with url: organization_person_finalization_path(@organization, @person), method: :post do |f|
-          .card.mb-4
-            .card-header
-              %h3 Assignment Check-Ins
-              = check_box_tag 'finalize_assignments', '1', true
-              = label_tag 'finalize_assignments', 'Finalize Assignments'
-            
-            .card-body
-              - @assignment_check_ins.each do |check_in|
-                .assignment-finalization.mb-4.p-3.border.rounded
-                  %h5= check_in.assignment.title
-                  
-                  .row
-                    .col-md-6
-                      %h6 Employee Perspective
-                      %p.mb-1
-                        %strong Rating:
-                        = assignment_rating_display(check_in.employee_rating)
-                      %p.mb-1
-                        %strong Energy:
-                        = "#{check_in.actual_energy_percentage}%"
-                      %p.mb-1
-                        %strong Alignment:
-                        = check_in.employee_personal_alignment&.humanize
-                      %p.mb-0
-                        %strong Notes:
-                        = simple_format(check_in.employee_private_notes)
-                    
-                    .col-md-6
-                      %h6 Manager Perspective
-                      %p.mb-1
-                        %strong Rating:
-                        = assignment_rating_display(check_in.manager_rating)
-                      %p.mb-0
-                        %strong Notes:
-                        = simple_format(check_in.manager_private_notes)
-                  
-                  .row.mt-3
-                    .col-md-6
-                      .form-group
-                        = label_tag "assignment_check_ins[#{check_in.id}][assignment_id]", "Assignment ID", class: 'sr-only'
-                        = hidden_field_tag "assignment_check_ins[#{check_in.id}][assignment_id]", check_in.assignment.id
-                        
-                        = label_tag "assignment_check_ins[#{check_in.id}][official_rating]", "Official Rating"
-                        = select_tag "assignment_check_ins[#{check_in.id}][official_rating]",
-                                    options_for_select(assignment_rating_options, check_in.manager_rating),
-                                    class: 'form-control'
-                    
-                    .col-md-6
-                      .form-group
-                        = label_tag "assignment_check_ins[#{check_in.id}][shared_notes]", "Shared Notes"
-                        = text_area_tag "assignment_check_ins[#{check_in.id}][shared_notes]", nil, 
-                                       rows: 2, class: 'form-control',
-                                       placeholder: 'Summary, action items, development plans...'
-          
-          .row.mt-4
-            .col-12
-              .alert.alert-warning
-                %strong ⚠️ This will:
-                %ul
-                  %li Create MAAP snapshot with complete ratings
-                  %li Close selected tenures and open new ones
-                  %li Make all notes visible to #{@person.first_name}
-                  %li Send notification to #{@person.first_name}
-              
-              = f.submit 'Finalize Selected Check-Ins', class: 'btn btn-success btn-lg',
-                         data: { confirm: 'Are you sure you want to finalize these check-ins?' }
-  
-  - elsif current_person == @person
-    -# Employee Read-Only View
-    .card.mb-4
-      .card-header
-        %h3 Position Check-In - Ready for Finalization
-        %p.text-muted Your manager will review and finalize this check-in
-      
-      .card-body
-        .row
-          .col-md-6
-            .card.border-primary
-              .card-header.bg-primary.text-white
-                %h5.mb-0 Your Assessment
-              .card-body
-                %p.mb-2
-                  %strong Rating:
-                  = position_rating_display(@position_check_in.employee_rating)
-                %p.mb-0
-                  %strong Notes:
-                  = simple_format(@position_check_in.employee_private_notes)
-          
-          .col-md-6
-            .card.border-info
-              .card-header.bg-info.text-white
-                %h5.mb-0 Manager's Assessment
-              .card-body
-                %p.mb-2
-                  %strong Rating:
-                  = position_rating_display(@position_check_in.manager_rating)
-                %p.mb-0
-                  %strong Notes:
-                  = simple_format(@position_check_in.manager_private_notes)
-        
-        .alert.alert-info.mt-3
-          %i.bi.bi-info-circle.me-2
-          %strong Your manager will review both assessments and set the official rating.
-          You will be notified when the finalization is complete.
-  
-  - else
-    -# Manager Finalization View
-    = form_with url: organization_person_finalization_path(@organization, @person), method: :post do |f|
-      
-      -# Position Finalization
-      - if @position_check_in
-        .card.mb-4
-          .card-header
-            %h3 Position Check-In
-            = check_box_tag 'finalize_position', '1', true
-            = label_tag 'finalize_position', 'Finalize Position'
-          
-          .card-body
-            .row
-              .col-md-6
-                %h5 Employee Perspective
-                %p= position_rating_display(@position_check_in.employee_rating)
-                %p.small= simple_format(@position_check_in.employee_private_notes)
-              
-              .col-md-6
-                %h5 Manager Perspective
-                %p= position_rating_display(@position_check_in.manager_rating)
-                %p.small= simple_format(@position_check_in.manager_private_notes)
-            
-            .row.mt-3
-              .col-12
-                .form-group
-                  = label_tag :position_official_rating, "Official Rating"
-                  = select_tag :position_official_rating,
-                              options_for_select(position_rating_options, @position_check_in.manager_rating),
-                              class: 'form-control'
-                
-                .form-group
-                  = label_tag :position_shared_notes, "Shared Notes"
-                  = text_area_tag :position_shared_notes, nil, rows: 3, class: 'form-control',
-                                 placeholder: 'Summary, action items, career development plans...'
-      
-      -# Assignment Finalizations
-      - if @assignment_check_ins&.any?
-        .card.mb-4
-          .card-header
-            %h3 Assignment Check-Ins
-            = check_box_tag 'finalize_assignments', '1', true
-            = label_tag 'finalize_assignments', 'Finalize Assignments'
-          
-          .card-body
-            - @assignment_check_ins.each do |check_in|
-              .assignment-finalization.mb-4.p-3.border.rounded
-                %h5= check_in.assignment.title
-                
-                .row
-                  .col-md-6
-                    %h6 Employee Perspective
-                    %p.mb-1
-                      %strong Rating:
-                      = assignment_rating_display(check_in.employee_rating)
-                    %p.mb-1
-                      %strong Energy:
-                      = "#{check_in.actual_energy_percentage}%"
-                    %p.mb-1
-                      %strong Alignment:
-                      = check_in.employee_personal_alignment&.humanize
-                    %p.mb-0
-                      %strong Notes:
-                      = simple_format(check_in.employee_private_notes)
-                  
-                  .col-md-6
-                    %h6 Manager Perspective
-                    %p.mb-1
-                      %strong Rating:
-                      = assignment_rating_display(check_in.manager_rating)
-                    %p.mb-0
-                      %strong Notes:
-                      = simple_format(check_in.manager_private_notes)
-                
-                .row.mt-3
-                  .col-md-6
-                    .form-group
-                      = label_tag "assignment_check_ins[#{check_in.id}][assignment_id]", "Assignment ID", class: 'sr-only'
-                      = hidden_field_tag "assignment_check_ins[#{check_in.id}][assignment_id]", check_in.assignment.id
-                      
-                      = label_tag "assignment_check_ins[#{check_in.id}][official_rating]", "Official Rating"
-                      = select_tag "assignment_check_ins[#{check_in.id}][official_rating]",
-                                  options_for_select(assignment_rating_options, check_in.manager_rating),
-                                  class: 'form-control'
-                  
-                  .col-md-6
-                    .form-group
-                      = label_tag "assignment_check_ins[#{check_in.id}][shared_notes]", "Shared Notes"
-                      = text_area_tag "assignment_check_ins[#{check_in.id}][shared_notes]", nil, 
-                                     rows: 2, class: 'form-control',
-                                     placeholder: 'Summary, action items, development plans...'
-      
-      -# Aspiration Finalizations (Phase 3)
-      
-      -# Only show the finalization button if there are check-ins to finalize
-      - if @position_check_in || @assignment_check_ins&.any?
-        .row.mt-4
-          .col-12
-            .alert.alert-warning
-              %strong ⚠️ This will:
-              %ul
-                %li Create MAAP snapshot with complete ratings
-                %li Close selected tenures and open new ones
-                %li Make all notes visible to #{@person.first_name}
-                %li Send notification to #{@person.first_name}
-            
-            = f.submit 'Finalize Selected Check-Ins', class: 'btn btn-success btn-lg',
-                       data: { confirm: 'Are you sure you want to finalize these check-ins?' }
-      - else
-        .row.mt-4
-          .col-12
-            .alert.alert-info
-              %i.bi.bi-info-circle.me-2
-              %strong No check-ins are ready for finalization at this time.
-
-
-
-
+          = f.submit 'Finalize Selected Check-Ins', class: 'btn btn-success btn-lg',
+                     data: { confirm: 'Are you sure you want to finalize these check-ins?' }
+    - else
+      .row.mt-4
+        .col-12
+          .alert.alert-info
+            %i.bi.bi-info-circle.me-2
+            %strong No check-ins are ready for finalization at this time.

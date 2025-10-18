@@ -1,5 +1,5 @@
 - content_for :go_back_link do
-  = link_to organization_assignment_tenure_path(@person.current_organization_or_default, @person), class: "go-back-link" do
+  = link_to organization_person_check_ins_path(@person.current_organization_or_default, @person), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     Back to #{@person.display_name}'s Assignments
 
@@ -186,7 +186,7 @@
         .row.mt-4
           .col-12
             %h6 Edit Assignment
-            = form_with url: organization_assignment_tenure_path(@person.current_organization_or_default, @person), method: :patch, local: true do |form|
+            = form_with url: organization_person_check_ins_path(@person.current_organization_or_default, @person), method: :patch, local: true do |form|
               .row
                 .col-12
                   .mb-1
@@ -241,4 +241,4 @@
                 
                 .col-12.text-end
                   = form.submit "Update Assignment", class: "btn btn-primary me-2"
-                  = link_to "Back to All Assignments", organization_assignment_tenure_path(@person.current_organization_or_default, @person), class: "btn btn-outline-secondary"
+                  = link_to "Back to All Assignments", organization_person_check_ins_path(@person.current_organization_or_default, @person), class: "btn btn-outline-secondary"

@@ -1,0 +1,37 @@
+.card.mb-4
+  .card-header
+    %h3 Aspiration Check-Ins
+    = check_box_tag 'finalize_aspirations', '1', true
+    = label_tag 'finalize_aspirations', 'Finalize Aspirations'
+  
+  .card-body
+    - aspiration_check_ins.each do |check_in|
+      .aspiration-finalization.mb-4.p-3.border.rounded
+        %h5= check_in.aspiration.name
+        
+        .row
+          .col-md-6
+            %h6 Employee Perspective
+            = render 'shared/check_ins_and_finalizations/aspiration_employee_perspective', check_in: check_in
+          
+          .col-md-6
+            %h6 Manager Perspective
+            = render 'shared/check_ins_and_finalizations/aspiration_manager_perspective', check_in: check_in
+        
+        .row.mt-3
+          .col-md-6
+            .form-group
+              = label_tag "aspiration_check_ins[#{check_in.id}][aspiration_id]", "Aspiration ID", class: 'sr-only'
+              = hidden_field_tag "aspiration_check_ins[#{check_in.id}][aspiration_id]", check_in.aspiration.id
+              
+              = label_tag "aspiration_check_ins[#{check_in.id}][official_rating]", "Official Rating"
+              = select_tag "aspiration_check_ins[#{check_in.id}][official_rating]",
+                          options_for_select(aspiration_rating_options, check_in.manager_rating),
+                          class: 'form-control'
+          
+          .col-md-6
+            .form-group
+              = label_tag "aspiration_check_ins[#{check_in.id}][shared_notes]", "Shared Notes"
+              = text_area_tag "aspiration_check_ins[#{check_in.id}][shared_notes]", nil, 
+                             rows: 2, class: 'form-control',
+                             placeholder: 'Summary, action items, development plans...'

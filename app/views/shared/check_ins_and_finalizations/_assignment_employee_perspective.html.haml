@@ -1,0 +1,12 @@
+%p.mb-1
+  %strong Rating:
+  = assignment_rating_display(check_in.employee_rating)
+%p.mb-1
+  %strong Energy:
+  = "#{check_in.actual_energy_percentage}%"
+%p.mb-1
+  %strong Alignment:
+  = check_in.employee_personal_alignment&.humanize
+%p.mb-0
+  %strong Notes:
+  = simple_format(check_in.employee_private_notes)

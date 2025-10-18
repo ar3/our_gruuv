@@ -1,0 +1,7 @@
+-# Aspiration Finalizations
+- if @aspiration_check_ins&.any?
+  = render 'aspiration_finalization_form', 
+           form: form, 
+           aspiration_check_ins: @aspiration_check_ins, 
+           person: @person, 
+           organization: @organization

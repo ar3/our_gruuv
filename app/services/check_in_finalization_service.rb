@@ -25,9 +25,11 @@ class CheckInFinalizationService
         results[:assignments] = assignment_results.value
       end
       
-      # Finalize aspirations if selected (Phase 3)
+      # Finalize aspirations if selected
       if @params[:finalize_aspirations]
-        # Implementation in Phase 3
+        aspiration_results = finalize_aspirations
+        return aspiration_results unless aspiration_results.ok?
+        results[:aspirations] = aspiration_results.value
       end
       
       # Create ONE snapshot with complete MAAP state
@@ -80,6 +82,32 @@ class CheckInFinalizationService
       shared_notes: @params[:position_shared_notes],
       finalized_by: @finalized_by
     ).finalize
+  end
+  
+  def finalize_aspirations
+    aspiration_results = []
+    
+    return Result.ok([]) unless @params[:aspiration_check_ins]
+    
+    @params[:aspiration_check_ins].each do |check_in_id, aspiration_params|
+      aspiration_id = aspiration_params[:aspiration_id]
+      next unless aspiration_id
+      
+      check_in = AspirationCheckIn.find(check_in_id)
+      next unless check_in.ready_for_finalization?
+      
+      result = Finalizers::AspirationCheckInFinalizer.new(
+        check_in: check_in,
+        official_rating: aspiration_params[:official_rating],
+        shared_notes: aspiration_params[:shared_notes],
+        finalized_by: @finalized_by
+      ).finalize
+      
+      return result unless result.ok?
+      aspiration_results << result.value
+    end
+    
+    Result.ok(aspiration_results)
   end
   
   def create_snapshot(results)

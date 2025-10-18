@@ -33,5 +33,5 @@
               = link_to teammate_organization_person_path(@organization, teammate.person), class: "btn btn-outline-primary" do
                 %i.bi.bi-eye
               - if current_person.can_manage_employment?(@organization)
-                = link_to organization_assignment_tenure_path(@organization, teammate.person), class: "btn btn-outline-secondary" do
+                = link_to organization_person_check_ins_path(@organization, teammate.person), class: "btn btn-outline-secondary" do
                   %i.bi.bi-list-task

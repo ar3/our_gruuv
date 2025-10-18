@@ -6,18 +6,7 @@
         .card-header.bg-primary.text-white
           %h5.mb-0 Your Assessment
         .card-body
-          %p.mb-2
-            %strong Rating:
-            = check_in.employee_rating&.humanize || 'Not rated'
-          %p.mb-2
-            %strong Energy %:
-            = check_in.actual_energy_percentage || 'Not set'
-          %p.mb-2
-            %strong Alignment:
-            = check_in.employee_personal_alignment&.humanize || 'Not set'
-          %p.mb-0
-            %strong Notes:
-            = simple_format(check_in.employee_private_notes)
+          = render 'shared/check_ins_and_finalizations/assignment_employee_perspective', check_in: check_in
 
     .col-md-4
       - if check_in&.manager_completed?

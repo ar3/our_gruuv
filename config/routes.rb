@@ -103,24 +103,11 @@ get '/login', to: 'auth#login', as: :login
     # Assignments management
     resources :assignments, module: :organizations
     
-    # Assignment tenures - unified interface for managing assignments and check-ins
-    resources :assignment_tenures, module: :organizations, only: [:show, :update] do
-      collection do
-        get :changes_confirmation
-      end
-      member do
-        get :choose_assignments
-        post :update_assignments
-      end
-    end
-    
     # People management
     resources :people, module: :organizations, only: [:show] do
       member do
         get :complete_picture
         get :teammate
-        get 'execute_changes/:maap_snapshot_id', action: :execute_changes, as: :execute_changes
-        post 'process_changes/:maap_snapshot_id', action: :process_changes, as: :process_changes
         post :update_permission
       end
       

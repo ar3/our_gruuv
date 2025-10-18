@@ -1,0 +1,29 @@
+-# Aspiration Check-In Completed View
+.row
+  .col-md-4
+    .card
+      .card-header Employee Perspective
+      .card-body
+        %p= check_in.employee_rating&.humanize || 'Not rated'
+        %p.small= simple_format(check_in.employee_private_notes)
+
+  .col-md-4
+    .card
+      .card-header Manager Perspective
+      .card-body
+        %p= check_in.manager_rating&.humanize || 'Not rated'
+        %p.small= simple_format(check_in.manager_private_notes)
+
+  .col-md-4
+    .card.border-success
+      .card-header.bg-success.text-white Official Rating
+      .card-body
+        %h3= check_in.official_rating&.humanize || 'Not rated'
+        %p.small Finalized by #{check_in.finalized_by&.display_name}
+
+- if check_in.shared_notes.present?
+  .card.mt-3
+    .card-header Shared Notes
+    .card-body= simple_format(check_in.shared_notes)
+
+

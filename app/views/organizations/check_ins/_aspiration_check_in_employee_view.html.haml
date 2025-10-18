@@ -1,36 +1,37 @@
-- if check_in&.manager_completed?
-  -# Manager has completed their side
+- if check_in&.employee_completed?
+  -# Employee has completed their side
   .row
     .col-md-8
       .card.border-primary
         .card-header.bg-primary.text-white
           %h5.mb-0 Your Assessment
         .card-body
-          = render 'shared/check_ins_and_finalizations/assignment_manager_perspective', check_in: check_in
+          = render 'shared/check_ins_and_finalizations/aspiration_employee_perspective', check_in: check_in
 
     .col-md-4
-      - if check_in&.employee_completed?
+      - if check_in&.manager_completed?
         .card.border-info
           .card-header.bg-info.text-white
             %h5.mb-0 Status
           .card-body.text-center
-            %p.mb-3 #{@person.first_name} is ready to finalize this check-in
+            %p.mb-3 #{check_in.manager_completed_by&.first_name || 'Your manager'} is ready to finalize this check-in
             = link_to "Go to Finalization", organization_person_finalization_path(@organization, @person),
                       class: 'btn btn-success btn-sm',
-                      data: { confirm: 'Are you ready to finalize this check-in? This will create the official rating.' }
+                      data: { confirm: 'Your manager will review both assessments and set the official rating.' }
       - else
         .card.border-warning
           .card-header.bg-warning.text-dark
             %h5.mb-0 Status
           .card-body.text-center
-            %p.mb-0 #{@person.first_name} is not ready to finalize this check-in
+            %p.mb-0 Your manager is not ready to finalize this check-in
 
   .form-group.mt-3
     %label Status
-    = form.fields_for :assignment_check_in, check_in do |af|
+    = form.fields_for :aspiration_check_ins, check_in, index: check_in.id do |af|
+      = af.hidden_field :aspiration_id, value: check_in.aspiration.id
       .form-check
         = af.radio_button :status, 'complete', checked: true
-        = af.label :status_complete, 'Ready for Finalization', class: 'form-check-label'
+        = af.label :status_complete, 'Ready for Manager', class: 'form-check-label'
       .form-check
         = af.radio_button :status, 'draft'
         = af.label :status_draft, 'Make Changes', class: 'form-check-label'
@@ -39,7 +40,7 @@
       Select "Make Changes" to edit your assessment and notes
 
 - else
-  -# Manager has not completed their side - show the form
-  = render 'assignment_check_in_in_progress', check_in: check_in, form: form, view_mode: :manager
+  -# Employee has not completed their side - show the form
+  = render 'aspiration_check_in_in_progress', check_in: check_in, form: form, view_mode: :employee
 
 

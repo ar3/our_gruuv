@@ -50,7 +50,7 @@ RSpec.describe 'Check-ins End-to-End Workflow', type: :system, critical: true do
       expect(page).to have_content('No assignment check-ins are currently in progress')
 
       # Step 2: Create a check-in by visiting assignment tenure page
-      visit organization_assignment_tenure_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
       expect(page).to have_content('Assignment Mode for John Doe')
       expect(page).to have_content('Frontend Development')
 

@@ -18,6 +18,24 @@ module CheckInHelper
     'exceeding' => { emoji: '🟢', label: 'Exceeding' }
   }.freeze
   
+  ASPIRATION_RATINGS = {
+    'working_to_meet' => { emoji: '🟡', label: 'Working to Meet' },
+    'meeting' => { emoji: '🔵', label: 'Meeting' },
+    'exceeding' => { emoji: '🟢', label: 'Exceeding' }
+  }.freeze
+  
+  def aspiration_rating_display(rating)
+    return 'Not Rated' if rating.nil?
+    data = ASPIRATION_RATINGS[rating]
+    "#{data[:emoji]} #{data[:label]}"
+  end
+  
+  def aspiration_rating_options
+    ASPIRATION_RATINGS.map do |value, data|
+      ["#{data[:emoji]} #{data[:label]}", value]
+    end
+  end
+  
   def assignment_rating_display(rating)
     return 'Not Rated' if rating.nil?
     data = ASSIGNMENT_RATINGS[rating]

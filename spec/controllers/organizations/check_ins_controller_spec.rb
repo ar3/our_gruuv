@@ -17,6 +17,8 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
   let(:assignment2) { create(:assignment, company: company, title: 'Assignment 2') }
   let(:assignment_tenure1) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, started_at: 3.months.ago, ended_at: nil) }
   let(:assignment_tenure2) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment2, started_at: 2.months.ago, ended_at: nil) }
+  let(:aspiration1) { create(:aspiration, organization: company, name: 'Technical Leadership') }
+  let(:aspiration2) { create(:aspiration, organization: company, name: 'Team Collaboration') }
   
   # Create check-ins ready for finalization
   let(:check_in1) do
@@ -47,6 +49,33 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
            manager_private_notes: 'Excellent progress')
   end
 
+  # Create aspiration check-ins
+  let(:aspiration_check_in1) do
+    create(:aspiration_check_in,
+           teammate: employee_teammate,
+           aspiration: aspiration1,
+           check_in_started_on: 1.week.ago,
+           employee_completed_at: 3.days.ago,
+           manager_completed_at: 2.days.ago,
+           employee_rating: 'meeting',
+           manager_rating: 'exceeding',
+           employee_private_notes: 'Working on technical skills',
+           manager_private_notes: 'Great technical growth!')
+  end
+
+  let(:aspiration_check_in2) do
+    create(:aspiration_check_in,
+           teammate: employee_teammate,
+           aspiration: aspiration2,
+           check_in_started_on: 1.week.ago,
+           employee_completed_at: 2.days.ago,
+           manager_completed_at: 1.day.ago,
+           employee_rating: 'exceeding',
+           manager_rating: 'meeting',
+           employee_private_notes: 'Collaborating well with team',
+           manager_private_notes: 'Strong team player')
+  end
+
   before do
     session[:current_person_id] = manager.id
     manager_employment
@@ -68,6 +97,22 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
     it 'loads check-ins in progress' do
       get :show, params: { organization_id: company.id, person_id: employee.id }
       expect(assigns(:check_ins_in_progress)).to include(check_in1, check_in2)
+    end
+
+    it 'loads aspiration check-ins' do
+      aspiration_check_in1
+      aspiration_check_in2
+      get :show, params: { organization_id: company.id, person_id: employee.id }
+      expect(assigns(:aspiration_check_ins)).to include(aspiration_check_in1, aspiration_check_in2)
+    end
+
+    it 'creates aspiration check-ins for aspirations without existing check-ins' do
+      aspiration1
+      aspiration2
+      get :show, params: { organization_id: company.id, person_id: employee.id }
+      aspiration_check_ins = assigns(:aspiration_check_ins)
+      expect(aspiration_check_ins.count).to eq(2)
+      expect(aspiration_check_ins.map(&:aspiration)).to include(aspiration1, aspiration2)
     end
 
     it 'sets is_manager correctly' do

@@ -18,14 +18,14 @@ RSpec.describe Organizations::AssignmentTenuresController, type: :request do
 
   describe "GET /organizations/:organization_id/assignment_tenures/:id" do
     it "returns http success" do
-      get organization_assignment_tenure_path(company, person)
+      get organization_person_check_ins_path(company, person)
       expect(response).to have_http_status(:success)
     end
   end
 
   describe "GET /organizations/:organization_id/assignment_tenures/:id/choose_assignments" do
     it "returns http success" do
-      get choose_assignments_organization_assignment_tenure_path(company, person)
+      get organization_assignments_path(company)
       expect(response).to have_http_status(:success)
     end
   end

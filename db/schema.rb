@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_16_202942) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_17_135606) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -48,6 +48,33 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_16_202942) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["person_id"], name: "index_addresses_on_person_id"
+  end
+
+  create_table "aspiration_check_ins", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.bigint "aspiration_id", null: false
+    t.date "check_in_started_on", null: false
+    t.string "employee_rating"
+    t.string "manager_rating"
+    t.string "official_rating"
+    t.text "employee_private_notes"
+    t.text "manager_private_notes"
+    t.text "shared_notes"
+    t.datetime "employee_completed_at"
+    t.datetime "manager_completed_at"
+    t.bigint "manager_completed_by_id"
+    t.bigint "finalized_by_id"
+    t.datetime "official_check_in_completed_at"
+    t.bigint "maap_snapshot_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["aspiration_id"], name: "index_aspiration_check_ins_on_aspiration_id"
+    t.index ["check_in_started_on"], name: "index_aspiration_check_ins_on_check_in_started_on"
+    t.index ["finalized_by_id"], name: "index_aspiration_check_ins_on_finalized_by_id"
+    t.index ["maap_snapshot_id"], name: "index_aspiration_check_ins_on_maap_snapshot_id"
+    t.index ["manager_completed_by_id"], name: "index_aspiration_check_ins_on_manager_completed_by_id"
+    t.index ["teammate_id", "aspiration_id", "official_check_in_completed_at"], name: "index_aspiration_check_ins_on_teammate_aspiration_open"
+    t.index ["teammate_id"], name: "index_aspiration_check_ins_on_teammate_id"
   end
 
   create_table "aspirations", force: :cascade do |t|
@@ -638,6 +665,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_16_202942) do
   add_foreign_key "abilities", "people", column: "created_by_id"
   add_foreign_key "abilities", "people", column: "updated_by_id"
   add_foreign_key "addresses", "people"
+  add_foreign_key "aspiration_check_ins", "aspirations"
+  add_foreign_key "aspiration_check_ins", "maap_snapshots"
+  add_foreign_key "aspiration_check_ins", "people", column: "finalized_by_id"
+  add_foreign_key "aspiration_check_ins", "people", column: "manager_completed_by_id"
+  add_foreign_key "aspiration_check_ins", "teammates"
   add_foreign_key "aspirations", "organizations"
   add_foreign_key "assignment_abilities", "abilities"
   add_foreign_key "assignment_abilities", "assignments"

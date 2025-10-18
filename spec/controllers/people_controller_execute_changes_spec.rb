@@ -267,14 +267,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       
       get :execute_changes, params: { organization_id: organization.id, id: employee.id, maap_snapshot_id: maap_snapshot.id }
       
-      expect(response).to redirect_to(organization_assignment_tenure_path(organization, employee))
+      expect(response).to redirect_to(organization_person_check_ins_path(organization, employee))
       expect(flash[:alert]).to include('not authorized')
     end
 
     it 'handles missing MaapSnapshot gracefully' do
       get :execute_changes, params: { organization_id: organization.id, id: employee.id, maap_snapshot_id: 99999 }
       
-      expect(response).to redirect_to(organization_assignment_tenure_path(organization, employee))
+      expect(response).to redirect_to(organization_person_check_ins_path(organization, employee))
       expect(flash[:alert]).to include('not found')
     end
   end

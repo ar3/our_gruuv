@@ -228,7 +228,7 @@ RSpec.describe Organizations::AssignmentTenuresController, type: :controller do
         patch :update, params: { organization_id: organization.id, id: employee.id }
         
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_assignment_tenure_path(organization, employee))
+        expect(response).to redirect_to(organization_person_check_ins_path(organization, employee))
       end
     end
   end

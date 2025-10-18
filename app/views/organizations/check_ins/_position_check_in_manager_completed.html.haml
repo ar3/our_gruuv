@@ -8,12 +8,7 @@
       .card-header.bg-primary.text-white
         %h5.mb-0 Your Assessment
       .card-body
-        %p.mb-2
-          %strong Rating:
-          = position_rating_display(check_in.manager_rating)
-        %p.mb-0
-          %strong Notes:
-          = simple_format(check_in.manager_private_notes)
+        = render 'shared/check_ins_and_finalizations/position_manager_perspective', check_in: check_in
   
   .col-md-6
     .card.border-info

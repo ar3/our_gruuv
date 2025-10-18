@@ -47,7 +47,7 @@ RSpec.describe 'Assignment Management Manager Complete Bug', type: :request do
         }
 
         # Make the actual request to assignment_tenures (assignment management)
-        patch organization_assignment_tenure_path(organization, employee), params: form_params
+        patch organization_person_check_ins_path(organization, employee), params: form_params
 
         # Should redirect to execute_changes page
         expect(response).to have_http_status(:redirect)

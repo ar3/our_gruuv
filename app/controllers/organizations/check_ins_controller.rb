@@ -70,8 +70,13 @@ class Organizations::CheckInsController < ApplicationController
   end
 
   def load_or_build_aspiration_check_ins
-    # Implemented in Phase 3
-    []
+    # Get all aspirations for this organization
+    aspirations = Aspiration.where(organization: @organization).ordered
+    
+    # For each aspiration, find or create an open check-in
+    aspirations.map do |aspiration|
+      AspirationCheckIn.find_or_create_open_for(@teammate, aspiration)
+    end.compact
   end
 
   def update_assignment_check_ins
@@ -116,7 +121,42 @@ class Organizations::CheckInsController < ApplicationController
   end
 
   def update_aspiration_check_ins
-    # Implemented in Phase 3
+    aspiration_check_ins_params = params[:aspiration_check_ins] || params['[aspiration_check_ins]']
+    return unless aspiration_check_ins_params
+
+    aspiration_check_ins_params.each do |check_in_id, check_in_params|
+      aspiration_id = check_in_params[:aspiration_id]
+      next unless aspiration_id
+
+      aspiration = Aspiration.find(aspiration_id)
+      check_in = AspirationCheckIn.find_or_create_open_for(@teammate, aspiration)
+      next unless check_in
+
+      # Update check-in fields
+      check_in.assign_attributes(
+        employee_rating: check_in_params[:employee_rating],
+        manager_rating: check_in_params[:manager_rating],
+        employee_private_notes: check_in_params[:employee_private_notes],
+        manager_private_notes: check_in_params[:manager_private_notes]
+      )
+
+      # Handle completion status
+      if check_in_params[:status] == 'complete'
+        if @view_mode == :employee
+          check_in.complete_employee_side!
+        elsif @view_mode == :manager
+          check_in.complete_manager_side!(completed_by: current_person)
+        end
+      elsif check_in_params[:status] == 'draft'
+        if @view_mode == :employee
+          check_in.uncomplete_employee_side!
+        elsif @view_mode == :manager
+          check_in.uncomplete_manager_side!
+        end
+      end
+
+      check_in.save!
+    end
   end
   
   def update_position_check_in

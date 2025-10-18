@@ -79,20 +79,20 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access finalization features"}
       
     %li
-      - if action_name == 'show' && controller_name == 'assignment_tenures'
+      - if action_name == 'show' && controller_name == 'check_ins'
         .dropdown-item.text-muted
           %i.bi.bi-clipboard-check.me-2
-          Assignment Mode (Active)
+          Check-Ins (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).can_view_manage_mode?
-        = link_to organization_assignment_tenure_path(@person.current_organization_or_default, @person), class: 'dropdown-item' do
+        = link_to organization_person_check_ins_path(@person.current_organization_or_default, @person), class: 'dropdown-item' do
           %i.bi.bi-clipboard-check.me-2
-          Assignment Mode
+          Check-Ins
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-clipboard-check.me-2
-          Assignment Mode
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access assignment features"}
+          Check-Ins
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
       
     %li
       - if action_name == 'show' && controller_name == 'people'
