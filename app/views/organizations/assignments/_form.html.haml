@@ -14,6 +14,19 @@
 
 .row
   .col-md-12
+    .mb-3
+      = form.label :department_id, "Department (Optional)", class: "form-label"
+      - company = @organization.root_company
+      - departments = company&.descendants&.where(type: 'Department') || []
+      - department_options = [['No Department', '']] + departments.map { |dept| [dept.name, dept.id] }
+      = form.select :department_id, 
+                    department_options,
+                    { selected: @assignment.department_id },
+                    { class: 'form-select' }
+      %small.form-text.text-muted Leave blank for company-level assignment
+
+.row
+  .col-md-12
     / Existing Outcomes Section
     - if @assignment.assignment_outcomes.any?
       .mt-4

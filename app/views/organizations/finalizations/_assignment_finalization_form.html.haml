@@ -10,11 +10,11 @@
         %h5= check_in.assignment.title
         
         .row
-          .col-md-6
+          .col-md-6.employee-perspective
             %h6 Employee Perspective
             = render 'shared/check_ins_and_finalizations/assignment_employee_perspective', check_in: check_in
           
-          .col-md-6
+          .col-md-6.manager-perspective
             %h6 Manager Perspective
             = render 'shared/check_ins_and_finalizations/assignment_manager_perspective', check_in: check_in
         

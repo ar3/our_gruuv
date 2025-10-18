@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_17_135606) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_18_181627) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -167,8 +167,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_17_135606) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "became_public_at"
+    t.bigint "department_id"
     t.index ["became_public_at"], name: "index_assignments_on_became_public_at"
     t.index ["company_id"], name: "index_assignments_on_company_id"
+    t.index ["department_id"], name: "index_assignments_on_department_id"
   end
 
   create_table "debug_responses", force: :cascade do |t|
@@ -681,6 +683,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_17_135606) do
   add_foreign_key "assignment_tenures", "assignments"
   add_foreign_key "assignment_tenures", "teammates"
   add_foreign_key "assignments", "organizations", column: "company_id"
+  add_foreign_key "assignments", "organizations", column: "department_id"
   add_foreign_key "employment_tenures", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "people", column: "manager_id"
   add_foreign_key "employment_tenures", "positions"

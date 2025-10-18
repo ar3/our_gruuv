@@ -26,7 +26,7 @@ class ActiveEmploymentTenureQuery
   private
   
   def find_for_person_and_organization(scope)
-    teammate = @person.teammates.find_by(organization: @organization)
+    teammate = @person.teammates.for_organization_hierarchy(@organization).first
     return EmploymentTenure.none unless teammate
     
     scope.where(teammate: teammate)

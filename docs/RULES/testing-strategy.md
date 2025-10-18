@@ -219,3 +219,54 @@ scenario 'creating a new huddle when not logged in' do
   expect(page).to have_content('Huddle created successfully!')
 end
 ```
+
+## System Spec Best Practices - Avoiding Flaky Tests
+
+### Use Specific CSS Classes or Data Attributes for Test Selectors
+
+**✅ Good - Direct CSS selectors:**
+```ruby
+manager_section = page.find('.manager-perspective')
+employee_section = page.find('.employee-perspective')
+```
+
+**❌ Avoid - XPath parent traversal:**
+```ruby
+manager_section = page.find('h6', text: 'Manager Perspective').find(:xpath, '..')
+employee_section = page.find('h6', text: 'Employee Perspective').find(:xpath, '..')
+```
+
+### Why XPath Parent Traversal is Flaky
+
+XPath parent traversal (`.find(:xpath, '..')`) can fail when:
+- The DOM is being updated/reloaded while Capybara is trying to interact with an element
+- There's a timing issue where an element is found but then removed before interaction
+- The parent node becomes detached during DOM updates
+
+This results in Selenium errors like:
+```
+Selenium::WebDriver::Error::UnknownError:
+  unknown error: unhandled inspector error: {"code":-32000,"message":"Node with given id does not belong to the document"}
+```
+
+### Best Practices
+
+1. **Add semantic CSS classes to view templates specifically for testing** (e.g., `.manager-perspective`, `.employee-section`)
+2. **Prefer direct CSS selectors over text-based finding + traversal**
+3. **Use data attributes when CSS classes aren't appropriate** (e.g., `data-test-id="manager-section"`)
+4. **Avoid complex DOM traversal in tests** - keep selectors simple and direct
+
+### Example Implementation
+
+**In view template:**
+```haml
+.col-md-6.manager-perspective
+  %h6 Manager Perspective
+  = render 'manager_content'
+```
+
+**In test:**
+```ruby
+manager_section = page.find('.manager-perspective')
+expect(manager_section).to have_content('Expected content')
+```

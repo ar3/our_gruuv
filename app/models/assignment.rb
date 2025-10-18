@@ -3,6 +3,7 @@ class Assignment < ApplicationRecord
   
   # Associations
   belongs_to :company, class_name: 'Organization'
+  belongs_to :department, class_name: 'Organization', optional: true
   has_many :assignment_outcomes, dependent: :destroy
   has_many :position_assignments, dependent: :destroy
   has_many :positions, through: :position_assignments
@@ -20,6 +21,7 @@ class Assignment < ApplicationRecord
   validates :title, presence: true, uniqueness: { scope: :company_id }
   validates :tagline, presence: true
   validates :company, presence: true
+  validate :department_must_belong_to_company
   
   # Virtual attribute for outcomes textarea
   attr_accessor :outcomes_textarea
@@ -131,4 +133,14 @@ class Assignment < ApplicationRecord
     }
   
   multisearchable against: [:title, :tagline, :required_activities, :handbook]
+  
+  private
+  
+  def department_must_belong_to_company
+    return unless department && company
+    
+    unless department.parent == company
+      errors.add(:department, 'must belong to the same company')
+    end
+  end
 end

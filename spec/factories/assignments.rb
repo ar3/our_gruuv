@@ -26,5 +26,9 @@ FactoryBot.define do
         create(:assignment_outcome, :quantitative, assignment: assignment)
       end
     end
+    
+    trait :department do
+      association :department, factory: [:organization, :department]
+    end
   end
 end 

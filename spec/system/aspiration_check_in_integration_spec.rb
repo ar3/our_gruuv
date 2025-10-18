@@ -46,7 +46,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
         choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][status]_complete"
       end
       
-      click_button 'Save Check-Ins'
+      click_button 'Save All Check-Ins'
       
       # Should see success message
       expect(page).to have_content('Check-ins saved successfully')
@@ -76,7 +76,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
         choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][status]_complete"
       end
       
-      click_button 'Save Check-Ins'
+      click_button 'Save All Check-Ins'
       
       # Should see success message
       expect(page).to have_content('Check-ins saved successfully')
@@ -161,7 +161,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
         choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][status]_draft"
       end
       
-      click_button 'Save Check-Ins'
+      click_button 'Save All Check-Ins'
       
       # Manager goes to finalization page
       sign_in_as(manager, organization)
@@ -182,7 +182,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
         choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][status]_complete"
       end
       
-      click_button 'Save Check-Ins'
+      click_button 'Save All Check-Ins'
       
       # Manager marks aspiration as ready
       sign_in_as(manager, organization)
@@ -193,7 +193,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
         choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][status]_complete"
       end
       
-      click_button 'Save Check-Ins'
+      click_button 'Save All Check-Ins'
       
       # Manager goes to finalization page
       visit organization_person_finalization_path(organization, employee)

@@ -27,7 +27,8 @@
 
   .form-group.mt-3
     %label Status
-    = form.fields_for :assignment_check_in, check_in do |af|
+    = form.fields_for :assignment_check_ins, check_in, index: check_in.id do |af|
+      = af.hidden_field :assignment_id, value: check_in.assignment.id
       .form-check
         = af.radio_button :status, 'complete', checked: true
         = af.label :status_complete, 'Ready for Finalization', class: 'form-check-label'

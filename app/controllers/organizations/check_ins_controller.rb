@@ -39,7 +39,10 @@ class Organizations::CheckInsController < ApplicationController
   end
   
   def set_teammate
-    @teammate = @person.teammates.find_by(organization: @organization)
+    # Find teammate within the organization hierarchy
+    # This handles cases where a person has a teammate record at a child department
+    # but we're viewing check-ins at the company level
+    @teammate = @person.teammates.for_organization_hierarchy(@organization).first
   end
   
   def determine_view_mode
@@ -91,15 +94,20 @@ class Organizations::CheckInsController < ApplicationController
       check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
       next unless check_in
 
-      # Update check-in fields
-      check_in.assign_attributes(
-        employee_rating: check_in_params[:employee_rating],
-        manager_rating: check_in_params[:manager_rating],
-        employee_private_notes: check_in_params[:employee_private_notes],
-        manager_private_notes: check_in_params[:manager_private_notes],
-        actual_energy_percentage: check_in_params[:actual_energy_percentage],
-        employee_personal_alignment: check_in_params[:employee_personal_alignment]
-      )
+      # Update check-in fields based on view mode
+      if @view_mode == :employee
+        check_in.assign_attributes(
+          employee_rating: check_in_params[:employee_rating],
+          employee_private_notes: check_in_params[:employee_private_notes],
+          actual_energy_percentage: check_in_params[:actual_energy_percentage],
+          employee_personal_alignment: check_in_params[:employee_personal_alignment]
+        )
+      elsif @view_mode == :manager
+        check_in.assign_attributes(
+          manager_rating: check_in_params[:manager_rating],
+          manager_private_notes: check_in_params[:manager_private_notes]
+        )
+      end
 
       # Handle completion status
       if check_in_params[:status] == 'complete'

@@ -29,10 +29,10 @@
 .form-group.mt-3
   %label Status
   .form-check
-    = radio_button_tag "aspiration_check_ins[#{check_in.id}][status]", 'draft', (check_in&.status == 'draft' || check_in&.status.nil?), class: 'form-check-input'
+    = radio_button_tag "aspiration_check_ins[#{check_in.id}][status]", 'draft', (check_in&.status == 'draft' || check_in&.status.nil?), class: 'form-check-input', id: "aspiration_check_ins[#{check_in.id}][status]_draft"
     = label_tag "aspiration_check_ins[#{check_in.id}][status]_draft", 'Save as Draft', class: 'form-check-label'
   .form-check
-    = radio_button_tag "aspiration_check_ins[#{check_in.id}][status]", 'complete', check_in&.status == 'complete', class: 'form-check-input'
+    = radio_button_tag "aspiration_check_ins[#{check_in.id}][status]", 'complete', check_in&.status == 'complete', class: 'form-check-input', id: "aspiration_check_ins[#{check_in.id}][status]_complete"
     = label_tag "aspiration_check_ins[#{check_in.id}][status]_complete", 'Mark Ready', class: 'form-check-label'
 
   .small.text-muted.mt-1

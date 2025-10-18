@@ -19,7 +19,7 @@
   = form_with url: organization_person_finalization_path(@organization, @person), method: :post do |f|
     = render 'position_finalization_section', form: f
     
-    = render 'assignment_finalization_section'
+    = render 'assignment_finalization_section', form: f
     
     = render 'aspiration_finalization_section', form: f
     

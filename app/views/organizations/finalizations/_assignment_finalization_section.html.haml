@@ -31,8 +31,8 @@
               %i.bi.bi-info-circle.me-2
               %strong Your manager will review both assessments and set the official rating.
               You will be notified when the finalization is complete.
-  - else
-    -# Manager view of ready assignment check-ins
+  - elsif @position_check_in&.officially_completed?
+    -# Manager view when position is already finalized - render own form
     = form_with url: organization_person_finalization_path(@organization, @person), method: :post do |f|
       = render 'assignment_finalization_form', 
                form: f, 
@@ -52,3 +52,10 @@
           
           = f.submit 'Finalize Selected Check-Ins', class: 'btn btn-success btn-lg',
                      data: { confirm: 'Are you sure you want to finalize these check-ins?' }
+  - else
+    -# Manager view in main finalization flow - just render the form content without wrapper
+    = render 'assignment_finalization_form', 
+             form: form, 
+             assignment_check_ins: @assignment_check_ins, 
+             person: @person, 
+             organization: @organization

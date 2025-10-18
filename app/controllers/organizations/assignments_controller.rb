@@ -75,7 +75,7 @@ class Organizations::AssignmentsController < ApplicationController
   end
 
   def assignment_params
-    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook)
+    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook, :department_id)
   end
 
   def create_external_references(assignment, params)

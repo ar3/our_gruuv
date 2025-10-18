@@ -52,7 +52,10 @@ class Organizations::FinalizationsController < ApplicationController
   end
   
   def set_teammate
-    @teammate = @person.teammates.find_by(organization: @organization)
+    # Find teammate within the organization hierarchy
+    # This handles cases where a person has a teammate record at a child department
+    # but we're viewing finalization at the company level
+    @teammate = @person.teammates.for_organization_hierarchy(@organization).first
   end
   
   def authorize_finalization

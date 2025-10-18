@@ -30,6 +30,8 @@ RSpec.describe 'Assignment Check-In Integration', type: :system do
     
     # Set up authentication using proper session-based approach
     manager_person.update!(current_organization: organization)
+    # Ensure manager is a teammate in the organization with proper permissions
+    manager_teammate.update!(organization: organization, can_manage_employment: true)
   end
 
   describe 'Assignment Check-In Creation and Management' do
