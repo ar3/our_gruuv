@@ -1,14 +1,5 @@
 - content_for :header do
   %h1.mb-0 Finalize Check-Ins for #{@person.display_name}
-  - if @position_check_in&.officially_completed?
-    - if @assignment_check_ins&.any?
-      %p.text-muted.mb-0 Review finalized position check-in and ready assignment check-ins
-    - else
-      %p.text-muted.mb-0 Review finalized check-ins
-  - elsif current_person == @person
-    %p.text-muted.mb-0 Review your check-ins that are ready for finalization
-  - else
-    %p.text-muted.mb-0 Review ready check-ins and finalize selected ones
         
 - content_for :header_action do
   = render 'people/view_switcher'
@@ -17,13 +8,8 @@
   = link_to organization_person_check_ins_path(@organization, @person), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     Back to Check-Ins
-  
-- if @position_check_in&.officially_completed?
-  = render 'position_finalization_section'
-  
-  = render 'assignment_finalization_section'
 
-- elsif current_person == @person
+- if current_person == @person
   = render 'position_finalization_section'
   
   = render 'assignment_finalization_section'
