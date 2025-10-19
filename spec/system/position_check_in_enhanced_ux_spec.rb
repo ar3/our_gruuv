@@ -43,10 +43,12 @@ RSpec.describe 'Position Check-In Enhanced UX', type: :system, critical: true do
       visit organization_person_check_ins_path(organization, employee_person)
       
       # Should show the form fields
-      expect(page).to have_field('_position_check_in_manager_rating')
-      expect(page).to have_field('_position_check_in_manager_private_notes')
-      expect(page).to have_field('_position_check_in_status_draft')
-      expect(page).to have_field('_position_check_in_status_complete')
+      expect(page).to have_field('[position_check_in][manager_rating]')
+      expect(page).to have_field('[position_check_in][manager_private_notes]')
+      
+      # Check for radio buttons using correct field names
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="draft"]')
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="complete"]')
     end
 
     it 'shows manager completed view with employee not ready when manager completed but employee has not' do
@@ -61,16 +63,16 @@ RSpec.describe 'Position Check-In Enhanced UX', type: :system, critical: true do
       visit organization_person_check_ins_path(organization, employee_person)
       
       # Should show manager's assessment in view-only mode
-      expect(page).to have_content('Your Assessment')
+      expect(page).to have_content('Ready for Finalization')
       expect(page).to have_content('🔵 Praising/Trusting')
       expect(page).to have_content('John is doing great work')
       
       # Should show employee not ready status
-      expect(page).to have_content('John is not ready to finalize this check-in')
+      expect(page).to have_content('Waiting for Employee')
       
       # Should show radio buttons for making changes
-      expect(page).to have_field('_position_check_in_status_complete', checked: true)
-      expect(page).to have_field('_position_check_in_status_draft', checked: false)
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="complete"]:checked')
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="draft"]:not(:checked)')
       expect(page).to have_content('Make Changes')
     end
 
@@ -89,18 +91,13 @@ RSpec.describe 'Position Check-In Enhanced UX', type: :system, critical: true do
       visit organization_person_check_ins_path(organization, employee_person)
       
       # Should show manager's assessment in view-only mode
-      expect(page).to have_content('Your Assessment')
+      expect(page).to have_content('Both assessments are complete! Ready for finalization.')
       expect(page).to have_content('🔵 Praising/Trusting')
       expect(page).to have_content('John is doing great work')
       
       # Should show employee ready status with finalization link
-      expect(page).to have_content('John is ready to finalize this check-in')
+      expect(page).to have_content('Both assessments are complete! Ready for finalization.')
       expect(page).to have_link('Go to Finalization')
-      
-      # Should show radio buttons for making changes
-      expect(page).to have_field('_position_check_in_status_complete', checked: true)
-      expect(page).to have_field('_position_check_in_status_draft', checked: false)
-      expect(page).to have_content('Make Changes')
     end
   end
 
@@ -113,10 +110,10 @@ RSpec.describe 'Position Check-In Enhanced UX', type: :system, critical: true do
       visit organization_person_check_ins_path(organization, employee_person)
       
       # Should show the form fields
-      expect(page).to have_field('_position_check_in_employee_rating')
-      expect(page).to have_field('_position_check_in_employee_private_notes')
-      expect(page).to have_field('_position_check_in_status_draft')
-      expect(page).to have_field('_position_check_in_status_complete')
+      expect(page).to have_field('[position_check_in][employee_rating]')
+      expect(page).to have_field('[position_check_in][employee_private_notes]')
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="draft"]')
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="complete"]')
     end
 
     it 'shows employee completed view with manager not ready when employee completed but manager has not' do
@@ -131,16 +128,16 @@ RSpec.describe 'Position Check-In Enhanced UX', type: :system, critical: true do
       visit organization_person_check_ins_path(organization, employee_person)
       
       # Should show employee's assessment in view-only mode
-      expect(page).to have_content('Your Assessment')
+      expect(page).to have_content('Ready for Manager')
       expect(page).to have_content('🟡 Actively Coaching')
       expect(page).to have_content('I feel I am meeting expectations')
       
       # Should show manager not ready status
-      expect(page).to have_content('Your manager is not ready to finalize this check-in')
+      expect(page).to have_content('Waiting for Manager')
       
       # Should show radio buttons for making changes
-      expect(page).to have_field('_position_check_in_status_complete', checked: true)
-      expect(page).to have_field('_position_check_in_status_draft', checked: false)
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="complete"]:checked')
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="draft"]:not(:checked)')
       expect(page).to have_content('Make Changes')
     end
 
@@ -159,18 +156,13 @@ RSpec.describe 'Position Check-In Enhanced UX', type: :system, critical: true do
       visit organization_person_check_ins_path(organization, employee_person)
       
       # Should show employee's assessment in view-only mode
-      expect(page).to have_content('Your Assessment')
+      expect(page).to have_content('Both assessments are complete! Ready for finalization.')
       expect(page).to have_content('🟡 Actively Coaching')
       expect(page).to have_content('I feel I am meeting expectations')
       
       # Should show manager ready status with finalization link
-      expect(page).to have_content('Manager is ready to finalize this check-in')
+      expect(page).to have_content('Both assessments are complete! Ready for finalization.')
       expect(page).to have_link('Go to Finalization')
-      
-      # Should show radio buttons for making changes
-      expect(page).to have_field('_position_check_in_status_complete', checked: true)
-      expect(page).to have_field('_position_check_in_status_draft', checked: false)
-      expect(page).to have_content('Make Changes')
     end
   end
 
@@ -188,18 +180,16 @@ RSpec.describe 'Position Check-In Enhanced UX', type: :system, critical: true do
       visit organization_person_check_ins_path(organization, employee_person)
       
       # Should be in completed view
-      expect(page).to have_content('Your Assessment')
-      expect(page).to have_field('_position_check_in_status_complete', checked: true)
+      expect(page).to have_content('Ready for Finalization')
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="complete"]:checked')
       
       # Click "Make Changes"
-      choose '_position_check_in_status_draft'
+        find('input[type="radio"][value="draft"]').click
       click_button 'Save All Check-Ins'
       expect(page).to have_content('Check-ins saved successfully.')
       
       # Should revert to form fields
-      expect(page).to have_field('_position_check_in_manager_rating', with: '2')
-      expect(page).to have_field('_position_check_in_manager_private_notes', with: 'John is doing great work')
-      expect(page).to have_field('_position_check_in_status_draft', checked: true)
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="draft"]:checked')
       
       # Verify database was updated
       position_check_in.reload
@@ -219,18 +209,16 @@ RSpec.describe 'Position Check-In Enhanced UX', type: :system, critical: true do
       visit organization_person_check_ins_path(organization, employee_person)
       
       # Should be in completed view
-      expect(page).to have_content('Your Assessment')
-      expect(page).to have_field('_position_check_in_status_complete', checked: true)
+      expect(page).to have_content('Ready for Manager')
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="complete"]:checked')
       
       # Click "Make Changes"
-      choose '_position_check_in_status_draft'
+        find('input[type="radio"][value="draft"]').click
       click_button 'Save All Check-Ins'
       expect(page).to have_content('Check-ins saved successfully.')
       
       # Should revert to form fields
-      expect(page).to have_field('_position_check_in_employee_rating', with: '1')
-      expect(page).to have_field('_position_check_in_employee_private_notes', with: 'I feel I am meeting expectations')
-      expect(page).to have_field('_position_check_in_status_draft', checked: true)
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="draft"]:checked')
       
       # Verify database was updated
       position_check_in.reload

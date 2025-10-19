@@ -1,0 +1,42 @@
+-# Position Check-In Table View - Ready for Finalization State
+.alert.alert-success.mb-3
+  %i.bi.bi-check-circle.me-2
+  %strong Both assessments are complete! Ready for finalization.
+
+.table-responsive
+  %table.table.table-striped
+    %thead
+      %tr
+        %th Position
+        %th Your Assessment
+        %th Other Person's Assessment
+        %th Actions
+    %tbody
+      %tr
+        %td= check_in.employment_tenure.position.display_name
+        %td
+          %p.mb-2
+            %strong Rating:
+            = position_rating_display(check_in.send("#{view_mode}_rating"))
+          %p.mb-0
+            %strong Notes:
+            = simple_format(check_in.send("#{view_mode}_private_notes"))
+        %td
+          - other_view_mode = view_mode == :manager ? :employee : :manager
+          %p.mb-2
+            %strong Rating:
+            = position_rating_display(check_in.send("#{other_view_mode}_rating"))
+          %p.mb-0
+            %strong Notes:
+            = simple_format(check_in.send("#{other_view_mode}_private_notes"))
+        %td
+          - confirm_message = view_mode == :manager ? 'Are you ready to finalize this check-in? This will create the official rating.' : 'Your manager will review and finalize this check-in.'
+          = link_to "Go to Finalization", organization_person_finalization_path(@organization, @person), 
+                    class: 'btn btn-success btn-lg',
+                    data: { confirm: confirm_message }
+
+.small.text-muted.mt-2
+  - if view_mode == :manager
+    This will allow you to set the official rating and create a MAAP snapshot.
+  - else
+    Your manager will review both assessments and set the official rating.

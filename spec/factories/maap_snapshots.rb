@@ -6,7 +6,14 @@ FactoryBot.define do
     
     change_type { 'assignment_management' }
     reason { 'Testing assignment changes' }
-    maap_data { {} }
+    maap_data do
+      {
+        employment_tenure: nil,
+        assignments: [],
+        milestones: [],
+        aspirations: []
+      }
+    end
     manager_request_info { { ip_address: '127.0.0.1', user_agent: 'Test Agent' } }
     effective_date { nil }
     

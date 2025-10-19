@@ -1,6 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Finalizers::PositionCheckInFinalizer do
+  include ActiveSupport::Testing::TimeHelpers
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:manager) { create(:person) }
@@ -12,9 +13,9 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
   describe '#finalize' do
     context 'when check-in is ready for finalization' do
       it 'closes current tenure with official rating' do
-        freeze_time do
+        travel_to Time.current do
           result = finalizer.finalize
-          expect(result.success?).to be true
+          expect(result.ok?).to be true
           
           employment_tenure.reload
           expect(employment_tenure.ended_at).to eq(Date.current)
@@ -24,7 +25,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
 
       it 'creates new tenure with same values but nil rating' do
         result = finalizer.finalize
-        expect(result.success?).to be true
+        expect(result.ok?).to be true
         
         new_tenure = result.value[:new_tenure]
         expect(new_tenure.teammate).to eq(teammate)
@@ -38,9 +39,9 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
       end
 
       it 'finalizes the check-in' do
-        freeze_time do
+        travel_to Time.current do
           result = finalizer.finalize
-          expect(result.success?).to be true
+          expect(result.ok?).to be true
           
           check_in.reload
           expect(check_in.official_rating).to eq(2)
@@ -52,7 +53,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
 
       it 'returns rating data for snapshot' do
         result = finalizer.finalize
-        expect(result.success?).to be true
+        expect(result.ok?).to be true
         
         rating_data = result.value[:rating_data]
         expect(rating_data[:position_id]).to eq(employment_tenure.position_id)
@@ -67,7 +68,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
 
       it 'returns error' do
         result = finalizer.finalize
-        expect(result.success?).to be false
+        expect(result.ok?).to be false
         expect(result.error).to eq("Check-in not ready")
       end
     end
@@ -77,7 +78,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
 
       it 'returns error' do
         result = finalizer.finalize
-        expect(result.success?).to be false
+        expect(result.ok?).to be false
         expect(result.error).to eq("Official rating required")
       end
     end
@@ -85,9 +86,10 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
     context 'when official rating is 0' do
       let(:finalizer) { described_class.new(check_in: check_in, official_rating: 0, shared_notes: 'Notes', finalized_by: manager) }
 
-      it 'succeeds' do
+      it 'returns error' do
         result = finalizer.finalize
-        expect(result.success?).to be true
+        expect(result.ok?).to be false
+        expect(result.error).to eq("Invalid official rating")
       end
     end
   end

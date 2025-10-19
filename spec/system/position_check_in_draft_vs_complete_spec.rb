@@ -42,14 +42,12 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       
       expect(page).to have_content('Check-Ins for John Doe')
       expect(page).to have_content('View Mode: Manager')
-      expect(page).to have_content('Position: Software Engineer')
+      expect(page).to have_content('Software Engineer')
 
       # Fill in manager assessment but select "Save as Draft"
-      within '.card.mb-4' do
-        select '🔵 Praising/Trusting - Consistent strong performance', from: '_position_check_in_manager_rating'
-        fill_in '_position_check_in_manager_private_notes', with: 'Manager draft notes'
-        choose '_position_check_in_status_draft'  # This should NOT complete the check-in
-      end
+      select '🔵 Praising/Trusting - Consistent strong performance', from: '[position_check_in][manager_rating]'
+      fill_in '[position_check_in][manager_private_notes]', with: 'Manager draft notes'
+      find('input[type="radio"][value="draft"]').click  # This should NOT complete the check-in
       
       click_button 'Save All Check-Ins'
 
@@ -68,7 +66,7 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       expect(position_check_in.manager_completed_by).to be_nil, "Manager should NOT be marked as completed by when saving as draft"
       
       # Status should show as "In Progress" not "Waiting for Employee"
-      expect(page).to have_content('📝 In Progress')
+      expect(page).to have_content('Draft')
       expect(page).not_to have_content('⏳ Waiting for Employee')
     end
 
@@ -77,11 +75,11 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       visit organization_person_check_ins_path(organization, employee_person)
       
       # Fill in manager assessment and select "Mark Ready for Finalization"
-      within '.card.mb-4' do
-        select '🔵 Praising/Trusting - Consistent strong performance', from: '_position_check_in_manager_rating'
-        fill_in '_position_check_in_manager_private_notes', with: 'Manager completed notes'
-        choose '_position_check_in_status_complete'  # This SHOULD complete the check-in
-      end
+        within 'table' do
+          select '🔵 Praising/Trusting - Consistent strong performance', from: '[position_check_in][manager_rating]'
+          fill_in '[position_check_in][manager_private_notes]', with: 'Manager completed notes'
+          find('input[type="radio"][value="complete"]').click  # This SHOULD complete the check-in
+        end
       
       click_button 'Save All Check-Ins'
 
@@ -95,7 +93,7 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       expect(position_check_in.manager_completed_by).to eq(manager_person), "Manager should be marked as completed by the current manager"
       
       # Status should show as "Waiting for Employee" not "In Progress"
-      expect(page).to have_content('⏳ Waiting for Employee')
+      expect(page).to have_content('Waiting for Employee')
       expect(page).not_to have_content('📝 In Progress')
     end
   end
@@ -112,10 +110,10 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       expect(page).to have_content('View Mode: Employee')
 
       # Fill in employee assessment but select "Save as Draft"
-      within '.card.mb-4' do
-        select '🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements', from: '_position_check_in_employee_rating'
-        fill_in '_position_check_in_employee_private_notes', with: 'Employee draft notes'
-        choose '_position_check_in_status_draft'  # This should NOT complete the check-in
+      within 'table' do
+        select '🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements', from: '[position_check_in][employee_rating]'
+        fill_in '[position_check_in][employee_private_notes]', with: 'Employee draft notes'
+        find('input[type="radio"][value="draft"]').click  # This should NOT complete the check-in
       end
       
       click_button 'Save All Check-Ins'
@@ -129,7 +127,7 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       expect(position_check_in.employee_completed_at).to be_nil, "Employee should NOT be marked as completed when saving as draft"
       
       # Status should show as "In Progress" not "Waiting for Manager"
-      expect(page).to have_content('📝 In Progress')
+      expect(page).to have_content('Draft')
       expect(page).not_to have_content('⏳ Waiting for Manager')
     end
 
@@ -138,11 +136,11 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       visit organization_person_check_ins_path(organization, employee_person)
       
       # Fill in employee assessment and select "Mark Ready for Manager"
-      within '.card.mb-4' do
-        select '🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements', from: '_position_check_in_employee_rating'
-        fill_in '_position_check_in_employee_private_notes', with: 'Employee completed notes'
-        choose '_position_check_in_status_complete'  # This SHOULD complete the check-in
-      end
+        within 'table' do
+          select '🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements', from: '[position_check_in][employee_rating]'
+          fill_in '[position_check_in][employee_private_notes]', with: 'Employee completed notes'
+          find('input[type="radio"][value="complete"]').click  # This SHOULD complete the check-in
+        end
       
       click_button 'Save All Check-Ins'
 
@@ -155,7 +153,7 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       expect(position_check_in.employee_completed_at).to be_present, "Employee should be marked as completed when selecting 'Mark Ready for Manager'"
       
       # Status should show as "Waiting for Manager" not "In Progress"
-      expect(page).to have_content('⏳ Waiting for Manager')
+      expect(page).to have_content('Waiting for Manager')
       expect(page).not_to have_content('📝 In Progress')
     end
   end

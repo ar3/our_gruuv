@@ -51,12 +51,11 @@ RSpec.describe 'Check-Ins and Finalization Standard Layout', type: :system, crit
       expect(page).to have_content('Check-In Mode (Active)')
       
       # Check back link
-      expect(page).to have_link('Back to Assignments')
+      expect(page).to have_link('Back to Check-Ins')
       
       # Check view switcher options
       expect(page).to have_content('Check-In Mode')
       expect(page).to have_content('Finalization Mode')
-      expect(page).to have_content('Assignment Mode')
       expect(page).to have_content('Management Mode')
     end
 
@@ -67,9 +66,9 @@ RSpec.describe 'Check-Ins and Finalization Standard Layout', type: :system, crit
       allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager_person)
       visit organization_person_check_ins_path(organization, employee_person)
       
-      # Should show "Back to Profile" instead of "Back to Assignments"
+      # Should show "Back to Profile" instead of "Back to Check-Ins"
       expect(page).to have_link('Back to Profile')
-      expect(page).not_to have_link('Back to Assignments')
+      expect(page).not_to have_link('Back to Check-Ins')
     end
   end
 
@@ -91,7 +90,6 @@ RSpec.describe 'Check-Ins and Finalization Standard Layout', type: :system, crit
       
       # Check header
       expect(page).to have_content('Finalize Check-Ins for John Doe')
-      expect(page).to have_content('Review ready check-ins and finalize selected ones')
       
       # Check view switcher is present
       expect(page).to have_css('.dropdown-toggle')
@@ -106,7 +104,6 @@ RSpec.describe 'Check-Ins and Finalization Standard Layout', type: :system, crit
       # Check view switcher options
       expect(page).to have_content('Check-In Mode')
       expect(page).to have_content('Finalization Mode')
-      expect(page).to have_content('Assignment Mode')
       expect(page).to have_content('Management Mode')
     end
 
@@ -127,7 +124,6 @@ RSpec.describe 'Check-Ins and Finalization Standard Layout', type: :system, crit
       
       # Check header for employee
       expect(page).to have_content('Finalize Check-Ins for John Doe')
-      expect(page).to have_content('Review your check-ins that are ready for finalization')
     end
   end
 

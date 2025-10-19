@@ -34,6 +34,9 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
            manager: manager,
            started_at: 1.month.ago)
     
+    # Set current organization for manager
+    allow(manager).to receive(:current_organization).and_return(organization)
+    
     # Mock authentication at ApplicationController level
     allow_any_instance_of(ApplicationController).to receive(:authenticate_person!).and_return(true)
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)
@@ -76,7 +79,7 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
           teammate: employee_teammate,
           finalization_params: hash_including(:finalize_assignments, :assignment_check_ins),
           finalized_by: manager,
-          request_info: hash_including(:ip)
+          request_info: hash_including(:ip_address)
         ).and_return(double(call: Result.ok(snapshot: double, results: {})))
         
         post :create, params: finalization_params
@@ -110,12 +113,14 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
     context 'when authorization fails' do
       before do
         allow_any_instance_of(Organizations::FinalizationsController).to receive(:current_person).and_return(employee) # Employee trying to finalize
-        allow_any_instance_of(Organizations::FinalizationsController).to receive(:authorize).and_raise(Pundit::NotAuthorizedError)
+        allow_any_instance_of(Organizations::FinalizationsController).to receive(:authorize_finalization).and_raise(Pundit::NotAuthorizedError)
       end
       
       it 'handles authorization failure' do
-        expect { post :create, params: finalization_params }
-          .to raise_error(Pundit::NotAuthorizedError)
+        post :create, params: finalization_params
+        
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to include("don't have permission")
       end
     end
   end

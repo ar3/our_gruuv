@@ -3,13 +3,29 @@
   %p.text-muted.mb-0= "View Mode: #{@view_mode.to_s.titleize}"
         
 - content_for :header_action do
-  = render 'people/view_switcher'
+  .d-flex.align-items-center.gap-2
+    -# View Toggle Buttons
+    .btn-group.me-3{"role" => "group"}
+      = link_to organization_person_check_ins_path(@organization, @person, view: 'table'), 
+                class: "btn btn-sm #{'btn-primary' if @view_mode_param == 'table'} #{'btn-outline-primary' if @view_mode_param != 'table'}",
+                "data-view" => "table",
+                title: "Table View" do
+        %i.bi.bi-table.me-1
+        Table
+      = link_to organization_person_check_ins_path(@organization, @person, view: 'card'), 
+                class: "btn btn-sm #{'btn-primary' if @view_mode_param == 'card'} #{'btn-outline-primary' if @view_mode_param != 'card'}",
+                "data-view" => "card",
+                title: "Card View" do
+        %i.bi.bi-grid.me-1
+        Card
+    
+    = render 'people/view_switcher'
 
 - content_for :go_back_link do
   - if @person.active_employment_tenure_for(@organization)
-    = link_to organization_person_check_ins_path(@organization, @person), class: "go-back-link" do
+    = link_to organization_person_finalization_path(@organization, @person), class: "go-back-link" do
       %i.bi.bi-arrow-left.me-2
-      Back to Check-Ins
+      Go to Finalization
   - else
     = link_to organization_person_path(@organization, @person), class: "go-back-link" do
       %i.bi.bi-arrow-left.me-2
@@ -21,41 +37,65 @@
     %strong ⚠️ Your manager has finalized check-ins.
     = link_to 'Review and Acknowledge', organization_person_finalization_path(@organization, @person), class: 'btn btn-sm btn-warning'
 
+-# Mobile warning for table view
+- if @view_mode_param == 'table'
+  .alert.alert-info.d-md-none
+    %strong ℹ️ Mobile Notice:
+    This view performs better on larger screens. 
+    = link_to 'Switch to card view for mobile', organization_person_check_ins_path(@organization, @person, view: 'card'), class: 'btn btn-sm btn-outline-primary ms-2'
+
 = form_with url: organization_person_check_ins_path(@organization, @person), method: :patch do |f|
   
   -# Position Section
-  .row.mt-4
-    .col-12
-      = render 'position_check_in_form', 
-               form: f,
-               check_in: @position_check_in, 
-               view_mode: @view_mode
+  = render 'section_header', 
+           title: 'Position', 
+           icon: 'bi-briefcase', 
+           description: 'Assess role performance and growth'
   
-  -# Assignment Sections
-  - if @assignment_check_ins&.any?
-    - puts "DEBUG: Rendering #{@assignment_check_ins.count} assignment check-ins"
-    - @assignment_check_ins.each do |check_in|
-      .row.mt-4
-        .col-12
-          = render 'assignment_check_in_form',
-                   form: f,
-                   check_in: check_in,
-                   view_mode: @view_mode
+  - if @view_mode_param == 'table'
+    = render 'position_check_ins_table',
+             position_check_in: @position_check_in,
+             form: f,
+             view_mode: @view_mode
   - else
-    - puts "DEBUG: No assignment check-ins to render"
+    = render 'position_check_in_card',
+             position_check_in: @position_check_in,
+             form: f,
+             view_mode: @view_mode
   
-  -# Aspiration Sections
-  - if @aspiration_check_ins&.any?
-    - puts "DEBUG: Rendering #{@aspiration_check_ins.count} aspiration check-ins"
-    - @aspiration_check_ins.each do |check_in|
-      .row.mt-4
-        .col-12
-          = render 'aspiration_check_in_form',
-                   form: f,
-                   check_in: check_in,
-                   view_mode: @view_mode
+  -# Assignment Section
+  = render 'section_header', 
+           title: 'Assignment', 
+           icon: 'bi-clipboard-check', 
+           description: 'Evaluate project contributions and energy'
+  
+  - if @view_mode_param == 'table'
+    = render 'assignment_check_ins_table',
+             assignment_check_ins: @assignment_check_ins,
+             form: f,
+             view_mode: @view_mode
   - else
-    - puts "DEBUG: No aspiration check-ins to render"
+    = render 'assignment_check_ins_card',
+             assignment_check_ins: @assignment_check_ins,
+             form: f,
+             view_mode: @view_mode
+  
+  -# Aspiration Section
+  = render 'section_header', 
+           title: 'Aspiration', 
+           icon: 'bi-star', 
+           description: 'Track progress toward personal goals'
+  
+  - if @view_mode_param == 'table'
+    = render 'aspiration_check_ins_table',
+             aspiration_check_ins: @aspiration_check_ins,
+             form: f,
+             view_mode: @view_mode
+  - else
+    = render 'aspiration_check_ins_card',
+             aspiration_check_ins: @aspiration_check_ins,
+             form: f,
+             view_mode: @view_mode
   
   .row.mt-4
     .col-12

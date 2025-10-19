@@ -129,7 +129,7 @@ RSpec.describe 'People Management', type: :system, critical: true do
       click_button 'Filter & Sort'
       
       # Should see filter options
-      expect(page).to have_content('Unassigned Employees')
+      expect(page).to have_content('Unassigned')
       expect(page).to have_content('Followers')
     end
   end
@@ -147,7 +147,7 @@ RSpec.describe 'People Management', type: :system, critical: true do
       # Navigate to new employee (may show permission error)
       visit new_organization_employment_management_path(organization)
       # Check that we're on the new employee page or got permission error
-      expect(page).to have_content('Create New Person & Employment').or have_content('permission', visible: :all)
+      expect(page).to have_content('Organization Connection').or have_content('permission')
     end
 
     it 'shows proper permissions and access controls' do

@@ -28,7 +28,8 @@ class Organizations::FinalizationsController < ApplicationController
     result = CheckInFinalizationService.new(
       teammate: @teammate,
       finalization_params: finalization_params,
-      finalized_by: current_person
+      finalized_by: current_person,
+      request_info: build_request_info
     ).call
     
     if result.ok?

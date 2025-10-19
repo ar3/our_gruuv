@@ -48,14 +48,14 @@ class MaapSnapshot < ApplicationRecord
   
   # Class methods for building snapshots
   def self.build_for_employee(employee:, created_by:, change_type:, reason:, request_info: {})
-    company = employee.employment_tenures.active.first&.company
+    company = employee.teammates.joins(:employment_tenures).where(employment_tenures: { ended_at: nil }).first&.employment_tenures&.active&.first&.company
     new(
       employee: employee,
       created_by: created_by,
       company: company,
       change_type: change_type,
       reason: reason,
-      request_info: request_info,
+      manager_request_info: request_info,
       maap_data: build_maap_data_for_employee(employee, company)
     )
   end
@@ -69,7 +69,7 @@ class MaapSnapshot < ApplicationRecord
       company: company,
       change_type: change_type,
       reason: reason,
-      request_info: request_info,
+      manager_request_info: request_info,
       form_params: form_params,
       maap_data: build_maap_data_for_employee_with_changes(employee, company, form_params)
     )
@@ -83,7 +83,7 @@ class MaapSnapshot < ApplicationRecord
       company: company,
       change_type: change_type,
       reason: reason,
-      request_info: request_info,
+      manager_request_info: request_info,
       form_params: form_params,
       maap_data: nil
     )
@@ -96,7 +96,7 @@ class MaapSnapshot < ApplicationRecord
       company: company,
       change_type: 'exploration',
       reason: reason,
-      request_info: request_info,
+      manager_request_info: request_info,
       maap_data: {}
     )
   end

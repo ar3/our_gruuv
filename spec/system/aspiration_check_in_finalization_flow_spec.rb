@@ -17,14 +17,14 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       within("[data-aspiration-id='#{company_aspiration_1.id}']") do
         select 'Exceeding', from: "aspiration_check_ins[#{aspiration_check_in_1.id}][manager_rating]"
         fill_in "aspiration_check_ins[#{aspiration_check_in_1.id}][manager_private_notes]", with: 'Manager thinks employee is exceeding expectations on company growth'
-        choose "aspiration_check_ins[#{aspiration_check_in_1.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Fill out company-aspiration-2 (save as draft)
       within("[data-aspiration-id='#{company_aspiration_2.id}']") do
         select 'Meeting', from: "aspiration_check_ins[#{aspiration_check_in_2.id}][manager_rating]"
         fill_in "aspiration_check_ins[#{aspiration_check_in_2.id}][manager_private_notes]", with: 'Manager thinks employee is meeting expectations on innovation'
-        choose "aspiration_check_ins[#{aspiration_check_in_2.id}][status]_draft"
+        find('input[type="radio"][value="draft"]').click
       end
       
       # Step 2: Submit
@@ -39,14 +39,14 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       within("[data-aspiration-id='#{company_aspiration_1.id}']") do
         select 'Meeting', from: "aspiration_check_ins[#{aspiration_check_in_1.id}][employee_rating]"
         fill_in "aspiration_check_ins[#{aspiration_check_in_1.id}][employee_private_notes]", with: 'Employee thinks they are meeting expectations on company growth'
-        choose "aspiration_check_ins[#{aspiration_check_in_1.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Fill out company-aspiration-2 (save as draft)
       within("[data-aspiration-id='#{company_aspiration_2.id}']") do
         select 'Working to Meet', from: "aspiration_check_ins[#{aspiration_check_in_2.id}][employee_rating]"
         fill_in "aspiration_check_ins[#{aspiration_check_in_2.id}][employee_private_notes]", with: 'Employee thinks they are working to meet expectations on innovation'
-        choose "aspiration_check_ins[#{aspiration_check_in_2.id}][status]_draft"
+        find('input[type="radio"][value="draft"]').click
       end
       
       # Step 4: Submit
@@ -103,7 +103,7 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       within("[data-aspiration-id='#{sales_aspiration.id}']") do
         select 'Exceeding', from: "aspiration_check_ins[#{aspiration_check_in.id}][manager_rating]"
         fill_in "aspiration_check_ins[#{aspiration_check_in.id}][manager_private_notes]", with: 'Manager thinks sales employee is exceeding expectations on sales excellence'
-        choose "aspiration_check_ins[#{aspiration_check_in.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Step 2: Submit
@@ -118,7 +118,7 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       within("[data-aspiration-id='#{sales_aspiration.id}']") do
         select 'Meeting', from: "aspiration_check_ins[#{aspiration_check_in.id}][employee_rating]"
         fill_in "aspiration_check_ins[#{aspiration_check_in.id}][employee_private_notes]", with: 'Sales employee thinks they are meeting expectations on sales excellence'
-        choose "aspiration_check_ins[#{aspiration_check_in.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Step 4: Submit
@@ -174,7 +174,7 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       within("[data-aspiration-id='#{support_aspiration.id}']") do
         select 'Exceeding', from: "aspiration_check_ins[#{aspiration_check_in.id}][employee_rating]"
         fill_in "aspiration_check_ins[#{aspiration_check_in.id}][employee_private_notes]", with: 'Support employee thinks they are exceeding expectations on customer support'
-        choose "aspiration_check_ins[#{aspiration_check_in.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Step 2: Submit
@@ -189,7 +189,7 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       within("[data-aspiration-id='#{support_aspiration.id}']") do
         select 'Meeting', from: "aspiration_check_ins[#{aspiration_check_in.id}][manager_rating]"
         fill_in "aspiration_check_ins[#{aspiration_check_in.id}][manager_private_notes]", with: 'Manager thinks support employee is meeting expectations on customer support'
-        choose "aspiration_check_ins[#{aspiration_check_in.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Step 4: Submit

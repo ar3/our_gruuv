@@ -117,7 +117,7 @@ RSpec.describe MaapSnapshot, type: :model do
         expect(snapshot.company.id).to eq(company.id)
         expect(snapshot.change_type).to eq('assignment_management')
         expect(snapshot.reason).to eq('Test snapshot')
-        expect(snapshot.request_info['ip_address']).to eq('127.0.0.1')
+        expect(snapshot.manager_request_info['ip_address']).to eq('127.0.0.1')
       end
     end
     

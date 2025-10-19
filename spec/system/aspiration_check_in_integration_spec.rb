@@ -35,7 +35,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
         select 'Meeting', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][employee_rating]"
         fill_in "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][employee_private_notes]", 
                 with: 'Making good progress on career development goals'
-        choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Employee fills out second aspiration
@@ -43,7 +43,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
         select 'Exceeding', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][employee_rating]"
         fill_in "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][employee_private_notes]", 
                 with: 'Excelled in learning new technologies'
-        choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
@@ -63,7 +63,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
         select 'Meeting', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][manager_rating]"
         fill_in "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][manager_private_notes]", 
                 with: 'Employee shows strong career development initiative'
-        choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       within('.card', text: 'Aspiration: Technical Skills') do
@@ -73,7 +73,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
         select 'Exceeding', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][manager_rating]"
         fill_in "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][manager_private_notes]", 
                 with: 'Outstanding technical growth and contribution'
-        choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
@@ -158,7 +158,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
         select 'Meeting', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][employee_rating]"
         fill_in "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][employee_private_notes]", 
                 with: 'Making good progress'
-        choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][status]_draft"
+        find('input[type="radio"][value="draft"]').click
       end
       
       click_button 'Save All Check-Ins'
@@ -179,7 +179,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
       
       within('.card', text: 'Aspiration: Career Growth') do
         select 'Meeting', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][employee_rating]"
-        choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
@@ -190,7 +190,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
       
       within('.card', text: 'Aspiration: Career Growth') do
         select 'Meeting', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][manager_rating]"
-        choose "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'

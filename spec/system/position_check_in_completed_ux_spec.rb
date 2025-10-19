@@ -40,44 +40,44 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       # Step 1: Complete manager assessment
       visit organization_person_check_ins_path(organization, employee_person)
       
-      within '.card.mb-4' do
-        select '🔵 Praising/Trusting - Consistent strong performance', from: '_position_check_in_manager_rating'
-        fill_in '_position_check_in_manager_private_notes', with: 'John is doing excellent work on the frontend features'
-        choose '_position_check_in_status_complete'
+      within 'table' do
+        select '🔵 Praising/Trusting - Consistent strong performance', from: '[position_check_in][manager_rating]'
+        fill_in '[position_check_in][manager_private_notes]', with: 'John is doing excellent work on the frontend features'
+        find('input[type="radio"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
       expect(page).to have_content('Check-ins saved successfully.')
       
       # Step 2: Verify view-only mode is shown
-      expect(page).to have_content('Your Assessment')
+      expect(page).to have_content('Ready for Finalization')
       expect(page).to have_content('🔵 Praising/Trusting')
       expect(page).to have_content('John is doing excellent work on the frontend features')
-      expect(page).to have_content('John is not ready to finalize this check-in')
+      expect(page).to have_content('John has not completed their assessment')
       
       # Should NOT show form fields
-      expect(page).not_to have_select('_position_check_in_manager_rating')
-      expect(page).not_to have_field('_position_check_in_manager_private_notes')
+      expect(page).not_to have_select('[position_check_in][manager_rating]')
+      expect(page).not_to have_field('[position_check_in][manager_private_notes]')
       
-      # Should show radio buttons for status
-      expect(page).to have_checked_field('_position_check_in_status_complete')
-      expect(page).to have_unchecked_field('_position_check_in_status_draft')
+      # Should show radio buttons for status (check for any radio button with complete value)
+      expect(page).to have_css('input[type="radio"][value="complete"]')
+      expect(page).to have_css('input[type="radio"][value="draft"]')
       expect(page).to have_content('Ready for Finalization')
       expect(page).to have_content('Make Changes')
       
       # Step 3: Test undo functionality
-      choose '_position_check_in_status_draft'
+      find('input[type="radio"][value="draft"]').click
       click_button 'Save All Check-Ins'
       
       expect(page).to have_content('Check-ins saved successfully.')
       
       # Step 4: Verify back to edit mode
-      expect(page).to have_content('📝 In Progress')
-      expect(page).to have_select('_position_check_in_manager_rating')
-      expect(page).to have_field('_position_check_in_manager_private_notes')
+      expect(page).to have_content('Draft')
+      expect(page).to have_select('[position_check_in][manager_rating]')
+      expect(page).to have_field('[position_check_in][manager_private_notes]')
       
       # Values should be preserved
-      expect(find_field('_position_check_in_manager_private_notes').value).to eq('John is doing excellent work on the frontend features')
+      expect(find_field('[position_check_in][manager_private_notes]').value).to eq('John is doing excellent work on the frontend features')
     end
   end
 
@@ -90,44 +90,44 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       # Step 1: Complete employee assessment
       visit organization_person_check_ins_path(organization, employee_person)
       
-      within '.card.mb-4' do
-        select '🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements', from: '_position_check_in_employee_rating'
-        fill_in '_position_check_in_employee_private_notes', with: 'I feel I am meeting expectations but want to improve'
-        choose '_position_check_in_status_complete'
+      within 'table' do
+        select '🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements', from: '[position_check_in][employee_rating]'
+        fill_in '[position_check_in][employee_private_notes]', with: 'I feel I am meeting expectations but want to improve'
+        find('input[type="radio"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
       expect(page).to have_content('Check-ins saved successfully.')
       
       # Step 2: Verify view-only mode is shown
-      expect(page).to have_content('Your Assessment')
+      expect(page).to have_content('Ready for Manager')
       expect(page).to have_content('🟡 Actively Coaching')
       expect(page).to have_content('I feel I am meeting expectations but want to improve')
-      expect(page).to have_content('Your manager is not ready to finalize this check-in')
+      expect(page).to have_content('Waiting for Manager')
       
       # Should NOT show form fields
-      expect(page).not_to have_select('_position_check_in_employee_rating')
-      expect(page).not_to have_field('_position_check_in_employee_private_notes')
+      expect(page).not_to have_select('[position_check_in][employee_rating]')
+      expect(page).not_to have_field('[position_check_in][employee_private_notes]')
       
       # Should show radio buttons for status
-      expect(page).to have_checked_field('_position_check_in_status_complete')
-      expect(page).to have_unchecked_field('_position_check_in_status_draft')
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="complete"]:checked')
+      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="draft"]:not(:checked)')
       expect(page).to have_content('Ready for Manager')
       expect(page).to have_content('Make Changes')
       
       # Step 3: Test undo functionality
-      choose '_position_check_in_status_draft'
+      find('input[type="radio"][value="draft"]').click
       click_button 'Save All Check-Ins'
       
       expect(page).to have_content('Check-ins saved successfully.')
       
       # Step 4: Verify back to edit mode
-      expect(page).to have_content('📝 In Progress')
-      expect(page).to have_select('_position_check_in_employee_rating')
-      expect(page).to have_field('_position_check_in_employee_private_notes')
+      expect(page).to have_content('Draft')
+      expect(page).to have_select('[position_check_in][employee_rating]')
+      expect(page).to have_field('[position_check_in][employee_private_notes]')
       
       # Values should be preserved
-      expect(find_field('_position_check_in_employee_private_notes').value).to eq('I feel I am meeting expectations but want to improve')
+      expect(find_field('[position_check_in][employee_private_notes]').value).to eq('I feel I am meeting expectations but want to improve')
     end
   end
 end

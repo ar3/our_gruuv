@@ -41,46 +41,44 @@ RSpec.describe 'Position Check-In Draft vs Complete - Comprehensive Test', type:
       visit organization_person_check_ins_path(organization, employee_person)
       
       # Look for form fields in the in-progress partial
-      within '.card.mb-4' do
-        select '🔵 Praising/Trusting - Consistent strong performance', from: '_position_check_in_manager_rating'
-        fill_in '_position_check_in_manager_private_notes', with: 'Manager draft notes'
-        choose '_position_check_in_status_draft'
+      within 'table' do
+        select '🔵 Praising/Trusting - Consistent strong performance', from: '[position_check_in][manager_rating]'
+        fill_in '[position_check_in][manager_private_notes]', with: 'Manager draft notes'
+        find('input[type="radio"][value="draft"]').click
       end
       
       click_button 'Save All Check-Ins'
       expect(page).to have_content('Check-ins saved successfully.')
       
-      position_check_in = PositionCheckIn.find_by(teammate: employee_teammate)
+      position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.manager_completed_at).to be_nil, "Draft should not mark as completed"
       expect(position_check_in.manager_completed_by).to be_nil, "Draft should not set completed_by"
-      expect(page).to have_content('📝 In Progress')
+      expect(page).to have_content('Draft')
       
       # Test 2: Mark as complete SHOULD mark as completed
-      within '.card.mb-4' do
-        choose '_position_check_in_status_complete'
+      within 'table' do
+        find('input[type="radio"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
       expect(page).to have_content('Check-ins saved successfully.')
       
-      position_check_in.reload
+      position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.manager_completed_at).to be_present, "Complete should mark as completed"
       expect(position_check_in.manager_completed_by).to eq(manager_person), "Complete should set completed_by"
       expect(page).to have_content('Ready for Finalization')
       
       # Test 3: Change back to draft should uncomplete
-      # Now we're in the completed view, so the radio buttons are in a different structure
-      within '.card.mb-4' do
-        choose '_position_check_in_status_draft'
-      end
+      # Now we're in the completed view, so the radio buttons are outside the table
+      find('input[type="radio"][value="draft"]').click
       
       click_button 'Save All Check-Ins'
       expect(page).to have_content('Check-ins saved successfully.')
       
-      position_check_in.reload
+      position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.manager_completed_at).to be_nil, "Changing to draft should uncomplete"
       expect(position_check_in.manager_completed_by).to be_nil, "Changing to draft should clear completed_by"
-      expect(page).to have_content('📝 In Progress')
+      expect(page).to have_content('Draft')
     end
   end
 
@@ -93,42 +91,40 @@ RSpec.describe 'Position Check-In Draft vs Complete - Comprehensive Test', type:
       # Test 1: Save as draft should NOT mark as completed
       visit organization_person_check_ins_path(organization, employee_person)
       
-      within '.card.mb-4' do
-        select '🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements', from: '_position_check_in_employee_rating'
-        fill_in '_position_check_in_employee_private_notes', with: 'Employee draft notes'
-        choose '_position_check_in_status_draft'
+      within 'table' do
+        select '🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements', from: '[position_check_in][employee_rating]'
+        fill_in '[position_check_in][employee_private_notes]', with: 'Employee draft notes'
+        find('input[type="radio"][value="draft"]').click
       end
       
       click_button 'Save All Check-Ins'
       expect(page).to have_content('Check-ins saved successfully.')
       
-      position_check_in = PositionCheckIn.find_by(teammate: employee_teammate)
+      position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.employee_completed_at).to be_nil, "Draft should not mark as completed"
-      expect(page).to have_content('📝 In Progress')
+      expect(page).to have_content('Draft')
       
       # Test 2: Mark as complete SHOULD mark as completed
-      within '.card.mb-4' do
-        choose '_position_check_in_status_complete'
+      within 'table' do
+        find('input[type="radio"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
       expect(page).to have_content('Check-ins saved successfully.')
       
-      position_check_in.reload
+      position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.employee_completed_at).to be_present, "Complete should mark as completed"
       expect(page).to have_content('Ready for Manager')
       
       # Test 3: Change back to draft should uncomplete
-      within '.card.mb-4' do
-        choose '_position_check_in_status_draft'
-      end
+      find('input[type="radio"][value="draft"]').click
       
       click_button 'Save All Check-Ins'
       expect(page).to have_content('Check-ins saved successfully.')
       
-      position_check_in.reload
+      position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.employee_completed_at).to be_nil, "Changing to draft should uncomplete"
-      expect(page).to have_content('📝 In Progress')
+      expect(page).to have_content('Draft')
     end
   end
 end

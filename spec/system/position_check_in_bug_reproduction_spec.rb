@@ -47,10 +47,10 @@ RSpec.describe 'Position Check-In Bug Reproduction', type: :system, critical: tr
     puts "DEBUG: Initial check-ins count: #{initial_check_ins.count}"
     
     # Step 3: Fill in manager assessment and select "Save as Draft"
-    within '.card.mb-4' do
-      select '🔵 Praising/Trusting - Consistent strong performance', from: '_position_check_in_manager_rating'
-      fill_in '_position_check_in_manager_private_notes', with: 'Manager draft notes - should NOT be completed'
-      choose '_position_check_in_status_draft'  # This should NOT complete the check-in
+    within 'table' do
+      select '🔵 Praising/Trusting - Consistent strong performance', from: '[position_check_in][manager_rating]'
+      fill_in '[position_check_in][manager_private_notes]', with: 'Manager draft notes - should NOT be completed'
+      find('input[type="radio"][value="draft"]').click  # This should NOT complete the check-in
     end
     
     # Step 4: Click save
@@ -78,7 +78,7 @@ RSpec.describe 'Position Check-In Bug Reproduction', type: :system, critical: tr
       "Expected nil, got #{position_check_in.manager_completed_by}"
     
     # Step 7: Verify UI state
-    expect(page).to have_content('📝 In Progress')
+    expect(page).to have_content('Draft')
     expect(page).not_to have_content('⏳ Waiting for Employee')
   end
 end

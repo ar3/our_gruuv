@@ -3,6 +3,7 @@ module CheckInHelper
   def position_rating_display(rating)
     return 'Not Rated' if rating.nil?
     data = EmploymentTenure::POSITION_RATINGS[rating]
+    return 'Not Rated' if data.nil?
     "#{data[:emoji]} #{data[:label]}"
   end
   

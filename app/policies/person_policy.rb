@@ -173,14 +173,22 @@ class PersonPolicy < ApplicationPolicy
     # Users can view check-ins if they are:
     # 1. The person themselves
     # 2. In their managerial hierarchy 
-    # 3. Have employment management permissions for any organization
+    # 3. Have employment management permissions for the specific organization
     return true if admin_bypass? || actual_user == record || actual_user.in_managerial_hierarchy_of?(record)
     
-    # Check if user has employment management permissions in any organization
-    user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
-    user_has_employment_management = user_employment_orgs.any? { |org| actual_user.can_manage_employment?(org) }
+    # Get organization context from pundit_user (handle both ApplicationController and OrganizationNamespaceBaseController)
+    user_org = if user.respond_to?(:organization) && user.organization
+                 user.organization
+               elsif user.respond_to?(:pundit_organization) && user.pundit_organization
+                 user.pundit_organization
+               else
+                 nil
+               end
     
-    user_has_employment_management
+    return false unless user_org
+    
+    # Check if user has employment management permissions in the SPECIFIC organization
+    actual_user.can_manage_employment?(user_org)
   end
 
 

@@ -42,36 +42,24 @@ RSpec.describe 'Check-ins Employee Flow', type: :system, critical: true do
       )
     end
 
-    it 'loads check-ins page with empty state' do
-      visit organization_check_in_path(organization, employee_person)
-
-      expect(page).to have_content('Check-In Mode for John Doe')
-      expect(page).to have_content('Assignment Check-ins')
-      expect(page).to have_content('No Check-ins in Progress')
-      expect(page).to have_content('No assignment check-ins are currently in progress')
-      expect(page).to have_content('Check-ins appear here once either the employee or manager has started their review')
-      expect(page).to have_link('Manage Assignments')
-    end
 
     it 'shows coming soon sections' do
-      visit organization_check_in_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
-      expect(page).to have_content('Discussion Topics')
-      expect(page).to have_content('Personal Goals')
-      expect(page).to have_content('TODOs')
-      expect(page).to have_content('Coming Soon')
+      expect(page).to have_content('ASPIRATION')
+      expect(page).to have_content('No aspirations available to do a check-in on')
     end
 
     it 'shows proper back navigation' do
-      visit organization_check_in_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
-      expect(page).to have_link('Back to Assignment Mode')
+      expect(page).to have_link('Go to Finalization')
     end
 
     it 'shows view switcher in header' do
-      visit organization_check_in_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
-      expect(page).to have_content('Check-In Mode for John Doe')
+      expect(page).to have_content('Check-Ins for John Doe')
       # View switcher should be present in header_action
     end
   end
@@ -264,24 +252,26 @@ RSpec.describe 'Check-ins Employee Flow', type: :system, critical: true do
     let!(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
 
     it 'shows proper back navigation' do
-      visit organization_check_in_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
-      expect(page).to have_link('Back to Assignment Mode')
+      # Should show "Back to Profile" link when no active employment tenure
+      expect(page).to have_link('Back to Profile')
     end
 
     it 'shows view switcher in header' do
-      visit organization_check_in_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
-      expect(page).to have_content('Check-In Mode for Charlie Brown')
+      expect(page).to have_content('Check-Ins for Charlie Brown')
       # View switcher should be present in header_action
     end
 
     it 'shows check-in page structure' do
-      visit organization_check_in_path(organization, employee_person)
+      visit organization_person_check_ins_path(organization, employee_person)
 
-      expect(page).to have_content('Check-In Mode for Charlie Brown')
-      expect(page).to have_content('Assignment Check-ins')
-      expect(page).to have_content('No Check-ins in Progress')
+      expect(page).to have_content('Check-Ins for Charlie Brown')
+      expect(page).to have_content('ASSIGNMENT')
+      expect(page).to have_content('No position available to do a check-in on')
+      expect(page).to have_content('No assignments available to do a check-in on')
     end
   end
 end

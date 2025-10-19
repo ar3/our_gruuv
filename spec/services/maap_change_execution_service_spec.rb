@@ -373,7 +373,12 @@ RSpec.describe MaapChangeExecutionService do
                created_by: manager,
                company: organization,
                change_type: 'assignment_management',
-               maap_data: {})
+               maap_data: {
+                 employment_tenure: nil,
+                 assignments: [],
+                 milestones: [],
+                 aspirations: []
+               })
       end
 
       before do

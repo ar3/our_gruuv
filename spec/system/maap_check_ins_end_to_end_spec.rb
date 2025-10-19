@@ -43,12 +43,12 @@ RSpec.describe 'MAAP Check-In System End-to-End', type: :system, critical: true 
       expect(page).to have_content('Check-Ins for John Doe')
       expect(page).to have_content('View Mode: Manager')
       expect(page).to have_content('Software Engineer')
-      expect(page).to have_content('📝 In Progress')
+      expect(page).to have_content('Draft')
 
       # Step 2: Manager completes their assessment
       select '🔵 Praising/Trusting - Consistent strong performance', from: '_position_check_in_manager_rating'
       fill_in '_position_check_in_manager_private_notes', with: 'John is doing excellent work on the frontend features'
-      choose '_position_check_in_status_complete'
+      find('input[type="radio"][value="complete"]').click
       
       click_button 'Save All Check-Ins'
 
@@ -67,7 +67,7 @@ RSpec.describe 'MAAP Check-In System End-to-End', type: :system, critical: true 
       # Step 4: Employee completes their assessment
       select '🟢 Looking to Reward - Exceptional, seeking to increase responsibility', from: '_position_check_in_employee_rating'
       fill_in '_position_check_in_employee_private_notes', with: 'I feel I am exceeding expectations and ready for more responsibility'
-      choose '_position_check_in_status_complete'
+      find('input[type="radio"][value="complete"]').click
       
       click_button 'Save All Check-Ins'
 
@@ -151,7 +151,7 @@ RSpec.describe 'MAAP Check-In System End-to-End', type: :system, critical: true 
       
       select '🔵 Praising/Trusting - Consistent strong performance', from: 'position_check_in_manager_rating'
       fill_in 'position_check_in_manager_private_notes', with: 'Manager notes'
-      choose 'position_check_in_status_complete'
+      find('input[type="radio"][value="complete"]').click
       click_button 'Save All Check-Ins'
 
       # Switch to employee view
@@ -167,7 +167,7 @@ RSpec.describe 'MAAP Check-In System End-to-End', type: :system, critical: true 
       # Employee completes
       select '🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements', from: 'position_check_in_employee_rating'
       fill_in 'position_check_in_employee_private_notes', with: 'Employee notes'
-      choose 'position_check_in_status_complete'
+      find('input[type="radio"][value="complete"]').click
       click_button 'Save All Check-Ins'
 
       # Switch back to manager view
@@ -195,7 +195,7 @@ RSpec.describe 'MAAP Check-In System End-to-End', type: :system, critical: true 
       
       select '🔵 Praising/Trusting - Consistent strong performance', from: 'position_check_in_manager_rating'
       fill_in 'position_check_in_manager_private_notes', with: 'Draft notes'
-      choose 'position_check_in_status_draft'
+      find('input[type="radio"][value="draft"]').click
       click_button 'Save All Check-Ins'
 
       # Should not be completed
@@ -206,7 +206,7 @@ RSpec.describe 'MAAP Check-In System End-to-End', type: :system, critical: true 
 
       # Now mark as ready
       visit organization_person_check_ins_path(organization, employee_person)
-      choose 'position_check_in_status_complete'
+      find('input[type="radio"][value="complete"]').click
       click_button 'Save All Check-Ins'
 
       # Should now be completed
@@ -277,7 +277,7 @@ RSpec.describe 'MAAP Check-In System End-to-End', type: :system, critical: true 
       
       # Initial state
       visit organization_person_check_ins_path(organization, employee_person)
-      expect(page).to have_content('📝 In Progress')
+      expect(page).to have_content('Draft')
 
       # Employee completed
       position_check_in.update!(

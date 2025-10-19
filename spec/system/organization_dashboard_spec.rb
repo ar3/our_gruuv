@@ -39,8 +39,8 @@ RSpec.describe 'Organization Dashboard', type: :system, critical: true do
       expect(page).to have_content('Clarify expectations')
       expect(page).to have_content('Milestones')
       expect(page).to have_content('Recent Milestone')
-      expect(page).to have_content('All Ability')
-      expect(page).to have_content('My Milestone')
+      expect(page).to have_content('All 0 Abilities')
+      expect(page).to have_content('My 0 Milestones')
     end
 
     it 'shows CONVO section with collaboration tools' do
@@ -67,8 +67,8 @@ RSpec.describe 'Organization Dashboard', type: :system, critical: true do
       visit dashboard_organization_path(organization)
 
       expect(page).to have_content(organization.display_name)
-      expect(page).to have_content('All Teammate')
-      expect(page).to have_content('All Team')
+      expect(page).to have_content('All 0 Teammates')
+      expect(page).to have_content('All 0 Teams')
       expect(page).to have_content('Organization Overview')
     end
   end
@@ -91,14 +91,14 @@ RSpec.describe 'Organization Dashboard', type: :system, critical: true do
     it 'navigates to abilities management' do
       visit dashboard_organization_path(organization)
 
-      click_link 'All Ability'
+      click_link 'All 0 Abilities'
       expect(page).to have_content('Abilities')
     end
 
     it 'navigates to teammates list' do
       visit dashboard_organization_path(organization)
 
-      click_link 'All Teammate'
+      click_link 'All 0 Teammates'
       expect(page).to have_content('Teammates')
     end
 
@@ -127,13 +127,13 @@ RSpec.describe 'Organization Dashboard', type: :system, critical: true do
       visit dashboard_organization_path(organization)
 
       expect(page).to have_content('1 Recent Observation')
-      expect(page).to have_content('1 Observation')
+      expect(page).to have_content('0 My Observations')
     end
 
     it 'shows teammate counts' do
       visit dashboard_organization_path(organization)
 
-      expect(page).to have_content('1 Teammate')
+      expect(page).to have_content('All 0 Teammates')
     end
   end
 
@@ -157,12 +157,12 @@ RSpec.describe 'Organization Dashboard', type: :system, critical: true do
     it 'shows zero counts for new organization' do
       visit dashboard_organization_path(organization)
 
-      expect(page).to have_content('0 Recent Observation')
-      expect(page).to have_content('0 Observation')
-      expect(page).to have_content('0 Recent Milestone')
-      expect(page).to have_content('0 Ability')
-      expect(page).to have_content('0 Milestone')
-      expect(page).to have_content('1 Teammate') # Current user
+      expect(page).to have_content('0 Recent Observations')
+      expect(page).to have_content('0 My Observations')
+      expect(page).to have_content('0 Recent Milestones')
+      expect(page).to have_content('0 Abilities')
+      expect(page).to have_content('0 Milestones')
+      expect(page).to have_content('All 0 Teammates') # Current user
     end
   end
 

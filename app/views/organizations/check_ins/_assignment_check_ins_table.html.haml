@@ -1,0 +1,78 @@
+-# Assignment Check-Ins Table View with Interactive Forms
+- if assignment_check_ins&.any?
+  - if assignment_check_ins.any?(&:officially_completed?)
+    = render 'assignment_check_ins_table_completed', check_ins: assignment_check_ins
+  - elsif assignment_check_ins.any?(&:ready_for_finalization?)
+    = render 'assignment_check_ins_table_ready_for_finalization', check_ins: assignment_check_ins, form: form, view_mode: view_mode
+  - elsif view_mode == :manager && assignment_check_ins.any?(&:manager_completed?)
+    = render 'assignment_check_ins_table_manager_completed', check_ins: assignment_check_ins, form: form
+  - elsif view_mode == :employee && assignment_check_ins.any?(&:employee_completed?)
+    = render 'assignment_check_ins_table_employee_completed', check_ins: assignment_check_ins, form: form
+  - else
+    .table-responsive
+      %table.table.table-striped
+        %thead
+          %tr
+            %th Assignment
+            - if view_mode == :employee || view_mode.nil?
+              %th Employee Rating
+              %th Energy %
+              %th Alignment
+              %th Employee Notes
+            - if view_mode == :manager || view_mode.nil?
+              %th Manager Rating
+              %th Manager Notes
+            %th Status
+        %tbody
+          - assignment_check_ins.each do |check_in|
+            = form.fields_for :assignment_check_ins, check_in, index: check_in.id do |af|
+              %tr
+                %td= check_in.assignment.title
+                - if view_mode == :employee || view_mode.nil?
+                  %td
+                    = af.select :employee_rating, 
+                                assignment_rating_options,
+                                { include_blank: 'Select rating' },
+                                class: 'form-control form-control-sm'
+                  %td
+                    = af.number_field :actual_energy_percentage, 
+                                      min: 0, max: 100,
+                                      class: 'form-control form-control-sm',
+                                      placeholder: '0-100'
+                  %td
+                    = af.select :employee_personal_alignment, 
+                                [['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Dislike', 'dislike']],
+                                { include_blank: 'Select alignment' },
+                                class: 'form-control form-control-sm'
+                  %td
+                    = af.text_area :employee_private_notes, 
+                                   rows: 2,
+                                   class: 'form-control form-control-sm',
+                                   placeholder: 'Employee notes...'
+                - if view_mode == :manager || view_mode.nil?
+                  %td
+                    = af.select :manager_rating, 
+                                assignment_rating_options,
+                                { include_blank: 'Select rating' },
+                                class: 'form-control form-control-sm'
+                  %td
+                    = af.text_area :manager_private_notes, 
+                                   rows: 2,
+                                   class: 'form-control form-control-sm',
+                                   placeholder: 'Manager notes...'
+                %td
+                  = af.hidden_field :assignment_id, value: check_in.assignment.id
+                  .form-check
+                    = af.radio_button :status, 'draft', 
+                                      checked: (check_in.status == 'draft' || check_in.status.nil?),
+                                      class: 'form-check-input'
+                    = af.label :status_draft, 'Draft', class: 'form-check-label'
+                  .form-check
+                    = af.radio_button :status, 'complete', 
+                                      checked: check_in.status == 'complete',
+                                      class: 'form-check-input'
+                    = af.label :status_complete, 'Complete', class: 'form-check-label'
+- else
+  .alert.alert-info
+    %i.bi.bi-info-circle.me-2
+    No assignments available to do a check-in on

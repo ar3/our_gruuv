@@ -1,0 +1,48 @@
+-# Position Check-In Table View - Manager Completed State
+.table-responsive
+  %table.table.table-striped
+    %thead
+      %tr
+        %th Position
+        %th Manager Rating
+        %th Manager Notes
+        %th Employee Status
+        %th Actions
+    %tbody
+      %tr
+        %td= check_in.employment_tenure.position.display_name
+        %td
+          = position_rating_display(check_in.manager_rating)
+        %td
+          = simple_format(check_in.manager_private_notes)
+        %td
+          - if check_in.employee_completed?
+            .badge.bg-success Ready for Finalization
+            %br
+            %small.text-muted #{@person.first_name} has completed their assessment
+          - else
+            .badge.bg-warning Waiting for Employee
+            %br
+            %small.text-muted #{@person.first_name} has not completed their assessment
+        %td
+          - if check_in.employee_completed?
+            = link_to "Go to Finalization", organization_person_finalization_path(@organization, @person), 
+                      class: 'btn btn-success btn-sm',
+                      data: { confirm: 'Are you ready to finalize this check-in? This will create the official rating.' }
+
+.form-group.mt-3
+  %label Status
+  = form.fields_for :position_check_in do |pf|
+    -# Hidden fields to preserve existing values when form is submitted
+    = pf.hidden_field :manager_rating, value: check_in.manager_rating
+    = pf.hidden_field :manager_private_notes, value: check_in.manager_private_notes
+    
+    .form-check
+      = pf.radio_button :status, 'complete', checked: true
+      = pf.label :status_complete, 'Ready for Finalization', class: 'form-check-label'
+    .form-check
+      = pf.radio_button :status, 'draft'
+      = pf.label :status_draft, 'Make Changes', class: 'form-check-label'
+  
+  .small.text-muted.mt-1
+    Select "Make Changes" to edit your assessment and notes

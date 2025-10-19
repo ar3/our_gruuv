@@ -54,6 +54,14 @@
               %i.bi.bi-x-circle.me-2
               = flash[:error]
             %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
+      
+      - if flash[:notice]
+        .toast.align-items-center.text-white.bg-success.border-0{role: "alert", "aria-live": "assertive", "aria-atomic": "true", "data-bs-autohide": "true", "data-bs-delay": "5000"}
+          .d-flex
+            .toast-body
+              %i.bi.bi-check-circle.me-2
+              = flash[:notice]
+            %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
     
     / Main Navigation
     %nav.navbar.navbar-expand-lg.navbar-dark.bg-primary

@@ -26,7 +26,7 @@ RSpec.describe 'Observations Workflow', type: :system, critical: true do
         visit new_organization_observation_path(organization)
 
         expect(page).to have_content('Who are you observing?')
-        expect(page).to have_content('John Doe')
+        expect(page).to have_content('John')
         expect(page).to have_content('john@example.com')
       end
 
@@ -35,7 +35,7 @@ RSpec.describe 'Observations Workflow', type: :system, critical: true do
 
         expect(page).to have_content('What happened?')
         expect(page).to have_field('observation_story')
-        expect(page).to have_content('Tell the story of what happened')
+        expect(page).to have_field('observation_story', placeholder: 'Tell the story of what happened... Be specific about what you observed and why it matters.')
       end
 
     it 'shows feeling selection' do

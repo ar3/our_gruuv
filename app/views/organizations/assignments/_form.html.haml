@@ -17,7 +17,7 @@
     .mb-3
       = form.label :department_id, "Department (Optional)", class: "form-label"
       - company = @organization.root_company
-      - departments = company&.descendants&.where(type: 'Department') || []
+      - departments = company ? company.descendants.select { |org| org.type == 'Department' } : []
       - department_options = [['No Department', '']] + departments.map { |dept| [dept.name, dept.id] }
       = form.select :department_id, 
                     department_options,

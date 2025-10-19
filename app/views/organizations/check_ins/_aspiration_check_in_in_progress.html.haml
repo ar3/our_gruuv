@@ -1,46 +1,63 @@
 -# Aspiration Check-In Form Fields
-.row
-  - if view_mode == :employee || view_mode.nil?
-    .col-md-6
-      %h5 Employee Assessment
-      .form-group
-        = label_tag "aspiration_check_ins[#{check_in.id}][employee_rating]", "Rating"
-        = select_tag "aspiration_check_ins[#{check_in.id}][employee_rating]", options_for_select([['Working to Meet', 'working_to_meet'], ['Meeting', 'meeting'], ['Exceeding', 'exceeding']], check_in&.employee_rating), class: 'form-control', include_blank: 'Select rating'
+= form.fields_for :aspiration_check_ins, check_in, index: check_in.id do |af|
+  .row
+    - if view_mode == :employee || view_mode.nil?
+      .col-md-6
+        %h5 Employee Assessment
+        .form-group
+          = af.label :employee_rating, "Rating"
+          = af.select :employee_rating, 
+                      aspiration_rating_options,
+                      { include_blank: 'Select rating' },
+                      class: 'form-control'
 
-      .form-group
-        = label_tag "aspiration_check_ins[#{check_in.id}][employee_private_notes]", "Private Notes"
-        = text_area_tag "aspiration_check_ins[#{check_in.id}][employee_private_notes]", check_in&.employee_private_notes, class: 'form-control', rows: 3, placeholder: 'Your thoughts on this aspiration...'
+        .form-group
+          = af.label :employee_private_notes, "Private Notes"
+          = af.text_area :employee_private_notes, 
+                         rows: 3,
+                         class: 'form-control',
+                         placeholder: 'Your thoughts on this aspiration...'
 
-  - if view_mode == :manager || view_mode.nil?
-    .col-md-6
-      %h5 Manager Assessment
-      .form-group
-        = label_tag "aspiration_check_ins[#{check_in.id}][manager_rating]", "Rating"
-        = select_tag "aspiration_check_ins[#{check_in.id}][manager_rating]", options_for_select([['Working to Meet', 'working_to_meet'], ['Meeting', 'meeting'], ['Exceeding', 'exceeding']], check_in&.manager_rating), class: 'form-control', include_blank: 'Select rating'
+    - if view_mode == :manager || view_mode.nil?
+      .col-md-6
+        %h5 Manager Assessment
+        .form-group
+          = af.label :manager_rating, "Rating"
+          = af.select :manager_rating, 
+                      aspiration_rating_options,
+                      { include_blank: 'Select rating' },
+                      class: 'form-control'
 
-      .form-group
-        = label_tag "aspiration_check_ins[#{check_in.id}][manager_private_notes]", "Private Notes"
-        = text_area_tag "aspiration_check_ins[#{check_in.id}][manager_private_notes]", check_in&.manager_private_notes, class: 'form-control', rows: 3, placeholder: 'Your assessment of this aspiration...'
+        .form-group
+          = af.label :manager_private_notes, "Private Notes"
+          = af.text_area :manager_private_notes, 
+                         rows: 3,
+                         class: 'form-control',
+                         placeholder: 'Your assessment of this aspiration...'
 
--# Hidden fields
-= hidden_field_tag "aspiration_check_ins[#{check_in.id}][aspiration_id]", check_in&.aspiration&.id
+  -# Hidden fields
+  = af.hidden_field :aspiration_id, value: check_in.aspiration.id
 
--# Status radio buttons
-.form-group.mt-3
-  %label Status
-  .form-check
-    = radio_button_tag "aspiration_check_ins[#{check_in.id}][status]", 'draft', (check_in&.status == 'draft' || check_in&.status.nil?), class: 'form-check-input', id: "aspiration_check_ins[#{check_in.id}][status]_draft"
-    = label_tag "aspiration_check_ins[#{check_in.id}][status]_draft", 'Save as Draft', class: 'form-check-label'
-  .form-check
-    = radio_button_tag "aspiration_check_ins[#{check_in.id}][status]", 'complete', check_in&.status == 'complete', class: 'form-check-input', id: "aspiration_check_ins[#{check_in.id}][status]_complete"
-    = label_tag "aspiration_check_ins[#{check_in.id}][status]_complete", 'Mark Ready', class: 'form-check-label'
+  -# Status radio buttons
+  .form-group.mt-3
+    %label Status
+    .form-check
+      = af.radio_button :status, 'draft', 
+                        checked: (check_in.status == 'draft' || check_in.status.nil?),
+                        class: 'form-check-input'
+      = af.label :status_draft, 'Save as Draft', class: 'form-check-label'
+    .form-check
+      = af.radio_button :status, 'complete', 
+                        checked: check_in.status == 'complete',
+                        class: 'form-check-input'
+      = af.label :status_complete, 'Mark Ready', class: 'form-check-label'
 
-  .small.text-muted.mt-1
-    - if view_mode == :employee
-      Select "Mark Ready" when you're done with your assessment
-    - elsif view_mode == :manager
-      Select "Mark Ready" when you're done with your assessment
-    - else
-      Select "Mark Ready" when both assessments are complete
+    .small.text-muted.mt-1
+      - if view_mode == :employee
+        Select "Mark Ready" when you're done with your assessment
+      - elsif view_mode == :manager
+        Select "Mark Ready" when you're done with your assessment
+      - else
+        Select "Mark Ready" when both assessments are complete
 
 

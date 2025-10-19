@@ -23,14 +23,14 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
       within("[data-assignment-id='#{company_assignment_1.id}']") do
         select 'Exceeding', from: "assignment_check_ins[#{assignment_check_in_1.id}][manager_rating]"
         fill_in "assignment_check_ins[#{assignment_check_in_1.id}][manager_private_notes]", with: 'Manager thinks employee is exceeding expectations on company strategy'
-        choose "assignment_check_ins[#{assignment_check_in_1.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Fill out company-assignment-2 (save as draft)
       within("[data-assignment-id='#{company_assignment_2.id}']") do
         select 'Meeting', from: "assignment_check_ins[#{assignment_check_in_2.id}][manager_rating]"
         fill_in "assignment_check_ins[#{assignment_check_in_2.id}][manager_private_notes]", with: 'Manager thinks employee is meeting expectations on company operations'
-        choose "assignment_check_ins[#{assignment_check_in_2.id}][status]_draft"
+        find('input[type="radio"][value="draft"]').click
       end
       
       # Step 11: Submit
@@ -47,7 +47,7 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
         fill_in "assignment_check_ins[#{assignment_check_in_1.id}][employee_private_notes]", with: 'Employee thinks they are meeting expectations on company strategy'
         fill_in "assignment_check_ins[#{assignment_check_in_1.id}][actual_energy_percentage]", with: '75'
         select 'Like', from: "assignment_check_ins[#{assignment_check_in_1.id}][employee_personal_alignment]"
-        choose "assignment_check_ins[#{assignment_check_in_1.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Fill out company-assignment-2 (save as draft)
@@ -56,7 +56,7 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
         fill_in "assignment_check_ins[#{assignment_check_in_2.id}][employee_private_notes]", with: 'Employee thinks they are working to meet expectations on company operations'
         fill_in "assignment_check_ins[#{assignment_check_in_2.id}][actual_energy_percentage]", with: '50'
         select 'Neutral', from: "assignment_check_ins[#{assignment_check_in_2.id}][employee_personal_alignment]"
-        choose "assignment_check_ins[#{assignment_check_in_2.id}][status]_draft"
+        find('input[type="radio"][value="draft"]').click
       end
       
       # Step 13: Submit
@@ -129,14 +129,14 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
       within("[data-assignment-id='#{sales_assignment_1.id}']") do
         select 'Exceeding', from: "assignment_check_ins[#{assignment_check_in_1.id}][manager_rating]"
         fill_in "assignment_check_ins[#{assignment_check_in_1.id}][manager_private_notes]", with: 'Manager thinks sales employee is exceeding expectations on sales growth'
-        choose "assignment_check_ins[#{assignment_check_in_1.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Fill out sales-assignment-2 (save as draft)
       within("[data-assignment-id='#{sales_assignment_2.id}']") do
         select 'Meeting', from: "assignment_check_ins[#{assignment_check_in_2.id}][manager_rating]"
         fill_in "assignment_check_ins[#{assignment_check_in_2.id}][manager_private_notes]", with: 'Manager thinks sales employee is meeting expectations on customer acquisition'
-        choose "assignment_check_ins[#{assignment_check_in_2.id}][status]_draft"
+        find('input[type="radio"][value="draft"]').click
       end
       
       # Step 11: Submit
@@ -153,7 +153,7 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
         fill_in "assignment_check_ins[#{assignment_check_in_1.id}][employee_private_notes]", with: 'Sales employee thinks they are meeting expectations on sales growth'
         fill_in "assignment_check_ins[#{assignment_check_in_1.id}][actual_energy_percentage]", with: '65'
         select 'Like', from: "assignment_check_ins[#{assignment_check_in_1.id}][employee_personal_alignment]"
-        choose "assignment_check_ins[#{assignment_check_in_1.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Fill out sales-assignment-2 (save as draft)
@@ -162,7 +162,7 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
         fill_in "assignment_check_ins[#{assignment_check_in_2.id}][employee_private_notes]", with: 'Sales employee thinks they are working to meet expectations on customer acquisition'
         fill_in "assignment_check_ins[#{assignment_check_in_2.id}][actual_energy_percentage]", with: '45'
         select 'Neutral', from: "assignment_check_ins[#{assignment_check_in_2.id}][employee_personal_alignment]"
-        choose "assignment_check_ins[#{assignment_check_in_2.id}][status]_draft"
+        find('input[type="radio"][value="draft"]').click
       end
       
       # Step 13: Submit
@@ -237,7 +237,7 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
         fill_in "assignment_check_ins[#{assignment_check_in_1.id}][employee_private_notes]", with: 'Support employee thinks they are exceeding expectations on customer support'
         fill_in "assignment_check_ins[#{assignment_check_in_1.id}][actual_energy_percentage]", with: '85'
         select 'Love', from: "assignment_check_ins[#{assignment_check_in_1.id}][employee_personal_alignment]"
-        choose "assignment_check_ins[#{assignment_check_in_1.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Fill out support-assignment-2 (save as draft)
@@ -246,7 +246,7 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
         fill_in "assignment_check_ins[#{assignment_check_in_2.id}][employee_private_notes]", with: 'Support employee thinks they are meeting expectations on support documentation'
         fill_in "assignment_check_ins[#{assignment_check_in_2.id}][actual_energy_percentage]", with: '35'
         select 'Prefer Not', from: "assignment_check_ins[#{assignment_check_in_2.id}][employee_personal_alignment]"
-        choose "assignment_check_ins[#{assignment_check_in_2.id}][status]_draft"
+        find('input[type="radio"][value="draft"]').click
       end
       
       # Step 11: Submit
@@ -261,14 +261,14 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
       within("[data-assignment-id='#{support_assignment_1.id}']") do
         select 'Meeting', from: "assignment_check_ins[#{assignment_check_in_1.id}][manager_rating]"
         fill_in "assignment_check_ins[#{assignment_check_in_1.id}][manager_private_notes]", with: 'Manager thinks support employee is meeting expectations on customer support'
-        choose "assignment_check_ins[#{assignment_check_in_1.id}][status]_complete"
+        find('input[type="radio"][value="complete"]').click
       end
       
       # Fill out support-assignment-2 (save as draft)
       within("[data-assignment-id='#{support_assignment_2.id}']") do
         select 'Working to Meet', from: "assignment_check_ins[#{assignment_check_in_2.id}][manager_rating]"
         fill_in "assignment_check_ins[#{assignment_check_in_2.id}][manager_private_notes]", with: 'Manager thinks support employee is working to meet expectations on support documentation'
-        choose "assignment_check_ins[#{assignment_check_in_2.id}][status]_draft"
+        find('input[type="radio"][value="draft"]').click
       end
       
       # Step 13: Submit

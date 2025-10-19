@@ -36,7 +36,7 @@ RSpec.describe 'Check-ins UI Duplication Bug', type: :system do
   describe 'bulk check-in finalization form submission' do
     it 'should fail by reproducing the cross-assignment duplication bug' do
       # Navigate to the check-ins page
-      visit organization_check_in_path(organization, employee)
+      visit organization_person_check_ins_path(organization, employee)
       
       # Check if we're on the authenticated page or redirected
       if page.has_content?('Employee Growth Plan Champion')

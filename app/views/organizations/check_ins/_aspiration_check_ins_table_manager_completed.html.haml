@@ -1,0 +1,48 @@
+-# Aspiration Check-In Table View - Manager Completed State
+.table-responsive
+  %table.table.table-striped
+    %thead
+      %tr
+        %th Aspiration
+        %th Manager Rating
+        %th Manager Notes
+        %th Employee Status
+        %th Actions
+    %tbody
+      - check_ins.each do |check_in|
+        - if check_in.manager_completed?
+          %tr
+            %td= check_in.aspiration.name
+            %td
+              = aspiration_rating_display(check_in.manager_rating)
+            %td
+              = simple_format(check_in.manager_private_notes)
+            %td
+              - if check_in.employee_completed?
+                .badge.bg-success Ready for Finalization
+                %br
+                %small.text-muted #{@person.first_name} has completed their assessment
+              - else
+                .badge.bg-warning Waiting for Employee
+                %br
+                %small.text-muted #{@person.first_name} has not completed their assessment
+            %td
+              - if check_in.employee_completed?
+                = link_to "Go to Finalization", organization_person_finalization_path(@organization, @person), 
+                          class: 'btn btn-success btn-sm',
+                          data: { confirm: 'Are you ready to finalize this check-in? This will create the official rating.' }
+
+.form-group.mt-3
+  %label Status
+  - check_ins.each do |check_in|
+    - if check_in.manager_completed?
+      = form.fields_for :aspiration_check_ins, check_in, index: check_in.id do |af|
+        .form-check
+          = af.radio_button :status, 'complete', checked: true
+          = af.label :status_complete, 'Ready for Finalization', class: 'form-check-label'
+        .form-check
+          = af.radio_button :status, 'draft'
+          = af.label :status_draft, 'Make Changes', class: 'form-check-label'
+      
+      .small.text-muted.mt-1
+        Select "Make Changes" to edit your assessment and notes
