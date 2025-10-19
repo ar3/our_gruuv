@@ -16,6 +16,8 @@ class Organizations::CheckInsController < ApplicationController
     @aspiration_check_ins = load_or_build_aspiration_check_ins
     
     puts "DEBUG: Loaded #{@assignment_check_ins.count} assignment check-ins"
+    puts "DEBUG: Position check-in: #{@position_check_in.inspect}"
+    puts "DEBUG: View mode: #{@view_mode}"
   end
   
   def update
@@ -73,8 +75,8 @@ class Organizations::CheckInsController < ApplicationController
   end
 
   def load_or_build_aspiration_check_ins
-    # Get all aspirations for this organization
-    aspirations = Aspiration.where(organization: @organization).ordered
+    # Get all aspirations for this organization hierarchy
+    aspirations = Aspiration.within_hierarchy(@organization).ordered
     
     # For each aspiration, find or create an open check-in
     aspirations.map do |aspiration|
@@ -140,13 +142,18 @@ class Organizations::CheckInsController < ApplicationController
       check_in = AspirationCheckIn.find_or_create_open_for(@teammate, aspiration)
       next unless check_in
 
-      # Update check-in fields
-      check_in.assign_attributes(
-        employee_rating: check_in_params[:employee_rating],
-        manager_rating: check_in_params[:manager_rating],
-        employee_private_notes: check_in_params[:employee_private_notes],
-        manager_private_notes: check_in_params[:manager_private_notes]
-      )
+      # Update check-in fields based on view mode
+      if @view_mode == :employee
+        check_in.assign_attributes(
+          employee_rating: check_in_params[:employee_rating],
+          employee_private_notes: check_in_params[:employee_private_notes]
+        )
+      elsif @view_mode == :manager
+        check_in.assign_attributes(
+          manager_rating: check_in_params[:manager_rating],
+          manager_private_notes: check_in_params[:manager_private_notes]
+        )
+      end
 
       # Handle completion status
       if check_in_params[:status] == 'complete'

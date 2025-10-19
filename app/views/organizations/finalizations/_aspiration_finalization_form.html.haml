@@ -11,12 +11,18 @@
         
         .row
           .col-md-6
-            %h6 Employee Perspective
-            = render 'shared/check_ins_and_finalizations/aspiration_employee_perspective', check_in: check_in
+            .card.border-primary
+              .card-header.bg-primary.text-white
+                %h6.mb-0 Employee Perspective
+              .card-body
+                = render 'shared/check_ins_and_finalizations/aspiration_employee_perspective', check_in: check_in
           
           .col-md-6
-            %h6 Manager Perspective
-            = render 'shared/check_ins_and_finalizations/aspiration_manager_perspective', check_in: check_in
+            .card.border-info
+              .card-header.bg-info.text-white
+                %h6.mb-0 Manager Perspective
+              .card-body
+                = render 'shared/check_ins_and_finalizations/aspiration_manager_perspective', check_in: check_in
         
         .row.mt-3
           .col-md-6
