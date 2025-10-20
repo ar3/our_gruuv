@@ -52,9 +52,7 @@ class CheckInFinalizationService
     return Result.ok([]) unless @params[:assignment_check_ins]
     
     @params[:assignment_check_ins].each do |check_in_id, assignment_params|
-      assignment_id = assignment_params[:assignment_id]
-      next unless assignment_id
-      
+      # Use the check_in_id directly since that's what the form sends
       check_in = AssignmentCheckIn.find(check_in_id)
       next unless check_in.ready_for_finalization?
       

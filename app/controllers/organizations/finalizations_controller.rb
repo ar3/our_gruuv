@@ -71,8 +71,8 @@ class Organizations::FinalizationsController < ApplicationController
       :finalize_aspirations,
       :position_official_rating,
       :position_shared_notes,
-      assignment_check_ins: [:assignment_id, :official_rating, :shared_notes],
-      aspiration_check_ins: [:aspiration_id, :official_rating, :shared_notes]
+      assignment_check_ins: {},
+      aspiration_check_ins: {}
       # Add more params in later phases
     )
   end
