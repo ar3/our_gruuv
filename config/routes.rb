@@ -282,6 +282,25 @@ delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconn
   # Kudos permalinks (public observation links)
   get '/kudos/:date/:id', to: 'kudos#show', as: :kudos
 
+  # ENM Alignment Typology App (completely isolated namespace)
+  namespace :enm do
+    root 'home#index'
+    
+    resources :assessments, only: [:new, :create, :show, :edit, :update], param: :code do
+      member do
+        get 'phase/:phase', to: 'assessments#show_phase', as: :phase
+        patch 'phase/:phase', to: 'assessments#update_phase'
+      end
+    end
+    
+    resources :partnerships, only: [:new, :create, :show, :edit, :update], param: :code do
+      member do
+        post :add_assessment
+        delete 'remove_assessment/:assessment_code', to: 'partnerships#remove_assessment', as: :remove_assessment
+      end
+    end
+  end
+
   # Defines the root path route ("/")
   # root "posts#index"
 end

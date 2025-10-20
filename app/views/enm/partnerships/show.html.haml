@@ -1,0 +1,22 @@
+%h1 Partnership Analysis
+%p Partnership code: #{@partnership.code}
+
+.row
+  .col-md-6
+    .card
+      .card-body
+        %h5.card-title Relationship Type
+        %p.card-text #{@partnership.relationship_description}
+        %p.card-text Compatibility Score: #{@partnership.compatibility_analysis['compatibility_score']}%
+  
+  .col-md-6
+    .card
+      .card-body
+        %h5.card-title Assessments
+        - @assessments.each do |assessment|
+          %p #{assessment.code} - #{assessment.full_code}
+        
+        = form_with url: add_assessment_enm_partnership_path(@partnership.code), method: :post, local: true do |f|
+          .form-group
+            = f.text_field :assessment_code, class: "form-control", placeholder: "Add assessment code"
+          = f.submit "Add Assessment", class: "btn btn-primary"

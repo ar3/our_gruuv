@@ -1,0 +1,18 @@
+%h1 Assessment Results
+%p Your assessment code: #{@assessment.code}
+
+.row
+  .col-md-6
+    .card
+      .card-body
+        %h5.card-title Your Typology
+        %p.card-text #{@assessment.full_code}
+        %p.card-text #{@assessment.typology_description[:nickname]}
+        %p.card-text #{@assessment.typology_description[:description]}
+  
+  .col-md-6
+    .card
+      .card-body
+        %h5.card-title Actions
+        = link_to "Update Answers", edit_enm_assessment_path(@assessment.code), class: "btn btn-primary"
+        = link_to "Add to Partnership Analysis", new_enm_partnership_path, class: "btn btn-secondary"

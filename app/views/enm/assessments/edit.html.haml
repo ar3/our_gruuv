@@ -1,0 +1,11 @@
+%h1 Edit Assessment
+%p Update your assessment answers.
+
+.row
+  .col-md-8
+    .card
+      .card-body
+        = form_with model: @form, url: enm_assessment_path(@assessment.code), method: :patch, local: true do |f|
+          %p Edit form for phase #{@phase}
+          .form-group.mt-3
+            = f.submit "Update Assessment", class: "btn btn-primary"

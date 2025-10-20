@@ -1,0 +1,67 @@
+%h1 Assessment Phase #{@phase}
+
+.row
+  .col-md-8
+    .card
+      .card-body
+        = form_with model: @form, url: phase_enm_assessment_path(@assessment.code, phase: @phase), method: :patch, local: true do |f|
+          - if @phase == 1
+            %h5 Core Openness
+            %p How comfortable are you with your partner being open to relationships evolving?
+            
+            .form-group
+              = f.label "Same-sex relationships", class: "form-label"
+              = f.select :core_openness_same_sex, options_for_select([-3, -2, -1, 0, 1, 2, 3].map { |v| [v, v] }), {}, class: "form-control"
+            
+            .form-group
+              = f.label "Opposite-sex relationships", class: "form-label"
+              = f.select :core_openness_opposite_sex, options_for_select([-3, -2, -1, 0, 1, 2, 3].map { |v| [v, v] }), {}, class: "form-control"
+            
+            %h5 Passive Openness Split
+            %p How open are you to emotional vs physical connections?
+            
+            .form-group
+              = f.label "Emotional openness", class: "form-label"
+              = f.select :passive_openness_emotional, options_for_select([-3, -2, -1, 0, 1, 2, 3].map { |v| [v, v] }), {}, class: "form-control"
+            
+            .form-group
+              = f.label "Physical openness", class: "form-label"
+              = f.select :passive_openness_physical, options_for_select([-3, -2, -1, 0, 1, 2, 3].map { |v| [v, v] }), {}, class: "form-control"
+            
+            %h5 Active Readiness
+            %p How ready are you to actively explore relationships?
+            
+            .form-group
+              = f.label "Emotional readiness", class: "form-label"
+              = f.select :active_readiness_emotional, options_for_select([-3, -2, -1, 0, 1, 2, 3].map { |v| [v, v] }), {}, class: "form-control"
+            
+            .form-group
+              = f.label "Physical readiness", class: "form-label"
+              = f.select :active_readiness_physical, options_for_select([-3, -2, -1, 0, 1, 2, 3].map { |v| [v, v] }), {}, class: "form-control"
+          
+          - elsif @phase == 2
+            %h5 Emotional Escalator
+            %p Rate your comfort level for each step of emotional intimacy.
+            
+            %table.table
+              %thead
+                %tr
+                  %th Step
+                  %th Description
+                  %th Comfort Level
+              %tbody
+                - (1..9).each do |step|
+                  %tr
+                    %td #{step}
+                    %td Step #{step} description
+                    %td
+                      = f.select "emotional_escalator_#{step}_comfort", options_for_select([-3, -2, -1, 0, 1, 2, 3].map { |v| [v, v] }), {}, class: "form-control"
+          
+          - elsif @phase == 3
+            %h5 Confirm Results
+            %p Review your assessment results and confirm.
+            %p Your code: #{@assessment.full_code}
+            %p Typology: #{@assessment.typology_description[:nickname]}
+          
+          .form-group.mt-3
+            = f.submit "Continue", class: "btn btn-primary"

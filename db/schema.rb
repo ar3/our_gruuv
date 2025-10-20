@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_18_181627) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_19_234827) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -203,6 +203,36 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_18_181627) do
     t.index ["seat_id"], name: "index_employment_tenures_on_seat_id"
     t.index ["teammate_id"], name: "index_employment_tenures_on_teammate_id"
     t.check_constraint "official_position_rating IS NULL OR official_position_rating >= '-3'::integer AND official_position_rating <= 3", name: "valid_position_rating_range"
+  end
+
+  create_table "enm_assessments", force: :cascade do |t|
+    t.string "code", limit: 8, null: false
+    t.jsonb "phase_1_data", default: {}
+    t.jsonb "phase_2_data", default: {}
+    t.jsonb "phase_3_data", default: {}
+    t.string "macro_category", limit: 1
+    t.string "readiness", limit: 1
+    t.string "style", limit: 1
+    t.string "full_code", limit: 5
+    t.integer "completed_phase", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["code"], name: "index_enm_assessments_on_code", unique: true
+    t.index ["completed_phase"], name: "index_enm_assessments_on_completed_phase"
+    t.index ["full_code"], name: "index_enm_assessments_on_full_code"
+    t.index ["macro_category"], name: "index_enm_assessments_on_macro_category"
+  end
+
+  create_table "enm_partnerships", force: :cascade do |t|
+    t.string "code", limit: 8, null: false
+    t.jsonb "assessment_codes", default: []
+    t.jsonb "compatibility_analysis", default: {}
+    t.string "relationship_type", limit: 1
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assessment_codes"], name: "index_enm_partnerships_on_assessment_codes", using: :gin
+    t.index ["code"], name: "index_enm_partnerships_on_code", unique: true
+    t.index ["relationship_type"], name: "index_enm_partnerships_on_relationship_type"
   end
 
   create_table "external_references", force: :cascade do |t|

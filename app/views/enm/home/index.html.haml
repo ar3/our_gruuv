@@ -1,0 +1,17 @@
+%h1 ENM Alignment Typology
+%p Welcome to the ENM Alignment Typology assessment tool.
+
+.row
+  .col-md-6
+    .card
+      .card-body
+        %h5.card-title Take Individual Assessment
+        %p.card-text Complete the 3-phase assessment to discover your relationship orientation.
+        = link_to "Start Assessment", new_enm_assessment_path, class: "btn btn-primary"
+  
+  .col-md-6
+    .card
+      .card-body
+        %h5.card-title Analyze Partnership
+        %p.card-text Compare multiple assessment codes to analyze compatibility.
+        = link_to "Create Partnership Analysis", new_enm_partnership_path, class: "btn btn-secondary"

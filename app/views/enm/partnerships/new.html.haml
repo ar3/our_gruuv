@@ -1,0 +1,14 @@
+%h1 Create Partnership Analysis
+%p Enter assessment codes to analyze compatibility.
+
+.row
+  .col-md-8
+    .card
+      .card-body
+        = form_with model: @partnership, url: enm_partnerships_path, local: true do |f|
+          .form-group
+            = f.label "Assessment Codes", class: "form-label"
+            = f.text_field :assessment_codes, class: "form-control", placeholder: "Enter assessment codes separated by commas"
+          
+          .form-group.mt-3
+            = f.submit "Create Partnership Analysis", class: "btn btn-primary"
