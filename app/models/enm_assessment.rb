@@ -31,3 +31,7 @@ class EnmAssessment < ApplicationRecord
     EnmPartnership.where("assessment_codes @> ?", [code].to_json)
   end
 end
+
+
+
+

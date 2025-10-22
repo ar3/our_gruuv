@@ -38,3 +38,7 @@ class EnmPartnership < ApplicationRecord
     errors.add(:assessment_codes, "can't be empty") if assessment_codes.blank?
   end
 end
+
+
+
+

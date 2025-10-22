@@ -95,3 +95,7 @@ RSpec.describe Enm::PartnershipAnalyzerService do
     end
   end
 end
+
+
+
+
