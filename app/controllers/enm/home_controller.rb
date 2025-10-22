@@ -3,3 +3,7 @@ class Enm::HomeController < Enm::BaseController
     # Landing page - no data needed
   end
 end
+
+
+
+

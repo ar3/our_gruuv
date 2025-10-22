@@ -1,4 +1,3 @@
-- puts "DEBUG: Rendering position check-in form for check_in: #{check_in.inspect}"
 .card.mb-4{data: {position_id: check_in.employment_tenure.position.id}}
   .card-header
     %h3 Position: #{@person.active_employment_tenure_for(@organization)&.position&.display_name}

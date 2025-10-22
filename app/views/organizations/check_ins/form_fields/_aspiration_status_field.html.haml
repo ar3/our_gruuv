@@ -1,0 +1,15 @@
+.form-check
+  = form.radio_button :status, 'draft',
+                      checked: (check_in.status == 'draft' || check_in.status.nil?),
+                      class: 'form-check-input'
+  = form.label :status_draft, 'Draft', class: 'form-check-label'
+.form-check
+  = form.radio_button :status, 'complete',
+                      checked: check_in.status == 'complete',
+                      class: 'form-check-input'
+  = form.label :status_complete, 'Complete', class: 'form-check-label'
+
+
+
+
+

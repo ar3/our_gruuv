@@ -210,6 +210,15 @@ RSpec.describe 'Check-ins Tabular View', type: :system do
       
       click_button 'Save All Check-Ins'
       expect(page).to have_content('Check-ins saved successfully')
+      
+      # Verify data was actually saved to the database
+      employee_teammate = employee.teammates.for_organization_hierarchy(organization).first
+      position_check_in = PositionCheckIn.find_by(teammate: employee_teammate)
+      position_check_in.reload
+      
+      expect(position_check_in.manager_rating).to eq(2)
+      expect(position_check_in.manager_private_notes).to eq('Great work in table view!')
+      expect(position_check_in.updated_at).to be > 1.minute.ago
     end
   end
 end

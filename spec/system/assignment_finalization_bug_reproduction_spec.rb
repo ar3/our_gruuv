@@ -47,8 +47,10 @@ RSpec.describe 'Assignment Finalization - Real Scenario Bug', type: :system do
     # - Two ready assignment check-ins (should be visible but aren't)
     
     let!(:finalized_position_check_in) do
+      employment_tenure = EmploymentTenure.find_by(teammate: employee_teammate, company: organization)
       PositionCheckIn.create!(
         teammate: employee_teammate,
+        employment_tenure: employment_tenure,
         check_in_started_on: 2.weeks.ago,
         employee_rating: 2,
         employee_private_notes: 'Some things happened and I am less than confident',
@@ -117,28 +119,20 @@ RSpec.describe 'Assignment Finalization - Real Scenario Bug', type: :system do
       # The bug is that when there's a finalized position check-in,
       # the view shows employee acknowledgment mode and ignores assignments
       
-      # What we expect to see (but don't due to bug):
+      # The bug has been fixed! Assignment check-ins are now visible
       expect(page).to have_content('Assignment Check-Ins')
       expect(page).to have_content('Backend API Development')
       expect(page).to have_content('Database Optimization')
       expect(page).to have_button('Finalize Selected Check-Ins')
       
-      # What we actually see (due to bug):
-      expect(page).to have_content('Review finalized check-ins')
+      # We can also see the finalized position check-in
       expect(page).to have_content('Position Check-In - Finalized')
-      expect(page).not_to have_content('Assignment Check-Ins')
     end
 
-    it 'Employee also cannot see assignment check-ins in this scenario' do
+    it 'Employee can now see assignment check-ins in this scenario' do
       sign_in_and_visit(employee_person, organization, organization_person_finalization_path(organization, employee_person))
       
-      puts "\n===== EMPLOYEE VIEW - SAME BUG ====="
-      puts "Page contains 'Review finalized check-ins': #{page.has_content?('Review finalized check-ins')}"
-      puts "Page contains 'Assignment Check-Ins': #{page.has_content?('Assignment Check-Ins')}"
-      puts "Page contains 'Backend API Development': #{page.has_content?('Backend API Development')}"
-      puts "===== END DEBUG ====="
-      
-      # Employee should see assignments in read-only mode, but doesn't due to bug
+      # The bug has been fixed! Employee can now see assignment check-ins
       expect(page).to have_content('Assignment Check-Ins')
       expect(page).to have_content('Backend API Development')
     end

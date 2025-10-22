@@ -98,19 +98,51 @@ RSpec.configure do |config|
     Capybara.use_default_driver
   end
 
+  config.after(:each) do
+    # Always clear ActionMailer deliveries
+    ActionMailer::Base.deliveries.clear
+  end
+
   # Configure shared database connection for system tests
   # This allows Capybara to see the same database state as the test thread
-  config.before(:suite) do
-    if defined?(ActiveRecord::Base)
-      ActiveRecord::Base.connection_pool.disconnect!
+  config.after(:suite) do
+    # Reset all sequences after test suite completes
+    if ActiveRecord::Base.connection.adapter_name.downcase.include?('postgres')
+      ActiveRecord::Base.connection.tables.each do |table|
+        ActiveRecord::Base.connection.reset_pk_sequence!(table) rescue nil
+      end
     end
   end
 
   config.before(:each, type: :system) do
-    # Ensure we're using the same database connection for system tests
-    ActiveRecord::Base.connection_pool.with_connection do |conn|
-      # This ensures Capybara and the test thread share the same connection
+    # Clear Rails cache
+    Rails.cache.clear
+    
+    # Clear background job queues
+    if ActiveJob::Base.queue_adapter.respond_to?(:enqueued_jobs)
+      ActiveJob::Base.queue_adapter.enqueued_jobs.clear
+      ActiveJob::Base.queue_adapter.performed_jobs.clear rescue nil
     end
+    
+    # Ensure Capybara uses the correct driver
+    driven_by(:selenium_chrome)
+  end
+
+  config.after(:each, type: :system) do
+    # Reset Capybara session completely
+    Capybara.reset_sessions!
+    
+    # Clear all browser data
+    if page.driver.respond_to?(:browser)
+      begin
+        page.driver.browser.manage.delete_all_cookies
+      rescue Selenium::WebDriver::Error::InvalidSessionIdError
+        # Session already closed, ignore
+      end
+    end
+    
+    # Clear ActionMailer deliveries
+    ActionMailer::Base.deliveries.clear
   end
 end
 

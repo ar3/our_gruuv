@@ -6,7 +6,13 @@ module AuthenticationHelpers
       sign_in_via_http(person, organization)
     else
       # For non-JS tests, use rack_session_access
-      page.set_rack_session(current_person_id: person.id)
+      begin
+        page.set_rack_session(current_person_id: person.id)
+      rescue Selenium::WebDriver::Error::UnknownError, Selenium::WebDriver::Error::InvalidSessionIdError
+        # If session is invalid, visit a page first to establish it
+        visit root_path
+        page.set_rack_session(current_person_id: person.id)
+      end
       
       # Also set the organization if provided
       if organization

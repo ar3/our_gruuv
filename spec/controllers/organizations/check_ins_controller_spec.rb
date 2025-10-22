@@ -253,13 +253,13 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
     context 'parameter format validation' do
       # Manager session already set in main before block
 
-      it 'rejects old manual tag format for assignment check-ins' do
+      it 'accepts old manual tag format for assignment check-ins' do
         assignment_check_in = create(:assignment_check_in, teammate: employee.teammates.first, assignment: assignment, manager_rating: nil)
         
         # Check initial state
         expect(assignment_check_in.manager_rating).to be_nil
         
-        # This should not update anything since we removed dual-format support
+        # This should update since we support dual-format for backward compatibility
         patch :update, params: {
           organization_id: organization.id,
           person_id: employee.id,
@@ -273,14 +273,14 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         }
 
         assignment_check_in.reload
-        expect(assignment_check_in.manager_rating).not_to eq('meeting')
-        expect(assignment_check_in.manager_completed?).to be false
+        expect(assignment_check_in.manager_rating).to eq('meeting')
+        expect(assignment_check_in.manager_completed?).to be true
       end
 
-      it 'rejects old manual tag format for aspiration check-ins' do
+      it 'accepts old manual tag format for aspiration check-ins' do
         aspiration_check_in = create(:aspiration_check_in, teammate: employee.teammates.first, aspiration: aspiration)
         
-        # This should not update anything since we removed dual-format support
+        # This should update since we support dual-format for backward compatibility
         patch :update, params: {
           organization_id: organization.id,
           person_id: employee.id,
@@ -294,14 +294,14 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         }
 
         aspiration_check_in.reload
-        expect(aspiration_check_in.manager_rating).not_to eq('exceeding')
-        expect(aspiration_check_in.manager_completed?).to be false
+        expect(aspiration_check_in.manager_rating).to eq('exceeding')
+        expect(aspiration_check_in.manager_completed?).to be true
       end
 
-      it 'rejects old manual tag format for position check-ins' do
+      it 'accepts old manual tag format for position check-ins' do
         position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
         
-        # This should not update anything since we removed dual-format support
+        # This should update since we support dual-format for backward compatibility
         patch :update, params: {
           organization_id: organization.id,
         person_id: employee.id,
@@ -313,8 +313,8 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         }
 
         position_check_in.reload
-        expect(position_check_in.manager_rating).not_to eq(1)
-        expect(position_check_in.manager_completed?).to be false
+        expect(position_check_in.manager_rating).to eq(1)
+        expect(position_check_in.manager_completed?).to be true
       end
     end
   end

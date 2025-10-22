@@ -27,23 +27,21 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
       visit organization_person_check_ins_path(organization, employee)
       
       # Should see aspiration check-in forms
-      expect(page).to have_content('Aspiration: Career Growth')
-      expect(page).to have_content('Aspiration: Technical Skills')
+      expect(page).to have_content('Career Growth')
+      expect(page).to have_content('Technical Skills')
       
-      # Employee fills out first aspiration
-      within('.card', text: 'Aspiration: Career Growth') do
-        select 'Meeting', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][employee_rating]"
-        fill_in "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][employee_private_notes]", 
-                with: 'Making good progress on career development goals'
-        find('input[type="radio"][value="complete"]').click
+      # Employee fills out Career Growth aspiration
+      within('tr', text: 'Career Growth') do
+        find('select[name*="aspiration_check_ins"][name*="employee_rating"]').select('Meeting')
+        find('textarea[name*="aspiration_check_ins"][name*="employee_private_notes"]').set('Making good progress on career development goals')
+        find('input[name*="aspiration_check_ins"][name*="status"][value="complete"]').click
       end
       
-      # Employee fills out second aspiration
-      within('.card', text: 'Aspiration: Technical Skills') do
-        select 'Exceeding', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][employee_rating]"
-        fill_in "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][employee_private_notes]", 
-                with: 'Excelled in learning new technologies'
-        find('input[type="radio"][value="complete"]').click
+      # Employee fills out Technical Skills aspiration
+      within('tr', text: 'Technical Skills') do
+        find('select[name*="aspiration_check_ins"][name*="employee_rating"]').select('Exceeding')
+        find('textarea[name*="aspiration_check_ins"][name*="employee_private_notes"]').set('Excelled in learning new technologies')
+        find('input[name*="aspiration_check_ins"][name*="status"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
@@ -56,24 +54,21 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
       visit organization_person_check_ins_path(organization, employee)
       
       # Should see aspiration check-in forms with employee data
-      within('.card', text: 'Aspiration: Career Growth') do
-        expect(page).to have_content('Meeting')
-        expect(page).to have_content('Making good progress on career development goals')
-        
-        select 'Meeting', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][manager_rating]"
-        fill_in "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][manager_private_notes]", 
-                with: 'Employee shows strong career development initiative'
-        find('input[type="radio"][value="complete"]').click
+      expect(page).to have_content('Meeting')
+      expect(page).to have_content('Making good progress on career development goals')
+      
+      # Manager fills out Career Growth aspiration
+      within('tr', text: 'Career Growth') do
+        find('select[name*="aspiration_check_ins"][name*="manager_rating"]').select('Meeting')
+        find('textarea[name*="aspiration_check_ins"][name*="manager_private_notes"]').set('Employee shows strong career development initiative')
+        find('input[name*="aspiration_check_ins"][name*="status"][value="complete"]').click
       end
       
-      within('.card', text: 'Aspiration: Technical Skills') do
-        expect(page).to have_content('Exceeding')
-        expect(page).to have_content('Excelled in learning new technologies')
-        
-        select 'Exceeding', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][manager_rating]"
-        fill_in "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration2).id}][manager_private_notes]", 
-                with: 'Outstanding technical growth and contribution'
-        find('input[type="radio"][value="complete"]').click
+      # Manager fills out Technical Skills aspiration
+      within('tr', text: 'Technical Skills') do
+        find('select[name*="aspiration_check_ins"][name*="manager_rating"]').select('Exceeding')
+        find('textarea[name*="aspiration_check_ins"][name*="manager_private_notes"]').set('Outstanding technical growth and contribution')
+        find('input[name*="aspiration_check_ins"][name*="status"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
@@ -154,12 +149,9 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
       sign_in_as(employee, organization)
       visit organization_person_check_ins_path(organization, employee)
       
-      within('.card', text: 'Aspiration: Career Growth') do
-        select 'Meeting', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][employee_rating]"
-        fill_in "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][employee_private_notes]", 
-                with: 'Making good progress'
-        find('input[type="radio"][value="draft"]').click
-      end
+      first('select[name*="aspiration_check_ins"][name*="employee_rating"]').select('Meeting')
+      first('textarea[name*="aspiration_check_ins"][name*="employee_private_notes"]').set('Making good progress')
+      first('input[name*="aspiration_check_ins"][name*="status"][value="draft"]').click
       
       click_button 'Save All Check-Ins'
       
@@ -177,9 +169,10 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
       sign_in_as(employee, organization)
       visit organization_person_check_ins_path(organization, employee)
       
-      within('.card', text: 'Aspiration: Career Growth') do
-        select 'Meeting', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][employee_rating]"
-        find('input[type="radio"][value="complete"]').click
+      # Target the Career Growth aspiration specifically
+      within('tr', text: 'Career Growth') do
+        find('select[name*="aspiration_check_ins"][name*="employee_rating"]').select('Meeting')
+        find('input[name*="aspiration_check_ins"][name*="status"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
@@ -188,9 +181,10 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
       sign_in_as(manager, organization)
       visit organization_person_check_ins_path(organization, employee)
       
-      within('.card', text: 'Aspiration: Career Growth') do
-        select 'Meeting', from: "aspiration_check_ins[#{AspirationCheckIn.find_by(aspiration: aspiration1).id}][manager_rating]"
-        find('input[type="radio"][value="complete"]').click
+      # Target the Career Growth aspiration specifically
+      within('tr', text: 'Career Growth') do
+        find('select[name*="aspiration_check_ins"][name*="manager_rating"]').select('Meeting')
+        find('input[name*="aspiration_check_ins"][name*="status"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'

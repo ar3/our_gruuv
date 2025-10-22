@@ -9,7 +9,7 @@
   - elsif view_mode == :employee && position_check_in.employee_completed?
     = render 'position_check_ins_table_employee_completed', check_in: position_check_in, form: form
   - else
-    = form.fields_for :position_check_in do |pf|
+    = form.fields_for :position_check_in, position_check_in do |pf|
       .table-responsive
         %table.table.table-striped
           %thead
@@ -27,39 +27,16 @@
               %td= position_check_in.employment_tenure.position.display_name
               - if view_mode == :employee || view_mode.nil?
                 %td
-                  = pf.select :employee_rating, 
-                              position_rating_options,
-                              { selected: position_check_in.employee_rating, include_blank: 'Select rating' },
-                              class: 'form-control form-control-sm'
+                  = render 'organizations/check_ins/form_fields/employee_rating_field', form: pf, check_in: position_check_in, css_class: 'form-control form-control-sm'
                 %td
-                  = pf.text_area :employee_private_notes, 
-                                 rows: 2,
-                                 value: position_check_in.employee_private_notes,
-                                 class: 'form-control form-control-sm',
-                                 placeholder: 'Employee notes...'
+                  = render 'organizations/check_ins/form_fields/employee_private_notes_field', form: pf, check_in: position_check_in, css_class: 'form-control form-control-sm'
               - if view_mode == :manager || view_mode.nil?
                 %td
-                  = pf.select :manager_rating, 
-                              position_rating_options,
-                              { selected: position_check_in.manager_rating, include_blank: 'Select rating' },
-                              class: 'form-control form-control-sm'
+                  = render 'organizations/check_ins/form_fields/manager_rating_field', form: pf, check_in: position_check_in, css_class: 'form-control form-control-sm'
                 %td
-                  = pf.text_area :manager_private_notes, 
-                                 rows: 2,
-                                 value: position_check_in.manager_private_notes,
-                                 class: 'form-control form-control-sm',
-                                 placeholder: 'Manager notes...'
+                  = render 'organizations/check_ins/form_fields/manager_private_notes_field', form: pf, check_in: position_check_in, css_class: 'form-control form-control-sm'
               %td
-                .form-check
-                  = pf.radio_button :status, 'draft', 
-                                    checked: (position_check_in.status == 'draft' || position_check_in.status.nil?),
-                                    class: 'form-check-input'
-                  = pf.label :status_draft, 'Draft', class: 'form-check-label'
-                .form-check
-                  = pf.radio_button :status, 'complete', 
-                                    checked: position_check_in.status == 'complete',
-                                    class: 'form-check-input'
-                  = pf.label :status_complete, 'Complete', class: 'form-check-label'
+                = render 'organizations/check_ins/form_fields/position_status_field', form: pf, check_in: position_check_in
 - else
   .alert.alert-info
     %i.bi.bi-info-circle.me-2

@@ -2,23 +2,15 @@
   - if view_mode == :employee
     .form-group
       = pf.label :employee_rating, "Where do you feel you stand?"
-      = pf.select :employee_rating,
-                 position_rating_options,
-                 { include_blank: 'Select your perspective' },
-                 class: 'form-control'
+      = render 'organizations/check_ins/form_fields/employee_rating_field', form: pf, check_in: check_in, css_class: 'form-control'
     
     .form-group
       = pf.label :employee_private_notes, "Your private notes"
-      = pf.text_area :employee_private_notes, rows: 3, class: 'form-control'
+      = render 'organizations/check_ins/form_fields/employee_private_notes_field', form: pf, check_in: check_in, css_class: 'form-control'
     
     .form-group
       %label Status
-      .form-check
-        = pf.radio_button :status, 'draft', checked: !check_in.employee_completed?
-        = pf.label :status_draft, 'Save as Draft'
-      .form-check
-        = pf.radio_button :status, 'complete'
-        = pf.label :status_complete, 'Mark Ready for Manager'
+      = render 'organizations/check_ins/form_fields/position_status_field', form: pf, check_in: check_in
     
     - if check_in.manager_completed?
       .alert.alert-info.mt-2
@@ -31,20 +23,12 @@
     
     .form-group
       = pf.label :manager_rating, "Where do you think #{@person.first_name} stands?"
-      = pf.select :manager_rating,
-                 position_rating_options,
-                 { include_blank: 'Select your assessment' },
-                 class: 'form-control'
+      = render 'organizations/check_ins/form_fields/manager_rating_field', form: pf, check_in: check_in, css_class: 'form-control'
     
     .form-group
       = pf.label :manager_private_notes, "Your private notes"
-      = pf.text_area :manager_private_notes, rows: 3, class: 'form-control'
+      = render 'organizations/check_ins/form_fields/manager_private_notes_field', form: pf, check_in: check_in, css_class: 'form-control'
     
     .form-group
       %label Status
-      .form-check
-        = pf.radio_button :status, 'draft', checked: !check_in.manager_completed?
-        = pf.label :status_draft, 'Save as Draft'
-      .form-check
-        = pf.radio_button :status, 'complete'
-        = pf.label :status_complete, 'Mark Ready for Finalization'
+      = render 'organizations/check_ins/form_fields/position_status_field', form: pf, check_in: check_in

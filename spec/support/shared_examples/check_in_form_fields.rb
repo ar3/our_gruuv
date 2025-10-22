@@ -66,3 +66,7 @@ RSpec.shared_examples "employee check-in form fields" do |view_type|
     expect(page).not_to have_css('textarea[name*="position_check_in"][name*="manager_private_notes"]')
   end
 end
+
+
+
+

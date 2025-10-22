@@ -20,18 +20,14 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
       assignment_check_in_2 = AssignmentCheckIn.find_by(teammate: company_employee_teammate, assignment: company_assignment_2)
       
       # Fill out company-assignment-1 (mark ready)
-      within("[data-assignment-id='#{company_assignment_1.id}']") do
-        select 'Exceeding', from: "assignment_check_ins[#{assignment_check_in_1.id}][manager_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_1.id}][manager_private_notes]", with: 'Manager thinks employee is exceeding expectations on company strategy'
-        find('input[type="radio"][value="complete"]').click
-      end
+      first('select[name*="assignment_check_ins"][name*="manager_rating"]').select('Exceeding')
+      first('textarea[name*="assignment_check_ins"][name*="manager_private_notes"]').set('Manager thinks employee is exceeding expectations on company strategy')
+      first('input[name*="assignment_check_ins"][name*="status"][value="complete"]').click
       
       # Fill out company-assignment-2 (save as draft)
-      within("[data-assignment-id='#{company_assignment_2.id}']") do
-        select 'Meeting', from: "assignment_check_ins[#{assignment_check_in_2.id}][manager_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_2.id}][manager_private_notes]", with: 'Manager thinks employee is meeting expectations on company operations'
-        find('input[type="radio"][value="draft"]').click
-      end
+      all('select[name*="assignment_check_ins"][name*="manager_rating"]').last.select('Meeting')
+      all('textarea[name*="assignment_check_ins"][name*="manager_private_notes"]').last.set('Manager thinks employee is meeting expectations on company operations')
+      all('input[name*="assignment_check_ins"][name*="status"][value="draft"]').last.click
       
       # Step 11: Submit
       click_button 'Save All Check-Ins'
@@ -42,22 +38,18 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
       visit organization_person_check_ins_path(company, company_employee)
       
       # Fill out company-assignment-1 (mark ready)
-      within("[data-assignment-id='#{company_assignment_1.id}']") do
-        select 'Meeting', from: "assignment_check_ins[#{assignment_check_in_1.id}][employee_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_1.id}][employee_private_notes]", with: 'Employee thinks they are meeting expectations on company strategy'
-        fill_in "assignment_check_ins[#{assignment_check_in_1.id}][actual_energy_percentage]", with: '75'
-        select 'Like', from: "assignment_check_ins[#{assignment_check_in_1.id}][employee_personal_alignment]"
-        find('input[type="radio"][value="complete"]').click
-      end
+      first('select[name*="assignment_check_ins"][name*="employee_rating"]').select('Meeting')
+      first('textarea[name*="assignment_check_ins"][name*="employee_private_notes"]').set('Employee thinks they are meeting expectations on company strategy')
+      first('input[name*="assignment_check_ins"][name*="actual_energy_percentage"]').set('75')
+      first('select[name*="assignment_check_ins"][name*="employee_personal_alignment"]').select('Like')
+      first('input[name*="assignment_check_ins"][name*="status"][value="complete"]').click
       
       # Fill out company-assignment-2 (save as draft)
-      within("[data-assignment-id='#{company_assignment_2.id}']") do
-        select 'Working to Meet', from: "assignment_check_ins[#{assignment_check_in_2.id}][employee_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_2.id}][employee_private_notes]", with: 'Employee thinks they are working to meet expectations on company operations'
-        fill_in "assignment_check_ins[#{assignment_check_in_2.id}][actual_energy_percentage]", with: '50'
-        select 'Neutral', from: "assignment_check_ins[#{assignment_check_in_2.id}][employee_personal_alignment]"
-        find('input[type="radio"][value="draft"]').click
-      end
+      all('select[name*="assignment_check_ins"][name*="employee_rating"]').last.select('Working to Meet')
+      all('textarea[name*="assignment_check_ins"][name*="employee_private_notes"]').last.set('Employee thinks they are working to meet expectations on company operations')
+      all('input[name*="assignment_check_ins"][name*="actual_energy_percentage"]').last.set('50')
+      all('select[name*="assignment_check_ins"][name*="employee_personal_alignment"]').last.select('Neutral')
+      all('input[name*="assignment_check_ins"][name*="status"][value="draft"]').last.click
       
       # Step 13: Submit
       click_button 'Save All Check-Ins'
@@ -126,18 +118,14 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
       assignment_check_in_2 = AssignmentCheckIn.find_by(teammate: sales_employee_teammate, assignment: sales_assignment_2)
       
       # Fill out sales-assignment-1 (mark ready)
-      within("[data-assignment-id='#{sales_assignment_1.id}']") do
-        select 'Exceeding', from: "assignment_check_ins[#{assignment_check_in_1.id}][manager_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_1.id}][manager_private_notes]", with: 'Manager thinks sales employee is exceeding expectations on sales growth'
-        find('input[type="radio"][value="complete"]').click
-      end
+      first('select[name*="assignment_check_ins"][name*="manager_rating"]').select('Exceeding')
+      first('textarea[name*="assignment_check_ins"][name*="manager_private_notes"]').set('Manager thinks sales employee is exceeding expectations on sales growth')
+      first('input[name*="assignment_check_ins"][name*="status"][value="complete"]').click
       
       # Fill out sales-assignment-2 (save as draft)
-      within("[data-assignment-id='#{sales_assignment_2.id}']") do
-        select 'Meeting', from: "assignment_check_ins[#{assignment_check_in_2.id}][manager_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_2.id}][manager_private_notes]", with: 'Manager thinks sales employee is meeting expectations on customer acquisition'
-        find('input[type="radio"][value="draft"]').click
-      end
+      all('select[name*="assignment_check_ins"][name*="manager_rating"]').last.select('Meeting')
+      all('textarea[name*="assignment_check_ins"][name*="manager_private_notes"]').last.set('Manager thinks sales employee is meeting expectations on customer acquisition')
+      all('input[name*="assignment_check_ins"][name*="status"][value="draft"]').last.click
       
       # Step 11: Submit
       click_button 'Save All Check-Ins'
@@ -148,22 +136,18 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
       visit organization_person_check_ins_path(company, sales_employee)
       
       # Fill out sales-assignment-1 (mark ready)
-      within("[data-assignment-id='#{sales_assignment_1.id}']") do
-        select 'Meeting', from: "assignment_check_ins[#{assignment_check_in_1.id}][employee_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_1.id}][employee_private_notes]", with: 'Sales employee thinks they are meeting expectations on sales growth'
-        fill_in "assignment_check_ins[#{assignment_check_in_1.id}][actual_energy_percentage]", with: '65'
-        select 'Like', from: "assignment_check_ins[#{assignment_check_in_1.id}][employee_personal_alignment]"
-        find('input[type="radio"][value="complete"]').click
-      end
+      first('select[name*="assignment_check_ins"][name*="employee_rating"]').select('Meeting')
+      first('textarea[name*="assignment_check_ins"][name*="employee_private_notes"]').set('Sales employee thinks they are meeting expectations on sales growth')
+      first('input[name*="assignment_check_ins"][name*="actual_energy_percentage"]').set('65')
+      first('select[name*="assignment_check_ins"][name*="employee_personal_alignment"]').select('Like')
+      first('input[name*="assignment_check_ins"][name*="status"][value="complete"]').click
       
       # Fill out sales-assignment-2 (save as draft)
-      within("[data-assignment-id='#{sales_assignment_2.id}']") do
-        select 'Working to Meet', from: "assignment_check_ins[#{assignment_check_in_2.id}][employee_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_2.id}][employee_private_notes]", with: 'Sales employee thinks they are working to meet expectations on customer acquisition'
-        fill_in "assignment_check_ins[#{assignment_check_in_2.id}][actual_energy_percentage]", with: '45'
-        select 'Neutral', from: "assignment_check_ins[#{assignment_check_in_2.id}][employee_personal_alignment]"
-        find('input[type="radio"][value="draft"]').click
-      end
+      all('select[name*="assignment_check_ins"][name*="employee_rating"]').last.select('Working to Meet')
+      all('textarea[name*="assignment_check_ins"][name*="employee_private_notes"]').last.set('Sales employee thinks they are working to meet expectations on customer acquisition')
+      all('input[name*="assignment_check_ins"][name*="actual_energy_percentage"]').last.set('45')
+      all('select[name*="assignment_check_ins"][name*="employee_personal_alignment"]').last.select('Neutral')
+      all('input[name*="assignment_check_ins"][name*="status"][value="draft"]').last.click
       
       # Step 13: Submit
       click_button 'Save All Check-Ins'
@@ -232,22 +216,18 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
       assignment_check_in_2 = AssignmentCheckIn.find_by(teammate: support_employee_teammate, assignment: support_assignment_2)
       
       # Fill out support-assignment-1 (mark ready)
-      within("[data-assignment-id='#{support_assignment_1.id}']") do
-        select 'Exceeding', from: "assignment_check_ins[#{assignment_check_in_1.id}][employee_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_1.id}][employee_private_notes]", with: 'Support employee thinks they are exceeding expectations on customer support'
-        fill_in "assignment_check_ins[#{assignment_check_in_1.id}][actual_energy_percentage]", with: '85'
-        select 'Love', from: "assignment_check_ins[#{assignment_check_in_1.id}][employee_personal_alignment]"
-        find('input[type="radio"][value="complete"]').click
-      end
+      first('select[name*="assignment_check_ins"][name*="employee_rating"]').select('Exceeding')
+      first('textarea[name*="assignment_check_ins"][name*="employee_private_notes"]').set('Support employee thinks they are exceeding expectations on customer support')
+      first('input[name*="assignment_check_ins"][name*="actual_energy_percentage"]').set('85')
+      first('select[name*="assignment_check_ins"][name*="employee_personal_alignment"]').select('Love')
+      first('input[name*="assignment_check_ins"][name*="status"][value="complete"]').click
       
       # Fill out support-assignment-2 (save as draft)
-      within("[data-assignment-id='#{support_assignment_2.id}']") do
-        select 'Meeting', from: "assignment_check_ins[#{assignment_check_in_2.id}][employee_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_2.id}][employee_private_notes]", with: 'Support employee thinks they are meeting expectations on support documentation'
-        fill_in "assignment_check_ins[#{assignment_check_in_2.id}][actual_energy_percentage]", with: '35'
-        select 'Prefer Not', from: "assignment_check_ins[#{assignment_check_in_2.id}][employee_personal_alignment]"
-        find('input[type="radio"][value="draft"]').click
-      end
+      all('select[name*="assignment_check_ins"][name*="employee_rating"]').last.select('Meeting')
+      all('textarea[name*="assignment_check_ins"][name*="employee_private_notes"]').last.set('Support employee thinks they are meeting expectations on support documentation')
+      all('input[name*="assignment_check_ins"][name*="actual_energy_percentage"]').last.set('35')
+      all('select[name*="assignment_check_ins"][name*="employee_personal_alignment"]').last.select('Neutral')
+      all('input[name*="assignment_check_ins"][name*="status"][value="draft"]').last.click
       
       # Step 11: Submit
       click_button 'Save All Check-Ins'
@@ -258,18 +238,14 @@ RSpec.describe 'Check-In Finalization Flow', type: :system do
       visit organization_person_check_ins_path(company, support_employee)
       
       # Fill out support-assignment-1 (mark ready)
-      within("[data-assignment-id='#{support_assignment_1.id}']") do
-        select 'Meeting', from: "assignment_check_ins[#{assignment_check_in_1.id}][manager_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_1.id}][manager_private_notes]", with: 'Manager thinks support employee is meeting expectations on customer support'
-        find('input[type="radio"][value="complete"]').click
-      end
+      first('select[name*="assignment_check_ins"][name*="manager_rating"]').select('Meeting')
+      first('textarea[name*="assignment_check_ins"][name*="manager_private_notes"]').set('Manager thinks support employee is meeting expectations on customer support')
+      first('input[name*="assignment_check_ins"][name*="status"][value="complete"]').click
       
       # Fill out support-assignment-2 (save as draft)
-      within("[data-assignment-id='#{support_assignment_2.id}']") do
-        select 'Working to Meet', from: "assignment_check_ins[#{assignment_check_in_2.id}][manager_rating]"
-        fill_in "assignment_check_ins[#{assignment_check_in_2.id}][manager_private_notes]", with: 'Manager thinks support employee is working to meet expectations on support documentation'
-        find('input[type="radio"][value="draft"]').click
-      end
+      all('select[name*="assignment_check_ins"][name*="manager_rating"]').last.select('Working to Meet')
+      all('textarea[name*="assignment_check_ins"][name*="manager_private_notes"]').last.set('Manager thinks support employee is working to meet expectations on support documentation')
+      all('input[name*="assignment_check_ins"][name*="status"][value="draft"]').last.click
       
       # Step 13: Submit
       click_button 'Save All Check-Ins'

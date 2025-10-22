@@ -112,6 +112,10 @@ GEM
     cssbundling-rails (1.4.3)
       railties (>= 6.0.0)
     csv (3.3.5)
+    database_cleaner-active_record (2.2.2)
+      activerecord (>= 5.a)
+      database_cleaner-core (~> 2.0)
+    database_cleaner-core (2.0.1)
     date (3.4.1)
     debug (1.11.0)
       irb (~> 1.10)
@@ -607,6 +611,7 @@ DEPENDENCIES
   creek (~> 2.0)
   cssbundling-rails
   csv (~> 3.2)
+  database_cleaner-active_record (~> 2.2)
   debug
   dotenv-rails (~> 3.1)
   draper (~> 4.0)

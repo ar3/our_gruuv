@@ -15,13 +15,7 @@ RSpec.describe 'Check-ins View Consistency', type: :system do
     employee_teammate = create(:teammate, person: employee, organization: organization)
     employment_tenure = create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager, position: position)
 
-    # Create position check-in
-    create(:position_check_in, teammate: employee_teammate, employment_tenure: employment_tenure).update!(
-      employee_rating: 'working_to_meet',
-      manager_rating: 'working_to_meet',
-      employee_private_notes: 'Making good progress',
-      manager_private_notes: 'Outstanding performance'
-    )
+    # Position check-in will be created automatically by the controller
 
     # Create assignment check-ins
     assignment1 = create(:assignment, company: organization, title: 'Frontend Development')
@@ -147,10 +141,10 @@ RSpec.describe 'Check-ins View Consistency', type: :system do
   def fill_card_form_with_test_data
     # Fill position
     select '🔵 Praising/Trusting', from: '[position_check_in][manager_rating]'
-    fill_in '[position_check_in][manager_private_notes]', with: 'Test card data - great work!'
+    fill_in '[position_check_in][manager_private_notes]', with: 'Test consistency data - great work!'
     
-    # Mark as complete - find by value instead of ID
-    find('input[name="[position_check_in][status]"][value="complete"]').click
+    # Keep as draft so we can test table view too
+    find('input[name="[position_check_in][status]"][value="draft"]').click
   end
 
   def fill_table_form_with_test_data
@@ -160,10 +154,10 @@ RSpec.describe 'Check-ins View Consistency', type: :system do
       manager_rating_select.select('🔵 Praising/Trusting')
       
       manager_notes_textarea = find('textarea[name*="position_check_in"][name*="manager_private_notes"]')
-      manager_notes_textarea.fill_in(with: 'Test table data - great work!')
+      manager_notes_textarea.set('Test consistency data - great work!')
       
-      # Mark as complete
-      find('input[name*="position_check_in"][name*="status"][value="complete"]').click
+      # Keep as draft for consistency testing
+      find('input[name*="position_check_in"][name*="status"][value="draft"]').click
     end
   end
 end

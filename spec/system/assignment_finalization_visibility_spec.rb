@@ -114,15 +114,17 @@ RSpec.describe 'Assignment Finalization Visibility', type: :system do
 
   describe 'Manager View - Assignment Check-ins WITH Position Check-in' do
     let!(:position_check_in) do
+      employment_tenure = EmploymentTenure.find_by(teammate: employee_teammate, company: organization)
       PositionCheckIn.create!(
         teammate: employee_teammate,
+        employment_tenure: employment_tenure,
         check_in_started_on: Date.current,
         employee_rating: 2,
         employee_private_notes: 'Doing well overall',
-        employee_completed_at: Time.current,
+        employee_completed_at: 1.hour.ago,
         manager_rating: 3,
         manager_private_notes: 'Strong performer',
-        manager_completed_at: Time.current,
+        manager_completed_at: 30.minutes.ago,
         manager_completed_by: manager_person
       )
     end
@@ -238,15 +240,17 @@ RSpec.describe 'Assignment Finalization Visibility', type: :system do
 
   describe 'Employee View - Assignment Check-ins WITH Position Check-in' do
     let!(:position_check_in) do
+      employment_tenure = EmploymentTenure.find_by(teammate: employee_teammate, company: organization)
       PositionCheckIn.create!(
         teammate: employee_teammate,
+        employment_tenure: employment_tenure,
         check_in_started_on: Date.current,
         employee_rating: 2,
         employee_private_notes: 'Doing well overall',
-        employee_completed_at: Time.current,
+        employee_completed_at: 1.hour.ago,
         manager_rating: 3,
         manager_private_notes: 'Strong performer',
-        manager_completed_at: Time.current,
+        manager_completed_at: 30.minutes.ago,
         manager_completed_by: manager_person
       )
     end

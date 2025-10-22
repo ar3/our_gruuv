@@ -104,3 +104,7 @@ RSpec.describe EnmPartnership, type: :model do
     end
   end
 end
+
+
+
+

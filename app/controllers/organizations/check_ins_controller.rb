@@ -19,9 +19,9 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   
   def update
     # Parse giant form and update all check-ins
-    update_position_check_in if params[:position_check_in]
-    update_assignment_check_ins if params[:assignment_check_ins]
-    update_aspiration_check_ins if params[:aspiration_check_ins]
+    update_position_check_in if params[:position_check_in] || params["[position_check_in]"]
+    update_assignment_check_ins if params[:assignment_check_ins] || params["[assignment_check_ins]"]
+    update_aspiration_check_ins if params[:aspiration_check_ins] || params["[aspiration_check_ins]"]
     
     redirect_to organization_person_check_ins_path(@organization, @person),
                 notice: 'Check-ins saved successfully.'
@@ -130,7 +130,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   end
 
   def update_aspiration_check_ins
-    aspiration_check_ins_params = params[:aspiration_check_ins]
+    aspiration_check_ins_params = params[:aspiration_check_ins] || params["[aspiration_check_ins]"]
     return unless aspiration_check_ins_params
 
     aspiration_check_ins_params.each do |check_in_id, check_in_params|
@@ -144,24 +144,24 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
       # Update check-in fields based on view mode
       if @view_mode == :employee
         check_in.assign_attributes(
-          employee_rating: check_in_params[:employee_rating],
-          employee_private_notes: check_in_params[:employee_private_notes]
+          employee_rating: check_in_params.permit(:employee_rating)[:employee_rating],
+          employee_private_notes: check_in_params.permit(:employee_private_notes)[:employee_private_notes]
         )
       elsif @view_mode == :manager
         check_in.assign_attributes(
-          manager_rating: check_in_params[:manager_rating],
-          manager_private_notes: check_in_params[:manager_private_notes]
+          manager_rating: check_in_params.permit(:manager_rating)[:manager_rating],
+          manager_private_notes: check_in_params.permit(:manager_private_notes)[:manager_private_notes]
         )
       end
 
       # Handle completion status
-      if check_in_params[:status] == 'complete'
+      if check_in_params.permit(:status)[:status] == 'complete'
         if @view_mode == :employee
           check_in.complete_employee_side!
         elsif @view_mode == :manager
           check_in.complete_manager_side!(completed_by: current_person)
         end
-      elsif check_in_params[:status] == 'draft'
+      elsif check_in_params.permit(:status)[:status] == 'draft'
         if @view_mode == :employee
           check_in.uncomplete_employee_side!
         elsif @view_mode == :manager

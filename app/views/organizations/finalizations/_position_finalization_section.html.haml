@@ -38,7 +38,7 @@
         %strong This check-in has been finalized.
         = link_to 'View all your check-ins and acknowledgements', audit_organization_employee_path(@organization, @person), class: 'btn btn-sm btn-outline-info ms-2'
 
-- elsif current_person == @person
+- elsif current_person == @person && @position_check_in.present?
   -# Employee Read-Only View
   .card.mb-4
     .card-header
