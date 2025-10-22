@@ -24,18 +24,26 @@ RSpec.describe 'ENM Assessment Wizard Flow', type: :system do
       # Phase 1: Fill out core orientation questions
       within 'form' do
         # Core Openness - Same-sex relationships
-        select '2', from: 'enm_assessment_phase1[core_openness_same_sex]'
+        select 'Agree', from: 'enm_assessment_phase1[core_openness_same_sex]'
         
         # Core Openness - Opposite-sex relationships  
-        select '2', from: 'enm_assessment_phase1[core_openness_opposite_sex]'
+        select 'Agree', from: 'enm_assessment_phase1[core_openness_opposite_sex]'
         
-        # Passive Openness Split
-        select '2', from: 'enm_assessment_phase1[passive_openness_emotional]'
-        select '2', from: 'enm_assessment_phase1[passive_openness_physical]'
+        # Passive Emotional Openness
+        select 'Agree', from: 'enm_assessment_phase1[passive_emotional_same_sex]'
+        select 'Agree', from: 'enm_assessment_phase1[passive_emotional_opposite_sex]'
         
-        # Active Readiness
-        select '3', from: 'enm_assessment_phase1[active_readiness_emotional]'
-        select '3', from: 'enm_assessment_phase1[active_readiness_physical]'
+        # Passive Physical Openness
+        select 'Agree', from: 'enm_assessment_phase1[passive_physical_same_sex]'
+        select 'Agree', from: 'enm_assessment_phase1[passive_physical_opposite_sex]'
+        
+        # Active Emotional Readiness
+        select 'Strongly Agree', from: 'enm_assessment_phase1[active_emotional_same_sex]'
+        select 'Strongly Agree', from: 'enm_assessment_phase1[active_emotional_opposite_sex]'
+        
+        # Active Physical Readiness
+        select 'Strongly Agree', from: 'enm_assessment_phase1[active_physical_same_sex]'
+        select 'Strongly Agree', from: 'enm_assessment_phase1[active_physical_opposite_sex]'
       end
       
       # Submit Phase 1
@@ -43,13 +51,38 @@ RSpec.describe 'ENM Assessment Wizard Flow', type: :system do
       
       # Should redirect to Phase 2
       expect(page).to have_content('Assessment Phase 2')
-      expect(page).to have_content('Emotional Escalator')
+      expect(page).to have_content('Emotional Intimacy Steps')
       
-      # Phase 2: Fill out emotional escalator comfort levels
+      # Phase 2: Fill out escalator comfort levels and disclosure preferences
       within 'form' do
-        # Fill in emotional escalator comfort levels for all 9 steps
-        (1..9).each do |step|
-          select '2', from: "enm_assessment_phase2[emotional_escalator_#{step}_comfort]"
+        # Fill in distant steps (1-3) - used for both physical and emotional
+        (1..3).each do |step|
+          select 'Comfortable', from: "enm_assessment_phase2[distant_step_#{step}_comfort_same_sex]"
+          select 'Comfortable', from: "enm_assessment_phase2[distant_step_#{step}_comfort_opposite_sex]"
+          select 'Notification Expected', from: "enm_assessment_phase2[distant_step_#{step}_pre_disclosure_same_sex]"
+          select 'Notification Expected', from: "enm_assessment_phase2[distant_step_#{step}_pre_disclosure_opposite_sex]"
+          select 'Full, Expected', from: "enm_assessment_phase2[distant_step_#{step}_post_disclosure_same_sex]"
+          select 'Full, Expected', from: "enm_assessment_phase2[distant_step_#{step}_post_disclosure_opposite_sex]"
+        end
+        
+        # Fill in physical escalator steps (4-9)
+        (4..9).each do |step|
+          select 'Comfortable', from: "enm_assessment_phase2[physical_step_#{step}_comfort_same_sex]"
+          select 'Comfortable', from: "enm_assessment_phase2[physical_step_#{step}_comfort_opposite_sex]"
+          select 'Agreement Expected', from: "enm_assessment_phase2[physical_step_#{step}_pre_disclosure_same_sex]"
+          select 'Agreement Expected', from: "enm_assessment_phase2[physical_step_#{step}_pre_disclosure_opposite_sex]"
+          select 'Desired, but not Expected', from: "enm_assessment_phase2[physical_step_#{step}_post_disclosure_same_sex]"
+          select 'Desired, but not Expected', from: "enm_assessment_phase2[physical_step_#{step}_post_disclosure_opposite_sex]"
+        end
+        
+        # Fill in emotional escalator steps (4-9)
+        (4..9).each do |step|
+          select 'Comfortable', from: "enm_assessment_phase2[emotional_step_#{step}_comfort_same_sex]"
+          select 'Comfortable', from: "enm_assessment_phase2[emotional_step_#{step}_comfort_opposite_sex]"
+          select 'Agreement Expected', from: "enm_assessment_phase2[emotional_step_#{step}_pre_disclosure_same_sex]"
+          select 'Agreement Expected', from: "enm_assessment_phase2[emotional_step_#{step}_pre_disclosure_opposite_sex]"
+          select 'Desired, but not Expected', from: "enm_assessment_phase2[emotional_step_#{step}_post_disclosure_same_sex]"
+          select 'Desired, but not Expected', from: "enm_assessment_phase2[emotional_step_#{step}_post_disclosure_opposite_sex]"
         end
       end
       

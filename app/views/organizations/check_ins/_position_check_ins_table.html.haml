@@ -4,9 +4,9 @@
     = render 'position_check_ins_table_completed', check_in: position_check_in
   - elsif position_check_in.ready_for_finalization?
     = render 'position_check_ins_table_ready_for_finalization', check_in: position_check_in, form: form, view_mode: view_mode
-  - elsif view_mode == :manager && position_check_in.manager_completed?
+  - elsif view_mode == :manager && position_check_in.manager_completed? && position_check_in.employee_completed?
     = render 'position_check_ins_table_manager_completed', check_in: position_check_in, form: form
-  - elsif view_mode == :employee && position_check_in.employee_completed?
+  - elsif view_mode == :employee && position_check_in.employee_completed? && position_check_in.manager_completed?
     = render 'position_check_ins_table_employee_completed', check_in: position_check_in, form: form
   - else
     = form.fields_for :position_check_in, position_check_in do |pf|

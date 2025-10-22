@@ -6,12 +6,21 @@ class Organizations::FinalizationsController < ApplicationController
   before_action :authorize_finalization
   
   def show
+    # Determine view mode
+    if current_person == @person
+      @view_mode = :employee
+    elsif @person.current_manager_for(@organization) == current_person
+      @view_mode = :manager
+    else
+      @view_mode = :readonly
+    end
+    
     # Load all ready-to-finalize check-ins (for managers)
     @position_check_in = PositionCheckIn.where(teammate: @teammate).ready_for_finalization.first
     @assignment_check_ins = AssignmentCheckIn.where(teammate: @teammate).ready_for_finalization
     
     # If no ready check-ins, load the most recent finalized ones (for employees to acknowledge)
-    if @position_check_in.nil?
+    if @position_check_in.nil? && @view_mode == :employee
       @position_check_in = PositionCheckIn.where(teammate: @teammate).closed.order(:official_check_in_completed_at).last
     end
     
@@ -19,7 +28,7 @@ class Organizations::FinalizationsController < ApplicationController
     @aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate).ready_for_finalization
     
     # If no ready aspiration check-ins, load the most recent finalized ones (for employees to acknowledge)
-    if @aspiration_check_ins.empty?
+    if @aspiration_check_ins.empty? && @view_mode == :employee
       @aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate).closed.order(:official_check_in_completed_at).last(5)
     end
   end

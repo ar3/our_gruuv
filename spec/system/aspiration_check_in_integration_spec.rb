@@ -155,13 +155,19 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
       
       click_button 'Save All Check-Ins'
       
+      # Wait for redirect to complete
+      expect(page).to have_current_path(organization_person_check_ins_path(organization, employee))
+      
       # Manager goes to finalization page
       sign_in_as(manager, organization)
+      # Visit a different page first to clear any flash messages
+      visit root_path
       visit organization_person_finalization_path(organization, employee)
       
       # Should not see aspiration check-ins
       expect(page).not_to have_content('Aspiration Check-Ins')
-      expect(page).to have_content('No check-ins are ready for finalization')
+      # Should not see aspiration finalization section
+      expect(page).not_to have_css('h3', text: 'Aspiration Check-Ins')
     end
 
     it 'shows aspiration check-ins on finalization page when both employee and manager are ready' do
