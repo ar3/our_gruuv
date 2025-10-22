@@ -16,6 +16,12 @@ class Enm::AssessmentsController < Enm::BaseController
   def show_phase
     @phase = params[:phase].to_i
     @form = form_for_phase(@phase)
+    
+    # Add progressive analysis for Phase 1
+    if @phase == 1
+      calculator = Enm::AssessmentCalculatorService.new
+      @partial_analysis = calculator.partial_phase_1_analysis(@assessment.phase_1_data)
+    end
   end
   
   def update_phase

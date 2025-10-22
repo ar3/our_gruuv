@@ -7,8 +7,10 @@ RSpec.describe Enm::AssessmentCalculatorService do
     it 'calculates monogamy-leaning from closed emotional and physical' do
       data = {
         core_openness: { same_sex: 2, opposite_sex: 2 },
-        passive_openness: { emotional: -2, physical: -2 },
-        active_readiness: { emotional: -2, physical: -2 }
+        passive_emotional: { same_sex: -2, opposite_sex: -2 },
+        passive_physical: { same_sex: -2, opposite_sex: -2 },
+        active_emotional: { same_sex: -2, opposite_sex: -2 },
+        active_physical: { same_sex: -2, opposite_sex: -2 }
       }
       
       result = service.calculate_phase_1_results(data)
@@ -20,8 +22,10 @@ RSpec.describe Enm::AssessmentCalculatorService do
     it 'calculates swing-leaning from closed emotional, open physical' do
       data = {
         core_openness: { same_sex: 2, opposite_sex: 2 },
-        passive_openness: { emotional: -2, physical: 2 },
-        active_readiness: { emotional: -1, physical: 3 }
+        passive_emotional: { same_sex: -2, opposite_sex: -2 },
+        passive_physical: { same_sex: 2, opposite_sex: 2 },
+        active_emotional: { same_sex: -1, opposite_sex: -1 },
+        active_physical: { same_sex: 3, opposite_sex: 3 }
       }
       
       result = service.calculate_phase_1_results(data)
@@ -33,8 +37,10 @@ RSpec.describe Enm::AssessmentCalculatorService do
     it 'calculates poly-leaning from open emotional and physical' do
       data = {
         core_openness: { same_sex: 2, opposite_sex: 2 },
-        passive_openness: { emotional: 2, physical: 2 },
-        active_readiness: { emotional: 3, physical: 3 }
+        passive_emotional: { same_sex: 2, opposite_sex: 2 },
+        passive_physical: { same_sex: 2, opposite_sex: 2 },
+        active_emotional: { same_sex: 3, opposite_sex: 3 },
+        active_physical: { same_sex: 3, opposite_sex: 3 }
       }
       
       result = service.calculate_phase_1_results(data)
@@ -46,8 +52,10 @@ RSpec.describe Enm::AssessmentCalculatorService do
     it 'calculates heart-leaning from open emotional, closed physical' do
       data = {
         core_openness: { same_sex: 2, opposite_sex: 2 },
-        passive_openness: { emotional: 2, physical: -2 },
-        active_readiness: { emotional: 2, physical: -1 }
+        passive_emotional: { same_sex: 2, opposite_sex: 2 },
+        passive_physical: { same_sex: -2, opposite_sex: -2 },
+        active_emotional: { same_sex: 2, opposite_sex: 2 },
+        active_physical: { same_sex: -1, opposite_sex: -1 }
       }
       
       result = service.calculate_phase_1_results(data)
@@ -60,29 +68,69 @@ RSpec.describe Enm::AssessmentCalculatorService do
   describe '#calculate_phase_2_results' do
     it 'calculates ECI and PCI from escalator data' do
       data = {
-        emotional_escalator: [
-          { comfort: 2, prior_disclosure: 1, post_disclosure: 1 },
-          { comfort: 3, prior_disclosure: 2, post_disclosure: 2 },
-          { comfort: 1, prior_disclosure: 0, post_disclosure: 0 }
+        distant_steps: [
+          { step: 1, comfort: { same_sex: 2, opposite_sex: 2 }, pre_disclosure: { same_sex: 'notification', opposite_sex: 'notification' }, post_disclosure: { same_sex: 'full', opposite_sex: 'full' } },
+          { step: 2, comfort: { same_sex: 3, opposite_sex: 3 }, pre_disclosure: { same_sex: 'agreement', opposite_sex: 'agreement' }, post_disclosure: { same_sex: 'desired', opposite_sex: 'desired' } },
+          { step: 3, comfort: { same_sex: 1, opposite_sex: 1 }, pre_disclosure: { same_sex: 'none', opposite_sex: 'none' }, post_disclosure: { same_sex: 'unwanted', opposite_sex: 'unwanted' } }
         ],
         physical_escalator: [
-          { comfort: 1, prior_disclosure: 0, post_disclosure: 0 },
-          { comfort: 2, prior_disclosure: 1, post_disclosure: 1 },
-          { comfort: 3, prior_disclosure: 2, post_disclosure: 2 }
+          { step: 4, comfort: { same_sex: 1, opposite_sex: 1 }, pre_disclosure: { same_sex: 'none', opposite_sex: 'none' }, post_disclosure: { same_sex: 'unwanted', opposite_sex: 'unwanted' } },
+          { step: 5, comfort: { same_sex: 2, opposite_sex: 2 }, pre_disclosure: { same_sex: 'notification', opposite_sex: 'notification' }, post_disclosure: { same_sex: 'full', opposite_sex: 'full' } },
+          { step: 6, comfort: { same_sex: 3, opposite_sex: 3 }, pre_disclosure: { same_sex: 'agreement', opposite_sex: 'agreement' }, post_disclosure: { same_sex: 'desired', opposite_sex: 'desired' } }
         ],
-        style_axes: {
-          connection: 2,
-          emotional_structure: -1,
-          sexual_structure: 1,
-          initiation_pattern: 0
-        }
+        emotional_escalator: [
+          { step: 4, comfort: { same_sex: 2, opposite_sex: 2 }, pre_disclosure: { same_sex: 'notification', opposite_sex: 'notification' }, post_disclosure: { same_sex: 'full', opposite_sex: 'full' } },
+          { step: 5, comfort: { same_sex: 3, opposite_sex: 3 }, pre_disclosure: { same_sex: 'agreement', opposite_sex: 'agreement' }, post_disclosure: { same_sex: 'desired', opposite_sex: 'desired' } },
+          { step: 6, comfort: { same_sex: 1, opposite_sex: 1 }, pre_disclosure: { same_sex: 'none', opposite_sex: 'none' }, post_disclosure: { same_sex: 'unwanted', opposite_sex: 'unwanted' } }
+        ]
       }
       
       result = service.calculate_phase_2_results(data)
       
       expect(result[:eci]).to eq(2.0) # Average of 2, 3, 1
       expect(result[:pci]).to eq(2.0) # Average of 1, 2, 3
-      expect(result[:style]).to eq('K') # Based on style axes
+      expect(result[:style]).to eq('K') # Based on escalator patterns
+    end
+  end
+  
+  describe '#partial_phase_1_analysis' do
+    it 'returns analysis after Q1' do
+      data = {
+        core_openness: { same_sex: 2, opposite_sex: 2 }
+      }
+      
+      result = service.partial_phase_1_analysis(data)
+      
+      expect(result[:stage]).to eq('after_q1')
+      expect(result[:likely_non_monogamous]).to be true
+    end
+    
+    it 'returns analysis after Q3' do
+      data = {
+        core_openness: { same_sex: 2, opposite_sex: 2 },
+        passive_emotional: { same_sex: 2, opposite_sex: 2 },
+        passive_physical: { same_sex: 2, opposite_sex: 2 }
+      }
+      
+      result = service.partial_phase_1_analysis(data)
+      
+      expect(result[:stage]).to eq('after_q3')
+      expect(result[:likely_poly]).to be true
+    end
+    
+    it 'returns analysis after Q5' do
+      data = {
+        core_openness: { same_sex: 2, opposite_sex: 2 },
+        passive_emotional: { same_sex: 2, opposite_sex: 2 },
+        passive_physical: { same_sex: 2, opposite_sex: 2 },
+        active_emotional: { same_sex: 3, opposite_sex: 3 },
+        active_physical: { same_sex: 3, opposite_sex: 3 }
+      }
+      
+      result = service.partial_phase_1_analysis(data)
+      
+      expect(result[:stage]).to eq('after_q5')
+      expect(result[:readiness]).to eq('A')
     end
   end
   

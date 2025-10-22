@@ -1,20 +1,37 @@
 class Enm::AssessmentPhase1Form < Reform::Form
   include Reform::Form::ActiveModel::Validations
   
-  # Individual fields for the form
+  # Q1: Core Openness
   property :core_openness_same_sex, virtual: true
   property :core_openness_opposite_sex, virtual: true
-  property :passive_openness_emotional, virtual: true
-  property :passive_openness_physical, virtual: true
-  property :active_readiness_emotional, virtual: true
-  property :active_readiness_physical, virtual: true
   
+  # Q2: Passive Emotional Openness
+  property :passive_emotional_same_sex, virtual: true
+  property :passive_emotional_opposite_sex, virtual: true
+  
+  # Q3: Passive Physical Openness
+  property :passive_physical_same_sex, virtual: true
+  property :passive_physical_opposite_sex, virtual: true
+  
+  # Q4: Active Emotional Readiness
+  property :active_emotional_same_sex, virtual: true
+  property :active_emotional_opposite_sex, virtual: true
+  
+  # Q5: Active Physical Readiness
+  property :active_physical_same_sex, virtual: true
+  property :active_physical_opposite_sex, virtual: true
+  
+  # Validations for all fields
   validates :core_openness_same_sex, presence: true
   validates :core_openness_opposite_sex, presence: true
-  validates :passive_openness_emotional, presence: true
-  validates :passive_openness_physical, presence: true
-  validates :active_readiness_emotional, presence: true
-  validates :active_readiness_physical, presence: true
+  validates :passive_emotional_same_sex, presence: true
+  validates :passive_emotional_opposite_sex, presence: true
+  validates :passive_physical_same_sex, presence: true
+  validates :passive_physical_opposite_sex, presence: true
+  validates :active_emotional_same_sex, presence: true
+  validates :active_emotional_opposite_sex, presence: true
+  validates :active_physical_same_sex, presence: true
+  validates :active_physical_opposite_sex, presence: true
   
   def phase_1_data
     {
@@ -22,13 +39,21 @@ class Enm::AssessmentPhase1Form < Reform::Form
         same_sex: core_openness_same_sex.to_i,
         opposite_sex: core_openness_opposite_sex.to_i
       },
-      passive_openness: {
-        emotional: passive_openness_emotional.to_i,
-        physical: passive_openness_physical.to_i
+      passive_emotional: {
+        same_sex: passive_emotional_same_sex.to_i,
+        opposite_sex: passive_emotional_opposite_sex.to_i
       },
-      active_readiness: {
-        emotional: active_readiness_emotional.to_i,
-        physical: active_readiness_physical.to_i
+      passive_physical: {
+        same_sex: passive_physical_same_sex.to_i,
+        opposite_sex: passive_physical_opposite_sex.to_i
+      },
+      active_emotional: {
+        same_sex: active_emotional_same_sex.to_i,
+        opposite_sex: active_emotional_opposite_sex.to_i
+      },
+      active_physical: {
+        same_sex: active_physical_same_sex.to_i,
+        opposite_sex: active_physical_opposite_sex.to_i
       }
     }
   end

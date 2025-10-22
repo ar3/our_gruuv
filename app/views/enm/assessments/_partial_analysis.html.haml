@@ -1,0 +1,27 @@
+- if analysis[:stage] == 'after_q1'
+  .alert.alert-info
+    %h6 Likely Orientation
+    - if analysis[:likely_non_monogamous]
+      %p.text-success Likely Non-Monogamous
+    - else
+      %p.text-warning Likely Monogamous
+
+- elsif analysis[:stage] == 'after_q3'
+  .alert.alert-info
+    %h6 Relationship Style
+    - if analysis[:likely_monogamous]
+      %p.text-warning Likely Monogamous
+    - elsif analysis[:likely_swinger]
+      %p.text-info Likely Swinger
+    - elsif analysis[:likely_poly]
+      %p.text-success Likely Poly
+    - else
+      %p.text-muted Unclear
+
+- elsif analysis[:stage] == 'after_q5'
+  .alert.alert-success
+    %h6 Phase 1 Complete
+    %p Readiness: #{analysis[:readiness]}
+    - if analysis[:sex_differences]
+      .mt-2
+        %small.text-muted Note: Significant differences between same-sex and opposite-sex responses detected
