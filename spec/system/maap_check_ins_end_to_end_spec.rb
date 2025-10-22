@@ -53,7 +53,7 @@ RSpec.describe 'MAAP Check-In System End-to-End', type: :system, critical: true 
       click_button 'Save All Check-Ins'
 
       # Verify manager side is completed by checking the page content
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       expect(page).to have_content('⏳ Waiting for Employee')
 
       # Step 3: Switch to employee view
@@ -72,7 +72,7 @@ RSpec.describe 'MAAP Check-In System End-to-End', type: :system, critical: true 
       click_button 'Save All Check-Ins'
 
       # Verify both sides are completed by checking page content
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       expect(page).to have_content('⏳ Ready to Finalize')
 
       # Step 5: Manager goes to finalization page

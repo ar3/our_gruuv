@@ -47,7 +47,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
       click_button 'Save All Check-Ins'
       
       # Should see success message
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
       
       # Step 2: Manager completes aspiration check-ins
       sign_in_as(manager, organization)
@@ -74,7 +74,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
       click_button 'Save All Check-Ins'
       
       # Should see success message
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
       
       # Step 3: Manager goes to finalization page
       visit organization_person_finalization_path(organization, employee)
@@ -127,7 +127,7 @@ RSpec.describe 'Aspiration Check-In Integration', type: :system do
       click_button 'Finalize Selected Check-Ins'
       
       # Should see success message
-      expect(page).to have_content('Check-ins finalized successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins finalized successfully', visible: :all)
       
       # Step 5: Verify aspiration check-ins are finalized
       aspiration_check_in1 = AspirationCheckIn.find_by(aspiration: aspiration1)

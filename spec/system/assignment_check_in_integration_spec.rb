@@ -115,7 +115,7 @@ RSpec.describe 'Assignment Check-In Integration', type: :system do
       end
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       assignment_check_in.reload
       expect(assignment_check_in.employee_completed?).to be true
@@ -135,7 +135,7 @@ RSpec.describe 'Assignment Check-In Integration', type: :system do
       within('table', text: 'Assignment') { find('input[type="radio"][value="complete"]').click }
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       assignment_check_in.reload
       expect(assignment_check_in.manager_completed?).to be true
@@ -182,7 +182,7 @@ RSpec.describe 'Assignment Check-In Integration', type: :system do
       # Choose to make changes
       find('input[name*="assignment_check_ins"][type="radio"][value="draft"]').click
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       # Wait for the database to be updated
       sleep 0.1
@@ -225,7 +225,7 @@ RSpec.describe 'Assignment Check-In Integration', type: :system do
       check 'finalize_assignments'
       
       click_button 'Finalize Selected Check-Ins'
-      expect(page).to have_content('Check-ins finalized successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins finalized successfully.', visible: :all)
       
       assignment_check_in.reload
       expect(assignment_check_in.officially_completed?).to be true
@@ -243,7 +243,7 @@ RSpec.describe 'Assignment Check-In Integration', type: :system do
       click_button 'Finalize Selected Check-Ins'
       
       # Check that the finalization was successful
-      expect(page).to have_content('Check-ins finalized successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins finalized successfully', visible: :all)
       
       # The snapshot and tenure updates are tested in the service specs
       # System test focuses on the UI flow
@@ -261,7 +261,7 @@ RSpec.describe 'Assignment Check-In Integration', type: :system do
       click_button 'Finalize Selected Check-Ins'
       
       # Check that the finalization was successful
-      expect(page).to have_content('Check-ins finalized successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins finalized successfully', visible: :all)
       
       # The tenure update is tested in the service specs
       # System test focuses on the UI flow
@@ -381,7 +381,7 @@ RSpec.describe 'Assignment Check-In Integration', type: :system do
       end
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       check_in1.reload
       check_in2.reload

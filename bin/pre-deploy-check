@@ -5,9 +5,9 @@
 
 echo "Starting pre-deployment checks..."
 
-# Run critical system specs
-echo "1. Running critical system specs..."
-./bin/critical-specs
+# Run system specs
+echo "1. Running system specs..."
+./bin/system-specs
 
 # Run security check with Brakeman
 echo "2. Running security scan..."

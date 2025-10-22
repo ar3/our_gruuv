@@ -164,7 +164,7 @@ RSpec.describe 'Aspiration Finalization Bug Reproduction', type: :system do
       click_button 'Finalize Selected Check-Ins'
       
       # Should see success message
-      expect(page).to have_content('Check-ins finalized successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins finalized successfully', visible: :all)
       
       # Verify aspiration check-in is finalized
       aspiration_check_in.reload

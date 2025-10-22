@@ -68,7 +68,7 @@ RSpec.describe 'Check-ins UI Duplication Bug', type: :system do
         
         # Wait for redirect to check-ins page (finalization success)
         expect(page).to have_current_path(organization_person_check_ins_path(organization, employee))
-        expect(page).to have_content('Check-ins finalized successfully')
+        expect(page).to have_css('.toast-body', text: 'Check-ins finalized successfully', visible: :all)
         
         # Get the created snapshot
         snapshot = MaapSnapshot.last

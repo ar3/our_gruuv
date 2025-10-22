@@ -57,7 +57,7 @@ RSpec.describe 'Position Check-In Bug Reproduction', type: :system, critical: tr
     click_button 'Save All Check-Ins'
 
     # Step 5: Verify the bug - check-in should NOT be completed
-    expect(page).to have_content('Check-ins saved successfully.')
+    expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
     
     # Step 6: Check database state
     position_check_in = PositionCheckIn.find_by(teammate: employee_teammate)

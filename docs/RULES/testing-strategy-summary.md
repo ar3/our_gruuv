@@ -37,16 +37,17 @@ We have successfully implemented a comprehensive testing strategy for the Rails 
 ## Testing Infrastructure
 
 ### Scripts
-- **`bin/critical-specs`** - Runs all critical system specs
+- **`bin/system-specs`** - Runs all system specs (browser-based tests)
+- **`bin/unit-specs`** - Runs all non-system specs (unit/integration tests)
 - **`bin/pre-deploy-check`** - Comprehensive pre-deployment validation
 
 ### CI/CD Integration
-- **GitHub Actions** (`.github/workflows/critical-specs.yml`) - Automated testing on push/PR
+- **GitHub Actions** (`.github/workflows/system-specs.yml`) - Automated testing on push/PR
 - **Railway Integration** - Pre-deployment checks
 
 ### Configuration
-- **RSpec Tags** - `critical: true` for important specs
-- **Default Exclusion** - Critical specs excluded from regular runs (`.rspec`)
+- **System Specs** - Browser-based integration tests in `spec/system/`
+- **Unit Specs** - All other tests (models, controllers, services, etc.)
 
 ## Testing Strategy Rules
 
@@ -83,9 +84,14 @@ We have successfully implemented a comprehensive testing strategy for the Rails 
 
 ## Usage
 
-### Running Critical Specs
+### Running System Specs
 ```bash
-./bin/critical-specs
+./bin/system-specs
+```
+
+### Running Unit Specs
+```bash
+./bin/unit-specs
 ```
 
 ### Pre-Deployment Check
@@ -95,15 +101,14 @@ We have successfully implemented a comprehensive testing strategy for the Rails 
 
 ### Regular Development
 ```bash
-bundle exec rspec  # Excludes critical specs by default
-bundle exec rspec --tag critical  # Runs only critical specs
+bundle exec rspec  # Runs all specs
 ```
 
 ## Benefits
 
 1. **Confidence**: Core functionality is tested
-2. **Speed**: Regular runs exclude slow critical specs
-3. **Safety**: Critical specs run before deployment
+2. **Speed**: System specs can be run separately from unit specs
+3. **Safety**: System specs run before deployment
 4. **Maintainability**: Clear testing rules and structure
 5. **Coverage**: Comprehensive testing of key features
 

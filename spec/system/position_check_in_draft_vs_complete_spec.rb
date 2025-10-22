@@ -52,7 +52,7 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       click_button 'Save All Check-Ins'
 
       # Should show success message
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       # Check-in should still be in draft state (NOT completed)
       position_check_in = PositionCheckIn.find_by(teammate: employee_teammate)
@@ -84,7 +84,7 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       click_button 'Save All Check-Ins'
 
       # Should show success message
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       # Check-in should be marked as manager completed
       position_check_in = PositionCheckIn.find_by(teammate: employee_teammate)
@@ -119,7 +119,7 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       click_button 'Save All Check-Ins'
 
       # Should show success message
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       # Check-in should still be in draft state (NOT completed)
       position_check_in = PositionCheckIn.find_by(teammate: employee_teammate)
@@ -145,7 +145,7 @@ RSpec.describe 'Position Check-In Draft vs Complete Status', type: :system, crit
       click_button 'Save All Check-Ins'
 
       # Should show success message
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       # Check-in should be marked as employee completed
       position_check_in = PositionCheckIn.find_by(teammate: employee_teammate)

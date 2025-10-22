@@ -81,7 +81,7 @@ RSpec.describe 'Check-ins View Consistency', type: :system do
       visit organization_person_check_ins_path(organization, employee, view: 'card')
       fill_card_form_with_test_data
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
       
       # Get the saved data
       position_check_in = PositionCheckIn.last
@@ -94,7 +94,7 @@ RSpec.describe 'Check-ins View Consistency', type: :system do
       visit organization_person_check_ins_path(organization, employee, view: 'table')
       fill_table_form_with_test_data
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
       
       # Get the saved data
       position_check_in.reload

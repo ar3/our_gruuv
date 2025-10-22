@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+# Run all non-system specs (unit and integration tests)
+# This script runs all non-browser tests: models, controllers, services, etc.
+
+echo "Running all non-system specs..."
+
+# Set up test environment
+export RAILS_ENV=test
+export RACK_ENV=test
+
+# Run database setup for tests
+echo "Setting up test database..."
+./bin/rails db:test:prepare
+
+# Run all non-system specs (exclude system specs)
+echo "Running unit and integration specs..."
+bundle exec rspec spec --exclude-pattern "spec/system/**/*_spec.rb" --format documentation
+
+echo "Non-system specs completed!"

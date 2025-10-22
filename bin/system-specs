@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+# Run all system specs (browser-based integration tests)
+# This script runs all Capybara-based tests to ensure UI functionality works
+
+echo "Running all system specs..."
+
+# Set up test environment
+export RAILS_ENV=test
+export RACK_ENV=test
+
+# Run database setup for tests
+echo "Setting up test database..."
+./bin/rails db:test:prepare
+
+# Run all system specs
+echo "Running system specs..."
+bundle exec rspec spec/system --format documentation
+
+echo "System specs completed!"

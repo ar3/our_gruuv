@@ -15,17 +15,17 @@ ngrok http --domain=crappie-saved-absolutely.ngrok-free.app 3000
 git push origin main && railway up
 ```
 
-# Run critical specs before deployment
-./bin/critical-specs
+# Run system specs before deployment
+./bin/system-specs
 
 # Full pre-deployment check
 ./bin/pre-deploy-check
 
-# Regular development (excludes critical specs)
-bundle exec rspec
+# Regular development (excludes system specs)
+bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb"
 
-# Run only critical specs
-bundle exec rspec --tag critical
+# Run only system specs
+./bin/system-specs
 
 ## 📚 Documentation Hub
 

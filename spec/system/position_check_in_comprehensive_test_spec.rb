@@ -48,7 +48,7 @@ RSpec.describe 'Position Check-In Draft vs Complete - Comprehensive Test', type:
       end
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.manager_completed_at).to be_nil, "Draft should not mark as completed"
@@ -61,7 +61,7 @@ RSpec.describe 'Position Check-In Draft vs Complete - Comprehensive Test', type:
       end
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.manager_completed_at).to be_present, "Complete should mark as completed"
@@ -73,7 +73,7 @@ RSpec.describe 'Position Check-In Draft vs Complete - Comprehensive Test', type:
       find('input[type="radio"][value="draft"]').click
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.manager_completed_at).to be_nil, "Changing to draft should uncomplete"
@@ -98,7 +98,7 @@ RSpec.describe 'Position Check-In Draft vs Complete - Comprehensive Test', type:
       end
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.employee_completed_at).to be_nil, "Draft should not mark as completed"
@@ -110,7 +110,7 @@ RSpec.describe 'Position Check-In Draft vs Complete - Comprehensive Test', type:
       end
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.employee_completed_at).to be_present, "Complete should mark as completed"
@@ -120,7 +120,7 @@ RSpec.describe 'Position Check-In Draft vs Complete - Comprehensive Test', type:
       find('input[type="radio"][value="draft"]').click
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       position_check_in = PositionCheckIn.find_by(teammate: employee_person.teammates.for_organization_hierarchy(organization).first)
       expect(position_check_in.employee_completed_at).to be_nil, "Changing to draft should uncomplete"

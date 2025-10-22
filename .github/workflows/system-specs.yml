@@ -1,4 +1,4 @@
-name: Critical Specs
+name: System Specs
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  critical-specs:
+  system-specs:
     runs-on: ubuntu-latest
     
     services:
@@ -51,12 +51,12 @@ jobs:
       run: |
         bundle exec rails db:test:prepare
     
-    - name: Run critical specs
+    - name: Run system specs
       env:
         RAILS_ENV: test
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/our_gruuv_test
       run: |
-        bundle exec rspec spec/system/ --tag critical --format documentation
+        bundle exec rspec spec/system/ --format documentation
     
     - name: Run security scan
       run: |

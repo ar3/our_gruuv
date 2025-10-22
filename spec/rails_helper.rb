@@ -11,6 +11,7 @@ require 'rspec/rails'
 require 'rack_session_access/capybara'
 require 'factory_bot_rails'
 require 'pundit/rspec'
+require 'database_cleaner/active_record'
 
 # Configure Capybara
 require 'capybara/rspec'
@@ -54,12 +55,33 @@ RSpec.configure do |config|
     Rails.root.join('spec/fixtures')
   ]
 
-  # If you're not using ActiveRecord, or you'd prefer not to run each of your
-  # examples within a transaction, remove the following line or assign false
-  # instead of true.
-  # Use transactional fixtures for all tests, including system tests
-  # This requires shared database connection for Capybara to work properly
+  # Database cleaning strategy
+  # Use transactional fixtures for non-system tests (fast)
+  # Use database_cleaner truncation for system tests (reliable with Selenium)
   config.use_transactional_fixtures = true
+  
+  # Configure database_cleaner for system tests
+  config.before(:suite) do
+    DatabaseCleaner.strategy = :transaction
+    DatabaseCleaner.clean_with(:truncation)
+  end
+  
+  config.before(:each) do
+    DatabaseCleaner.start
+  end
+  
+  config.after(:each) do
+    DatabaseCleaner.clean
+  end
+  
+  # Override database cleaning strategy for system tests
+  config.before(:each, type: :system) do
+    DatabaseCleaner.strategy = :truncation
+  end
+  
+  config.after(:each, type: :system) do
+    DatabaseCleaner.strategy = :transaction
+  end
 
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false

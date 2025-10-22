@@ -25,7 +25,7 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       
       # Step 2: Submit
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
       
       # Step 3: Employee fills company-aspiration-1 (mark ready) and company-aspiration-2 (draft)
       switch_to_user(company_employee, company)
@@ -43,7 +43,7 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       
       # Step 4: Submit
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
       
       # Step 5: Manager goes to finalization page
       switch_to_user(manager, company)
@@ -98,7 +98,7 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       
       # Step 2: Submit
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
       
       # Step 3: Employee fills sales-aspiration (mark ready)
       switch_to_user(sales_employee, company)
@@ -111,7 +111,7 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       
       # Step 4: Submit
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
       
       # Step 5: Manager goes to finalization page
       switch_to_user(manager, company)
@@ -146,7 +146,7 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       
       # Step 2: Submit
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
       
       # Step 3: Manager fills support-aspiration (mark ready)
       switch_to_user(manager, company)
@@ -159,7 +159,7 @@ RSpec.describe 'Aspiration Check-In Finalization Flow', type: :system do
       
       # Step 4: Submit
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
       
       # Step 5: Manager goes to finalization page
       visit organization_person_finalization_path(company, support_employee)

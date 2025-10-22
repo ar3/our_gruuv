@@ -47,7 +47,7 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       end
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       # Step 2: Verify view-only mode is shown
       expect(page).to have_content('Ready for Finalization')
@@ -69,7 +69,7 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       find('input[type="radio"][value="draft"]').click
       click_button 'Save All Check-Ins'
       
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       # Step 4: Verify back to edit mode
       expect(page).to have_content('Draft')
@@ -97,7 +97,7 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       end
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       # Step 2: Verify view-only mode is shown
       expect(page).to have_content('Ready for Manager')
@@ -119,7 +119,7 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       find('input[type="radio"][value="draft"]').click
       click_button 'Save All Check-Ins'
       
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       # Step 4: Verify back to edit mode
       expect(page).to have_content('Draft')

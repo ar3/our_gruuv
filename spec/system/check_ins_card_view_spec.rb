@@ -16,13 +16,11 @@ RSpec.describe 'Check-ins Card View', type: :system do
     employee_teammate = create(:teammate, person: employee, organization: organization)
     employment_tenure = create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager, position: position)
 
-    # Create position check-in
-    create(:position_check_in, teammate: employee_teammate, employment_tenure: employment_tenure).update!(
-      employee_rating: 'working_to_meet',
-      manager_rating: 'working_to_meet',
-      employee_private_notes: 'Making good progress',
-      manager_private_notes: 'Outstanding performance'
-    )
+    # Create position check-in (incomplete so form is rendered)
+    create(:position_check_in, teammate: employee_teammate, employment_tenure: employment_tenure, 
+           employee_rating: 'working_to_meet', manager_rating: 'working_to_meet',
+           employee_private_notes: 'Making good progress', manager_private_notes: 'Outstanding performance',
+           employee_completed_at: nil, manager_completed_at: nil)
 
     # Create assignment check-ins
     assignment1 = create(:assignment, company: organization, title: 'Frontend Development')
@@ -98,7 +96,7 @@ RSpec.describe 'Check-ins Card View', type: :system do
       fill_in '[position_check_in][manager_private_notes]', with: 'Great work in card view!'
 
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
     end
   end
 end

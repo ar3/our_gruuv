@@ -209,7 +209,7 @@ RSpec.describe 'Check-ins Tabular View', type: :system do
       end
       
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
       
       # Verify data was actually saved to the database
       employee_teammate = employee.teammates.for_organization_hierarchy(organization).first

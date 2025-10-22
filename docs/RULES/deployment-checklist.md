@@ -4,24 +4,24 @@
 
 Before deploying to production, run these checks:
 
-### 1. Critical System Specs
+### 1. System Specs
 ```bash
-./bin/critical-specs
+./bin/system-specs
 ```
-Runs all critical system specs to ensure core functionality works.
+Runs all system specs to ensure UI functionality works.
 
 ### 2. Full Pre-Deployment Check
 ```bash
 ./bin/pre-deploy-check
 ```
 Runs:
-- Critical system specs
+- System specs
 - Security scan (Brakeman)
 - Code quality check (RuboCop)
 - Migration status check
 
 ### 3. Manual Checks
-- [ ] All critical specs pass
+- [ ] All system specs pass
 - [ ] No pending migrations
 - [ ] Environment variables are set correctly
 - [ ] Database backups are current

@@ -186,7 +186,7 @@ RSpec.describe 'Position Check-In Enhanced UX', type: :system, critical: true do
       # Click "Make Changes"
         find('input[type="radio"][value="draft"]').click
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       # Should revert to form fields
       expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="draft"]:checked')
@@ -215,7 +215,7 @@ RSpec.describe 'Position Check-In Enhanced UX', type: :system, critical: true do
       # Click "Make Changes"
         find('input[type="radio"][value="draft"]').click
       click_button 'Save All Check-Ins'
-      expect(page).to have_content('Check-ins saved successfully.')
+      expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully.', visible: :all)
       
       # Should revert to form fields
       expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="draft"]:checked')
