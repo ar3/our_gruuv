@@ -7,28 +7,40 @@ class Organizations::FinalizationsController < ApplicationController
   
   def show
     # Determine view mode
+    puts "\n=== FINALIZATION VIEW MODE DETERMINATION ==="
+    puts "current_person: #{current_person&.display_name} (#{current_person&.id})"
+    puts "@person: #{@person&.display_name} (#{@person&.id})"
+    puts "current_person == @person: #{current_person == @person}"
+    puts "current_manager: #{@person&.current_manager_for(@organization)&.display_name} (#{@person&.current_manager_for(@organization)&.id})"
+    puts "current_manager == current_person: #{@person&.current_manager_for(@organization) == current_person}"
+    
     if current_person == @person
       @view_mode = :employee
+      puts "Setting view_mode to :employee"
     elsif @person.current_manager_for(@organization) == current_person
       @view_mode = :manager
+      puts "Setting view_mode to :manager"
     else
       @view_mode = :readonly
+      puts "Setting view_mode to :readonly"
     end
+    puts "Final view_mode: #{@view_mode}"
+    puts "=== END FINALIZATION DEBUG ===\n"
     
     # Load all ready-to-finalize check-ins (for managers)
     @position_check_in = PositionCheckIn.where(teammate: @teammate).ready_for_finalization.first
     @assignment_check_ins = AssignmentCheckIn.where(teammate: @teammate).ready_for_finalization
     
-    # If no ready check-ins, load the most recent finalized ones (for employees to acknowledge)
-    if @position_check_in.nil? && @view_mode == :employee
+    # If no ready check-ins, load the most recent finalized ones (for employees and managers to acknowledge)
+    if @position_check_in.nil?
       @position_check_in = PositionCheckIn.where(teammate: @teammate).closed.order(:official_check_in_completed_at).last
     end
     
     # Load aspiration check-ins ready for finalization
     @aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate).ready_for_finalization
     
-    # If no ready aspiration check-ins, load the most recent finalized ones (for employees to acknowledge)
-    if @aspiration_check_ins.empty? && @view_mode == :employee
+    # If no ready aspiration check-ins, load the most recent finalized ones (for employees and managers to acknowledge)
+    if @aspiration_check_ins.empty?
       @aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate).closed.order(:official_check_in_completed_at).last(5)
     end
   end
@@ -66,6 +78,13 @@ class Organizations::FinalizationsController < ApplicationController
     # This handles cases where a person has a teammate record at a child department
     # but we're viewing finalization at the company level
     @teammate = @person.teammates.for_organization_hierarchy(@organization).first
+    
+    # If no teammate found, redirect with error
+    unless @teammate
+      redirect_to organization_person_check_ins_path(@organization, @person),
+                  alert: "Unable to find teammate record for #{@person.display_name} in #{@organization.name}"
+      return
+    end
   end
   
   def authorize_finalization

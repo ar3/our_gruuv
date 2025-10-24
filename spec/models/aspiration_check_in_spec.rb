@@ -136,6 +136,131 @@ RSpec.describe AspirationCheckIn, type: :model do
         expect(check_in_with_no_history.previous_check_in_summary).to be_nil
       end
     end
+
+    describe 'completion tracking' do
+      describe '#complete_employee_side!' do
+        it 'marks employee side as completed' do
+          expect(check_in.employee_completed?).to be false
+          
+          check_in.complete_employee_side!
+          
+          expect(check_in.employee_completed?).to be true
+          expect(check_in.employee_completed_at).to be_present
+        end
+
+        it 'updates ready_for_finalization status when manager already completed' do
+          manager = create(:person)
+          check_in.complete_manager_side!(completed_by: manager)
+          expect(check_in.ready_for_finalization?).to be false
+          
+          check_in.complete_employee_side!
+          
+          expect(check_in.ready_for_finalization?).to be true
+        end
+      end
+
+      describe '#complete_manager_side!' do
+        it 'marks manager side as completed' do
+          manager = create(:person)
+          expect(check_in.manager_completed?).to be false
+
+          check_in.complete_manager_side!(completed_by: manager)
+          
+          expect(check_in.manager_completed?).to be true
+          expect(check_in.manager_completed_at).to be_present
+          expect(check_in.manager_completed_by).to eq(manager)
+        end
+
+        it 'updates ready_for_finalization status when employee already completed' do
+          check_in.complete_employee_side!
+          expect(check_in.ready_for_finalization?).to be false
+          
+          manager = create(:person)
+          check_in.complete_manager_side!(completed_by: manager)
+          
+          expect(check_in.ready_for_finalization?).to be true
+        end
+      end
+
+      describe '#uncomplete_employee_side!' do
+        it 'unmarks employee side as completed' do
+          check_in.complete_employee_side!
+          expect(check_in.employee_completed?).to be true
+          
+          check_in.uncomplete_employee_side!
+          
+          expect(check_in.employee_completed?).to be false
+          expect(check_in.employee_completed_at).to be_nil
+        end
+
+        it 'updates ready_for_finalization status when manager completed' do
+          manager = create(:person)
+          check_in.complete_employee_side!
+          check_in.complete_manager_side!(completed_by: manager)
+          expect(check_in.ready_for_finalization?).to be true
+          
+          check_in.uncomplete_employee_side!
+          
+          expect(check_in.ready_for_finalization?).to be false
+        end
+      end
+
+      describe '#uncomplete_manager_side!' do
+        it 'unmarks manager side as completed' do
+          manager = create(:person)
+          check_in.complete_manager_side!(completed_by: manager)
+          expect(check_in.manager_completed?).to be true
+          
+          check_in.uncomplete_manager_side!
+          
+          expect(check_in.manager_completed?).to be false
+          expect(check_in.manager_completed_at).to be_nil
+          expect(check_in.manager_completed_by).to be_nil
+        end
+
+        it 'updates ready_for_finalization status when employee completed' do
+          check_in.complete_employee_side!
+          manager = create(:person)
+          check_in.complete_manager_side!(completed_by: manager)
+          expect(check_in.ready_for_finalization?).to be true
+          
+          check_in.uncomplete_manager_side!
+          
+          expect(check_in.ready_for_finalization?).to be false
+        end
+      end
+
+      describe 'completion state transitions' do
+        it 'handles multiple complete/uncomplete cycles' do
+          manager = create(:person)
+          
+          # Complete both sides
+          check_in.complete_employee_side!
+          check_in.complete_manager_side!(completed_by: manager)
+          expect(check_in.ready_for_finalization?).to be true
+          
+          # Uncomplete employee side
+          check_in.uncomplete_employee_side!
+          expect(check_in.ready_for_finalization?).to be false
+          expect(check_in.employee_completed?).to be false
+          expect(check_in.manager_completed?).to be true
+          
+          # Complete employee side again
+          check_in.complete_employee_side!
+          expect(check_in.ready_for_finalization?).to be true
+          
+          # Uncomplete manager side
+          check_in.uncomplete_manager_side!
+          expect(check_in.ready_for_finalization?).to be false
+          expect(check_in.employee_completed?).to be true
+          expect(check_in.manager_completed?).to be false
+          
+          # Complete manager side again
+          check_in.complete_manager_side!(completed_by: manager)
+          expect(check_in.ready_for_finalization?).to be true
+        end
+      end
+    end
   end
   
   describe 'class methods' do

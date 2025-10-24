@@ -1,14 +1,19 @@
 -# Aspiration Check-Ins Table View with Interactive Forms
 - if aspiration_check_ins&.any?
   - if aspiration_check_ins.any?(&:officially_completed?)
+    .debug-marker OFFICIALLY COMPLETED VIEW
     = render 'aspiration_check_ins_table_completed', check_ins: aspiration_check_ins
   - elsif aspiration_check_ins.any?(&:ready_for_finalization?)
+    .debug-marker READY FOR FINALIZATION VIEW
     = render 'aspiration_check_ins_table_ready_for_finalization', check_ins: aspiration_check_ins, form: form, view_mode: view_mode
   - elsif view_mode == :manager && aspiration_check_ins.any?(&:manager_completed?)
+    .debug-marker MANAGER COMPLETED VIEW
     = render 'aspiration_check_ins_table_manager_completed', check_ins: aspiration_check_ins, form: form
   - elsif view_mode == :employee && aspiration_check_ins.any?(&:employee_completed?)
+    .debug-marker EMPLOYEE COMPLETED VIEW
     = render 'aspiration_check_ins_table_employee_completed', check_ins: aspiration_check_ins, form: form
   - else
+    .debug-marker EDITABLE FORM VIEW
     .table-responsive
       %table.table.table-striped
         %thead

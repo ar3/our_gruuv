@@ -19,9 +19,12 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   
   def update
     # Parse giant form and update all check-ins
-    update_position_check_in if params[:position_check_in] || params["[position_check_in]"]
-    update_assignment_check_ins if params[:assignment_check_ins] || params["[assignment_check_ins]"]
-    update_aspiration_check_ins if params[:aspiration_check_ins] || params["[aspiration_check_ins]"]
+    # Handle both old and new parameter structures (with and without check_ins scope)
+    check_ins_params = params[:check_ins] || params
+    
+    update_position_check_in(check_ins_params) if check_ins_params[:position_check_in] || check_ins_params["[position_check_in]"]
+    update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
+    update_aspiration_check_ins(check_ins_params) if check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"]
     
     redirect_to organization_person_check_ins_path(@organization, @person),
                 notice: 'Check-ins saved successfully.'
@@ -45,13 +48,25 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   end
   
   def determine_view_mode
+    Rails.logger.debug "=== VIEW MODE DETERMINATION ==="
+    Rails.logger.debug "current_person: #{current_person&.display_name} (#{current_person&.id})"
+    Rails.logger.debug "@person: #{@person&.display_name} (#{@person&.id})"
+    Rails.logger.debug "current_person == @person: #{current_person == @person}"
+    Rails.logger.debug "current_manager: #{@person&.current_manager_for(@organization)&.display_name} (#{@person&.current_manager_for(@organization)&.id})"
+    Rails.logger.debug "current_manager == current_person: #{@person&.current_manager_for(@organization) == current_person}"
+    
     if current_person == @person
       @view_mode = :employee
+      Rails.logger.debug "Setting view_mode to :employee"
     elsif @person.current_manager_for(@organization) == current_person
       @view_mode = :manager
+      Rails.logger.debug "Setting view_mode to :manager"
     else
       @view_mode = :readonly
+      Rails.logger.debug "Setting view_mode to :readonly"
     end
+    Rails.logger.debug "Final view_mode: #{@view_mode}"
+    Rails.logger.debug "=== END DEBUG ===\n"
   end
 
   def load_or_build_position_check_in
@@ -83,8 +98,8 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     end.compact
   end
 
-  def update_assignment_check_ins
-    assignment_check_ins_params = params[:assignment_check_ins] || params["[assignment_check_ins]"]
+  def update_assignment_check_ins(check_ins_params = params)
+    assignment_check_ins_params = check_ins_params[:assignment_check_ins]
     return unless assignment_check_ins_params
 
     assignment_check_ins_params.each do |check_in_id, check_in_params|
@@ -129,8 +144,8 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     end
   end
 
-  def update_aspiration_check_ins
-    aspiration_check_ins_params = params[:aspiration_check_ins] || params["[aspiration_check_ins]"]
+  def update_aspiration_check_ins(check_ins_params = params)
+    aspiration_check_ins_params = check_ins_params[:aspiration_check_ins]
     return unless aspiration_check_ins_params
 
     aspiration_check_ins_params.each do |check_in_id, check_in_params|
@@ -173,9 +188,9 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     end
   end
   
-  def update_position_check_in
+  def update_position_check_in(check_ins_params = params)
     check_in = PositionCheckIn.find_or_create_open_for(@teammate)
-    attrs = position_check_in_params
+    attrs = position_check_in_params(check_ins_params)
     
     # Handle status radio button
     if attrs[:status] == 'complete'
@@ -202,9 +217,10 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     end
   end
 
-  def position_check_in_params
-    # Handle position_check_in parameter format (both with and without brackets)
-    position_params = params[:position_check_in] || params["[position_check_in]"]
+  def position_check_in_params(check_ins_params = params)
+    # Handle position_check_in parameter format
+    check_ins_params = check_ins_params[:check_ins] || check_ins_params
+    position_params = check_ins_params[:position_check_in]
     
     if @view_mode == :employee
       position_params.permit(:employee_rating, :employee_private_notes, :status)

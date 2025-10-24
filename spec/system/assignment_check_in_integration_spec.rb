@@ -128,8 +128,8 @@ RSpec.describe 'Assignment Check-In Integration', type: :system do
       sign_in_and_visit(manager_person, organization, organization_person_check_ins_path(organization, employee_person))
       
       # Fill in manager assessment
-      select 'Exceeding', from: "[assignment_check_ins][#{assignment_check_in.id}][manager_rating]"
-      fill_in "[assignment_check_ins][#{assignment_check_in.id}][manager_private_notes]", with: 'John is exceeding expectations on frontend work'
+      select 'Exceeding', from: "check_ins[assignment_check_ins][#{assignment_check_in.id}][manager_rating]"
+      fill_in "check_ins[assignment_check_ins][#{assignment_check_in.id}][manager_private_notes]", with: 'John is exceeding expectations on frontend work'
       
       # Mark as complete
       within('table', text: 'Assignment') { find('input[type="radio"][value="complete"]').click }

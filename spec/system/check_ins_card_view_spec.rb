@@ -92,8 +92,8 @@ RSpec.describe 'Check-ins Card View', type: :system do
       expect(page).to have_button('Save All Check-Ins')
 
       # Should be able to fill out forms and submit
-      select '🔵 Praising/Trusting', from: '[position_check_in][manager_rating]'
-      fill_in '[position_check_in][manager_private_notes]', with: 'Great work in card view!'
+      select '🔵 Praising/Trusting', from: 'check_ins[position_check_in][manager_rating]'
+      fill_in 'check_ins[position_check_in][manager_private_notes]', with: 'Great work in card view!'
 
       click_button 'Save All Check-Ins'
       expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)

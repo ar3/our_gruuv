@@ -1,17 +1,16 @@
-class SearchController < ApplicationController
+class Organizations::SearchController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
   after_action :verify_authorized
 
-  def index
-    authorize :search, :index?
+  def show
+    authorize :search, :show?
     
     @query = params[:q].to_s.strip
-    @current_organization = current_person.current_organization
     
     if @query.present?
       search_query = GlobalSearchQuery.new(
         query: @query,
-        current_organization: @current_organization,
+        current_organization: @organization,
         current_person: current_person
       )
       

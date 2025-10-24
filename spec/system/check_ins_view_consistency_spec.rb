@@ -58,7 +58,18 @@ RSpec.describe 'Check-ins View Consistency', type: :system do
     it 'ensures card and table views have identical form fields' do
       sign_in_as(manager, organization)
       
-      # Visit both views
+      # Ensure check-ins are in draft/editable state by visiting and marking as draft
+      visit organization_person_check_ins_path(organization, employee, view: 'table')
+      
+      # If position check-in shows "ready for finalization", mark it as draft
+      if page.has_content?('Ready for finalization') || page.has_content?('Both assessments are complete')
+        within('table', text: 'POSITION') do
+          find('input[type="radio"][value="draft"]').click if page.has_field?(type: 'radio', with: 'draft')
+        end
+        click_button 'Save All Check-Ins'
+      end
+      
+      # Now check both views
       visit organization_person_check_ins_path(organization, employee, view: 'card')
       card_page_html = page.html
       
@@ -140,11 +151,11 @@ RSpec.describe 'Check-ins View Consistency', type: :system do
 
   def fill_card_form_with_test_data
     # Fill position
-    select '🔵 Praising/Trusting', from: '[position_check_in][manager_rating]'
-    fill_in '[position_check_in][manager_private_notes]', with: 'Test consistency data - great work!'
+    select '🔵 Praising/Trusting', from: 'check_ins[position_check_in][manager_rating]'
+    fill_in 'check_ins[position_check_in][manager_private_notes]', with: 'Test consistency data - great work!'
     
     # Keep as draft so we can test table view too
-    find('input[name="[position_check_in][status]"][value="draft"]').click
+    find('input[name="check_ins[position_check_in][status]"][value="draft"]').click
   end
 
   def fill_table_form_with_test_data

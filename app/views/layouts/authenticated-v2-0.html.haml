@@ -106,7 +106,7 @@
           %ul.navbar-nav
             - if current_person
               %li.nav-item.me-3
-                = link_to search_path, class: "nav-link", title: "Search" do
+                = link_to organization_search_path(current_organization), class: "nav-link", title: "Search" do
                   %i.bi.bi-search
               %li.nav-item.dropdown
                 %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}

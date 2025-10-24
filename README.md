@@ -27,6 +27,20 @@ bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb"
 # Run only system specs
 ./bin/system-specs
 
+
+# Main specs (1,898 examples) - NO ENM specs
+bundle exec rspec spec/
+
+# System specs - NO ENM specs  
+bundle exec rspec spec/system/
+
+# ENM specs only (106 examples) - ONLY when specifically requested
+bundle exec rspec spec/enm/
+
+# Or using the rake tasks
+bundle exec rake spec:enm:all
+
+
 ## 📚 Documentation Hub
 
 This is your central guide to understanding OurGruuv's architecture, patterns, and conventions.

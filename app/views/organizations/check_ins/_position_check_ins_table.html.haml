@@ -1,14 +1,19 @@
 -# Position Check-Ins Table View with Interactive Forms
 - if position_check_in
   - if position_check_in.officially_completed?
+    .debug-marker OFFICIALLY COMPLETED VIEW
     = render 'position_check_ins_table_completed', check_in: position_check_in
   - elsif position_check_in.ready_for_finalization?
+    .debug-marker READY FOR FINALIZATION VIEW
     = render 'position_check_ins_table_ready_for_finalization', check_in: position_check_in, form: form, view_mode: view_mode
   - elsif view_mode == :manager && position_check_in.manager_completed? && position_check_in.employee_completed?
+    .debug-marker MANAGER COMPLETED VIEW
     = render 'position_check_ins_table_manager_completed', check_in: position_check_in, form: form
   - elsif view_mode == :employee && position_check_in.employee_completed? && position_check_in.manager_completed?
+    .debug-marker EMPLOYEE COMPLETED VIEW
     = render 'position_check_ins_table_employee_completed', check_in: position_check_in, form: form
   - else
+    .debug-marker EDITABLE FORM VIEW
     = form.fields_for :position_check_in, position_check_in do |pf|
       .table-responsive
         %table.table.table-striped

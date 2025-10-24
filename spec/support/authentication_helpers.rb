@@ -6,11 +6,14 @@ module AuthenticationHelpers
       sign_in_via_http(person, organization)
     else
       # For non-JS tests, use rack_session_access
+      # First, clear any existing session to avoid conflicts
       begin
+        page.set_rack_session(current_person_id: nil)
         page.set_rack_session(current_person_id: person.id)
       rescue Selenium::WebDriver::Error::UnknownError, Selenium::WebDriver::Error::InvalidSessionIdError
         # If session is invalid, visit a page first to establish it
         visit root_path
+        page.set_rack_session(current_person_id: nil)
         page.set_rack_session(current_person_id: person.id)
       end
       
@@ -49,7 +52,9 @@ module AuthenticationHelpers
     
     # Use Capybara's visit method with query parameters
     query_string = params.map { |k, v| "#{k}=#{v}" }.join('&')
+    puts "\n=== DEBUG: Signing in via HTTP: /test/auth/sign_in?#{query_string} ==="
     visit("/test/auth/sign_in?#{query_string}")
+    puts "=== DEBUG: Response: #{page.text[0..200]} ==="
     
     # Wait for the request to complete
     sleep(0.1)

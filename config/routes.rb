@@ -15,8 +15,6 @@ Rails.application.routes.draw do
   get "/healthcheck", to: "healthcheck#index"
   get "/healthcheck/oauth_test", to: "healthcheck#oauth_test"
   
-  # Global search
-  get "/search", to: "search#index"
   
   # OAuth debug route
   get "/auth/debug", to: "auth#oauth_debug"
@@ -156,6 +154,9 @@ get '/login', to: 'auth#login', as: :login
     
     # Departments and Teams management
     resources :departments_and_teams, module: :organizations, only: [:index]
+    
+    # Search functionality
+    resource :search, only: [:show], module: :organizations, controller: 'search'
     
     # Slack integration nested under organizations
     resource :slack, only: [:show], module: :organizations, controller: 'slack' do

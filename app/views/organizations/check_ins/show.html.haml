@@ -44,7 +44,7 @@
     This view performs better on larger screens. 
     = link_to 'Switch to card view for mobile', organization_person_check_ins_path(@organization, @person, view: 'card'), class: 'btn btn-sm btn-outline-primary ms-2'
 
-= form_with url: organization_person_check_ins_path(@organization, @person), method: :patch do |f|
+= form_with url: organization_person_check_ins_path(@organization, @person), method: :patch, scope: :check_ins do |f|
   
   -# Position Section
   = render 'section_header', 

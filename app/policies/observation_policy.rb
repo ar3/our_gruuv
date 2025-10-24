@@ -120,7 +120,7 @@ class ObservationPolicy < ApplicationPolicy
   def user_in_management_hierarchy?
     return false unless actual_user.is_a?(Person)
     
-    record.observed_teammates.any? { |teammate| actual_user.in_managerial_hierarchy_of?(teammate.person) }
+    record.observed_teammates.any? { |teammate| actual_user.in_managerial_hierarchy_of?(teammate.person, @organization) }
   end
 
   def user_can_manage_employment?

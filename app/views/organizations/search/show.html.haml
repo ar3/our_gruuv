@@ -1,7 +1,7 @@
 - content_for :go_back_link do
-  = link_to organization_path(@current_organization), class: "go-back-link" do
+  = link_to organization_path(@organization), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
-    Back to #{@current_organization.display_name}
+    Back to #{@organization.display_name}
 
 - content_for :header do
   .d-flex.align-items-center
@@ -15,7 +15,7 @@
   .col-lg-12
     .card.border-0.shadow-sm
       .card-body
-        = form_with url: search_path, method: :get, local: true, class: "mb-0" do |f|
+        = form_with url: organization_search_path(@organization), method: :get, local: true, class: "mb-0" do |f|
           .row
             .col-md-10
               = f.text_field :q, 
@@ -51,7 +51,7 @@
                       %tr
                         %td= person.display_name
                         %td= person.email
-                        %td= @current_organization.display_name
+                        %td= @organization.display_name
                         %td
                           .btn-group.btn-group-sm
                             = link_to person_path(person), class: "btn btn-outline-primary" do
@@ -105,7 +105,7 @@
                         %td= observation.observed_at.strftime("%b %d, %Y")
                         %td
                           .btn-group.btn-group-sm
-                            = link_to organization_observation_path(@current_organization, observation), class: "btn btn-outline-primary" do
+                            = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary" do
                               %i.bi.bi-eye
 
         - if @results[:assignments].any?
@@ -131,7 +131,7 @@
                         %td= assignment.company.display_name
                         %td
                           .btn-group.btn-group-sm
-                            = link_to organization_assignment_path(@current_organization, assignment), class: "btn btn-outline-primary" do
+                            = link_to organization_assignment_path(@organization, assignment), class: "btn btn-outline-primary" do
                               %i.bi.bi-eye
 
         - if @results[:abilities].any?
@@ -157,7 +157,7 @@
                         %td= ability.organization.display_name
                         %td
                           .btn-group.btn-group-sm
-                            = link_to organization_ability_path(@current_organization, ability), class: "btn btn-outline-primary" do
+                            = link_to organization_ability_path(@organization, ability), class: "btn btn-outline-primary" do
                               %i.bi.bi-eye
   - else
     .row.justify-content-center
@@ -169,7 +169,7 @@
           %p.mb-2 
             No results found for "#{@query}". Try different keywords or check your spelling.
           %p.mb-0
-            %small.text-muted Search across people, organizations, observations, assignments, and abilities in #{@current_organization.display_name}.
+            %small.text-muted Search across people, organizations, observations, assignments, and abilities in #{@organization.display_name}.
 - else
   .row.justify-content-center
     .col-lg-12
@@ -180,4 +180,4 @@
         %p.mb-2 
           Enter a search term above to find people, organizations, observations, assignments, and abilities.
         %p.mb-0
-          %small.text-muted Search is scoped to #{@current_organization.display_name} and respects your permissions.
+          %small.text-muted Search is scoped to #{@organization.display_name} and respects your permissions.

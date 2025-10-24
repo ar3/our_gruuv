@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SearchController, type: :controller do
+RSpec.describe Organizations::SearchController, type: :controller do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person, current_organization: organization) }
 
@@ -8,30 +8,30 @@ RSpec.describe SearchController, type: :controller do
     session[:current_person_id] = person.id
   end
 
-  describe 'GET #index' do
+  describe 'GET #show' do
     context 'with search query' do
       it 'assigns @query and @results' do
-        get :index, params: { q: 'test' }
+        get :show, params: { organization_id: organization.id, q: 'test' }
         
         expect(assigns(:query)).to eq('test')
         expect(assigns(:results)).to be_present
-        expect(assigns(:current_organization).id).to eq(organization.id)
+        expect(assigns(:organization).id).to eq(organization.id)
       end
     end
 
     context 'without search query' do
       it 'assigns empty results' do
-        get :index
+        get :show, params: { organization_id: organization.id }
         
         expect(assigns(:query)).to eq('')
         expect(assigns(:results)[:total_count]).to eq(0)
-        expect(assigns(:current_organization).id).to eq(organization.id)
+        expect(assigns(:organization).id).to eq(organization.id)
       end
     end
 
-    it 'renders the index template' do
-      get :index
-      expect(response).to render_template(:index)
+    it 'renders the show template' do
+      get :show, params: { organization_id: organization.id }
+      expect(response).to render_template(:show)
     end
   end
 end

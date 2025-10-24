@@ -50,7 +50,11 @@ class PersonPolicy < ApplicationPolicy
     # 1. The person themselves (employees can view their own management mode)
     # 2. In their managerial hierarchy 
     # 3. Have employment management permissions for any organization
-    return true if admin_bypass? || actual_user == record || actual_user.in_managerial_hierarchy_of?(record)
+    return true if admin_bypass? || actual_user == record
+    
+    # Check if user is in managerial hierarchy for any organization
+    user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
+    return true if user_employment_orgs.any? { |org| actual_user.in_managerial_hierarchy_of?(record, org) }
     
     # Check if user has employment management permissions in any organization
     user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
@@ -76,8 +80,9 @@ class PersonPolicy < ApplicationPolicy
     # User can access if they have employment management permissions anywhere
     return true if user_has_employment_management
     
-    # User can access if they are in the managerial hierarchy
-    return true if actual_user.in_managerial_hierarchy_of?(record)
+    # User can access if they are in the managerial hierarchy for any organization
+    user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
+    return true if user_employment_orgs.any? { |org| actual_user.in_managerial_hierarchy_of?(record, org) }
     
     # User can always access their own manager view
     return true if actual_user == record
@@ -95,7 +100,11 @@ class PersonPolicy < ApplicationPolicy
     # 1. The person themselves
     # 2. In their managerial hierarchy 
     # 3. Have employment management permissions for any organization
-    return true if admin_bypass? || actual_user == record || actual_user.in_managerial_hierarchy_of?(record)
+    return true if admin_bypass? || actual_user == record
+    
+    # Check if user is in managerial hierarchy for any organization
+    user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
+    return true if user_employment_orgs.any? { |org| actual_user.in_managerial_hierarchy_of?(record, org) }
     
     # Check if user has employment management permissions in any organization
     user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
@@ -109,7 +118,13 @@ class PersonPolicy < ApplicationPolicy
     # 1. The person themselves
     # 2. In their managerial hierarchy 
     # 3. Have MAAP management permissions for the specific organization
-    return true if admin_bypass? || actual_user == record || actual_user.in_managerial_hierarchy_of?(record)
+    return true if admin_bypass? || actual_user == record
+    
+    # Check if user is in managerial hierarchy for the specific organization
+    organization = user.pundit_organization
+    return false unless organization
+    
+    return true if actual_user.in_managerial_hierarchy_of?(record, organization)
     
     # Check if user has MAAP management permissions for the specific organization
     # Organization context is passed via pundit_user.pundit_organization
@@ -124,7 +139,11 @@ class PersonPolicy < ApplicationPolicy
     # 1. The person themselves
     # 2. In their managerial hierarchy 
     # 3. Have BOTH employment management AND MAAP management permissions for any organization
-    return true if admin_bypass? || actual_user == record || actual_user.in_managerial_hierarchy_of?(record)
+    return true if admin_bypass? || actual_user == record
+    
+    # Check if user is in managerial hierarchy for any organization
+    user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
+    return true if user_employment_orgs.any? { |org| actual_user.in_managerial_hierarchy_of?(record, org) }
     
     # Check for both permissions across all user's organizations
     user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
@@ -140,7 +159,11 @@ class PersonPolicy < ApplicationPolicy
     # 1. The person themselves
     # 2. In their managerial hierarchy 
     # 3. Have employment management permissions for any organization
-    return true if admin_bypass? || actual_user == record || actual_user.in_managerial_hierarchy_of?(record)
+    return true if admin_bypass? || actual_user == record
+    
+    # Check if user is in managerial hierarchy for any organization
+    user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
+    return true if user_employment_orgs.any? { |org| actual_user.in_managerial_hierarchy_of?(record, org) }
     
     # Check if user has employment management permissions in any organization
     user_employment_orgs = actual_user.employment_tenures.includes(:company).map(&:company)
@@ -174,7 +197,21 @@ class PersonPolicy < ApplicationPolicy
     # 1. The person themselves
     # 2. In their managerial hierarchy 
     # 3. Have employment management permissions for the specific organization
-    return true if admin_bypass? || actual_user == record || actual_user.in_managerial_hierarchy_of?(record)
+    return true if admin_bypass? || actual_user == record
+    
+    # Get organization context from pundit_user (handle both ApplicationController and OrganizationNamespaceBaseController)
+    user_org = if user.respond_to?(:organization) && user.organization
+                 user.organization
+               elsif user.respond_to?(:pundit_organization) && user.pundit_organization
+                 user.pundit_organization
+               else
+                 nil
+               end
+    
+    return false unless user_org
+    
+    # Check if user is in managerial hierarchy for the specific organization
+    return true if actual_user.in_managerial_hierarchy_of?(record, user_org)
     
     # Get organization context from pundit_user (handle both ApplicationController and OrganizationNamespaceBaseController)
     user_org = if user.respond_to?(:organization) && user.organization

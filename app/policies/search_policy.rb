@@ -1,5 +1,5 @@
 class SearchPolicy < ApplicationPolicy
-  def index?
+  def show?
     user.present?
   end
 

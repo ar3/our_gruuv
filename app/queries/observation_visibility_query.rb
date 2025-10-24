@@ -134,7 +134,7 @@ class ObservationVisibilityQuery
   def user_in_management_hierarchy?(observation)
     return false unless @person.is_a?(Person)
     
-    observation.observed_teammates.any? { |teammate| @person.in_managerial_hierarchy_of?(teammate.person) }
+    observation.observed_teammates.any? { |teammate| @person.in_managerial_hierarchy_of?(teammate.person, @company) }
   end
 
   def user_can_manage_employment?
@@ -156,7 +156,7 @@ class ObservationVisibilityQuery
       # Find all teammates in the company and check if this person manages them
       all_teammates = Teammate.where(organization: @company).includes(:person)
       managed_teammate_ids = all_teammates.select do |teammate|
-        @person.in_managerial_hierarchy_of?(teammate.person)
+        @person.in_managerial_hierarchy_of?(teammate.person, @company)
       end.map(&:id)
       
       return managed_teammate_ids

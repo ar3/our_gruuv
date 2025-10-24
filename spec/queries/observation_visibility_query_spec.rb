@@ -18,7 +18,7 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
   before do
     # Set up management hierarchy
     allow(manager_person).to receive(:in_managerial_hierarchy_of?).and_return(false)
-    allow(manager_person).to receive(:in_managerial_hierarchy_of?).with(observee_person).and_return(true)
+    allow(manager_person).to receive(:in_managerial_hierarchy_of?).with(observee_person, company).and_return(true)
     allow(admin_person).to receive(:can_manage_employment?).and_return(true)
   end
 

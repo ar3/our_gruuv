@@ -273,15 +273,15 @@ class Person < ApplicationRecord
     end
   end
 
-  def in_managerial_hierarchy_of?(other_person)
-    return false unless current_organization
+  def in_managerial_hierarchy_of?(other_person, organization)
+    return false unless organization
     
-    other_teammate = other_person.teammates.find_by(organization: current_organization)
+    other_teammate = other_person.teammates.find_by(organization: organization)
     return false unless other_teammate
     
     # Check if this person is the manager of the other person's active employment tenure
     other_teammate.employment_tenures.active
-                  .where(company: current_organization)
+                  .where(company: organization)
                   .where(manager: self)
                   .exists?
   end

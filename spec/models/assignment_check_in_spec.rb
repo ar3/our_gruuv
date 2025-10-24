@@ -260,6 +260,85 @@ RSpec.describe AssignmentCheckIn, type: :model do
       check_in.update!(official_check_in_completed_at: Time.current)
         expect(check_in.ready_for_finalization?).to be false
     end
+
+    describe '#uncomplete_employee_side!' do
+      it 'unmarks employee side as completed' do
+        check_in.complete_employee_side!
+        expect(check_in.employee_completed?).to be true
+        
+        check_in.uncomplete_employee_side!
+        
+        expect(check_in.employee_completed?).to be false
+        expect(check_in.employee_completed_at).to be_nil
+      end
+
+      it 'updates ready_for_finalization status when manager completed' do
+        manager = create(:person)
+        check_in.complete_employee_side!
+        check_in.complete_manager_side!(completed_by: manager)
+        expect(check_in.ready_for_finalization?).to be true
+        
+        check_in.uncomplete_employee_side!
+        
+        expect(check_in.ready_for_finalization?).to be false
+      end
+    end
+
+    describe '#uncomplete_manager_side!' do
+      it 'unmarks manager side as completed' do
+        manager = create(:person)
+        check_in.complete_manager_side!(completed_by: manager)
+        expect(check_in.manager_completed?).to be true
+        
+        check_in.uncomplete_manager_side!
+        
+        expect(check_in.manager_completed?).to be false
+        expect(check_in.manager_completed_at).to be_nil
+        expect(check_in.manager_completed_by).to be_nil
+      end
+
+      it 'updates ready_for_finalization status when employee completed' do
+        check_in.complete_employee_side!
+        manager = create(:person)
+        check_in.complete_manager_side!(completed_by: manager)
+        expect(check_in.ready_for_finalization?).to be true
+        
+        check_in.uncomplete_manager_side!
+        
+        expect(check_in.ready_for_finalization?).to be false
+      end
+    end
+
+    describe 'completion state transitions' do
+      it 'handles multiple complete/uncomplete cycles' do
+        manager = create(:person)
+        
+        # Complete both sides
+        check_in.complete_employee_side!
+        check_in.complete_manager_side!(completed_by: manager)
+        expect(check_in.ready_for_finalization?).to be true
+        
+        # Uncomplete employee side
+        check_in.uncomplete_employee_side!
+        expect(check_in.ready_for_finalization?).to be false
+        expect(check_in.employee_completed?).to be false
+        expect(check_in.manager_completed?).to be true
+        
+        # Complete employee side again
+        check_in.complete_employee_side!
+        expect(check_in.ready_for_finalization?).to be true
+        
+        # Uncomplete manager side
+        check_in.uncomplete_manager_side!
+        expect(check_in.ready_for_finalization?).to be false
+        expect(check_in.employee_completed?).to be true
+        expect(check_in.manager_completed?).to be false
+        
+        # Complete manager side again
+        check_in.complete_manager_side!(completed_by: manager)
+        expect(check_in.ready_for_finalization?).to be true
+      end
+    end
   end
 
   describe 'finalize_check_in!' do
