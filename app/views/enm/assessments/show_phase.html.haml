@@ -1,23 +1,26 @@
 %h1 Assessment Phase #{@phase}
 
 .row
-  .col-md-4
-    .card
-      .card-header
-        %h5 Analysis
-      .card-body
-        - if @phase == 1
-          - if @partial_analysis
-            = render 'partial_analysis', analysis: @partial_analysis
+  -if @phase == 1
+    .col-md-4
+      .card
+        .card-header
+          %h5 Analysis
+        .card-body
+          - if @phase == 1
+            - if @partial_analysis
+              = render 'partial_analysis', analysis: @partial_analysis
+            - else
+              %p Complete questions to see your analysis
           - else
-            %p Complete questions to see your analysis
-        - else
-          %p Phase #{@phase} analysis will appear here
+            %p Phase #{@phase} analysis will appear here
   
-  .col-md-8
+  .col-12{class: @phase == 1 ? 'col-md-8' : 'col-md-12'}
     .card
       .card-body
         = form_with model: @form, url: phase_enm_assessment_path(@assessment.code, phase: @phase), method: :patch, local: true do |f|
+          = hidden_field_tag :save_progress, '', id: 'save_progress_flag'
+          = hidden_field_tag :anchor, '', id: 'anchor_field'
           - if @phase == 1
             .question-group.mb-4
               %h5 Q1: Core Openness
@@ -104,308 +107,130 @@
                 %small If either partner disagrees, you are ENM, but passively so. You should definitely go down to the escalator ratings below.
           
           - elsif @phase == 2
+            - comfortability_popover_content = capture_haml do
+              %table.table.table-bordered.table-sm.mb-0
+                %tr
+                  %td
+                    %strong Very Comfortable
+                  %td This would feel natural and safe within our relationship.
+                %tr
+                  %td
+                    %strong Comfortable
+                  %td This would feel fine if disclosure expectations are met.
+                %tr
+                  %td
+                    %strong Slightly Comfortable
+                  %td I'd probably be okay with this, if handled carefully.
+                %tr
+                  %td
+                    %strong Slightly Uncomfortable
+                  %td Could try to be okay / need significant emotional prep.
+                %tr
+                  %td
+                    %strong Uncomfortable
+                  %td Disclosure helps, but I'd still feel deeply uncomfortable.
+                %tr
+                  %td
+                    %strong Very Uncomfortable
+                  %td Regardless of disclosure, this would feel unsafe.
+            
+            - prior_popover_content = capture_haml do
+              %table.table.table-bordered.table-responsive.table-striped.table-sm
+                %tr
+                  %td
+                    No Notification or Agreement Expected 
+                  %td 
+                    I desire for you to navigate this autonomously.
+                %tr
+                  %td
+                    Notification Expected 
+                  %td 
+                    I need awareness beforehand so I can emotionally prepare.
+                %tr
+                  %td
+                    Agreement Expected 
+                  %td 
+                    I need to talk and agree before this happens to feel emotionally safe.
+            
+            - post_popover_content = capture_haml do
+              %table.table.table-bordered.table-responsive.table-striped.table-sm
+                %tr
+                  %td
+                    Desired, but not Expected 
+                  %td 
+                    I appreciate transparency but don’t require it.” - Exploring partner is willing to say yes to show things like text messages, shared location, et
+                %tr
+                  %td
+                    Full, Expected 
+                  %td 
+                    I expect full transparency afterward to maintain trust.” - Exploring partner is expected to show things like text messages, shared locations, etc after every %encounter 
+                %tr
+                  %td
+                    Unwanted 
+                  %td 
+                    I’d rather not know afterward; it would cause distress.
+      
             %h5 Escalator Assessment
             %p Rate your comfort level and disclosure preferences for each step of intimacy.
             
             %h6.mt-4 Distant Steps (1-3) - Used for Both Physical and Emotional Intimacy
             
-            %table.table.table-bordered
+            %table.table.table-bordered.table-responsive.table-striped.table-hover
               %thead
                 %tr
-                  %th Step
-                  %th Description
-                  %th Examples
-                  %th Same Sex Comfort
-                  %th Opposite Sex Comfort
-                  %th Same Sex Pre-Disclosure
-                  %th Opposite Sex Pre-Disclosure
-                  %th Same Sex Post-Disclosure
-                  %th Opposite Sex Post-Disclosure
+                  %th{width: '30%'} Step
+                  %th{width: '70%'} Answers
               %tbody
-                %tr
-                  %td 1
-                  %td Curiosity
-                  %td Likes or brief replies in group/app; Comms in dating or group App; Comms once or twice per week; No photos shared
-                  %td
-                    = f.select "distant_step_1_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_1_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_1_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_1_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_1_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_1_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 2
-                  %td Acquainted
-                  %td Social media exchanged; Occasional DMs; light compliments; Sharing of G-rated/clothed photos common
-                  %td
-                    = f.select "distant_step_2_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_2_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_2_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_2_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_2_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_2_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 3
-                  %td Connected
-                  %td Real phone numbers exchanged; Text or calls most days; Sharing of PG-rated/innocent bathing suit/workout clothed photos
-                  %td
-                    = f.select "distant_step_3_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_3_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_3_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_3_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_3_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "distant_step_3_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
+                = render 'reminder_row', escalator_type: 'Emotional and Physical'
+                = render 'escalator_step_row', step_number: 1, step_name: 'Distant: Curiosity', description: 'Neutral curiosity; minimal personal energy', examples: 'Likes or brief replies in group/app; Comms in dating or group App; Comms once or twice per week; No photos shared', escalator_type: 'distant', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'escalator_step_row', step_number: 2, step_name: 'Distant: Acquainted', description: 'Awareness, interest, and digital familiarity', examples: 'Social media exchanged; Occasional DMs; light compliments; Sharing of G-rated/clothed photos common', escalator_type: 'distant', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'escalator_step_row', step_number: 3, step_name: 'Distant: Connected', description: 'Early compatibility; casual comfort', examples: 'Real phone numbers exchanged; Text or calls most days; Sharing of PG-rated/innocent bathing suit/workout clothed photos', escalator_type: 'distant', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
             
-            %h6.mt-4 Physical Intimacy Steps (4-9)
+            #physical-intimacy-section.mt-4
+              .d-flex.justify-content-between.align-items-center.mb-3
+                %h2 Physical Intimacy Steps (4-9)
+                = f.submit "Save Progress", 
+                           class: "btn btn-outline-success btn-sm",
+                           name: "save_progress_physical",
+                           formnovalidate: true
             
-            %table.table.table-bordered
+            %table.table.table-bordered.table-responsive.table-striped.table-hover
               %thead
                 %tr
-                  %th Step
-                  %th Description
-                  %th Examples
-                  %th Same Sex Comfort
-                  %th Opposite Sex Comfort
-                  %th Same Sex Pre-Disclosure
-                  %th Opposite Sex Pre-Disclosure
-                  %th Same Sex Post-Disclosure
-                  %th Opposite Sex Post-Disclosure
+                  %th{width: '30%'} Step
+                  %th{width: '70%'} Answers
               %tbody
-                %tr
-                  %td 4
-                  %td Present (Surface)
-                  %td Meet in public place & short hugs/cheek-only kisses; Meet up no more than once per month; Sharing of PG-rated photos (more sexy, but still clothed)
-                  %td
-                    = f.select "physical_step_4_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_4_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_4_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_4_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_4_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_4_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 5
-                  %td Warm (Surface)
-                  %td Meet in public place & hand holding, cuddling, playful affection; Meet up every other week or so; Sharing of lingerie pics
-                  %td
-                    = f.select "physical_step_5_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_5_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_5_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_5_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_5_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_5_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 6
-                  %td Aroused (Surface)
-                  %td Meet in semi-public places (movies), on-lips kissing (no tongue), over clothes touching; Meet up every week or so; Sharing of nude pics
-                  %td
-                    = f.select "physical_step_6_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_6_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_6_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_6_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_6_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_6_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 7
-                  %td Near-Sexual (Intimate)
-                  %td Private encounters (houses, hotels, etc), makeout-sessions, & non-genital sexual foreplay; Meet up multiple times per week
-                  %td
-                    = f.select "physical_step_7_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_7_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_7_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_7_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_7_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_7_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 8
-                  %td Sexual (Intimate)
-                  %td Oral sex (Fellatio and/or Cunnilingus); Mutual masturbation (Handjobs/fingering); No penetration (vaginal or anal)
-                  %td
-                    = f.select "physical_step_8_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_8_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_8_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_8_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_8_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_8_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 9
-                  %td Intimate Union (Intimate)
-                  %td Full penetration intercourse (vaginal or anal); Repeated encounters
-                  %td
-                    = f.select "physical_step_9_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_9_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_9_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_9_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_9_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "physical_step_9_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
+                = render 'reminder_row', escalator_type: 'Physical'
+                = render 'escalator_step_row', step_number: 4, step_name: 'Physical: Surface: Present', description: 'First physical comfort test', examples: 'Meet in public place & short hugs/cheek-only kisses; Meet up no more than once per month; Sharing of PG-rated photos (more sexy, but still clothed)', escalator_type: 'physical', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'escalator_step_row', step_number: 5, step_name: 'Physical: Surface: Warm', description: 'Safe, social intimacy', examples: 'Meet in public place & hand holding, cuddling, playful affection; Meet up every other week or so; Sharing of lingerie pics', escalator_type: 'physical', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'escalator_step_row', step_number: 6, step_name: 'Physical: Surface: Aroused', description: 'Erotic curiosity expressed', examples: 'Meet in semi-public places (movies), on-lips kissing (no tongue), over clothes touching; Meet up every week or so; Sharing of nude pics', escalator_type: 'physical', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'reminder_row', escalator_type: 'Physical'
+                = render 'escalator_step_row', step_number: 7, step_name: 'Physical: Intimate: Near-Sexual', description: 'Sexual intent clear', examples: 'Private encounters (houses, hotels, etc), makeout-sessions, & non-genital sexual foreplay; Meet up multiple times per week', escalator_type: 'physical', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'escalator_step_row', step_number: 8, step_name: 'Physical: Intimate: Sexual', description: 'Active sexual engagement', examples: 'Oral sex (Fellatio and/or Cunnilingus); Mutual masturbation (Handjobs/fingering); No penetration (vaginal or anal)', escalator_type: 'physical', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'escalator_step_row', step_number: 9, step_name: 'Physical: Intimate: Intimate Union', description: 'Ongoing physical relationship', examples: 'Full penetration intercourse (vaginal or anal); Repeated encounters', escalator_type: 'physical', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
             
-            %h6.mt-4 Emotional Intimacy Steps (4-9)
+            #emotional-intimacy-section.mt-4
+              .d-flex.justify-content-between.align-items-center.mb-3
+                %h2 Emotional Intimacy Steps (4-9)
+                = f.submit "Save Progress", 
+                           class: "btn btn-outline-success btn-sm",
+                           name: "save_progress_emotional",
+                           formnovalidate: true
             
-            %table.table.table-bordered
+            %table.table.table-bordered.table-responsive.table-striped.table-hover
               %thead
                 %tr
-                  %th Step
-                  %th Description
-                  %th Examples
-                  %th Same Sex Comfort
-                  %th Opposite Sex Comfort
-                  %th Same Sex Pre-Disclosure
-                  %th Opposite Sex Pre-Disclosure
-                  %th Same Sex Post-Disclosure
-                  %th Opposite Sex Post-Disclosure
+                  %th{width: '30%'} Step
+                  %th{width: '70%'} Answers
               %tbody
-                %tr
-                  %td 4
-                  %td Present (Surface)
-                  %td Mild venting (not about original partner); Genuine concern; Texting, talking, or visiting 1-3 times per week
-                  %td
-                    = f.select "emotional_step_4_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_4_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_4_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_4_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_4_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_4_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 5
-                  %td Vulnerability (Surface)
-                  %td Sharing fears, insecurities, personal reflections; Texting, talking, or visiting multiple times per week
-                  %td
-                    = f.select "emotional_step_5_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_5_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_5_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_5_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_5_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_5_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 6
-                  %td Supportive (Surface)
-                  %td Offering comfort; reaching out during stress; Discuss issues about original partner; Common "I miss you"; Texting, talking, or visiting daily
-                  %td
-                    = f.select "emotional_step_6_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_6_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_6_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_6_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_6_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_6_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 7
-                  %td Integration (Intimate)
-                  %td Meeting poly-aware friends; Ok with being publicly acknowledged; If original partner is unavailable, the other partner satisfies "primary partner" roles
-                  %td
-                    = f.select "emotional_step_7_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_7_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_7_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_7_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_7_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_7_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 8
-                  %td Entwined (Intimate)
-                  %td Meeting poly-aware family; Life planning; Lines blur at high emotion times; Hard to imagine life without them
-                  %td
-                    = f.select "emotional_step_8_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_8_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_8_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_8_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_8_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_8_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                
-                %tr
-                  %td 9
-                  %td Bonded (Intimate)
-                  %td "I love you"; Shared rituals and future plans
-                  %td
-                    = f.select "emotional_step_9_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_9_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_9_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_9_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_9_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
-                  %td
-                    = f.select "emotional_step_9_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
+                = render 'reminder_row', escalator_type: 'Emotional'
+                = render 'escalator_step_row', step_number: 4, step_name: 'Surface: Present', description: 'Emotional care begins', examples: 'Mild venting (not about original partner); Genuine concern; Texting, talking, or visiting 1-3 times per week', escalator_type: 'emotional', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'escalator_step_row', step_number: 5, step_name: 'Surface: Vulnerability', description: 'Attachment deepens', examples: 'Sharing fears, insecurities, personal reflections; Texting, talking, or visiting multiple times per week', escalator_type: 'emotional', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'escalator_step_row', step_number: 6, step_name: 'Surface: Supportive', description: 'Emotional responsibility forming', examples: 'Offering comfort; reaching out during stress; Discuss issues about original partner; Common "I miss you"; Texting, talking, or visiting daily', escalator_type: 'emotional', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'reminder_row', escalator_type: 'Emotional'
+                = render 'escalator_step_row', step_number: 7, step_name: 'Intimate: Integration', description: 'Connection becomes visible', examples: 'Meeting poly-aware friends; Ok with being publicly acknowledged; If original partner is unavailable, the other partner satisfies "primary partner" roles', escalator_type: 'emotional', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'escalator_step_row', step_number: 8, step_name: 'Intimate: Entwined', description: 'Deep interdependence', examples: 'Meeting poly-aware family; Life planning; Lines blur at high emotion times; Hard to imagine life without them', escalator_type: 'emotional', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
+                = render 'escalator_step_row', step_number: 9, step_name: 'Intimate: Bonded', description: 'Full emotional partnership', examples: '"I love you"; Shared rituals and future plans', escalator_type: 'emotional', form: f, comfortability_popover_content: comfortability_popover_content, prior_popover_content: prior_popover_content, post_popover_content: post_popover_content
           
           - elsif @phase == 3
             %h5 Confirm Results
@@ -415,3 +240,4 @@
           
           .form-group.mt-3
             = f.submit "Continue", class: "btn btn-primary"
+

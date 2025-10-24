@@ -1,0 +1,37 @@
+- # _escalator_step_row.html.haml
+- # Parameters: step_number, step_name, description, examples, escalator_type, form
+
+%tr
+  %td
+    %h3= "#{step_number} - #{step_name}"
+    %hr/
+    %p= description
+    %hr/
+    %p= examples
+  %td
+    %span.d-inline If my partner reached this level intimacy with someone of their 
+    %strong.d-inline-block OPPOSITE sex
+    %span.d-inline, I would feel emotionally 
+    %span.d-inline-block= form.select "#{escalator_type}_step_#{step_number}_comfort_opposite_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
+    %i.bi.bi-info-circle.text-muted.d-inline-block{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "right", "data-bs-html" => "true", "data-bs-content" => comfortability_popover_content, "data-bs-title" => "Comfort Level Definitions", style: "cursor: pointer;"}
+    %span.d-inline ; given before it happened, my partner and I agreed;
+    %span.d-inline-block= form.select "#{escalator_type}_step_#{step_number}_pre_disclosure_opposite_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
+    %i.bi.bi-info-circle.text-muted.d-inline-block{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "right", "data-bs-html" => "true", "data-bs-content" => prior_popover_content, "data-bs-title" => "Prior Disclosure Definitions", style: "cursor: pointer;"}
+    %span.d-inline & after,
+    %span.d-inline-block= form.select "#{escalator_type}_step_#{step_number}_post_disclosure_opposite_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
+    %i.bi.bi-info-circle.text-muted.d-inline-block{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "right", "data-bs-html" => "true", "data-bs-content" => post_popover_content, "data-bs-title" => "Post Disclosure Definitions", style: "cursor: pointer;"}
+    %span.d-inline='.'
+    %hr/
+
+    %span.d-inline If my partner reached this level intimacy with someone of their 
+    %strong.d-inline-block SAME sex
+    %span.d-inline, I would feel emotionally 
+    %span.d-inline-block= form.select "#{escalator_type}_step_#{step_number}_comfort_same_sex", comfort_likert_options, { prompt: "Select..." }, class: "form-control form-control-sm"
+    %i.bi.bi-info-circle.text-muted.d-inline-block{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "right", "data-bs-html" => "true", "data-bs-content" => comfortability_popover_content, "data-bs-title" => "Comfort Level Definitions", style: "cursor: pointer;"}
+    %span.d-inline ; given before it happened, my partner and I agreed;
+    %span.d-inline-block= form.select "#{escalator_type}_step_#{step_number}_pre_disclosure_same_sex", prior_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
+    %i.bi.bi-info-circle.text-muted.d-inline-block{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "right", "data-bs-html" => "true", "data-bs-content" => prior_popover_content, "data-bs-title" => "Prior Disclosure Definitions", style: "cursor: pointer;"}
+    %span.d-inline & after,
+    %span.d-inline-block= form.select "#{escalator_type}_step_#{step_number}_post_disclosure_same_sex", post_disclosure_options, { prompt: "Select..." }, class: "form-control form-control-sm"
+    %i.bi.bi-info-circle.text-muted.d-inline-block{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "right", "data-bs-html" => "true", "data-bs-content" => post_popover_content, "data-bs-title" => "Post Disclosure Definitions", style: "cursor: pointer;"}
+    %span.d-inline='.'

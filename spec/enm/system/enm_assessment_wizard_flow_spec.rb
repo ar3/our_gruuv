@@ -1,4 +1,4 @@
-require 'rails_helper'
+require_relative '../../spec_helper'
 
 RSpec.describe 'ENM Assessment Wizard Flow', type: :system do
   before do

@@ -1,4 +1,4 @@
-require 'rails_helper'
+require_relative '../../spec_helper'
 
 RSpec.describe Enm::PartnershipAnalyzerService do
   let(:service) { Enm::PartnershipAnalyzerService.new }

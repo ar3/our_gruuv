@@ -113,4 +113,49 @@ class Enm::AssessmentPhase2Form < Reform::Form
       end
     }
   end
+
+  def populate_from_existing_data
+    return unless model.phase_2_data.present?
+    
+    existing_data = model.phase_2_data
+    
+    # Populate distant steps
+    if existing_data["distant_steps"].present?
+      existing_data["distant_steps"].each do |step_data|
+        step = step_data["step"]
+        send("distant_step_#{step}_comfort_same_sex=", step_data["comfort"]["same_sex"]) if step_data["comfort"]["same_sex"].present?
+        send("distant_step_#{step}_comfort_opposite_sex=", step_data["comfort"]["opposite_sex"]) if step_data["comfort"]["opposite_sex"].present?
+        send("distant_step_#{step}_pre_disclosure_same_sex=", step_data["pre_disclosure"]["same_sex"]) if step_data["pre_disclosure"]["same_sex"].present?
+        send("distant_step_#{step}_pre_disclosure_opposite_sex=", step_data["pre_disclosure"]["opposite_sex"]) if step_data["pre_disclosure"]["opposite_sex"].present?
+        send("distant_step_#{step}_post_disclosure_same_sex=", step_data["post_disclosure"]["same_sex"]) if step_data["post_disclosure"]["same_sex"].present?
+        send("distant_step_#{step}_post_disclosure_opposite_sex=", step_data["post_disclosure"]["opposite_sex"]) if step_data["post_disclosure"]["opposite_sex"].present?
+      end
+    end
+    
+    # Populate physical escalator
+    if existing_data["physical_escalator"].present?
+      existing_data["physical_escalator"].each do |step_data|
+        step = step_data["step"]
+        send("physical_step_#{step}_comfort_same_sex=", step_data["comfort"]["same_sex"]) if step_data["comfort"]["same_sex"].present?
+        send("physical_step_#{step}_comfort_opposite_sex=", step_data["comfort"]["opposite_sex"]) if step_data["comfort"]["opposite_sex"].present?
+        send("physical_step_#{step}_pre_disclosure_same_sex=", step_data["pre_disclosure"]["same_sex"]) if step_data["pre_disclosure"]["same_sex"].present?
+        send("physical_step_#{step}_pre_disclosure_opposite_sex=", step_data["pre_disclosure"]["opposite_sex"]) if step_data["pre_disclosure"]["opposite_sex"].present?
+        send("physical_step_#{step}_post_disclosure_same_sex=", step_data["post_disclosure"]["same_sex"]) if step_data["post_disclosure"]["same_sex"].present?
+        send("physical_step_#{step}_post_disclosure_opposite_sex=", step_data["post_disclosure"]["opposite_sex"]) if step_data["post_disclosure"]["opposite_sex"].present?
+      end
+    end
+    
+    # Populate emotional escalator
+    if existing_data["emotional_escalator"].present?
+      existing_data["emotional_escalator"].each do |step_data|
+        step = step_data["step"]
+        send("emotional_step_#{step}_comfort_same_sex=", step_data["comfort"]["same_sex"]) if step_data["comfort"]["same_sex"].present?
+        send("emotional_step_#{step}_comfort_opposite_sex=", step_data["comfort"]["opposite_sex"]) if step_data["comfort"]["opposite_sex"].present?
+        send("emotional_step_#{step}_pre_disclosure_same_sex=", step_data["pre_disclosure"]["same_sex"]) if step_data["pre_disclosure"]["same_sex"].present?
+        send("emotional_step_#{step}_pre_disclosure_opposite_sex=", step_data["pre_disclosure"]["opposite_sex"]) if step_data["pre_disclosure"]["opposite_sex"].present?
+        send("emotional_step_#{step}_post_disclosure_same_sex=", step_data["post_disclosure"]["same_sex"]) if step_data["post_disclosure"]["same_sex"].present?
+        send("emotional_step_#{step}_post_disclosure_opposite_sex=", step_data["post_disclosure"]["opposite_sex"]) if step_data["post_disclosure"]["opposite_sex"].present?
+      end
+    end
+  end
 end

@@ -57,4 +57,39 @@ class Enm::AssessmentPhase1Form < Reform::Form
       }
     }
   end
-end
+
+  def populate_from_existing_data
+    return unless model.phase_1_data.present?
+    
+    existing_data = model.phase_1_data
+    
+    # Populate core openness
+    if existing_data["core_openness"].present?
+      self.core_openness_same_sex = existing_data["core_openness"]["same_sex"] if existing_data["core_openness"]["same_sex"].present?
+      self.core_openness_opposite_sex = existing_data["core_openness"]["opposite_sex"] if existing_data["core_openness"]["opposite_sex"].present?
+    end
+    
+    # Populate passive emotional
+    if existing_data["passive_emotional"].present?
+      self.passive_emotional_same_sex = existing_data["passive_emotional"]["same_sex"] if existing_data["passive_emotional"]["same_sex"].present?
+      self.passive_emotional_opposite_sex = existing_data["passive_emotional"]["opposite_sex"] if existing_data["passive_emotional"]["opposite_sex"].present?
+    end
+    
+    # Populate passive physical
+    if existing_data["passive_physical"].present?
+      self.passive_physical_same_sex = existing_data["passive_physical"]["same_sex"] if existing_data["passive_physical"]["same_sex"].present?
+      self.passive_physical_opposite_sex = existing_data["passive_physical"]["opposite_sex"] if existing_data["passive_physical"]["opposite_sex"].present?
+    end
+    
+    # Populate active emotional
+    if existing_data["active_emotional"].present?
+      self.active_emotional_same_sex = existing_data["active_emotional"]["same_sex"] if existing_data["active_emotional"]["same_sex"].present?
+      self.active_emotional_opposite_sex = existing_data["active_emotional"]["opposite_sex"] if existing_data["active_emotional"]["opposite_sex"].present?
+    end
+    
+    # Populate active physical
+    if existing_data["active_physical"].present?
+      self.active_physical_same_sex = existing_data["active_physical"]["same_sex"] if existing_data["active_physical"]["same_sex"].present?
+      self.active_physical_opposite_sex = existing_data["active_physical"]["opposite_sex"] if existing_data["active_physical"]["opposite_sex"].present?
+    end
+  end

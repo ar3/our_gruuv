@@ -1,4 +1,4 @@
-require 'rails_helper'
+require_relative '../../spec_helper'
 
 RSpec.describe Enm::AssessmentsController, type: :controller do
   describe 'GET #new' do

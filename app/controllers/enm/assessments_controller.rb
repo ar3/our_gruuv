@@ -28,16 +28,39 @@ class Enm::AssessmentsController < Enm::BaseController
     @phase = params[:phase].to_i
     @form = form_for_phase(@phase)
     
+    # Check which save progress button was clicked
+    is_save_progress = params[:save_progress_physical].present? || params[:save_progress_emotional].present?
+    
+    # Determine the anchor based on which button was clicked
+    anchor = if params[:save_progress_physical].present?
+               "#physical-intimacy-section"
+             elsif params[:save_progress_emotional].present?
+               "#emotional-intimacy-section"
+             else
+               ""
+             end
+    
     if @form.validate(assessment_params)
-      update_assessment_from_form(@form, @phase)
+      update_assessment_from_form(@form, @phase, is_save_progress)
       
-      if @phase < 3
+      # If this is a save progress request, stay on same page with anchor
+      if is_save_progress
+        redirect_to "#{phase_enm_assessment_path(@assessment.code, phase: @phase)}#{anchor}", 
+                    notice: 'Progress saved successfully!'
+      elsif @phase < 3
         redirect_to phase_enm_assessment_path(@assessment.code, phase: @phase + 1)
       else
         redirect_to enm_assessment_path(@assessment.code)
       end
     else
-      render :show_phase
+      # If validation fails but it's a save progress, still try to save partial data
+      if is_save_progress
+        save_partial_progress(@form, @phase)
+        redirect_to "#{phase_enm_assessment_path(@assessment.code, phase: @phase)}#{anchor}", 
+                    notice: 'Progress saved (some fields may need completion)'
+      else
+        render :show_phase
+      end
     end
   end
   
@@ -67,11 +90,17 @@ class Enm::AssessmentsController < Enm::BaseController
   def form_for_phase(phase)
     case phase
     when 1
-      Enm::AssessmentPhase1Form.new(@assessment)
+      form = Enm::AssessmentPhase1Form.new(@assessment)
+      form.populate_from_existing_data if @assessment.phase_1_data.present?
+      form
     when 2
-      Enm::AssessmentPhase2Form.new(@assessment)
+      form = Enm::AssessmentPhase2Form.new(@assessment)
+      form.populate_from_existing_data if @assessment.phase_2_data.present?
+      form
     when 3
-      Enm::AssessmentPhase3Form.new(@assessment)
+      form = Enm::AssessmentPhase3Form.new(@assessment)
+      form.populate_from_existing_data if @assessment.phase_3_data.present?
+      form
     else
       raise ArgumentError, "Invalid phase: #{phase}"
     end
@@ -83,7 +112,7 @@ class Enm::AssessmentsController < Enm::BaseController
     params[:enm_assessment_phase1] || params[:enm_assessment_phase2] || params[:enm_assessment_phase3] || params[:assessment] || {}
   end
   
-  def update_assessment_from_form(form, phase)
+  def update_assessment_from_form(form, phase, is_save_progress = false)
     calculator = Enm::AssessmentCalculatorService.new
     
     case phase
@@ -96,12 +125,20 @@ class Enm::AssessmentsController < Enm::BaseController
         readiness: results[:readiness]
       )
     when 2
-      results = calculator.calculate_phase_2_results(form.phase_2_data)
-      @assessment.update!(
-        phase_2_data: form.phase_2_data,
-        completed_phase: 2,
-        style: results[:style]
-      )
+      if is_save_progress
+        # For save progress, just save the data without calculating results
+        existing_data = @assessment.phase_2_data || {}
+        merged_data = existing_data.deep_merge(form.phase_2_data)
+        @assessment.update!(phase_2_data: merged_data)
+      else
+        # Normal completion - calculate results
+        results = calculator.calculate_phase_2_results(form.phase_2_data)
+        @assessment.update!(
+          phase_2_data: form.phase_2_data,
+          completed_phase: 2,
+          style: results[:style]
+        )
+      end
     when 3
       full_code = calculator.generate_final_code(
         @assessment.macro_category,
@@ -113,6 +150,18 @@ class Enm::AssessmentsController < Enm::BaseController
         completed_phase: 3,
         full_code: full_code
       )
+    end
+  end
+
+  def save_partial_progress(form, phase)
+    # Save whatever data we can, even if validation fails
+    case phase
+    when 2
+      existing_data = @assessment.phase_2_data || {}
+      # Get the raw params and merge them
+      new_data = form.phase_2_data rescue {}
+      merged_data = existing_data.deep_merge(new_data)
+      @assessment.update!(phase_2_data: merged_data)
     end
   end
 end

@@ -1,4 +1,4 @@
-require 'rails_helper'
+require_relative '../../spec_helper'
 
 RSpec.describe Enm::CodeGeneratorService do
   describe '.generate_unique_code' do

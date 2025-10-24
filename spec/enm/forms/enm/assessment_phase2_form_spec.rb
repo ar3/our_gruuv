@@ -1,4 +1,4 @@
-require 'rails_helper'
+require_relative '../../spec_helper'
 
 RSpec.describe Enm::AssessmentPhase2Form do
   let(:assessment) { create(:enm_assessment, :incomplete) }

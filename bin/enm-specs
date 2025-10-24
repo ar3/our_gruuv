@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+# bin/enm-specs
+# Script to run ENM-specific specs
+
+require 'bundler/setup'
+require 'rspec/core'
+
+# Set up RSpec
+RSpec.configure do |config|
+  config.color = true
+  config.tty = true
+end
+
+# Run ENM specs
+RSpec::Core::Runner.run(['spec/enm/'])

@@ -26,18 +26,18 @@ module EnmHelper
   # Prior disclosure options
   def prior_disclosure_options
     [
-      ['No Notification or Agreement Expected', 'none'],
-      ['Notification Expected', 'notification'],
-      ['Agreement Expected', 'agreement']
+      ['No notification needed', 'none'],
+      ['Notification is given', 'notification'],
+      ['We talk and agree on it', 'agreement']
     ]
   end
 
   # Post disclosure options
   def post_disclosure_options
     [
-      ['Full, Expected', 'full'],
-      ['Desired, but not Expected', 'desired'],
-      ['Unwanted', 'unwanted']
+      ['Disclosure desired, but not required', 'desired'],
+      ['Full disclosure is given', 'full'],
+      ['Disclosure is unwanted', 'unwanted']
     ]
   end
 
