@@ -1,10 +1,12 @@
 class AspirationPolicy < ApplicationPolicy
   def index?
-    admin_bypass? || user_has_maap_permission?
+    # Allow all authenticated users to view aspirations index
+    true
   end
 
   def show?
-    admin_bypass? || user_has_maap_permission_for_record?
+    # Allow all authenticated users to view individual aspirations
+    true
   end
 
   def create?
@@ -25,11 +27,8 @@ class AspirationPolicy < ApplicationPolicy
         scope.all
       elsif user.respond_to?(:pundit_organization) && user.pundit_organization
         organization = user.pundit_organization
-        if actual_user.teammates.exists?(organization: organization, can_manage_maap: true)
-          scope.where(organization: organization)
-        else
-          scope.none
-        end
+        # Allow all teammates to see aspirations for their organization
+        scope.where(organization: organization)
       else
         scope.none
       end
