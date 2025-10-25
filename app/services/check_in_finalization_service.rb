@@ -8,19 +8,12 @@ class CheckInFinalizationService
   end
   
   def call
-    puts "\n=== DEBUG: CheckInFinalizationService called ==="
-    puts "Params: #{@params.inspect}"
-    puts "Finalize position: #{@params[:finalize_position]}"
-    puts "Official rating: #{@params[:position_official_rating]}"
-    
     ActiveRecord::Base.transaction do
       results = {}
       
       # Finalize position if selected
       if @params[:finalize_position]
-        puts "=== DEBUG: Finalizing position ==="
         position_result = finalize_position
-        puts "=== DEBUG: Position result: #{position_result.inspect} ==="
         return position_result unless position_result.ok?
         results[:position] = position_result.value
       end

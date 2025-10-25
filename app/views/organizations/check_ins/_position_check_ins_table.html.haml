@@ -1,47 +1,8 @@
 -# Position Check-Ins Table View with Interactive Forms
 - if position_check_in
-  - if position_check_in.officially_completed?
-    .debug-marker OFFICIALLY COMPLETED VIEW
-    = render 'position_check_ins_table_completed', check_in: position_check_in
-  - elsif position_check_in.ready_for_finalization?
-    .debug-marker READY FOR FINALIZATION VIEW
-    = render 'position_check_ins_table_ready_for_finalization', check_in: position_check_in, form: form, view_mode: view_mode
-  - elsif view_mode == :manager && position_check_in.manager_completed? && position_check_in.employee_completed?
-    .debug-marker MANAGER COMPLETED VIEW
-    = render 'position_check_ins_table_manager_completed', check_in: position_check_in, form: form
-  - elsif view_mode == :employee && position_check_in.employee_completed? && position_check_in.manager_completed?
-    .debug-marker EMPLOYEE COMPLETED VIEW
-    = render 'position_check_ins_table_employee_completed', check_in: position_check_in, form: form
-  - else
-    .debug-marker EDITABLE FORM VIEW
-    = form.fields_for :position_check_in, position_check_in do |pf|
-      .table-responsive
-        %table.table.table-striped
-          %thead
-            %tr
-              %th Position
-              - if view_mode == :employee || view_mode.nil?
-                %th Employee Rating
-                %th Employee Notes
-              - if view_mode == :manager || view_mode.nil?
-                %th Manager Rating
-                %th Manager Notes
-              %th Status
-          %tbody
-            %tr
-              %td= position_check_in.employment_tenure.position.display_name
-              - if view_mode == :employee || view_mode.nil?
-                %td
-                  = render 'organizations/check_ins/form_fields/employee_rating_field', form: pf, check_in: position_check_in, css_class: 'form-control form-control-sm'
-                %td
-                  = render 'organizations/check_ins/form_fields/employee_private_notes_field', form: pf, check_in: position_check_in, css_class: 'form-control form-control-sm'
-              - if view_mode == :manager || view_mode.nil?
-                %td
-                  = render 'organizations/check_ins/form_fields/manager_rating_field', form: pf, check_in: position_check_in, css_class: 'form-control form-control-sm'
-                %td
-                  = render 'organizations/check_ins/form_fields/manager_private_notes_field', form: pf, check_in: position_check_in, css_class: 'form-control form-control-sm'
-              %td
-                = render 'organizations/check_ins/form_fields/position_status_field', form: pf, check_in: position_check_in
+  - display_mode = position_check_in.viewer_display_mode(view_mode)
+  - partial_name = "position_check_ins_table_#{view_mode}_#{display_mode}"
+  = render partial_name, check_in: position_check_in, form: form, view_mode: view_mode
 - else
   .alert.alert-info
     %i.bi.bi-info-circle.me-2

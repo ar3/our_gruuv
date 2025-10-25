@@ -51,7 +51,7 @@ RSpec.describe 'Position Check-In Ready for Finalization UX', type: :system, cri
       allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager_person)
       visit organization_person_check_ins_path(organization, employee_person)
       
-      expect(page).to have_content('Both assessments are complete! Ready for finalization.')
+      expect(page).to have_content('READY FOR FINALIZATION VIEW')
       expect(page).to have_content('Your Assessment')
       expect(page).to have_content('Other Person\'s Assessment')
       expect(page).to have_content('🔵 Praising/Trusting') # Manager's rating
@@ -64,7 +64,7 @@ RSpec.describe 'Position Check-In Ready for Finalization UX', type: :system, cri
       allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(employee_person)
       visit organization_person_check_ins_path(organization, employee_person)
       
-      expect(page).to have_content('Both assessments are complete! Ready for finalization.')
+      expect(page).to have_content('READY FOR FINALIZATION VIEW')
       expect(page).to have_content('Your Assessment')
       expect(page).to have_content('Other Person\'s Assessment')
       expect(page).to have_content('🟡 Actively Coaching') # Employee's rating

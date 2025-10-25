@@ -26,6 +26,8 @@ RSpec.describe 'Position Check-In Finalization Flow', type: :system do
       # Mark as draft to re-open for editing
       within('table', text: 'Position') do
         find('input[type="radio"][value="draft"]').click
+        sleep 0.5 # Wait for DOM to update
+        sleep 0.5 # Wait for DOM to update
       end
       click_button 'Save All Check-Ins'
       
@@ -89,6 +91,7 @@ RSpec.describe 'Position Check-In Finalization Flow', type: :system do
       # Mark as draft to re-open for editing
       within('table', text: 'Position') do
         find('input[type="radio"][value="draft"]').click
+        sleep 0.5 # Wait for DOM to update
       end
       click_button 'Save All Check-Ins'
       
@@ -183,6 +186,7 @@ RSpec.describe 'Position Check-In Finalization Flow', type: :system do
       # Mark as draft to re-open for editing
       within('table', text: 'Position') do
         find('input[type="radio"][value="draft"]').click
+        sleep 0.5 # Wait for DOM to update
       end
       click_button 'Save All Check-Ins'
       
@@ -213,6 +217,7 @@ RSpec.describe 'Position Check-In Finalization Flow', type: :system do
       # Mark as draft to re-open for editing
       within('table', text: 'Position') do
         find('input[type="radio"][value="draft"]').click
+        sleep 0.5 # Wait for DOM to update
       end
       click_button 'Save All Check-Ins'
       
@@ -282,6 +287,7 @@ RSpec.describe 'Position Check-In Finalization Flow', type: :system do
       # Mark as draft to re-open for editing
       within('table', text: 'Position') do
         find('input[type="radio"][value="draft"]').click
+        sleep 0.5 # Wait for DOM to update
       end
       click_button 'Save All Check-Ins'
       
@@ -312,6 +318,7 @@ RSpec.describe 'Position Check-In Finalization Flow', type: :system do
       # Mark as draft to re-open for editing
       within('table', text: 'Position') do
         find('input[type="radio"][value="draft"]').click
+        sleep 0.5 # Wait for DOM to update
       end
       click_button 'Save All Check-Ins'
       

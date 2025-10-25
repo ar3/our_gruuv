@@ -41,9 +41,9 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       visit organization_person_check_ins_path(organization, employee_person)
       
       within 'table' do
-        select '🔵 Praising/Trusting - Consistent strong performance', from: '[position_check_in][manager_rating]'
-        fill_in '[position_check_in][manager_private_notes]', with: 'John is doing excellent work on the frontend features'
-        find('input[type="radio"][value="complete"]').click
+        select '🔵 Praising/Trusting - Consistent strong performance', from: 'check_ins[position_check_in][manager_rating]'
+        fill_in 'check_ins[position_check_in][manager_private_notes]', with: 'John is doing excellent work on the frontend features'
+        find('input[name="check_ins[position_check_in][status]"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
@@ -53,11 +53,11 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       expect(page).to have_content('Ready for Finalization')
       expect(page).to have_content('🔵 Praising/Trusting')
       expect(page).to have_content('John is doing excellent work on the frontend features')
-      expect(page).to have_content('John has not completed their assessment')
+      expect(page).to have_content('John has to complete their self-assessment')
       
       # Should NOT show form fields
-      expect(page).not_to have_select('[position_check_in][manager_rating]')
-      expect(page).not_to have_field('[position_check_in][manager_private_notes]')
+      expect(page).not_to have_select('check_ins[position_check_in][manager_rating]')
+      expect(page).not_to have_field('check_ins[position_check_in][manager_private_notes]')
       
       # Should show radio buttons for status (check for any radio button with complete value)
       expect(page).to have_css('input[type="radio"][value="complete"]')
@@ -91,9 +91,9 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       visit organization_person_check_ins_path(organization, employee_person)
       
       within 'table' do
-        select '🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements', from: '[position_check_in][employee_rating]'
-        fill_in '[position_check_in][employee_private_notes]', with: 'I feel I am meeting expectations but want to improve'
-        find('input[type="radio"][value="complete"]').click
+        select '🟡 Actively Coaching - Mostly meeting expectations... Working on specific improvements', from: 'check_ins[position_check_in][employee_rating]'
+        fill_in 'check_ins[position_check_in][employee_private_notes]', with: 'I feel I am meeting expectations but want to improve'
+        find('input[name="check_ins[position_check_in][status]"][value="complete"]').click
       end
       
       click_button 'Save All Check-Ins'
@@ -106,12 +106,12 @@ RSpec.describe 'Position Check-In Completed UX', type: :system, critical: true d
       expect(page).to have_content('Waiting for Manager')
       
       # Should NOT show form fields
-      expect(page).not_to have_select('[position_check_in][employee_rating]')
-      expect(page).not_to have_field('[position_check_in][employee_private_notes]')
+      expect(page).not_to have_select('check_ins[position_check_in][employee_rating]')
+      expect(page).not_to have_field('check_ins[position_check_in][employee_private_notes]')
       
       # Should show radio buttons for status
-      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="complete"]:checked')
-      expect(page).to have_css('input[type="radio"][name="[position_check_in][status]"][value="draft"]:not(:checked)')
+      expect(page).to have_css('input[type="radio"][name="check_ins[position_check_in][status]"][value="complete"]:checked')
+      expect(page).to have_css('input[type="radio"][name="check_ins[position_check_in][status]"][value="draft"]:not(:checked)')
       expect(page).to have_content('Ready for Manager')
       expect(page).to have_content('Make Changes')
       

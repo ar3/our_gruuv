@@ -1,0 +1,36 @@
+-# Position Check-Ins Table View - Manager Show Complete Summary
+.table-responsive
+  %table.table.table-striped
+    %thead
+      %tr
+        %th Position
+        %th Manager Rating
+        %th Manager Notes
+        %th Employee Status
+        %th Status
+    %tbody
+      %tr
+        %td= check_in.employment_tenure.position.display_name
+        %td
+          = position_rating_display(check_in.manager_rating)
+        %td
+          = simple_format(check_in.manager_private_notes)
+        %td
+          - other_mode = check_in.other_participant_display_mode(:manager)
+          - partial_name = "position_check_ins_table_manager_#{other_mode}"
+          = render partial_name, check_in: check_in
+        %td
+          = form.fields_for :position_check_in do |pf|
+            -# Hidden fields to preserve existing values when form is submitted
+            = pf.hidden_field :manager_rating, value: check_in.manager_rating
+            = pf.hidden_field :manager_private_notes, value: check_in.manager_private_notes
+            
+            .form-check
+              = pf.radio_button :status, 'complete', checked: true
+              = pf.label :status_complete, 'Ready for Finalization', class: 'form-check-label'
+            .form-check
+              = pf.radio_button :status, 'draft'
+              = pf.label :status_draft, 'Make Changes', class: 'form-check-label'
+
+.small.text-muted.mt-1
+  Select "Make Changes" to edit your assessment and notes

@@ -19,7 +19,7 @@
           .card-header.bg-info.text-white
             %h5.mb-0 Status
           .card-body.text-center
-            %p.mb-3 #{@person.first_name} is ready to finalize this check-in
+            %p.mb-3 #{@person.first_name} completed #{time_ago_in_words(check_in.employee_completed_at)} ago
             = link_to "Go to Finalization", organization_person_finalization_path(@organization, @person), 
                       class: 'btn btn-success btn-sm',
                       data: { confirm: 'Are you ready to finalize this check-in? This will create the official rating.' }
@@ -28,7 +28,7 @@
           .card-header.bg-warning.text-dark
             %h5.mb-0 Status
           .card-body.text-center
-            %p.mb-0 #{@person.first_name} is not ready to finalize this check-in
+            %p.mb-0 #{@person.first_name} has to complete their self-assessment
   
   .form-group.mt-3
     %label Status

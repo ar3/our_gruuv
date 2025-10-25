@@ -7,25 +7,13 @@ class Organizations::FinalizationsController < ApplicationController
   
   def show
     # Determine view mode
-    puts "\n=== FINALIZATION VIEW MODE DETERMINATION ==="
-    puts "current_person: #{current_person&.display_name} (#{current_person&.id})"
-    puts "@person: #{@person&.display_name} (#{@person&.id})"
-    puts "current_person == @person: #{current_person == @person}"
-    puts "current_manager: #{@person&.current_manager_for(@organization)&.display_name} (#{@person&.current_manager_for(@organization)&.id})"
-    puts "current_manager == current_person: #{@person&.current_manager_for(@organization) == current_person}"
-    
     if current_person == @person
       @view_mode = :employee
-      puts "Setting view_mode to :employee"
     elsif @person.current_manager_for(@organization) == current_person
       @view_mode = :manager
-      puts "Setting view_mode to :manager"
     else
       @view_mode = :readonly
-      puts "Setting view_mode to :readonly"
     end
-    puts "Final view_mode: #{@view_mode}"
-    puts "=== END FINALIZATION DEBUG ===\n"
     
     # Load all ready-to-finalize check-ins (for managers)
     @position_check_in = PositionCheckIn.where(teammate: @teammate).ready_for_finalization.first
