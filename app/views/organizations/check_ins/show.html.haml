@@ -62,7 +62,10 @@
              position_check_in: @position_check_in,
              form: f,
              view_mode: @view_mode
-  
+  .row.mt-4
+    .col-12
+      = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
+
   -# Assignment Section
   = render 'section_header', 
            title: 'Assignments/Outcomes', 
@@ -86,7 +89,10 @@
            title: 'Aspirations/Values', 
            icon: 'bi-star', 
            description: 'Track progress toward personal goals'
-  
+  .row.mt-4
+    .col-12
+      = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
+
   - if @view_mode_param == 'table'
     = render 'aspiration_check_ins_table',
              aspiration_check_ins: @aspiration_check_ins,
@@ -101,3 +107,60 @@
   .row.mt-4
     .col-12
       = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
+
+  = render 'section_header', 
+           title: 'Abilities/Skills/Knowledge', 
+           icon: 'bi-briefcase', 
+           description: 'Something about skill goals'
+
+
+  = render 'section_header', 
+           title: 'Personal Growth/Development', 
+           icon: 'bi-briefcase', 
+           description: '3 years, 2 quarters, 1 month'
+
+  .row.mt-4
+    .col-4 
+      .card
+        .card-header
+          %h5.mb-0 Current Goals (Now => up to 3 months from now)
+        .card-body
+          %ul
+            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
+            %li If I can accomplish ____ (by XX/XXX), ______ will become easier or unnecessary
+            %li If I can accomplish ____ (by XX/XXX), ______ will become easier or unnecessary
+    .col-4 
+      .card
+        .card-header
+          %h5.mb-0 Short-Term Goals (3 months to 3 years from now)
+        .card-body
+          %ul
+            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
+            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
+            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
+    .col-4 
+      .card
+        .card-header
+          %h5.mb-0 Long-Term Goals (More than3 years from now)
+        .card-body
+          %ul
+            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
+            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
+            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
+
+  = render 'section_header', 
+           title: 'Big Three', 
+           icon: 'bi-briefcase', 
+           description: '3 years, 2 quarters, 1 month'
+
+  = render 'section_header', 
+           title: '1:1 Todos', 
+           icon: 'bi-briefcase', 
+           description: 'Something about dream goals'
+
+  = render 'section_header', 
+           title: '1:1 Topics/Issues/Opportunities', 
+           icon: 'bi-briefcase', 
+           description: 'Something about dream goals'
+
+-# Dream Goals Section
