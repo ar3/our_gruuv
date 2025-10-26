@@ -48,7 +48,7 @@
   
   -# Position Section
   = render 'section_header', 
-           title: 'Position', 
+           title: 'Position/Overall', 
            icon: 'bi-briefcase', 
            description: 'Assess role performance and growth'
   
@@ -65,9 +65,10 @@
   
   -# Assignment Section
   = render 'section_header', 
-           title: 'Assignment', 
+           title: 'Assignments/Outcomes', 
            icon: 'bi-clipboard-check', 
-           description: 'Evaluate project contributions and energy'
+           description: 'Evaluate project contributions and energy',
+           action_link: { url: assignment_selection_organization_person_path(@organization, @person), icon: 'bi-plus-circle', text: '', title: 'Manage assignments' }
   
   - if @view_mode_param == 'table'
     = render 'assignment_check_ins_table',
@@ -82,7 +83,7 @@
   
   -# Aspiration Section
   = render 'section_header', 
-           title: 'Aspiration', 
+           title: 'Aspirations/Values', 
            icon: 'bi-star', 
            description: 'Track progress toward personal goals'
   
