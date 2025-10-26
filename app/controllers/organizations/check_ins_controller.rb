@@ -200,6 +200,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   
   def update_position_check_in(check_ins_params = params)
     check_in = PositionCheckIn.find_or_create_open_for(@teammate)
+    # Handle both :position_check_in and "[position_check_in]" parameter formats
     attrs = position_check_in_params(check_ins_params)
     
     # Handle status radio button
@@ -228,9 +229,10 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   end
 
   def position_check_in_params(check_ins_params = params)
-    # Handle position_check_in parameter format
+    # Handle position_check_in parameter format (both :position_check_in and "[position_check_in]")
     check_ins_params = check_ins_params[:check_ins] || check_ins_params
-    position_params = check_ins_params[:position_check_in]
+    position_params = check_ins_params[:position_check_in] || check_ins_params["[position_check_in]"]
+    return {} unless position_params
     
     if @view_mode == :employee
       position_params.permit(:employee_rating, :employee_private_notes, :status)
@@ -242,8 +244,8 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   end
   
   def assignment_check_in_params(check_ins_params = params)
-    # Handle assignment_check_ins parameter format
-    assignment_params = check_ins_params[:assignment_check_ins] || {}
+    # Handle assignment_check_ins parameter format (both :assignment_check_ins and "[assignment_check_ins]")
+    assignment_params = check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"] || {}
     
     permitted_params = {}
     assignment_params.each do |check_in_id, attrs|
@@ -261,8 +263,8 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   end
   
   def aspiration_check_in_params(check_ins_params = params)
-    # Handle aspiration_check_ins parameter format
-    aspiration_params = check_ins_params[:aspiration_check_ins] || {}
+    # Handle aspiration_check_ins parameter format (both :aspiration_check_ins and "[aspiration_check_ins]")
+    aspiration_params = check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"] || {}
     
     permitted_params = {}
     aspiration_params.each do |check_in_id, attrs|
