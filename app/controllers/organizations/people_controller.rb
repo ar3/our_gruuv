@@ -98,6 +98,65 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
     end
   end
 
+  def assignment_selection
+    authorize @person, :manage_assignments?
+    
+    @teammate = @person.teammates.find_by(organization: organization)
+    @assignments = organization.assignments.includes(:position_assignments).ordered
+    @current_employment = @teammate&.employment_tenures&.active&.first
+    
+    # Get required assignment IDs from position
+    @required_assignment_ids = if @current_employment&.position
+      @current_employment.position.assignments.pluck(:id)
+    else
+      []
+    end
+    
+    # Get already assigned assignment IDs (active tenures)
+    @assigned_assignment_ids = if @teammate
+      @teammate.assignment_tenures.active.pluck(:assignment_id)
+    else
+      []
+    end
+  end
+
+  def update_assignments
+    authorize @person, :manage_assignments?
+    
+    @teammate = @person.teammates.find_by(organization: organization)
+    
+    unless @teammate
+      redirect_to organization_person_check_ins_path(organization, @person), alert: 'Person must be a teammate of this organization.'
+      return
+    end
+    
+    assignment_ids = params[:assignment_ids] || []
+    assignment_ids = assignment_ids.map(&:to_i).compact
+    
+    # Get currently active assignment IDs
+    current_assignment_ids = @teammate.assignment_tenures.active.pluck(:assignment_id)
+    
+    # Find new assignments to add
+    new_assignment_ids = assignment_ids - current_assignment_ids
+    
+    # Create tenures for new assignments
+    new_assignment_ids.each do |assignment_id|
+      assignment = Assignment.find_by(id: assignment_id, company: organization)
+      next unless assignment
+      
+      # Only create if no active tenure exists
+      unless @teammate.assignment_tenures.active.exists?(assignment_id: assignment_id)
+        @teammate.assignment_tenures.create!(
+          assignment: assignment,
+          started_at: Date.current,
+          anticipated_energy_percentage: 0
+        )
+      end
+    end
+    
+    redirect_to organization_person_check_ins_path(organization, @person), notice: 'Assignments updated successfully.'
+  end
+
   private
 
   def set_person

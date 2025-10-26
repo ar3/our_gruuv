@@ -1,15 +1,17 @@
 class TeammatesQuery
-  attr_reader :organization, :params
+  attr_reader :organization, :params, :current_person
 
-  def initialize(organization, params = {})
+  def initialize(organization, params = {}, current_person: nil)
     @organization = organization
     @params = params
+    @current_person = current_person
   end
 
   def call
     teammates = base_scope
     teammates = filter_by_organization(teammates)
     teammates = filter_by_permissions(teammates)
+    teammates = filter_by_manager_relationship(teammates)
     teammates = apply_sort(teammates)
     # Note: Status filtering is complex and requires Array conversion
     # This should be applied after pagination in the controller
@@ -26,6 +28,7 @@ class TeammatesQuery
     filters[:status] = params[:status] if params[:status].present?
     filters[:organization_id] = params[:organization_id] if params[:organization_id].present?
     filters[:permission] = params[:permission] if params[:permission].present?
+    filters[:manager_filter] = params[:manager_filter] if params[:manager_filter].present?
     filters
   end
 
@@ -34,7 +37,7 @@ class TeammatesQuery
   end
 
   def current_view
-    params[:view] || 'table'
+    params[:view] || params[:display] || 'table'
   end
 
   def has_active_filters?
@@ -89,6 +92,16 @@ class TeammatesQuery
     end
 
     filtered_teammates
+  end
+
+  def filter_by_manager_relationship(teammates)
+    return teammates unless params[:manager_filter] == 'direct_reports'
+    return teammates unless current_person
+
+    # Filter to only direct reports based on active employment tenure manager relationships
+    teammates.joins(:employment_tenures)
+             .where(employment_tenures: { manager: current_person, ended_at: nil })
+             .distinct
   end
 
   def apply_sort(teammates)

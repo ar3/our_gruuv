@@ -26,7 +26,10 @@
     Filter & Sort
 
 / Spotlight Section
-= render 'organizations/employees/spotlights/teammates_overview'
+- if @spotlight_type == 'manager_overview'
+  = render 'organizations/employees/spotlights/manager_overview'
+- else
+  = render 'organizations/employees/spotlights/teammates_overview'
 
 / Active Filters Display
 - if @has_active_filters
@@ -54,6 +57,8 @@
   .col-lg-12
     - if @teammates.any?
       - case @current_view
+      - when 'check_in_status'
+        = render 'organizations/employees/displays/check_in_status'
       - when 'cards'
         = render 'organizations/employees/card_view'
       - when 'list'
@@ -112,6 +117,14 @@
                   = check_box_tag 'status[]', 'terminated', @current_filters[:status]&.include?('terminated'), class: 'form-check-input', id: 'filter_terminated'
                   = label_tag 'filter_terminated', 'Terminated', class: 'form-check-label'
               .mb-3
+                %label.form-label Manager Relationship
+                .form-check
+                  = radio_button_tag 'manager_filter', '', @current_filters[:manager_filter].blank?, class: 'form-check-input', id: 'manager_all'
+                  = label_tag 'manager_all', 'All Teammates', class: 'form-check-label'
+                .form-check
+                  = radio_button_tag 'manager_filter', 'direct_reports', @current_filters[:manager_filter] == 'direct_reports', class: 'form-check-input', id: 'manager_direct'
+                  = label_tag 'manager_direct', 'My Direct Reports', class: 'form-check-label'
+              .mb-3
                 %label.form-label Organization
                 = select_tag 'organization_id', options_from_collection_for_select([@organization] + @organization.descendants, :id, :name, @current_filters[:organization_id]), { include_blank: 'All Organizations', class: 'form-select' }
               .mb-3
@@ -143,6 +156,9 @@
                 .form-check
                   = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
                   = label_tag 'view_list', 'List View', class: 'form-check-label'
+                .form-check
+                  = radio_button_tag 'display', 'check_in_status', @current_view == 'check_in_status', class: 'form-check-input', id: 'view_check_in_status'
+                  = label_tag 'view_check_in_status', 'Check-in Status', class: 'form-check-label'
         .modal-footer
           = link_to "Clear Filters", organization_employees_path(@organization), class: "btn btn-secondary"
           %button.btn.btn-primary{type: "submit"}

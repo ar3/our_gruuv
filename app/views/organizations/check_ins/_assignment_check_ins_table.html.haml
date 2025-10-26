@@ -49,3 +49,7 @@
   .alert.alert-info
     %i.bi.bi-info-circle.me-2
     No assignments available to do a check-in on
+    .mt-2
+      = link_to assignment_selection_organization_person_path(@organization, @person), class: "btn btn-outline-primary btn-sm" do
+        %i.bi.bi-plus-circle.me-1
+        Select Assignments

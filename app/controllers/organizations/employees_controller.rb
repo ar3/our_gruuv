@@ -6,8 +6,15 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Basic authorization - user should be able to view the organization
     authorize @organization, :show?
     
+    # Additional authorization for manager filter
+    if params[:manager_filter] == 'direct_reports' && !current_person&.has_direct_reports?(@organization)
+      redirect_to organization_employees_path(@organization), 
+                  alert: 'You do not have any direct reports in this organization.'
+      return
+    end
+    
     # Use TeammatesQuery for filtering and sorting
-    query = TeammatesQuery.new(@organization, params)
+    query = TeammatesQuery.new(@organization, params, current_person: current_person)
     
     # Get teammates with all filters except status (to keep ActiveRecord relation)
     filtered_teammates = query.call
@@ -19,9 +26,17 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     @pagy = Pagy.new(count: status_filtered_teammates.count, page: params[:page] || 1, items: 25)
     @teammates = status_filtered_teammates[@pagy.offset, @pagy.items]
     
+    # Eager load associations for check-in status display
+    if query.current_view == 'check_in_status'
+      @teammates = eager_load_check_in_data(@teammates)
+    end
+    
     # Calculate spotlight statistics from all teammates (not filtered, not paginated)
     all_teammates = query.call
     @spotlight_stats = calculate_spotlight_stats(all_teammates)
+    
+    # Use manager spotlight if manager filter is active
+    @spotlight_type = params[:manager_filter] == 'direct_reports' ? 'manager_overview' : 'teammates_overview'
     
     # Store current filter/sort state for view
     @current_filters = query.current_filters
@@ -134,6 +149,25 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   
   private
 
+    def eager_load_check_in_data(teammates)
+      # Convert array back to ActiveRecord relation for eager loading if needed
+      if teammates.is_a?(Array)
+        teammate_ids = teammates.map(&:id)
+        teammates_relation = Teammate.where(id: teammate_ids)
+      else
+        teammates_relation = teammates
+      end
+      
+      # Eager load all check-in related associations
+      teammates_relation.includes(
+        :person,
+        :employment_tenures => [:position_check_ins, :position],
+        :assignment_tenures => [:assignment_check_ins, :assignment],
+        :aspiration_check_ins => :aspiration,
+        :teammate_milestones => :ability
+      )
+    end
+
     def calculate_spotlight_stats(teammates)
       # Always use ActiveRecord relation for spotlight stats to ensure proper joins
       if teammates.is_a?(Array)
@@ -144,7 +178,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         teammates_relation = teammates
       end
 
-      {
+      base_stats = {
         total_teammates: teammates.count,
         followers: teammates.select { |t| TeammateStatus.new(t).status == :follower }.count,
         huddlers: teammates.select { |t| TeammateStatus.new(t).status == :huddler }.count,
@@ -154,6 +188,62 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         unknown: teammates.select { |t| TeammateStatus.new(t).status == :unknown }.count,
         huddle_participants: teammates_relation.joins(:huddle_participants).distinct.count,
         non_employee_participants: teammates_relation.joins(:huddle_participants).where(first_employed_at: nil).distinct.count
+      }
+
+      # Add manager-specific stats if this is a manager view
+      if params[:manager_filter] == 'direct_reports' && current_person
+        manager_stats = calculate_manager_stats(teammates, teammates_relation)
+        base_stats.merge(manager_stats)
+      else
+        base_stats
+      end
+    end
+
+    def calculate_manager_stats(teammates, teammates_relation)
+      total_direct_reports = teammates.count
+      ready_for_finalization = 0
+      needs_manager_completion = 0
+      pending_acknowledgements = 0
+      total_check_ins = 0
+
+      teammates.each do |teammate|
+        # Count check-ins ready for finalization
+        ready_count = ready_for_finalization_count(teammate.person, @organization)
+        ready_for_finalization += ready_count
+
+        # Count check-ins needing manager completion
+        check_ins = check_ins_for_employee(teammate.person, @organization)
+        needs_manager_completion += check_ins[:needs_manager_completion].count
+        total_check_ins += check_ins[:position].count + check_ins[:assignments].count + check_ins[:aspirations].count
+
+        # Count pending acknowledgements
+        pending_acknowledgements += pending_acknowledgements_count(teammate.person, @organization)
+      end
+
+      # Calculate percentages
+      completion_percentage = total_check_ins > 0 ? ((total_check_ins - needs_manager_completion - ready_for_finalization) * 100.0 / total_check_ins).round(1) : 0
+      ready_percentage = total_check_ins > 0 ? (ready_for_finalization * 100.0 / total_check_ins).round(1) : 0
+      incomplete_percentage = total_check_ins > 0 ? (needs_manager_completion * 100.0 / total_check_ins).round(1) : 0
+
+      # Calculate team health score (simplified)
+      team_health_score = if total_direct_reports > 0
+        completion_rate = completion_percentage
+        acknowledgement_rate = pending_acknowledgements > 0 ? 0 : 100
+        ((completion_rate + acknowledgement_rate) / 2).round(0)
+      else
+        0
+      end
+
+      {
+        total_direct_reports: total_direct_reports,
+        ready_for_finalization: ready_for_finalization,
+        needs_manager_completion: needs_manager_completion,
+        pending_acknowledgements: pending_acknowledgements,
+        total_check_ins: total_check_ins,
+        completion_percentage: completion_percentage,
+        ready_percentage: ready_percentage,
+        incomplete_percentage: incomplete_percentage,
+        team_health_score: team_health_score
       }
     end
 

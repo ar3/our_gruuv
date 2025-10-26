@@ -286,6 +286,16 @@ class Person < ApplicationRecord
                   .exists?
   end
 
+  def has_direct_reports?(organization)
+    return false unless organization
+    
+    # Check if this person manages anyone in the organization
+    EmploymentTenure.joins(:teammate)
+                    .where(teammates: { organization: organization })
+                    .where(manager: self, ended_at: nil)
+                    .exists?
+  end
+
   # Huddle participation methods
   def huddle_playbook_stats
     huddle_participants.joins(:huddle)

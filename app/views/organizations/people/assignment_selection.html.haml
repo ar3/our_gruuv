@@ -1,0 +1,85 @@
+- content_for :header do
+  %h1.mb-0 Select Assignments for #{@person.display_name}
+
+- content_for :go_back_link do
+  = link_to organization_person_check_ins_path(@organization, @person), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Check-Ins
+
+.row.justify-content-center
+  .col-lg-10
+    - if @current_employment
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-clipboard-check.me-2
+            Assignment Selection
+          %p.text-muted.mb-0
+            Select assignments for #{@person.display_name}. Required assignments for their position are automatically selected and cannot be removed.
+        
+        .card-body
+          = form_with url: update_assignments_organization_person_path(@organization, @person), method: :post do |f|
+            - if @assignments.any?
+              .table-responsive
+                %table.table.table-hover
+                  %thead
+                    %tr
+                      %th{style: "width: 50px;"}
+                      %th Assignment
+                      %th Description
+                      %th Status
+                  %tbody
+                    - @assignments.each do |assignment|
+                      - is_required = @required_assignment_ids.include?(assignment.id)
+                      - is_assigned = @assigned_assignment_ids.include?(assignment.id)
+                      - is_disabled = is_required || is_assigned
+                      - is_checked = is_required || is_assigned
+                      
+                      %tr{class: is_disabled ? 'table-secondary' : ''}
+                        %td
+                          .form-check
+                            = check_box_tag "assignment_ids[]", assignment.id, is_checked, 
+                                           disabled: is_disabled, 
+                                           class: "form-check-input", 
+                                           id: "assignment_ids_#{assignment.id}"
+                        %td
+                          = label_tag "assignment_ids_#{assignment.id}", assignment.title, class: "form-check-label fw-bold"
+                        %td
+                          %small.text-muted= assignment.tagline
+                        %td
+                          - if is_required
+                            %span.badge.bg-primary
+                              %i.bi.bi-star-fill.me-1
+                              Required for position
+                          - elsif is_assigned
+                            %span.badge.bg-success
+                              %i.bi.bi-check-circle-fill.me-1
+                              Already assigned
+                          - else
+                            %span.badge.bg-secondary Optional
+              
+              .row.mt-4
+                .col-6
+                  = link_to 'Cancel', organization_person_check_ins_path(@organization, @person), class: 'btn btn-outline-secondary'
+                .col-6.text-end
+                  = f.submit 'Save Assignments', class: 'btn btn-primary'
+            - else
+              .alert.alert-info
+                %i.bi.bi-info-circle.me-2
+                No assignments available for this organization.
+                = link_to 'Create an assignment', organization_assignments_path(@organization), class: 'btn btn-sm btn-primary ms-2'
+    - else
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-exclamation-triangle.me-2
+            No Active Employment
+        .card-body
+          .alert.alert-warning
+            %p.mb-2
+              %strong #{@person.display_name} must have an active employment record before assignments can be selected.
+            %p.mb-0
+              Please create an employment record first, then return to select assignments.
+          
+          = link_to 'Back to Check-Ins', organization_person_check_ins_path(@organization, @person), class: 'btn btn-outline-secondary'
+

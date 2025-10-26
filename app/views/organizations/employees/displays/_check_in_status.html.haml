@@ -1,0 +1,97 @@
+/ Check-in Status Card Display
+.row.justify-content-center
+  .col-lg-12
+    - if @teammates.any?
+      .row
+        - @teammates.each do |teammate|
+          .col-lg-12.mb-4
+            .card.border-0.shadow-sm
+              .card-body
+                .row.align-items-start
+                  / Column 1: Employee Info (25%)
+                  .col-md-3
+                    .d-flex.flex-column
+                      %h5.mb-2
+                        = link_to teammate.person.display_name, person_path(teammate.person), class: "text-decoration-none"
+                      = overall_status_badge(overall_employee_status(teammate.person, @organization))
+                      %small.text-muted.mt-1
+                        = teammate_current_position(teammate)
+                  
+                  / Column 2: Check-ins (25%)
+                  .col-md-3
+                    %h6.text-muted.mb-2 Check-ins
+                    - check_ins = check_ins_for_employee(teammate.person, @organization)
+                    
+                    / Position check-ins
+                    - if check_ins[:position].any?
+                      .mb-2
+                        %small.fw-bold Position:
+                        %br
+                        - check_ins[:position].each do |check_in|
+                          .d-flex.justify-content-between.align-items-center
+                            %small= check_in_type_name(check_in)
+                            = check_in_status_badge(check_in)
+                    
+                    / Assignment check-ins
+                    - if check_ins[:assignments].any?
+                      .mb-2
+                        %small.fw-bold Assignments:
+                        %br
+                        - check_ins[:assignments].each do |check_in|
+                          .d-flex.justify-content-between.align-items-center
+                            %small= truncate(check_in_type_name(check_in), length: 20)
+                            = check_in_status_badge(check_in)
+                    
+                    / Aspiration check-ins
+                    - if check_ins[:aspirations].any?
+                      .mb-2
+                        %small.fw-bold Aspirations:
+                        %br
+                        - check_ins[:aspirations].each do |check_in|
+                          .d-flex.justify-content-between.align-items-center
+                            %small= truncate(check_in_type_name(check_in), length: 20)
+                            = check_in_status_badge(check_in)
+                    
+                    / Milestone progress
+                    - if check_ins[:milestones].any?
+                      .mb-2
+                        %small.fw-bold Milestones:
+                        %br
+                        %small.text-muted #{check_ins[:milestones].count} milestone#{'s' if check_ins[:milestones].count != 1}
+                    
+                    - if check_ins[:position].empty? && check_ins[:assignments].empty? && check_ins[:aspirations].empty? && check_ins[:milestones].empty?
+                      %small.text-muted No active check-ins
+                  
+                  / Column 3: Ready for Finalization (25%)
+                  .col-md-3
+                    %h6.text-muted.mb-2 Ready for Finalization
+                    - ready_count = ready_for_finalization_count(teammate.person, @organization)
+                    - if ready_count > 0
+                      .mb-2
+                        %span.badge.bg-warning.me-2 #{ready_count}
+                        %small.text-muted item#{'s' if ready_count != 1} ready
+                      %br
+                      = link_to "View Finalizations", organization_person_check_ins_path(@organization, teammate.person), class: "btn btn-sm btn-outline-warning"
+                    - else
+                      %small.text-muted No items ready for finalization
+                  
+                  / Column 4: Pending Acknowledgements (25%)
+                  .col-md-3
+                    %h6.text-muted.mb-2 Pending Acknowledgements
+                    - pending_count = pending_acknowledgements_count(teammate.person, @organization)
+                    - if pending_count > 0
+                      .mb-2
+                        %span.badge.bg-danger.me-2 #{pending_count}
+                        %small.text-muted pending
+                      %br
+                      = link_to "View Audit", audit_organization_employee_path(@organization, teammate.person), class: "btn btn-sm btn-outline-danger"
+                    - else
+                      %small.text-muted No pending acknowledgements
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Direct Reports Found
+        %p.mb-2 
+          You don't have any direct reports in this organization.
+          = link_to "View All Teammates", organization_employees_path(@organization), class: "btn btn-primary btn-sm"

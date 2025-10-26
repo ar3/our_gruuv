@@ -107,6 +107,8 @@ get '/login', to: 'auth#login', as: :login
         get :complete_picture
         get :teammate
         post :update_permission
+        get :assignment_selection
+        post :update_assignments
       end
       
       # Unified check-ins page (spreadsheet-style giant form)
