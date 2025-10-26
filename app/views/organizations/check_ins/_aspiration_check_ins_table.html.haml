@@ -1,55 +1,37 @@
 -# Aspiration Check-Ins Table View with Interactive Forms
 - if aspiration_check_ins&.any?
-  - if aspiration_check_ins.any?(&:officially_completed?)
-    = render 'aspiration_check_ins_table_completed', check_ins: aspiration_check_ins
-  - elsif aspiration_check_ins.any?(&:ready_for_finalization?)
-    = render 'aspiration_check_ins_table_ready_for_finalization', check_ins: aspiration_check_ins, form: form, view_mode: view_mode
-  - elsif view_mode == :manager && aspiration_check_ins.any?(&:manager_completed?)
-    = render 'aspiration_check_ins_table_manager_completed', check_ins: aspiration_check_ins, form: form
-  - elsif view_mode == :employee && aspiration_check_ins.any?(&:employee_completed?)
-    = render 'aspiration_check_ins_table_employee_completed', check_ins: aspiration_check_ins, form: form
-  - else
-    .table-responsive
-      %table.table.table-striped
-        %thead
-          %tr
-            %th Aspiration
-            - if view_mode == :employee || view_mode.nil?
-              %th Employee Rating
-              %th Employee Notes
-            - if view_mode == :manager || view_mode.nil?
-              %th Manager Rating
-              %th Manager Notes
+  .table-responsive
+    %table.table.table-striped
+      %thead
+        %tr
+          %th Aspiration
+          %th{style: "display: none;"} ID
+          - if view_mode == :employee
+            %th Employee Rating
+            %th Employee Notes
+            %th Manager Status
             %th Status
-        %tbody
-          - aspiration_check_ins.each do |check_in|
-            = form.fields_for :aspiration_check_ins, check_in, index: check_in.id do |af|
-              %tr
-                %td= check_in.aspiration.name
-                - if view_mode == :employee || view_mode.nil?
-                  %td
-                    = render 'organizations/check_ins/form_fields/aspiration_employee_rating_field', form: af, check_in: check_in, css_class: 'form-control form-control-sm'
-                  %td
-                    = render 'organizations/check_ins/form_fields/aspiration_employee_private_notes_field', form: af, check_in: check_in, css_class: 'form-control form-control-sm'
-                - elsif view_mode == :manager
-                  %td
-                    - if check_in.employee_rating.present?
-                      .badge.bg-info= check_in.employee_rating.humanize
-                    - else
-                      .text-muted Not rated
-                  %td
-                    - if check_in.employee_private_notes.present?
-                      .small= check_in.employee_private_notes
-                    - else
-                      .text-muted No notes
-                - if view_mode == :manager || view_mode.nil?
-                  %td
-                    = render 'organizations/check_ins/form_fields/aspiration_manager_rating_field', form: af, check_in: check_in, css_class: 'form-control form-control-sm'
-                  %td
-                    = render 'organizations/check_ins/form_fields/aspiration_manager_private_notes_field', form: af, check_in: check_in, css_class: 'form-control form-control-sm'
-                %td
-                  = render 'organizations/check_ins/form_fields/aspiration_id_field', form: af, check_in: check_in
-                  = render 'organizations/check_ins/form_fields/aspiration_status_field', form: af, check_in: check_in
+          - elsif view_mode == :manager
+            %th Manager Rating
+            %th Manager Notes
+            %th Employee Status
+            %th Status
+          - else
+            %th Employee Rating
+            %th Employee Notes
+            %th Manager Rating
+            %th Manager Notes
+            %th Status
+      %tbody
+        - aspiration_check_ins.each do |check_in|
+          -# Determine which partial to render based on CheckInBehavior methods
+          - display_mode = check_in.viewer_display_mode(view_mode)
+          - partial_name = "aspiration_check_ins_table_#{view_mode}_#{display_mode}"
+          
+          = form.fields_for :aspiration_check_ins, check_in, index: check_in.id do |af|
+            %tr{data: {check_in_id: check_in.id}}
+              %td= check_in.aspiration.name
+              = render partial_name, check_in: check_in, form: af, view_mode: view_mode
 - else
   .alert.alert-info
     %i.bi.bi-info-circle.me-2
