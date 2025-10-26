@@ -5,6 +5,7 @@ RSpec.describe "Organizations", type: :request do
 
   before do
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
+    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(nil)
   end
 
   describe "GET /index" do
