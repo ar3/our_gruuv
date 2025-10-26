@@ -15,32 +15,6 @@ ngrok http --domain=crappie-saved-absolutely.ngrok-free.app 3000
 git push origin main && railway up
 ```
 
-# Run system specs before deployment
-./bin/system-specs
-
-# Full pre-deployment check
-./bin/pre-deploy-check
-
-# Regular development (excludes system specs)
-bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb"
-
-# Run only system specs
-./bin/system-specs
-
-
-# Main specs (1,898 examples) - NO ENM specs
-bundle exec rspec spec/
-
-# System specs - NO ENM specs  
-bundle exec rspec spec/system/
-
-# ENM specs only (106 examples) - ONLY when specifically requested
-bundle exec rspec spec/enm/
-
-# Or using the rake tasks
-bundle exec rake spec:enm:all
-
-
 ## 📚 Documentation Hub
 
 This is your central guide to understanding OurGruuv's architecture, patterns, and conventions.
@@ -168,24 +142,64 @@ bin/dev
 ```
 
 ### Testing
+
+The test suite is organized into three independent groups:
+
+**1. Unit & Integration Specs** (Models, Controllers, Services, Policies, etc.)
 ```bash
-# Fast development (excludes critical system specs)
-bundle exec rspec --tag ~critical
+# Run all non-system specs (fast, ~2064 examples)
+./bin/unit-specs
 
-# Pre-deployment (runs all tests including critical paths)
-bundle exec rspec --tag critical
-bundle exec rspec  # or run all
-
-# Run specific test
-bundle exec rspec spec/path/to/test_spec.rb
+# Manual equivalent
+bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb"
 ```
 
-**Testing Pyramid:**
-- **Unit Specs** (many): Models, services, decorators, policies
-- **Request Specs** (moderate): Controller actions, HTTP responses, authorization
-- **System Specs** (few): Critical end-to-end user workflows only
+**2. System Specs** (End-to-end browser tests with Selenium)
+```bash
+# Run all system specs (slower, ~57 examples)
+./bin/system-specs
 
-**Critical System Specs**: Tagged with `:critical`, excluded by default for fast development.
+# Manual equivalent  
+bundle exec rspec spec/system/
+```
+
+**3. ENM Specs** (Ethical Non-Monogamy assessment module)
+```bash
+# Run ENM specs only (isolated module, ~106 examples)
+./bin/enm-specs
+
+# Manual equivalent
+bundle exec rspec spec/enm/
+```
+
+**All Specs Together**
+```bash
+# Run everything (unit + system + ENM)
+bundle exec rspec spec/
+```
+
+**Why This Separation?**
+- **Speed**: Unit specs run fast (~2 minutes) for quick development feedback
+- **Isolation**: ENM is a separate module with its own test suite
+- **Stability**: System specs need browser (Chrome/Selenium) and are slower
+- **Flexibility**: Run only what you need for your current work
+
+**Testing Pyramid:**
+- **Unit/Integration Specs** (many, fast): Models, services, decorators, policies, controllers
+- **System Specs** (few, slow): Critical end-to-end user workflows with browser testing
+- **ENM Specs** (separate): Isolated assessment wizard functionality
+
+**Development Workflow:**
+```bash
+# Day-to-day development (fast feedback)
+./bin/unit-specs
+
+# Before committing (ensure critical paths work)
+./bin/system-specs
+
+# Pre-deployment (everything)
+bundle exec rspec spec/
+```
 
 ### Deployment
 - **Platform**: Railway

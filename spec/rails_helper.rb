@@ -21,6 +21,11 @@ Capybara.register_driver :selenium_chrome do |app|
   Capybara::Selenium::Driver.new(app, browser: :chrome, options: Selenium::WebDriver::Chrome::Options.new(args: %w[headless disable-gpu no-sandbox disable-dev-shm-usage]))
 end
 
+# Alias for compatibility
+Capybara.register_driver :selenium_chrome_headless do |app|
+  Capybara::Selenium::Driver.new(app, browser: :chrome, options: Selenium::WebDriver::Chrome::Options.new(args: %w[headless disable-gpu no-sandbox disable-dev-shm-usage]))
+end
+
 Capybara.javascript_driver = :selenium_chrome
 Capybara.default_max_wait_time = 5
 # Add additional requires below this line. Rails is not loaded until this point!
@@ -57,30 +62,26 @@ RSpec.configure do |config|
 
   # Database cleaning strategy
   # Use transactional fixtures for non-system tests (fast)
-  # Use database_cleaner truncation for system tests (reliable with Selenium)
+  # System tests need truncation (not transactional) because they run in a separate browser process
   config.use_transactional_fixtures = true
   
-  # Configure database_cleaner for system tests
+  # Configure DatabaseCleaner for system tests only
+  # Non-system tests use Rails' built-in transactional fixtures which are faster
   config.before(:suite) do
-    DatabaseCleaner.strategy = :transaction
     DatabaseCleaner.clean_with(:truncation)
   end
   
-  config.before(:each) do
-    DatabaseCleaner.start
-  end
-  
-  config.after(:each) do
-    DatabaseCleaner.clean
-  end
-  
-  # Override database cleaning strategy for system tests
+  # For system tests, use truncation instead of transactions
   config.before(:each, type: :system) do
     DatabaseCleaner.strategy = :truncation
   end
   
+  config.before(:each, type: :system) do
+    DatabaseCleaner.start
+  end
+  
   config.after(:each, type: :system) do
-    DatabaseCleaner.strategy = :transaction
+    DatabaseCleaner.clean
   end
 
   # You can uncomment this line to turn off ActiveRecord support entirely.

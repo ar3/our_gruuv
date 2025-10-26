@@ -1,10 +1,6 @@
-require_relative '../../spec_helper'
+require 'rails_helper'
 
 RSpec.describe 'ENM Assessment Wizard Flow', type: :system do
-  before do
-    driven_by(:selenium_chrome_headless)
-  end
-
   describe 'Complete 3-phase assessment flow' do
     it 'guides user through all phases and generates final typology code' do
       # Start at the ENM home page

@@ -52,9 +52,7 @@ module AuthenticationHelpers
     
     # Use Capybara's visit method with query parameters
     query_string = params.map { |k, v| "#{k}=#{v}" }.join('&')
-    puts "\n=== DEBUG: Signing in via HTTP: /test/auth/sign_in?#{query_string} ==="
     visit("/test/auth/sign_in?#{query_string}")
-    puts "=== DEBUG: Response: #{page.text[0..200]} ==="
     
     # Wait for the request to complete
     sleep(0.1)

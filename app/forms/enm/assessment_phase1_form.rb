@@ -93,3 +93,4 @@ class Enm::AssessmentPhase1Form < Reform::Form
       self.active_physical_opposite_sex = existing_data["active_physical"]["opposite_sex"] if existing_data["active_physical"]["opposite_sex"].present?
     end
   end
+end
