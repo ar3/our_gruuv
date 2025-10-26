@@ -1,0 +1,14 @@
+-# Assignment Check-Ins Table View - Manager Show Open Fields
+%td{style: "display: none;"}
+  = render 'organizations/check_ins/form_fields/assignment_id_field', form: form, check_in: check_in
+%td
+  = render 'organizations/check_ins/form_fields/assignment_manager_rating_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+%td
+  = render 'organizations/check_ins/form_fields/assignment_manager_private_notes_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+%td
+  - other_mode = check_in.other_participant_display_mode(:manager)
+  - partial_name = "assignment_check_ins_table_manager_#{other_mode}"
+  = render partial_name, check_in: check_in
+%td
+  = render 'organizations/check_ins/form_fields/assignment_status_field', form: form, check_in: check_in
+

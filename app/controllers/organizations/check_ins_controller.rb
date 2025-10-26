@@ -99,48 +99,52 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   end
 
   def update_assignment_check_ins(check_ins_params = params)
-    assignment_check_ins_params = check_ins_params[:assignment_check_ins]
-    return unless assignment_check_ins_params
+    assignment_params = assignment_check_in_params(check_ins_params)
+    return unless assignment_params.present?
 
-    assignment_check_ins_params.each do |check_in_id, check_in_params|
-      assignment_id = check_in_params[:assignment_id]
+    assignment_params.each do |check_in_id, attrs|
+      assignment_id = attrs[:assignment_id]
       next unless assignment_id
 
       assignment = Assignment.find(assignment_id)
       check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
       next unless check_in
 
-      # Update check-in fields based on view mode
-      if @view_mode == :employee
-        check_in.assign_attributes(
-          employee_rating: check_in_params[:employee_rating],
-          employee_private_notes: check_in_params[:employee_private_notes],
-          actual_energy_percentage: check_in_params[:actual_energy_percentage],
-          employee_personal_alignment: check_in_params[:employee_personal_alignment]
-        )
-      elsif @view_mode == :manager
-        check_in.assign_attributes(
-          manager_rating: check_in_params[:manager_rating],
-          manager_private_notes: check_in_params[:manager_private_notes]
-        )
-      end
-
-      # Handle completion status
-      if check_in_params[:status] == 'complete'
+      # Handle status radio button
+      if attrs[:status] == 'complete'
+        # Only update fields that are present and not empty
+        update_attrs = attrs.except(:status, :assignment_id).reject { |k, v| v.blank? }
+        check_in.update!(update_attrs) if update_attrs.present?
+        
         if @view_mode == :employee
           check_in.complete_employee_side!
         elsif @view_mode == :manager
           check_in.complete_manager_side!(completed_by: current_person)
+        elsif @view_mode == :readonly
+          # For readonly, determine which side to complete based on what fields are present
+          if attrs[:employee_rating].present? || attrs[:employee_private_notes].present?
+            check_in.complete_employee_side!
+          end
+          if attrs[:manager_rating].present? || attrs[:manager_private_notes].present?
+            check_in.complete_manager_side!(completed_by: current_person)
+          end
         end
-      elsif check_in_params[:status] == 'draft'
+      else
+        # Save as draft - uncomplete if previously completed
+        # Only update fields that are present and not empty
+        update_attrs = attrs.except(:status, :assignment_id).reject { |k, v| v.blank? }
+        check_in.update!(update_attrs) if update_attrs.present?
+        
         if @view_mode == :employee
           check_in.uncomplete_employee_side!
         elsif @view_mode == :manager
           check_in.uncomplete_manager_side!
+        elsif @view_mode == :readonly
+          # For readonly, uncomplete both sides
+          check_in.uncomplete_employee_side!
+          check_in.uncomplete_manager_side!
         end
       end
-
-      check_in.save!
     end
   end
 
@@ -229,5 +233,24 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     else
       {}
     end
+  end
+  
+  def assignment_check_in_params(check_ins_params = params)
+    # Handle assignment_check_ins parameter format
+    assignment_params = check_ins_params[:assignment_check_ins] || {}
+    
+    permitted_params = {}
+    assignment_params.each do |check_in_id, attrs|
+      if @view_mode == :employee
+        permitted_params[check_in_id] = attrs.permit(:assignment_id, :employee_rating, :actual_energy_percentage, :employee_personal_alignment, :employee_private_notes, :status)
+      elsif @view_mode == :manager
+        permitted_params[check_in_id] = attrs.permit(:assignment_id, :manager_rating, :manager_private_notes, :status)
+      elsif @view_mode == :readonly
+        # For readonly, permit all fields
+        permitted_params[check_in_id] = attrs.permit(:assignment_id, :employee_rating, :actual_energy_percentage, :employee_personal_alignment, :employee_private_notes, :manager_rating, :manager_private_notes, :status)
+      end
+    end
+    
+    permitted_params
   end
 end

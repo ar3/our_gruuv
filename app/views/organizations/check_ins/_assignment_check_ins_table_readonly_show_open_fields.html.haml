@@ -1,0 +1,18 @@
+-# Assignment Check-Ins Table View - Readonly Show Open Fields
+%td{style: "display: none;"}
+  = render 'organizations/check_ins/form_fields/assignment_id_field', form: form, check_in: check_in
+%td
+  = render 'organizations/check_ins/form_fields/assignment_employee_rating_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+%td
+  = render 'organizations/check_ins/form_fields/assignment_actual_energy_percentage_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+%td
+  = render 'organizations/check_ins/form_fields/assignment_employee_personal_alignment_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+%td
+  = render 'organizations/check_ins/form_fields/assignment_employee_private_notes_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+%td
+  = render 'organizations/check_ins/form_fields/assignment_manager_rating_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+%td
+  = render 'organizations/check_ins/form_fields/assignment_manager_private_notes_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+%td
+  = render 'organizations/check_ins/form_fields/assignment_status_field', form: form, check_in: check_in
+
