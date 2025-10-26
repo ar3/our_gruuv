@@ -1,4 +1,6 @@
 class Organizations::EmployeesController < Organizations::OrganizationNamespaceBaseController
+  include TeammateHelper
+  
   before_action :require_authentication
   after_action :verify_authorized
   
@@ -7,7 +9,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     authorize @organization, :show?
     
     # Additional authorization for manager filter
-    if params[:manager_filter] == 'direct_reports' && !current_person&.has_direct_reports?(@organization)
+    if params[:manager_filter] == 'direct_reports' && (!current_person || !current_person.has_direct_reports?(@organization))
       redirect_to organization_employees_path(@organization), 
                   alert: 'You do not have any direct reports in this organization.'
       return
