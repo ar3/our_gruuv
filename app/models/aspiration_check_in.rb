@@ -1,6 +1,7 @@
 class AspirationCheckIn < ApplicationRecord
   include CheckInBehavior
   
+  belongs_to :teammate
   belongs_to :aspiration
   belongs_to :manager_completed_by, class_name: 'Person', optional: true
   

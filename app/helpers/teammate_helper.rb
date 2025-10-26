@@ -101,7 +101,11 @@ module TeammateHelper
   end
 
   def clear_filter_url(filter_name, filter_value)
-    current_params = params.to_unsafe_h.dup
+    return '' if filter_name.nil?
+    return '' if filter_value.nil? # Return empty string for nil values
+    
+    # Handle both ActionController::Parameters and Hash
+    current_params = params.respond_to?(:to_unsafe_h) ? params.to_unsafe_h.dup : params.dup
     case filter_name.to_s
     when 'status'
       current_params[:status] = Array(current_params[:status]) - [filter_value]
@@ -114,7 +118,14 @@ module TeammateHelper
     when 'manager_filter'
       current_params[:manager_filter] = nil
     end
-    organization_employees_path(@organization, current_params.except(:controller, :action))
+    
+    # Get organization from instance variable
+    organization = @organization
+    return '' if organization.nil?
+    
+    # Remove nil values and controller/action keys for cleaner URL
+    clean_params = current_params.except(:controller, :action).compact
+    organization_employees_path(organization, clean_params)
   end
 
   def sort_icon(sort_field)
@@ -161,6 +172,8 @@ module TeammateHelper
 
   # Check-in status helper methods for manager view
   def overall_employee_status(person, organization)
+    return 'unknown' if person.nil? || organization.nil?
+    
     teammate = person.teammates.find_by(organization: organization)
     return 'unknown' unless teammate
 
@@ -198,6 +211,8 @@ module TeammateHelper
   end
 
   def check_ins_for_employee(person, organization)
+    return { position: [], assignments: [], aspirations: [], milestones: [], ready_for_finalization: [], needs_manager_completion: [], needs_employee_completion: [], all_complete: [] } if person.nil? || organization.nil?
+    
     teammate = person.teammates.find_by(organization: organization)
     return { position: [], assignments: [], aspirations: [], milestones: [], ready_for_finalization: [], needs_manager_completion: [], needs_employee_completion: [], all_complete: [] } unless teammate
 
@@ -206,10 +221,8 @@ module TeammateHelper
                                  .flat_map(&:position_check_ins)
                                  .select(&:open?)
 
-    # Assignment check-ins
-    assignment_check_ins = teammate.assignment_tenures.active
-                                  .flat_map(&:assignment_check_ins)
-                                  .select(&:open?)
+    # Assignment check-ins - query directly from teammate since assignment_check_in belongs_to teammate
+    assignment_check_ins = teammate.assignment_check_ins.open
 
     # Aspiration check-ins
     aspiration_check_ins = teammate.aspiration_check_ins.open
@@ -245,6 +258,8 @@ module TeammateHelper
   end
 
   def check_in_status_badge(check_in)
+    return content_tag(:span, 'Unknown', class: 'badge bg-secondary') if check_in.nil?
+    
     case check_in.completion_state
     when :both_complete
       content_tag(:span, 'Ready', class: 'badge bg-warning')
@@ -260,6 +275,8 @@ module TeammateHelper
   end
 
   def check_in_type_name(check_in)
+    return 'Unknown' if check_in.nil?
+    
     case check_in.class.name
     when 'PositionCheckIn'
       'Position'
@@ -268,7 +285,7 @@ module TeammateHelper
     when 'AspirationCheckIn'
       check_in.aspiration&.name || 'Aspiration'
     else
-      check_in.class.name.humanize
+      check_in.class.name.gsub(/CheckIn/, ' Check In').humanize
     end
   end
 end

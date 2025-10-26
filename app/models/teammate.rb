@@ -8,6 +8,7 @@ class Teammate < ApplicationRecord
   # Reverse associations
   has_many :teammate_milestones, dependent: :nullify
   has_many :assignment_check_ins, dependent: :nullify
+  has_many :aspiration_check_ins, dependent: :nullify
   has_many :assignment_tenures, dependent: :nullify
   has_many :assignments, through: :assignment_tenures
   has_many :employment_tenures, dependent: :nullify

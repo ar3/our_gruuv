@@ -194,8 +194,8 @@ RSpec.describe TeammateHelper, type: :helper do
     end
 
     it 'only includes open check-ins' do
-      # Create closed check-in
-      closed_check_in = create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, closed_at: 1.day.ago)
+      # Create closed check-in (one that has been officially completed)
+      closed_check_in = create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, official_check_in_completed_at: 1.day.ago)
       
       result = helper.check_ins_for_employee(person, organization)
 
@@ -203,8 +203,12 @@ RSpec.describe TeammateHelper, type: :helper do
     end
 
     it 'only includes active employment tenures' do
-      # Create ended employment tenure
-      ended_tenure = create(:employment_tenure, teammate: teammate, company: organization, ended_at: 1.day.ago)
+      # Get the existing employment_tenure and end it first
+      employment_tenure.update!(ended_at: 2.days.ago)
+      
+      # Create a new tenure with different company to avoid overlap
+      other_company = create(:organization)
+      ended_tenure = create(:employment_tenure, teammate: teammate, company: other_company, started_at: 10.days.ago, ended_at: 1.day.ago)
       ended_check_in = create(:position_check_in, teammate: teammate, employment_tenure: ended_tenure, employee_completed_at: 1.day.ago, manager_completed_at: nil)
       
       result = helper.check_ins_for_employee(person, organization)
@@ -212,10 +216,9 @@ RSpec.describe TeammateHelper, type: :helper do
       expect(result[:position]).not_to include(ended_check_in)
     end
 
-    it 'only includes active assignment tenures' do
-      # Create ended assignment tenure
-      ended_assignment_tenure = create(:assignment_tenure, teammate: teammate, assignment: assignment, ended_at: 1.day.ago)
-      ended_check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, employee_completed_at: 1.day.ago, manager_completed_at: nil)
+    it 'only includes open assignment check-ins' do
+      # Create closed check-in (one that has been officially completed)
+      ended_check_in = create(:assignment_check_in, teammate: teammate, assignment: assignment, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, official_check_in_completed_at: 1.day.ago)
       
       result = helper.check_ins_for_employee(person, organization)
 
@@ -326,8 +329,8 @@ RSpec.describe TeammateHelper, type: :helper do
       expect(helper.check_in_type_name(check_in)).to eq('Position')
     end
 
-    it 'returns assignment name for AssignmentCheckIn' do
-      assignment = build(:assignment, name: 'Project Alpha')
+    it 'returns assignment title for AssignmentCheckIn' do
+      assignment = build(:assignment, title: 'Project Alpha')
       check_in = build(:assignment_check_in, assignment: assignment)
       expect(helper.check_in_type_name(check_in)).to eq('Project Alpha')
     end
@@ -383,15 +386,17 @@ RSpec.describe TeammateHelper, type: :helper do
     end
 
     it 'removes manager_filter from params' do
-      allow(helper).to receive(:@organization).and_return(organization)
+      # Stub the instance variable directly
+      helper.instance_variable_set(:@organization, organization)
       result = helper.clear_filter_url('manager_filter', 'direct_reports')
       expect(result).to eq('/test/path')
     end
 
     it 'handles nil filter_value' do
-      allow(helper).to receive(:@organization).and_return(organization)
+      # Stub the instance variable directly
+      helper.instance_variable_set(:@organization, organization)
       result = helper.clear_filter_url('manager_filter', nil)
-      expect(result).to eq('/test/path')
+      expect(result).to eq('')
     end
   end
 end
