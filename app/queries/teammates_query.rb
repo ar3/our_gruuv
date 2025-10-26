@@ -28,7 +28,8 @@ class TeammatesQuery
     filters[:status] = params[:status] if params[:status].present?
     filters[:organization_id] = params[:organization_id] if params[:organization_id].present?
     filters[:permission] = params[:permission] if params[:permission].present?
-    filters[:manager_filter] = params[:manager_filter] if params[:manager_filter].present?
+    # Include manager_filter even if it's an empty string (for UI state)
+    filters[:manager_filter] = params[:manager_filter] unless params[:manager_filter].nil?
     filters
   end
 
@@ -37,10 +38,14 @@ class TeammatesQuery
   end
 
   def current_view
-    params[:view] || params[:display] || 'table'
+    # Prioritize display over view, but fall back if display is empty
+    return params[:display] unless params[:display].blank?
+    return params[:view] unless params[:view].blank?
+    'table'
   end
 
   def has_active_filters?
+    # Check if any filter has a value (even empty string counts as an active filter for UI state)
     current_filters.any?
   end
 
