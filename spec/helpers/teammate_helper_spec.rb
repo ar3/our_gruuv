@@ -399,4 +399,151 @@ RSpec.describe TeammateHelper, type: :helper do
       expect(result).to eq('')
     end
   end
+
+  describe '#categorize_check_ins_by_freshness' do
+    let(:check_ins) do
+      [
+        # Fresh check-in (finalized 30 days ago)
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 30.days.ago),
+        # Stale but active check-in (finalized 100 days ago, manager completed)
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 100.days.ago, manager_completed_at: 1.day.ago),
+        # Stale and inactive check-in (finalized 100 days ago, neither completed)
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 100.days.ago),
+        # Never finalized - should be stale_inactive
+        create(:assignment_check_in, teammate: teammate, assignment: assignment, official_check_in_completed_at: nil)
+      ]
+    end
+
+    it 'categorizes check-ins correctly' do
+      result = helper.categorize_check_ins_by_freshness(check_ins)
+      expect(result[:fresh].count).to eq(1)
+      expect(result[:stale_active].count).to eq(1)
+      expect(result[:stale_inactive].count).to eq(2)
+    end
+
+    it 'handles empty array' do
+      result = helper.categorize_check_ins_by_freshness([])
+      expect(result[:fresh]).to be_empty
+      expect(result[:stale_active]).to be_empty
+      expect(result[:stale_inactive]).to be_empty
+    end
+  end
+
+  describe '#check_in_freshness_summary' do
+    let(:check_ins) do
+      [
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 30.days.ago),
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 30.days.ago),
+        create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, official_check_in_completed_at: 100.days.ago, manager_completed_at: 1.day.ago)
+      ]
+    end
+
+    it 'returns correct summary with percentages' do
+      result = helper.check_in_freshness_summary(check_ins)
+      expect(result[:fresh_count]).to eq(2)
+      expect(result[:fresh_percentage]).to eq(67)
+      expect(result[:stale_active_count]).to eq(1)
+      expect(result[:stale_active_percentage]).to eq(33)
+      expect(result[:stale_inactive_count]).to eq(0)
+      expect(result[:stale_inactive_percentage]).to eq(0)
+    end
+
+    it 'returns nil for empty array' do
+      result = helper.check_in_freshness_summary([])
+      expect(result).to be_nil
+    end
+  end
+
+  describe '#render_freshness_progress_bar' do
+    let(:summary) do
+      {
+        fresh_count: 2,
+        fresh_percentage: 40,
+        stale_active_count: 1,
+        stale_active_percentage: 20,
+        stale_inactive_count: 2,
+        stale_inactive_percentage: 40
+      }
+    end
+
+    it 'renders progress bar with correct segments' do
+      result = helper.render_freshness_progress_bar(summary)
+      expect(result).to include('progress')
+      expect(result).to include('bg-success')
+      expect(result).to include('bg-info')
+      expect(result).to include('bg-warning')
+    end
+
+    it 'returns message for nil summary' do
+      result = helper.render_freshness_progress_bar(nil)
+      expect(result).to include('No check-ins')
+    end
+  end
+
+  describe '#finalization_summary_by_type' do
+    let(:check_ins) do
+      {
+        position: [
+          create(:position_check_in, teammate: teammate, employment_tenure: employment_tenure, 
+                 employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, official_check_in_completed_at: nil)
+        ],
+        assignments: [
+          create(:assignment_check_in, teammate: teammate, assignment: assignment,
+                 employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, official_check_in_completed_at: nil)
+        ],
+        aspirations: [],
+        milestones: []
+      }
+    end
+
+    it 'returns correct counts by type' do
+      result = helper.finalization_summary_by_type(check_ins)
+      expect(result[:position]).to eq(1)
+      expect(result[:assignments]).to eq(1)
+      expect(result[:aspirations]).to eq(0)
+      expect(result[:total]).to eq(2)
+    end
+
+    it 'handles empty check-ins' do
+      result = helper.finalization_summary_by_type({ position: [], assignments: [], aspirations: [], milestones: [] })
+      expect(result[:total]).to eq(0)
+    end
+  end
+
+  describe '#acknowledgement_summary_by_type' do
+    before do
+      create(:maap_snapshot, employee: person, company: organization, change_type: 'position_tenure', 
+             effective_date: Date.current, employee_acknowledged_at: nil)
+      create(:maap_snapshot, employee: person, company: organization, change_type: 'assignment_management', 
+             effective_date: Date.current, employee_acknowledged_at: nil)
+      create(:maap_snapshot, employee: person, company: organization, change_type: 'position_tenure', 
+             effective_date: Date.current, employee_acknowledged_at: 1.day.ago) # Already acknowledged
+    end
+
+    it 'returns correct counts by change type' do
+      result = helper.acknowledgement_summary_by_type(person, organization)
+      expect(result[:position]).to eq(1)
+      expect(result[:assignments]).to eq(1)
+      expect(result[:aspirations]).to eq(0)
+      expect(result[:milestones]).to eq(0)
+      expect(result[:bulk]).to eq(0)
+      expect(result[:total]).to eq(2)
+    end
+
+    it 'excludes already acknowledged snapshots' do
+      result = helper.acknowledgement_summary_by_type(person, organization)
+      expect(result[:total]).to eq(2)
+      expect(result[:position]).to eq(1) # Only one unacknowledged position snapshot
+    end
+
+    it 'handles nil person gracefully' do
+      result = helper.acknowledgement_summary_by_type(nil, organization)
+      expect(result[:total]).to eq(0)
+    end
+
+    it 'handles nil organization gracefully' do
+      result = helper.acknowledgement_summary_by_type(person, nil)
+      expect(result[:total]).to eq(0)
+    end
+  end
 end

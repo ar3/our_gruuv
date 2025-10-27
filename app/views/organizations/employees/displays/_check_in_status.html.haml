@@ -1,6 +1,16 @@
 / Check-in Status Card Display
 .row.justify-content-center
   .col-lg-12
+    / Legend
+    .row.mb-3
+      .col-12
+        .alert.alert-light.py-2
+          %small.text-muted
+            %strong Legend:
+            %span.badge.bg-success.ms-2 Fresh (&lt; 90 days)
+            %span.badge.bg-info.ms-2 Stale/Active (&gt; 90 days, in progress)
+            %span.badge.bg-warning.ms-2 Stale/Inactive (&gt; 90 days, no activity)
+    
     - if @teammates.any?
       .row
         - @teammates.each do |teammate|
@@ -22,71 +32,86 @@
                     %h6.text-muted.mb-2 Check-ins
                     - check_ins = check_ins_for_employee(teammate.person, @organization)
                     
-                    / Position check-ins
-                    - if check_ins[:position].any?
-                      .mb-2
-                        %small.fw-bold Position:
-                        %br
-                        - check_ins[:position].each do |check_in|
-                          .d-flex.justify-content-between.align-items-center
-                            %small= check_in_type_name(check_in)
-                            = check_in_status_badge(check_in)
+                    / Position check-ins summary
+                    .mb-3
+                      .d-flex.justify-content-between.align-items-center.mb-1
+                        %strong.small Position
+                        - if check_ins[:position].any?
+                          %span.badge.bg-secondary= check_ins[:position].count
+                      - position_summary = check_in_freshness_summary(check_ins[:position])
+                      = render_freshness_progress_bar(position_summary)
                     
-                    / Assignment check-ins
-                    - if check_ins[:assignments].any?
-                      .mb-2
-                        %small.fw-bold Assignments:
-                        %br
-                        - check_ins[:assignments].each do |check_in|
-                          .d-flex.justify-content-between.align-items-center
-                            %small= truncate(check_in_type_name(check_in), length: 20)
-                            = check_in_status_badge(check_in)
+                    / Assignment check-ins summary
+                    .mb-3
+                      .d-flex.justify-content-between.align-items-center.mb-1
+                        %strong.small Assignments
+                        - if check_ins[:assignments].any?
+                          %span.badge.bg-secondary= check_ins[:assignments].count
+                      - assignment_summary = check_in_freshness_summary(check_ins[:assignments])
+                      = render_freshness_progress_bar(assignment_summary)
                     
-                    / Aspiration check-ins
-                    - if check_ins[:aspirations].any?
-                      .mb-2
-                        %small.fw-bold Aspirations:
-                        %br
-                        - check_ins[:aspirations].each do |check_in|
-                          .d-flex.justify-content-between.align-items-center
-                            %small= truncate(check_in_type_name(check_in), length: 20)
-                            = check_in_status_badge(check_in)
-                    
-                    / Milestone progress
-                    - if check_ins[:milestones].any?
-                      .mb-2
-                        %small.fw-bold Milestones:
-                        %br
-                        %small.text-muted #{check_ins[:milestones].count} milestone#{'s' if check_ins[:milestones].count != 1}
-                    
-                    - if check_ins[:position].empty? && check_ins[:assignments].empty? && check_ins[:aspirations].empty? && check_ins[:milestones].empty?
-                      %small.text-muted No active check-ins
+                    / Aspiration check-ins summary
+                    .mb-3
+                      .d-flex.justify-content-between.align-items-center.mb-1
+                        %strong.small Aspirations
+                        - if check_ins[:aspirations].any?
+                          %span.badge.bg-secondary= check_ins[:aspirations].count
+                      - aspiration_summary = check_in_freshness_summary(check_ins[:aspirations])
+                      = render_freshness_progress_bar(aspiration_summary)
                   
                   / Column 3: Ready for Finalization (25%)
                   .col-md-3
                     %h6.text-muted.mb-2 Ready for Finalization
-                    - ready_count = ready_for_finalization_count(teammate.person, @organization)
-                    - if ready_count > 0
+                    - finalization_summary = finalization_summary_by_type(check_ins)
+                    
+                    - if finalization_summary[:total] > 0
                       .mb-2
-                        %span.badge.bg-warning.me-2 #{ready_count}
-                        %small.text-muted item#{'s' if ready_count != 1} ready
-                      %br
-                      = link_to "View Finalizations", organization_person_check_ins_path(@organization, teammate.person), class: "btn btn-sm btn-outline-warning"
+                        - if finalization_summary[:position] > 0
+                          .d-flex.justify-content-between.align-items-center.mb-1
+                            %strong.small Position
+                            %span.badge.bg-warning= finalization_summary[:position]
+                        - if finalization_summary[:assignments] > 0
+                          .d-flex.justify-content-between.align-items-center.mb-1
+                            %strong.small Assignments
+                            %span.badge.bg-warning= finalization_summary[:assignments]
+                        - if finalization_summary[:aspirations] > 0
+                          .d-flex.justify-content-between.align-items-center.mb-1
+                            %strong.small Aspirations
+                            %span.badge.bg-warning= finalization_summary[:aspirations]
+                      = link_to "Finalize (#{finalization_summary[:total]})", organization_person_check_ins_path(@organization, teammate.person), class: "btn btn-sm btn-outline-warning"
                     - else
-                      %small.text-muted No items ready for finalization
+                      %small.text-muted None ready
                   
                   / Column 4: Pending Acknowledgements (25%)
                   .col-md-3
                     %h6.text-muted.mb-2 Pending Acknowledgements
-                    - pending_count = pending_acknowledgements_count(teammate.person, @organization)
-                    - if pending_count > 0
+                    - ack_summary = acknowledgement_summary_by_type(teammate.person, @organization)
+                    
+                    - if ack_summary[:total] > 0
                       .mb-2
-                        %span.badge.bg-danger.me-2 #{pending_count}
-                        %small.text-muted pending
-                      %br
-                      = link_to "View Audit", audit_organization_employee_path(@organization, teammate.person), class: "btn btn-sm btn-outline-danger"
+                        - if ack_summary[:position] > 0
+                          .d-flex.justify-content-between.align-items-center.mb-1
+                            %strong.small Position
+                            %span.badge.bg-danger= ack_summary[:position]
+                        - if ack_summary[:assignments] > 0
+                          .d-flex.justify-content-between.align-items-center.mb-1
+                            %strong.small Assignments
+                            %span.badge.bg-danger= ack_summary[:assignments]
+                        - if ack_summary[:aspirations] > 0
+                          .d-flex.justify-content-between.align-items-center.mb-1
+                            %strong.small Aspirations
+                            %span.badge.bg-danger= ack_summary[:aspirations]
+                        - if ack_summary[:milestones] > 0
+                          .d-flex.justify-content-between.align-items-center.mb-1
+                            %strong.small Milestones
+                            %span.badge.bg-danger= ack_summary[:milestones]
+                        - if ack_summary[:bulk] > 0
+                          .d-flex.justify-content-between.align-items-center.mb-1
+                            %strong.small Bulk Updates
+                            %span.badge.bg-danger= ack_summary[:bulk]
+                      = link_to "View Audit (#{ack_summary[:total]})", audit_organization_employee_path(@organization, teammate.person), class: "btn btn-sm btn-outline-danger"
                     - else
-                      %small.text-muted No pending acknowledgements
+                      %small.text-muted None pending
     - else
       .alert.alert-info
         %h6.mb-2

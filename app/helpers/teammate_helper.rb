@@ -288,4 +288,100 @@ module TeammateHelper
       check_in.class.name.gsub(/CheckIn/, ' Check In').humanize
     end
   end
+
+  # Freshness categorization and summary methods for direct reports view
+  def categorize_check_ins_by_freshness(check_ins)
+    fresh = []
+    stale_active = []
+    stale_inactive = []
+    
+    check_ins.each do |check_in|
+      if check_in.official_check_in_completed_at.nil?
+        # Never finalized - treat as stale_inactive
+        stale_inactive << check_in
+      elsif check_in.official_check_in_completed_at > 90.days.ago
+        fresh << check_in
+      elsif check_in.employee_completed_at.present? || check_in.manager_completed_at.present?
+        stale_active << check_in
+      else
+        stale_inactive << check_in
+      end
+    end
+    
+    { fresh: fresh, stale_active: stale_active, stale_inactive: stale_inactive }
+  end
+
+  def check_in_freshness_summary(check_ins)
+    return nil if check_ins.empty?
+    
+    categorized = categorize_check_ins_by_freshness(check_ins)
+    total = check_ins.count
+    
+    {
+      fresh_count: categorized[:fresh].count,
+      fresh_percentage: (categorized[:fresh].count * 100.0 / total).round(0),
+      stale_active_count: categorized[:stale_active].count,
+      stale_active_percentage: (categorized[:stale_active].count * 100.0 / total).round(0),
+      stale_inactive_count: categorized[:stale_inactive].count,
+      stale_inactive_percentage: (categorized[:stale_inactive].count * 100.0 / total).round(0)
+    }
+  end
+
+  def render_freshness_progress_bar(summary)
+    return content_tag(:small, 'No check-ins', class: 'text-muted') if summary.nil?
+    
+    # Build progress bar with three segments
+    fresh_bar = content_tag(:div, '', 
+      class: 'progress-bar bg-success', 
+      style: "width: #{summary[:fresh_percentage]}%",
+      title: "#{summary[:fresh_count]} fresh (#{summary[:fresh_percentage]}%)")
+    
+    stale_active_bar = content_tag(:div, '', 
+      class: 'progress-bar bg-info', 
+      style: "width: #{summary[:stale_active_percentage]}%",
+      title: "#{summary[:stale_active_count]} stale/active (#{summary[:stale_active_percentage]}%)")
+    
+    stale_inactive_bar = content_tag(:div, '', 
+      class: 'progress-bar bg-warning', 
+      style: "width: #{summary[:stale_inactive_percentage]}%",
+      title: "#{summary[:stale_inactive_count]} stale/inactive (#{summary[:stale_inactive_percentage]}%)")
+    
+    content_tag(:div, fresh_bar + stale_active_bar + stale_inactive_bar, class: 'progress', style: 'height: 20px;')
+  end
+
+  def finalization_summary_by_type(check_ins)
+    position_ready = check_ins[:position].select(&:ready_for_finalization?)
+    assignment_ready = check_ins[:assignments].select(&:ready_for_finalization?)
+    aspiration_ready = check_ins[:aspirations].select(&:ready_for_finalization?)
+    
+    {
+      position: position_ready.count,
+      assignments: assignment_ready.count,
+      aspirations: aspiration_ready.count,
+      total: position_ready.count + assignment_ready.count + aspiration_ready.count
+    }
+  end
+
+  def acknowledgement_summary_by_type(person, organization)
+    # MaapSnapshots don't have explicit type fields, so we'll infer from change_type
+    snapshots = MaapSnapshot.for_employee(person)
+                            .for_company(organization)
+                            .where.not(effective_date: nil)
+                            .where(employee_acknowledged_at: nil)
+    
+    position_count = snapshots.where(change_type: 'position_tenure').count
+    assignment_count = snapshots.where(change_type: 'assignment_management').count
+    aspiration_count = snapshots.where(change_type: 'aspiration_management').count
+    milestone_count = snapshots.where(change_type: 'milestone_management').count
+    bulk_count = snapshots.where(change_type: ['bulk_update', 'bulk_check_in_finalization']).count
+    
+    {
+      position: position_count,
+      assignments: assignment_count,
+      aspirations: aspiration_count,
+      milestones: milestone_count,
+      bulk: bulk_count,
+      total: snapshots.count
+    }
+  end
 end
