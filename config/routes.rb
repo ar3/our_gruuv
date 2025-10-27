@@ -118,6 +118,25 @@ get '/login', to: 'auth#login', as: :login
       resource :finalization, only: [:show, :create] do
         patch :acknowledge, on: :member
       end
+      
+      # Check-in history pages
+      resource :position_check_ins, only: [] do
+        collection do
+          get :history
+        end
+      end
+      
+      resources :assignment_check_ins, only: [] do
+        member do
+          get :history
+        end
+      end
+      
+      resources :aspiration_check_ins, only: [] do
+        member do
+          get :history
+        end
+      end
     end
     
     # Positions management

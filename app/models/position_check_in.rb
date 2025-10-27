@@ -32,6 +32,14 @@ class PositionCheckIn < ApplicationRecord
     )
   end
   
+  # Find the latest finalized check-in for a teammate (across all employment tenures)
+  def self.latest_finalized_for(teammate)
+    where(teammate: teammate)
+      .closed
+      .order(official_check_in_completed_at: :desc)
+      .first
+  end
+  
   private
   
   def only_one_open_check_in_per_teammate

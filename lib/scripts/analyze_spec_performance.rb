@@ -189,3 +189,4 @@ if __FILE__ == $0
   SpecPerformanceAnalyzer.new.analyze
 end
 
+

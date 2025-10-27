@@ -68,6 +68,43 @@ module CheckInHelper
   def partial_exists?(partial_name)
     lookup_context.exists?(partial_name, [], true)
   end
+
+  # Popover content for latest finalized check-ins
+  def latest_position_check_in_popover_content(teammate)
+    latest = PositionCheckIn.latest_finalized_for(teammate)
+    return "No completed check-ins yet" unless latest
+    
+    content = []
+    content << "<strong>Finalized:</strong> #{latest.official_check_in_completed_at.strftime('%m/%d/%Y')}"
+    content << "<strong>Rating:</strong> #{position_rating_display(latest.official_rating)}"
+    content << "<strong>By:</strong> #{latest.finalized_by.display_name}" if latest.finalized_by
+    content << "<br><em>#{latest.shared_notes}</em>" if latest.shared_notes.present?
+    content.join('<br>')
+  end
+
+  def latest_assignment_check_in_popover_content(teammate, assignment)
+    latest = AssignmentCheckIn.latest_finalized_for(teammate, assignment)
+    return "No completed check-ins yet" unless latest
+    
+    content = []
+    content << "<strong>Finalized:</strong> #{latest.official_check_in_completed_at.strftime('%m/%d/%Y')}"
+    content << "<strong>Rating:</strong> #{assignment_rating_display(latest.official_rating)}"
+    content << "<strong>By:</strong> #{latest.finalized_by.display_name}" if latest.finalized_by
+    content << "<br><em>#{latest.shared_notes}</em>" if latest.shared_notes.present?
+    content.join('<br>')
+  end
+
+  def latest_aspiration_check_in_popover_content(teammate, aspiration)
+    latest = AspirationCheckIn.latest_finalized_for(teammate, aspiration)
+    return "No completed check-ins yet" unless latest
+    
+    content = []
+    content << "<strong>Finalized:</strong> #{latest.official_check_in_completed_at.strftime('%m/%d/%Y')}"
+    content << "<strong>Rating:</strong> #{aspiration_rating_display(latest.official_rating)}"
+    content << "<strong>By:</strong> #{latest.finalized_by.display_name}" if latest.finalized_by
+    content << "<br><em>#{latest.shared_notes}</em>" if latest.shared_notes.present?
+    content.join('<br>')
+  end
 end
 
 

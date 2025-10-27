@@ -61,3 +61,4 @@ bundle exec rspec --tag enm
 - They can be run independently without affecting other test suites
 - All ENM specs are automatically tagged with `:enm` for easy filtering
 - The ENM specs use their own spec_helper.rb for any specific configuration needs
+

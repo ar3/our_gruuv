@@ -87,6 +87,14 @@ class AssignmentCheckIn < ApplicationRecord
     total_days.to_f / (check_ins.count - 1)
   end
 
+  # Find the latest finalized check-in for a teammate and assignment
+  def self.latest_finalized_for(teammate, assignment)
+    where(teammate: teammate, assignment: assignment)
+      .closed
+      .order(official_check_in_completed_at: :desc)
+      .first
+  end
+
   # Find the associated assignment tenure for this check-in
   def assignment_tenure
     @assignment_tenure ||= AssignmentTenure.most_recent_for(teammate, assignment)

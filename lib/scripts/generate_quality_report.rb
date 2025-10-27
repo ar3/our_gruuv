@@ -188,3 +188,4 @@ if __FILE__ == $0
   QualityReportGenerator.new.generate
 end
 
+

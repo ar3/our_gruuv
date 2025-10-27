@@ -160,3 +160,4 @@ if __FILE__ == $0
   SpecCoverageAnalyzer.new.analyze
 end
 
+
