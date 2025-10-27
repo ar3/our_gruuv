@@ -84,14 +84,15 @@
              form: f,
              view_mode: @view_mode
   
+  .row.mt-4
+    .col-12
+      = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
+  
   -# Aspiration Section
   = render 'section_header', 
            title: 'Aspirations/Values', 
            icon: 'bi-star', 
            description: 'Track progress toward personal goals'
-  .row.mt-4
-    .col-12
-      = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
 
   - if @view_mode_param == 'table'
     = render 'aspiration_check_ins_table',
@@ -112,7 +113,26 @@
            title: 'Abilities/Skills/Knowledge', 
            icon: 'bi-briefcase', 
            description: 'Something about skill goals'
+  .row.mt-4
+    .col-12
+      .alert.alert-warning.alert-dismissible.fade.show{role: "alert"}
+        .d-flex.align-items-center
+          %i.bi.bi-heart.me-2
+          %strong.me-2 Considering adding abilities/skills/knowledge goals to check-ins
+          %span We'd love to build with you... ! Let's get started. 
+          = link_to "Tell us what you think", new_interest_submission_path(source_page: nil, return_url: request.url), class: "alert-link ms-2"
+        %button.btn-close{type: "button", "data-bs-dismiss": "alert", "aria-label": "Close"}
 
+    .col-12
+      .card
+        .card-header
+          %h5.mb-0 
+        .card-body
+          %ul
+            %li I'm working towards showcasing expert level skills in _____
+            %li I'm working towards showcasing proficient level skills in _____
+            %li I'm working towards showcasing Demonstrated → Advanced → Expert → Distinguished → Industry-Recognized
+    
 
   = render 'section_header', 
            title: 'Personal Growth/Development', 
@@ -120,6 +140,15 @@
            description: '3 years, 2 quarters, 1 month'
 
   .row.mt-4
+    .col-12
+      .alert.alert-warning.alert-dismissible.fade.show{role: "alert"}
+        .d-flex.align-items-center
+          %i.bi.bi-heart.me-2
+          %strong.me-2 Considering adding general goals to check-ins
+          %span We'd love to build with you... ! Let's get started. 
+          = link_to "Tell us what you think", new_interest_submission_path(source_page: nil, return_url: request.url), class: "alert-link ms-2"
+        %button.btn-close{type: "button", "data-bs-dismiss": "alert", "aria-label": "Close"}
+
     .col-4 
       .card
         .card-header
@@ -149,18 +178,13 @@
             %li If I can accomplish ____ (by XX/XXX), I will be able to ______
 
   = render 'section_header', 
-           title: 'Big Three', 
-           icon: 'bi-briefcase', 
-           description: '3 years, 2 quarters, 1 month'
-
-  = render 'section_header', 
            title: '1:1 Todos', 
            icon: 'bi-briefcase', 
-           description: 'Something about dream goals'
+           description: 'Connect to Asana for 1:1 todos?'
 
   = render 'section_header', 
            title: '1:1 Topics/Issues/Opportunities', 
            icon: 'bi-briefcase', 
-           description: 'Something about dream goals'
+           description: 'Connect to Asana for 1:1 oppties?'
 
 -# Dream Goals Section

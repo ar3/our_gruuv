@@ -15,22 +15,30 @@ class Organizations::FinalizationsController < ApplicationController
       @view_mode = :readonly
     end
     
-    # Load all ready-to-finalize check-ins (for managers)
-    @position_check_in = PositionCheckIn.where(teammate: @teammate).ready_for_finalization.first
-    @assignment_check_ins = AssignmentCheckIn.where(teammate: @teammate).ready_for_finalization
+    # Load ALL check-ins for display (ready for finalization + incomplete ones)
+    # Ready to finalize
+    @ready_position_check_in = PositionCheckIn.where(teammate: @teammate).ready_for_finalization.first
+    @ready_assignment_check_ins = AssignmentCheckIn.where(teammate: @teammate).ready_for_finalization
+    @ready_aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate).ready_for_finalization
     
-    # If no ready check-ins, load the most recent finalized ones (for employees and managers to acknowledge)
-    if @position_check_in.nil?
-      @position_check_in = PositionCheckIn.where(teammate: @teammate).closed.order(:official_check_in_completed_at).last
-    end
+    # Partially complete (for display in read-only rows)
+    @incomplete_position_check_ins = PositionCheckIn.where(teammate: @teammate)
+                                                    .open
+                                                    .where.not(employee_completed_at: nil, manager_completed_at: nil)
+                                                    .where.not(id: @ready_position_check_in&.id)
     
-    # Load aspiration check-ins ready for finalization
-    @aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate).ready_for_finalization
+    @incomplete_assignment_check_ins = AssignmentCheckIn.where(teammate: @teammate)
+                                                          .open
+                                                          .where.not(id: @ready_assignment_check_ins.map(&:id))
+                                                          .where("(employee_completed_at IS NOT NULL AND manager_completed_at IS NULL) OR (employee_completed_at IS NULL AND manager_completed_at IS NOT NULL)")
     
-    # If no ready aspiration check-ins, load the most recent finalized ones (for employees and managers to acknowledge)
-    if @aspiration_check_ins.empty?
-      @aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate).closed.order(:official_check_in_completed_at).last(5)
-    end
+    @incomplete_aspiration_check_ins = AspirationCheckIn.where(teammate: @teammate)
+                                                           .open
+                                                           .where.not(id: @ready_aspiration_check_ins.map(&:id))
+                                                           .where("(employee_completed_at IS NOT NULL AND manager_completed_at IS NULL) OR (employee_completed_at IS NULL AND manager_completed_at IS NOT NULL)")
+    
+    # Load already finalized check-ins for acknowledgment view
+    @finalized_position_check_in = PositionCheckIn.where(teammate: @teammate).closed.order(:official_check_in_completed_at).last
   end
   
   def create
@@ -82,14 +90,9 @@ class Organizations::FinalizationsController < ApplicationController
   
   def finalization_params
     params.permit(
-      :finalize_position,
-      :finalize_assignments,
-      :finalize_aspirations,
-      :position_official_rating,
-      :position_shared_notes,
+      position_check_in: [:finalize, :official_rating, :shared_notes],
       assignment_check_ins: {},
       aspiration_check_ins: {}
-      # Add more params in later phases
     )
   end
   

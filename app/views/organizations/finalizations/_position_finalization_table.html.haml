@@ -1,0 +1,20 @@
+-# Position Finalization Table
+- if @ready_position_check_in || @finalized_position_check_in
+  .table-responsive.mb-4
+    %table.table.table-striped.table-hover
+      %thead.table-light
+        %tr
+          %th Name
+          %th Employee Check-in
+          %th Manager Check-in
+          %th Final Notes
+          %th Final Rating
+          %th Finalize?
+      %tbody
+        - if @ready_position_check_in
+          = render 'position_finalization_row_ready', check_in: @ready_position_check_in, form: form
+        - elsif @finalized_position_check_in
+          = render 'position_finalization_row_finalized', check_in: @finalized_position_check_in
+        - if @incomplete_position_check_ins&.any?
+          - @incomplete_position_check_ins.each do |check_in|
+            = render 'position_finalization_row_incomplete', check_in: check_in

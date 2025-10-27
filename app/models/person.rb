@@ -290,9 +290,8 @@ class Person < ApplicationRecord
     return false unless organization
     
     # Check if this person manages anyone in the organization
-    EmploymentTenure.joins(:teammate)
-                    .where(teammates: { organization: organization })
-                    .where(manager: self, ended_at: nil)
+    # EmploymentTenure has a company association, not an organization association
+    EmploymentTenure.where(company: organization, manager: self, ended_at: nil)
                     .exists?
   end
 

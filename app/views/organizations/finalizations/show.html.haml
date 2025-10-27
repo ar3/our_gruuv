@@ -10,21 +10,39 @@
     Back to Check-Ins
 
 - if current_person == @person
-  = render 'position_finalization_section'
-  
-  = render 'assignment_finalization_section'
+  -# Employee View (Read-only acknowledgment)
+  = render 'organizations/finalizations/employee_acknowledgment_view'
 
 - else
   -# Manager Finalization View
   = form_with url: organization_person_finalization_path(@organization, @person), method: :post do |f|
-    = render 'position_finalization_section', form: f
     
-    = render 'assignment_finalization_section', form: f
+    -# Position Section
+    = render 'organizations/check_ins/section_header', 
+             title: 'Position/Overall', 
+             icon: 'bi-briefcase', 
+             description: 'Set official position rating'
     
-    = render 'aspiration_finalization_section', form: f
+    = render 'organizations/finalizations/position_finalization_table', form: f
+    
+    -# Assignment Section
+    = render 'organizations/check_ins/section_header', 
+             title: 'Assignments/Outcomes', 
+             icon: 'bi-clipboard-check', 
+             description: 'Finalize individual assignment ratings and energy'
+    
+    = render 'organizations/finalizations/assignment_finalization_table', form: f
+    
+    -# Aspiration Section
+    = render 'organizations/check_ins/section_header', 
+             title: 'Aspirations/Values', 
+             icon: 'bi-star', 
+             description: 'Set official aspiration ratings'
+    
+    = render 'organizations/finalizations/aspiration_finalization_table', form: f
     
     -# Only show the finalization button if there are check-ins to finalize
-    - if @position_check_in || @assignment_check_ins&.any? || @aspiration_check_ins&.any?
+    - if @ready_position_check_in || @ready_assignment_check_ins&.any? || @ready_aspiration_check_ins&.any?
       .row.mt-4
         .col-12
           .alert.alert-warning

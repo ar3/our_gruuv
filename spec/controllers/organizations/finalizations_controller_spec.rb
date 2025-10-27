@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::FinalizationsController, type: :controller do
-  let(:organization) { create(:organization) }
+  let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
   let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
@@ -47,7 +47,7 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
       get :show, params: { organization_id: organization.id, person_id: employee.id }
       
       expect(response.status).to eq(200)
-      expect(assigns(:assignment_check_ins)).to include(assignment_check_in)
+      expect(assigns(:ready_assignment_check_ins)).to include(assignment_check_in)
     end
     
     it 'authorizes access to finalization' do
@@ -62,10 +62,9 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
       {
         organization_id: organization.id,
         person_id: employee.id,
-        finalize_assignments: '1',
         assignment_check_ins: {
           assignment_check_in.id => {
-            assignment_id: assignment.id,
+            finalize: '1',
             official_rating: 'meeting',
             shared_notes: 'Good work'
           }
@@ -77,7 +76,7 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
       it 'calls CheckInFinalizationService with assignment data' do
         expect(CheckInFinalizationService).to receive(:new).with(
           teammate: employee_teammate,
-          finalization_params: hash_including(:finalize_assignments, :assignment_check_ins),
+          finalization_params: hash_including(:assignment_check_ins),
           finalized_by: manager,
           request_info: hash_including(:ip_address)
         ).and_return(double(call: Result.ok(snapshot: double, results: {})))
@@ -126,12 +125,11 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
   end
 
   describe 'finalization_params' do
-    it 'permits assignment check-in fields' do
+    it 'permits assignment check-in fields with individual finalize flags' do
       params = ActionController::Parameters.new(
-        finalize_assignments: '1',
         assignment_check_ins: {
           '1' => {
-            assignment_id: '1',
+            finalize: '1',
             official_rating: 'meeting',
             shared_notes: 'Notes'
           }
@@ -141,11 +139,48 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
       controller.params = params
       permitted = controller.send(:finalization_params)
       
-      expect(permitted[:finalize_assignments]).to eq('1')
       expect(permitted[:assignment_check_ins]).to be_present
-      expect(permitted[:assignment_check_ins]['1'][:assignment_id]).to eq('1')
+      expect(permitted[:assignment_check_ins]['1'][:finalize]).to eq('1')
       expect(permitted[:assignment_check_ins]['1'][:official_rating]).to eq('meeting')
       expect(permitted[:assignment_check_ins]['1'][:shared_notes]).to eq('Notes')
+    end
+    
+    it 'permits position check-in fields with individual finalize flags' do
+      params = ActionController::Parameters.new(
+        position_check_in: {
+          finalize: '1',
+          official_rating: '1',  # Comes in as string from form
+          shared_notes: 'Position notes'
+        }
+      )
+      
+      controller.params = params
+      permitted = controller.send(:finalization_params)
+      
+      expect(permitted[:position_check_in]).to be_present
+      expect(permitted[:position_check_in][:finalize]).to eq('1')
+      expect(permitted[:position_check_in][:official_rating]).to eq('1')
+      expect(permitted[:position_check_in][:shared_notes]).to eq('Position notes')
+    end
+    
+    it 'permits aspiration check-in fields with individual finalize flags' do
+      params = ActionController::Parameters.new(
+        aspiration_check_ins: {
+          '1' => {
+            finalize: '1',
+            official_rating: 'meeting',
+            shared_notes: 'Aspiration notes'
+          }
+        }
+      )
+      
+      controller.params = params
+      permitted = controller.send(:finalization_params)
+      
+      expect(permitted[:aspiration_check_ins]).to be_present
+      expect(permitted[:aspiration_check_ins]['1'][:finalize]).to eq('1')
+      expect(permitted[:aspiration_check_ins]['1'][:official_rating]).to eq('meeting')
+      expect(permitted[:aspiration_check_ins]['1'][:shared_notes]).to eq('Aspiration notes')
     end
   end
 end

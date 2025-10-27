@@ -21,17 +21,17 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Get teammates with all filters except status (to keep ActiveRecord relation)
     filtered_teammates = query.call
     
+    # Eager load associations for check-in status display BEFORE pagination to preserve filters
+    if query.current_view == 'check_in_status'
+      filtered_teammates = eager_load_check_in_data(filtered_teammates)
+    end
+    
     # Apply status filter (converts to Array)
     status_filtered_teammates = query.filter_by_status(filtered_teammates)
     
     # Paginate the status-filtered teammates using Kaminari-style pagination
     @pagy = Pagy.new(count: status_filtered_teammates.count, page: params[:page] || 1, items: 25)
     @teammates = status_filtered_teammates[@pagy.offset, @pagy.items]
-    
-    # Eager load associations for check-in status display
-    if query.current_view == 'check_in_status'
-      @teammates = eager_load_check_in_data(@teammates)
-    end
     
     # Calculate spotlight statistics from all teammates (not filtered, not paginated)
     all_teammates = query.call
@@ -161,11 +161,13 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       end
       
       # Eager load all check-in related associations
+      # Note: assignment_check_ins and aspiration_check_ins belong directly to teammate, not through assignment_tenures
       teammates_relation.includes(
         :person,
         :employment_tenures => [:position_check_ins, :position],
-        :assignment_tenures => [:assignment_check_ins, :assignment],
-        :aspiration_check_ins => :aspiration,
+        :assignment_tenures => :assignment, # assignment_tenures has assignment, but check-ins are on teammate
+        :assignment_check_ins => :assignment, # assignment_check_ins belong to teammate directly
+        :aspiration_check_ins => :aspiration, # aspiration_check_ins belong to teammate directly
         :teammate_milestones => :ability
       )
     end
@@ -210,16 +212,16 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
 
       teammates.each do |teammate|
         # Count check-ins ready for finalization
-        ready_count = ready_for_finalization_count(teammate.person, @organization)
+        ready_count = helpers.ready_for_finalization_count(teammate.person, @organization)
         ready_for_finalization += ready_count
 
         # Count check-ins needing manager completion
-        check_ins = check_ins_for_employee(teammate.person, @organization)
+        check_ins = helpers.check_ins_for_employee(teammate.person, @organization)
         needs_manager_completion += check_ins[:needs_manager_completion].count
         total_check_ins += check_ins[:position].count + check_ins[:assignments].count + check_ins[:aspirations].count
 
         # Count pending acknowledgements
-        pending_acknowledgements += pending_acknowledgements_count(teammate.person, @organization)
+        pending_acknowledgements += helpers.pending_acknowledgements_count(teammate.person, @organization)
       end
 
       # Calculate percentages

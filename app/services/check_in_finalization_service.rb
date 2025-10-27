@@ -11,22 +11,22 @@ class CheckInFinalizationService
     ActiveRecord::Base.transaction do
       results = {}
       
-      # Finalize position if selected
-      if @params[:finalize_position]
+      # Finalize position if finalize flag is set
+      if @params[:position_check_in]&.dig(:finalize) == '1'
         position_result = finalize_position
         return position_result unless position_result.ok?
         results[:position] = position_result.value
       end
       
-      # Finalize assignments if selected
-      if @params[:finalize_assignments]
+      # Finalize assignments that have finalize flag set
+      if @params[:assignment_check_ins]
         assignment_results = finalize_assignments
         return assignment_results unless assignment_results.ok?
         results[:assignments] = assignment_results.value
       end
       
-      # Finalize aspirations if selected
-      if @params[:finalize_aspirations]
+      # Finalize aspirations that have finalize flag set
+      if @params[:aspiration_check_ins]
         aspiration_results = finalize_aspirations
         return aspiration_results unless aspiration_results.ok?
         results[:aspirations] = aspiration_results.value
@@ -52,7 +52,9 @@ class CheckInFinalizationService
     return Result.ok([]) unless @params[:assignment_check_ins]
     
     @params[:assignment_check_ins].each do |check_in_id, assignment_params|
-      # Use the check_in_id directly since that's what the form sends
+      # Only finalize if the finalize flag is set
+      next unless assignment_params[:finalize] == '1'
+      
       check_in = AssignmentCheckIn.find(check_in_id)
       next unless check_in.ready_for_finalization?
       
@@ -76,8 +78,8 @@ class CheckInFinalizationService
     
     Finalizers::PositionCheckInFinalizer.new(
       check_in: check_in,
-      official_rating: @params[:position_official_rating].to_i,
-      shared_notes: @params[:position_shared_notes],
+      official_rating: @params[:position_check_in][:official_rating].to_i,
+      shared_notes: @params[:position_check_in][:shared_notes],
       finalized_by: @finalized_by
     ).finalize
   end
@@ -88,8 +90,8 @@ class CheckInFinalizationService
     return Result.ok([]) unless @params[:aspiration_check_ins]
     
     @params[:aspiration_check_ins].each do |check_in_id, aspiration_params|
-      aspiration_id = aspiration_params[:aspiration_id]
-      next unless aspiration_id
+      # Only finalize if the finalize flag is set
+      next unless aspiration_params[:finalize] == '1'
       
       check_in = AspirationCheckIn.find(check_in_id)
       next unless check_in.ready_for_finalization?
