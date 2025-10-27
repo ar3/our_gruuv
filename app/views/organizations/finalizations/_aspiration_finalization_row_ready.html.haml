@@ -11,8 +11,19 @@
       = aspiration_rating_display(check_in.manager_rating)
     %small.text-muted= simple_format(check_in.manager_private_notes)
   %td
-    = form.text_area "aspiration_check_ins[#{check_in.id}][shared_notes]", class: "form-control form-control-sm", rows: 2, placeholder: "Shared summary and action items..."
+    - if view_mode == :employee
+      %small.text-muted Waiting for manager to set
+    - else
+      = form.text_area "aspiration_check_ins[#{check_in.id}][shared_notes]", class: "form-control form-control-sm", rows: 2, placeholder: "Shared summary and action items..."
   %td
-    = form.select "aspiration_check_ins[#{check_in.id}][official_rating]", aspiration_rating_options, { selected: check_in.manager_rating || check_in.employee_rating, prompt: 'Select rating...' }, { class: "form-select form-select-sm", required: true }
+    - if view_mode == :employee
+      %small.text-muted Waiting for manager to set
+    - else
+      = form.select "aspiration_check_ins[#{check_in.id}][official_rating]", aspiration_rating_options, { selected: check_in.manager_rating || check_in.employee_rating, prompt: 'Select rating...' }, { class: "form-select form-select-sm", required: true }
   %td.text-center
-    = form.check_box "aspiration_check_ins[#{check_in.id}][finalize]", { class: "form-check-input" }, "1", "0"
+    - if view_mode == :employee
+      = form.check_box "aspiration_check_ins[#{check_in.id}][finalize]", { class: "form-check-input", disabled: true }, "1", "0"
+      %br
+      %small.text-muted (Manager only)
+    - else
+      = form.check_box "aspiration_check_ins[#{check_in.id}][finalize]", { class: "form-check-input" }, "1", "0"

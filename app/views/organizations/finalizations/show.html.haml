@@ -9,42 +9,37 @@
     %i.bi.bi-arrow-left.me-2
     Back to Check-Ins
 
-- if current_person == @person
-  -# Employee View (Read-only acknowledgment)
-  = render 'organizations/finalizations/employee_acknowledgment_view'
-
-- else
-  -# Manager Finalization View
-  = form_with url: organization_person_finalization_path(@organization, @person), method: :post do |f|
-    
-    -# Position Section
-    = render 'organizations/check_ins/section_header', 
-             title: 'Position/Overall', 
-             icon: 'bi-briefcase', 
-             description: 'Set official position rating'
-    
-    = render 'organizations/finalizations/position_finalization_table', form: f
-    
-    -# Assignment Section
-    = render 'organizations/check_ins/section_header', 
-             title: 'Assignments/Outcomes', 
-             icon: 'bi-clipboard-check', 
-             description: 'Finalize individual assignment ratings and energy'
-    
-    = render 'organizations/finalizations/assignment_finalization_table', form: f
-    
-    -# Aspiration Section
-    = render 'organizations/check_ins/section_header', 
-             title: 'Aspirations/Values', 
-             icon: 'bi-star', 
-             description: 'Set official aspiration ratings'
-    
-    = render 'organizations/finalizations/aspiration_finalization_table', form: f
-    
-    -# Only show the finalization button if there are check-ins to finalize
-    - if @ready_position_check_in || @ready_assignment_check_ins&.any? || @ready_aspiration_check_ins&.any?
-      .row.mt-4
-        .col-12
+= form_with url: organization_person_finalization_path(@organization, @person), method: :post, local: true do |f|
+  
+  -# Position Section
+  = render 'organizations/check_ins/section_header', 
+           title: 'Position/Overall', 
+           icon: 'bi-briefcase', 
+           description: 'Set official position rating'
+  
+  = render 'organizations/finalizations/position_finalization_table', form: f, view_mode: @view_mode
+  
+  -# Assignment Section
+  = render 'organizations/check_ins/section_header', 
+           title: 'Assignments/Outcomes', 
+           icon: 'bi-clipboard-check', 
+           description: 'Finalize individual assignment ratings and energy'
+  
+  = render 'organizations/finalizations/assignment_finalization_table', form: f, view_mode: @view_mode
+  
+  -# Aspiration Section
+  = render 'organizations/check_ins/section_header', 
+           title: 'Aspirations/Values', 
+           icon: 'bi-star', 
+           description: 'Set official aspiration ratings'
+  
+  = render 'organizations/finalizations/aspiration_finalization_table', form: f, view_mode: @view_mode
+  
+  -# Finalization button section
+  - if @ready_position_check_in || @ready_assignment_check_ins&.any? || @ready_aspiration_check_ins&.any?
+    .row.mt-4
+      .col-12
+        - if @view_mode == :manager
           .alert.alert-warning
             %strong ⚠️ This will:
             %ul
@@ -55,9 +50,17 @@
           
           = f.submit 'Finalize Selected Check-Ins', class: 'btn btn-success btn-lg',
                      data: { confirm: 'Are you sure you want to finalize these check-ins?' }
-    - else
-      .row.mt-4
-        .col-12
+        - else
           .alert.alert-info
             %i.bi.bi-info-circle.me-2
-            %strong No check-ins are ready for finalization at this time.
+            %strong
+              %i.bi.bi-exclamation-triangle.me-2
+              Your manager will finalize these check-ins. You can view the status below.
+          
+          = f.submit 'Finalize Selected Check-Ins', class: 'btn btn-success btn-lg', disabled: true
+  - else
+    .row.mt-4
+      .col-12
+        .alert.alert-info
+          %i.bi.bi-info-circle.me-2
+          %strong No check-ins are ready for finalization at this time.

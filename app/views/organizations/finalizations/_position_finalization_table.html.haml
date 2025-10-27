@@ -12,7 +12,7 @@
           %th Finalize?
       %tbody
         - if @ready_position_check_in
-          = render 'position_finalization_row_ready', check_in: @ready_position_check_in, form: form
+          = render 'position_finalization_row_ready', check_in: @ready_position_check_in, form: form, view_mode: view_mode
         - elsif @finalized_position_check_in
           = render 'position_finalization_row_finalized', check_in: @finalized_position_check_in
         - if @incomplete_position_check_ins&.any?
