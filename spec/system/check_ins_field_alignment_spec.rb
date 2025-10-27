@@ -27,7 +27,7 @@ RSpec.describe 'Check-ins Field Alignment', type: :system do
       create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
       
       sign_in_as(manager, organization)
-      visit organization_person_check_ins_path(organization, employee)
+      visit organization_person_check_ins_path(organization, employee, view: 'table')
       
       # Extract all form field names
       field_names = extract_form_field_names(page.html)
@@ -56,7 +56,7 @@ RSpec.describe 'Check-ins Field Alignment', type: :system do
       create(:assignment_check_in, teammate: employee.teammates.first, assignment: assignment)
       
       sign_in_as(manager, organization)
-      visit organization_person_check_ins_path(organization, employee)
+      visit organization_person_check_ins_path(organization, employee, view: 'table')
       
       # Extract all form field names
       field_names = extract_form_field_names(page.html)
@@ -71,7 +71,7 @@ RSpec.describe 'Check-ins Field Alignment', type: :system do
       end
       
       # Verify fields are within table structure
-      within('table', text: 'Assignment') do
+      within('table', text: 'ASSIGNMENTS') do
         expect(page).to have_css('select[name^="check_ins[assignment_check_ins]"]')
       end
     end
@@ -82,7 +82,7 @@ RSpec.describe 'Check-ins Field Alignment', type: :system do
       create(:aspiration_check_in, teammate: employee.teammates.first, aspiration: aspiration)
       
       sign_in_as(manager, organization)
-      visit organization_person_check_ins_path(organization, employee)
+      visit organization_person_check_ins_path(organization, employee, view: 'table')
       
       # Extract all form field names
       field_names = extract_form_field_names(page.html)
@@ -104,7 +104,7 @@ RSpec.describe 'Check-ins Field Alignment', type: :system do
     
     it 'verifies fields are within table rows (HTML structure)' do
       sign_in_as(manager, organization)
-      visit organization_person_check_ins_path(organization, employee)
+      visit organization_person_check_ins_path(organization, employee, view: 'table')
       
       # Parse HTML to verify fields are within <tr> elements
       doc = Nokogiri::HTML(page.html)

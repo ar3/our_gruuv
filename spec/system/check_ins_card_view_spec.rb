@@ -89,13 +89,14 @@ RSpec.describe 'Check-ins Card View', type: :system do
       visit organization_person_check_ins_path(organization, employee, view: 'card')
 
       # Should have the same save button as table view
-      expect(page).to have_button('Save All Check-Ins')
+      expect(page).to have_button('Save All Check-Ins', count: 3)
 
       # Should be able to fill out forms and submit
       select '🔵 Praising/Trusting', from: 'check_ins[position_check_in][manager_rating]'
       fill_in 'check_ins[position_check_in][manager_private_notes]', with: 'Great work in card view!'
 
-      click_button 'Save All Check-Ins'
+      # Use first button to avoid ambiguity
+      first('input[value="Save All Check-Ins"]').click
       expect(page).to have_css('.toast-body', text: 'Check-ins saved successfully', visible: :all)
     end
   end

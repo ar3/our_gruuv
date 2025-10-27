@@ -61,6 +61,9 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+  
+  # Code coverage analysis
+  gem "simplecov", "~> 0.21", require: false
 end
 
 group :development do
@@ -72,6 +75,9 @@ group :development do
   
   # Detect N+1 queries and unused eager loading
   gem "bullet", require: false
+  
+  # Code quality analysis
+  gem "rubycritic", "~> 4.7", require: false
 end
 
 group :test do

@@ -64,6 +64,10 @@ module CheckInHelper
       content_tag(:span, '📝 In Progress', class: 'badge badge-secondary')
     end
   end
+  
+  def partial_exists?(partial_name)
+    lookup_context.exists?(partial_name, [], true)
+  end
 end
 
 

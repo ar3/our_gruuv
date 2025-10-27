@@ -462,6 +462,44 @@ end
 - **Skip testing simple CRUD** that Rails handles automatically
 - **Test what could go wrong** rather than aiming for 100% coverage
 
+### Quality Analysis Workflow
+
+**Tools Available:**
+- SimpleCov for coverage analysis
+- RubyCritic for code quality assessment
+- Custom scripts for spec performance and redundancy analysis
+
+**Daily Workflow:**
+- After AI generates new specs, run `rake quality:coverage` to verify they're testing new code paths
+- Use coverage report to identify if new specs are redundant (testing already-covered code)
+
+**Weekly Quality Check:**
+- Run `rake quality:specs` to analyze spec performance and identify slow tests
+- Review spec-to-code ratios to spot over-tested areas
+
+**Before Major Refactoring:**
+- Run `rake quality:full` for complete analysis
+- Use RubyCritic to identify complex code that needs simplification before refactoring
+
+**When Feeling "Sloppy":**
+- Run `rake quality:critique` to get code quality scores
+- Focus on files with low scores that need attention
+- Use redundancy report to delete unnecessary specs
+
+**Quality Thresholds:**
+- Target coverage: 70-85% average (complex logic: 90%+, simple CRUD: 50-70%)
+- Action if coverage <70%: Add more strategic specs
+- Action if many slow specs: Optimize or remove slow tests
+- Action if RubyCritic scores <C: Refactor before adding features
+
+**AI-Assisted Development Guidelines:**
+- Check if AI-generated specs are redundant by reviewing coverage reports
+- Focus on testing complex business logic, not simple CRUD or Rails framework behavior
+- Delete redundant specs that test the same code paths
+- Keep valuable specs: complex logic, authorization flows, data integrity, edge cases
+
+See `docs/QUALITY_ANALYSIS.md` for comprehensive documentation on using quality analysis tools.
+
 ### Policy Testing
 - **Test policies independently** from controllers using dedicated policy specs
 - **Test all permission scenarios** including admin bypass, user access, and denied access
