@@ -1,4 +1,4 @@
-class Organizations::AssignmentCheckInsController < Organizations::OrganizationNamespaceBaseController
+class Organizations::People::AssignmentCheckInsController < Organizations::OrganizationNamespaceBaseController
   layout 'authenticated-v2-0'
   before_action :authenticate_person!
   before_action :set_person
