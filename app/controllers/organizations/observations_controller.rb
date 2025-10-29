@@ -5,8 +5,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     authorize Observation
     # Use ObservationVisibilityQuery for complex visibility logic
     visibility_query = ObservationVisibilityQuery.new(current_person, organization)
-    @observations = visibility_query.visible_observations.includes(:observer, :observed_teammates, :observation_ratings)
+    @observations = visibility_query.visible_observations.includes(:observer, :observation_ratings).includes(observed_teammates: :person)
     @observations = @observations.recent
+    
+    # Manually preload polymorphic rateable associations to avoid N+1 queries
+    preload_rateables
   end
 
   def show
@@ -291,11 +294,15 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       @observation.observed_at ||= Time.current
       
       # Add initial rateable if provided (build in memory, not saved)
+      # Need to load the rateable so it's available even when observation isn't saved
       if params[:rateable_type].present? && params[:rateable_id].present?
-        @observation.observation_ratings.build(
+        rateable = params[:rateable_type].constantize.find(params[:rateable_id])
+        rating = @observation.observation_ratings.build(
           rateable_type: params[:rateable_type],
           rateable_id: params[:rateable_id]
         )
+        # Pre-load the rateable association so it's available for @observation.assignments
+        rating.rateable = rateable
       end
     end
     
@@ -522,16 +529,57 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         @observation.observees.build(teammate_id: teammate_id)
       end
       
-      @observation.assign_attributes(draft_params)
       @observation.observed_at ||= Time.current
-      @observation.save!
-      authorize @observation, :update?
+      
+      permitted = draft_params
+      Rails.logger.debug "=== PUBLISH DEBUG START ==="
+      Rails.logger.debug "draft_params keys: #{permitted.keys.inspect}"
+      Rails.logger.debug "draft_params observation_ratings_attributes present?: #{permitted[:observation_ratings_attributes].present?}"
+      Rails.logger.debug "draft_params observation_ratings_attributes: #{permitted[:observation_ratings_attributes].inspect}"
+      Rails.logger.debug "draft_params full: #{permitted.inspect}"
+      Rails.logger.debug "params[:observation] raw: #{params[:observation].inspect}"
+      
+      # Use Reform form to handle nested attributes properly
+      @form = ObservationForm.new(@observation)
+      Rails.logger.debug "Form observation_ratings before validate: #{@form.observation_ratings.map { |r| "#{r.rateable_type}:#{r.rateable_id}=>#{r.rating}" }.inspect}"
+      
+      if @form.validate(permitted)
+        Rails.logger.debug "Form validated successfully"
+        @form.save
+        Rails.logger.debug "Form saved. Model observation_ratings count: #{@observation.observation_ratings.reload.count}"
+        Rails.logger.debug "Model observation_ratings: #{@observation.observation_ratings.map { |r| "#{r.rateable_type}:#{r.rateable_id}=>#{r.rating}" }.inspect}"
+        authorize @observation, :update?
+      else
+        Rails.logger.error "Publish validation failed: #{@form.errors.full_messages}"
+        @return_url = params[:return_url] || organization_observations_path(organization)
+        @return_text = params[:return_text] || 'Back'
+        @assignments = organization.assignments.ordered
+        @aspirations = organization.aspirations
+        @abilities = organization.abilities.order(:name)
+        flash[:alert] = "Cannot publish: #{@form.errors.full_messages.join(', ')}"
+        render :quick_new, layout: 'overlay', status: :unprocessable_entity
+        return
+      end
     else
       @observation = Observation.find(params[:id])
       authorize @observation, :update?
 
       if params[:observation].present?
-        @observation.assign_attributes(draft_params)
+        # Use Reform form to handle nested attributes properly
+        @form = ObservationForm.new(@observation)
+        if @form.validate(draft_params)
+          @form.save
+        else
+          Rails.logger.error "Publish validation failed: #{@form.errors.full_messages}"
+          @return_url = params[:return_url] || organization_observations_path(organization)
+          @return_text = params[:return_text] || 'Back'
+          @assignments = organization.assignments.ordered
+          @aspirations = organization.aspirations
+          @abilities = organization.abilities.order(:name)
+          flash[:alert] = "Cannot publish: #{@form.errors.full_messages.join(', ')}"
+          render :quick_new, layout: 'overlay', status: :unprocessable_entity
+          return
+        end
       end
     end
     
@@ -558,6 +606,26 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   end
 
   private
+
+  def preload_rateables
+    # Collect all rateable ids grouped by type
+    rating_ids_by_type = @observations.flat_map(&:observation_ratings).group_by(&:rateable_type)
+    
+    # Preload each type separately to avoid N+1 queries on polymorphic association
+    rating_ids_by_type.each do |rateable_type, ratings|
+      ids = ratings.map(&:rateable_id).uniq
+      next if ids.empty?
+      
+      case rateable_type
+      when 'Assignment'
+        Assignment.where(id: ids).load
+      when 'Ability'
+        Ability.where(id: ids).load
+      when 'Aspiration'
+        Aspiration.where(id: ids).load
+      end
+    end
+  end
 
   def set_observation
     @observation = Observation.find(params[:id])
@@ -727,8 +795,18 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def draft_params
     permitted = params.require(:observation).permit(
       :story, :primary_feeling, :secondary_feeling, :privacy_level,
-      observation_ratings_attributes: [:id, :rateable_type, :rateable_id, :rating, :_destroy]
+      observation_ratings_attributes: {}
     )
+    
+    # Manually permit the nested observation_ratings_attributes hash with string keys like "assignment_1"
+    # Rails strong params doesn't handle dynamic keys well, so we need to iterate
+    if params[:observation][:observation_ratings_attributes].present?
+      ratings_attrs = {}
+      params[:observation][:observation_ratings_attributes].each do |key, attrs|
+        ratings_attrs[key] = attrs.permit(:id, :rateable_type, :rateable_id, :rating, :_destroy) if attrs.present?
+      end
+      permitted[:observation_ratings_attributes] = ratings_attrs
+    end
     
     # Convert empty strings to nil for optional fields
     permitted[:secondary_feeling] = nil if permitted[:secondary_feeling].blank?

@@ -11,17 +11,24 @@
     = javascript_importmap_tags
 
   %body.overlay-layout
-    .overlay-content
-      .overlay-header.d-flex.justify-content-between.align-items-center
-        %h4.mb-0= content_for(:header) || "Return to Previous Page"
-        - return_url = content_for(:return_url) || "#"
-        - return_text = content_for(:return_text) || "Back"
-        = link_to return_url, class: "btn btn-sm btn-outline-secondary", id: "return-button" do
-          %i.bi.bi-arrow-left.me-1
-          = return_text
+    - return_url = content_for(:return_url) || "#"
+    - return_text = content_for(:return_text) || "Back"
+    .container.mt-4.overlay-content
+      .row.mb-1
+        .col-12
+          .overlay-header.d-flex.justify-content-between.align-items-center
+            .flex-grow-1
+              %h1.mb-0
+                = content_for(:header) || "Return to Previous Page"
+      .row.mb-3
+        .col-12
+          = link_to return_url, class: "text-muted", id: "return-button" do
+            %i.bi.bi-arrow-left.me-1
+            = return_text
       
-      .overlay-body
-        = yield
+      .row.overlay-body
+        .col-12
+          = yield
 
     - if notice
       .toast-container.position-fixed.top-0.end-0.p-3{style: "z-index: 1055;"}

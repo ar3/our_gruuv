@@ -36,6 +36,10 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       # Should show selected observee
       expect(page).to have_content(employee.display_name)
       
+      # Should show the pre-populated assignment
+      expect(page).to have_content(assignment.title)
+      expect(page).to have_content('Assignments') # Section header
+      
       # Fill in story
       fill_in 'observation_story', with: 'I completed a great feature this week!'
       
@@ -135,6 +139,41 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       
       # Should still be a draft
       expect(draft.published_at).to be_nil
+    end
+
+    it 'saves rating when selecting rating button and submitting form' do
+      sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
+
+      click_link 'Add Win / Challenge'
+
+      expect(page).to have_content('Create Quick Observation')
+
+      # Assignment should be pre-populated from the check-in link
+      expect(page).to have_content(assignment.title)
+
+      # Fill in story (required before we can save)
+      fill_in 'observation_story', with: 'Test rating story'
+      
+      # Find the radio button for "strongly agree" rating for this assignment
+      # The input name should be: observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]
+      rating_input_name = "observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]"
+      
+      # Select the strongly_agree rating radio button
+      choose rating_input_name, option: 'strongly_agree'
+      
+      # Now publish the observation (which will save the rating)
+      click_button 'Publish & Return to Check-ins'
+
+      # Wait for redirect
+      expect(page).to have_content('Check-Ins', wait: 5)
+
+      # Check that rating was saved in database
+      observation = Observation.last
+      observation.reload
+      
+      rating = observation.observation_ratings.find_by(rateable_type: 'Assignment', rateable_id: assignment.id)
+      expect(rating).to be_present, "Rating not found for assignment #{assignment.id}. Existing ratings: #{observation.observation_ratings.map { |r| "#{r.rateable_type}:#{r.rateable_id}" }.inspect}"
+      expect(rating.rating).to eq('strongly_agree'), "Rating was not strongly_agree, got: #{rating.rating.inspect}"
     end
 
     it 'persists return_text parameter through add assignments flow' do
@@ -272,11 +311,13 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       
       sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
       
-      # Should see observation count button
-      expect(page).to have_button('1 observation')
+      # Should see observation count link (text includes "1 observation" and "ago")
+      expect(page).to have_text(/1 observation.*ago/i)
+      observation_link = page.find('a', text: /1 observation/i)
+      expect(observation_link).to have_css('i.bi.bi-eye')
       
       # Click it
-      click_button '1 observation'
+      observation_link.click
       
       # Should open modal
       expect(page).to have_css('.modal.show')

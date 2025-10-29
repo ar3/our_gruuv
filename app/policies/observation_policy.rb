@@ -31,6 +31,9 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def view_permalink?
+    # Draft observations are only visible to their creator
+    return false if record.draft? && actual_user != record.observer
+    
     # Permalink page respects privacy settings
     case record.privacy_level
     when 'observer_only'

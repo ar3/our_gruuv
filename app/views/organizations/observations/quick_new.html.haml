@@ -78,9 +78,13 @@
       - if @assignments.any?
         .mb-3
           %h6.text-primary Assignments
-          - observation_assignments = @observation.assignments
-          - if observation_assignments.any?
-            - observation_assignments.each do |assignment|
+          -# For unsaved observations, get assignments from built observation_ratings
+          -# For persisted observations, use the association
+          - assignment_ratings = @observation.observation_ratings.select { |or_obj| or_obj.rateable_type == 'Assignment' }
+          - if assignment_ratings.any?
+            - assignment_ratings.each do |rating_obj|
+              - assignment = rating_obj.rateable
+              - next unless assignment.present?
               .card.mb-2
                 .card-body
                   .d-flex.justify-content-between.align-items-center
@@ -88,8 +92,16 @@
                       %strong= assignment.title
                       .mt-2
                         = render 'organizations/observations/rating_buttons', 
-                                 rating: @observation.observation_ratings.find_by(rateable: assignment)&.rating,
+                                 rating: rating_obj.rating,
                                  input_name: "observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]"
+                        -# Include hidden fields for rateable_type and rateable_id
+                        - if rating_obj.new_record? || rating_obj.id.nil?
+                          = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
+                          = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
+                        - else
+                          = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][id]", rating_obj.id
+                          = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
+                          = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
           = form.submit 'Add Assignments', 
                         class: 'btn btn-sm btn-outline-primary',
                         name: 'save_and_add_assignments',

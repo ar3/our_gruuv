@@ -1,0 +1,6 @@
+- rating_words = local_assigns[:observation_rating].decorate.rating_to_words
+- if local_assigns[:include_aspiration_name]
+  An #{content_tag(:strong, rating_words)} exemplification of #{content_tag(:strong, local_assigns[:observation_rating].rateable.name)}
+- else
+  An #{content_tag(:strong, rating_words)} exemplification
+

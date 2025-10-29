@@ -21,7 +21,7 @@
         = form.label :secondary_feeling, "Secondary feeling (optional)", class: 'form-label'
         = form.select :secondary_feeling, 
                      options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, observation&.secondary_feeling), 
-                     { prompt: 'Select a secondary feeling...', include_blank: 'None' }, 
+                     { prompt: 'Select a secondary feeling...' }, 
                      { class: 'form-select', id: 'observation_secondary_feeling' }
 - else
   .mb-3
@@ -35,6 +35,6 @@
     = form.label :secondary_feeling, "Secondary feeling (optional)", class: 'form-label'
     = form.select :secondary_feeling, 
                  options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, observation&.secondary_feeling), 
-                 { prompt: 'Select a secondary feeling...', include_blank: 'None' }, 
+                 { prompt: 'Select a secondary feeling...' }, 
                  { class: 'form-select', id: 'observation_secondary_feeling' }
 

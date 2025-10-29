@@ -3,25 +3,21 @@
                  class: css_class || 'form-control form-control-sm',
                  placeholder: 'Manager notes...'
 
-.mt-2.d-flex.gap-2.align-items-center
+.mt-2
   - observation_count = check_in.assignment.observations.published.where('observed_at >= ?', check_in.previous_finalized_check_in&.official_check_in_completed_at || 1.year.ago).count
-  - if observation_count > 0
-    %button.btn.btn-sm.btn-outline-secondary{type: "button", "data-bs-toggle" => "modal", "data-bs-target" => "#observationsModal_assignment_#{check_in.assignment_id}"}
-      %i.bi.bi-eye.me-1
-      = pluralize(observation_count, 'observation')
   - teammate = @person.teammates.find_by(organization: @organization)
-  - if teammate
-    %a.btn.btn-sm.btn-outline-primary{href: quick_new_organization_observations_path(
-      @organization,
-      return_url: organization_person_check_ins_path(@organization, @person, show_observations_for: "assignment_#{check_in.assignment_id}"),
-      return_text: "Check-ins",
-      observee_ids: [teammate.id],
-      rateable_type: 'Assignment',
-      rateable_id: check_in.assignment_id,
-      privacy_level: 'observed_and_managers'
-    )}
-      %i.bi.bi-plus-circle.me-1
-      Add Win / Challenge
+  - if observation_count > 0 || teammate
+    .d-flex.flex-column.gap-1
+      - if observation_count > 0
+        - since_date = check_in.previous_finalized_check_in&.official_check_in_completed_at || 1.year.ago
+        - time_ago = time_ago_in_words(since_date)
+        = link_to "#", class: "text-muted text-decoration-none small", "data-bs-toggle" => "modal", "data-bs-target" => "#observationsModal_assignment_#{check_in.assignment_id}" do
+          %i.bi.bi-eye.me-1
+          #{pluralize(observation_count, 'observation')} on this since #{time_ago} ago
+      - if teammate
+        = link_to quick_new_organization_observations_path(@organization, return_url: organization_person_check_ins_path(@organization, @person, show_observations_for: "assignment_#{check_in.assignment_id}"), return_text: "Check-ins", observee_ids: [teammate.id], rateable_type: 'Assignment', rateable_id: check_in.assignment_id, privacy_level: 'observed_and_managers'), class: "text-muted text-decoration-none small" do
+          %i.bi.bi-plus-circle.me-1
+          Add Win / Challenge
 
 
 

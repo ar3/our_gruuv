@@ -89,11 +89,19 @@ class ObservationVisibilityQuery
     # Combine all conditions with OR
     where_clause = conditions.join(' OR ')
     
-    base_scope.where(where_clause, *params)
+    # Filter results to only include published observations OR drafts where user is observer
+    # Draft observations (published_at is nil) should only be visible to their creator
+    result_scope = base_scope.where(where_clause, *params)
+    result_scope = result_scope.where("published_at IS NOT NULL OR observer_id = ?", @person.id)
+    
+    result_scope
   end
 
   def visible_to?(observation)
     return false unless @person.present? && @company.present?
+
+    # Draft observations are only visible to their creator
+    return false if observation.draft? && observation.observer != @person
 
     case observation.privacy_level
     when 'observer_only'
