@@ -261,6 +261,194 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
                 notice: 'Notifications sent successfully'
   end
 
+  # Quick observation creation from check-ins
+  def quick_new
+    authorize Observation
+    
+    # Load or create draft
+    if params[:draft_id].present?
+      @observation = Observation.find(params[:draft_id])
+      authorize @observation, :edit?
+      
+      # Don't reload - it wipes out fresh data. Just reload associations
+      @observation.observation_ratings.reload if @observation.observation_ratings.loaded?
+      
+      puts "=== LOADING DRAFT #{@observation.id} ==="
+      puts "Story: #{@observation.story.inspect}"
+      Rails.logger.info "Loading existing draft #{@observation.id}, story: #{@observation.story.inspect}"
+    else
+      # Create new draft
+      @observation = organization.observations.build(observer: current_person)
+      
+      # Set observees from params
+      observee_ids = params[:observee_ids] || []
+      observee_ids.each do |teammate_id|
+        next if teammate_id.blank?
+        @observation.observees.build(teammate_id: teammate_id)
+      end
+      
+      # Set story placeholder
+      @observation.story = params[:story] || ''
+      @observation.privacy_level = params[:privacy_level] || 'observed_and_managers'
+      @observation.observed_at ||= Time.current
+      
+      @observation.save!
+      
+      # Add initial rateable if provided
+      if params[:rateable_type].present? && params[:rateable_id].present?
+        @observation.observation_ratings.create!(
+          rateable_type: params[:rateable_type],
+          rateable_id: params[:rateable_id]
+        )
+      end
+      
+      # Reload to get associations
+      @observation.reload
+    end
+    
+    # Ensure observation_ratings are loaded for associations
+    @observation.observation_ratings.load if @observation.observation_ratings.loaded?
+    
+    # Load available rateables
+    @assignments = organization.assignments.ordered
+    @aspirations = organization.aspirations
+    @abilities = organization.abilities.order(:name)
+    
+    # Store return context
+    @return_url = params[:return_url] || organization_observations_path(organization)
+    @return_text = params[:return_text] || 'Back'
+    
+    render layout: 'overlay'
+  end
+
+  # Show page for adding assignments to draft
+  def add_assignments
+    @observation = Observation.find(params[:id])
+    authorize @observation, :update?
+    
+    # Load available assignments
+    @assignments = organization.assignments.ordered
+    
+    # Store return context
+    @return_url = params[:return_url] || organization_observations_path(organization)
+    @return_text = params[:return_text] || 'Back'
+    
+    render layout: 'overlay'
+  end
+
+  # Add rateables to draft observation
+  def add_rateables
+    @observation = Observation.find(params[:id])
+    authorize @observation, :update?
+    
+    rateable_type = params[:rateable_type]
+    rateable_ids = params[:rateable_ids] || []
+    
+    Rails.logger.debug "=== Add Rateables ==="
+    Rails.logger.debug "Rateable type: #{rateable_type}"
+    Rails.logger.debug "Rateable IDs: #{rateable_ids}"
+    
+    rateable_ids.each do |rateable_id|
+      next if rateable_id.blank?
+      
+      # Check if rating already exists
+      existing = @observation.observation_ratings.find_by(
+        rateable_type: rateable_type,
+        rateable_id: rateable_id
+      )
+      
+      # Only create if it doesn't exist
+      unless existing
+        rating = @observation.observation_ratings.create!(
+          rateable_type: rateable_type,
+          rateable_id: rateable_id
+        )
+        Rails.logger.debug "Created rating: #{rating.id} for #{rateable_type} #{rateable_id}"
+      else
+        Rails.logger.debug "Rating already exists for #{rateable_type} #{rateable_id}"
+      end
+    end
+    
+    @observation.reload
+    Rails.logger.debug "Observation now has #{@observation.observation_ratings.count} ratings"
+    Rails.logger.debug "Story after reload: #{@observation.story.inspect}"
+    
+    redirect_url = params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id)
+    redirect_to redirect_url, notice: "Added #{rateable_ids.count} #{rateable_type.downcase}(s)"
+  end
+
+  # Update draft observation
+  def update_draft
+    Rails.logger.info "=== UPDATE DRAFT ACTION CALLED ==="
+    Rails.logger.info "Params received: #{params.inspect}"
+    
+    @observation = Observation.find(params[:id])
+    authorize @observation, :update?
+    
+    Rails.logger.info "Observation found: #{@observation.id}"
+    Rails.logger.info "Current story: #{@observation.story.inspect}"
+    
+    permitted_params = draft_params
+    Rails.logger.info "Permitted params: #{permitted_params.inspect}"
+    
+    if @observation.update(permitted_params)
+      @observation.reload
+      puts "=== UPDATE SUCCESS === Story: #{@observation.story.inspect}"
+      Rails.logger.info "Updated successfully! New story: #{@observation.story.inspect}"
+      Rails.logger.info "Story length: #{@observation.story&.length}"
+      
+      redirect_to quick_new_organization_observations_path(
+        organization, 
+        draft_id: @observation.id, 
+        return_url: params[:return_url], 
+        return_text: params[:return_text]
+      )
+    else
+      Rails.logger.error "Failed to update: #{@observation.errors.full_messages.join(', ')}"
+      Rails.logger.error "Attempted params: #{permitted_params.inspect}"
+      flash[:alert] = "Failed to update: #{@observation.errors.full_messages.join(', ')}"
+      @return_url = params[:return_url] || organization_observations_path(organization)
+      @return_text = params[:return_text] || 'Back'
+      @assignments = organization.assignments.ordered
+      @aspirations = organization.aspirations
+      @abilities = organization.abilities.order(:name)
+      render :quick_new, layout: 'overlay', status: :unprocessable_entity
+    end
+  end
+
+  # Publish draft observation
+  def publish
+    @observation = Observation.find(params[:id])
+    authorize @observation, :update?
+    
+    # Update with any new data from publish params
+    if params[:observation].present?
+      @observation.assign_attributes(draft_params)
+    end
+    
+    # Publish will validate story is present
+    if @observation.publish!
+      redirect_url = params[:return_url] || organization_observations_path(organization)
+      
+      # Add show_observations_for param if provided
+      if params[:show_observations_for].present?
+        redirect_url += "?show_observations_for=#{params[:show_observations_for]}"
+      end
+      
+      # Use status 303 See Other for proper Turbo redirect handling
+      redirect_to redirect_url, status: :see_other, notice: 'Observation was successfully published.'
+    else
+      # Validation failed - redirect back with errors
+      @return_url = params[:return_url] || organization_observations_path(organization)
+      @return_text = params[:return_text] || 'Back'
+      @assignments = organization.assignments.ordered
+      @aspirations = organization.aspirations
+      @abilities = organization.abilities.order(:name)
+      flash[:alert] = "Cannot publish: #{@observation.errors.full_messages.join(', ')}"
+      render :quick_new, layout: 'overlay', status: :unprocessable_entity
+    end
+  end
+
   private
 
   def set_observation
@@ -426,5 +614,12 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     else
       '❓'
     end
+  end
+
+  def draft_params
+    params.require(:observation).permit(
+      :story, :primary_feeling, :secondary_feeling, :privacy_level,
+      observation_ratings_attributes: [:id, :rateable_type, :rateable_id, :rating, :_destroy]
+    )
   end
 end

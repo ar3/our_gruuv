@@ -260,4 +260,145 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(assigns(:observations)).not_to include(observation) # Non-journal observation
     end
   end
+
+  describe 'GET #quick_new' do
+    let(:assignment) { create(:assignment, company: company) }
+    
+    it 'renders the quick_new form' do
+      get :quick_new, params: {
+        organization_id: company.id,
+        return_url: organization_observations_path(company),
+        return_text: 'Check-ins',
+        observee_ids: [observee_teammate.id],
+        rateable_type: 'Assignment',
+        rateable_id: assignment.id,
+        privacy_level: 'observed_and_managers'
+      }
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'creates a draft observation when draft_id is not provided' do
+      expect {
+        get :quick_new, params: {
+          organization_id: company.id,
+          return_url: organization_observations_path(company),
+          observee_ids: [observee_teammate.id]
+        }
+      }.to change(Observation, :count).by(1)
+      
+      draft = Observation.last
+      expect(draft.published_at).to be_nil
+      expect(draft.observer).to eq(observer)
+    end
+
+    it 'loads existing draft when draft_id is provided' do
+      draft = build(:observation, observer: observer, company: company, published_at: nil)
+      draft.observees.build(teammate: observee_teammate)
+      draft.save!
+      
+      get :quick_new, params: {
+        organization_id: company.id,
+        draft_id: draft.id,
+        return_url: organization_observations_path(company)
+      }
+      
+      expect(assigns(:observation)).to eq(draft)
+      expect(assigns(:observation).published_at).to be_nil
+    end
+
+    it 'assigns available rateables for the organization' do
+      assignment # Create the assignment
+      get :quick_new, params: {
+        organization_id: company.id,
+        observee_ids: [observee_teammate.id]
+      }
+      expect(assigns(:assignments)).to include(assignment)
+    end
+  end
+
+  describe 'POST #add_rateables' do
+    let(:draft) do
+      obs = build(:observation, observer: observer, company: company, published_at: nil)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs
+    end
+    let(:assignment) { create(:assignment, company: company) }
+
+    it 'adds rateables to the draft' do
+      expect {
+        post :add_rateables, params: {
+          organization_id: company.id,
+          id: draft.id,
+          rateable_type: 'Assignment',
+          rateable_ids: [assignment.id]
+        }
+      }.to change { draft.observation_ratings.count }.by(1)
+      
+      expect(draft.reload.published_at).to be_nil
+    end
+
+    it 'redirects back to quick_new' do
+      post :add_rateables, params: {
+        organization_id: company.id,
+        id: draft.id,
+        rateable_type: 'Assignment',
+        rateable_ids: [assignment.id]
+      }
+      expect(response).to redirect_to(quick_new_organization_observations_path(company, draft_id: draft.id))
+    end
+  end
+
+  describe 'PATCH #update_draft' do
+    let(:draft) do
+      obs = build(:observation, observer: observer, company: company, published_at: nil)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs
+    end
+
+    it 'updates the draft observation' do
+      patch :update_draft, params: {
+        organization_id: company.id,
+        id: draft.id,
+        observation: {
+          story: 'Updated story',
+          primary_feeling: 'excited'
+        }
+      }
+      draft.reload
+      expect(draft.story).to eq('Updated story')
+      expect(draft.primary_feeling).to eq('excited')
+      expect(draft.published_at).to be_nil
+    end
+  end
+
+  describe 'POST #publish' do
+    let(:draft) do
+      obs = build(:observation, observer: observer, company: company, published_at: nil)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs
+    end
+
+    it 'sets published_at timestamp' do
+      post :publish, params: {
+        organization_id: company.id,
+        id: draft.id,
+        return_url: organization_observations_path(company)
+      }
+      draft.reload
+      expect(draft.published_at).to be_present
+    end
+
+    it 'redirects to return_url with show_observations_for param' do
+      post :publish, params: {
+        organization_id: company.id,
+        id: draft.id,
+        return_url: organization_observations_path(company),
+        show_observations_for: 'assignment_123'
+      }
+      expect(response).to redirect_to(organization_observations_path(company) + '?show_observations_for=assignment_123')
+    end
+  end
 end

@@ -1,0 +1,40 @@
+- content_for :overlay_title do
+  Add Assignments to Observation
+
+- content_for :overlay_return_url do
+  = quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: @return_url, return_text: @return_text)
+
+- content_for :overlay_return_text do
+  Back to Draft
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-list-check.me-2
+      Select Assignments to Add
+  .card-body
+    = form_with url: add_rateables_organization_observation_path(organization, @observation), method: :post, local: true do |form|
+      = hidden_field_tag :return_url, params[:return_url]
+      = hidden_field_tag :return_text, params[:return_text]
+      = hidden_field_tag :rateable_type, 'Assignment'
+      
+      .mb-3
+        %label.form-label Select Assignments
+        .list-group
+          - @assignments.each do |assignment|
+            - checked = @observation.assignments.include?(assignment)
+            .list-group-item
+              .form-check
+                = check_box_tag 'rateable_ids[]', assignment.id, checked, 
+                              class: 'form-check-input',
+                              id: "assignment_#{assignment.id}"
+                = label_tag "assignment_#{assignment.id}", class: 'form-check-label' do
+                  %strong= assignment.title
+                  - if assignment.tagline.present?
+                    %br
+                    %small.text-muted= assignment.tagline
+      
+      .d-flex.gap-2.mt-3
+        = form.submit 'Add Selected Assignments', class: 'btn btn-primary'
+        = link_to 'Cancel', quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: @return_url, return_text: @return_text), class: 'btn btn-outline-secondary'
+

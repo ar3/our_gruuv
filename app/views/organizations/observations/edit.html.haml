@@ -39,13 +39,7 @@
             = form.text_area :story, class: 'form-control', rows: 6, placeholder: 'Tell the story of what happened...'
             .form-text Markdown is supported for formatting.
           
-          .mb-3
-            = form.label :primary_feeling, "Primary Feeling", class: 'form-label'
-            = form.select :primary_feeling, options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, @observation.primary_feeling), { prompt: 'Select a feeling...' }, { class: 'form-select' }
-          
-          .mb-3
-            = form.label :secondary_feeling, "Secondary Feeling (Optional)", class: 'form-label'
-            = form.select :secondary_feeling, options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, @observation.secondary_feeling), { prompt: 'Select a secondary feeling...', include_blank: 'None' }, { class: 'form-select' }
+          = render 'organizations/observations/feelings_fields', form: form, observation: @observation, layout: 'stacked'
           
           .mb-3
             = form.label :privacy_level, "Privacy Level", class: 'form-label'

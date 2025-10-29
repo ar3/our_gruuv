@@ -156,6 +156,7 @@ get '/login', to: 'auth#login', as: :login
     resources :observations, module: :organizations do
       collection do
         get :journal  # Shortcut to apply "My Journal" workspace
+        get :quick_new  # Quick observation creation from check-ins
       end
       member do
         get :set_ratings, action: :set_ratings
@@ -163,6 +164,10 @@ get '/login', to: 'auth#login', as: :login
         get :review, action: :review
         post :create_observation, action: :create_observation
         post :post_to_slack, action: :post_to_slack
+        get :add_assignments  # Add assignments to draft observation
+        post :add_rateables  # Add rateables to draft observation
+        patch :update_draft  # Update draft observation
+        post :publish  # Publish draft observation
       end
     end
     

@@ -24,7 +24,12 @@ class Observation < ApplicationRecord
     public_observation: 'public_observation'         # 🌍 Everyone in organization + anyone with permalink
   }
   
-  validates :observer, :company, :story, :privacy_level, presence: true
+  validates :observer, :company, presence: true
+  validates :story, presence: true, if: :published?
+  validates :privacy_level, presence: true
+  before_validation { self.primary_feeling = nil if primary_feeling.blank? }
+  before_validation { self.secondary_feeling = nil if primary_feeling.blank? }
+  before_validation { self.custom_slug = nil if primary_feeling.blank? }
   validates :custom_slug, uniqueness: true, allow_nil: true
   validates :primary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true
   validates :secondary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true
@@ -39,6 +44,8 @@ class Observation < ApplicationRecord
   scope :by_observer, ->(observer) { where(observer: observer) }
   scope :by_feeling, ->(feeling) { where(primary_feeling: feeling) }
   scope :by_privacy_level, ->(level) { where(privacy_level: level) }
+  scope :drafts, -> { where(published_at: nil) }
+  scope :published, -> { where.not(published_at: nil) }
   
   before_validation :set_observed_at_default
   
@@ -90,6 +97,18 @@ class Observation < ApplicationRecord
 
   def soft_deleted?
     deleted_at.present?
+  end
+  
+  def draft?
+    published_at.nil?
+  end
+  
+  def published?
+    published_at.present?
+  end
+  
+  def publish!
+    update!(published_at: Time.current)
   end
   
   def can_post_to_slack?

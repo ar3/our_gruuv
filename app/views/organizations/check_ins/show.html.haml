@@ -188,3 +188,14 @@
            description: 'Connect to Asana for 1:1 oppties?'
 
 -# Dream Goals Section
+
+- if params[:show_observations_for].present?
+  :javascript
+    document.addEventListener('DOMContentLoaded', function() {
+      var modalId = 'observationsModal_#{params[:show_observations_for]}';
+      var modalElement = document.getElementById(modalId);
+      if (modalElement) {
+        var modal = new bootstrap.Modal(modalElement);
+        modal.show();
+      }
+    });

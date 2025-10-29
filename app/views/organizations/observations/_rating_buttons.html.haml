@@ -1,0 +1,34 @@
+- input_name ||= :likert
+- likert_value ||= rating&.to_sym
+- likert_value = likert_value.nil? ? nil : likert_value.to_sym
+
+.form-check.form-check-inline
+  - strongly_agree_active = likert_value == :strongly_agree
+  %label.btn.btn-sm{title: 'Exceptional', class: "btn-outline-success #{'active' if strongly_agree_active}"}
+    = radio_button_tag input_name, 'strongly_agree', strongly_agree_active
+    %i.bi.bi-star
+
+.form-check.form-check-inline
+  - agree_active = likert_value == :agree
+  %label.btn.btn-sm{title: 'Good', class: "btn-outline-secondary #{'active' if agree_active}"}
+    = radio_button_tag input_name, 'agree', agree_active
+    %i.bi.bi-hand-thumbs-up
+
+.form-check.form-check-inline
+  - il_active = ![:strongly_agree, :agree, :disagree, :strongly_disagree].include?(likert_value)
+  %label.btn.btn-sm{title: 'N/A', class: "btn-outline-light #{'active' if il_active}"}
+    = radio_button_tag input_name, 'na', il_active
+    %i.bi.bi-eye-slash
+
+.form-check.form-check-inline
+  - disagree_active = likert_value == :disagree
+  %label.btn.btn-sm{title: 'Opportunity for Improvement', class: "btn-outline-warning #{'active' if disagree_active}"}
+    = radio_button_tag input_name, 'disagree', disagree_active
+    %i.bi.bi-hand-thumbs-down
+
+.form-check.form-check-inline
+  - strongly_disagree_active = likert_value == :strongly_disagree
+  %label.btn.btn-sm{title: 'Major Concern', class: "btn-outline-danger #{'active' if strongly_disagree_active}"}
+    = radio_button_tag input_name, 'strongly_disagree', strongly_disagree_active
+    %i.bi.bi-x-circle
+

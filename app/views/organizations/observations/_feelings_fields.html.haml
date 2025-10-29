@@ -1,0 +1,40 @@
+/ Feelings form fields partial
+/ Accepts:
+/   form - form builder (from form_with)
+/   observation - the observation/form object to get current feeling values
+/   layout - optional, 'row' (default) or 'stacked' for vertical layout
+
+- observation ||= @observation || @form
+- layout ||= 'row'
+
+- if layout == 'row'
+  .row
+    .col-md-6
+      .mb-3
+        = form.label :primary_feeling, "How did this make you feel?", class: 'form-label'
+        = form.select :primary_feeling, 
+                     options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, observation&.primary_feeling), 
+                     { prompt: 'Select a feeling...' }, 
+                     { class: 'form-select', id: 'observation_primary_feeling' }
+    .col-md-6
+      .mb-3
+        = form.label :secondary_feeling, "Secondary feeling (optional)", class: 'form-label'
+        = form.select :secondary_feeling, 
+                     options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, observation&.secondary_feeling), 
+                     { prompt: 'Select a secondary feeling...', include_blank: 'None' }, 
+                     { class: 'form-select', id: 'observation_secondary_feeling' }
+- else
+  .mb-3
+    = form.label :primary_feeling, "How did this make you feel?", class: 'form-label'
+    = form.select :primary_feeling, 
+                 options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, observation&.primary_feeling), 
+                 { prompt: 'Select a feeling...' }, 
+                 { class: 'form-select', id: 'observation_primary_feeling' }
+  
+  .mb-3
+    = form.label :secondary_feeling, "Secondary feeling (optional)", class: 'form-label'
+    = form.select :secondary_feeling, 
+                 options_for_select(Feelings::FEELINGS.map { |f| ["#{f[:display]} #{f[:discrete_feeling].to_s.humanize}", f[:discrete_feeling].to_s] }, observation&.secondary_feeling), 
+                 { prompt: 'Select a secondary feeling...', include_blank: 'None' }, 
+                 { class: 'form-select', id: 'observation_secondary_feeling' }
+

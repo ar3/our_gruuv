@@ -1,0 +1,14 @@
+.modal.fade{id: modal_id, tabindex: "-1"}
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        %h5.modal-title= modal_title
+        %button.btn-close{type: "button", "data-bs-dismiss": "modal"}
+      .modal-body
+        = render 'organizations/observations/filtered_list',
+                 rateable_type: rateable_type,
+                 rateable_id: rateable_id,
+                 observee_ids: observee_ids,
+                 start_date: start_date,
+                 end_date: end_date
+

@@ -74,6 +74,13 @@ class AssignmentCheckIn < ApplicationRecord
     (check_in_started_on - assignment_tenure.started_at.to_date).to_i
   end
 
+  def previous_finalized_check_in
+    @previous_finalized_check_in ||= AssignmentCheckIn
+      .where(teammate: teammate, assignment: assignment)
+      .closed
+      .order(:official_check_in_completed_at)
+      .last
+  end
 
   def self.average_days_between_check_ins(teammate)
     check_ins = for_teammate(teammate).order(:check_in_started_on)

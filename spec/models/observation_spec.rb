@@ -52,7 +52,16 @@ RSpec.describe Observation, type: :model do
   describe 'validations' do
     it { should validate_presence_of(:observer) }
     it { should validate_presence_of(:company) }
-    it { should validate_presence_of(:story) }
+    it 'validates story presence only when published' do
+      draft = build(:observation, published_at: nil, story: '', observer: observer, company: company)
+      draft.observees.build(teammate: teammate1)
+      expect(draft).to be_valid
+      
+      published = build(:observation, published_at: Time.current, story: '', observer: observer, company: company)
+      published.observees.build(teammate: teammate1)
+      expect(published).not_to be_valid
+      expect(published.errors[:story]).to include("can't be blank")
+    end
     it { should validate_presence_of(:privacy_level) }
     
     it 'validates primary_feeling inclusion when present' do

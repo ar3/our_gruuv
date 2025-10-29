@@ -1,0 +1,216 @@
+- content_for :header do
+  Create Quick Observation
+- content_for :return_url do
+  = @return_url
+- content_for :return_text do
+  = @return_text
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-person-check.me-2
+      Observation Details
+  .card-body
+    = form_with model: @observation, url: update_draft_organization_observation_path(organization, @observation), method: :patch, local: true, data: { turbo: false } do |form|
+      - if @observation.errors.any?
+        .alert.alert-danger
+          %h6 Please correct the following errors:
+          %ul.mb-0
+            - @observation.errors.full_messages.each do |message|
+              %li= message
+      
+      .mb-3
+        %label.form-label
+          %strong Who are you observing?
+        - @observation.observees.each do |observee|
+          %span.badge.bg-primary.me-1
+            = observee.teammate.person.display_name
+      
+      .mb-3
+        = form.label :story, "What happened?", class: 'form-label'
+        = form.text_area :story, id: 'observation_story', class: 'form-control', rows: 5, placeholder: 'Tell the story of what happened... Be specific about what you observed and why it matters.'
+        .form-text Markdown is supported for formatting.
+      
+      = render 'organizations/observations/feelings_fields', form: form, observation: @observation, layout: 'row'
+      
+      .mb-3
+        = form.label :privacy_level, "Privacy Level", class: 'form-label'
+        - Observation.privacy_levels.keys.each do |key|
+          .form-check
+            = form.radio_button :privacy_level, key, class: 'form-check-input'
+            = form.label :"privacy_level_#{key}", class: 'form-check-label' do
+              - case key
+              - when 'observer_only'
+                🔒 Just for me (Journal)
+              - when 'observed_only'
+                👤 Just for them
+              - when 'managers_only'
+                👔 For their managers
+              - when 'observed_and_managers'
+                👥 For them and their managers
+              - when 'public_observation'
+                🌍 Public to organization
+      
+      / Rateable sections
+      - if @assignments.any?
+        .mb-3
+          %h6.text-primary Assignments
+          - observation_assignments = @observation.assignments
+          - if observation_assignments.any?
+            - observation_assignments.each do |assignment|
+              .card.mb-2
+                .card-body
+                  .d-flex.justify-content-between.align-items-center
+                    %div
+                      %strong= assignment.title
+                      .mt-2
+                        = render 'organizations/observations/rating_buttons', 
+                                 rating: @observation.observation_ratings.find_by(rateable: assignment)&.rating,
+                                 input_name: "observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]"
+          = link_to add_assignments_organization_observation_path(organization, @observation, return_url: quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: @return_url, return_text: @return_text), return_text: 'Draft'), 
+                    class: 'btn btn-sm btn-outline-primary' do
+            %i.bi.bi-plus-circle.me-1
+            Add Assignments
+      
+      .d-flex.gap-2.mt-3
+        = form.submit 'Save Story', class: 'btn btn-outline-secondary'
+        -# Publish button - use JavaScript to submit to publish action
+        = button_tag "Publish & Return to #{@return_text}", 
+                     class: 'btn btn-primary', 
+                     type: 'button',
+                     onclick: "publishObservation()"
+        = link_to 'Cancel', @return_url, class: 'btn btn-outline-danger'
+
+:javascript
+  function saveAndOpenModal() {
+    const storyField = document.getElementById('observation_story');
+    
+    // Validate story is filled
+    if (!storyField || !storyField.value || storyField.value.trim() === '') {
+      alert('Please fill in the story before adding assignments.');
+      storyField.focus();
+      return false;
+    }
+    
+    // Get all form data
+    const primaryFeelingField = document.getElementById('observation_primary_feeling');
+    const secondaryFeelingField = document.getElementById('observation_secondary_feeling');
+    const privacyLevelField = document.querySelector('input[name="observation[privacy_level]"]:checked');
+    
+    const formData = new FormData();
+    formData.append('observation[story]', storyField.value);
+    if (primaryFeelingField && primaryFeelingField.value) {
+      formData.append('observation[primary_feeling]', primaryFeelingField.value);
+    }
+    if (secondaryFeelingField && secondaryFeelingField.value) {
+      formData.append('observation[secondary_feeling]', secondaryFeelingField.value);
+    }
+    if (privacyLevelField) {
+      formData.append('observation[privacy_level]', privacyLevelField.value);
+    }
+    
+    // Save draft and then open modal
+    fetch('#{update_draft_organization_observation_path(organization, @observation)}', {
+      method: 'PATCH',
+      body: formData,
+      headers: {
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      }
+    }).then(function(response) {
+      console.log('Draft saved successfully');
+      // Open modal after save completes
+      const modalElement = document.getElementById('addAssignmentModal');
+      if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+      } else {
+        console.error('Modal element not found');
+      }
+    }).catch(function(error) {
+      console.error('Error saving draft:', error);
+      alert('Failed to save draft. Please try again.');
+    });
+  }
+  
+  function publishObservation() {
+    // Get form data first
+    const storyField = document.getElementById('observation_story');
+    const primaryFeelingField = document.getElementById('observation_primary_feeling');
+    const secondaryFeelingField = document.getElementById('observation_secondary_feeling');
+    const privacyLevelField = document.querySelector('input[name="observation[privacy_level]"]:checked');
+    
+    // Client-side validation
+    if (!storyField || !storyField.value || storyField.value.trim() === '') {
+      alert('Please fill in the story before publishing.');
+      storyField.focus();
+      return false;
+    }
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '#{publish_organization_observation_path(organization, @observation)}';
+    form.innerHTML = `
+      <input type="hidden" name="return_url" value="#{@return_url}">
+      #{hidden_field_tag :show_observations_for, params[:show_observations_for], id: nil}
+      <input type="hidden" name="authenticity_token" value="#{form_authenticity_token}">
+      ${storyField ? `<input type="hidden" name="observation[story]" value="${storyField.value.replace(/"/g, '&quot;')}">` : ''}
+      ${primaryFeelingField ? `<input type="hidden" name="observation[primary_feeling]" value="${primaryFeelingField.value}">` : ''}
+      ${secondaryFeelingField && secondaryFeelingField.value ? `<input type="hidden" name="observation[secondary_feeling]" value="${secondaryFeelingField.value}">` : ''}
+      ${privacyLevelField ? `<input type="hidden" name="observation[privacy_level]" value="${privacyLevelField.value}">` : ''}
+    `;
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  function saveStoryBeforeModal() {
+    // Save the current form data before opening modal
+    const storyField = document.getElementById('observation_story');
+    const primaryFeelingField = document.getElementById('observation_primary_feeling');
+    const secondaryFeelingField = document.getElementById('observation_secondary_feeling');
+    const privacyLevelField = document.querySelector('input[name="observation[privacy_level]"]:checked');
+    
+    const formData = new FormData();
+    formData.append('observation[story]', storyField ? storyField.value : '');
+    if (primaryFeelingField) {
+      formData.append('observation[primary_feeling]', primaryFeelingField.value);
+    }
+    if (secondaryFeelingField) {
+      formData.append('observation[secondary_feeling]', secondaryFeelingField.value);
+    }
+    if (privacyLevelField) {
+      formData.append('observation[privacy_level]', privacyLevelField.value);
+    }
+    
+    // Submit the form to save draft without reloading page
+    fetch('#{update_draft_organization_observation_path(organization, @observation)}', {
+      method: 'PATCH',
+      body: formData,
+      headers: {
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      }
+    });
+  }
+
+/ Modal for adding assignments
+.modal.fade#addAssignmentModal{tabindex: "-1"}
+  .modal-dialog
+    .modal-content
+      .modal-header
+        %h5.modal-title Add Assignments
+        %button.btn-close{type: "button", "data-bs-dismiss": "modal"}
+      .modal-body
+        = form_with url: add_rateables_organization_observation_path(organization, @observation), method: :post do |f|
+          = hidden_field_tag :return_url, @return_url
+          = hidden_field_tag :return_text, @return_text
+          = hidden_field_tag :rateable_type, 'Assignment'
+          
+          - @assignments.each do |assignment|
+            .form-check
+              = check_box_tag 'rateable_ids[]', assignment.id, @observation.assignments.include?(assignment), 
+                            class: 'form-check-input',
+                            id: "assignment_#{assignment.id}"
+              = label_tag "assignment_#{assignment.id}", assignment.title, class: 'form-check-label'
+          
+          .modal-footer
+            = f.submit 'Add Selected', class: 'btn btn-primary'
+

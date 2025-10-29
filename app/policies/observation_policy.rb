@@ -90,6 +90,11 @@ class ObservationPolicy < ApplicationPolicy
     create?
   end
 
+  # Quick observation actions
+  def quick_new?
+    create?
+  end
+
   def view_change_history?
     # Observer, observed, and those with can_manage_employment can see change history
     actual_user == record.observer || 

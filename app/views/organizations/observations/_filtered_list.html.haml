@@ -1,0 +1,23 @@
+- observations = Observation.published.includes(:observer, :observation_ratings, :observed_teammates)
+- observations = observations.joins(:observed_teammates).where(teammates: { id: observee_ids }) if observee_ids.present?
+- observations = observations.joins(:observation_ratings).where(observation_ratings: { rateable_type: rateable_type, rateable_id: rateable_id }) if rateable_type.present? && rateable_id.present?
+- observations = observations.where('observed_at >= ?', start_date) if start_date.present?
+- observations = observations.where('observed_at <= ?', end_date) if end_date.present?
+- observations = observations.recent.limit(20)
+
+- if observations.any?
+  .list-group
+    - observations.each do |observation|
+      .list-group-item
+        .d-flex
+          .flex-grow-1
+            %strong= observation.observer.display_name
+            %br
+            %small.text-muted= observation.observed_at.strftime('%B %d, %Y')
+            %p.mb-0.mt-1= truncate(observation.story, length: 200)
+          .ms-3
+            = link_to organization_observation_path(@organization, observation), class: 'btn btn-sm btn-outline-primary', target: '_blank' do
+              View
+- else
+  .alert.alert-info No observations found
+
