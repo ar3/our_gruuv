@@ -83,6 +83,10 @@ Rails.application.configure do
   config.hosts << "crappie-saved-absolutely.ngrok-free.app"
   config.hosts << /.*\.ngrok-free\.app/
   
+  # Configure session cookies for ngrok (allow secure cookies even over HTTP tunnel)
+  # This helps CSRF tokens work correctly with ngrok
+  config.action_dispatch.cookies_same_site_protection = :lax if Rails.env.development?
+  
   # Configure Bullet for N+1 query detection
   config.after_initialize do
     require 'bullet'

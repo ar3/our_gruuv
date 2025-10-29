@@ -5,6 +5,7 @@
     %meta{name: "viewport", content: "width=device-width,initial-scale=1"}
     = csrf_meta_tags
     = csp_meta_tag
+    = yield(:head) if content_for?(:head)
     
     = stylesheet_link_tag "application", "data-turbo-track": "reload"
     = javascript_importmap_tags
@@ -13,9 +14,11 @@
     .overlay-content
       .overlay-header.d-flex.justify-content-between.align-items-center
         %h4.mb-0= content_for(:header) || "Return to Previous Page"
-        = link_to content_for(:return_url) || "#", class: "btn btn-sm btn-outline-secondary", id: "return-button" do
+        - return_url = content_for(:return_url) || "#"
+        - return_text = content_for(:return_text) || "Back"
+        = link_to return_url, class: "btn btn-sm btn-outline-secondary", id: "return-button" do
           %i.bi.bi-arrow-left.me-1
-          = content_for(:return_text) || "Back"
+          = return_text
       
       .overlay-body
         = yield

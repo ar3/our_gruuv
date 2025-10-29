@@ -9,6 +9,9 @@ class ApplicationController < ActionController::Base
   
   layout :determine_layout
   
+  # Allow CSRF token validation for ngrok domains
+  protect_from_forgery with: :exception, prepend: true
+  
   # Global exception handler to prevent silent failures
   rescue_from StandardError, with: :handle_unexpected_error
   

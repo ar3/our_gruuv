@@ -1,23 +1,46 @@
 - content_for :header do
   Create Quick Observation
 - content_for :return_url do
-  = @return_url
+  = @return_url || organization_observations_path(organization)
 - content_for :return_text do
-  = @return_text
+  = @return_text || 'Back'
 
 .card.mb-3
   .card-header
     %h5.mb-0
       %i.bi.bi-person-check.me-2
       Observation Details
+      - if @observation.persisted? && @observation.draft?
+        .mt-2
+          %small.text-muted
+            = link_to "draft", organization_observation_path(organization, @observation), class: "text-muted text-decoration-none"
+            = " saved at "
+            = @observation.updated_at.strftime("%l:%M %p on %B %d, %Y")
+      - elsif @observation.new_record?
+        .mt-2
+          %small.text-muted
+            This observation will be saved as a draft when you add assignments or publish.
   .card-body
-    = form_with model: @observation, url: update_draft_organization_observation_path(organization, @observation), method: :patch, local: true, data: { turbo: false } do |form|
+    - form_url = @observation.persisted? ? update_draft_organization_observation_path(organization, @observation) : update_draft_organization_observation_path(organization, :new)
+    = form_with model: @observation, url: form_url, method: :post, local: true, data: { turbo: false, turbo_method: false }, html: { id: 'observation_form' } do |form|
+      / Add _method field only for buttons that need PATCH (Add Assignments and default form submission)
+      = hidden_field_tag '_method', 'patch', id: 'form_method_field'
+      / Explicitly include CSRF token (form_with should add this, but ensuring it's present for ngrok)
+      = hidden_field_tag :authenticity_token, form_authenticity_token
       - if @observation.errors.any?
         .alert.alert-danger
           %h6 Please correct the following errors:
           %ul.mb-0
             - @observation.errors.full_messages.each do |message|
               %li= message
+      
+      / Hidden fields for publish action
+      = hidden_field_tag :return_url, @return_url
+      = hidden_field_tag :return_text, @return_text
+      = hidden_field_tag :show_observations_for, params[:show_observations_for]
+      -# Preserve observee_ids through form submissions
+      - @observation.observees.each do |observee|
+        = hidden_field_tag "observee_ids[]", observee.teammate_id
       
       .mb-3
         %label.form-label
@@ -67,150 +90,27 @@
                         = render 'organizations/observations/rating_buttons', 
                                  rating: @observation.observation_ratings.find_by(rateable: assignment)&.rating,
                                  input_name: "observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]"
-          = link_to add_assignments_organization_observation_path(organization, @observation, return_url: quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: @return_url, return_text: @return_text), return_text: 'Draft'), 
-                    class: 'btn btn-sm btn-outline-primary' do
-            %i.bi.bi-plus-circle.me-1
-            Add Assignments
+          = form.submit 'Add Assignments', 
+                        class: 'btn btn-sm btn-outline-primary',
+                        name: 'save_and_add_assignments',
+                        value: 'Add Assignments',
+                        onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
       
       .d-flex.gap-2.mt-3
-        = form.submit 'Save Story', class: 'btn btn-outline-secondary'
-        -# Publish button - use JavaScript to submit to publish action
-        = button_tag "Publish & Return to #{@return_text}", 
-                     class: 'btn btn-primary', 
-                     type: 'button',
-                     onclick: "publishObservation()"
-        = link_to 'Cancel', @return_url, class: 'btn btn-outline-danger'
-
-:javascript
-  function saveAndOpenModal() {
-    const storyField = document.getElementById('observation_story');
-    
-    // Validate story is filled
-    if (!storyField || !storyField.value || storyField.value.trim() === '') {
-      alert('Please fill in the story before adding assignments.');
-      storyField.focus();
-      return false;
-    }
-    
-    // Get all form data
-    const primaryFeelingField = document.getElementById('observation_primary_feeling');
-    const secondaryFeelingField = document.getElementById('observation_secondary_feeling');
-    const privacyLevelField = document.querySelector('input[name="observation[privacy_level]"]:checked');
-    
-    const formData = new FormData();
-    formData.append('observation[story]', storyField.value);
-    if (primaryFeelingField && primaryFeelingField.value) {
-      formData.append('observation[primary_feeling]', primaryFeelingField.value);
-    }
-    if (secondaryFeelingField && secondaryFeelingField.value) {
-      formData.append('observation[secondary_feeling]', secondaryFeelingField.value);
-    }
-    if (privacyLevelField) {
-      formData.append('observation[privacy_level]', privacyLevelField.value);
-    }
-    
-    // Save draft and then open modal
-    fetch('#{update_draft_organization_observation_path(organization, @observation)}', {
-      method: 'PATCH',
-      body: formData,
-      headers: {
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-      }
-    }).then(function(response) {
-      console.log('Draft saved successfully');
-      // Open modal after save completes
-      const modalElement = document.getElementById('addAssignmentModal');
-      if (modalElement) {
-        const modal = new bootstrap.Modal(modalElement);
-        modal.show();
-      } else {
-        console.error('Modal element not found');
-      }
-    }).catch(function(error) {
-      console.error('Error saving draft:', error);
-      alert('Failed to save draft. Please try again.');
-    });
-  }
-  
-  function publishObservation() {
-    // Get form data first
-    const storyField = document.getElementById('observation_story');
-    const primaryFeelingField = document.getElementById('observation_primary_feeling');
-    const secondaryFeelingField = document.getElementById('observation_secondary_feeling');
-    const privacyLevelField = document.querySelector('input[name="observation[privacy_level]"]:checked');
-    
-    // Client-side validation
-    if (!storyField || !storyField.value || storyField.value.trim() === '') {
-      alert('Please fill in the story before publishing.');
-      storyField.focus();
-      return false;
-    }
-    
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '#{publish_organization_observation_path(organization, @observation)}';
-    form.innerHTML = `
-      <input type="hidden" name="return_url" value="#{@return_url}">
-      #{hidden_field_tag :show_observations_for, params[:show_observations_for], id: nil}
-      <input type="hidden" name="authenticity_token" value="#{form_authenticity_token}">
-      ${storyField ? `<input type="hidden" name="observation[story]" value="${storyField.value.replace(/"/g, '&quot;')}">` : ''}
-      ${primaryFeelingField ? `<input type="hidden" name="observation[primary_feeling]" value="${primaryFeelingField.value}">` : ''}
-      ${secondaryFeelingField && secondaryFeelingField.value ? `<input type="hidden" name="observation[secondary_feeling]" value="${secondaryFeelingField.value}">` : ''}
-      ${privacyLevelField ? `<input type="hidden" name="observation[privacy_level]" value="${privacyLevelField.value}">` : ''}
-    `;
-    document.body.appendChild(form);
-    form.submit();
-  }
-
-  function saveStoryBeforeModal() {
-    // Save the current form data before opening modal
-    const storyField = document.getElementById('observation_story');
-    const primaryFeelingField = document.getElementById('observation_primary_feeling');
-    const secondaryFeelingField = document.getElementById('observation_secondary_feeling');
-    const privacyLevelField = document.querySelector('input[name="observation[privacy_level]"]:checked');
-    
-    const formData = new FormData();
-    formData.append('observation[story]', storyField ? storyField.value : '');
-    if (primaryFeelingField) {
-      formData.append('observation[primary_feeling]', primaryFeelingField.value);
-    }
-    if (secondaryFeelingField) {
-      formData.append('observation[secondary_feeling]', secondaryFeelingField.value);
-    }
-    if (privacyLevelField) {
-      formData.append('observation[privacy_level]', privacyLevelField.value);
-    }
-    
-    // Submit the form to save draft without reloading page
-    fetch('#{update_draft_organization_observation_path(organization, @observation)}', {
-      method: 'PATCH',
-      body: formData,
-      headers: {
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-      }
-    });
-  }
-
-/ Modal for adding assignments
-.modal.fade#addAssignmentModal{tabindex: "-1"}
-  .modal-dialog
-    .modal-content
-      .modal-header
-        %h5.modal-title Add Assignments
-        %button.btn-close{type: "button", "data-bs-dismiss": "modal"}
-      .modal-body
-        = form_with url: add_rateables_organization_observation_path(organization, @observation), method: :post do |f|
-          = hidden_field_tag :return_url, @return_url
-          = hidden_field_tag :return_text, @return_text
-          = hidden_field_tag :rateable_type, 'Assignment'
-          
-          - @assignments.each do |assignment|
-            .form-check
-              = check_box_tag 'rateable_ids[]', assignment.id, @observation.assignments.include?(assignment), 
-                            class: 'form-check-input',
-                            id: "assignment_#{assignment.id}"
-              = label_tag "assignment_#{assignment.id}", assignment.title, class: 'form-check-label'
-          
-          .modal-footer
-            = f.submit 'Add Selected', class: 'btn btn-primary'
+        -# Publish button - submit form to publish action (POST, no _method)
+        = form.submit "Publish & Return to #{@return_text}", 
+                      class: 'btn btn-primary',
+                      formaction: publish_organization_observation_path(organization, @observation.new_record? ? :new : @observation),
+                      formmethod: :post,
+                      name: 'publish',
+                      onclick: "document.getElementById('form_method_field').remove(); return true;"
+        -# Cancel button - submit form to cancel action (POST, no _method)
+        - cancel_id = @observation.new_record? ? :new : @observation
+        = form.submit 'Cancel',
+                      class: 'btn btn-outline-danger',
+                      formaction: cancel_organization_observation_path(organization, cancel_id),
+                      formmethod: :post,
+                      name: 'cancel',
+                      onclick: "document.getElementById('form_method_field').remove(); return true;",
+                      data: { disable_with: 'Canceling...' }
 

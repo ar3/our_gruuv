@@ -401,4 +401,8 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(response).to redirect_to(organization_observations_path(company) + '?show_observations_for=assignment_123')
     end
   end
+
+  # Note: CSRF protection is disabled in test environment (config/environments/test.rb)
+  # System specs won't catch CSRF issues because allow_forgery_protection = false
+  # This is expected Rails behavior - tests don't validate CSRF tokens
 end
