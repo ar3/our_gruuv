@@ -374,16 +374,19 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     rateable_type = params[:rateable_type]
     rateable_ids = params[:rateable_ids] || []
     
+    # Reload to ensure we have fresh association data before checking for duplicates
+    @observation.reload
+    
     rateable_ids.each do |rateable_id|
       next if rateable_id.blank?
       
-      # Check if rating already exists
+      # Check if rating already exists (reload ensures this check is accurate)
       existing = @observation.observation_ratings.find_by(
         rateable_type: rateable_type,
         rateable_id: rateable_id
       )
       
-      # Only create if it doesn't exist
+      # Only create if it doesn't exist - skip silently if already present
       unless existing
         @observation.observation_ratings.create!(
           rateable_type: rateable_type,
@@ -422,10 +425,24 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         @observation.observees.build(teammate_id: teammate_id)
       end
       
-      @observation.assign_attributes(draft_params)
-      @observation.observed_at ||= Time.current
-      @observation.save!
-      authorize @observation, :update?
+      # Use Reform to handle nested attributes properly and avoid duplicates
+      permitted_params = draft_params
+      @form = ObservationForm.new(@observation)
+      if @form.validate(permitted_params)
+        @form.save
+        @observation.observed_at ||= Time.current
+        @observation.save! if @observation.changed? || @observation.new_record?
+        authorize @observation, :update?
+      else
+        flash[:alert] = "Failed to save: #{@form.errors.full_messages.join(', ')}"
+        @return_url = params[:return_url] || organization_observations_path(organization)
+        @return_text = params[:return_text] || 'Back'
+        @assignments = organization.assignments.ordered
+        @aspirations = organization.aspirations
+        @abilities = organization.abilities.order(:name)
+        render :quick_new, layout: 'overlay', status: :unprocessable_entity
+        return
+      end
     else
       @observation = Observation.find(params[:id])
       authorize @observation, :update?
@@ -433,37 +450,31 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     permitted_params = draft_params
     
-    # Check if we should save and navigate to add_assignments
-    if params[:save_and_add_assignments].present?
-      # Update observation with form data
-      if !@observation.update(permitted_params)
-        flash[:alert] = "Failed to save: #{@observation.errors.full_messages.join(', ')}"
+    # Use Reform to handle nested attributes properly and avoid duplicates
+    @form = ObservationForm.new(@observation)
+    if @form.validate(permitted_params)
+      @form.save
+      
+      # Check if we should save and navigate to add_assignments
+      if params[:save_and_add_assignments].present?
+        redirect_to add_assignments_organization_observation_path(
+          organization, 
+          @observation,
+          return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_text: params[:return_text] || 'Draft'
+        )
+      else
         redirect_to quick_new_organization_observations_path(
-          organization,
-          draft_id: @observation.id,
-          return_url: params[:return_url],
+          organization, 
+          draft_id: @observation.id, 
+          return_url: params[:return_url], 
           return_text: params[:return_text]
         )
-        return
       end
-      
-      redirect_to add_assignments_organization_observation_path(
-        organization, 
-        @observation,
-        return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
-        return_text: params[:return_text] || 'Draft'
-      )
-    elsif @observation.update(permitted_params)
-      redirect_to quick_new_organization_observations_path(
-        organization, 
-        draft_id: @observation.id, 
-        return_url: params[:return_url], 
-        return_text: params[:return_text]
-      )
     else
-      Rails.logger.error "Failed to update: #{@observation.errors.full_messages.join(', ')}"
+      Rails.logger.error "Failed to update: #{@form.errors.full_messages.join(', ')}"
       Rails.logger.error "Attempted params: #{permitted_params.inspect}"
-      flash[:alert] = "Failed to update: #{@observation.errors.full_messages.join(', ')}"
+      flash[:alert] = "Failed to update: #{@form.errors.full_messages.join(', ')}"
       @return_url = params[:return_url] || organization_observations_path(organization)
       @return_text = params[:return_text] || 'Back'
       @assignments = organization.assignments.ordered

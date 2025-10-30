@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_29_011001) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_29_204848) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -367,7 +367,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_29_011001) do
   create_table "observations", force: :cascade do |t|
     t.bigint "observer_id", null: false
     t.bigint "company_id", null: false
-    t.text "story", null: false
+    t.text "story"
     t.string "primary_feeling"
     t.string "secondary_feeling"
     t.datetime "observed_at"

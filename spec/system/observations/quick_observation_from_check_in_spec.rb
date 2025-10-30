@@ -236,6 +236,43 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       expect(draft.published_at).to be_nil # Should still be a draft
     end
 
+    it 'handles adding assignments when assignment is pre-populated from check-in link' do
+      sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
+
+      click_link 'Add Win / Challenge'
+
+      expect(page).to have_content('Create Quick Observation')
+
+      # Assignment should be pre-populated from the check-in link
+      expect(page).to have_content(assignment.title)
+
+      # Fill in story
+      fill_in 'observation_story', with: 'Test story with pre-populated assignment'
+
+      # Click "Add Assignments" button - should NOT show validation error about duplicate
+      click_button 'Add Assignments'
+
+      # Should be on add_assignments page without validation errors
+      expect(page).to have_content('Select Assignments to Add', wait: 5)
+      expect(page).not_to have_content('has already been taken')
+      expect(page).not_to have_content('errors')
+
+      # Assignment should be pre-checked since it was pre-populated
+      expect(page).to have_checked_field("assignment_#{assignment.id}")
+
+      # Uncheck and re-check (or just submit with it checked)
+      click_button 'Add Selected Assignments'
+
+      # Should redirect back without errors
+      expect(page).to have_content('Create Quick Observation', wait: 5)
+      expect(page).not_to have_content('has already been taken')
+
+      # Verify the assignment is still in the draft
+      draft = Observation.drafts.last
+      draft.reload
+      expect(draft.assignments).to include(assignment)
+    end
+
     it 'does not save draft when canceling without story content' do
       sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
       
