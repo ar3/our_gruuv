@@ -7,6 +7,8 @@ class ObservationForm < Reform::Form
   property :secondary_feeling
   property :observed_at
   property :custom_slug
+  # Virtual state: publishing vs draft saves
+  property :publishing, virtual: true
   
   # Nested attributes for observees
   collection :observees, populate_if_empty: Observee do
@@ -32,7 +34,7 @@ class ObservationForm < Reform::Form
   # Virtual property for observation ratings attributes (used in wizard)
   property :observation_ratings_attributes, virtual: true
   
-  validates :story, presence: true
+  validates :story, presence: true, if: :publishing?
   validates :privacy_level, presence: true
   validates :primary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true, allow_blank: true
   validates :secondary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true, allow_blank: true
@@ -94,6 +96,10 @@ class ObservationForm < Reform::Form
     
     # Save model with other attributes
     model.save!
+  end
+
+  def publishing?
+    publishing == true || publishing.to_s == 'true'
   end
 
   # Normalize empty strings to nil for feelings

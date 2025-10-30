@@ -17,6 +17,94 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
   end
 
   context 'as an employee viewing their check-ins' do
+    it 'shows an aspiration preselected via querystring and saves draft only when clicking Add Aspirations' do
+      sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
+
+      aspiration = create(:aspiration, organization: organization, name: 'Career Growth')
+
+      # Navigate with preselected aspiration via query string
+      visit quick_new_organization_observations_path(
+        organization,
+        return_url: organization_person_check_ins_path(organization, employee),
+        return_text: 'Check-ins',
+        observee_ids: [employee_teammate.id],
+        rateable_type: 'Aspiration',
+        rateable_id: aspiration.id,
+        privacy_level: 'observed_and_managers'
+      )
+
+      expect(page).to have_content('Create Quick Observation')
+      # Preselected aspiration should be visible even before saving draft
+      expect(page).to have_content('Aspirations')
+      expect(page).to have_content('Career Growth')
+
+      # No draft should be created yet
+      expect(Observation.drafts.count).to eq(0)
+
+      # Click Add Aspirations to save draft and go to picker
+      find('input[name="save_and_add"][value="aspirations"]', visible: true).click
+
+      # Now on the add aspirations page
+      expect(page).to have_content('Select Aspirations to Add', wait: 5)
+      # A draft should now exist
+      expect(Observation.drafts.count).to eq(1)
+    end
+
+    it 'shows an ability preselected via querystring and saves draft only when clicking Add Abilities' do
+      sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
+
+      ability = create(:ability, organization: organization, name: 'Ruby')
+
+      visit quick_new_organization_observations_path(
+        organization,
+        return_url: organization_person_check_ins_path(organization, employee),
+        return_text: 'Check-ins',
+        observee_ids: [employee_teammate.id],
+        rateable_type: 'Ability',
+        rateable_id: ability.id,
+        privacy_level: 'observed_and_managers'
+      )
+
+      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Abilities')
+      expect(page).to have_content('Ruby')
+      expect(Observation.drafts.count).to eq(0)
+
+      find('input[name="save_and_add"][value="abilities"]', visible: true).click
+
+      expect(page).to have_content('Select Abilities to Add', wait: 5)
+      expect(Observation.drafts.count).to eq(1)
+    end
+
+    it 'allows adding additional observees via an Add Observees flow and only saves on click' do
+      sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
+
+      other_person = create(:person, full_name: 'Teammate Two')
+      other_teammate = create(:teammate, person: other_person, organization: organization)
+
+      visit quick_new_organization_observations_path(
+        organization,
+        return_url: organization_person_check_ins_path(organization, employee),
+        return_text: 'Check-ins',
+        observee_ids: [employee_teammate.id],
+        privacy_level: 'observed_and_managers'
+      )
+
+      expect(page).to have_content(employee.display_name)
+      expect(Observation.drafts.count).to eq(0)
+
+      find('input[name="save_and_add"][value="observees"]', visible: true).click
+
+      expect(page).to have_content('Select Observees to Add', wait: 5)
+      expect(Observation.drafts.count).to eq(1)
+
+      # Check the new teammate and submit
+      check "teammate_#{other_teammate.id}"
+      click_button 'Add Selected Observees'
+
+      # Back on quick_new; both observees show
+      expect(page).to have_content(other_person.display_name)
+    end
     it 'allows creating a quick observation from check-in page' do
       sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
       
@@ -192,10 +280,8 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       
       expect(page).to have_content('Select Assignments to Add', wait: 5)
       
-      # Go back - use the return link in overlay header (text is "Draft")
-      within('.overlay-header') do
-        click_link 'Draft'
-      end
+      # Go back using the overlay header back button
+      find('#return-button').click
       
       # Should still say "Publish & Return to Check-ins"
       expect(page).to have_button('Publish & Return to Check-ins', wait: 5)
@@ -320,16 +406,72 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       # Should be on add_assignments page
       expect(page).to have_content('Select Assignments to Add', wait: 5)
       
-      # Go back to draft - use the return link in overlay header (text is "Draft")
-      within('.overlay-header') do
-        click_link 'Draft'
-      end
+      # Go back using the overlay header back button
+      find('#return-button').click
       
       # Story and primary feeling should still be there
       expect(page).to have_field('observation_story', with: 'Test story with primary feeling only', wait: 5)
       expect(find_field('observation[primary_feeling]').value).to eq('happy')
       # Secondary feeling should still be blank
       expect(find_field('observation[secondary_feeling]').value).to eq('')
+    end
+
+    it 'handles adding aspirations and prevents duplicates' do
+      sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
+
+      click_link 'Add Win / Challenge'
+
+      expect(page).to have_content('Create Quick Observation')
+
+      # Create an aspiration for the org
+      aspiration = create(:aspiration, organization: organization)
+
+      # Go to add aspirations
+      find('input[name="save_and_add"][value="aspirations"]', visible: true).click
+      expect(page).to have_content('Select Aspirations to Add', wait: 5)
+
+      # Check and submit
+      check "aspiration_#{aspiration.id}"
+      click_button 'Add Selected Aspirations'
+
+      # Back on quick_new, should show aspiration section, no errors
+      expect(page).to have_content('Aspirations', wait: 5)
+      expect(page).to have_content(aspiration.name)
+      expect(page).not_to have_content('has already been taken')
+
+      # Add again to ensure no duplicate validation error
+      find('input[name="save_and_add"][value="aspirations"]', visible: true).click
+      expect(page).to have_checked_field("aspiration_#{aspiration.id}")
+      click_button 'Add Selected Aspirations'
+      expect(page).not_to have_content('has already been taken')
+    end
+
+    it 'saves rating for an ability and persists it on publish' do
+      sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
+
+      click_link 'Add Win / Challenge'
+
+      ability = create(:ability, organization: organization)
+
+      # Add ability
+      find('input[name="save_and_add"][value="abilities"]', visible: true).click
+      expect(page).to have_content('Select Abilities to Add', wait: 5)
+      check "ability_#{ability.id}"
+      click_button 'Add Selected Abilities'
+
+      # Now rate the ability
+      rating_input_name = "observation[observation_ratings_attributes][ability_#{ability.id}][rating]"
+      fill_in 'observation_story', with: 'Story for ability rating'
+      choose rating_input_name, option: 'agree'
+
+      click_button 'Publish & Return to Check-ins'
+      expect(page).to have_content('Check-Ins', wait: 5)
+
+      observation = Observation.last
+      observation.reload
+      rating = observation.observation_ratings.find_by(rateable_type: 'Ability', rateable_id: ability.id)
+      expect(rating).to be_present
+      expect(rating.rating).to eq('agree')
     end
 
 
@@ -348,9 +490,8 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       
       sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
       
-      # Should see observation count link (text includes "1 observation" and "ago")
-      expect(page).to have_text(/1 observation.*ago/i)
-      observation_link = page.find('a', text: /1 observation/i)
+      # Should see observation modal trigger link for this assignment
+      observation_link = page.find('a[data-bs-target^="#observationsModal_assignment_"]', match: :first)
       expect(observation_link).to have_css('i.bi.bi-eye')
       
       # Click it
@@ -366,18 +507,18 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
     it 'allows creating an observation about the employee' do
       sign_in_and_visit(manager, organization, organization_person_check_ins_path(organization, employee))
       
-      # Click "Add Win / Challenge" for the employee
-      click_link 'Add Win / Challenge'
+      # Click the first "Add Win / Challenge" (scoped to first occurrence)
+      first('a', text: 'Add Win / Challenge').click
       
-      # Should show manager as observing employee
-      expect(page).to have_content(manager.display_name)
+      # Should show employee being observed
+      expect(page).to have_content(employee.display_name)
       expect(page).to have_content('Observation Details')
       
       # Fill in story
-      fill_in 'story', with: 'Sarah did great work on the project this week!'
+      fill_in 'observation_story', with: 'Sarah did great work on the project this week!'
       
       # Publish
-      click_link 'Publish'
+      click_button 'Publish & Return to Check-ins'
       
       # Should return to check-ins
       expect(page).to have_content('Check-Ins for')

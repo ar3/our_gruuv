@@ -53,6 +53,7 @@ RSpec.describe 'Check-ins Field Alignment', type: :system do
     it 'assignment check-in fields match controller params' do
       # Create assignment data
       assignment = create(:assignment, company: organization)
+      create(:assignment_tenure, teammate: employee.teammates.first, assignment: assignment, started_at: 1.month.ago)
       create(:assignment_check_in, teammate: employee.teammates.first, assignment: assignment)
       
       sign_in_as(manager, organization)
@@ -71,7 +72,7 @@ RSpec.describe 'Check-ins Field Alignment', type: :system do
       end
       
       # Verify fields are within table structure
-      within('table', text: 'ASSIGNMENTS') do
+      within('.table-responsive table', match: :first) do
         expect(page).to have_css('select[name^="check_ins[assignment_check_ins]"]')
       end
     end

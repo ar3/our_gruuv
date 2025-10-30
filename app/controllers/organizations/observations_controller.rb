@@ -136,6 +136,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       
       @observation = organization.observations.build(observer: current_person)
       @form = ObservationForm.new(@observation)
+      @form.publishing = true
       populate_form_from_wizard_data(@form, wizard_data)
       
       # Load available abilities and assignments for selected observees
@@ -361,6 +362,35 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     render layout: 'overlay'
   end
 
+  # Show page for adding aspirations to draft
+  def add_aspirations
+    @observation = Observation.find(params[:id])
+    authorize @observation, :update?
+    
+    @aspirations = organization.aspirations
+    
+    @return_url = params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id)
+    @return_text = params[:return_text] || 'Back'
+    
+    render layout: 'overlay'
+  end
+
+  # Show page for adding abilities to draft
+  def add_abilities
+    @observation = Observation.find(params[:id])
+    authorize @observation, :update?
+    
+    @abilities = organization.abilities.order(:name)
+    
+    @return_url = params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id)
+    @return_text = params[:return_text] || 'Back'
+    
+    render layout: 'overlay'
+  end
+
+  # Show page (GET) for adding observees to draft
+  # POST handling lives below in the same action (see request.post? branch)
+
   # Add rateables to draft observation
   def add_rateables
     @observation = Observation.find(params[:id])
@@ -410,6 +440,39 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     redirect_to redirect_url, notice: "Added #{rateable_ids.count} #{rateable_type.downcase}(s)"
   end
 
+  # Add observees to draft observation
+def add_observees
+  @observation = Observation.find(params[:id])
+  authorize @observation, :update?
+  
+  if request.post?
+    teammate_ids = params[:teammate_ids] || []
+    teammate_ids.each do |tid|
+      next if tid.blank?
+      unless @observation.observees.exists?(teammate_id: tid)
+        @observation.observees.create!(teammate_id: tid)
+      end
+    end
+    @observation.reload
+    redirect_url = params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id)
+    if params[:return_url].present? || params[:return_text].present?
+      redirect_url = quick_new_organization_observations_path(
+        organization,
+        draft_id: @observation.id,
+        return_url: params[:return_url],
+        return_text: params[:return_text]
+      )
+    end
+    return redirect_to redirect_url, notice: "Added #{teammate_ids.reject(&:blank?).count} observee(s)"
+  else
+    # GET - render picker
+    @teammates = organization.teammates.includes(:person)
+    @return_url = params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id)
+    @return_text = params[:return_text] || 'Back'
+    render layout: 'overlay'
+  end
+end
+
   # Update draft observation
   def update_draft
     # Handle new observations (id = 'new')
@@ -449,16 +512,42 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
     
     permitted_params = draft_params
+    # For save-and-add flows, ignore inline ratings; rating is set on picker/after
+    if params[:save_and_add_assignments].present? || params[:save_and_add].present?
+      permitted_params = permitted_params.except(:observation_ratings_attributes)
+    end
     
-    # Use Reform to handle nested attributes properly and avoid duplicates
+    # Use Reform in draft mode (no story requirement)
     @form = ObservationForm.new(@observation)
-    if @form.validate(permitted_params)
-      @form.save
-      
-      # Check if we should save and navigate to add_assignments
+    @form.publishing = false
+    saved = @form.validate(permitted_params) && @form.save
+    
+    if saved
+      # Check if we should save and navigate to an add-* picker
       if params[:save_and_add_assignments].present?
         redirect_to add_assignments_organization_observation_path(
           organization, 
+          @observation,
+          return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_text: params[:return_text] || 'Draft'
+        )
+      elsif params[:save_and_add].to_s == 'aspirations'
+        redirect_to add_aspirations_organization_observation_path(
+          organization,
+          @observation,
+          return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_text: params[:return_text] || 'Draft'
+        )
+      elsif params[:save_and_add].to_s == 'abilities'
+        redirect_to add_abilities_organization_observation_path(
+          organization,
+          @observation,
+          return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_text: params[:return_text] || 'Draft'
+        )
+      elsif params[:save_and_add].to_s == 'observees'
+        redirect_to add_observees_organization_observation_path(
+          organization,
           @observation,
           return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
           return_text: params[:return_text] || 'Draft'
@@ -472,9 +561,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         )
       end
     else
-      Rails.logger.error "Failed to update: #{@form.errors.full_messages.join(', ')}"
+      Rails.logger.error "Failed to update: #{@observation.errors.full_messages.join(', ')}"
       Rails.logger.error "Attempted params: #{permitted_params.inspect}"
-      flash[:alert] = "Failed to update: #{@form.errors.full_messages.join(', ')}"
+      flash[:alert] = "Failed to update: #{@observation.errors.full_messages.join(', ')}"
       @return_url = params[:return_url] || organization_observations_path(organization)
       @return_text = params[:return_text] || 'Back'
       @assignments = organization.assignments.ordered
@@ -578,6 +667,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       if params[:observation].present?
         # Use Reform form to handle nested attributes properly
         @form = ObservationForm.new(@observation)
+        @form.publishing = true
         if @form.validate(draft_params)
           @form.save
         else

@@ -1,0 +1,38 @@
+- content_for :header do
+  Add Observees to Observation
+- content_for :return_url do
+  = quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text])
+- content_for :return_text do
+  = params[:return_text] || 'Draft'
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-people.me-2
+      Select Observees to Add
+  .card-body
+    = form_with url: add_observees_organization_observation_path(organization, @observation), method: :post, local: true do |form|
+      = hidden_field_tag :authenticity_token, form_authenticity_token
+      = hidden_field_tag :return_url, params[:return_url]
+      = hidden_field_tag :return_text, params[:return_text]
+
+      .mb-3
+        %label.form-label Select Teammates
+        .list-group
+          - @teammates.each do |teammate|
+            - checked = @observation.observees.exists?(teammate_id: teammate.id)
+            .list-group-item
+              .form-check
+                = check_box_tag 'teammate_ids[]', teammate.id, checked,
+                              class: 'form-check-input',
+                              id: "teammate_#{teammate.id}"
+                = label_tag "teammate_#{teammate.id}", class: 'form-check-label' do
+                  %strong= teammate.person.display_name
+
+      .d-flex.gap-2.mt-3
+        = link_to quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]), class: 'btn btn-outline-secondary' do
+          %i.bi.bi-arrow-left.me-1
+          = params[:return_text] || 'Draft'
+        = form.submit 'Add Selected Observees', class: 'btn btn-primary'
+
+

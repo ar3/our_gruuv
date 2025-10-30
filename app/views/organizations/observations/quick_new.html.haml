@@ -107,6 +107,71 @@
                         name: 'save_and_add_assignments',
                         value: 'Add Assignments',
                         onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
+
+      .mb-3
+        %h6.text-primary Aspirations
+        - aspiration_ratings = @observation.observation_ratings.select { |or_obj| or_obj.rateable_type == 'Aspiration' }
+        - if aspiration_ratings.any?
+          - aspiration_ratings.each do |rating_obj|
+            - aspiration = rating_obj.rateable
+            - next unless aspiration.present?
+            .card.mb-2
+              .card-body
+                .d-flex.justify-content-between.align-items-center
+                  %div
+                    %strong= aspiration.name
+                    .mt-2
+                      = render 'organizations/observations/rating_buttons', 
+                               rating: rating_obj.rating,
+                               input_name: "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rating]"
+                      - if rating_obj.new_record? || rating_obj.id.nil?
+                        = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_type]", 'Aspiration'
+                        = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_id]", aspiration.id
+                      - else
+                        = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][id]", rating_obj.id
+                        = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_type]", 'Aspiration'
+                        = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_id]", aspiration.id
+        = form.submit 'Aspirations',
+                      class: 'btn btn-sm btn-outline-primary',
+                      name: 'save_and_add',
+                      value: 'aspirations',
+                      onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
+
+      .mb-3
+        %h6.text-primary Abilities
+        - ability_ratings = @observation.observation_ratings.select { |or_obj| or_obj.rateable_type == 'Ability' }
+        - if ability_ratings.any?
+          - ability_ratings.each do |rating_obj|
+            - ability = rating_obj.rateable
+            - next unless ability.present?
+            .card.mb-2
+              .card-body
+                .d-flex.justify-content-between.align-items-center
+                  %div
+                    %strong= ability.name
+                    .mt-2
+                      = render 'organizations/observations/rating_buttons', 
+                               rating: rating_obj.rating,
+                               input_name: "observation[observation_ratings_attributes][ability_#{ability.id}][rating]"
+                      - if rating_obj.new_record? || rating_obj.id.nil?
+                        = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_type]", 'Ability'
+                        = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_id]", ability.id
+                      - else
+                        = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][id]", rating_obj.id
+                        = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_type]", 'Ability'
+                        = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_id]", ability.id
+        = form.submit 'Abilities',
+                      class: 'btn btn-sm btn-outline-primary',
+                      name: 'save_and_add',
+                      value: 'abilities',
+                      onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
+
+      .mb-3
+        = form.submit 'Observees',
+                      class: 'btn btn-sm btn-outline-secondary',
+                      name: 'save_and_add',
+                      value: 'observees',
+                      onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
       
       .d-flex.gap-2.mt-3
         -# Publish button - submit form to publish action (POST, no _method)
