@@ -1,0 +1,71 @@
+-# Abilities Table View
+- if relevant_abilities&.any?
+  .table-responsive
+    %table.table.table-striped{data: {abilities_table: true}}
+      %thead
+        %tr
+          %th Ability
+          %th Why It's Relevant
+          %th When Milestones Achieved
+          %th #{person.first_name} is actively pursuing:
+      %tbody
+        - relevant_abilities.each do |ability_data|
+          - ability = ability_data[:ability]
+          - milestone_attainments = ability_data[:milestone_attainments]
+          - assignment_requirements = ability_data[:assignment_requirements]
+          %tr
+            %td
+              - begin
+                - if policy(ability).show?
+                  = link_to organization_ability_path(@organization, ability), class: "text-decoration-none" do
+                    = ability.name
+                - else
+                  = ability.name
+              - rescue
+                = ability.name
+            %td
+              - relevance_items = []
+              - milestone_attainments.each do |milestone|
+                - relevance_items << "You have Milestone #{milestone.milestone_level}"
+              - assignment_requirements.each do |assignment_ability|
+                - assignment = assignment_ability.assignment
+                - relevance_items << "You need Milestone #{assignment_ability.milestone_level} for #{assignment.title}"
+              - if relevance_items.any?
+                %ul.mb-0.pl-3{style: "list-style: disc;"}
+                  - relevance_items.each do |item|
+                    %li= item
+              - else
+                %span.text-muted None
+            %td
+              - if milestone_attainments.any?
+                %ul.mb-0.pl-3{style: "list-style: disc;"}
+                  - milestone_attainments.each do |milestone|
+                    %li
+                      Milestone #{milestone.milestone_level}: #{milestone.attained_at.strftime('%B %d, %Y')}
+              - else
+                %span.text-muted None
+            %td
+              .d-flex.flex-wrap.gap-2
+                .form-check.form-check-inline
+                  = radio_button_tag "ability_goal[#{ability.id}]", "na", true, class: "form-check-input", disabled: true
+                  = label_tag "ability_goal[#{ability.id}]_na", "N/A", class: "form-check-label"
+                .form-check.form-check-inline
+                  = radio_button_tag "ability_goal[#{ability.id}]", "m1", false, class: "form-check-input", disabled: true
+                  = label_tag "ability_goal[#{ability.id}]_m1", "M1: Demonstrated", class: "form-check-label"
+                .form-check.form-check-inline
+                  = radio_button_tag "ability_goal[#{ability.id}]", "m2", false, class: "form-check-input", disabled: true
+                  = label_tag "ability_goal[#{ability.id}]_m2", "M2: Advanced", class: "form-check-label"
+                .form-check.form-check-inline
+                  = radio_button_tag "ability_goal[#{ability.id}]", "m3", false, class: "form-check-input", disabled: true
+                  = label_tag "ability_goal[#{ability.id}]_m3", "M3: Expert", class: "form-check-label"
+                .form-check.form-check-inline
+                  = radio_button_tag "ability_goal[#{ability.id}]", "m4", false, class: "form-check-input", disabled: true
+                  = label_tag "ability_goal[#{ability.id}]_m4", "M4: Distinguished", class: "form-check-label"
+                .form-check.form-check-inline
+                  = radio_button_tag "ability_goal[#{ability.id}]", "m5", false, class: "form-check-input", disabled: true
+                  = label_tag "ability_goal[#{ability.id}]_m5", "M5: Industry-Recognized", class: "form-check-label"
+- else
+  .alert.alert-info{data: {abilities_empty_state: true}}
+    %i.bi.bi-info-circle.me-2
+    No relevant abilities found
+

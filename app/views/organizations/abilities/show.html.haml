@@ -107,6 +107,20 @@
             %p.small
               %i.bi.bi-clipboard.text-muted.me-1
               Not required by any assignments
+        
+        .mb-3
+          %h6.text-muted.small.mb-2 Actions
+          - if policy(@ability).update?
+            = link_to organization_ability_assignment_milestones_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100" do
+              %i.bi.bi-link-45deg.me-2
+              Manage Assignment Milestones
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                %button.btn.btn-outline-secondary.btn-sm.w-100.disabled{disabled: true, type: "button"}
+                  %i.bi.bi-link-45deg.me-2
+                  Manage Assignment Milestones
+              %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need MAAP management permissions to manage assignment milestones"}}
           
           - if @ability.has_person_attainments?
             %p.small

@@ -96,10 +96,14 @@ get '/login', to: 'auth#login', as: :login
     resources :huddle_playbooks, module: :organizations
     
     # Abilities management
-    resources :abilities, module: :organizations
+    resources :abilities, module: :organizations do
+      resource :assignment_milestones, only: [:show, :update], module: :abilities
+    end
     
     # Assignments management
-    resources :assignments, module: :organizations
+    resources :assignments, module: :organizations do
+      resource :ability_milestones, only: [:show, :update], module: :assignments
+    end
     
     # People management
     resources :people, module: :organizations, only: [:show] do

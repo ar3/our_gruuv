@@ -21,6 +21,10 @@
         %li
           %hr.dropdown-divider
         %li
+          = link_to organization_assignment_ability_milestones_path(@organization, @assignment), class: "dropdown-item" do
+            %i.bi.bi-link-45deg.me-2
+            Manage Ability Milestones
+        %li
           = link_to edit_organization_assignment_path(@organization, @assignment), class: "dropdown-item" do
             %i.bi.bi-pencil.me-2
             Edit Assignment

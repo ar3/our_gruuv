@@ -109,29 +109,16 @@
     .col-12
       = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
 
+  -# Abilities Section
   = render 'section_header', 
            title: 'Abilities/Skills/Knowledge', 
            icon: 'bi-briefcase', 
-           description: 'Something about skill goals'
-  .row.mt-4
-    .col-12
-      .alert.alert-warning.alert-dismissible.fade.show{role: "alert"}
-        .d-flex.align-items-center
-          %i.bi.bi-heart.me-2
-          %strong.me-2 Considering adding abilities/skills/knowledge goals to check-ins
-          %span We'd love to build with you... ! Let's get started. 
-          = link_to "Tell us what you think", new_interest_submission_path(source_page: nil, return_url: request.url), class: "alert-link ms-2"
-        %button.btn-close{type: "button", "data-bs-dismiss": "alert", "aria-label": "Close"}
-
-    .col-12
-      .card
-        .card-header
-          %h5.mb-0 
-        .card-body
-          %ul
-            %li I'm working towards showcasing expert level skills in _____
-            %li I'm working towards showcasing proficient level skills in _____
-            %li I'm working towards showcasing Demonstrated → Advanced → Expert → Distinguished → Industry-Recognized
+           description: 'View abilities relevant to your role and assignments'
+  
+  = render 'abilities_table',
+           relevant_abilities: @relevant_abilities,
+           view_mode: @view_mode,
+           person: @person
     
 
   = render 'section_header', 

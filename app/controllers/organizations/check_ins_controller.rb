@@ -15,6 +15,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     @position_check_in = load_or_build_position_check_in
     @assignment_check_ins = load_or_build_assignment_check_ins
     @aspiration_check_ins = load_or_build_aspiration_check_ins
+    @relevant_abilities = load_relevant_abilities
   end
   
   def update
@@ -96,6 +97,10 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     aspirations.map do |aspiration|
       AspirationCheckIn.find_or_create_open_for(@teammate, aspiration)
     end.compact
+  end
+
+  def load_relevant_abilities
+    RelevantAbilitiesQuery.new(teammate: @teammate, organization: @organization).call
   end
 
   def update_assignment_check_ins(check_ins_params = params)
