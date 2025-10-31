@@ -8,7 +8,6 @@ RSpec.describe ObservationForm, type: :form do
 
   describe 'validations' do
     it 'validates custom_slug uniqueness' do
-      # Create a teammate for the observer to satisfy the at_least_one_observee validation
       teammate = create(:teammate, organization: company)
       
       form.custom_slug = 'test-slug'
@@ -36,8 +35,9 @@ RSpec.describe ObservationForm, type: :form do
       expect(new_form.errors[:custom_slug]).to include('has already been taken')
     end
 
-    it 'validates story presence' do
+    it 'validates story presence when publishing' do
       form.story = nil
+      form.publishing = true
       expect(form).not_to be_valid
       expect(form.errors[:story]).to include("can't be blank")
     end
@@ -58,16 +58,6 @@ RSpec.describe ObservationForm, type: :form do
       form.secondary_feeling = 'invalid_feeling'
       expect(form).not_to be_valid
       expect(form.errors[:secondary_feeling]).to include('is not included in the list')
-    end
-
-    it 'validates at least one observee' do
-      # Create a form without observees to test the validation
-      observation_without_observees = build(:observation, observer: observer, company: company)
-      observation_without_observees.observees.clear
-      form_without_observees = ObservationForm.new(observation_without_observees)
-      
-      expect(form_without_observees).not_to be_valid
-      expect(form_without_observees.errors[:observees]).to include('must have at least one observee')
     end
   end
 

@@ -90,7 +90,7 @@ class ObservationVisibilityQuery
     where_clause = conditions.join(' OR ')
     
     # Filter results to only include published observations OR drafts where user is observer
-    # Draft observations (published_at is nil) should only be visible to their creator
+    # Draft observations (published_at is nil) should only be visible to their creator, regardless of privacy level
     result_scope = base_scope.where(where_clause, *params)
     result_scope = result_scope.where("published_at IS NOT NULL OR observer_id = ?", @person.id)
     

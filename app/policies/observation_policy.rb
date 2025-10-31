@@ -128,7 +128,10 @@ class ObservationPolicy < ApplicationPolicy
   def user_in_management_hierarchy?
     return false unless actual_user.is_a?(Person)
     
-    record.observed_teammates.any? { |teammate| actual_user.in_managerial_hierarchy_of?(teammate.person, @organization) }
+    # Use record.company for organization context (KudosController doesn't have organization in pundit_user)
+    organization = user.respond_to?(:pundit_organization) && user.pundit_organization ? user.pundit_organization : record.company
+    
+    record.observed_teammates.any? { |teammate| actual_user.in_managerial_hierarchy_of?(teammate.person, organization) }
   end
 
   def user_can_manage_employment?

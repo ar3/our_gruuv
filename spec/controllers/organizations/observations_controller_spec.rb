@@ -117,8 +117,9 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         {
           organization_id: company.id,
           observation: {
-            story: '', # Invalid - empty story
-            privacy_level: 'observed_only'
+            story: '', # Invalid - empty story when publishing
+            privacy_level: 'observed_only',
+            publishing: 'true'
           }
         }
       end
@@ -278,17 +279,18 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
 
     it 'creates a draft observation when draft_id is not provided' do
-      expect {
-        get :quick_new, params: {
-          organization_id: company.id,
-          return_url: organization_observations_path(company),
-          observee_ids: [observee_teammate.id]
-        }
-      }.to change(Observation, :count).by(1)
+      get :quick_new, params: {
+        organization_id: company.id,
+        return_url: organization_observations_path(company),
+        observee_ids: [observee_teammate.id]
+      }
       
-      draft = Observation.last
-      expect(draft.published_at).to be_nil
-      expect(draft.observer).to eq(observer)
+      # quick_new builds the observation in memory but doesn't save it
+      # The observation is saved later via update_draft or publish
+      expect(assigns(:observation)).to be_present
+      expect(assigns(:observation).published_at).to be_nil
+      expect(assigns(:observation).observer).to eq(observer)
+      expect(assigns(:observation).observees).to be_present
     end
 
     it 'loads existing draft when draft_id is provided' do

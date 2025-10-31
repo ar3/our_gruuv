@@ -675,12 +675,13 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
         showModal();
       ")
       
-      # Give a moment for the modal to open
-      sleep 0.3
+      # Wait for the modal to become visible
+      expect(page).to have_css("##{modal_id}.show", wait: 10)
       
-      # Wait for the modal content to become visible
-      # This is more reliable than checking for the .show class
-      expect(page).to have_content('Observations for', wait: 10)
+      # Wait for the modal title to be visible and contain the expected text
+      within("##{modal_id}.show", visible: true) do
+        expect(page).to have_css('h5.modal-title', text: /Observations for/, wait: 5)
+      end
     end
   end
 

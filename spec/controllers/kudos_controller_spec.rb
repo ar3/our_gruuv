@@ -10,6 +10,7 @@ RSpec.describe KudosController, type: :controller do
     obs = build(:observation, observer: observer, company: company, observed_at: Date.parse('2025-10-05'))
     obs.observees.build(teammate: observee_teammate)
     obs.save!
+    obs.publish! # Publish so observees can view it (drafts are only visible to creator)
     obs
   end
 

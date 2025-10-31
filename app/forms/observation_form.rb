@@ -39,7 +39,6 @@ class ObservationForm < Reform::Form
   validates :primary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true, allow_blank: true
   validates :secondary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true, allow_blank: true
   validate :custom_slug_uniqueness
-  validate :at_least_one_observee
   
   def save
     return false unless valid?
@@ -143,13 +142,5 @@ class ObservationForm < Reform::Form
     if existing_observation
       errors.add(:custom_slug, 'has already been taken')
     end
-  end
-  
-  def at_least_one_observee
-    # Check both existing observees and virtual properties
-    # Filter out empty strings from teammate_ids (Rails checkbox behavior)
-    valid_teammate_ids = teammate_ids&.reject(&:blank?) || []
-    has_observees = observees.any? || valid_teammate_ids.any?
-    errors.add(:observees, "must have at least one observee") unless has_observees
   end
 end

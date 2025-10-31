@@ -745,7 +745,8 @@ end
     if params[:observation].present?
       params.require(:observation).permit(
         :story, :privacy_level, :primary_feeling, :secondary_feeling, 
-        :observed_at, :custom_slug, :send_notifications, teammate_ids: [], notify_teammate_ids: [],
+        :observed_at, :custom_slug, :send_notifications, :publishing,
+        teammate_ids: [], notify_teammate_ids: [],
         observees_attributes: [:id, :teammate_id, :_destroy],
         observation_ratings_attributes: {}
       )
