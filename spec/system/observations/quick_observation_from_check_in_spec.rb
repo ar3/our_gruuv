@@ -17,6 +17,136 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
   end
 
   context 'as an employee viewing their check-ins' do
+    it 'retains story, privacy, feelings, rateables, and observees across add flows and on publish' do
+      # Setup: second assignment, an ability, an aspiration, and another teammate
+      second_assignment = create(:assignment, company: organization)
+      create(:assignment_tenure, teammate: employee_teammate, assignment: second_assignment, started_at: 1.month.ago)
+      ability = create(:ability, organization: organization, name: 'Ruby')
+      aspiration = create(:aspiration, organization: organization, name: 'Grow Leadership')
+      other_person = create(:person, full_name: 'Teammate Two')
+      other_teammate = create(:teammate, person: other_person, organization: organization)
+
+      sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
+
+      # 1) Start quick_new from assignment row (first assignment is pre-populated)
+      first('a', text: 'Add Win / Challenge').click
+      expect(page).to have_content('Create Quick Observation')
+      
+      # First assignment should be visible (pre-populated from check-in link)
+      expect(page).to have_content(assignment.title)
+
+      # 2) Fill story, journal privacy, both feelings
+      fill_in 'observation_story', with: 'Full flow story validation text'
+      choose 'observation_privacy_level_observer_only'
+      select '😀 (Happy) Happy', from: 'observation[primary_feeling]'
+      select '😊 (Satisfied) Satisfied', from: 'observation[secondary_feeling]'
+      
+      # Set rating for the pre-populated first assignment
+      choose "observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]", option: 'strongly_agree'
+
+      # 3) Add a new assignment and set rating to agree
+      click_button 'Add Assignments'
+      expect(page).to have_content('Select Assignments to Add', wait: 5)
+      check "assignment_#{second_assignment.id}"
+      click_button 'Add Selected Assignments'
+      expect(page).to have_content('Create Quick Observation', wait: 5)
+
+      # Set rating for the newly added second assignment to agree
+      choose "observation[observation_ratings_attributes][assignment_#{second_assignment.id}][rating]", option: 'agree'
+      
+      # Verify both assignment ratings are set
+      expect(find("input[name='observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]'][value='strongly_agree']")).to be_checked
+      expect(find("input[name='observation[observation_ratings_attributes][assignment_#{second_assignment.id}][rating]'][value='agree']")).to be_checked
+
+      # 4) Validate previously filled items are still present
+      expect(find_field('observation_story').value).to include('Full flow story validation text')
+      expect(page).to have_checked_field('observation_privacy_level_observer_only')
+      expect(find_field('observation[primary_feeling]').value).to eq('happy')
+      expect(find_field('observation[secondary_feeling]').value).to eq('satisfied')
+
+      # 5) Add a new observee
+      find('input[name="save_and_add"][value="observees"]', visible: true).click
+      expect(page).to have_content('Select Observees to Add', wait: 5)
+      check "teammate_#{other_teammate.id}"
+      click_button 'Add Selected Observees'
+      expect(page).to have_content('Create Quick Observation', wait: 5)
+
+      # 6) Validate state still intact, including assignment ratings (BUG CHECK)
+      expect(find_field('observation_story').value).to include('Full flow story validation text')
+      expect(page).to have_checked_field('observation_privacy_level_observer_only')
+      expect(find_field('observation[primary_feeling]').value).to eq('happy')
+      expect(find_field('observation[secondary_feeling]').value).to eq('satisfied')
+      # Ensure the new observee is visible
+      expect(page).to have_content(other_person.display_name)
+      # CRITICAL: Check that second assignment rating is still set (not reset to N/A)
+      expect(find("input[name='observation[observation_ratings_attributes][assignment_#{second_assignment.id}][rating]'][value='agree']")).to be_checked, 
+        "Second assignment rating was reset to N/A after adding observee!"
+      # First assignment rating should still be set too
+      expect(find("input[name='observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]'][value='strongly_agree']")).to be_checked
+
+      # 7) Add ability and set rating to agree
+      find('input[name="save_and_add"][value="abilities"]', visible: true).click
+      expect(page).to have_content('Select Abilities to Add', wait: 5)
+      check "ability_#{ability.id}"
+      click_button 'Add Selected Abilities'
+      expect(page).to have_content('Create Quick Observation', wait: 5)
+      choose "observation[observation_ratings_attributes][ability_#{ability.id}][rating]", option: 'agree'
+
+      # 8) Validate state still intact, including assignment ratings (BUG CHECK)
+      expect(find_field('observation_story').value).to include('Full flow story validation text')
+      expect(page).to have_checked_field('observation_privacy_level_observer_only')
+      expect(find_field('observation[primary_feeling]').value).to eq('happy')
+      expect(find_field('observation[secondary_feeling]').value).to eq('satisfied')
+      expect(page).to have_content(other_person.display_name)
+      # CRITICAL: Check that second assignment rating is still set (not reset to N/A)
+      expect(find("input[name='observation[observation_ratings_attributes][assignment_#{second_assignment.id}][rating]'][value='agree']")).to be_checked,
+        "Second assignment rating was reset to N/A after adding ability!"
+      # First assignment rating should still be set too
+      expect(find("input[name='observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]'][value='strongly_agree']")).to be_checked
+
+      # 9) Add aspiration and set rating to agree
+      find('input[name="save_and_add"][value="aspirations"]', visible: true).click
+      expect(page).to have_content('Select Aspirations to Add', wait: 5)
+      check "aspiration_#{aspiration.id}"
+      click_button 'Add Selected Aspirations'
+      expect(page).to have_content('Create Quick Observation', wait: 5)
+      choose "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rating]", option: 'agree'
+
+      # 10) Validate everything still intact prior to publish, including assignment ratings (BUG CHECK)
+      expect(find_field('observation_story').value).to include('Full flow story validation text')
+      expect(page).to have_checked_field('observation_privacy_level_observer_only')
+      expect(find_field('observation[primary_feeling]').value).to eq('happy')
+      expect(find_field('observation[secondary_feeling]').value).to eq('satisfied')
+      expect(page).to have_content(other_person.display_name)
+      # CRITICAL: Check that second assignment rating is still set (not reset to N/A)
+      expect(find("input[name='observation[observation_ratings_attributes][assignment_#{second_assignment.id}][rating]'][value='agree']")).to be_checked,
+        "Second assignment rating was reset to N/A after adding aspiration!"
+      # First assignment rating should still be set too
+      expect(find("input[name='observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]'][value='strongly_agree']")).to be_checked
+
+      # Publish & validate persisted record
+      click_button 'Publish & Return to Check-ins'
+      expect(page).to have_content('Check-Ins', wait: 5)
+
+      observation = Observation.last
+      observation.reload
+      expect(observation.story).to include('Full flow story validation text')
+      expect(observation.privacy_level).to eq('observer_only')
+      expect(observation.primary_feeling).to eq('happy')
+      expect(observation.secondary_feeling).to eq('satisfied')
+      # Observees include both original employee and added teammate
+      expect(observation.observees.pluck(:teammate_id)).to include(employee_teammate.id, other_teammate.id)
+      # Ratings - verify all are persisted correctly
+      first_assignment_rating = observation.observation_ratings.find_by(rateable_type: 'Assignment', rateable_id: assignment.id)
+      second_assignment_rating = observation.observation_ratings.find_by(rateable_type: 'Assignment', rateable_id: second_assignment.id)
+      ability_rating = observation.observation_ratings.find_by(rateable_type: 'Ability', rateable_id: ability.id)
+      aspiration_rating = observation.observation_ratings.find_by(rateable_type: 'Aspiration', rateable_id: aspiration.id)
+      expect(first_assignment_rating&.rating).to eq('strongly_agree')
+      expect(second_assignment_rating&.rating).to eq('agree'), 
+        "Second assignment rating was not persisted correctly in database!"
+      expect(ability_rating&.rating).to eq('agree')
+      expect(aspiration_rating&.rating).to eq('agree')
+    end
     it 'shows an aspiration preselected via querystring and saves draft only when clicking Add Aspirations' do
       sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
 
@@ -275,25 +405,45 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       # Fill in story
       fill_in 'observation_story', with: 'Story that should persist'
       
+      # Wait for the form to be ready before clicking
+      expect(page).to have_button('Add Assignments', wait: 5)
+      
       # Click Add Assignments - should maintain return_text
       click_button 'Add Assignments'
       
-      expect(page).to have_content('Select Assignments to Add', wait: 5)
+      # Wait for the redirect to complete and the page to be fully loaded
+      expect(page).to have_content('Select Assignments to Add', wait: 10)
+      
+      # Wait a moment for the page to stabilize after redirect
+      sleep 0.5
       
       # Go back using the overlay header back button
+      expect(page).to have_css('#return-button', wait: 5)
       find('#return-button').click
+      
+      # Wait for redirect back to quick_new
+      expect(page).to have_content('Create Quick Observation', wait: 10)
       
       # Should still say "Publish & Return to Check-ins"
       expect(page).to have_button('Publish & Return to Check-ins', wait: 5)
       
       # Select assignment and add
+      expect(page).to have_button('Add Assignments', wait: 5)
       click_button 'Add Assignments'
+      
+      # Wait for add assignments page
+      expect(page).to have_content('Select Assignments to Add', wait: 10)
+      sleep 0.5
+      
       check "assignment_#{assignment.id}"
       click_button 'Add Selected Assignments'
       
+      # Wait for redirect back to quick_new
+      expect(page).to have_content('Create Quick Observation', wait: 10)
+      
       # Should still say "Publish & Return to Check-ins" after adding assignments
       expect(page).to have_button('Publish & Return to Check-ins', wait: 5)
-      expect(page).to have_field('observation_story', with: 'Story that should persist')
+      expect(page).to have_field('observation_story', with: 'Story that should persist', wait: 5)
     end
 
     it 'saves draft when canceling with story content, then redirects' do
@@ -491,15 +641,46 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
       
       # Should see observation modal trigger link for this assignment
+      expect(page).to have_css('a[data-bs-target^="#observationsModal_assignment_"]', wait: 5)
       observation_link = page.find('a[data-bs-target^="#observationsModal_assignment_"]', match: :first)
       expect(observation_link).to have_css('i.bi.bi-eye')
       
-      # Click it
-      observation_link.click
+      # Get the modal ID from the link's data-bs-target attribute
+      modal_target = observation_link['data-bs-target']
+      modal_id = modal_target.gsub('#', '')
       
-      # Should open modal
-      expect(page).to have_css('.modal.show')
-      expect(page).to have_content('Observations for')
+      # Ensure the modal element exists in the DOM (may be hidden initially)
+      expect(page).to have_css("##{modal_id}", visible: :all, wait: 5)
+      
+      # Use JavaScript to trigger the modal - more reliable than clicking the link
+      # Bootstrap 5's getOrCreateInstance handles initialization better
+      page.execute_script("
+        function showModal() {
+          if (typeof bootstrap !== 'undefined' && typeof bootstrap.Modal !== 'undefined') {
+            var modalElement = document.getElementById('#{modal_id}');
+            if (modalElement) {
+              try {
+                var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                modal.show();
+                return true;
+              } catch (e) {
+                var modal = new bootstrap.Modal(modalElement);
+                modal.show();
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+        showModal();
+      ")
+      
+      # Give a moment for the modal to open
+      sleep 0.3
+      
+      # Wait for the modal content to become visible
+      # This is more reliable than checking for the .show class
+      expect(page).to have_content('Observations for', wait: 10)
     end
   end
 

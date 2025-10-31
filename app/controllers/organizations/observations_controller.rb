@@ -512,10 +512,10 @@ end
     end
     
     permitted_params = draft_params
-    # For save-and-add flows, ignore inline ratings; rating is set on picker/after
-    if params[:save_and_add_assignments].present? || params[:save_and_add].present?
-      permitted_params = permitted_params.except(:observation_ratings_attributes)
-    end
+    # Note: We no longer strip out observation_ratings_attributes for save-and-add flows.
+    # ObservationForm#save handles duplicate prevention correctly by checking for existing
+    # ratings before creating new ones, so ratings will be preserved when adding observees,
+    # abilities, or aspirations.
     
     # Use Reform in draft mode (no story requirement)
     @form = ObservationForm.new(@observation)
