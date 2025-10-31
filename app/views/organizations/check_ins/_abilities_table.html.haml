@@ -7,6 +7,7 @@
           %th Ability
           %th Why It's Relevant
           %th When Milestones Achieved
+          %th Notes
           %th #{person.first_name} is actively pursuing:
       %tbody
         - relevant_abilities.each do |ability_data|
@@ -45,25 +46,21 @@
               - else
                 %span.text-muted None
             %td
-              .d-flex.flex-wrap.gap-2
-                .form-check.form-check-inline
-                  = radio_button_tag "ability_goal[#{ability.id}]", "na", true, class: "form-check-input", disabled: true
-                  = label_tag "ability_goal[#{ability.id}]_na", "N/A", class: "form-check-label"
-                .form-check.form-check-inline
-                  = radio_button_tag "ability_goal[#{ability.id}]", "m1", false, class: "form-check-input", disabled: true
-                  = label_tag "ability_goal[#{ability.id}]_m1", "M1: Demonstrated", class: "form-check-label"
-                .form-check.form-check-inline
-                  = radio_button_tag "ability_goal[#{ability.id}]", "m2", false, class: "form-check-input", disabled: true
-                  = label_tag "ability_goal[#{ability.id}]_m2", "M2: Advanced", class: "form-check-label"
-                .form-check.form-check-inline
-                  = radio_button_tag "ability_goal[#{ability.id}]", "m3", false, class: "form-check-input", disabled: true
-                  = label_tag "ability_goal[#{ability.id}]_m3", "M3: Expert", class: "form-check-label"
-                .form-check.form-check-inline
-                  = radio_button_tag "ability_goal[#{ability.id}]", "m4", false, class: "form-check-input", disabled: true
-                  = label_tag "ability_goal[#{ability.id}]_m4", "M4: Distinguished", class: "form-check-label"
-                .form-check.form-check-inline
-                  = radio_button_tag "ability_goal[#{ability.id}]", "m5", false, class: "form-check-input", disabled: true
-                  = label_tag "ability_goal[#{ability.id}]_m5", "M5: Industry-Recognized", class: "form-check-label"
+              %textarea.form-control.form-control-sm{rows: "2", placeholder: "Coming Soon... Ability notes..." }
+            %td
+              .btn-group-vertical{role: "group", "aria-label": "Ability goal selection"}
+                = radio_button_tag "ability_goal[#{ability.id}]", "na", true, class: "btn-check", id: "ability_goal_#{ability.id}_na", disabled: true
+                = label_tag "ability_goal_#{ability.id}_na", "N/A", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_na"
+                = radio_button_tag "ability_goal[#{ability.id}]", "m1", false, class: "btn-check", id: "ability_goal_#{ability.id}_m1", disabled: true
+                = label_tag "ability_goal_#{ability.id}_m1", "M1: Demonstrated", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m1"
+                = radio_button_tag "ability_goal[#{ability.id}]", "m2", false, class: "btn-check", id: "ability_goal_#{ability.id}_m2", disabled: true
+                = label_tag "ability_goal_#{ability.id}_m2", "M2: Advanced", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m2"
+                = radio_button_tag "ability_goal[#{ability.id}]", "m3", false, class: "btn-check", id: "ability_goal_#{ability.id}_m3", disabled: true
+                = label_tag "ability_goal_#{ability.id}_m3", "M3: Expert", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m3"
+                = radio_button_tag "ability_goal[#{ability.id}]", "m4", false, class: "btn-check", id: "ability_goal_#{ability.id}_m4", disabled: true
+                = label_tag "ability_goal_#{ability.id}_m4", "M4: Distinguished", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m4"
+                = radio_button_tag "ability_goal[#{ability.id}]", "m5", false, class: "btn-check", id: "ability_goal_#{ability.id}_m5", disabled: true
+                = label_tag "ability_goal_#{ability.id}_m5", "M5: Industry-Recognized", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m5"
 - else
   .alert.alert-info{data: {abilities_empty_state: true}}
     %i.bi.bi-info-circle.me-2

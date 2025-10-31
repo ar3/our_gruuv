@@ -42,6 +42,19 @@
                   = check_in.aspiration.name
                   %i.bi.bi-clock-history.ms-1.text-muted
               = render partial_name, check_in: check_in, form: af, view_mode: view_mode
+    -# Observation modals for each aspiration
+    - aspiration_check_ins.each do |check_in|
+      - since_date = check_in.previous_finalized_check_in&.official_check_in_completed_at || 1.year.ago
+      - teammate = @person.teammates.find_by(organization: @organization)
+      - if teammate
+        = render 'organizations/observations/list_modal',
+                 modal_id: "observationsModal_aspiration_#{check_in.aspiration_id}",
+                 modal_title: "Observations for #{check_in.aspiration.name}",
+                 rateable_type: 'Aspiration',
+                 rateable_id: check_in.aspiration_id,
+                 observee_ids: [teammate.id],
+                 start_date: since_date,
+                 end_date: nil
 - else
   .alert.alert-info
     %i.bi.bi-info-circle.me-2
