@@ -1,0 +1,253 @@
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2= @goal.title
+    - if policy(@goal).update?
+      = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary ml-2" do
+        %i.bi.bi-pencil.me-2
+        Edit
+    - else
+      .btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+        %i.bi.bi-pencil.me-2
+        Edit
+
+- content_for :go_back_link do
+  = link_to organization_goals_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Goals
+
+.row
+  .col-md-8
+    / Goal Details Card
+    .card.mb-4{ role: "region", "aria-labelledby": "goal-details" }
+      .card-header
+        %h5.mb-0{ id: "goal-details" }
+          %i.bi.bi-info-circle.me-2
+          Goal Details
+      .card-body
+        %dl.row
+          %dt.col-sm-4 Title:
+          %dd.col-sm-8= @goal.title
+          %dt.col-sm-4 Description:
+          %dd.col-sm-8
+            - if @goal.description.present?
+              = simple_format(@goal.description)
+            - else
+              %em.text-muted No description provided
+          %dt.col-sm-4 Goal Type:
+          %dd.col-sm-8
+            %span.badge{class: goal_badge_class(@goal.goal_type)}
+              = @goal.goal_type.humanize
+          %dt.col-sm-4 Timeframe:
+          %dd.col-sm-8
+            %span.badge{class: timeframe_badge_class(@goal.timeframe)}
+              = @goal.timeframe.to_s.humanize
+          %dt.col-sm-4 Status:
+          %dd.col-sm-8
+            %span.badge{class: status_badge_class(@goal.status)}
+              = @goal.status.to_s.humanize
+          %dt.col-sm-4 Target Dates:
+          %dd.col-sm-8
+            - if @goal.earliest_target_date.present? || @goal.most_likely_target_date.present? || @goal.latest_target_date.present?
+              - if @goal.earliest_target_date.present?
+                .mb-1
+                  %strong Earliest:
+                  = @goal.earliest_target_date.strftime("%B %d, %Y")
+              - if @goal.most_likely_target_date.present?
+                .mb-1
+                  %strong Most Likely:
+                  = @goal.most_likely_target_date.strftime("%B %d, %Y")
+              - if @goal.latest_target_date.present?
+                .mb-1
+                  %strong Latest:
+                  = @goal.latest_target_date.strftime("%B %d, %Y")
+            - else
+              %em.text-muted No target dates set
+          %dt.col-sm-4 Owner:
+          %dd.col-sm-8
+            - if @goal.owner_type == 'Person'
+              = @goal.owner.display_name
+            - else
+              = @goal.owner.display_name
+          %dt.col-sm-4 Creator:
+          %dd.col-sm-8= @goal.creator.person.display_name
+          %dt.col-sm-4 Privacy Level:
+          %dd.col-sm-8
+            %span.badge.bg-secondary= @goal.privacy_level.humanize
+          - if @goal.started_at.present?
+            %dt.col-sm-4 Started:
+            %dd.col-sm-8= @goal.started_at.strftime("%B %d, %Y at %I:%M %p")
+          - if @goal.completed_at.present?
+            %dt.col-sm-4 Completed:
+            %dd.col-sm-8= @goal.completed_at.strftime("%B %d, %Y at %I:%M %p")
+          - if @goal.cancelled_at.present?
+            %dt.col-sm-4 Cancelled:
+            %dd.col-sm-8= @goal.cancelled_at.strftime("%B %d, %Y at %I:%M %p")
+          - if @goal.became_top_priority.present?
+            %dt.col-sm-4 Top Priority Since:
+            %dd.col-sm-8= @goal.became_top_priority.strftime("%B %d, %Y at %I:%M %p")
+          %dt.col-sm-4 Created:
+          %dd.col-sm-8= @goal.created_at.strftime("%B %d, %Y at %I:%M %p")
+          %dt.col-sm-4 Updated:
+          %dd.col-sm-8= @goal.updated_at.strftime("%B %d, %Y at %I:%M %p")
+
+    / Outgoing Links Card
+    .card.mb-4{ role: "region", "aria-labelledby": "outgoing-links" }
+      .card-header.d-flex.justify-content-between.align-items-center
+        %h5.mb-0{ id: "outgoing-links" }
+          %i.bi.bi-arrow-right-circle.me-2
+          This Goal Relates To
+        - if policy(@goal).update?
+          %button.btn.btn-sm.btn-primary{"data-bs-toggle" => "modal", "data-bs-target" => "#addLinkModal", type: "button"}
+            %i.bi.bi-plus.me-1
+            Add Link
+      .card-body
+        - if @goal.outgoing_links.any?
+          - @goal.outgoing_links.group_by(&:link_type).each do |link_type, links|
+            %h6.mt-3.mb-2
+              %span.badge.bg-info= link_type.humanize
+            %ul.list-unstyled
+              - links.each do |link|
+                %li.mb-2
+                  .d-flex.justify-content-between.align-items-start
+                    .flex-grow-1
+                      = link_to organization_goal_path(@organization, link.that_goal), class: "text-decoration-none" do
+                        %strong= link.that_goal.title
+                      - if link.metadata.present? && link.metadata['notes'].present?
+                        %small.text-muted.d-block.mt-1= link.metadata['notes']
+                    - if policy(link).destroy?
+                      = link_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger ms-2", data: { confirm: "Are you sure you want to remove this link?" } do
+                        %i.bi.bi-trash
+        - else
+          %em.text-muted No outgoing links. This goal doesn't relate to any other goals yet.
+          - if policy(@goal).update?
+            = link_to "#", class: "text-decoration-none", "data-bs-toggle" => "modal", "data-bs-target" => "#addLinkModal" do
+              Add a link
+
+    / Incoming Links Card
+    .card.mb-4{ role: "region", "aria-labelledby": "incoming-links" }
+      .card-header
+        %h5.mb-0{ id: "incoming-links" }
+          %i.bi.bi-arrow-left-circle.me-2
+          Goals That Relate To This
+      .card-body
+        - if @goal.incoming_links.any?
+          - @goal.incoming_links.group_by(&:link_type).each do |link_type, links|
+            %h6.mt-3.mb-2
+              %span.badge.bg-success= link_type.humanize
+            %ul.list-unstyled
+              - links.each do |link|
+                %li.mb-2
+                  = link_to organization_goal_path(@organization, link.this_goal), class: "text-decoration-none" do
+                    %strong= link.this_goal.title
+                  - if link.metadata.present? && link.metadata['notes'].present?
+                    %small.text-muted.d-block.mt-1= link.metadata['notes']
+        - else
+          %em.text-muted No incoming links. No other goals relate to this goal yet.
+
+  .col-md-4
+    / Actions Card
+    .card.mb-4
+      .card-header
+        %h6.mb-0
+          %i.bi.bi-gear.me-2
+          Actions
+      .card-body
+        .d-grid.gap-2
+          - if policy(@goal).update?
+            = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-primary" do
+              %i.bi.bi-pencil.me-2
+              Edit Goal
+          - if policy(@goal).destroy?
+            = link_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to delete this goal? This action cannot be undone." } do
+              %i.bi.bi-trash.me-2
+              Delete Goal
+          - if policy(@goal).update?
+            %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#addLinkModal", type: "button"}
+              %i.bi.bi-link-45deg.me-2
+              Link to Another Goal
+
+    / Quick Info Card
+    .card.mb-4
+      .card-header
+        %h6.mb-0
+          %i.bi.bi-info-circle.me-2
+          Quick Info
+      .card-body
+        .mb-2
+          %small.text-muted Goal Type:
+          %div
+            %span.badge{class: goal_badge_class(@goal.goal_type)}
+              = @goal.goal_type.humanize
+        .mb-2
+          %small.text-muted Timeframe:
+          %div
+            %span.badge{class: timeframe_badge_class(@goal.timeframe)}
+              = @goal.timeframe.to_s.humanize
+        .mb-2
+          %small.text-muted Status:
+          %div
+            %span.badge{class: status_badge_class(@goal.status)}
+              = @goal.status.to_s.humanize
+        .mb-2
+          %small.text-muted Links:
+          %div
+            %strong= @goal.outgoing_links.count
+            %small.text-muted outgoing
+            %span.mx-1 |
+            %strong= @goal.incoming_links.count
+            %small.text-muted incoming
+        - if @goal.most_likely_target_date.present?
+          .mb-2
+            %small.text-muted Most Likely Target:
+            %div= @goal.most_likely_target_date.strftime("%b %d, %Y")
+        - if @goal.became_top_priority.present?
+          .mb-2
+            %small.text-muted Top Priority Since:
+            %div= @goal.became_top_priority.strftime("%b %d, %Y")
+        .mb-2
+          %small.text-muted Created:
+          %div= @goal.created_at.strftime("%b %d, %Y")
+
+/ Add Link Modal
+#addLinkModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "addLinkModalLabel", tabindex: "-1"}
+  .modal-dialog
+    .modal-content
+      .modal-header
+        %h5.modal-title#addLinkModalLabel
+          %i.bi.bi-link-45deg.me-2
+          Link This Goal to Another Goal
+        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+      = form_with url: organization_goal_goal_links_path(@organization, @goal), method: :post, local: true do |f|
+        .modal-body
+          .mb-3
+            %label.form-label
+              Link To Goal
+              %span.text-danger *
+            - available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization)).where.not(id: @goal.id)
+            - if available_goals.any?
+              = f.collection_select :that_goal_id, available_goals, :id, :title, { prompt: "Select a goal..." }, { class: "form-select", required: true }
+            - else
+              %select.form-select{disabled: true}
+                %option No other goals available to link
+              %small.text-muted You need to create other goals first before you can link them.
+          .mb-3
+            %label.form-label
+              Link Type
+              %span.text-danger *
+            - GoalLink.link_types.each do |link_type, value|
+              .form-check
+                = f.radio_button :link_type, link_type, class: "form-check-input", required: true
+                = f.label :link_type, link_type.humanize, value: link_type, class: "form-check-label"
+                - if link_type == 'this_is_key_result_of_that'
+                  %small.text-muted.d-block.ms-4
+                    %em Use this when the selected goal is a key result of this goal
+                - elsif link_type == 'this_blocks_that'
+                  %small.text-muted.d-block.ms-4
+                    %em This goal must be completed before the selected goal can start
+          .mb-3
+            %label.form-label Notes (Optional)
+            = f.text_area :metadata_notes, rows: 3, class: "form-control", placeholder: "Add any notes about this link..."
+        .modal-footer
+          %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+          = f.submit "Create Link", class: "btn btn-primary"
+

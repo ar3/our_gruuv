@@ -20,6 +20,9 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
                             .recent
                             .limit(5)
     
+    # Load check-ins data for hero cards
+    load_check_ins_dashboard_stats
+    
     # Organization-specific dashboard content will go here
     load_organization_dashboard_stats
   end
@@ -63,17 +66,6 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     # Load stats for the three pillars
     load_organization_stats
     
-  end
-  
-  def dashboard
-    @current_person = current_person
-    @recent_huddles = Huddle.joins(huddle_participants: :teammate)
-                            .where(teammates: { person: current_person })
-                            .recent
-                            .limit(5)
-    
-    # Organization-specific dashboard content will go here
-    load_organization_dashboard_stats
   end
   
   def new
@@ -312,5 +304,36 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     
     # Observations posted to Slack
     @observations_posted_to_slack_count = all_observations.joins(:notifications).where(notifications: { status: 'sent_successfully' }).distinct.count
+  end
+  
+  def load_check_ins_dashboard_stats
+    # Find teammate for current person in this organization
+    teammate = current_person.teammates.find_by(organization: @organization)
+    
+    if teammate
+      # Check for check-ins ready for finalization (manager perspective)
+      position_ready = PositionCheckIn.where(teammate: teammate).ready_for_finalization.exists?
+      assignment_ready = AssignmentCheckIn.where(teammate: teammate).ready_for_finalization.exists?
+      aspiration_ready = AspirationCheckIn.where(teammate: teammate).ready_for_finalization.exists?
+      @ready_for_finalization_count = [position_ready, assignment_ready, aspiration_ready].count(true)
+      
+      # Check for finalized check-in awaiting acknowledgement (employee perspective)
+      # Find latest closed check-in within last 7 days that may need acknowledgement
+      @finalized_check_in_exists = PositionCheckIn.where(teammate: teammate)
+                                                   .closed
+                                                   .where('official_check_in_completed_at > ?', 7.days.ago)
+                                                   .exists? ||
+                                  AssignmentCheckIn.where(teammate: teammate)
+                                                   .closed
+                                                   .where('official_check_in_completed_at > ?', 7.days.ago)
+                                                   .exists? ||
+                                  AspirationCheckIn.where(teammate: teammate)
+                                                  .closed
+                                                  .where('official_check_in_completed_at > ?', 7.days.ago)
+                                                  .exists?
+    else
+      @ready_for_finalization_count = 0
+      @finalized_check_in_exists = false
+    end
   end
 end

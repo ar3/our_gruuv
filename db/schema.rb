@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_29_204848) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_31_203203) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -246,6 +246,50 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_29_204848) do
     t.datetime "updated_at", null: false
     t.index ["referable_type", "referable_id", "reference_type"], name: "index_external_references_on_referable_and_type"
     t.index ["referable_type", "referable_id"], name: "index_external_references_on_referable"
+  end
+
+  create_table "goal_links", force: :cascade do |t|
+    t.bigint "this_goal_id", null: false
+    t.bigint "that_goal_id", null: false
+    t.string "link_type", null: false
+    t.jsonb "metadata"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["link_type"], name: "index_goal_links_on_link_type"
+    t.index ["that_goal_id"], name: "index_goal_links_on_that_goal_id"
+    t.index ["this_goal_id", "that_goal_id", "link_type"], name: "index_goal_links_unique", unique: true
+    t.index ["this_goal_id"], name: "index_goal_links_on_this_goal_id"
+  end
+
+  create_table "goals", force: :cascade do |t|
+    t.string "owner_type", null: false
+    t.bigint "owner_id", null: false
+    t.bigint "creator_id", null: false
+    t.string "title", null: false
+    t.text "description"
+    t.string "goal_type", null: false
+    t.date "earliest_target_date"
+    t.date "latest_target_date"
+    t.date "most_likely_target_date"
+    t.string "privacy_level", null: false
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "cancelled_at"
+    t.datetime "became_top_priority"
+    t.datetime "deleted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["cancelled_at"], name: "index_goals_on_cancelled_at"
+    t.index ["completed_at"], name: "index_goals_on_completed_at"
+    t.index ["creator_id"], name: "index_goals_on_creator_id"
+    t.index ["deleted_at"], name: "index_goals_on_deleted_at"
+    t.index ["earliest_target_date"], name: "index_goals_on_earliest_target_date"
+    t.index ["goal_type"], name: "index_goals_on_goal_type"
+    t.index ["latest_target_date"], name: "index_goals_on_latest_target_date"
+    t.index ["most_likely_target_date"], name: "index_goals_on_most_likely_target_date"
+    t.index ["owner_type", "owner_id"], name: "index_goals_on_owner_type_and_owner_id"
+    t.index ["privacy_level"], name: "index_goals_on_privacy_level"
+    t.index ["started_at"], name: "index_goals_on_started_at"
   end
 
   create_table "huddle_feedbacks", force: :cascade do |t|
@@ -721,6 +765,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_29_204848) do
   add_foreign_key "employment_tenures", "positions"
   add_foreign_key "employment_tenures", "seats"
   add_foreign_key "employment_tenures", "teammates"
+  add_foreign_key "goal_links", "goals", column: "that_goal_id"
+  add_foreign_key "goal_links", "goals", column: "this_goal_id"
+  add_foreign_key "goals", "teammates", column: "creator_id"
   add_foreign_key "huddle_feedbacks", "huddles"
   add_foreign_key "huddle_feedbacks", "teammates"
   add_foreign_key "huddle_participants", "huddles"

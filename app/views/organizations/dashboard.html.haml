@@ -4,6 +4,8 @@
     Dashboard
 
 .container-fluid.py-4
+  = render 'organizations/dashboard/check_ins'
+  = render 'organizations/dashboard/goals'
   = render 'organizations/dashboard/observations'
   = render 'organizations/dashboard/know_section', organization: @organization
   = render 'organizations/dashboard/convo_section', organization: @organization

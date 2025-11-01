@@ -1,0 +1,197 @@
+- content_for :go_back_link do
+  = link_to organization_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@organization.display_name}
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      Goals
+    .d-flex.align-items-center
+      - if policy(Goal).create?
+        = link_to new_organization_goal_path(@organization), class: "btn btn-primary ml-2" do
+          %i.bi.bi-plus
+      - else
+        .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+          %i.bi.bi-plus
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be a teammate to create goals"}
+
+- content_for :header_action do
+  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#goalsFilterModal", type: "button"}
+    %i.bi.bi-funnel.me-2
+    Filter & Sort
+
+/ Spotlight Section (optional based on spotlight param)
+- if @current_filters[:spotlight].present? && @current_filters[:spotlight] != 'none'
+  .row.justify-content-center.mb-4
+    .col-lg-12
+      .card.border-0.shadow-sm
+        .card-body
+          .row
+            .col-md-8
+              .row.text-center
+                .col-3
+                  .h3.text-primary= @goals.count
+                  %small.text-muted Total Goals
+                .col-3
+                  .h3.text-success= @goals.active.count
+                  %small.text-muted Active Goals
+                .col-3
+                  .h3.text-info= @goals.now.count
+                  %small.text-muted Now Timeframe
+                .col-3
+                  .h3.text-warning= @goals.select { |g| g.became_top_priority.present? }.count
+                  %small.text-muted Top Priority
+          .col-md-4
+            - if @goals.any?
+              .alert.alert-success.small
+                %i.bi.bi-check-circle.me-2
+                %strong #{pluralize(@goals.count, 'goal')} found!
+        .card-footer.bg-light
+          .row.align-items-center
+            .col-md-6
+              %small.text-muted
+                %i.bi.bi-funnel.me-1
+                Filters: #{@current_filters[:timeframe] || 'All'} / #{@current_filters[:goal_type] || 'All'} / #{@current_filters[:status] || 'All'}
+                %br
+                %i.bi.bi-sort-down.me-1
+                Sort: #{@current_filters[:sort] || 'Most Likely Date'} (#{@current_filters[:direction] || 'asc'})
+            .col-md-6.text-end
+              %small.text-muted
+                %i.bi.bi-table.me-1
+                View: #{@view_style.capitalize}
+                %br
+                %i.bi.bi-eye.me-1
+                Spotlight: #{@current_filters[:spotlight]&.humanize || 'None'}
+
+.row.justify-content-center
+  .col-lg-12
+    - if @goals.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Title
+              %th Type
+              %th Timeframe
+              %th Status
+              %th Target Dates
+              %th Owner
+              %th Actions
+          %tbody
+            - @goals.each do |goal|
+              %tr
+                %td
+                  = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
+                %td
+                  %span.badge{class: goal_badge_class(goal.goal_type)}
+                    = goal.goal_type.humanize
+                %td
+                  %span.badge{class: timeframe_badge_class(goal.timeframe)}
+                    = goal.timeframe.to_s.humanize
+                %td
+                  %span.badge{class: status_badge_class(goal.status)}
+                    = goal.status.to_s.humanize
+                %td
+                  %small.text-muted
+                    - if goal.earliest_target_date.present?
+                      = goal.earliest_target_date.strftime('%m/%d/%y')
+                    - else
+                      %em No date
+                    - if goal.most_likely_target_date.present?
+                      | - 
+                      = goal.most_likely_target_date.strftime('%m/%d/%y')
+                    - if goal.latest_target_date.present?
+                      | - 
+                      = goal.latest_target_date.strftime('%m/%d/%y')
+                %td
+                  - if goal.owner_type == 'Person'
+                    = goal.owner.display_name
+                  - else
+                    = goal.owner.display_name
+                %td
+                  .btn-group.btn-group-sm
+                    = link_to organization_goal_path(@organization, goal), class: "btn btn-outline-primary" do
+                      %i.bi.bi-eye
+                    - if policy(goal).update?
+                      = link_to edit_organization_goal_path(@organization, goal), class: "btn btn-outline-secondary" do
+                        %i.bi.bi-pencil
+                    - if policy(goal).destroy?
+                      = link_to organization_goal_path(@organization, goal), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to delete this goal?" } do
+                        %i.bi.bi-trash
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Goals Found
+        %p.mb-2
+          - if @current_filters.values.any?(&:present?)
+            No goals match your current filters. Try adjusting your filters.
+          - else
+            Create your first goal to get started with goal tracking.
+            = link_to "Create First Goal", new_organization_goal_path(@organization), class: "btn btn-primary btn-sm"
+
+/ Modal for Filter & Sort
+#goalsFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "goalsFilterModalLabel", tabindex: "-1"}
+  .modal-dialog.modal-lg
+    .modal-content
+      .modal-header
+        %h5.modal-title#goalsFilterModalLabel
+          %i.bi.bi-funnel.me-2
+          Filter & Sort Goals
+        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
+      .modal-body
+        = form_with url: organization_goals_path(@organization), method: :get, local: true, id: "goals-filter-form" do |f|
+          .row
+            .col-md-6
+              %h6.mb-3
+                %i.bi.bi-funnel.me-2
+                Filters
+              .mb-3
+                %label.form-label Timeframe
+                - %w[all now next later].each do |timeframe|
+                  .form-check
+                    = f.radio_button :timeframe, timeframe, checked: (@current_filters[:timeframe] == timeframe || (timeframe == 'all' && @current_filters[:timeframe].blank?)), class: "form-check-input"
+                    = f.label :timeframe, timeframe.humanize, value: timeframe, class: "form-check-label"
+              .mb-3
+                %label.form-label Goal Type
+                - %w[inspirational_objective qualitative_key_result quantitative_key_result].each do |goal_type|
+                  .form-check
+                    = check_box_tag "goal_type[]", goal_type, (@current_filters[:goal_type]&.include?(goal_type) || (params[:goal_type].is_a?(Array) && params[:goal_type].include?(goal_type))), class: "form-check-input", id: "goal_type_#{goal_type}", form: "goals-filter-form"
+                    = label_tag "goal_type_#{goal_type}", goal_type.humanize, class: "form-check-label"
+              .mb-3
+                %label.form-label Status
+                - %w[draft active completed cancelled].each do |status|
+                  .form-check
+                    = check_box_tag "status[]", status, (@current_filters[:status]&.include?(status) || (params[:status].is_a?(Array) && params[:status].include?(status))), class: "form-check-input", id: "status_#{status}", form: "goals-filter-form"
+                    = label_tag "status_#{status}", status.humanize, class: "form-check-label"
+            .col-md-6
+              %h6.mb-3
+                %i.bi.bi-sort-down.me-2
+                Sort Options
+              .mb-3
+                %label.form-label Sort By
+                - sort_options = [['Most Likely Date', 'most_likely_target_date'], ['Earliest Date', 'earliest_target_date'], ['Latest Date', 'latest_target_date'], ['Created Date', 'created_at'], ['Title (A-Z)', 'title']]
+                = f.select :sort, options_for_select(sort_options, @current_filters[:sort] || 'most_likely_target_date'), {}, class: "form-select"
+              .mb-3
+                %label.form-label Direction
+                - direction_options = [['Ascending', 'asc'], ['Descending', 'desc']]
+                = f.select :direction, options_for_select(direction_options, @current_filters[:direction] || 'asc'), {}, class: "form-select"
+              .mb-3
+                %label.form-label View Style
+                - %w[table cards list].each do |view_style|
+                  .form-check
+                    = f.radio_button :view, view_style, checked: (@view_style == view_style), class: "form-check-input"
+                    = f.label :view, class: "form-check-label" do
+                      %i{class: "bi bi-#{view_style == 'table' ? 'table' : view_style == 'cards' ? 'grid' : 'list'} me-2"}
+                      = view_style.humanize
+              .mb-3
+                %label.form-label Spotlight
+                - spotlight_options = [['No Spotlight', 'none'], ['Top Priority', 'top_priority'], ['Recently Added', 'recently_added'], ['Overdue', 'overdue']]
+                = f.select :spotlight, options_for_select(spotlight_options, @current_filters[:spotlight] || 'none'), {}, class: "form-select"
+          .modal-footer
+            = link_to organization_goals_path(@organization), class: "btn btn-secondary" do
+              Reset Filters
+            %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+            = f.submit "Apply Filters", class: "btn btn-primary"
+

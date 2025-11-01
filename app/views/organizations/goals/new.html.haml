@@ -1,0 +1,148 @@
+- content_for :go_back_link do
+  = link_to organization_goals_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Goals
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2 New Goal
+
+.container-fluid
+  .row
+    .col-12
+      .card
+        .card-body
+          = form_with model: [@organization, @form], url: organization_goals_path(@organization), local: true do |form|
+            - if @form.errors.any?
+              .alert.alert-danger
+                %h4= "#{pluralize(@form.errors.count, "error")} prohibited this goal from being saved:"
+                %ul.mb-0
+                  - @form.errors.full_messages.each do |message|
+                    %li= message
+            
+            .mb-3
+              = form.label :title, class: 'form-label' do
+                Title
+                %span.text-danger *
+              = form.text_field :title, class: 'form-control', required: true
+            
+            .mb-3
+              = form.label :description, class: 'form-label'
+              = form.text_area :description, class: 'form-control', rows: 4
+            
+            / Timeframe Selection - Large Button Group (shown when advanced settings is closed)
+            .mb-4#timeframe-selection
+              %label.form-label Timeframe
+              .btn-group.w-100{role: "group", "aria-label": "Timeframe selection"}
+                = form.radio_button :timeframe, 'near_term', class: 'btn-check', id: 'timeframe_near_term', checked: false
+                = form.label :timeframe, 'Near-term goal', value: 'near_term', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_near_term'
+                
+                = form.radio_button :timeframe, 'medium_term', class: 'btn-check', id: 'timeframe_medium_term', checked: false
+                = form.label :timeframe, 'Medium-term goal', value: 'medium_term', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_medium_term'
+                
+                = form.radio_button :timeframe, 'long_term', class: 'btn-check', id: 'timeframe_long_term', checked: false
+                = form.label :timeframe, 'Long-term goal', value: 'long_term', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_long_term'
+                
+                = form.radio_button :timeframe, 'vision', class: 'btn-check', id: 'timeframe_vision', checked: false
+                = form.label :timeframe, 'Vision', value: 'vision', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_vision'
+              
+              %small.form-text.text-muted.mt-2.d-block
+                Select a timeframe to automatically set the target date, or customize in Advanced Settings below.
+            
+            / Advanced Settings Collapse
+            .mb-3
+              %button.btn.btn-link.p-0.text-decoration-none{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#advancedSettings", "aria-expanded": "false", "aria-controls": "advancedSettings"}
+                %i.bi.bi-chevron-down.me-2
+                Advanced Settings
+            
+            .collapse#advancedSettings
+              .card.card-body.bg-light.mt-3
+                .mb-3
+                  = form.label :goal_type, class: 'form-label' do
+                    Goal Type
+                    %span.text-danger *
+                  - Goal.goal_types.each do |goal_type, value|
+                    .form-check
+                      = form.radio_button :goal_type, goal_type, class: 'form-check-input', required: true, checked: (@form.goal_type == goal_type || (@form.goal_type.blank? && goal_type == 'inspirational_objective'))
+                      = form.label :goal_type, goal_type.humanize, value: goal_type, class: 'form-check-label'
+                      - if goal_type == 'inspirational_objective'
+                        %small.text-muted.d-block.ms-4
+                          %em Not directly measurable, measured through linked key results
+                      - elsif goal_type == 'qualitative_key_result'
+                        %small.text-muted.d-block.ms-4
+                          %em Measurable by sentiment or qualitative assessment
+                      - elsif goal_type == 'quantitative_key_result'
+                        %small.text-muted.d-block.ms-4
+                          %em Measurable by counting or percentage
+                
+                .mb-3
+                  %label.form-label
+                    Target Dates
+                    %small.text-muted (Optional)
+                  %small.form-text.text-muted.mb-2.d-block
+                    If you set dates here, they will override the timeframe selection above.
+                  .row
+                    .col-md-4.mb-2
+                      = form.label :earliest_target_date, 'Earliest Target Date', class: 'form-label small'
+                      = form.date_field :earliest_target_date, class: 'form-control'
+                    .col-md-4.mb-2
+                      = form.label :most_likely_target_date, 'Most Likely Target Date', class: 'form-label small'
+                      = form.date_field :most_likely_target_date, class: 'form-control'
+                    .col-md-4.mb-2
+                      = form.label :latest_target_date, 'Latest Target Date', class: 'form-label small'
+                      = form.date_field :latest_target_date, class: 'form-control'
+                  %small.form-text.text-muted
+                    All dates are optional. If provided, Earliest ≤ Most Likely ≤ Latest
+                
+                .mb-3
+                  = form.label :owner_id, class: 'form-label' do
+                    Owner
+                    %span.text-danger *
+                  = form.select :owner_id, 
+                    available_goal_owners,
+                    { prompt: "Select an owner..." },
+                    { class: 'form-select', required: true }
+                  %small.form-text.text-muted
+                    Choose who this goal belongs to: yourself, an employee, a team, department, or company
+                
+                .mb-3
+                  = form.label :privacy_level, class: 'form-label' do
+                    Privacy Level
+                    %span.text-danger *
+                  - Goal.privacy_levels.each do |privacy_level, value|
+                    .form-check
+                      = form.radio_button :privacy_level, privacy_level, class: 'form-check-input', required: true, checked: (@form.privacy_level == privacy_level || (@form.privacy_level.blank? && privacy_level == 'everyone_in_company'))
+                      = form.label :privacy_level, privacy_level.humanize, value: privacy_level, class: 'form-check-label'
+                      - if privacy_level == 'only_creator'
+                        %small.text-muted.d-block.ms-4 Only you can view this goal
+                      - elsif privacy_level == 'only_creator_and_owner'
+                        %small.text-muted.d-block.ms-4 You and the goal owner can view this goal
+                      - elsif privacy_level == 'only_creator_owner_and_managers'
+                        %small.text-muted.d-block.ms-4 You, the owner, and their managers can view this goal
+                      - elsif privacy_level == 'everyone_in_company'
+                        %small.text-muted.d-block.ms-4 Everyone in your company can view this goal
+            
+            .d-flex
+              = form.submit 'Create Goal', class: 'btn btn-primary'
+              = link_to 'Cancel', organization_goals_path(@organization), class: 'btn btn-outline-secondary ms-2'
+
+:javascript
+  function setupTimeframeToggle() {
+    var advancedSettings = document.getElementById('advancedSettings');
+    var timeframeSelection = document.getElementById('timeframe-selection');
+    
+    if (advancedSettings && timeframeSelection && !advancedSettings.dataset.timeframeToggleSetup) {
+      advancedSettings.dataset.timeframeToggleSetup = 'true';
+      
+      advancedSettings.addEventListener('shown.bs.collapse', function() {
+        timeframeSelection.style.display = 'none';
+      });
+      
+      advancedSettings.addEventListener('hidden.bs.collapse', function() {
+        timeframeSelection.style.display = '';
+      });
+    }
+  }
+  
+  document.addEventListener('DOMContentLoaded', setupTimeframeToggle);
+  document.addEventListener('turbo:load', setupTimeframeToggle);

@@ -1,0 +1,25 @@
+/ Giant Goals Card at Top
+- goals_header_html = capture do
+  %i.bi.bi-bullseye.me-3
+  Goals
+- goals_primary_html = capture do
+  %i.bi.bi-list-check.me-3
+  View My Goals
+- goals_secondary_html = capture do
+  %i.bi.bi-plus-circle.me-2
+  Create New Goal
+- goals_tertiary_html = capture do
+  %i.bi.bi-clipboard-check.me-2
+  Check-In on Your Goals
+- goals_description = ['Set goals, track progress, achieve results', 'Define what matters, measure what counts', 'Turn aspirations into achievements'].sample
+
+= render 'organizations/dashboard/dashboard_hero_card',
+  header_html: goals_header_html,
+  description: goals_description,
+  primary_action_url: organization_goals_path(@organization),
+  primary_action_html: goals_primary_html,
+  secondary_action_url: new_organization_goal_path(@organization),
+  secondary_action_html: goals_secondary_html,
+  tertiary_action_url: organization_person_check_ins_path(@organization, current_person),
+  tertiary_action_html: goals_tertiary_html
+

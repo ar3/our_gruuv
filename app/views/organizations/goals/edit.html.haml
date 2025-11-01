@@ -1,0 +1,123 @@
+- content_for :go_back_link do
+  = link_to organization_goal_path(@organization, @goal), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Goal
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2 Edit Goal
+
+.container-fluid
+  .row
+    .col-12
+      .card
+        .card-body
+          = form_with model: [@organization, @form], url: organization_goal_path(@organization, @goal), local: true do |form|
+            - if @form.errors.any?
+              .alert.alert-danger
+                %h4= "#{pluralize(@form.errors.count, "error")} prohibited this goal from being saved:"
+                %ul.mb-0
+                  - @form.errors.full_messages.each do |message|
+                    %li= message
+            
+            .mb-3
+              = form.label :title, class: 'form-label' do
+                Title
+                %span.text-danger *
+              = form.text_field :title, class: 'form-control', required: true
+            
+            .mb-3
+              = form.label :description, class: 'form-label'
+              = form.text_area :description, class: 'form-control', rows: 4
+            
+            / Timeframe Selection - Large Button Group
+            - if @goal.most_likely_target_date.present?
+              / Derive timeframe from existing most_likely_target_date
+              - days_from_now = (@goal.most_likely_target_date - Date.today).to_i
+              - existing_timeframe = days_from_now < 120 ? 'near_term' : (days_from_now < 365 ? 'medium_term' : (days_from_now < 1095 ? 'long_term' : 'vision'))
+            - else
+              - existing_timeframe = 'vision'
+           
+            / Advanced Settings Collapse
+            .mb-3
+              %button.btn.btn-link.p-0.text-decoration-none{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#advancedSettings", "aria-expanded": "false", "aria-controls": "advancedSettings"}
+                %i.bi.bi-chevron-down.me-2
+                Advanced Settings
+            
+            .collapse#advancedSettings
+              .card.card-body.bg-light.mt-3
+                .mb-3
+                  = form.label :goal_type, class: 'form-label' do
+                    Goal Type
+                    %span.text-danger *
+                  - Goal.goal_types.each do |goal_type, value|
+                    .form-check
+                      = form.radio_button :goal_type, goal_type, class: 'form-check-input', required: true
+                      = form.label :goal_type, goal_type.humanize, value: goal_type, class: 'form-check-label'
+                      - if goal_type == 'inspirational_objective'
+                        %small.text-muted.d-block.ms-4
+                          %em Not directly measurable, measured through linked key results
+                      - elsif goal_type == 'qualitative_key_result'
+                        %small.text-muted.d-block.ms-4
+                          %em Measurable by sentiment or qualitative assessment
+                      - elsif goal_type == 'quantitative_key_result'
+                        %small.text-muted.d-block.ms-4
+                          %em Measurable by counting or percentage
+                
+                .mb-3
+                  %label.form-label
+                    Target Dates
+                    %small.text-muted (Optional)
+                  %small.form-text.text-muted.mb-2.d-block
+                    If you set dates here, they will override the timeframe selection above.
+                  .row
+                    .col-md-4.mb-2
+                      = form.label :earliest_target_date, 'Earliest Target Date', class: 'form-label small'
+                      = form.date_field :earliest_target_date, class: 'form-control'
+                    .col-md-4.mb-2
+                      = form.label :most_likely_target_date, 'Most Likely Target Date', class: 'form-label small'
+                      = form.date_field :most_likely_target_date, class: 'form-control'
+                    .col-md-4.mb-2
+                      = form.label :latest_target_date, 'Latest Target Date', class: 'form-label small'
+                      = form.date_field :latest_target_date, class: 'form-control'
+                  %small.form-text.text-muted
+                    All dates are optional. If provided, Earliest ≤ Most Likely ≤ Latest
+                
+                .mb-3
+                  = form.label :owner_id, class: 'form-label' do
+                    Owner
+                    %span.text-danger *
+                  - current_owner_value = "#{@goal.owner_type}_#{@goal.owner_id}"
+                  = form.select :owner_id, 
+                    available_goal_owners,
+                    { selected: current_owner_value },
+                    { class: 'form-select', required: true }
+                  %small.form-text.text-muted
+                    Choose who this goal belongs to: yourself, an employee, a team, department, or company
+                
+                .mb-3
+                  = form.label :privacy_level, class: 'form-label' do
+                    Privacy Level
+                    %span.text-danger *
+                  - Goal.privacy_levels.each do |privacy_level, value|
+                    .form-check
+                      = form.radio_button :privacy_level, privacy_level, class: 'form-check-input', required: true
+                      = form.label :privacy_level, privacy_level.humanize, value: privacy_level, class: 'form-check-label'
+                      - if privacy_level == 'only_creator'
+                        %small.text-muted.d-block.ms-4 Only you can view this goal
+                      - elsif privacy_level == 'only_creator_and_owner'
+                        %small.text-muted.d-block.ms-4 You and the goal owner can view this goal
+                      - elsif privacy_level == 'only_creator_owner_and_managers'
+                        %small.text-muted.d-block.ms-4 You, the owner, and their managers can view this goal
+                      - elsif privacy_level == 'everyone_in_company'
+                        %small.text-muted.d-block.ms-4 Everyone in your company can view this goal
+                
+                / Status display
+                .mb-3
+                  .alert.alert-info
+                    %strong Current Status:
+                    = @goal.status.to_s.humanize
+            
+            .d-flex
+              = form.submit 'Update Goal', class: 'btn btn-primary'
+              = link_to 'Cancel', organization_goal_path(@organization, @goal), class: 'btn btn-outline-secondary ms-2'
