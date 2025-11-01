@@ -5,6 +5,9 @@ class GoalLinkForm < Reform::Form
   property :link_type
   property :metadata
   
+  # Virtual property for metadata notes
+  property :metadata_notes, virtual: true
+  
   # Use ActiveModel validations
   validates :this_goal_id, presence: true
   validates :that_goal_id, presence: true
@@ -22,7 +25,13 @@ class GoalLinkForm < Reform::Form
     model.this_goal_id = this_goal_id
     model.that_goal_id = that_goal_id
     model.link_type = link_type
-    model.metadata = metadata
+    
+    # Handle metadata - either from metadata param or metadata_notes virtual property
+    if metadata_notes.present?
+      model.metadata = { notes: metadata_notes }
+    elsif metadata.present?
+      model.metadata = metadata
+    end
     
     # Save the model
     model.save

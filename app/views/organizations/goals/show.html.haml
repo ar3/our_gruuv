@@ -217,7 +217,7 @@
           %i.bi.bi-link-45deg.me-2
           Link This Goal to Another Goal
         %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-      = form_with url: organization_goal_goal_links_path(@organization, @goal), method: :post, local: true do |f|
+      = form_with model: [@organization, @goal, GoalLink.new], url: organization_goal_goal_links_path(@organization, @goal), method: :post, local: true do |f|
         .modal-body
           .mb-3
             %label.form-label

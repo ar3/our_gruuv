@@ -10,12 +10,6 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     
     goal_link_params = params[:goal_link] || {}
     
-    # Handle metadata_notes separately
-    if goal_link_params[:metadata_notes].present?
-      goal_link_params[:metadata] = { notes: goal_link_params[:metadata_notes] }
-      goal_link_params.delete(:metadata_notes)
-    end
-    
     if @form.validate(goal_link_params) && @form.save
       redirect_to organization_goal_path(@organization, @goal), 
                   notice: 'Goal link was successfully created.'
