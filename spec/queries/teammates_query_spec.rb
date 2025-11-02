@@ -131,6 +131,115 @@ RSpec.describe TeammatesQuery, type: :query do
         expect(results.size).to eq(results.uniq.size)
       end
     end
+
+    context 'with status filters' do
+      let(:active_employee) { create(:person) }
+      let(:unassigned_employee) { create(:person) }
+      let(:terminated_employee) { create(:person) }
+      let(:huddle_only_participant) { create(:person) }
+
+      let!(:active_teammate) { create(:teammate, person: active_employee, organization: organization, first_employed_at: 1.month.ago) }
+      let!(:unassigned_teammate) { create(:teammate, person: unassigned_employee, organization: organization, first_employed_at: 2.months.ago) }
+      let!(:terminated_teammate) { create(:teammate, person: terminated_employee, organization: organization, first_employed_at: 6.months.ago, last_terminated_at: 1.month.ago) }
+      let!(:huddle_only_teammate) { create(:teammate, person: huddle_only_participant, organization: organization, first_employed_at: nil, last_terminated_at: nil) }
+
+      before do
+        # Create employment tenure for active employee
+        create(:employment_tenure, teammate: active_teammate, company: organization, started_at: 2.months.ago, ended_at: nil)
+        # No employment tenure for unassigned (they have first_employed_at but no active tenure)
+        # Create terminated employment tenure (started_at must be before ended_at)
+        create(:employment_tenure, teammate: terminated_teammate, company: organization, started_at: 6.months.ago, ended_at: 1.month.ago)
+      end
+
+      describe 'active filter' do
+        it 'returns only active employees (assigned and unassigned)' do
+          query = TeammatesQuery.new(organization, { status: 'active' })
+          results = query.call_with_status_filter
+
+          expect(results).to include(active_teammate)
+          expect(results).to include(unassigned_teammate)
+          expect(results).not_to include(terminated_teammate)
+          expect(results).not_to include(huddle_only_teammate)
+        end
+      end
+
+      describe 'all_employed filter' do
+        it 'returns all ever-employed teammates (active, unassigned, and terminated)' do
+          query = TeammatesQuery.new(organization, { status: 'all_employed' })
+          results = query.call_with_status_filter
+
+          expect(results).to include(active_teammate)
+          expect(results).to include(unassigned_teammate)
+          expect(results).to include(terminated_teammate)
+          expect(results).not_to include(huddle_only_teammate)
+        end
+      end
+
+      describe 'terminated filter' do
+        it 'returns only terminated employees' do
+          query = TeammatesQuery.new(organization, { status: 'terminated' })
+          results = query.call_with_status_filter
+
+          expect(results).to include(terminated_teammate)
+          expect(results).not_to include(active_teammate)
+          expect(results).not_to include(unassigned_teammate)
+          expect(results).not_to include(huddle_only_teammate)
+        end
+      end
+
+      describe 'exclusion of huddle-only participants' do
+        it 'excludes huddle-only participants with default active filter' do
+          # Simulate default behavior - status defaults to 'active'
+          query = TeammatesQuery.new(organization, { status: 'active' })
+          results = query.call_with_status_filter
+
+          expect(results).not_to include(huddle_only_teammate)
+        end
+
+        it 'excludes huddle-only participants with all_employed filter' do
+          query = TeammatesQuery.new(organization, { status: 'all_employed' })
+          results = query.call_with_status_filter
+
+          expect(results).not_to include(huddle_only_teammate)
+        end
+      end
+    end
+
+    context 'uniqueness' do
+      it 'returns distinct teammates even with manager filter joins' do
+        # Create a teammate with multiple employment tenures reporting to the same manager
+        person = create(:person)
+        teammate = create(:teammate, person: person, organization: organization)
+        
+        # Create multiple employment tenures for the same teammate-manager relationship
+        create(:employment_tenure, teammate: teammate, company: organization, manager: manager, started_at: 3.months.ago, ended_at: 1.month.ago)
+        create(:employment_tenure, teammate: teammate, company: organization, manager: manager, started_at: 1.month.ago, ended_at: nil)
+
+        query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
+        results = query.call
+
+        # Should only appear once despite multiple tenures
+        expect(results.count { |t| t.id == teammate.id }).to eq(1)
+        expect(results).to include(teammate)
+      end
+
+      it 'returns distinct teammates without manager filter' do
+        # Create a teammate with multiple employment tenures
+        person = create(:person)
+        teammate = create(:teammate, person: person, organization: organization, first_employed_at: 3.months.ago)
+        
+        # Create multiple employment tenures
+        create(:employment_tenure, teammate: teammate, company: organization, started_at: 3.months.ago, ended_at: 1.month.ago)
+        create(:employment_tenure, teammate: teammate, company: organization, started_at: 1.month.ago, ended_at: nil)
+
+        query = TeammatesQuery.new(organization, {})
+        results = query.call
+
+        # Should only appear once despite multiple tenures
+        expect(results.count { |t| t.id == teammate.id }).to eq(1)
+        expect(results).to include(teammate)
+      end
+    end
   end
 
   describe '#current_filters' do
@@ -152,9 +261,24 @@ RSpec.describe TeammatesQuery, type: :query do
     it 'includes other existing filters' do
       query = TeammatesQuery.new(organization, { status: 'active', permission: 'employment_mgmt', manager_filter: 'direct_reports' })
       filters = query.current_filters
-      expect(filters[:status]).to eq('active')
+      # Status should be expanded to granular statuses for checkbox display
+      expect(filters[:status]).to include('assigned_employee', 'unassigned_employee')
       expect(filters[:permission]).to eq('employment_mgmt')
       expect(filters[:manager_filter]).to eq('direct_reports')
+    end
+
+    it 'expands status shortcuts to granular statuses for display' do
+      query = TeammatesQuery.new(organization, { status: 'active' })
+      filters = query.current_filters
+      expect(filters[:status]).to match_array(['assigned_employee', 'unassigned_employee'])
+
+      query = TeammatesQuery.new(organization, { status: 'all_employed' })
+      filters = query.current_filters
+      expect(filters[:status]).to match_array(['assigned_employee', 'unassigned_employee', 'terminated'])
+
+      query = TeammatesQuery.new(organization, { status: 'terminated' })
+      filters = query.current_filters
+      expect(filters[:status]).to match_array(['terminated'])
     end
   end
 

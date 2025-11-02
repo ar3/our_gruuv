@@ -8,6 +8,10 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Basic authorization - user should be able to view the organization
     authorize @organization, :show?
     
+    # Set default status to 'active' only when status is nil (not when it's an empty string)
+    # This allows the UI to explicitly request other statuses
+    params[:status] = 'active' if params[:status].nil?
+    
     # Additional authorization for manager filter
     if params[:manager_filter] == 'direct_reports' && (!current_person || !current_person.has_direct_reports?(@organization))
       redirect_to organization_employees_path(@organization), 

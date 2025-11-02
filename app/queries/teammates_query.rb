@@ -13,9 +13,10 @@ class TeammatesQuery
     teammates = filter_by_permissions(teammates)
     teammates = filter_by_manager_relationship(teammates)
     teammates = apply_sort(teammates)
+    # Ensure distinct to avoid duplicates from joins (e.g., manager filter)
     # Note: Status filtering is complex and requires Array conversion
     # This should be applied after pagination in the controller
-    teammates
+    teammates.distinct
   end
   
   def call_with_status_filter
@@ -25,7 +26,12 @@ class TeammatesQuery
 
   def current_filters
     filters = {}
-    filters[:status] = params[:status] if params[:status].present?
+    # Expand status shortcuts to granular statuses for checkbox display
+    if params[:status].present?
+      statuses = Array(params[:status])
+      expanded_statuses = expand_status_shortcuts(statuses)
+      filters[:status] = expanded_statuses.uniq
+    end
     filters[:organization_id] = params[:organization_id] if params[:organization_id].present?
     filters[:permission] = params[:permission] if params[:permission].present?
     # Include manager_filter even if it's an empty string (for UI state)
@@ -55,14 +61,54 @@ class TeammatesQuery
     statuses = Array(params[:status])
     return teammates if statuses.empty?
 
-    # Filter teammates based on their status using TeammateStatus
-    teammates.select do |teammate|
-      status = TeammateStatus.new(teammate).status
-      statuses.include?(status.to_s)
+    # Separate shortcuts from granular statuses
+    shortcuts = statuses.select { |s| ['active', 'terminated', 'all_employed'].include?(s.to_s) }
+    granular_statuses = statuses - shortcuts
+
+    # Apply database-level filters for shortcuts (more efficient)
+    if shortcuts.include?('active')
+      teammates = teammates.where.not(first_employed_at: nil).where(last_terminated_at: nil)
+    end
+
+    if shortcuts.include?('all_employed')
+      teammates = teammates.where.not(first_employed_at: nil)
+    end
+
+    if shortcuts.include?('terminated')
+      teammates = teammates.where.not(last_terminated_at: nil)
+    end
+
+    # If we have granular statuses, also filter by those using TeammateStatus
+    # (These might be redundant if shortcuts cover them, but handle for completeness)
+    if granular_statuses.any?
+      teammates.select do |teammate|
+        status = TeammateStatus.new(teammate).status
+        granular_statuses.include?(status.to_s)
+      end
+    else
+      teammates
     end
   end
 
   private
+
+  def expand_status_shortcuts(statuses)
+    expanded = []
+    statuses.each do |status|
+      case status.to_s
+      when 'active'
+        expanded.concat(['assigned_employee', 'unassigned_employee'])
+      when 'all_employed'
+        expanded.concat(['assigned_employee', 'unassigned_employee', 'terminated'])
+      when 'terminated'
+        expanded << 'terminated'
+      else
+        # Keep granular statuses as-is
+        expanded << status.to_s
+      end
+    end
+    expanded.uniq
+  end
 
   def base_scope
     Teammate.for_organization_hierarchy(organization)
