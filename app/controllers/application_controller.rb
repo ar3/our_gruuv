@@ -15,6 +15,11 @@ class ApplicationController < ActionController::Base
   # Global exception handler to prevent silent failures
   rescue_from StandardError, with: :handle_unexpected_error
   
+  def logout
+    session.clear
+    redirect_to root_path, notice: 'You have been logged out successfully!'
+  end
+  
   private
   
   def handle_unexpected_error(exception)
@@ -31,11 +36,6 @@ class ApplicationController < ActionController::Base
       format.html { render 'shared/error', status: :internal_server_error }
       format.json { render json: { error: 'An unexpected error occurred' }, status: :internal_server_error }
     end
-  end
-  
-  def logout
-    session.clear
-    redirect_to root_path, notice: 'You have been logged out successfully!'
   end
   
   helper_method :current_person
