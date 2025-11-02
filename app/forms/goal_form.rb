@@ -10,6 +10,8 @@ class GoalForm < Reform::Form
   property :owner_type
   property :owner_id
   property :started_at
+  property :completed_at
+  property :cancelled_at
   property :became_top_priority
   
   # Virtual property for timeframe selection (near_term, medium_term, long_term, vision)

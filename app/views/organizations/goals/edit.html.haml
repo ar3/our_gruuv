@@ -112,9 +112,23 @@
                       - elsif privacy_level == 'everyone_in_company'
                         %small.text-muted.d-block.ms-4 Everyone in your company can view this goal
                 
-                / Status display
                 .mb-3
-                  .alert.alert-info
+                  %label.form-label
+                    Status Dates
+                    %small.text-muted (Optional)
+                  %small.form-text.text-muted.mb-2.d-block
+                    Set when this goal was started, completed, or cancelled.
+                  .row
+                    .col-md-4.mb-2
+                      = form.label :started_at, 'Started At', class: 'form-label small'
+                      = form.datetime_local_field :started_at, class: 'form-control'
+                    .col-md-4.mb-2
+                      = form.label :completed_at, 'Completed At', class: 'form-label small'
+                      = form.datetime_local_field :completed_at, class: 'form-control'
+                    .col-md-4.mb-2
+                      = form.label :cancelled_at, 'Cancelled At', class: 'form-label small'
+                      = form.datetime_local_field :cancelled_at, class: 'form-control'
+                  %small.form-text.text-muted
                     %strong Current Status:
                     = @goal.status.to_s.humanize
             
