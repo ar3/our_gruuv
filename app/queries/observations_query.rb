@@ -1,0 +1,93 @@
+class ObservationsQuery
+  attr_reader :organization, :params, :current_person
+
+  def initialize(organization, params = {}, current_person: nil)
+    @organization = organization
+    @params = params
+    @current_person = current_person
+  end
+
+  def call
+    observations = base_scope
+    observations = filter_by_privacy_levels(observations)
+    observations = filter_by_timeframe(observations)
+    observations = apply_sort(observations)
+    observations
+  end
+
+  def current_filters
+    filters = {}
+    filters[:privacy] = params[:privacy] if params[:privacy].present?
+    filters[:timeframe] = params[:timeframe] if params[:timeframe].present? && params[:timeframe] != 'all'
+    filters
+  end
+
+  def current_sort
+    params[:sort] || 'observed_at_desc'
+  end
+
+  def current_view
+    return params[:view] unless params[:view].blank?
+    return params[:viewStyle] unless params[:viewStyle].blank?
+    'table'
+  end
+
+  def current_spotlight
+    params[:spotlight] || 'overview'
+  end
+
+  def has_active_filters?
+    current_filters.any?
+  end
+
+  # Expose base_scope and filter methods for controller to use for counting
+  def base_scope
+    @base_scope ||= begin
+      # Use ObservationVisibilityQuery for complex visibility logic
+      visibility_query = ObservationVisibilityQuery.new(current_person, organization)
+      visibility_query.visible_observations
+    end
+  end
+
+  def filter_by_privacy_levels(observations)
+    return observations unless params[:privacy].present?
+
+    privacy_levels = Array(params[:privacy])
+    return observations if privacy_levels.empty?
+
+    observations.where(privacy_level: privacy_levels)
+  end
+
+  def filter_by_timeframe(observations)
+    return observations unless params[:timeframe].present?
+    return observations if params[:timeframe] == 'all'
+
+    case params[:timeframe]
+    when 'this_week'
+      observations.where(observed_at: 1.week.ago..)
+    when 'this_month'
+      observations.where(observed_at: 1.month.ago..)
+    else
+      observations
+    end
+  end
+
+  private
+
+  def apply_sort(observations)
+    case params[:sort]
+    when 'observed_at_asc'
+      observations.order(observed_at: :asc)
+    when 'ratings_count_desc'
+      # Sort by count of observation_ratings, requires left join and group
+      observations.left_joins(:observation_ratings)
+                  .group('observations.id')
+                  .order('COUNT(observation_ratings.id) DESC, observations.observed_at DESC')
+    when 'story_asc'
+      observations.order(story: :asc)
+    else # 'observed_at_desc' or default
+      observations.recent # This uses order(observed_at: :desc)
+    end
+  end
+end
+

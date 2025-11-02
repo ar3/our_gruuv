@@ -1,0 +1,54 @@
+.list-group
+  - @observations.each do |observation|
+    .list-group-item
+      .d-flex.w-100.justify-content-between
+        %h5.mb-1
+          = truncate(observation.story, length: 80)
+          %span{class: "badge ms-2 #{observation.decorate.visibility_text_style}"}
+            = observation.decorate.visibility_icon
+            = observation.decorate.visibility_text
+        %small= observation.observed_at.strftime('%b %d, %Y')
+      %p.mb-1
+        - if observation.primary_feeling.present?
+          = observation.decorate.feelings_display_html
+        - else
+          %span.text-muted No feelings
+      %p.mb-1
+        - if observation.observation_ratings.any?
+          %small.text-muted Ratings:
+          - assignment_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Assignment' }
+          - ability_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Ability' }
+          - aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
+          - rating_texts = []
+          - assignment_ratings.each do |rating|
+            - rating_texts << capture { render('organizations/observations/assignment_rating', observation_rating: rating, include_assignment_name: true) }
+          - ability_ratings.each do |rating|
+            - rating_texts << capture { render('organizations/observations/ability_rating', observation_rating: rating, include_ability_name: true) }
+          - aspiration_ratings.each do |rating|
+            - rating_texts << capture { render('organizations/observations/aspiration_rating', observation_rating: rating, include_aspiration_name: true) }
+          != rating_texts.join(', ')
+        - else
+          .alert.alert-danger.mb-1.small.py-1.px-2.d-inline-block
+            %i.bi.bi-exclamation-triangle.me-1
+            nothing rated
+      %p.mb-1
+        %small.text-muted
+          Observer: #{observation.observer.preferred_name || observation.observer.first_name}
+          - if observation.observed_teammates.any?
+            |  • Observed:
+            - names = observation.observed_teammates.map { |teammate| teammate.person.preferred_name || teammate.person.first_name }
+            = names.join(', ')
+          - else
+            |  • Observed: No one
+      .btn-group.btn-group-sm
+        = link_to observation.decorate.permalink_path, class: "btn btn-outline-primary btn-sm", title: "Public permalink" do
+          %i.bi.bi-link-45deg
+        = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary btn-sm", title: "Show page" do
+          %i.bi.bi-eye
+        - if policy(observation).update?
+          = link_to edit_organization_observation_path(@organization, observation), class: "btn btn-outline-secondary btn-sm" do
+            %i.bi.bi-pencil
+        - if policy(observation).destroy?
+          = link_to organization_observation_path(@organization, observation), method: :delete, class: "btn btn-outline-danger btn-sm", data: { confirm: "Are you sure?" } do
+            %i.bi.bi-trash
+

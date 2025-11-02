@@ -3,13 +3,48 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
 
   def index
     authorize Observation
-    # Use ObservationVisibilityQuery for complex visibility logic
-    visibility_query = ObservationVisibilityQuery.new(current_person, organization)
-    @observations = visibility_query.visible_observations.includes(:observer, :observation_ratings).includes(observed_teammates: :person)
-    @observations = @observations.recent
+    
+    # Use ObservationsQuery for filtering and sorting
+    query = ObservationsQuery.new(organization, params, current_person: current_person)
+    
+    # Get observations with filters (but not sorting that uses group/join)
+    filtered_observations = base_filtered(query)
+    
+    # Count before applying complex sorts (like ratings_count which uses group)
+    total_count = if params[:sort] == 'ratings_count_desc'
+      # For ratings count sort, we need to count distinct observations
+      filtered_observations.left_joins(:observation_ratings)
+                          .group('observations.id')
+                          .count
+                          .length
+    else
+      filtered_observations.count
+    end
+    
+    # Apply sorting (may add joins/group)
+    sorted_observations = query.call
+    
+    # Eager load associations needed for the view
+    sorted_observations = sorted_observations.includes(:observer, { observed_teammates: :person }, :observation_ratings)
+    
+    # Paginate using Pagy (25 items per page, similar to employees controller)
+    @pagy = Pagy.new(count: total_count, page: params[:page] || 1, items: 25)
+    @observations = sorted_observations.limit(@pagy.items).offset(@pagy.offset)
     
     # Manually preload polymorphic rateable associations to avoid N+1 queries
     preload_rateables
+    
+    # Calculate spotlight statistics from all observations (not filtered, not paginated)
+    # Need to re-run query without sorting joins to avoid group issues
+    all_observations_query = ObservationsQuery.new(organization, params.except(:sort), current_person: current_person)
+    all_observations = all_observations_query.call
+    @spotlight_stats = calculate_spotlight_stats(all_observations)
+    
+    # Store current filter/sort/view/spotlight state for view
+    @current_filters = query.current_filters
+    @current_sort = query.current_sort
+    @current_view = query.current_view
+    @current_spotlight = query.current_spotlight
   end
 
   def show
@@ -707,6 +742,60 @@ end
   end
 
   private
+
+  def base_filtered(query)
+    # Get filtered observations without sorting (to get accurate count)
+    observations = query.base_scope
+    observations = query.filter_by_privacy_levels(observations)
+    observations = query.filter_by_timeframe(observations)
+    observations
+  end
+
+  def calculate_spotlight_stats(observations)
+    # Ensure we're working with an ActiveRecord relation for proper queries
+    if observations.is_a?(Array)
+      observation_ids = observations.map(&:id)
+      observations_relation = Observation.where(id: observation_ids)
+    else
+      observations_relation = observations
+    end
+
+    case @current_spotlight
+    when 'my_journal'
+      {
+        total_observations: observations.where(privacy_level: :observer_only, observer: current_person).count,
+        this_week: observations.where(privacy_level: :observer_only, observer: current_person, observed_at: 1.week.ago..).count,
+        this_month: observations.where(privacy_level: :observer_only, observer: current_person, observed_at: 1.month.ago..).count,
+        with_ratings: observations_relation.where(privacy_level: :observer_only, observer: current_person).joins(:observation_ratings).distinct.count
+      }
+    when 'team_wins'
+      {
+        total_public: observations.where(privacy_level: :public_observation).count,
+        this_week: observations.where(privacy_level: :public_observation, observed_at: 1.week.ago..).count,
+        this_month: observations.where(privacy_level: :public_observation, observed_at: 1.month.ago..).count,
+        with_ratings: observations_relation.where(privacy_level: :public_observation).joins(:observation_ratings).distinct.count,
+        positive_ratings: observations_relation.where(privacy_level: :public_observation)
+                                                .joins(:observation_ratings)
+                                                .where(observation_ratings: { rating: [:strongly_agree, :agree] })
+                                                .distinct.count
+      }
+    when 'this_week'
+      {
+        total_this_week: observations.where(observed_at: 1.week.ago..).count,
+        journal_entries: observations.where(privacy_level: :observer_only, observed_at: 1.week.ago..).count,
+        public_observations: observations.where(privacy_level: :public_observation, observed_at: 1.week.ago..).count,
+        with_ratings: observations_relation.where(observed_at: 1.week.ago..).joins(:observation_ratings).distinct.count
+      }
+    else # 'overview' or default
+      {
+        total_observations: observations.count,
+        this_week: observations.where(observed_at: 1.week.ago..).count,
+        journal_entries: observations.where(privacy_level: :observer_only).count,
+        public_observations: observations.where(privacy_level: :public_observation).count,
+        with_ratings: observations_relation.joins(:observation_ratings).distinct.count
+      }
+    end
+  end
 
   def preload_rateables
     # Collect all rateable ids grouped by type

@@ -29,27 +29,68 @@
       .card-body
         .row
           .col-md-8
-            / Main statistics/metrics area
+            / Main statistics/metrics area - varies by spotlight
             .row.text-center
-              .col-3
-                .h3.text-primary= @observations.where(observed_at: 1.week.ago..).count
-                %small.text-muted This Week
-              .col-3
-                .h3.text-info= @observations.where(privacy_level: :observer_only).count
-                %small.text-muted Journal Entries
-              .col-3
-                .h3.text-success= @observations.where(privacy_level: :public_observation).count
-                %small.text-muted Public Recognition
-              .col-3
-                .h3.text-warning= @observations.joins(:observation_ratings).distinct.count('observations.id')
-                %small.text-muted With Ratings
+              - case @current_spotlight
+              - when 'my_journal'
+                .col-3
+                  .h3.text-primary= @spotlight_stats[:total_observations] || 0
+                  %small.text-muted Total Journal
+                .col-3
+                  .h3.text-info= @spotlight_stats[:this_week] || 0
+                  %small.text-muted This Week
+                .col-3
+                  .h3.text-success= @spotlight_stats[:this_month] || 0
+                  %small.text-muted This Month
+                .col-3
+                  .h3.text-warning= @spotlight_stats[:with_ratings] || 0
+                  %small.text-muted With Ratings
+              - when 'team_wins'
+                .col-3
+                  .h3.text-primary= @spotlight_stats[:total_public] || 0
+                  %small.text-muted Total Public
+                .col-3
+                  .h3.text-info= @spotlight_stats[:this_week] || 0
+                  %small.text-muted This Week
+                .col-3
+                  .h3.text-success= @spotlight_stats[:positive_ratings] || 0
+                  %small.text-muted Positive Ratings
+                .col-3
+                  .h3.text-warning= @spotlight_stats[:with_ratings] || 0
+                  %small.text-muted With Ratings
+              - when 'this_week'
+                .col-3
+                  .h3.text-primary= @spotlight_stats[:total_this_week] || 0
+                  %small.text-muted Total This Week
+                .col-3
+                  .h3.text-info= @spotlight_stats[:journal_entries] || 0
+                  %small.text-muted Journal Entries
+                .col-3
+                  .h3.text-success= @spotlight_stats[:public_observations] || 0
+                  %small.text-muted Public
+                .col-3
+                  .h3.text-warning= @spotlight_stats[:with_ratings] || 0
+                  %small.text-muted With Ratings
+              - else
+                .col-3
+                  .h3.text-primary= @spotlight_stats[:this_week] || 0
+                  %small.text-muted This Week
+                .col-3
+                  .h3.text-info= @spotlight_stats[:journal_entries] || 0
+                  %small.text-muted Journal Entries
+                .col-3
+                  .h3.text-success= @spotlight_stats[:public_observations] || 0
+                  %small.text-muted Public Recognition
+                .col-3
+                  .h3.text-warning= @spotlight_stats[:with_ratings] || 0
+                  %small.text-muted With Ratings
           .col-md-4
             / Action alerts or status messages
             - if @observations.empty?
               .alert.alert-info.small
                 %i.bi.bi-info-circle.me-2
                 %strong Start giving feedback to your teammates
-            - elsif @observations.where(privacy_level: :observer_only).count > @observations.where(privacy_level: :public_observation).count
+            - elsif @current_spotlight == 'overview' && @spotlight_stats[:journal_entries] > @spotlight_stats[:public_observations]
               .alert.alert-warning.small
                 %i.bi.bi-lightbulb.me-2
                 %strong Consider sharing more observations publicly
@@ -58,87 +99,49 @@
           .col-md-6
             %small.text-muted
               %i.bi.bi-funnel.me-1
-              Filters: All observations
+              Filters:
+              - if @current_filters.any?
+                = @current_filters.map { |k, v| "#{k}: #{Array(v).join(', ')}" }.join('; ')
+              - else
+                All observations
               %br
               %i.bi.bi-sort-down.me-1
-              Sort: Most recent
+              Sort:
+              = observation_sort_options.find { |o| o[1] == @current_sort }&.first || 'Most recent'
           .col-md-6.text-end
             %small.text-muted
               %i.bi.bi-table.me-1
-              View: Cards
+              View:
+              = @current_view.humanize
               %br
               %i.bi.bi-eye.me-1
-              Spotlight: Overview
+              Spotlight:
+              = @current_spotlight.humanize
+
+/ Pagination Info
+.row.justify-content-center.mb-2
+  .col-lg-12
+    .d-flex.justify-content-between.align-items-center
+      %small.text-muted= raw pagy_info(@pagy) if @pagy
+      - if @observations&.count.to_i > 0
+        %small.text-muted Showing #{@current_view.humanize} view
 
 / Main Content Area
 .row.justify-content-center
   .col-lg-12
-    - if @observations.any?
-      .table-responsive
-        %table.table.table-hover
-          %thead
-            %tr
-              %th Story
-              %th Privacy
-              %th Feelings
-              %th Ratings
-              %th Observer
-              %th Observed
-              %th Date
-              %th Actions
-          %tbody
-            - @observations.each do |observation|
-              %tr
-                %td
-                  = truncate(observation.story, length: 100)
-                %td
-                  %span{class: "badge #{observation.decorate.visibility_text_style}"}
-                    = observation.decorate.visibility_icon
-                    = observation.decorate.visibility_text
-                %td
-                  - if observation.primary_feeling.present?
-                    = observation.decorate.feelings_display_html
-                  - else
-                    %span.text-muted No feelings
-                %td
-                  - if observation.observation_ratings.any?
-                    - assignment_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Assignment' }
-                    - ability_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Ability' }
-                    - aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
-                    - rating_texts = []
-                    - assignment_ratings.each do |rating|
-                      - rating_texts << capture { render('organizations/observations/assignment_rating', observation_rating: rating, include_assignment_name: true) }
-                    - ability_ratings.each do |rating|
-                      - rating_texts << capture { render('organizations/observations/ability_rating', observation_rating: rating, include_ability_name: true) }
-                    - aspiration_ratings.each do |rating|
-                      - rating_texts << capture { render('organizations/observations/aspiration_rating', observation_rating: rating, include_aspiration_name: true) }
-                    != rating_texts.join(', ')
-                  - else
-                    .alert.alert-danger.mb-0.small.py-1.px-2
-                      %i.bi.bi-exclamation-triangle.me-1
-                      nothing rated
-                %td
-                  = observation.observer.preferred_name || observation.observer.first_name
-                %td
-                  - if observation.observed_teammates.any?
-                    - names = observation.observed_teammates.map { |teammate| teammate.person.preferred_name || teammate.person.first_name }
-                    = names.join(', ')
-                  - else
-                    %span.text-muted No one
-                %td
-                  = observation.observed_at.strftime('%b %d, %Y')
-                %td
-                  .btn-group.btn-group-sm
-                    = link_to observation.decorate.permalink_path, class: "btn btn-outline-primary", title: "Public permalink" do
-                      %i.bi.bi-link-45deg
-                    = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary", title: "Show page" do
-                      %i.bi.bi-eye
-                    - if policy(observation).update?
-                      = link_to edit_organization_observation_path(@organization, observation), class: "btn btn-outline-secondary" do
-                        %i.bi.bi-pencil
-                    - if policy(observation).destroy?
-                      = link_to organization_observation_path(@organization, observation), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
-                        %i.bi.bi-trash
+    - if @observations&.any?
+      - case @current_view
+      - when 'cards'
+        = render 'organizations/observations/card_view'
+      - when 'list'
+        = render 'organizations/observations/list_view'
+      - else
+        = render 'organizations/observations/table_view'
+      
+      / Pagination Navigation
+      - if @pagy && @pagy.pages > 1
+        .d-flex.justify-content-center.mt-4
+          = raw pagy_nav(@pagy)
     - else
       .alert.alert-info
         %h6.mb-2
@@ -155,9 +158,10 @@
       .modal-header
         %h5.modal-title#observations-filter-modal-label
           %i.bi.bi-funnel.me-2
-          Filter & Sort Observations (coming soon)
+          Filter & Sort Observations
         %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-      .modal-body
+      = form_tag organization_observations_path(@organization), method: :get, local: true do
+        .modal-body
         .row
           .col-md-6
             %h6.mb-3
@@ -165,63 +169,58 @@
               Filters
             %h6 Privacy Level
             .form-check
-              = check_box_tag 'privacy[]', 'observer_only', false, class: 'form-check-input', id: 'privacy_observer_only'
+              = check_box_tag 'privacy[]', 'observer_only', @current_filters[:privacy]&.include?('observer_only'), class: 'form-check-input', id: 'privacy_observer_only'
               = label_tag 'privacy_observer_only', '🔒 Journal Entries', class: 'form-check-label'
             .form-check
-              = check_box_tag 'privacy[]', 'observed_only', false, class: 'form-check-input', id: 'privacy_observed_only'
+              = check_box_tag 'privacy[]', 'observed_only', @current_filters[:privacy]&.include?('observed_only'), class: 'form-check-input', id: 'privacy_observed_only'
               = label_tag 'privacy_observed_only', '👤 1-on-1 Feedback', class: 'form-check-label'
             .form-check
-              = check_box_tag 'privacy[]', 'managers_only', false, class: 'form-check-input', id: 'privacy_managers_only'
+              = check_box_tag 'privacy[]', 'managers_only', @current_filters[:privacy]&.include?('managers_only'), class: 'form-check-input', id: 'privacy_managers_only'
               = label_tag 'privacy_managers_only', '👔 Managers Only', class: 'form-check-label'
             .form-check
-              = check_box_tag 'privacy[]', 'observed_and_managers', false, class: 'form-check-input', id: 'privacy_observed_and_managers'
+              = check_box_tag 'privacy[]', 'observed_and_managers', @current_filters[:privacy]&.include?('observed_and_managers'), class: 'form-check-input', id: 'privacy_observed_and_managers'
               = label_tag 'privacy_observed_and_managers', '👥 Full Transparency', class: 'form-check-label'
             .form-check
-              = check_box_tag 'privacy[]', 'public_observation', false, class: 'form-check-input', id: 'privacy_public'
+              = check_box_tag 'privacy[]', 'public_observation', @current_filters[:privacy]&.include?('public_observation'), class: 'form-check-input', id: 'privacy_public'
               = label_tag 'privacy_public', '🌍 Public Recognition', class: 'form-check-label'
             .mb-3
               %h6 Timeframe
               .form-check
-                = radio_button_tag 'timeframe', 'this_week', false, class: 'form-check-input', id: 'timeframe_this_week'
+                = radio_button_tag 'timeframe', 'this_week', @current_filters[:timeframe] == 'this_week', class: 'form-check-input', id: 'timeframe_this_week'
                 = label_tag 'timeframe_this_week', 'This Week', class: 'form-check-label'
               .form-check
-                = radio_button_tag 'timeframe', 'this_month', false, class: 'form-check-input', id: 'timeframe_this_month'
+                = radio_button_tag 'timeframe', 'this_month', @current_filters[:timeframe] == 'this_month', class: 'form-check-input', id: 'timeframe_this_month'
                 = label_tag 'timeframe_this_month', 'This Month', class: 'form-check-label'
               .form-check
-                = radio_button_tag 'timeframe', 'all', true, class: 'form-check-input', id: 'timeframe_all'
+                = radio_button_tag 'timeframe', 'all', @current_filters[:timeframe].blank? || @current_filters[:timeframe] == 'all', class: 'form-check-input', id: 'timeframe_all'
                 = label_tag 'timeframe_all', 'All Time', class: 'form-check-label'
           .col-md-6
             %h6.mb-3
               %i.bi.bi-sort-down.me-2
               Sort Options
-            = select_tag 'sort', options_for_select(observation_sort_options, 'observed_at_desc'), { class: 'form-select' }
+            = select_tag 'sort', options_for_select(observation_sort_options, @current_sort), { class: 'form-select' }
             .mb-3
               %label.form-label View Style
               .form-check
-                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
-                %label.form-check-label
+                = radio_button_tag 'viewStyle', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
+                = label_tag 'view_table', 'Table View', class: 'form-check-label' do
                   %i.bi.bi-table.me-2
                   Table View
               .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
-                %label.form-check-label
+                = radio_button_tag 'viewStyle', 'cards', @current_view == 'cards', class: 'form-check-input', id: 'view_cards'
+                = label_tag 'view_cards', 'Card View', class: 'form-check-label' do
                   %i.bi.bi-grid.me-2
                   Card View
               .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
-                %label.form-check-label
+                = radio_button_tag 'viewStyle', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
+                = label_tag 'view_list', 'List View', class: 'form-check-label' do
                   %i.bi.bi-list.me-2
                   List View
             .mb-3
               %label.form-label Spotlight
-              %select.form-select
-                %option No Spotlight
-                %option Overview
-                %option My Journal
-                %option Team Wins
-                %option This Week
-      .modal-footer
-        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
-        %button.btn.btn-primary.disabled{type: "button"}
-          %i.bi.bi-check.me-2
-          Apply Filters
+              = select_tag 'spotlight', options_for_select([['Overview', 'overview'], ['My Journal', 'my_journal'], ['Team Wins', 'team_wins'], ['This Week', 'this_week']], @current_spotlight), { class: 'form-select' }
+        .modal-footer
+          = link_to organization_observations_path(@organization), class: "btn btn-link text-decoration-none" do
+            Clear All
+          %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
+          = submit_tag "Apply Filters", class: "btn btn-primary"
