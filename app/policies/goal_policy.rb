@@ -64,3 +64,4 @@ class GoalPolicy < ApplicationPolicy
   end
 end
 
+

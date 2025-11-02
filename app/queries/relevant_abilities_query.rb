@@ -84,3 +84,4 @@ class RelevantAbilitiesQuery
   end
 end
 
+

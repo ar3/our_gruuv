@@ -70,3 +70,4 @@ RSpec.describe GoalLinkPolicy, type: :policy do
   end
 end
 
+

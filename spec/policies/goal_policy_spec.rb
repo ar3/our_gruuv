@@ -248,3 +248,4 @@ RSpec.describe GoalPolicy, type: :policy do
   end
 end
 
+

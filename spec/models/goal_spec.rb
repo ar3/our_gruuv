@@ -481,3 +481,4 @@ RSpec.describe Goal, type: :model do
   end
 end
 
+

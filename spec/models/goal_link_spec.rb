@@ -165,3 +165,4 @@ RSpec.describe GoalLink, type: :model do
   end
 end
 
+

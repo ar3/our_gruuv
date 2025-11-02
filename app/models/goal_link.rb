@@ -73,3 +73,4 @@ class GoalLink < ApplicationRecord
   end
 end
 
+
