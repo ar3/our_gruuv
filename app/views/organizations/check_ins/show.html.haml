@@ -47,7 +47,7 @@
 = form_with url: organization_person_check_ins_path(@organization, @person), method: :patch, scope: :check_ins do |f|
   
   -# Position Section
-  = render 'section_header', 
+  = render 'shared/section_header', 
            title: 'Position/Overall', 
            icon: 'bi-briefcase', 
            description: 'Assess role performance and growth'
@@ -67,7 +67,7 @@
       = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
 
   -# Assignment Section
-  = render 'section_header', 
+  = render 'shared/section_header', 
            title: 'Assignments/Outcomes', 
            icon: 'bi-clipboard-check', 
            description: 'Evaluate project contributions and energy',
@@ -89,7 +89,7 @@
       = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
   
   -# Aspiration Section
-  = render 'section_header', 
+  = render 'shared/section_header', 
            title: 'Aspirations/Values', 
            icon: 'bi-star', 
            description: 'Track progress toward personal goals'
@@ -110,7 +110,7 @@
       = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
 
   -# Abilities Section
-  = render 'section_header', 
+  = render 'shared/section_header', 
            title: 'Abilities/Skills/Knowledge', 
            icon: 'bi-briefcase', 
            description: 'View abilities relevant to your role and assignments'
@@ -121,7 +121,7 @@
            person: @person
     
 
-  = render 'section_header', 
+  = render 'shared/section_header', 
            title: 'Personal Growth/Development', 
            icon: 'bi-briefcase', 
            description: '3 years, 2 quarters, 1 month'
@@ -164,12 +164,12 @@
             %li If I can accomplish ____ (by XX/XXX), I will be able to ______
             %li If I can accomplish ____ (by XX/XXX), I will be able to ______
 
-  = render 'section_header', 
+  = render 'shared/section_header', 
            title: '1:1 Todos', 
            icon: 'bi-briefcase', 
            description: 'Connect to Asana for 1:1 todos?'
 
-  = render 'section_header', 
+  = render 'shared/section_header', 
            title: '1:1 Topics/Issues/Opportunities', 
            icon: 'bi-briefcase', 
            description: 'Connect to Asana for 1:1 oppties?'

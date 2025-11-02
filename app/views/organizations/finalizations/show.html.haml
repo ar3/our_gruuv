@@ -12,7 +12,7 @@
 = form_with url: organization_person_finalization_path(@organization, @person), method: :post, local: true do |f|
   
   -# Position Section
-  = render 'organizations/check_ins/section_header', 
+  = render 'shared/section_header', 
            title: 'Position/Overall', 
            icon: 'bi-briefcase', 
            description: 'Set official position rating'
@@ -20,7 +20,7 @@
   = render 'organizations/finalizations/position_finalization_table', form: f, view_mode: @view_mode
   
   -# Assignment Section
-  = render 'organizations/check_ins/section_header', 
+  = render 'shared/section_header', 
            title: 'Assignments/Outcomes', 
            icon: 'bi-clipboard-check', 
            description: 'Finalize individual assignment ratings and energy'
@@ -28,7 +28,7 @@
   = render 'organizations/finalizations/assignment_finalization_table', form: f, view_mode: @view_mode
   
   -# Aspiration Section
-  = render 'organizations/check_ins/section_header', 
+  = render 'shared/section_header', 
            title: 'Aspirations/Values', 
            icon: 'bi-star', 
            description: 'Set official aspiration ratings'
