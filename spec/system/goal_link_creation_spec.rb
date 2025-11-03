@@ -23,7 +23,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       expect(page.current_path).to include('new_outgoing_link')
-      expect(page).to have_content('Link to Other Goals')
+      expect(page).to have_content('Create Links to Other Goals')
       expect(page).to have_link('Goal')
     end
     
@@ -34,14 +34,14 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_incoming_link_organization_goal_goal_links_path(organization, goal1)
       
       expect(page.current_path).to include('new_incoming_link')
-      expect(page).to have_content('Link from Other Goals')
+      expect(page).to have_content('Create Links from Other Goals')
       expect(page).to have_link('Goal')
     end
     
     it 'passes return_url and return_text correctly' do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1, return_url: organization_goal_path(organization, goal1), return_text: 'Goal')
       
-      expect(page).to have_content('Link to Other Goals')
+      expect(page).to have_content('Create Links to Other Goals')
       expect(page).to have_link('Goal', href: organization_goal_path(organization, goal1))
     end
   end
@@ -60,8 +60,12 @@ RSpec.describe 'Goal Link Creation', type: :system do
     it 'excludes current goal from list' do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
-      expect(page).not_to have_field('goal_ids[]', with: goal1.id.to_s)
-      expect(page).not_to have_content('Goal 1')
+      # Check that goal1 checkbox is not in the form
+      expect(page).not_to have_field("goal_ids_#{goal1.id}")
+      
+      # Check that goal2 and goal3 are in the list
+      expect(page).to have_field("goal_ids_#{goal2.id}")
+      expect(page).to have_field("goal_ids_#{goal3.id}")
     end
     
     it 'creates a link when selecting a single existing goal' do
@@ -120,11 +124,15 @@ RSpec.describe 'Goal Link Creation', type: :system do
       
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
-      check "goal_ids_#{goal2.id}"
-      click_button 'Create Links'
+      # Goal2 should be checked and disabled (already linked)
+      goal2_checkbox = find("input#goal_ids_#{goal2.id}")
+      expect(goal2_checkbox).to be_disabled
+      expect(goal2_checkbox).to be_checked
       
-      # Should show error or not create duplicate
-      expect(GoalLink.where(this_goal: goal1, that_goal: goal2).count).to eq(1)
+      expect(page).to have_content('Already Linked')
+      
+      # Should only have one link
+      expect(GoalLink.where(this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that').count).to eq(1)
     end
   end
   
@@ -306,6 +314,91 @@ RSpec.describe 'Goal Link Creation', type: :system do
       
       expect(page).to have_current_path(return_url)
       expect(GoalLink.count).to eq(0)
+    end
+  end
+  
+  describe 'circular dependency prevention' do
+    it 'disables checkboxes for goals that would create circular dependencies' do
+      # Create goal chain: goal1 -> goal2 -> goal3
+      create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      create(:goal_link, this_goal: goal2, that_goal: goal3, link_type: 'this_is_key_result_of_that')
+      
+      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal3)
+      
+      # Goal1 should be disabled (would create cycle: goal3 -> goal1, but goal1 -> goal2 -> goal3 exists)
+      # Actually, goal1 wouldn't create a cycle directly, but let's check goal2 which would
+      # goal3 -> goal2 would create: goal3 -> goal2, but goal2 -> goal3 exists (cycle!)
+      
+      # Goal2 should be disabled because it would create a direct cycle
+      goal2_checkbox = find("input#goal_ids_#{goal2.id}")
+      expect(goal2_checkbox).to be_disabled
+      
+      # Goal1 might also be disabled if it would create a transitive cycle
+      # goal3 -> goal1: goal3 -> goal1, but goal1 -> goal2 -> goal3 exists (cycle!)
+      goal1_checkbox = find("input#goal_ids_#{goal1.id}")
+      expect(goal1_checkbox).to be_disabled
+    end
+    
+    it 'allows selection of goals that don\'t create cycles' do
+      # Create goal1 -> goal2 (no cycle with goal3)
+      create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      
+      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal3)
+      
+      # Goal1 and goal2 should be enabled (no cycles)
+      goal1_checkbox = find("input#goal_ids_#{goal1.id}")
+      goal2_checkbox = find("input#goal_ids_#{goal2.id}")
+      
+      expect(goal1_checkbox).not_to be_disabled
+      expect(goal2_checkbox).not_to be_disabled
+    end
+  end
+  
+  describe 'existing link detection' do
+    it 'checks and disables already-linked goals' do
+      # Create existing link
+      create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      
+      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      
+      # Goal2 should be checked and disabled
+      goal2_checkbox = find("input#goal_ids_#{goal2.id}")
+      expect(goal2_checkbox).to be_disabled
+      expect(goal2_checkbox).to be_checked
+      
+      expect(page).to have_content('Already Linked')
+    end
+    
+    it 'allows selection of goals that are not already linked' do
+      # Create link between goal1 and goal2
+      create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      
+      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      
+      # Goal3 should be enabled and unchecked (not already linked)
+      goal3_checkbox = find("input#goal_ids_#{goal3.id}")
+      expect(goal3_checkbox).not_to be_disabled
+      expect(goal3_checkbox).not_to be_checked
+    end
+  end
+  
+  describe 'privacy level visualization' do
+    it 'displays privacy levels as concentric circles' do
+      goal_with_privacy = create(:goal, creator: teammate, owner: person, title: 'Private Goal', privacy_level: 'only_creator_and_owner')
+      
+      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      
+      expect(page).to have_content('🔘🔘○○ Creator & Owner')
+    end
+    
+    it 'shows tooltip with privacy level description' do
+      goal_with_privacy = create(:goal, creator: teammate, owner: person, title: 'Private Goal', privacy_level: 'only_creator_and_owner')
+      
+      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      
+      # Check that privacy rings have tooltip
+      privacy_span = find('span', text: /🔘🔘○○/)
+      expect(privacy_span['data-bs-toggle']).to eq('tooltip')
     end
   end
 end

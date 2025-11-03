@@ -10,8 +10,17 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     authorize @goal, :update?
     
     @direction = 'outgoing'
-    @available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization))
+    available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization))
                           .where.not(id: @goal.id)
+    
+    @available_goals_with_status = available_goals.map do |candidate_goal|
+      {
+        goal: candidate_goal,
+        would_create_circular_dependency: would_create_circular_dependency?(candidate_goal, @goal, 'outgoing'),
+        already_linked: already_linked?(candidate_goal, @goal, 'outgoing', 'this_is_key_result_of_that'),
+        existing_link: existing_link_for_goal(candidate_goal, @goal, 'outgoing', 'this_is_key_result_of_that')
+      }
+    end
     
     @return_url = params[:return_url] || organization_goal_path(@organization, @goal)
     @return_text = params[:return_text] || 'Goal'
@@ -25,8 +34,17 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     authorize @goal, :update?
     
     @direction = 'incoming'
-    @available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization))
+    available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization))
                           .where.not(id: @goal.id)
+    
+    @available_goals_with_status = available_goals.map do |candidate_goal|
+      {
+        goal: candidate_goal,
+        would_create_circular_dependency: would_create_circular_dependency?(candidate_goal, @goal, 'incoming'),
+        already_linked: already_linked?(candidate_goal, @goal, 'incoming', 'this_is_key_result_of_that'),
+        existing_link: existing_link_for_goal(candidate_goal, @goal, 'incoming', 'this_is_key_result_of_that')
+      }
+    end
     
     @return_url = params[:return_url] || organization_goal_path(@organization, @goal)
     @return_text = params[:return_text] || 'Goal'
@@ -170,6 +188,59 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
   def set_goal
     @goal = Goal.find(params[:goal_id])
     authorize @goal
+  end
+  
+  def would_create_circular_dependency?(candidate_goal, linking_goal, direction)
+    if direction == 'outgoing'
+      # For outgoing: Check if linking_goal -> candidate_goal would create a cycle
+      # This means checking if candidate_goal has a path back to linking_goal
+      creates_cycle?(linking_goal, candidate_goal)
+    else # incoming
+      # For incoming: Check if candidate_goal -> linking_goal would create a cycle
+      # This means checking if linking_goal has a path back to candidate_goal
+      creates_cycle?(candidate_goal, linking_goal)
+    end
+  end
+  
+  def creates_cycle?(this_goal, that_goal)
+    # BFS to check if that_goal eventually links back to this_goal
+    visited = Set.new
+    queue = [that_goal]
+    
+    while queue.any?
+      current = queue.shift
+      return true if current.id == this_goal.id
+      
+      next if visited.include?(current.id)
+      visited.add(current.id)
+      
+      # Follow outgoing links from current goal
+      current.outgoing_links.each do |link|
+        queue << link.that_goal
+      end
+    end
+    
+    false
+  end
+  
+  def already_linked?(candidate_goal, linking_goal, direction, link_type)
+    existing_link_for_goal(candidate_goal, linking_goal, direction, link_type).present?
+  end
+  
+  def existing_link_for_goal(candidate_goal, linking_goal, direction, link_type)
+    if direction == 'outgoing'
+      GoalLink.find_by(
+        this_goal: linking_goal,
+        that_goal: candidate_goal,
+        link_type: link_type
+      )
+    else # incoming
+      GoalLink.find_by(
+        this_goal: candidate_goal,
+        that_goal: linking_goal,
+        link_type: link_type
+      )
+    end
   end
 end
 

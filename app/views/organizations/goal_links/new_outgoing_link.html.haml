@@ -22,26 +22,42 @@
       = hidden_field_tag :return_url, @return_url
       = hidden_field_tag :return_text, @return_text
       
-      - if @available_goals.any?
+      - if @available_goals_with_status.any?
         .mb-4
           %label.form-label.fw-bold Existing Goals
           %small.text-muted.d-block.mb-2
             Select one or more existing goals to link to this goal.
           .list-group
-            - @available_goals.each do |goal|
-              .list-group-item
+            - @available_goals_with_status.each do |goal_status|
+              - goal = goal_status[:goal]
+              - disabled = goal_status[:would_create_circular_dependency] || goal_status[:already_linked]
+              - checked = goal_status[:already_linked]
+              - circular = goal_status[:would_create_circular_dependency]
+              - already_linked = goal_status[:already_linked]
+              
+              .list-group-item{class: "#{'bg-light' if disabled}"}
                 .form-check
-                  = check_box_tag "goal_ids[]", goal.id, false,
+                  = check_box_tag "goal_ids[]", goal.id, checked,
                                   class: "form-check-input",
-                                  id: "goal_ids_#{goal.id}"
-                  = label_tag "goal_ids_#{goal.id}", class: "form-check-label" do
+                                  id: "goal_ids_#{goal.id}",
+                                  disabled: disabled
+                  = label_tag "goal_ids_#{goal.id}", class: "form-check-label #{'text-muted' if disabled}" do
                     %strong= goal.title
                     %br
                     %small.text-muted
                       %span.badge{class: goal_category_badge_class(goal), style: "font-size: 0.75em;"}
                         = goal_category_label(goal)
                       | 
+                      %span{title: goal_privacy_tooltip_text(goal), "data-bs-toggle" => "tooltip"}
+                        = goal_privacy_rings_with_label(goal)
+                      | 
                       Owner: #{goal.owner.display_name}
+                      - if already_linked
+                        %span.badge.bg-success.ms-2{style: "font-size: 0.75em;"}
+                          Already Linked
+                      - elsif circular
+                        %span.badge.bg-warning.ms-2{style: "font-size: 0.75em;", title: "This link would create a circular dependency", "data-bs-toggle" => "tooltip"}
+                          Circular Ref
       - else
         .alert.alert-info
           %i.bi.bi-info-circle.me-2

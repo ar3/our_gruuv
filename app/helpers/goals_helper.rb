@@ -106,6 +106,55 @@ module GoalsHelper
     end
     lines.join("\n")
   end
+  
+  def goal_privacy_rings(goal)
+    case goal.privacy_level
+    when 'only_creator'
+      '🔘○○○'
+    when 'only_creator_and_owner'
+      '🔘🔘○○'
+    when 'only_creator_owner_and_managers'
+      '🔘🔘🔘○'
+    when 'everyone_in_company'
+      '🔘🔘🔘🔘'
+    else
+      '○○○○'
+    end
+  end
+  
+  def goal_privacy_label(goal)
+    case goal.privacy_level
+    when 'only_creator'
+      'Creator Only'
+    when 'only_creator_and_owner'
+      'Creator & Owner'
+    when 'only_creator_owner_and_managers'
+      'Creator, Owner & Managers'
+    when 'everyone_in_company'
+      'Everyone in Company'
+    else
+      goal.privacy_level.humanize
+    end
+  end
+  
+  def goal_privacy_rings_with_label(goal)
+    "#{goal_privacy_rings(goal)} #{goal_privacy_label(goal)}"
+  end
+  
+  def goal_privacy_tooltip_text(goal)
+    case goal.privacy_level
+    when 'only_creator'
+      'Only the creator can view this goal'
+    when 'only_creator_and_owner'
+      'The creator and owner can view this goal'
+    when 'only_creator_owner_and_managers'
+      'The creator, owner, and their managers can view this goal'
+    when 'everyone_in_company'
+      'Everyone in the company can view this goal'
+    else
+      goal.privacy_level.humanize
+    end
+  end
 end
 
 
