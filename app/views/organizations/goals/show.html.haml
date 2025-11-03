@@ -97,7 +97,7 @@
           %i.bi.bi-arrow-right-circle.me-2
           In pursuit of #{@goal.title}, here are some things that will help get there.
         - if policy(@goal).update?
-          %button.btn.btn-sm.btn-primary{"data-bs-toggle" => "modal", "data-bs-target" => "#addLinkModal", type: "button"}
+          = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-primary" do
             %i.bi.bi-plus.me-1
             Add Link
       .card-body
@@ -120,15 +120,19 @@
         - else
           %em.text-muted No outgoing links. This goal doesn't relate to any other goals yet.
           - if policy(@goal).update?
-            = link_to "#", class: "text-decoration-none", "data-bs-toggle" => "modal", "data-bs-target" => "#addLinkModal" do
+            = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "text-decoration-none" do
               Add a link
 
     / Incoming Links Card
     .card.mb-4{ role: "region", "aria-labelledby": "incoming-links" }
-      .card-header
+      .card-header.d-flex.justify-content-between.align-items-center
         %h5.mb-0{ id: "incoming-links" }
           %i.bi.bi-arrow-left-circle.me-2
           Pursuing #{@goal.title}, is in part in service to the following goals/visions
+        - if policy(@goal).update?
+          = link_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-primary" do
+            %i.bi.bi-plus.me-1
+            Add Link
       .card-body
         - if @goal.incoming_links.any?
           - @goal.incoming_links.group_by(&:link_type).each do |link_type, links|
@@ -137,12 +141,20 @@
             %ul.list-unstyled
               - links.each do |link|
                 %li.mb-2
-                  = link_to organization_goal_path(@organization, link.this_goal), class: "text-decoration-none" do
-                    %strong= link.this_goal.title
-                  - if link.metadata.present? && link.metadata['notes'].present?
-                    %small.text-muted.d-block.mt-1= link.metadata['notes']
+                  .d-flex.justify-content-between.align-items-start
+                    .flex-grow-1
+                      = link_to organization_goal_path(@organization, link.this_goal), class: "text-decoration-none" do
+                        %strong= link.this_goal.title
+                      - if link.metadata.present? && link.metadata['notes'].present?
+                        %small.text-muted.d-block.mt-1= link.metadata['notes']
+                    - if policy(link).destroy?
+                      = link_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger ms-2", data: { confirm: "Are you sure you want to remove this link?" } do
+                        %i.bi.bi-trash
         - else
           %em.text-muted No incoming links. No other goals relate to this goal yet.
+          - if policy(@goal).update?
+            = link_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "text-decoration-none" do
+              Add a link
 
   .col-md-4
     / Actions Card
@@ -162,9 +174,12 @@
               %i.bi.bi-trash.me-2
               Delete Goal
           - if policy(@goal).update?
-            %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#addLinkModal", type: "button"}
+            = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-secondary" do
               %i.bi.bi-link-45deg.me-2
               Link to Another Goal
+            = link_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-secondary mt-2" do
+              %i.bi.bi-link-45deg.me-2
+              Link from Another Goal
 
     / Quick Info Card
     .card.mb-4
@@ -200,6 +215,10 @@
           .mb-2
             %small.text-muted Most Likely Target:
             %div= @goal.most_likely_target_date.strftime("%b %d, %Y")
+        - else
+          .mb-2
+            %small.text-muted Most Likely Target:
+            %div.text-muted No target date set
         - if @goal.became_top_priority.present?
           .mb-2
             %small.text-muted Top Priority Since:
@@ -208,46 +227,4 @@
           %small.text-muted Created:
           %div= @goal.created_at.strftime("%b %d, %Y")
 
-/ Add Link Modal
-#addLinkModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "addLinkModalLabel", tabindex: "-1"}
-  .modal-dialog
-    .modal-content
-      .modal-header
-        %h5.modal-title#addLinkModalLabel
-          %i.bi.bi-link-45deg.me-2
-          Link This Goal to Another Goal
-        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-      = form_with model: [@organization, @goal, GoalLink.new], url: organization_goal_goal_links_path(@organization, @goal), method: :post, local: true do |f|
-        .modal-body
-          .mb-3
-            %label.form-label
-              Link To Goal
-              %span.text-danger *
-            - available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization)).where.not(id: @goal.id)
-            - if available_goals.any?
-              = f.collection_select :that_goal_id, available_goals, :id, :title, { prompt: "Select a goal..." }, { class: "form-select", required: true }
-            - else
-              %select.form-select{disabled: true}
-                %option No other goals available to link
-              %small.text-muted You need to create other goals first before you can link them.
-          .mb-3
-            %label.form-label
-              Link Type
-              %span.text-danger *
-            - GoalLink.link_types.each do |link_type, value|
-              .form-check
-                = f.radio_button :link_type, link_type, class: "form-check-input", required: true
-                = f.label :link_type, link_type.humanize, value: link_type, class: "form-check-label"
-                - if link_type == 'this_is_key_result_of_that'
-                  %small.text-muted.d-block.ms-4
-                    %em Use this when the selected goal is a key result of this goal
-                - elsif link_type == 'this_blocks_that'
-                  %small.text-muted.d-block.ms-4
-                    %em This goal must be completed before the selected goal can start
-          .mb-3
-            %label.form-label Notes (Optional)
-            = f.text_area :metadata_notes, rows: 3, class: "form-control", placeholder: "Add any notes about this link..."
-        .modal-footer
-          %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
-          = f.submit "Create Link", class: "btn btn-primary"
 

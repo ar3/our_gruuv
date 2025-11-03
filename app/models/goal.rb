@@ -95,6 +95,40 @@ class Goal < ApplicationRecord
     :draft
   end
   
+  def goal_category
+    return :vision if goal_type == 'inspirational_objective' && most_likely_target_date.nil?
+    return :objective if goal_type == 'inspirational_objective' && most_likely_target_date.present?
+    return :bad_key_result if %w[qualitative_key_result quantitative_key_result].include?(goal_type) && most_likely_target_date.nil?
+    return :key_result if %w[qualitative_key_result quantitative_key_result].include?(goal_type) && most_likely_target_date.present?
+    nil
+  end
+  
+  def vision?
+    goal_category == :vision
+  end
+  
+  def objective?
+    goal_category == :objective
+  end
+  
+  def key_result?
+    goal_category == :key_result
+  end
+  
+  def bad_key_result?
+    goal_category == :bad_key_result
+  end
+  
+  def has_sub_goals?
+    outgoing_links.exists?(link_type: 'this_is_key_result_of_that')
+  end
+  
+  def should_show_warning?
+    return true if bad_key_result?
+    return true if (vision? || objective?) && !has_sub_goals?
+    false
+  end
+  
   def can_be_viewed_by?(person)
     return true if person.og_admin?
     return true if creator.person == person # Always creator can view

@@ -75,50 +75,34 @@
               %th Type
               %th Timeframe
               %th Status
-              %th Target Dates
+              %th Children
+              %th Parents
               %th Owner
-              %th Actions
           %tbody
             - @goals.each do |goal|
-              %tr
+              %tr{class: goal_warning_class(goal)}
                 %td
                   = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
                 %td
-                  %span.badge{class: goal_badge_class(goal.goal_type)}
-                    = goal.goal_type.humanize
+                  %span.badge{class: goal_category_badge_class(goal)}
+                    = goal_category_label(goal)
+                  - if goal.should_show_warning?
+                    %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
                 %td
-                  %span.badge{class: timeframe_badge_class(goal.timeframe)}
+                  %span.badge{class: timeframe_badge_class(goal.timeframe), "data-bs-toggle" => "tooltip", "data-bs-title" => timeframe_tooltip_text(goal)}
                     = goal.timeframe.to_s.humanize
                 %td
                   %span.badge{class: status_badge_class(goal.status)}
                     = goal.status.to_s.humanize
                 %td
-                  %small.text-muted
-                    - if goal.earliest_target_date.present?
-                      = goal.earliest_target_date.strftime('%m/%d/%y')
-                    - else
-                      %em No date
-                    - if goal.most_likely_target_date.present?
-                      | - 
-                      = goal.most_likely_target_date.strftime('%m/%d/%y')
-                    - if goal.latest_target_date.present?
-                      | - 
-                      = goal.latest_target_date.strftime('%m/%d/%y')
+                  = goal.outgoing_links.count
+                %td
+                  = goal.incoming_links.count
                 %td
                   - if goal.owner_type == 'Person'
                     = goal.owner.display_name
                   - else
                     = goal.owner.display_name
-                %td
-                  .btn-group.btn-group-sm
-                    = link_to organization_goal_path(@organization, goal), class: "btn btn-outline-primary" do
-                      %i.bi.bi-eye
-                    - if policy(goal).update?
-                      = link_to edit_organization_goal_path(@organization, goal), class: "btn btn-outline-secondary" do
-                        %i.bi.bi-pencil
-                    - if policy(goal).destroy?
-                      = link_to organization_goal_path(@organization, goal), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to delete this goal?" } do
-                        %i.bi.bi-trash
     - else
       .alert.alert-info
         %h6.mb-2

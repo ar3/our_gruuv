@@ -158,7 +158,12 @@ get '/login', to: 'auth#login', as: :login
     
     # Goals management
     resources :goals, module: :organizations do
-      resources :goal_links, only: [:create, :destroy]
+      resources :goal_links, only: [:create, :destroy] do
+        collection do
+          get :new_outgoing_link
+          get :new_incoming_link
+        end
+      end
     end
     
     # Observations management

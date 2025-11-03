@@ -1,0 +1,70 @@
+- content_for :header do
+  Pursuing "#{@goal.title}", is in part in service to the following goals/visions
+
+- content_for :return_url do
+  = @return_url || organization_goal_path(@organization, @goal)
+
+- content_for :return_text do
+  = @return_text || "Back to the #{@goal.title} goal"
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-link-45deg.me-2
+      Create Links from Other Goals
+      %small.text-muted.ms-2
+        Each selected goal or new goal will be a parent of this goal.
+  .card-body
+    = form_with url: organization_goal_goal_links_path(@organization, @goal), method: :post, local: true do |f|
+      = hidden_field_tag :link_direction, 'incoming'
+      = hidden_field_tag :link_type, 'this_is_key_result_of_that'
+      = hidden_field_tag :return_url, @return_url
+      = hidden_field_tag :return_text, @return_text
+      
+      - if @available_goals.any?
+        .mb-4
+          %label.form-label.fw-bold Existing Goals
+          %small.text-muted.d-block.mb-2
+            Select one or more existing goals that will link to this goal.
+          .list-group
+            - @available_goals.each do |goal|
+              .list-group-item
+                .form-check
+                  = check_box_tag "goal_ids[]", goal.id, false,
+                                  class: "form-check-input",
+                                  id: "goal_ids_#{goal.id}"
+                  = label_tag "goal_ids_#{goal.id}", class: "form-check-label" do
+                    %strong= goal.title
+                    %br
+                    %small.text-muted
+                      %span.badge{class: goal_category_badge_class(goal), style: "font-size: 0.75em;"}
+                        = goal_category_label(goal)
+                      | 
+                      Owner: #{goal.owner.display_name}
+      - else
+        .alert.alert-info
+          %i.bi.bi-info-circle.me-2
+          No other goals available to link. Create new goals using the textarea below.
+      
+      .mb-4
+        %label.form-label.fw-bold
+          Create New Goals
+          %small.text-muted (Optional)
+        %small.text-muted.d-block.mb-2
+          Enter one goal title per line. Each will become a new Objective goal that links to this goal.
+        = text_area_tag "bulk_goal_titles", "", rows: 5, class: "form-control", placeholder: "Goal 1\nGoal 2\nGoal 3"
+        %small.form-text.text-muted
+          New goals will match the owner and privacy level of this goal.
+      
+      .mb-3
+        %label.form-label
+          Notes
+          %small.text-muted (Optional)
+        = text_area_tag "metadata_notes", "", rows: 3, class: "form-control", placeholder: "Add any notes about these links..."
+      
+      .d-flex.gap-2.mt-3
+        = link_to @return_url, class: 'btn btn-outline-secondary' do
+          %i.bi.bi-arrow-left.me-1
+          = @return_text || 'Cancel'
+        = f.submit 'Create Links', class: 'btn btn-primary'
+

@@ -135,3 +135,66 @@
             .d-flex
               = form.submit 'Update Goal', class: 'btn btn-primary'
               = link_to 'Cancel', organization_goal_path(@organization, @goal), class: 'btn btn-outline-secondary ms-2'
+    
+    / Links Management Section
+    .card.mt-4
+      .card-header.d-flex.justify-content-between.align-items-center
+        %h5.mb-0
+          %i.bi.bi-link-45deg.me-2
+          Goal Links
+        - if policy(@goal).update?
+          .d-flex.gap-2
+            = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Edit'), class: "btn btn-sm btn-primary" do
+              %i.bi.bi-arrow-right-circle.me-1
+              Add Outgoing Link
+            = link_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Edit'), class: "btn btn-sm btn-outline-primary" do
+              %i.bi.bi-arrow-left-circle.me-1
+              Add Incoming Link
+      .card-body
+        .row
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-arrow-right-circle.me-2
+              Outgoing Links
+            - if @goal.outgoing_links.any?
+              - @goal.outgoing_links.group_by(&:link_type).each do |link_type, links|
+                %h6.mt-3.mb-2
+                  %span.badge.bg-info= link_type.humanize
+                %ul.list-unstyled
+                  - links.each do |link|
+                    %li.mb-2
+                      .d-flex.justify-content-between.align-items-start
+                        .flex-grow-1
+                          = link_to organization_goal_path(@organization, link.that_goal), class: "text-decoration-none" do
+                            %strong= link.that_goal.title
+                          - if link.metadata.present? && link.metadata['notes'].present?
+                            %small.text-muted.d-block.mt-1= link.metadata['notes']
+                        - if policy(link).destroy?
+                          = link_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger ms-2", data: { confirm: "Are you sure you want to remove this link?" } do
+                            %i.bi.bi-trash
+            - else
+              %em.text-muted No outgoing links.
+          
+          .col-md-6
+            %h6.mb-3
+              %i.bi.bi-arrow-left-circle.me-2
+              Incoming Links
+            - if @goal.incoming_links.any?
+              - @goal.incoming_links.group_by(&:link_type).each do |link_type, links|
+                %h6.mt-3.mb-2
+                  %span.badge.bg-success= link_type.humanize
+                %ul.list-unstyled
+                  - links.each do |link|
+                    %li.mb-2
+                      .d-flex.justify-content-between.align-items-start
+                        .flex-grow-1
+                          = link_to organization_goal_path(@organization, link.this_goal), class: "text-decoration-none" do
+                            %strong= link.this_goal.title
+                          - if link.metadata.present? && link.metadata['notes'].present?
+                            %small.text-muted.d-block.mt-1= link.metadata['notes']
+                        - if policy(link).destroy?
+                          = link_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger ms-2", data: { confirm: "Are you sure you want to remove this link?" } do
+                            %i.bi.bi-trash
+            - else
+              %em.text-muted No incoming links.
+
