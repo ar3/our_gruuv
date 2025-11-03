@@ -9,6 +9,7 @@
         %th Observer
         %th Observed
         %th Date
+        %th Notifications
         %th Actions
     %tbody
       - @observations.each do |observation|
@@ -50,6 +51,17 @@
               %span.text-muted No one
           %td
             = observation.observed_at.strftime('%b %d, %Y')
+          %td
+            - latest_notification = observation.last_successful_notification
+            - if latest_notification&.slack_url.present?
+              = link_to latest_notification.slack_url, target: "_blank", class: "btn btn-outline-primary btn-sm", title: "View in Slack" do
+                %i.bi.bi-slack
+            - elsif observation.privacy_level == 'public_observation'
+              %i.bi.bi-exclamation-triangle.text-danger{title: "Public observation has no notifications"}
+            - elsif observation.privacy_level == 'observer_only' || observation.draft?
+              %span.text-muted N/A
+            - else
+              %i.bi.bi-x.text-muted{title: "No notifications"}
           %td
             .btn-group.btn-group-sm
               = link_to observation.decorate.permalink_path, class: "btn btn-outline-primary", title: "Public permalink" do

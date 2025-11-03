@@ -25,7 +25,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     sorted_observations = query.call
     
     # Eager load associations needed for the view
-    sorted_observations = sorted_observations.includes(:observer, { observed_teammates: :person }, :observation_ratings)
+    sorted_observations = sorted_observations.includes(:observer, { observed_teammates: :person }, :observation_ratings, :notifications)
     
     # Paginate using Pagy (25 items per page, similar to employees controller)
     @pagy = Pagy.new(count: total_count, page: params[:page] || 1, items: 25)
