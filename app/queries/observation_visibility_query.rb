@@ -76,10 +76,12 @@ class ObservationVisibilityQuery
       end
     end
 
-    # Add can_manage_employment access to all privacy levels
+    # Add can_manage_employment access to all privacy levels EXCEPT observed_only
+    # For observed_only, we want to respect the "observer + observees only" restriction
     if @person.respond_to?(:can_manage_employment?) && @person.can_manage_employment?(@company)
-      conditions << "company_id = ?"
+      conditions << "(company_id = ? AND privacy_level != ?)"
       params << @company.id
+      params << 'observed_only'
     end
 
     # public_observation: Anyone can view

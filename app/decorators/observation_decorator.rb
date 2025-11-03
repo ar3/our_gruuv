@@ -16,11 +16,11 @@ class ObservationDecorator < Draper::Decorator
     when 'observer_only'
       'Private Journal Entry'
     when 'observed_only'
-      '1-on-1 Feedback'
+      'Direct 1-on-1 Feedback'
     when 'managers_only'
-      'Manager Review'
+      'Between Observer and Managers'
     when 'observed_and_managers'
-      'Team Feedback'
+      'Shared with everyone directly involved'
     when 'public_observation'
       'Public Recognition'
     end
@@ -54,6 +54,40 @@ class ObservationDecorator < Draper::Decorator
     when 'public_observation'
       'Public'
     end
+  end
+
+  def privacy_rings
+    case privacy_level
+    when 'observer_only'
+      '🔘○○○'
+    when 'observed_only'
+      '🔘🔘○○'
+    when 'managers_only'
+      '🔘○🔘○'
+    when 'observed_and_managers'
+      '🔘🔘🔘○'
+    when 'public_observation'
+      '🔘🔘🔘🔘'
+    end
+  end
+
+  def privacy_label
+    case privacy_level
+    when 'observer_only'
+      'Private Journal'
+    when 'observed_only'
+      'Private Direct'
+    when 'managers_only'
+      'Manager Only'
+    when 'observed_and_managers'
+      'Stakeholders'
+    when 'public_observation'
+      'Public'
+    end
+  end
+
+  def privacy_rings_with_label
+    "#{privacy_rings} #{privacy_label}"
   end
 
   def feelings_display_html

@@ -4,9 +4,8 @@
       .d-flex.w-100.justify-content-between
         %h5.mb-1
           = truncate(observation.story, length: 80)
-          %span{class: "badge ms-2 #{observation.decorate.visibility_text_style}"}
-            = observation.decorate.visibility_icon
-            = observation.decorate.visibility_text
+          %span.ms-2{title: observation.decorate.visibility_text, "data-bs-toggle" => "tooltip"}
+            = observation.decorate.privacy_rings_with_label
         %small= observation.observed_at.strftime('%b %d, %Y')
       %p.mb-1
         - if observation.primary_feeling.present?

@@ -8,9 +8,8 @@
           %p.card-text
             = truncate(observation.story, length: 200)
           %p.mb-2
-            %span{class: "badge #{observation.decorate.visibility_text_style}"}
-              = observation.decorate.visibility_icon
-              = observation.decorate.visibility_text
+            %span{title: observation.decorate.visibility_text, "data-bs-toggle" => "tooltip"}
+              = observation.decorate.privacy_rings_with_label
           - if observation.primary_feeling.present?
             %p.mb-2= observation.decorate.feelings_display_html
           - if observation.observation_ratings.any?
