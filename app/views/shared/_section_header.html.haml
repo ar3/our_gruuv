@@ -1,6 +1,7 @@
+-include_top_header_margin = local_assigns[:include_top_header_margin].nil? ? true : local_assigns[:include_top_header_margin]
 -# Section Header (Dashboard Style)
-.row.mb-4.mt-5
-  .col-12.mt-5
+.row.mb-4{class: include_top_header_margin ? 'mt-5' : ''}
+  .col-12{class: include_top_header_margin ? 'mt-5' : ''}
     .d-flex.align-items-center.mb-3
       %h3.text-primary.mb-0.me-3
         %i{class: "#{icon} me-2"}
