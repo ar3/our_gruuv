@@ -1,0 +1,158 @@
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-clipboard-check.me-2
+      Check-ins Health Dashboard
+    .d-flex.align-items-center
+      %small.text-muted.ms-3
+        %i.bi.bi-info-circle.me-1
+        Track feedback status for all active employees
+
+.mb-4
+  = content_for :go_back_link
+
+- content_for :go_back_link do
+  = link_to organization_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@organization.display_name}
+
+/ Spotlight Section
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            / Main statistics/metrics area
+            .row.text-center
+              .col-3
+                .h3.text-primary= @spotlight_stats[:total_employees]
+                %small.text-muted Total Active Employees
+              .col-3
+                .h3.text-success= @spotlight_stats[:all_healthy]
+                %small.text-muted All Healthy
+              .col-3
+                .h3.text-warning= @spotlight_stats[:needing_attention]
+                %small.text-muted Need Attention
+              .col-3
+                .h3.text-info= "#{@spotlight_stats[:completion_rate]}%"
+                %small.text-muted Completion Rate
+          
+          .col-md-4
+            / Action alerts or status messages
+            - if @spotlight_stats[:needing_attention] > 0
+              .alert.alert-warning.small
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong #{@spotlight_stats[:needing_attention]} employee#{'s' if @spotlight_stats[:needing_attention] != 1} need#{'s' if @spotlight_stats[:needing_attention] == 1} attention
+      
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-building.me-1
+              Organization: #{@organization.display_name}
+              %br
+              %i.bi.bi-people.me-1
+              Showing active employees from company and descendants
+          .col-md-6.text-end
+            %small.text-muted
+              %i.bi.bi-clipboard-check.me-1
+              Spotlight: Check-ins Health Overview
+
+/ Pagination Info
+.row.justify-content-center.mb-2
+  .col-lg-12
+    .d-flex.justify-content-between.align-items-center
+      %small.text-muted= raw pagy_info(@pagy)
+
+/ Main Content Area
+.row.justify-content-center
+  .col-lg-12
+    - if @employee_health_data.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Employee
+              %th Position
+              %th Assignments
+              %th Aspirations
+              %th Milestones
+              %th Actions
+          %tbody
+            - @employee_health_data.each do |data|
+              - person = data[:person]
+              - teammate = data[:teammate]
+              - health = data[:health]
+              %tr
+                %td
+                  = link_to person.display_name, organization_person_path(@organization, person), class: "text-decoration-none fw-bold"
+                  %br
+                  %small.text-muted= person.email
+                
+                / Position cell
+                %td
+                  - position_health = health[:position]
+                  - cell_class = position_health_cell_class(position_health[:status])
+                  - icon_class = position_health_icon(position_health[:status])
+                  - tooltip_text = position_health_tooltip(position_health)
+                  .p-2.rounded{class: cell_class, "data-bs-toggle" => "tooltip", "data-bs-title" => tooltip_text}
+                    .d-flex.align-items-center
+                      %i{class: "bi #{icon_class} me-2"}
+                      %div
+                        %div.fw-bold= position_health_status_text(position_health)
+                        - if position_health[:open_check_in]
+                          %small
+                            - if position_health[:open_unacknowledged]
+                              %span.text-muted (Unacknowledged)
+                            - if position_health[:open_check_in_started_on]
+                              Started: #{position_health[:open_check_in_started_on].strftime('%b %d, %Y')}
+                        - if position_health[:last_rating_date] && position_health[:status] == :warning
+                          %small
+                            Last rated: #{position_health[:last_rating_date].strftime('%b %d, %Y')}
+                
+                / Assignments cell
+                %td
+                  - assignment_health = health[:assignments]
+                  - cell_class = assignment_health_cell_class(assignment_health[:status])
+                  - tooltip_text = assignment_health_tooltip(assignment_health)
+                  .p-2.rounded{class: cell_class, "data-bs-toggle" => "tooltip", "data-bs-title" => tooltip_text}
+                    .fw-bold= assignment_health_display(assignment_health)
+                
+                / Aspirations cell
+                %td
+                  - aspiration_health = health[:aspirations]
+                  - cell_class = aspiration_health_cell_class(aspiration_health[:status])
+                  - tooltip_text = aspiration_health_tooltip(aspiration_health)
+                  .p-2.rounded{class: cell_class, "data-bs-toggle" => "tooltip", "data-bs-title" => tooltip_text}
+                    .fw-bold= aspiration_health_display(aspiration_health)
+                
+                / Milestones cell
+                %td
+                  - milestone_health = health[:milestones]
+                  - cell_class = milestone_health_cell_class(milestone_health[:status])
+                  - tooltip_text = milestone_health_tooltip(milestone_health)
+                  .p-2.rounded{class: cell_class, "data-bs-toggle" => "tooltip", "data-bs-title" => tooltip_text}
+                    .fw-bold= milestone_health_display(milestone_health)
+                
+                / Actions cell
+                %td
+                  .btn-group.btn-group-sm
+                    = link_to organization_person_path(@organization, person), class: "btn btn-outline-primary" do
+                      %i.bi.bi-eye
+                    = link_to organization_person_check_ins_path(@organization, person), class: "btn btn-outline-secondary" do
+                      %i.bi.bi-clipboard-check
+      
+      / Pagination
+      .d-flex.justify-content-center.mt-4
+        - if @pagy.pages > 1
+          = raw pagy_nav(@pagy)
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Active Employees Found
+        %p.mb-2
+          This organization doesn't have any active employees yet.
+
+

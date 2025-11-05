@@ -137,28 +137,73 @@ class Goal < ApplicationRecord
     when 'only_creator'
       false
     when 'only_creator_and_owner'
-      owner_type == 'Person' && owner_id == person.id
-    when 'only_creator_owner_and_managers'
-      if owner_type == 'Person' && owner_id == person.id
-        true
-      elsif owner_type == 'Person'
-        # Check if person is in managerial hierarchy
-        person.in_managerial_hierarchy_of?(owner, owner_company)
+      if owner_type == 'Person'
+        owner_id == person.id
       else
-        false
+        # Organization owner: check if person belongs directly to owner organization
+        person.teammates.exists?(organization: owner)
+      end
+    when 'only_creator_owner_and_managers'
+      if owner_type == 'Person'
+        # Owner can always view
+        return true if owner_id == person.id
+        # Check if person is in managerial hierarchy of owner
+        # Use creator's organization (company) for the check
+        company = creator.organization.root_company || creator.organization
+        person.in_managerial_hierarchy_of?(owner, company)
+      else
+        # Organization owner with only_creator_owner_and_managers:
+        # - Direct members of owner organization can see
+        # - Check if person belongs directly to owner organization
+        person.teammates.exists?(organization: owner)
       end
     when 'everyone_in_company'
-      person.teammates.exists?(organization: owner_company)
+      if owner_type == 'Person'
+        # For Person owner: check if person is teammate in the same company as owner
+        owner_company = owner.teammates.joins(:organization).where(organizations: { type: 'Company' }).first&.organization
+        return false unless owner_company
+        person.teammates.exists?(organization: owner_company)
+      else
+        # For Organization owner: check owner_company
+        # Use owner_company method which handles traversal to root company
+        company = owner_company
+        return false unless company
+        # Check if person is a teammate in the company or any of its descendants
+        # This includes the company itself and all teams/departments under it
+        org_ids = company.self_and_descendants.map(&:id)
+        person.teammates.where(organization_id: org_ids).exists?
+      end
     else
       false
     end
   end
   
+  def manages_any_teammate_in_owner_org?(person)
+    return false unless owner_type == 'Organization'
+    return false unless owner_company
+    
+    # Get all teammates who belong directly to the owner organization
+    org_teammates = owner.teammates.where(organization: owner)
+    
+    # Check if person manages any of these teammates
+    org_teammates.any? do |teammate|
+      person.in_managerial_hierarchy_of?(teammate.person, owner_company)
+    end
+  end
+  
   def owner_company
     return nil if owner_type == 'Person'
-    return owner if owner_type == 'Organization' && owner.company?
-    return owner.root_company if owner_type == 'Organization'
-    nil
+    return nil unless owner_type == 'Organization'
+    
+    # Get owner record - reload to ensure we have parent association available
+    owner_record = Organization.find(owner_id)
+    
+    # If owner is already a Company, return it
+    return owner_record if owner_record.type == 'Company'
+    
+    # Use root_company method which handles traversal up the parent chain
+    # root_company will traverse parent_id if parent association isn't loaded
+    owner_record.root_company
   end
   
   def managers
@@ -211,9 +256,10 @@ class Goal < ApplicationRecord
     return unless owner_type && privacy_level
     
     if owner_type == 'Organization'
-      if privacy_level == 'only_creator_and_owner' || privacy_level == 'only_creator_owner_and_managers'
+      if privacy_level == 'only_creator_and_owner'
         errors.add(:privacy_level, 'is not valid for Organization owner')
       end
+      # Note: only_creator_owner_and_managers IS valid for Organization owners
     end
   end
 end

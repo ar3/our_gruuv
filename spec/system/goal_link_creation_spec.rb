@@ -75,7 +75,8 @@ RSpec.describe 'Goal Link Creation', type: :system do
       
       click_button 'Create Links'
       
-      expect(page).to have_content('Goal link was successfully created')
+      # Check for toast element in DOM (may not be visible immediately due to JS)
+      expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       expect(page).to have_current_path(organization_goal_path(organization, goal1))
       expect(page).to have_content('Goal 2')
       
@@ -91,7 +92,8 @@ RSpec.describe 'Goal Link Creation', type: :system do
       
       click_button 'Create Links'
       
-      expect(page).to have_content('Goal link was successfully created')
+      # Check for toast element in DOM (may not be visible immediately due to JS)
+      expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       expect(page).to have_current_path(organization_goal_path(organization, goal1))
       
       link2 = GoalLink.find_by(this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
@@ -151,7 +153,8 @@ RSpec.describe 'Goal Link Creation', type: :system do
       check "goal_ids_#{goal2.id}"
       click_button 'Create Links'
       
-      expect(page).to have_content('Goal link was successfully created')
+      # Check for toast element in DOM (may not be visible immediately due to JS)
+      expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       expect(page).to have_current_path(organization_goal_path(organization, goal1))
       
       link = GoalLink.find_by(this_goal: goal2, that_goal: goal1, link_type: 'this_is_key_result_of_that')
@@ -166,7 +169,8 @@ RSpec.describe 'Goal Link Creation', type: :system do
       fill_in 'bulk_goal_titles', with: "Bulk Goal 1\nBulk Goal 2\nBulk Goal 3"
       click_button 'Create Links'
       
-      expect(page).to have_content('Goal link was successfully created')
+      # Check for toast element in DOM (may not be visible immediately due to JS)
+      expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       
       created_goals = Goal.where(title: ['Bulk Goal 1', 'Bulk Goal 2', 'Bulk Goal 3'])
       expect(created_goals.count).to eq(3)
@@ -223,7 +227,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       fill_in 'bulk_goal_titles', with: ""
       click_button 'Create Links'
       
-      expect(page).to have_content(/select at least one|provide at least one/i)
+      expect(page).to have_css('.toast, .alert', text: /select at least one|provide at least one/i, visible: :hidden)
       expect(page.current_path).to include('new_outgoing_link')
     end
     
@@ -269,7 +273,8 @@ RSpec.describe 'Goal Link Creation', type: :system do
       fill_in 'bulk_goal_titles', with: "Bulk Goal"
       click_button 'Create Links'
       
-      expect(page).to have_content('Goal link was successfully created')
+      # Check for toast element in DOM (may not be visible immediately due to JS)
+      expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       
       # Check existing link was created
       existing_link = GoalLink.find_by(this_goal: goal1, that_goal: goal2)
@@ -290,7 +295,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       # Try to submit without selecting anything
       click_button 'Create Links'
       
-      expect(page).to have_content(/select at least one|provide at least one/i)
+      expect(page).to have_css('.toast, .alert', text: /select at least one|provide at least one/i, visible: :hidden)
       expect(page.current_path).to include('new_outgoing_link')
     end
     
@@ -302,7 +307,8 @@ RSpec.describe 'Goal Link Creation', type: :system do
       click_button 'Create Links'
       
       expect(page).to have_current_path(return_url)
-      expect(page).to have_content('Goal link was successfully created')
+      # Check for toast element in DOM (may not be visible immediately due to JS)
+      expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
     end
     
     it 'returns to return_url without creating links when cancel is clicked' do

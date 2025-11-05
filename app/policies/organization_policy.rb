@@ -27,6 +27,10 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || (actual_user && actual_user.can_manage_employment?(record))
   end
 
+  def check_ins_health?
+    admin_bypass? || (actual_user && actual_user.can_manage_employment?(record))
+  end
+
   class Scope < Scope
     def resolve
       if actual_user&.admin?

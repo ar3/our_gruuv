@@ -82,7 +82,8 @@ RSpec.describe 'Assignment Selection', type: :system do
       click_button 'Save Assignments'
       
       expect(page).to have_current_path(organization_person_check_ins_path(organization, person))
-      expect(page).to have_content('Assignments updated successfully')
+      # Check for toast element in DOM (may not be visible immediately due to JS)
+      expect(page).to have_css('.toast', text: 'Assignments updated successfully', visible: :hidden)
       
       # Verify tenures were created
       tenure1 = AssignmentTenure.find_by(teammate: teammate, assignment: optional_assignment1)

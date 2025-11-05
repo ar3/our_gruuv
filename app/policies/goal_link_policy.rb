@@ -17,3 +17,4 @@ class GoalLinkPolicy < ApplicationPolicy
 end
 
 
+

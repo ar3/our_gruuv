@@ -11,6 +11,19 @@ FactoryBot.define do
     association :creator, factory: :teammate
     association :owner, factory: :person
     
+    # Ensure date ordering when most_likely_target_date is overridden
+    after(:build) do |goal|
+      if goal.most_likely_target_date.present?
+        # If most_likely is set but earliest/latest aren't, or if ordering is invalid, fix it
+        if goal.earliest_target_date.nil? || goal.earliest_target_date > goal.most_likely_target_date
+          goal.earliest_target_date = goal.most_likely_target_date - 1.month
+        end
+        if goal.latest_target_date.nil? || goal.latest_target_date < goal.most_likely_target_date
+          goal.latest_target_date = goal.most_likely_target_date + 1.month
+        end
+      end
+    end
+    
     trait :inspirational_objective do
       goal_type { 'inspirational_objective' }
     end
@@ -80,5 +93,6 @@ FactoryBot.define do
     end
   end
 end
+
 
 

@@ -135,14 +135,13 @@ RSpec.describe Goal, type: :model do
         expect(goal.errors[:privacy_level]).to include('is not valid for Organization owner')
       end
       
-      it 'does not allow only_creator_owner_and_managers for Organization owner' do
+      it 'allows only_creator_owner_and_managers for Organization owner' do
         goal.privacy_level = 'only_creator_owner_and_managers'
         goal.earliest_target_date = Date.today + 1.month
         goal.most_likely_target_date = Date.today + 2.months
         goal.latest_target_date = Date.today + 3.months
         
-        expect(goal).not_to be_valid
-        expect(goal.errors[:privacy_level]).to include('is not valid for Organization owner')
+        expect(goal).to be_valid
       end
       
       it 'allows only_creator for Organization owner' do
@@ -355,83 +354,265 @@ RSpec.describe Goal, type: :model do
     
     describe '#can_be_viewed_by?' do
       let(:other_person) { create(:person) }
+      let(:owner_person) { create(:person) }
       let(:admin) { create(:person, :admin) }
+      let(:owner_teammate) { create(:teammate, person: owner_person, organization: company) }
+      let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
       
-      context 'with only_creator privacy level' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: person, privacy_level: 'only_creator') }
-        
-        it 'allows creator to view' do
-          expect(goal.can_be_viewed_by?(person)).to be true
+      context 'with Person owner' do
+        context 'with only_creator privacy level' do
+          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'only_creator') }
+          
+          it 'allows creator to view' do
+            expect(goal.can_be_viewed_by?(person)).to be true
+          end
+          
+          it 'does not allow owner to view (privacy is only_creator)' do
+            expect(goal.can_be_viewed_by?(owner_person)).to be false
+          end
+          
+          it 'allows admin to view' do
+            expect(goal.can_be_viewed_by?(admin)).to be true
+          end
+          
+          it 'does not allow others to view' do
+            expect(goal.can_be_viewed_by?(other_person)).to be false
+          end
+          
+          context 'when goal is draft' do
+            before { goal.update!(started_at: nil) }
+            
+            it 'allows creator to view draft goals' do
+              expect(goal.can_be_viewed_by?(person)).to be true
+            end
+            
+            it 'does not allow owner to view draft goals' do
+              expect(goal.can_be_viewed_by?(owner_person)).to be false
+            end
+          end
         end
         
-        it 'allows admin to view' do
-          expect(goal.can_be_viewed_by?(admin)).to be true
+        context 'with only_creator_and_owner privacy level' do
+          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'only_creator_and_owner') }
+          
+          it 'allows creator to view' do
+            expect(goal.can_be_viewed_by?(person)).to be true
+          end
+          
+          it 'allows owner to view' do
+            expect(goal.can_be_viewed_by?(owner_person)).to be true
+          end
+          
+          it 'allows admin to view' do
+            expect(goal.can_be_viewed_by?(admin)).to be true
+          end
+          
+          it 'does not allow others to view' do
+            expect(goal.can_be_viewed_by?(other_person)).to be false
+          end
         end
         
-        it 'does not allow others to view' do
-          expect(goal.can_be_viewed_by?(other_person)).to be false
+        context 'with only_creator_owner_and_managers privacy level' do
+          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'only_creator_owner_and_managers') }
+          let(:manager_person) { create(:person) }
+          let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
+          
+          before do
+            # Set up employment tenure where manager_person manages owner_person
+            create(:employment_tenure,
+              teammate: owner_teammate,
+              company: company,
+              manager: manager_person,
+              started_at: 1.month.ago,
+              ended_at: nil
+            )
+          end
+          
+          it 'allows creator to view' do
+            expect(goal.can_be_viewed_by?(person)).to be true
+          end
+          
+          it 'allows owner to view' do
+            expect(goal.can_be_viewed_by?(owner_person)).to be true
+          end
+          
+          it 'allows manager to view' do
+            expect(goal.can_be_viewed_by?(manager_person)).to be true
+          end
+          
+          it 'allows admin to view' do
+            expect(goal.can_be_viewed_by?(admin)).to be true
+          end
+          
+          it 'does not allow non-managers to view' do
+            expect(goal.can_be_viewed_by?(other_person)).to be false
+          end
+          
+          context 'when manager is not in hierarchy' do
+            let(:non_manager_person) { create(:person) }
+            
+            it 'does not allow non-manager to view' do
+              expect(goal.can_be_viewed_by?(non_manager_person)).to be false
+            end
+          end
+        end
+        
+        context 'with everyone_in_company privacy level' do
+          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'everyone_in_company') }
+          
+          before do
+            # Ensure people have teammate records in the company
+            owner_teammate
+            other_teammate
+          end
+          
+          it 'allows creator to view' do
+            expect(goal.can_be_viewed_by?(person)).to be true
+          end
+          
+          it 'allows owner to view' do
+            expect(goal.can_be_viewed_by?(owner_person)).to be true
+          end
+          
+          it 'allows teammates in the company to view' do
+            expect(goal.can_be_viewed_by?(other_person)).to be true
+          end
+          
+          it 'allows admin to view' do
+            expect(goal.can_be_viewed_by?(admin)).to be true
+          end
+          
+          it 'does not allow non-teammates to view' do
+            outsider = create(:person)
+            expect(goal.can_be_viewed_by?(outsider)).to be false
+          end
         end
       end
       
-      context 'with only_creator_and_owner privacy level' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: person, privacy_level: 'only_creator_and_owner') }
-        
-        it 'allows creator to view' do
-          expect(goal.can_be_viewed_by?(person)).to be true
+      context 'with Organization owner' do
+        context 'with only_creator privacy level' do
+          let(:goal) { create(:goal, creator: creator_teammate, owner: company, privacy_level: 'only_creator') }
+          let(:company_member) { create(:person) }
+          let(:company_member_teammate) { create(:teammate, person: company_member, organization: company) }
+          
+          before { company_member_teammate }
+          
+          it 'allows creator to view' do
+            expect(goal.can_be_viewed_by?(person)).to be true
+          end
+          
+          it 'does not allow direct member of owner organization to view (privacy is only_creator)' do
+            expect(goal.can_be_viewed_by?(company_member)).to be false
+          end
+          
+          it 'allows admin to view' do
+            expect(goal.can_be_viewed_by?(admin)).to be true
+          end
+          
+          it 'does not allow others to view' do
+            expect(goal.can_be_viewed_by?(other_person)).to be false
+          end
         end
         
-        it 'allows owner (if Person) to view' do
-          expect(goal.can_be_viewed_by?(person)).to be true
+        context 'with only_creator_and_owner privacy level' do
+          # Note: This privacy level is not valid for Organization owners per validation
+          # But we test it for completeness
+          let(:goal) { build(:goal, creator: creator_teammate, owner: company, privacy_level: 'only_creator_and_owner') }
+          
+          it 'is invalid for Organization owner' do
+            expect(goal).not_to be_valid
+            expect(goal.errors[:privacy_level]).to include('is not valid for Organization owner')
+          end
         end
         
-        it 'does not allow others to view' do
-          expect(goal.can_be_viewed_by?(other_person)).to be false
+        context 'with only_creator_owner_and_managers privacy level' do
+          let(:goal) { create(:goal, creator: creator_teammate, owner: company, privacy_level: 'only_creator_owner_and_managers') }
+          let(:org_member) { create(:person) }
+          let(:org_member_teammate) { create(:teammate, person: org_member, organization: company) }
+          let(:manager_of_member) { create(:person) }
+          let(:manager_of_member_teammate) { create(:teammate, person: manager_of_member, organization: company) }
+          let(:other_org_member) { create(:person) }
+          let(:other_org_member_teammate) { create(:teammate, person: other_org_member, organization: company) }
+          
+          before do
+            org_member_teammate
+            manager_of_member_teammate
+            other_org_member_teammate
+            
+            # Set up employment tenure where manager_of_member manages org_member
+            create(:employment_tenure,
+              teammate: org_member_teammate,
+              company: company,
+              manager: manager_of_member,
+              started_at: 1.month.ago,
+              ended_at: nil
+            )
+          end
+          
+          it 'allows creator to view' do
+            expect(goal.can_be_viewed_by?(person)).to be true
+          end
+          
+          it 'allows direct member of owner organization to view' do
+            expect(goal.can_be_viewed_by?(org_member)).to be true
+          end
+          
+          it 'allows manager of direct member to view' do
+            expect(goal.can_be_viewed_by?(manager_of_member)).to be true
+          end
+          
+          it 'allows admin to view' do
+            expect(goal.can_be_viewed_by?(admin)).to be true
+          end
+          
+          it 'allows non-manager member to view' do
+            expect(goal.can_be_viewed_by?(other_org_member)).to be true
+          end
+          
+          it 'does not allow non-member to view' do
+            expect(goal.can_be_viewed_by?(other_person)).to be false
+          end
         end
-      end
-      
-      context 'with only_creator_owner_and_managers privacy level' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: person, privacy_level: 'only_creator_owner_and_managers') }
-        let(:manager_person) { create(:person) }
-        let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
         
-        it 'allows creator to view' do
-          expect(goal.can_be_viewed_by?(person)).to be true
+        context 'with everyone_in_company privacy level' do
+          let(:goal) { create(:goal, creator: creator_teammate, owner: company, privacy_level: 'everyone_in_company') }
+          let(:company_member) { create(:person) }
+          let(:company_member_teammate) { create(:teammate, person: company_member, organization: company) }
+          
+          before { company_member_teammate }
+          
+          it 'allows creator to view' do
+            expect(goal.can_be_viewed_by?(person)).to be true
+          end
+          
+          it 'allows direct member of owner organization to view' do
+            expect(goal.can_be_viewed_by?(company_member)).to be true
+          end
+          
+          it 'allows admin to view' do
+            expect(goal.can_be_viewed_by?(admin)).to be true
+          end
+          
+          it 'does not allow non-teammates to view' do
+            outsider = create(:person)
+            expect(goal.can_be_viewed_by?(outsider)).to be false
+          end
         end
         
-        it 'allows owner to view' do
-          expect(goal.can_be_viewed_by?(person)).to be true
-        end
-        
-        it 'allows managers to view' do
-          # This would require employment_tenure setup - simplified for now
-          expect(goal.can_be_viewed_by?(person)).to be true
-        end
-        
-        it 'does not allow non-managers to view' do
-          expect(goal.can_be_viewed_by?(other_person)).to be false
-        end
-      end
-      
-      context 'with everyone_in_company privacy level' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: company, privacy_level: 'everyone_in_company') }
-        let(:company_teammate) { create(:teammate, person: other_person, organization: company) }
-        
-        before do
-          # Ensure other_person has a teammate record in the company
-          company_teammate
-        end
-        
-        it 'allows creator to view' do
-          expect(goal.can_be_viewed_by?(person)).to be true
-        end
-        
-        it 'allows teammates in the company to view' do
-          expect(goal.can_be_viewed_by?(other_person)).to be true
-        end
-        
-        it 'does not allow non-teammates to view' do
-          outsider = create(:person)
-          expect(goal.can_be_viewed_by?(outsider)).to be false
+        context 'with team as owner (should resolve to company)' do
+          let(:team_goal) { create(:goal, creator: creator_teammate, owner: team, privacy_level: 'everyone_in_company') }
+          let(:company_member) { create(:person) }
+          let(:company_member_teammate) { create(:teammate, person: company_member, organization: company) }
+          
+          before { company_member_teammate }
+          
+          it 'allows creator to view' do
+            expect(team_goal.can_be_viewed_by?(person)).to be true
+          end
+          
+          it 'allows member of root company to view' do
+            expect(team_goal.can_be_viewed_by?(company_member)).to be true
+          end
         end
       end
     end
@@ -449,7 +630,9 @@ RSpec.describe Goal, type: :model do
         let(:goal) { create(:goal, creator: creator_teammate, owner: company) }
         
         it 'returns the organization when owner is a Company' do
-          expect(goal.owner_company).to eq(company)
+          expect(goal.owner_company).to be_present
+          expect(goal.owner_company.id).to eq(company.id)
+          expect(goal.owner_company.type).to eq('Company')
         end
       end
       
@@ -457,7 +640,9 @@ RSpec.describe Goal, type: :model do
         let(:goal) { create(:goal, creator: creator_teammate, owner: team) }
         
         it 'returns the root company when owner is a Team' do
-          expect(goal.owner_company).to eq(company)
+          expect(goal.owner_company).to be_present
+          expect(goal.owner_company.id).to eq(company.id)
+          expect(goal.owner_company.type).to eq('Company')
         end
       end
     end

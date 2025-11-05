@@ -53,6 +53,8 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
   end
   
   def create
+    authorize @goal, :update? # Must be able to update the goal to create links
+    
     goal_link_params = params[:goal_link] || {}
     goal_ids = params[:goal_ids] || []
     bulk_goal_titles = params[:bulk_goal_titles]
@@ -187,6 +189,7 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
   
   def set_goal
     @goal = Goal.find(params[:goal_id])
+    @organization = Organization.find(params[:organization_id])
     authorize @goal
   end
   

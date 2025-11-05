@@ -180,6 +180,30 @@ RSpec.describe GoalPolicy, type: :policy do
       end
     end
     
+    context 'when owner is Organization' do
+      let(:org_goal) { create(:goal, creator: creator_teammate, owner: company, privacy_level: 'everyone_in_company') }
+      let(:org_member) { create(:person) }
+      let(:org_member_teammate) { create(:teammate, person: org_member, organization: company) }
+      let(:pundit_user_org_member) { OpenStruct.new(user: org_member, pundit_organization: company) }
+      
+      before { org_member_teammate }
+      
+      it 'allows creator to update' do
+        policy = GoalPolicy.new(pundit_user_creator, org_goal)
+        expect(policy.update?).to be true
+      end
+      
+      it 'allows direct member of owner organization to update' do
+        policy = GoalPolicy.new(pundit_user_org_member, org_goal)
+        expect(policy.update?).to be true
+      end
+      
+      it 'denies non-member to update' do
+        policy = GoalPolicy.new(pundit_user_other, org_goal)
+        expect(policy.update?).to be false
+      end
+    end
+    
     context 'when user is admin' do
       it 'allows admin to update' do
         policy = GoalPolicy.new(pundit_user_admin, personal_goal)
@@ -218,22 +242,91 @@ RSpec.describe GoalPolicy, type: :policy do
   end
   
   describe 'scope' do
-    let!(:personal_goal1) { create(:goal, creator: creator_teammate, owner: creator_person) }
-    let!(:personal_goal2) { create(:goal, creator: owner_teammate, owner: owner_person) }
-    let!(:team_goal1) { create(:goal, creator: creator_teammate, owner: company) }
-    let!(:other_company_goal) { create(:goal, creator: create(:teammate, person: other_person, organization: other_company), owner: other_company) }
-    let!(:other_person_private_goal) { create(:goal, creator: owner_teammate, owner: owner_person, privacy_level: 'only_creator') }
+    let!(:personal_goal1) { create(:goal, creator: creator_teammate, owner: creator_person, privacy_level: 'only_creator_and_owner') }
+    let!(:personal_goal2) { create(:goal, creator: owner_teammate, owner: owner_person, privacy_level: 'only_creator_and_owner') }
+    let!(:personal_goal_private) { create(:goal, creator: owner_teammate, owner: owner_person, privacy_level: 'only_creator') }
+    let!(:personal_goal_managers) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'only_creator_owner_and_managers') }
+    let!(:personal_goal_everyone) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'everyone_in_company') }
+    let!(:org_goal) { create(:goal, creator: creator_teammate, owner: company, privacy_level: 'everyone_in_company') }
+    let!(:org_goal_private) { create(:goal, creator: creator_teammate, owner: company, privacy_level: 'only_creator') }
+    let!(:other_company_goal) { create(:goal, creator: create(:teammate, person: other_person, organization: other_company), owner: other_company, privacy_level: 'everyone_in_company') }
     
     context 'when user is a teammate' do
-      it 'returns goals where user is owner, creator, or teammate of owner organization' do
-        policy = GoalPolicy::Scope.new(pundit_user_creator, Goal)
-        resolved = policy.resolve
+      context 'when user is creator' do
+        it 'returns goals where user is creator (regardless of privacy)' do
+          policy = GoalPolicy::Scope.new(pundit_user_creator, Goal)
+          resolved = policy.resolve
+          
+          expect(resolved).to include(personal_goal1) # creator is owner
+          expect(resolved).to include(personal_goal_managers) # creator
+          expect(resolved).to include(personal_goal_everyone) # creator
+          expect(resolved).to include(org_goal) # creator
+          expect(resolved).to include(org_goal_private) # creator
+        end
+      end
+      
+      context 'when user is owner (Person)' do
+        it 'returns goals where user is owner and privacy allows owner visibility' do
+          policy = GoalPolicy::Scope.new(pundit_user_owner, Goal)
+          resolved = policy.resolve
+          
+          expect(resolved).to include(personal_goal2) # owner
+          expect(resolved).to include(personal_goal_managers) # owner (if privacy allows)
+          expect(resolved).to include(personal_goal_everyone) # owner (if privacy allows)
+          expect(resolved).not_to include(personal_goal_private) # owner but privacy is only_creator
+          expect(resolved).not_to include(personal_goal1) # different owner
+        end
+      end
+      
+      context 'when user is manager of owner' do
+        before do
+          create(:employment_tenure,
+            teammate: owner_teammate,
+            company: company,
+            manager: manager_person,
+            started_at: 1.month.ago,
+            ended_at: nil
+          )
+        end
         
-        expect(resolved).to include(personal_goal1) # creator is owner
-        expect(resolved).to include(team_goal1) # creator and teammate of owner org
-        expect(resolved).not_to include(personal_goal2) # different person
-        expect(resolved).not_to include(other_company_goal) # different company
-        expect(resolved).not_to include(other_person_private_goal) # private goal of another person
+        let(:pundit_user_manager) { OpenStruct.new(user: manager_person, pundit_organization: company) }
+        
+        it 'returns goals where user is manager and privacy allows manager visibility' do
+          policy = GoalPolicy::Scope.new(pundit_user_manager, Goal)
+          resolved = policy.resolve
+          
+          expect(resolved).to include(personal_goal_managers) # manager of owner
+          expect(resolved).not_to include(personal_goal2) # not manager, privacy is only_creator_and_owner
+        end
+      end
+      
+      context 'when user is member of organization owner' do
+        let(:org_member) { create(:person) }
+        let(:org_member_teammate) { create(:teammate, person: org_member, organization: company) }
+        let(:pundit_user_org_member) { OpenStruct.new(user: org_member, pundit_organization: company) }
+        
+        before { org_member_teammate }
+        
+        it 'returns goals where owner is organization and privacy allows member visibility' do
+          policy = GoalPolicy::Scope.new(pundit_user_org_member, Goal)
+          resolved = policy.resolve
+          
+          expect(resolved).to include(org_goal) # member of owner org, privacy is everyone_in_company
+          expect(resolved).not_to include(org_goal_private) # member but privacy is only_creator
+        end
+      end
+      
+      context 'when user is regular teammate' do
+        it 'returns goals with everyone_in_company privacy' do
+          policy = GoalPolicy::Scope.new(pundit_user_other, Goal)
+          resolved = policy.resolve
+          
+          expect(resolved).to include(personal_goal_everyone) # everyone_in_company
+          expect(resolved).to include(org_goal) # everyone_in_company
+          expect(resolved).not_to include(personal_goal1) # only_creator_and_owner
+          expect(resolved).not_to include(personal_goal_private) # only_creator
+          expect(resolved).not_to include(org_goal_private) # only_creator
+        end
       end
     end
     
@@ -242,7 +335,7 @@ RSpec.describe GoalPolicy, type: :policy do
         policy = GoalPolicy::Scope.new(pundit_user_admin, Goal)
         resolved = policy.resolve
         
-        expect(resolved).to include(personal_goal1, personal_goal2, team_goal1, other_company_goal, other_person_private_goal)
+        expect(resolved).to include(personal_goal1, personal_goal2, personal_goal_private, personal_goal_managers, personal_goal_everyone, org_goal, org_goal_private, other_company_goal)
       end
     end
   end

@@ -76,6 +76,9 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
+    # Check-ins health dashboard
+    get :check_ins_health, to: 'organizations/check_ins_health#index'
+    
     # Employment management wizard
     resources :employment_management, only: [:index, :new, :create], controller: 'organizations/employment_management' do
       collection do
