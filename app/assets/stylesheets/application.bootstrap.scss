@@ -388,3 +388,55 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+// ===== OVERLAY LAYOUT STYLES =====
+.overlay-layout {
+  // background: rgba(0, 0, 0, 0.5);
+  // min-height: 100vh;
+  // display: flex;
+  // align-items: center;
+  // justify-content: center;
+  // padding: 2rem;
+}
+
+.overlay-content {
+  // max-width: 900px;
+  // width: 100%;
+  // background: white;
+  // border-radius: 0.5rem;
+  // box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  // max-height: 90vh;
+  // display: flex;
+  // flex-direction: column;
+}
+
+.overlay-header {
+  // background: #f8f9fa;
+  // border-bottom: 1px solid #dee2e6;
+  // padding: 1rem 1.5rem;
+  // border-radius: 0.5rem 0.5rem 0 0;
+  // flex-shrink: 0;
+}
+
+.overlay-body {
+  // padding: 1.5rem;
+  // overflow-y: auto;
+  // flex: 1;
+}
+
+.single-page-wizard-step {
+  background-color: var(--bs-light);
+  border-radius: 50%;
+  width: 4rem;
+  height: 4rem;
+  padding: 0;
+  font-size: 2.0rem;
+  font-weight: 900;
+  color: var(--bs-dark);
+  border: 1px solid #dee2e6;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
