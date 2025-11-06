@@ -12,7 +12,7 @@ class GoalLinkForm < Reform::Form
   property :bulk_create_mode, virtual: true # boolean
   
   # Access to current context (set by controller)
-  attr_accessor :organization, :current_person, :current_teammate, :linking_goal
+  attr_accessor :organization, :current_person, :current_teammate, :linking_goal, :bulk_create_service
   
   # Use ActiveModel validations
   validates :link_type, presence: true
@@ -66,7 +66,7 @@ class GoalLinkForm < Reform::Form
     titles = bulk_goal_titles.to_s.split("\n").map(&:strip).reject(&:blank?)
     return false if titles.empty?
     
-    service = Goals::BulkCreateService.new(
+    @bulk_create_service = Goals::BulkCreateService.new(
       organization,
       current_person,
       current_teammate,
@@ -76,10 +76,10 @@ class GoalLinkForm < Reform::Form
       link_type
     )
     
-    if service.call
+    if @bulk_create_service.call
       true
     else
-      service.errors.each { |error| errors.add(:base, error) }
+      @bulk_create_service.errors.each { |error| errors.add(:base, error) }
       false
     end
   end

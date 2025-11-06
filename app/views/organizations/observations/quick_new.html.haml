@@ -223,7 +223,7 @@
       
       .d-flex.gap-2.mt-3
         -# Publish button - submit form to publish action (POST, no _method)
-        = form.submit "Publish & Return to #{@return_text}", 
+        = form.submit "Publish & Return to #{@return_text.presence || 'Back'}", 
                       class: 'btn btn-primary',
                       formaction: publish_organization_observation_path(organization, @observation.new_record? ? :new : @observation),
                       formmethod: :post,

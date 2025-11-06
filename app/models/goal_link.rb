@@ -50,7 +50,8 @@ class GoalLink < ApplicationRecord
       visited.add(current.id)
       
       # Follow outgoing links from current goal
-      current.outgoing_links.each do |link|
+      # Reload to ensure we get fresh associations
+      current.outgoing_links.reload.each do |link|
         queue << link.that_goal
       end
     end

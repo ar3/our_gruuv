@@ -354,21 +354,22 @@ class MaapSnapshot < ApplicationRecord
         shared_notes = check_in_data["shared_notes"]
         official_complete = check_in_data["close_rating"] == true || check_in_data["close_rating"] == "true"
       else
+        # No form data for this assignment - use current check_in data
         official_rating = nil
         shared_notes = nil
         official_complete = false
       end
+    elsif check_in_id.present? && form_params["check_in_#{check_in_id}_final_rating"].present?
+      # Use check_in_id format only if this specific check_in_id has form params
+      # This prevents using another assignment's check_in_id data
+      official_rating = form_params["check_in_#{check_in_id}_final_rating"] || form_params["check_in_#{check_in_id}_official_rating"]
+      shared_notes = form_params["check_in_#{check_in_id}_shared_notes"]
+      official_complete = form_params["check_in_#{check_in_id}_close_rating"] == "true" || form_params["check_in_#{check_in_id}_official_complete"] == "1"
     else
-      # Use check_in_id format when check_in_id is present and no assignment_id format
-      if check_in_id.present?
-        official_rating = form_params["check_in_#{check_in_id}_final_rating"] || form_params["check_in_#{assignment_id}_official_rating"]
-        shared_notes = form_params["check_in_#{check_in_id}_shared_notes"] || form_params["check_in_#{assignment_id}_shared_notes"]
-        official_complete = form_params["check_in_#{check_in_id}_close_rating"] == "true" || form_params["check_in_#{assignment_id}_official_complete"] == "1"
-      else
-        official_rating = nil
-        shared_notes = nil
-        official_complete = false
-      end
+      # No form params for this assignment - use current check_in data
+      official_rating = nil
+      shared_notes = nil
+      official_complete = false
     end
     
     # Only include if there are form changes or current data

@@ -48,9 +48,11 @@ RSpec.describe GoalLink, type: :model do
     end
     
     it 'validates link_type inclusion' do
-      goal_link.link_type = 'invalid_type'
-      expect(goal_link).not_to be_valid
-      expect(goal_link.errors[:link_type]).to include('is not included in the list')
+      # Rails enum raises ArgumentError when setting invalid value via assignment
+      # This is the expected behavior - enums validate at assignment time
+      expect {
+        goal_link.link_type = 'invalid_type'
+      }.to raise_error(ArgumentError, "'invalid_type' is not a valid link_type")
     end
     
     it 'prevents self-linking' do
@@ -120,17 +122,16 @@ RSpec.describe GoalLink, type: :model do
       expect(circular_link.errors[:base]).to include("This link would create a circular dependency")
     end
     
-    it 'allows non-circular chains' do
-      # goal1 -> goal2 -> goal3 (linear chain, no cycle)
+    it 'prevents circular chains via back-links' do
+      # goal1 -> goal2 -> goal3 (linear chain)
       create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_blocks_that')
       create(:goal_link, this_goal: goal2, that_goal: goal3, link_type: 'this_blocks_that')
-      non_circular_link = build(:goal_link, this_goal: goal3, that_goal: goal2, link_type: 'this_makes_that_easier')
+      # Adding goal3 -> goal2 creates a cycle: goal2 -> goal3 -> goal2
+      circular_link = build(:goal_link, this_goal: goal3, that_goal: goal2, link_type: 'this_makes_that_easier')
       
-      # This creates a back-link but not a full cycle (goal3 -> goal2 is okay, as goal2 -> goal3 -> goal2 doesn't exist)
-      # Actually wait, this would create goal2 -> goal3 -> goal2 which IS a cycle
-      # Let me reconsider: goal1 -> goal2 -> goal3, then goal3 -> goal2
-      # This creates: goal1 -> goal2 -> goal3 -> goal2 (cycle at goal2/goal3 level)
-      expect(non_circular_link).not_to be_valid
+      # This should be invalid because it creates a cycle at goal2/goal3 level
+      expect(circular_link).not_to be_valid
+      expect(circular_link.errors[:base]).to include("This link would create a circular dependency")
     end
     
     it 'allows branching paths without cycles' do

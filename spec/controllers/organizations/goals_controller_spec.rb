@@ -369,19 +369,25 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       
       it 'prevents access to show' do
         goal.update!(privacy_level: 'only_creator')
-        expect {
-          get :show, params: { organization_id: company.id, id: goal.id }
-        }.to raise_error(Pundit::NotAuthorizedError)
+        # Authorization failure is handled by ApplicationController's rescue_from
+        # which redirects with an alert instead of raising an error
+        get :show, params: { organization_id: company.id, id: goal.id }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to match(/permission|not authorized/i)
       end
       
       it 'prevents access to update' do
-        expect {
-          patch :update, params: { 
-            organization_id: company.id, 
-            id: goal.id,
-            goal: { title: 'Hacked Title' }
-          }
-        }.to raise_error(Pundit::NotAuthorizedError)
+        # Authorization failure is handled by ApplicationController's rescue_from
+        # which redirects with an alert instead of raising an error
+        patch :update, params: { 
+          organization_id: company.id, 
+          id: goal.id,
+          goal: { title: 'Hacked Title' }
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to match(/permission|not authorized/i)
       end
     end
   end

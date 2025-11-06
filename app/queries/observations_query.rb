@@ -86,7 +86,7 @@ class ObservationsQuery
     when 'story_asc'
       observations.order(story: :asc)
     else # 'observed_at_desc' or default
-      observations.recent # This uses order(observed_at: :desc)
+      observations.order(observed_at: :desc)
     end
   end
 end

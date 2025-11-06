@@ -84,7 +84,7 @@ RSpec.describe AssignmentAbility, type: :model do
       
       assignment_ability.ability = other_ability
       expect(assignment_ability).not_to be_valid
-      expect(assignment_ability.errors[:ability]).to include('must belong to the same organization as the assignment')
+      expect(assignment_ability.errors[:ability]).to include('must belong to the same organization hierarchy as the assignment')
     end
 
     it 'allows assignment and ability from same organization' do

@@ -26,6 +26,7 @@ RSpec.describe GoalPolicy, type: :policy do
   
   describe 'index?' do
     it 'allows access to any teammate in the organization' do
+      other_teammate # Ensure teammate is created
       policy = GoalPolicy.new(pundit_user_other, Goal)
       expect(policy.index?).to be true
     end
@@ -135,6 +136,7 @@ RSpec.describe GoalPolicy, type: :policy do
       end
       
       it 'allows teammates in company to view' do
+        other_teammate # Ensure teammate is created
         policy = GoalPolicy.new(pundit_user_other, goal)
         expect(policy.show?).to be true
       end
@@ -154,6 +156,7 @@ RSpec.describe GoalPolicy, type: :policy do
   
   describe 'create?' do
     it 'allows teammates to create goals' do
+      creator_teammate # Ensure teammate is created
       policy = GoalPolicy.new(pundit_user_creator, Goal)
       expect(policy.create?).to be true
     end
@@ -244,7 +247,7 @@ RSpec.describe GoalPolicy, type: :policy do
   describe 'scope' do
     let!(:personal_goal1) { create(:goal, creator: creator_teammate, owner: creator_person, privacy_level: 'only_creator_and_owner') }
     let!(:personal_goal2) { create(:goal, creator: owner_teammate, owner: owner_person, privacy_level: 'only_creator_and_owner') }
-    let!(:personal_goal_private) { create(:goal, creator: owner_teammate, owner: owner_person, privacy_level: 'only_creator') }
+    let!(:personal_goal_private) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'only_creator') }
     let!(:personal_goal_managers) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'only_creator_owner_and_managers') }
     let!(:personal_goal_everyone) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'everyone_in_company') }
     let!(:org_goal) { create(:goal, creator: creator_teammate, owner: company, privacy_level: 'everyone_in_company') }

@@ -55,30 +55,30 @@ RSpec.describe 'ENM Assessment Wizard Flow', type: :system do
         (1..3).each do |step|
           select 'Comfortable', from: "enm_assessment_phase2[distant_step_#{step}_comfort_same_sex]"
           select 'Comfortable', from: "enm_assessment_phase2[distant_step_#{step}_comfort_opposite_sex]"
-          select 'Notification Expected', from: "enm_assessment_phase2[distant_step_#{step}_pre_disclosure_same_sex]"
-          select 'Notification Expected', from: "enm_assessment_phase2[distant_step_#{step}_pre_disclosure_opposite_sex]"
-          select 'Full, Expected', from: "enm_assessment_phase2[distant_step_#{step}_post_disclosure_same_sex]"
-          select 'Full, Expected', from: "enm_assessment_phase2[distant_step_#{step}_post_disclosure_opposite_sex]"
+          select 'Notification is given', from: "enm_assessment_phase2[distant_step_#{step}_pre_disclosure_same_sex]"
+          select 'Notification is given', from: "enm_assessment_phase2[distant_step_#{step}_pre_disclosure_opposite_sex]"
+          select 'Full disclosure is given', from: "enm_assessment_phase2[distant_step_#{step}_post_disclosure_same_sex]"
+          select 'Full disclosure is given', from: "enm_assessment_phase2[distant_step_#{step}_post_disclosure_opposite_sex]"
         end
         
         # Fill in physical escalator steps (4-9)
         (4..9).each do |step|
           select 'Comfortable', from: "enm_assessment_phase2[physical_step_#{step}_comfort_same_sex]"
           select 'Comfortable', from: "enm_assessment_phase2[physical_step_#{step}_comfort_opposite_sex]"
-          select 'Agreement Expected', from: "enm_assessment_phase2[physical_step_#{step}_pre_disclosure_same_sex]"
-          select 'Agreement Expected', from: "enm_assessment_phase2[physical_step_#{step}_pre_disclosure_opposite_sex]"
-          select 'Desired, but not Expected', from: "enm_assessment_phase2[physical_step_#{step}_post_disclosure_same_sex]"
-          select 'Desired, but not Expected', from: "enm_assessment_phase2[physical_step_#{step}_post_disclosure_opposite_sex]"
+          select 'We talk and agree on it', from: "enm_assessment_phase2[physical_step_#{step}_pre_disclosure_same_sex]"
+          select 'We talk and agree on it', from: "enm_assessment_phase2[physical_step_#{step}_pre_disclosure_opposite_sex]"
+          select 'Disclosure desired, but not required', from: "enm_assessment_phase2[physical_step_#{step}_post_disclosure_same_sex]"
+          select 'Disclosure desired, but not required', from: "enm_assessment_phase2[physical_step_#{step}_post_disclosure_opposite_sex]"
         end
         
         # Fill in emotional escalator steps (4-9)
         (4..9).each do |step|
           select 'Comfortable', from: "enm_assessment_phase2[emotional_step_#{step}_comfort_same_sex]"
           select 'Comfortable', from: "enm_assessment_phase2[emotional_step_#{step}_comfort_opposite_sex]"
-          select 'Agreement Expected', from: "enm_assessment_phase2[emotional_step_#{step}_pre_disclosure_same_sex]"
-          select 'Agreement Expected', from: "enm_assessment_phase2[emotional_step_#{step}_pre_disclosure_opposite_sex]"
-          select 'Desired, but not Expected', from: "enm_assessment_phase2[emotional_step_#{step}_post_disclosure_same_sex]"
-          select 'Desired, but not Expected', from: "enm_assessment_phase2[emotional_step_#{step}_post_disclosure_opposite_sex]"
+          select 'We talk and agree on it', from: "enm_assessment_phase2[emotional_step_#{step}_pre_disclosure_same_sex]"
+          select 'We talk and agree on it', from: "enm_assessment_phase2[emotional_step_#{step}_pre_disclosure_opposite_sex]"
+          select 'Disclosure desired, but not required', from: "enm_assessment_phase2[emotional_step_#{step}_post_disclosure_same_sex]"
+          select 'Disclosure desired, but not required', from: "enm_assessment_phase2[emotional_step_#{step}_post_disclosure_opposite_sex]"
         end
       end
       

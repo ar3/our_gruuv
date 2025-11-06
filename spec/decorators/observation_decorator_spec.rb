@@ -40,13 +40,13 @@ RSpec.describe ObservationDecorator, type: :decorator do
       expect(decorated_observation.visibility_text).to eq('Private Journal Entry')
       
       observation.privacy_level = 'observed_only'
-      expect(decorated_observation.visibility_text).to eq('1-on-1 Feedback')
+      expect(decorated_observation.visibility_text).to eq('Direct 1-on-1 Feedback')
       
       observation.privacy_level = 'managers_only'
-      expect(decorated_observation.visibility_text).to eq('Manager Review')
+      expect(decorated_observation.visibility_text).to eq('Between Observer and Managers')
       
       observation.privacy_level = 'observed_and_managers'
-      expect(decorated_observation.visibility_text).to eq('Team Feedback')
+      expect(decorated_observation.visibility_text).to eq('Shared with everyone directly involved')
       
       observation.privacy_level = 'public_observation'
       expect(decorated_observation.visibility_text).to eq('Public Recognition')

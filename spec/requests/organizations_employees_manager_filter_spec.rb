@@ -15,6 +15,11 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
     create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, ended_at: nil)
     create(:employment_tenure, teammate: non_direct_report_teammate, company: organization, manager: nil, ended_at: nil)
     
+    # Set first_employed_at so teammates pass the 'active' status filter
+    direct_report_teammate.update!(first_employed_at: 1.month.ago)
+    non_direct_report_teammate.update!(first_employed_at: 1.month.ago)
+    manager_teammate.update!(first_employed_at: 1.month.ago)
+    
     # Mock authentication for manager
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)
     allow(manager).to receive(:has_direct_reports?).and_return(true)

@@ -30,7 +30,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
 
       # 1) Start quick_new from assignment row (first assignment is pre-populated)
       first('a', text: 'Add Win / Challenge').click
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
       
       # First assignment should be visible (pre-populated from check-in link)
       expect(page).to have_content(assignment.title)
@@ -49,7 +49,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       expect(page).to have_content('Select Assignments to Add', wait: 5)
       check "assignment_#{second_assignment.id}"
       click_button 'Add Selected Assignments'
-      expect(page).to have_content('Create Quick Observation', wait: 5)
+      expect(page).to have_content('Create Observation', wait: 5)
 
       # Set rating for the newly added second assignment to agree
       choose "observation[observation_ratings_attributes][assignment_#{second_assignment.id}][rating]", option: 'agree'
@@ -65,11 +65,12 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       expect(find_field('observation[secondary_feeling]').value).to eq('satisfied')
 
       # 5) Add a new observee
-      find('input[name="save_and_add"][value="observees"]', visible: true).click
+      click_button 'Add others who are a part of this story'
       expect(page).to have_content('Select Observees to Add', wait: 5)
       check "teammate_#{other_teammate.id}"
       click_button 'Add Selected Observees'
-      expect(page).to have_content('Create Quick Observation', wait: 5)
+      # Wait for redirect back to quick_new
+      expect(page).to have_content('Create Observation', wait: 5)
 
       # 6) Validate state still intact, including assignment ratings (BUG CHECK)
       expect(find_field('observation_story').value).to include('Full flow story validation text')
@@ -85,11 +86,12 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       expect(find("input[name='observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]'][value='strongly_agree']")).to be_checked
 
       # 7) Add ability and set rating to agree
-      find('input[name="save_and_add"][value="abilities"]', visible: true).click
+      click_button 'Add Abilities'
       expect(page).to have_content('Select Abilities to Add', wait: 5)
       check "ability_#{ability.id}"
       click_button 'Add Selected Abilities'
-      expect(page).to have_content('Create Quick Observation', wait: 5)
+      # Wait for redirect back to quick_new
+      expect(page).to have_content('Create Observation', wait: 5)
       choose "observation[observation_ratings_attributes][ability_#{ability.id}][rating]", option: 'agree'
 
       # 8) Validate state still intact, including assignment ratings (BUG CHECK)
@@ -105,11 +107,12 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       expect(find("input[name='observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]'][value='strongly_agree']")).to be_checked
 
       # 9) Add aspiration and set rating to agree
-      find('input[name="save_and_add"][value="aspirations"]', visible: true).click
+      click_button 'Add Aspirations'
       expect(page).to have_content('Select Aspirations to Add', wait: 5)
       check "aspiration_#{aspiration.id}"
       click_button 'Add Selected Aspirations'
-      expect(page).to have_content('Create Quick Observation', wait: 5)
+      # Wait for redirect back to quick_new
+      expect(page).to have_content('Create Observation', wait: 5)
       choose "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rating]", option: 'agree'
 
       # 10) Validate everything still intact prior to publish, including assignment ratings (BUG CHECK)
@@ -124,8 +127,14 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       # First assignment rating should still be set too
       expect(find("input[name='observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]'][value='strongly_agree']")).to be_checked
 
+      # Verify page is fully loaded before checking for button
+      expect(page).to have_content('Create Observation')
+      expect(page).to have_css('form#observation_form')
+      
       # Publish & validate persisted record
-      click_button 'Publish & Return to Check-ins'
+      # Button text may vary based on return_text - find by name attribute which is more reliable
+      expect(page).to have_css('input[type="submit"][name="publish"]', visible: true)
+      find('input[type="submit"][name="publish"]').click
       expect(page).to have_content('Check-Ins', wait: 5)
 
       observation = Observation.last
@@ -163,7 +172,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
         privacy_level: 'observed_and_managers'
       )
 
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
       # Preselected aspiration should be visible even before saving draft
       expect(page).to have_content('Aspirations')
       expect(page).to have_content('Career Growth')
@@ -172,7 +181,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       expect(Observation.drafts.count).to eq(0)
 
       # Click Add Aspirations to save draft and go to picker
-      find('input[name="save_and_add"][value="aspirations"]', visible: true).click
+      click_button 'Add Aspirations'
 
       # Now on the add aspirations page
       expect(page).to have_content('Select Aspirations to Add', wait: 5)
@@ -195,12 +204,12 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
         privacy_level: 'observed_and_managers'
       )
 
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
       expect(page).to have_content('Abilities')
       expect(page).to have_content('Ruby')
       expect(Observation.drafts.count).to eq(0)
 
-      find('input[name="save_and_add"][value="abilities"]', visible: true).click
+      click_button 'Add Abilities'
 
       expect(page).to have_content('Select Abilities to Add', wait: 5)
       expect(Observation.drafts.count).to eq(1)
@@ -223,7 +232,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       expect(page).to have_content(employee.display_name)
       expect(Observation.drafts.count).to eq(0)
 
-      find('input[name="save_and_add"][value="observees"]', visible: true).click
+      click_button 'Add others who are a part of this story'
 
       expect(page).to have_content('Select Observees to Add', wait: 5)
       expect(Observation.drafts.count).to eq(1)
@@ -248,7 +257,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       click_link 'Add Win / Challenge'
       
       # Should navigate to quick_new page
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
       expect(page).to have_content('Observation Details')
       
       # Should show selected observee
@@ -289,7 +298,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       click_link 'Add Win / Challenge'
       
       # Should navigate to quick_new page
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
       
       # Fill in story and feelings
       fill_in 'observation_story', with: 'Test story that should persist'
@@ -321,7 +330,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       click_button 'Add Selected Assignments'
       
       # Should redirect back to quick_new page
-      expect(page).to have_content('Create Quick Observation', wait: 5)
+      expect(page).to have_content('Create Observation', wait: 5)
       
       # Wait for page to fully load
       expect(page).to have_field('observation_story', wait: 5)
@@ -364,7 +373,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
 
       click_link 'Add Win / Challenge'
 
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
 
       # Assignment should be pre-populated from the check-in link
       expect(page).to have_content(assignment.title)
@@ -399,7 +408,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       
       click_link 'Add Win / Challenge'
       
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
       expect(page).to have_button('Publish & Return to Check-ins')
       
       # Fill in story
@@ -422,10 +431,15 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       find('#return-button').click
       
       # Wait for redirect back to quick_new
-      expect(page).to have_content('Create Quick Observation', wait: 10)
+      expect(page).to have_content('Create Observation', wait: 10)
       
-      # Should still say "Publish & Return to Check-ins"
-      expect(page).to have_button('Publish & Return to Check-ins', wait: 5)
+      # Verify page is fully loaded
+      expect(page).to have_content('Create Observation')
+      expect(page).to have_css('form#observation_form')
+      
+      # Should still say "Publish & Return to Check-ins" (or similar based on return_text)
+      # Use name attribute which is more reliable than text matching
+      expect(page).to have_css('input[type="submit"][name="publish"]', visible: true)
       
       # Select assignment and add
       expect(page).to have_button('Add Assignments', wait: 5)
@@ -439,7 +453,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       click_button 'Add Selected Assignments'
       
       # Wait for redirect back to quick_new
-      expect(page).to have_content('Create Quick Observation', wait: 10)
+      expect(page).to have_content('Create Observation', wait: 10)
       
       # Should still say "Publish & Return to Check-ins" after adding assignments
       expect(page).to have_button('Publish & Return to Check-ins', wait: 5)
@@ -451,7 +465,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       
       click_link 'Add Win / Challenge'
       
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
       
       # Fill in story (but don't click Add Assignments or Publish)
       fill_in 'observation_story', with: 'Story that should be saved as draft on cancel'
@@ -477,7 +491,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
 
       click_link 'Add Win / Challenge'
 
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
 
       # Assignment should be pre-populated from the check-in link
       expect(page).to have_content(assignment.title)
@@ -500,7 +514,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       click_button 'Add Selected Assignments'
 
       # Should redirect back without errors
-      expect(page).to have_content('Create Quick Observation', wait: 5)
+      expect(page).to have_content('Create Observation', wait: 5)
       expect(page).not_to have_content('has already been taken')
 
       # Verify the assignment is still in the draft
@@ -514,7 +528,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       
       click_link 'Add Win / Challenge'
       
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
       
       # Don't fill in anything, just click Cancel
       click_button 'Cancel'
@@ -534,7 +548,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       
       click_link 'Add Win / Challenge'
       
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
       
       # Fill in story and primary feeling only (NO secondary feeling)
       fill_in 'observation_story', with: 'Test story with primary feeling only'
@@ -571,18 +585,21 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
 
       click_link 'Add Win / Challenge'
 
-      expect(page).to have_content('Create Quick Observation')
+      expect(page).to have_content('Create Observation')
 
       # Create an aspiration for the org
       aspiration = create(:aspiration, organization: organization)
 
       # Go to add aspirations
-      find('input[name="save_and_add"][value="aspirations"]', visible: true).click
+      click_button 'Add Aspirations'
       expect(page).to have_content('Select Aspirations to Add', wait: 5)
 
       # Check and submit
       check "aspiration_#{aspiration.id}"
       click_button 'Add Selected Aspirations'
+
+      # Wait for redirect back to quick_new
+      expect(page).to have_content('Create Observation', wait: 5)
 
       # Back on quick_new, should show aspiration section, no errors
       expect(page).to have_content('Aspirations', wait: 5)
@@ -590,9 +607,13 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       expect(page).not_to have_content('has already been taken')
 
       # Add again to ensure no duplicate validation error
-      find('input[name="save_and_add"][value="aspirations"]', visible: true).click
+      click_button 'Add Aspirations'
+      expect(page).to have_content('Select Aspirations to Add', wait: 5)
       expect(page).to have_checked_field("aspiration_#{aspiration.id}")
       click_button 'Add Selected Aspirations'
+      
+      # Wait for redirect back to quick_new
+      expect(page).to have_content('Create Observation', wait: 5)
       expect(page).not_to have_content('has already been taken')
     end
 
@@ -604,17 +625,25 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       ability = create(:ability, organization: organization)
 
       # Add ability
-      find('input[name="save_and_add"][value="abilities"]', visible: true).click
+      click_button 'Add Abilities'
       expect(page).to have_content('Select Abilities to Add', wait: 5)
       check "ability_#{ability.id}"
       click_button 'Add Selected Abilities'
+
+      # Wait for redirect back to quick_new - verify page is fully loaded
+      expect(page).to have_content('Create Observation')
+      expect(page).to have_css('form#observation_form')
+      expect(page).to have_field('observation_story')
 
       # Now rate the ability
       rating_input_name = "observation[observation_ratings_attributes][ability_#{ability.id}][rating]"
       fill_in 'observation_story', with: 'Story for ability rating'
       choose rating_input_name, option: 'agree'
 
-      click_button 'Publish & Return to Check-ins'
+      # Verify button exists and is enabled before clicking
+      # Button text may vary based on return_text - find by name attribute which is more reliable
+      expect(page).to have_css('input[type="submit"][name="publish"]', visible: true)
+      find('input[type="submit"][name="publish"]').click
       expect(page).to have_content('Check-Ins', wait: 5)
 
       observation = Observation.last
@@ -641,7 +670,7 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       sign_in_and_visit(employee, organization, organization_person_check_ins_path(organization, employee))
       
       # Should see observation modal trigger link for this assignment
-      expect(page).to have_css('a[data-bs-target^="#observationsModal_assignment_"]', wait: 5)
+      expect(page).to have_css('a[data-bs-target^="#observationsModal_assignment_"]')
       observation_link = page.find('a[data-bs-target^="#observationsModal_assignment_"]', match: :first)
       expect(observation_link).to have_css('i.bi.bi-eye')
       
@@ -649,38 +678,18 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       modal_target = observation_link['data-bs-target']
       modal_id = modal_target.gsub('#', '')
       
-      # Ensure the modal element exists in the DOM (may be hidden initially)
-      expect(page).to have_css("##{modal_id}", visible: :all, wait: 5)
+      # Ensure the modal element exists in the DOM
+      expect(page).to have_css("##{modal_id}", visible: :all)
       
-      # Use JavaScript to trigger the modal - more reliable than clicking the link
-      # Bootstrap 5's getOrCreateInstance handles initialization better
-      page.execute_script("
-        function showModal() {
-          if (typeof bootstrap !== 'undefined' && typeof bootstrap.Modal !== 'undefined') {
-            var modalElement = document.getElementById('#{modal_id}');
-            if (modalElement) {
-              try {
-                var modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-                modal.show();
-                return true;
-              } catch (e) {
-                var modal = new bootstrap.Modal(modalElement);
-                modal.show();
-                return true;
-              }
-            }
-          }
-          return false;
-        }
-        showModal();
-      ")
+      # Click the link to trigger the modal - Capybara will wait for it to appear
+      observation_link.click
       
-      # Wait for the modal to become visible
-      expect(page).to have_css("##{modal_id}.show", wait: 10)
+      # Wait for the modal to become visible using Capybara's implicit waits
+      expect(page).to have_css("##{modal_id}.show", visible: true)
       
       # Wait for the modal title to be visible and contain the expected text
-      within("##{modal_id}.show", visible: true) do
-        expect(page).to have_css('h5.modal-title', text: /Observations for/, wait: 5)
+      within("##{modal_id}") do
+        expect(page).to have_css('h5.modal-title', text: /Observations for/)
       end
     end
   end

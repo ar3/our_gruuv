@@ -121,33 +121,31 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
       titles = bulk_titles
       
       unless titles.empty?
-        goal_type = link_direction == 'incoming' ? 'inspirational_objective' : 'quantitative_key_result'
+        goal_link = GoalLink.new
+        form = GoalLinkForm.new(goal_link)
+        form.organization = @organization
+        form.current_person = current_person
+        form.current_teammate = current_person.teammates.find_by(organization: @organization)
+        form.linking_goal = @goal
         
-        titles.each do |title|
-          goal_link = GoalLink.new
-          form = GoalLinkForm.new(goal_link)
-          form.organization = @organization
-          form.current_person = current_person
-          form.current_teammate = current_person.teammates.find_by(organization: @organization)
-          form.linking_goal = @goal
-          
-          form_params = {
-            link_direction: link_direction,
-            link_type: 'this_is_key_result_of_that',
-            bulk_create_mode: true,
-            bulk_goal_titles: title
-          }
-          
-          # Add metadata notes if provided
-          if params[:metadata_notes].present?
-            form_params[:metadata_notes] = params[:metadata_notes]
-          end
-          
-          if form.validate(form_params) && form.save
-            success_count += 1
-          else
-            errors.concat(form.errors.full_messages)
-          end
+        # Pass all titles as newline-separated string
+        form_params = {
+          link_direction: link_direction,
+          link_type: 'this_is_key_result_of_that',
+          bulk_create_mode: true,
+          bulk_goal_titles: titles.join("\n")
+        }
+        
+        # Add metadata notes if provided
+        if params[:metadata_notes].present?
+          form_params[:metadata_notes] = params[:metadata_notes]
+        end
+        
+        if form.validate(form_params) && form.save
+          # Count how many goals were created
+          success_count += form.bulk_create_service&.created_goals&.count || 0
+        else
+          errors.concat(form.errors.full_messages)
         end
       end
     end

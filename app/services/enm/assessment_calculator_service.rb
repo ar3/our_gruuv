@@ -32,17 +32,17 @@ class Enm::AssessmentCalculatorService
   def partial_phase_1_analysis(phase_1_data)
     return { stage: 'none' } if phase_1_data.blank?
     
-    # Check if Q1 is answered
-    if phase_1_data[:core_openness]
-      core_same = phase_1_data[:core_openness][:same_sex].to_i
-      core_opposite = phase_1_data[:core_openness][:opposite_sex].to_i
+    # Check most complete data first (Q5 > Q3 > Q1)
+    # Check if Q1-Q5 are answered (full Phase 1)
+    if phase_1_data[:active_emotional] && phase_1_data[:active_physical]
+      readiness = determine_readiness(phase_1_data)
+      sex_differences = detect_sex_differences(phase_1_data)
       
-      # If either partner disagrees for both sexes, not ENM
-      if core_same <= -1 && core_opposite <= -1
-        return { stage: 'after_q1', likely_non_monogamous: false }
-      elsif core_same >= 1 || core_opposite >= 1
-        return { stage: 'after_q1', likely_non_monogamous: true }
-      end
+      return { 
+        stage: 'after_q5', 
+        readiness: readiness,
+        sex_differences: sex_differences
+      }
     end
     
     # Check if Q1-Q3 are answered
@@ -65,16 +65,17 @@ class Enm::AssessmentCalculatorService
       end
     end
     
-    # Check if Q1-Q5 are answered (full Phase 1)
-    if phase_1_data[:active_emotional] && phase_1_data[:active_physical]
-      readiness = determine_readiness(phase_1_data)
-      sex_differences = detect_sex_differences(phase_1_data)
+    # Check if Q1 is answered
+    if phase_1_data[:core_openness]
+      core_same = phase_1_data[:core_openness][:same_sex].to_i
+      core_opposite = phase_1_data[:core_openness][:opposite_sex].to_i
       
-      return { 
-        stage: 'after_q5', 
-        readiness: readiness,
-        sex_differences: sex_differences
-      }
+      # If either partner disagrees for both sexes, not ENM
+      if core_same <= -1 && core_opposite <= -1
+        return { stage: 'after_q1', likely_non_monogamous: false }
+      elsif core_same >= 1 || core_opposite >= 1
+        return { stage: 'after_q1', likely_non_monogamous: true }
+      end
     end
     
     { stage: 'incomplete' }

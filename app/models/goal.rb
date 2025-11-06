@@ -170,7 +170,11 @@ class Goal < ApplicationRecord
         return false unless company
         # Check if person is a teammate in the company or any of its descendants
         # This includes the company itself and all teams/departments under it
+        # Get all organization IDs that are part of this company hierarchy
         org_ids = company.self_and_descendants.map(&:id)
+        return false if org_ids.empty?
+        # Check if person has any teammates in the company or its descendants
+        # Make sure we're checking the association correctly
         person.teammates.where(organization_id: org_ids).exists?
       end
     else
@@ -195,15 +199,26 @@ class Goal < ApplicationRecord
     return nil if owner_type == 'Person'
     return nil unless owner_type == 'Organization'
     
-    # Get owner record - reload to ensure we have parent association available
+    # Get owner record - ensure parent association is available
     owner_record = Organization.find(owner_id)
     
     # If owner is already a Company, return it
     return owner_record if owner_record.type == 'Company'
     
     # Use root_company method which handles traversal up the parent chain
-    # root_company will traverse parent_id if parent association isn't loaded
-    owner_record.root_company
+    # root_company will use parent_id if parent association isn't loaded
+    root = owner_record.root_company
+    return root if root
+    
+    # Fallback: if root_company returns nil, try to find company via parent_id
+    # This handles cases where parent association might not be loaded
+    current = owner_record
+    while current && current.parent_id
+      current = Organization.find(current.parent_id)
+      return current if current.type == 'Company'
+    end
+    
+    nil
   end
   
   def managers

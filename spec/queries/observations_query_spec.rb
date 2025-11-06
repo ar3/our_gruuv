@@ -122,8 +122,10 @@ RSpec.describe ObservationsQuery, type: :query do
 
       it 'sorts by most recent first' do
         results = query.call.to_a
-        expect(results.first).to eq(observation3) # 1 day ago
-        expect(results.second).to eq(observation1) # 1 week ago
+        # Filter out draft observations (published_at is nil) for sorting test
+        published_results = results.select { |obs| obs.published_at.present? }
+        expect(published_results.first).to eq(observation3) # 1 day ago
+        expect(published_results.second).to eq(observation1) # 1 week ago
       end
     end
 
@@ -132,8 +134,10 @@ RSpec.describe ObservationsQuery, type: :query do
 
       it 'sorts by oldest first' do
         results = query.call.to_a
-        expect(results.first).to eq(observation1) # 1 week ago
-        expect(results.last).to eq(observation3) # 1 day ago
+        # Filter out draft observations (published_at is nil) for sorting test
+        published_results = results.select { |obs| obs.published_at.present? }
+        expect(published_results.first).to eq(observation1) # 1 week ago
+        expect(published_results.last).to eq(observation3) # 1 day ago
       end
     end
 

@@ -564,28 +564,28 @@ end
           organization, 
           @observation,
           return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: 'Observation'
+          return_text: params[:return_text] || 'Observation'
         )
       elsif params[:save_and_add_aspirations].present?
         redirect_to add_aspirations_organization_observation_path(
           organization,
           @observation,
           return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: 'Observation'
+          return_text: params[:return_text] || 'Observation'
         )
       elsif params[:save_and_add_abilities].present?
         redirect_to add_abilities_organization_observation_path(
           organization,
           @observation,
           return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: 'Observation'
+          return_text: params[:return_text] || 'Observation'
         )
       elsif params[:save_and_add_observees].present?
         redirect_to add_observees_organization_observation_path(
           organization,
           @observation,
           return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: 'Observation'
+          return_text: params[:return_text] || 'Observation'
         )
       else
         redirect_to quick_new_organization_observations_path(

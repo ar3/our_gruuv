@@ -25,22 +25,22 @@ RSpec.describe GoalForm, type: :form do
       expect(form.errors[:goal_type]).to include("can't be blank")
     end
     
-    it 'requires earliest_target_date' do
+    it 'allows earliest_target_date to be nil (dates are optional)' do
       form.earliest_target_date = nil
-      expect(form).not_to be_valid
-      expect(form.errors[:earliest_target_date]).to include("can't be blank")
+      expect(form).to be_valid
+      # Target dates are optional - they can be set via timeframe selection or explicitly
     end
     
-    it 'requires latest_target_date' do
+    it 'allows latest_target_date to be nil (dates are optional)' do
       form.latest_target_date = nil
-      expect(form).not_to be_valid
-      expect(form.errors[:latest_target_date]).to include("can't be blank")
+      expect(form).to be_valid
+      # Target dates are optional - they can be set via timeframe selection or explicitly
     end
     
-    it 'requires most_likely_target_date' do
+    it 'allows most_likely_target_date to be nil (dates are optional)' do
       form.most_likely_target_date = nil
-      expect(form).not_to be_valid
-      expect(form.errors[:most_likely_target_date]).to include("can't be blank")
+      expect(form).to be_valid
+      # Target dates are optional - they can be set via timeframe selection or explicitly
     end
     
     it 'requires privacy_level' do

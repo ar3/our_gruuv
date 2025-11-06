@@ -131,12 +131,15 @@ class GoalPolicy < ApplicationPolicy
       # everyone_in_company: Anyone in the company
       # Check if user is a teammate in the company (not just if they have teammate IDs)
       if actual_user.teammates.exists?(organization: company)
-        # For Person owner: check if owner's company is the user's company
-        # Use a subquery to check if owner has a teammate in the company
-        conditions << "(privacy_level = ? AND owner_type = ? AND owner_id IN (SELECT person_id FROM teammates WHERE organization_id = ?))"
-        params << 'everyone_in_company'
-        params << 'Person'
-        params << company.id
+        # For Person owner: check if owner has a teammate in the company
+        # This should include all Person owners who have teammates in the company
+        company_person_ids = Teammate.where(organization: company).pluck(:person_id).uniq
+        if company_person_ids.any?
+          conditions << "(privacy_level = ? AND owner_type = ? AND owner_id IN (?))"
+          params << 'everyone_in_company'
+          params << 'Person'
+          params << company_person_ids
+        end
         
         # For Organization owner: check if owner resolves to the same company
         # Get all organization IDs that resolve to this company (company itself + all descendants)
@@ -154,11 +157,48 @@ class GoalPolicy < ApplicationPolicy
         return base_scope.none
       end
       
-      where_clause = conditions.join(' OR ')
+      # Build the query using where with OR conditions
+      # Rails handles array parameters correctly when using where with hash syntax
+      # For raw SQL with arrays, we need to expand them properly
+      query = base_scope
+      param_index = 0
+      conditions.each_with_index do |condition, index|
+        # Count placeholders in this condition
+        placeholder_count = condition.count('?')
+        condition_params = params[param_index, placeholder_count]
+        param_index += placeholder_count
+        
+        # Expand arrays in IN clauses for proper SQL generation
+        expanded_params = condition_params.map do |param|
+          if param.is_a?(Array)
+            # For IN clauses, expand the array and create individual placeholders
+            param.map { |p| p }
+          else
+            param
+          end
+        end.flatten
+        
+        # If condition has arrays, we need to adjust placeholders
+        if condition_params.any? { |p| p.is_a?(Array) }
+          # Replace IN (?) with IN (?, ?, ...) for arrays
+          adjusted_condition = condition.dup
+          condition_params.each_with_index do |param, p_idx|
+            if param.is_a?(Array)
+              placeholders = param.map { '?' }.join(', ')
+              adjusted_condition.sub!('IN (?)', "IN (#{placeholders})")
+            end
+          end
+          condition = adjusted_condition
+        end
+        
+        if index == 0
+          query = query.where(condition, *expanded_params)
+        else
+          query = query.or(base_scope.where(condition, *expanded_params))
+        end
+      end
       
-      # Apply the combined conditions
-      # Rails handles array parameters correctly for IN clauses
-      base_scope.where(where_clause, *params)
+      query
     end
     
     def managed_person_ids_for_user(company)

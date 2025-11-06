@@ -58,10 +58,14 @@ RSpec.describe Enm::AssessmentsController, type: :controller do
         {
           core_openness_same_sex: 2,
           core_openness_opposite_sex: 2,
-          passive_openness_emotional: 2,
-          passive_openness_physical: 2,
-          active_readiness_emotional: 3,
-          active_readiness_physical: 3
+          passive_emotional_same_sex: 2,
+          passive_emotional_opposite_sex: 2,
+          passive_physical_same_sex: 2,
+          passive_physical_opposite_sex: 2,
+          active_emotional_same_sex: 3,
+          active_emotional_opposite_sex: 3,
+          active_physical_same_sex: 3,
+          active_physical_opposite_sex: 3
         }
       end
       
@@ -69,7 +73,7 @@ RSpec.describe Enm::AssessmentsController, type: :controller do
         patch :update_phase, params: { 
           code: assessment.code, 
           phase: 1, 
-          assessment: phase_1_data 
+          enm_assessment_phase1: phase_1_data 
         }
         
         assessment.reload
