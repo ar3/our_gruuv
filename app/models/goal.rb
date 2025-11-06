@@ -165,8 +165,13 @@ class Goal < ApplicationRecord
         person.teammates.exists?(organization: owner_company)
       else
         # For Organization owner: check owner_company
-        # Use owner_company method which handles traversal to root company
-        company = owner_company
+        # If owner is already a Company, use it directly; otherwise resolve via owner_company
+        owner_record = owner.is_a?(Organization) ? owner : Organization.find(owner_id)
+        if owner_record.type == 'Company'
+          company = owner_record
+        else
+          company = owner_company
+        end
         return false unless company
         # Check if person is a teammate in the company or any of its descendants
         # This includes the company itself and all teams/departments under it
@@ -174,7 +179,6 @@ class Goal < ApplicationRecord
         org_ids = company.self_and_descendants.map(&:id)
         return false if org_ids.empty?
         # Check if person has any teammates in the company or its descendants
-        # Make sure we're checking the association correctly
         person.teammates.where(organization_id: org_ids).exists?
       end
     else

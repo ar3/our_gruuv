@@ -684,10 +684,11 @@ RSpec.describe 'Quick Observation from Check-in Flow', type: :system, js: true d
       # Click the link to trigger the modal - Capybara will wait for it to appear
       observation_link.click
       
-      # Wait for the modal to become visible using Capybara's implicit waits
-      expect(page).to have_css("##{modal_id}.show", visible: true)
+      # Wait for the modal content to be visible instead of checking for .show class
+      # Bootstrap modals with .fade class animate, so content visibility is more reliable
+      expect(page).to have_css("##{modal_id} h5.modal-title", text: /Observations for/, visible: true)
       
-      # Wait for the modal title to be visible and contain the expected text
+      # Verify modal is actually visible
       within("##{modal_id}") do
         expect(page).to have_css('h5.modal-title', text: /Observations for/)
       end
