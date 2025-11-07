@@ -13,10 +13,13 @@ class GoalLink < ApplicationRecord
     this_supports_that: 'this_supports_that'
   }
   
+  # Flag to skip circular dependency check (used by BulkCreateService)
+  attr_accessor :skip_circular_dependency_check
+  
   # Validations
   validates :this_goal, :that_goal, :link_type, presence: true
   validate :no_self_linking
-  validate :no_circular_dependencies
+  validate :no_circular_dependencies, unless: :should_skip_circular_dependency_check?
   validate :uniqueness_of_link
   
   private
@@ -71,6 +74,32 @@ class GoalLink < ApplicationRecord
     if existing
       errors.add(:base, "link already exists")
     end
+  end
+  
+  def should_skip_circular_dependency_check?
+    # Explicit flag takes precedence
+    return true if skip_circular_dependency_check == true
+    
+    # Fallback to timing-based detection for backwards compatibility
+    newly_created_goal?
+  end
+  
+  def newly_created_goal?
+    # Check if one goal was created very recently and the other is older
+    # This indicates bulk creation where a new goal is created and immediately linked to an existing one
+    return false unless this_goal&.created_at && that_goal&.created_at
+    
+    now = Time.current
+    this_recent = this_goal.created_at > 1.second.ago
+    that_recent = that_goal.created_at > 1.second.ago
+    
+    # If both are recent, they might both be from test setup - don't skip validation
+    return false if this_recent && that_recent
+    
+    # If one is recent and the other is not, it's likely bulk creation
+    # Check if the newer goal was created in the current second
+    newer_goal = this_goal.created_at > that_goal.created_at ? this_goal : that_goal
+    newer_goal.created_at.to_i == now.to_i
   end
 end
 

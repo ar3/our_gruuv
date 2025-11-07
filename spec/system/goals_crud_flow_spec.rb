@@ -44,7 +44,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system, critical: true do
       # Goal type defaults to inspirational_objective, but let's verify it's selected
       # Privacy level defaults to everyone_in_company
       # Select owner from dropdown
-      select "Person: #{person.display_name}", from: 'goal_owner_id'
+      select "Teammate: #{person.display_name}", from: 'goal_owner_id'
       
       click_button 'Create Goal'
       
@@ -128,7 +128,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system, critical: true do
       fill_in 'goal_latest_target_date', with: (Date.today + 1.month).strftime('%Y-%m-%d')
       
       # Select owner
-      select "Person: #{person.display_name}", from: 'goal_owner_id'
+      select "Teammate: #{person.display_name}", from: 'goal_owner_id'
       
       click_button 'Create Goal'
       
@@ -149,7 +149,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system, critical: true do
       teammate = person.teammates.find_by(organization: organization) || create(:teammate, person: person, organization: organization)
       now_goal = create(:goal, 
         creator: teammate, 
-        owner: person, 
+        owner: teammate, 
         title: 'Now Goal',
         earliest_target_date: Date.today + 1.week,
         most_likely_target_date: Date.today + 1.month,
@@ -157,7 +157,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system, critical: true do
       )
       next_goal = create(:goal,
         creator: teammate,
-        owner: person,
+        owner: teammate,
         title: 'Next Goal',
         earliest_target_date: Date.today + 4.months,
         most_likely_target_date: Date.today + 6.months,
@@ -165,7 +165,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system, critical: true do
       )
       later_goal = create(:goal,
         creator: teammate,
-        owner: person,
+        owner: teammate,
         title: 'Later Goal',
         earliest_target_date: Date.today + 10.months,
         most_likely_target_date: Date.today + 12.months,
@@ -199,13 +199,13 @@ RSpec.describe 'Goals CRUD Flow', type: :system, critical: true do
       teammate = person.teammates.find_by(organization: organization) || create(:teammate, person: person, organization: organization)
       inspirational = create(:goal,
         creator: teammate,
-        owner: person,
+        owner: teammate,
         title: 'Inspirational Goal',
         goal_type: 'inspirational_objective'
       )
       qualitative = create(:goal,
         creator: teammate,
-        owner: person,
+        owner: teammate,
         title: 'Qualitative Goal',
         goal_type: 'qualitative_key_result'
       )
@@ -235,19 +235,19 @@ RSpec.describe 'Goals CRUD Flow', type: :system, critical: true do
       teammate = person.teammates.find_by(organization: organization) || create(:teammate, person: person, organization: organization)
       goal1 = create(:goal,
         creator: teammate,
-        owner: person,
+        owner: teammate,
         title: 'Goal 1',
         most_likely_target_date: Date.today + 3.months
       )
       goal2 = create(:goal,
         creator: teammate,
-        owner: person,
+        owner: teammate,
         title: 'Goal 2',
         most_likely_target_date: Date.today + 1.month
       )
       goal3 = create(:goal,
         creator: teammate,
-        owner: person,
+        owner: teammate,
         title: 'Goal 3',
         most_likely_target_date: Date.today + 2.months
       )
@@ -282,8 +282,8 @@ RSpec.describe 'Goals CRUD Flow', type: :system, critical: true do
   
   describe 'Goal Linking Workflow' do
     let!(:teammate) { person.teammates.find_by(organization: organization) || create(:teammate, person: person, organization: organization) }
-    let!(:goal1) { create(:goal, creator: teammate, owner: person, title: 'Goal 1') }
-    let!(:goal2) { create(:goal, creator: teammate, owner: person, title: 'Goal 2') }
+    let!(:goal1) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 1') }
+    let!(:goal2) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 2') }
     
     it 'creates a link between goals' do
       visit organization_goal_path(organization, goal1)
@@ -382,7 +382,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system, critical: true do
     let!(:private_goal) do
       create(:goal,
         creator: teammate,
-        owner: person,
+        owner: teammate,
         title: 'Private Goal',
         privacy_level: 'only_creator'
       )
@@ -413,7 +413,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system, critical: true do
       creator_teammate = person.teammates.find_by(organization: organization) || teammate
       
       # For everyone_in_company privacy, the owner needs to be an Organization (not a Person)
-      # because owner_company returns nil when owner_type is 'Person'
+      # because owner_company now returns the company via company_id for Teammate owners
       # Create the goal with organization as owner
       shared_goal = create(:goal,
         creator: creator_teammate,
@@ -440,7 +440,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system, critical: true do
     let!(:personal_goal) do
       create(:goal,
         creator: teammate,
-        owner: person,
+        owner: teammate,
         title: 'My Personal Goal'
       )
     end

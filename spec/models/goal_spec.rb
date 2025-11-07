@@ -35,7 +35,7 @@ RSpec.describe Goal, type: :model do
   end
   
   describe 'validations' do
-    let(:goal) { build(:goal, creator: creator_teammate, owner: person) }
+    let(:goal) { build(:goal, creator: creator_teammate, owner: creator_teammate) }
     
     it 'requires title' do
       goal.title = nil
@@ -108,8 +108,8 @@ RSpec.describe Goal, type: :model do
       expect { goal.privacy_level = 'invalid_level' }.to raise_error(ArgumentError, "'invalid_level' is not a valid privacy_level")
     end
     
-    context 'with Person owner' do
-      let(:goal) { build(:goal, creator: creator_teammate, owner: person, privacy_level: 'only_creator_owner_and_managers') }
+    context 'with Teammate owner' do
+      let(:goal) { build(:goal, creator: creator_teammate, owner: creator_teammate, privacy_level: 'only_creator_owner_and_managers') }
       
       it 'allows all privacy levels' do
         Goal.privacy_levels.keys.each do |level|
@@ -117,7 +117,7 @@ RSpec.describe Goal, type: :model do
           goal.earliest_target_date = Date.today + 1.month
           goal.most_likely_target_date = Date.today + 2.months
           goal.latest_target_date = Date.today + 3.months
-          expect(goal).to be_valid, "should allow privacy_level #{level} for Person owner"
+          expect(goal).to be_valid, "should allow privacy_level #{level} for Teammate owner"
         end
       end
     end
@@ -171,7 +171,7 @@ RSpec.describe Goal, type: :model do
     let!(:personal_goal) do
       create(:goal, 
         creator: creator_teammate, 
-        owner: person,
+        owner: creator_teammate,
         earliest_target_date: Date.today,
         most_likely_target_date: Date.today + 1.month,
         latest_target_date: Date.today + 2.months
@@ -191,7 +191,7 @@ RSpec.describe Goal, type: :model do
     let!(:other_goal) do
       create(:goal,
         creator: other_teammate,
-        owner: other_person,
+        owner: other_teammate,
         earliest_target_date: Date.today + 11.months,
         most_likely_target_date: Date.today + 12.months,
         latest_target_date: Date.today + 13.months
@@ -199,7 +199,7 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '.for_teammate' do
-      it 'returns goals where teammate is owner (Person)' do
+      it 'returns goals where teammate is owner (Teammate)' do
         result = described_class.for_teammate(creator_teammate)
         expect(result).to include(personal_goal)
       end
@@ -251,8 +251,8 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '.draft' do
-      let!(:draft_goal) { create(:goal, creator: creator_teammate, owner: person, started_at: nil) }
-      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: person, started_at: 1.day.ago) }
+      let!(:draft_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil) }
+      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago) }
       
       it 'returns goals without started_at' do
         result = described_class.draft
@@ -262,10 +262,10 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '.active' do
-      let!(:draft_goal) { create(:goal, creator: creator_teammate, owner: person, started_at: nil) }
-      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: person, started_at: 1.day.ago) }
-      let!(:completed_goal) { create(:goal, creator: creator_teammate, owner: person, started_at: 1.week.ago, completed_at: 1.day.ago) }
-      let!(:cancelled_goal) { create(:goal, creator: creator_teammate, owner: person, started_at: 1.week.ago, cancelled_at: 1.day.ago) }
+      let!(:draft_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil) }
+      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago) }
+      let!(:completed_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago, completed_at: 1.day.ago) }
+      let!(:cancelled_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago, cancelled_at: 1.day.ago) }
       
       it 'returns goals with started_at but no completed_at or cancelled_at' do
         result = described_class.active
@@ -275,8 +275,8 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '.completed' do
-      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: person, started_at: 1.day.ago) }
-      let!(:completed_goal) { create(:goal, creator: creator_teammate, owner: person, completed_at: 1.day.ago) }
+      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago) }
+      let!(:completed_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, completed_at: 1.day.ago) }
       
       it 'returns goals with completed_at' do
         result = described_class.completed
@@ -286,8 +286,8 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '.cancelled' do
-      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: person, started_at: 1.day.ago) }
-      let!(:cancelled_goal) { create(:goal, creator: creator_teammate, owner: person, cancelled_at: 1.day.ago) }
+      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago) }
+      let!(:cancelled_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, cancelled_at: 1.day.ago) }
       
       it 'returns goals with cancelled_at' do
         result = described_class.cancelled
@@ -298,7 +298,7 @@ RSpec.describe Goal, type: :model do
   end
   
   describe 'instance methods' do
-    let(:goal) { create(:goal, creator: creator_teammate, owner: person) }
+    let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
     
     describe '#timeframe' do
       it 'returns :now for goals within 3 months' do
@@ -359,9 +359,9 @@ RSpec.describe Goal, type: :model do
       let(:owner_teammate) { create(:teammate, person: owner_person, organization: company) }
       let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
       
-      context 'with Person owner' do
+      context 'with Teammate owner' do
         context 'with only_creator privacy level' do
-          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'only_creator') }
+          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_teammate, privacy_level: 'only_creator') }
           
           it 'allows creator to view' do
             expect(goal.can_be_viewed_by?(person)).to be true
@@ -393,7 +393,7 @@ RSpec.describe Goal, type: :model do
         end
         
         context 'with only_creator_and_owner privacy level' do
-          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'only_creator_and_owner') }
+          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_teammate, privacy_level: 'only_creator_and_owner') }
           
           it 'allows creator to view' do
             expect(goal.can_be_viewed_by?(person)).to be true
@@ -413,7 +413,7 @@ RSpec.describe Goal, type: :model do
         end
         
         context 'with only_creator_owner_and_managers privacy level' do
-          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'only_creator_owner_and_managers') }
+          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_teammate, privacy_level: 'only_creator_owner_and_managers') }
           let(:manager_person) { create(:person) }
           let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
           
@@ -458,7 +458,7 @@ RSpec.describe Goal, type: :model do
         end
         
         context 'with everyone_in_company privacy level' do
-          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_person, privacy_level: 'everyone_in_company') }
+          let(:goal) { create(:goal, creator: creator_teammate, owner: owner_teammate, privacy_level: 'everyone_in_company') }
           
           before do
             # Ensure people have teammate records in the company
@@ -618,11 +618,13 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '#owner_company' do
-      context 'with Person owner' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: person) }
+      context 'with Teammate owner' do
+        let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
         
-        it 'returns nil (Person owners do not have a company directly)' do
-          expect(goal.owner_company).to be_nil
+        it 'returns the company (via company_id)' do
+          expect(goal.owner_company).to be_present
+          expect(goal.owner_company.id).to eq(company.id)
+          expect(goal.owner_company.type).to eq('Company')
         end
       end
       
@@ -648,8 +650,8 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '#managers' do
-      context 'with Person owner' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: person) }
+      context 'with Teammate owner' do
+        let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
         let(:manager_person) { create(:person) }
         let(:employment_tenure) { create(:employment_tenure, teammate: creator_teammate, manager: manager_person, company: company) }
         
@@ -670,7 +672,7 @@ RSpec.describe Goal, type: :model do
     
     describe '#goal_category' do
       context 'with inspirational_objective and no target date' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'inspirational_objective', most_likely_target_date: nil) }
+        let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'inspirational_objective', most_likely_target_date: nil) }
         
         it 'returns :vision' do
           expect(goal.goal_category).to eq(:vision)
@@ -678,7 +680,7 @@ RSpec.describe Goal, type: :model do
       end
       
       context 'with inspirational_objective and target date' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'inspirational_objective', most_likely_target_date: Date.today + 90.days) }
+        let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'inspirational_objective', most_likely_target_date: Date.today + 90.days) }
         
         it 'returns :objective' do
           expect(goal.goal_category).to eq(:objective)
@@ -686,7 +688,7 @@ RSpec.describe Goal, type: :model do
       end
       
       context 'with qualitative_key_result and no target date' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'qualitative_key_result', most_likely_target_date: nil) }
+        let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'qualitative_key_result', most_likely_target_date: nil) }
         
         it 'returns :bad_key_result' do
           expect(goal.goal_category).to eq(:bad_key_result)
@@ -694,7 +696,7 @@ RSpec.describe Goal, type: :model do
       end
       
       context 'with quantitative_key_result and no target date' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'quantitative_key_result', most_likely_target_date: nil) }
+        let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'quantitative_key_result', most_likely_target_date: nil) }
         
         it 'returns :bad_key_result' do
           expect(goal.goal_category).to eq(:bad_key_result)
@@ -702,7 +704,7 @@ RSpec.describe Goal, type: :model do
       end
       
       context 'with qualitative_key_result and target date' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'qualitative_key_result', most_likely_target_date: Date.today + 90.days) }
+        let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'qualitative_key_result', most_likely_target_date: Date.today + 90.days) }
         
         it 'returns :key_result' do
           expect(goal.goal_category).to eq(:key_result)
@@ -710,7 +712,7 @@ RSpec.describe Goal, type: :model do
       end
       
       context 'with quantitative_key_result and target date' do
-        let(:goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'quantitative_key_result', most_likely_target_date: Date.today + 90.days) }
+        let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'quantitative_key_result', most_likely_target_date: Date.today + 90.days) }
         
         it 'returns :key_result' do
           expect(goal.goal_category).to eq(:key_result)
@@ -719,10 +721,10 @@ RSpec.describe Goal, type: :model do
     end
     
     describe 'category predicate methods' do
-      let(:vision_goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'inspirational_objective', most_likely_target_date: nil) }
-      let(:objective_goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'inspirational_objective', most_likely_target_date: Date.today + 90.days) }
-      let(:key_result_goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'quantitative_key_result', most_likely_target_date: Date.today + 90.days) }
-      let(:bad_key_result_goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'quantitative_key_result', most_likely_target_date: nil) }
+      let(:vision_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'inspirational_objective', most_likely_target_date: nil) }
+      let(:objective_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'inspirational_objective', most_likely_target_date: Date.today + 90.days) }
+      let(:key_result_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'quantitative_key_result', most_likely_target_date: Date.today + 90.days) }
+      let(:bad_key_result_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'quantitative_key_result', most_likely_target_date: nil) }
       
       describe '#vision?' do
         it 'returns true for vision goals' do
@@ -762,8 +764,8 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '#has_sub_goals?' do
-      let(:goal1) { create(:goal, creator: creator_teammate, owner: person) }
-      let(:goal2) { create(:goal, creator: creator_teammate, owner: person) }
+      let(:goal1) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
+      let(:goal2) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
       
       it 'returns true when goal has outgoing links with this_is_key_result_of_that' do
         create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
@@ -781,10 +783,10 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '#should_show_warning?' do
-      let(:goal2) { create(:goal, creator: creator_teammate, owner: person) }
+      let(:goal2) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
       
       context 'with vision goal' do
-        let(:vision_goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'inspirational_objective', most_likely_target_date: nil) }
+        let(:vision_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'inspirational_objective', most_likely_target_date: nil) }
         
         it 'returns true when vision has no sub-goals' do
           expect(vision_goal.should_show_warning?).to be true
@@ -797,7 +799,7 @@ RSpec.describe Goal, type: :model do
       end
       
       context 'with objective goal' do
-        let(:objective_goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'inspirational_objective', most_likely_target_date: Date.today + 90.days) }
+        let(:objective_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'inspirational_objective', most_likely_target_date: Date.today + 90.days) }
         
         it 'returns true when objective has no sub-goals' do
           expect(objective_goal.should_show_warning?).to be true
@@ -810,7 +812,7 @@ RSpec.describe Goal, type: :model do
       end
       
       context 'with bad key result goal' do
-        let(:bad_key_result_goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'quantitative_key_result', most_likely_target_date: nil) }
+        let(:bad_key_result_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'quantitative_key_result', most_likely_target_date: nil) }
         
         it 'returns true always' do
           expect(bad_key_result_goal.should_show_warning?).to be true
@@ -822,7 +824,7 @@ RSpec.describe Goal, type: :model do
       end
       
       context 'with key result goal' do
-        let(:key_result_goal) { create(:goal, creator: creator_teammate, owner: person, goal_type: 'quantitative_key_result', most_likely_target_date: Date.today + 90.days) }
+        let(:key_result_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'quantitative_key_result', most_likely_target_date: Date.today + 90.days) }
         
         it 'returns false' do
           expect(key_result_goal.should_show_warning?).to be false

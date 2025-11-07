@@ -11,135 +11,140 @@ RSpec.describe Organizations::GoalsController, type: :controller do
   end
   
   describe 'GET #index' do
-    let!(:personal_goal) { create(:goal, creator: creator_teammate, owner: person, most_likely_target_date: Date.today + 1.month) }
+    let!(:personal_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: Date.today + 1.month) }
     let!(:team_goal) { create(:goal, creator: creator_teammate, owner: company, most_likely_target_date: Date.today + 6.months) }
-    let!(:later_goal) { create(:goal, creator: creator_teammate, owner: person, most_likely_target_date: Date.today + 12.months) }
+    let!(:later_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: Date.today + 12.months) }
     
     it 'renders the index page' do
-      get :index, params: { organization_id: company.id }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id }
       expect(response).to have_http_status(:success)
     end
     
-    it 'assigns goals for the teammate' do
+    it 'requires owner filter' do
       get :index, params: { organization_id: company.id }
-      expect(assigns(:goals)).to include(personal_goal, team_goal, later_goal)
+      expect(assigns(:goals)).to be_empty
+    end
+    
+    it 'assigns goals for the teammate when owner filter is provided' do
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id }
+      expect(assigns(:goals)).to include(personal_goal, later_goal)
     end
     
     it 'filters by timeframe: now' do
-      get :index, params: { organization_id: company.id, timeframe: 'now' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, timeframe: 'now' }
       goals = assigns(:goals)
       expect(goals).to include(personal_goal)
       expect(goals).not_to include(team_goal, later_goal)
     end
     
     it 'filters by timeframe: next' do
-      get :index, params: { organization_id: company.id, timeframe: 'next' }
+      get :index, params: { organization_id: company.id, owner_type: 'Organization', owner_id: company.id, timeframe: 'next' }
       goals = assigns(:goals)
       expect(goals).to include(team_goal)
       expect(goals).not_to include(personal_goal, later_goal)
     end
     
     it 'filters by timeframe: later' do
-      get :index, params: { organization_id: company.id, timeframe: 'later' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, timeframe: 'later' }
       goals = assigns(:goals)
       expect(goals).to include(later_goal)
       expect(goals).not_to include(personal_goal, team_goal)
     end
     
     it 'filters by goal_type: inspirational_objective' do
-      inspirational_goal = create(:goal, creator: creator_teammate, owner: person, goal_type: 'inspirational_objective')
-      qualitative_goal = create(:goal, creator: creator_teammate, owner: person, goal_type: 'qualitative_key_result')
+      inspirational_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'inspirational_objective')
+      qualitative_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'qualitative_key_result')
       
-      get :index, params: { organization_id: company.id, goal_type: 'inspirational_objective' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, goal_type: 'inspirational_objective' }
       goals = assigns(:goals)
       expect(goals).to include(inspirational_goal)
       expect(goals).not_to include(qualitative_goal)
     end
     
     it 'filters by status: draft' do
-      draft_goal = create(:goal, creator: creator_teammate, owner: person, started_at: nil)
-      active_goal = create(:goal, creator: creator_teammate, owner: person, started_at: 1.day.ago)
+      draft_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil)
+      active_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago)
       
-      get :index, params: { organization_id: company.id, status: 'draft' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, status: 'draft' }
       goals = assigns(:goals)
       expect(goals).to include(draft_goal)
       expect(goals).not_to include(active_goal)
     end
     
     it 'filters by status: active' do
-      draft_goal = create(:goal, creator: creator_teammate, owner: person, started_at: nil)
-      active_goal = create(:goal, creator: creator_teammate, owner: person, started_at: 1.day.ago)
+      draft_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil)
+      active_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago)
       
-      get :index, params: { organization_id: company.id, status: 'active' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, status: 'active' }
       goals = assigns(:goals)
       expect(goals).to include(active_goal)
       expect(goals).not_to include(draft_goal)
     end
     
     it 'sorts by most_likely_target_date ascending' do
-      get :index, params: { organization_id: company.id, sort: 'most_likely_target_date', direction: 'asc' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, sort: 'most_likely_target_date', direction: 'asc' }
       goals = assigns(:goals).to_a
-      expect(goals.index(personal_goal)).to be < goals.index(team_goal)
-      expect(goals.index(team_goal)).to be < goals.index(later_goal)
+      expect(goals.index(personal_goal)).to be < goals.index(later_goal)
+      expect(goals).not_to include(team_goal) # team_goal has different owner
     end
     
     it 'sorts by most_likely_target_date descending' do
-      get :index, params: { organization_id: company.id, sort: 'most_likely_target_date', direction: 'desc' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, sort: 'most_likely_target_date', direction: 'desc' }
       goals = assigns(:goals).to_a
-      expect(goals.index(later_goal)).to be < goals.index(team_goal)
-      expect(goals.index(team_goal)).to be < goals.index(personal_goal)
+      expect(goals.index(later_goal)).to be < goals.index(personal_goal)
+      expect(goals).not_to include(team_goal) # team_goal has different owner
     end
     
     it 'sorts by title ascending' do
-      goal_a = create(:goal, creator: creator_teammate, owner: person, title: 'A Goal')
-      goal_z = create(:goal, creator: creator_teammate, owner: person, title: 'Z Goal')
+      goal_a = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'A Goal')
+      goal_z = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Z Goal')
       
-      get :index, params: { organization_id: company.id, sort: 'title', direction: 'asc' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, sort: 'title', direction: 'asc' }
       goals = assigns(:goals).to_a
       expect(goals.index(goal_a)).to be < goals.index(goal_z)
     end
     
     it 'sorts by created_at descending' do
-      old_goal = create(:goal, creator: creator_teammate, owner: person, created_at: 1.week.ago)
-      new_goal = create(:goal, creator: creator_teammate, owner: person, created_at: 1.day.ago)
+      old_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, created_at: 1.week.ago)
+      new_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, created_at: 1.day.ago)
       
-      get :index, params: { organization_id: company.id, sort: 'created_at', direction: 'desc' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, sort: 'created_at', direction: 'desc' }
       goals = assigns(:goals).to_a
       expect(goals.index(new_goal)).to be < goals.index(old_goal)
     end
     
     it 'applies spotlight: top_priority' do
-      top_priority_goal = create(:goal, creator: creator_teammate, owner: person, became_top_priority: 1.day.ago)
-      regular_goal = create(:goal, creator: creator_teammate, owner: person)
+      top_priority_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, became_top_priority: 1.day.ago)
+      regular_goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
       
-      get :index, params: { organization_id: company.id, spotlight: 'top_priority' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, spotlight: 'top_priority' }
       goals = assigns(:goals)
       expect(goals).to include(top_priority_goal)
       # Spotlight may filter or just highlight - check that it's included
     end
     
     it 'applies spotlight: recently_added' do
-      recent_goal = create(:goal, creator: creator_teammate, owner: person, created_at: 1.day.ago)
-      old_goal = create(:goal, creator: creator_teammate, owner: person, created_at: 1.month.ago)
+      recent_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, created_at: 1.day.ago)
+      old_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, created_at: 1.month.ago)
       
-      get :index, params: { organization_id: company.id, spotlight: 'recently_added' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, spotlight: 'recently_added' }
       goals = assigns(:goals)
       expect(goals).to include(recent_goal)
     end
     
     it 'sets view style from params' do
-      get :index, params: { organization_id: company.id, view: 'cards' }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, view: 'cards' }
       expect(assigns(:view_style)).to eq('cards')
     end
     
     it 'defaults view style to table' do
-      get :index, params: { organization_id: company.id }
+      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id }
       expect(assigns(:view_style)).to eq('table')
     end
   end
   
   describe 'GET #show' do
-    let(:goal) { create(:goal, creator: creator_teammate, owner: person) }
+    let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
     
     it 'renders the show page' do
       get :show, params: { organization_id: company.id, id: goal.id }
@@ -152,7 +157,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     end
     
     it 'includes outgoing links' do
-      linked_goal = create(:goal, creator: creator_teammate, owner: person)
+      linked_goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
       link = create(:goal_link, this_goal: goal, that_goal: linked_goal)
       
       get :show, params: { organization_id: company.id, id: goal.id }
@@ -160,7 +165,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     end
     
     it 'includes incoming links' do
-      linking_goal = create(:goal, creator: creator_teammate, owner: person)
+      linking_goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
       link = create(:goal_link, this_goal: linking_goal, that_goal: goal)
       
       get :show, params: { organization_id: company.id, id: goal.id }
@@ -198,8 +203,8 @@ RSpec.describe Organizations::GoalsController, type: :controller do
         most_likely_target_date: Date.today + 2.months,
         latest_target_date: Date.today + 3.months,
         privacy_level: 'only_creator',
-        owner_type: 'Person',
-        owner_id: person.id
+        owner_type: 'Teammate',
+        owner_id: creator_teammate.id
       }
     end
     
@@ -236,7 +241,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
   end
   
   describe 'GET #edit' do
-    let(:goal) { create(:goal, creator: creator_teammate, owner: person) }
+    let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
     
     it 'renders the edit form' do
       get :edit, params: { organization_id: company.id, id: goal.id }
@@ -251,7 +256,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
   end
   
   describe 'PATCH #update' do
-    let(:goal) { create(:goal, creator: creator_teammate, owner: person, title: 'Original Title') }
+    let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Original Title') }
     
     it 'updates the goal' do
       patch :update, params: { 
@@ -338,7 +343,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
   end
   
   describe 'DELETE #destroy' do
-    let!(:goal) { create(:goal, creator: creator_teammate, owner: person) }
+    let!(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
     
     it 'destroys the goal' do
       expect {
@@ -358,7 +363,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
   end
   
   describe 'authorization' do
-    let(:goal) { create(:goal, creator: creator_teammate, owner: person) }
+    let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
     let(:other_person) { create(:person) }
     let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
     

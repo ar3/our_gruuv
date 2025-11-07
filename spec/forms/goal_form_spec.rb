@@ -4,7 +4,7 @@ RSpec.describe GoalForm, type: :form do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
   let(:creator_teammate) { create(:teammate, person: person, organization: company) }
-  let(:goal) { build(:goal, creator: creator_teammate, owner: person) }
+  let(:goal) { build(:goal, creator: creator_teammate, owner: creator_teammate) }
   let(:form) { GoalForm.new(goal) }
   
   before do
@@ -74,8 +74,8 @@ RSpec.describe GoalForm, type: :form do
       form.most_likely_target_date = Date.today + 2.months
       form.latest_target_date = Date.today + 3.months
       form.privacy_level = "only_creator"
-      form.owner_type = "Person"
-      form.owner_id = person.id
+      form.owner_type = "Teammate"
+      form.owner_id = creator_teammate.id
       
       expect(form).to be_valid
     end
@@ -92,10 +92,10 @@ RSpec.describe GoalForm, type: :form do
       expect(form.errors[:privacy_level]).to include('is not included in the list')
     end
     
-    context 'with Person owner' do
+    context 'with Teammate owner' do
       before do
-        form.owner_type = 'Person'
-        form.owner_id = person.id
+        form.owner_type = 'Teammate'
+        form.owner_id = creator_teammate.id
       end
       
       it 'allows all privacy levels' do
@@ -107,14 +107,14 @@ RSpec.describe GoalForm, type: :form do
           form.latest_target_date = Date.today + 3.months
           form.privacy_level = level
           
-          expect(form).to be_valid, "should allow privacy_level #{level} for Person owner"
+          expect(form).to be_valid, "should allow privacy_level #{level} for Teammate owner"
         end
       end
     end
     
     context 'with Organization owner' do
       before do
-        form.owner_type = 'Organization'
+        form.owner_type = 'Company'
         form.owner_id = company.id
       end
       
@@ -151,8 +151,8 @@ RSpec.describe GoalForm, type: :form do
       form.most_likely_target_date = Date.today + 2.months
       form.latest_target_date = Date.today + 3.months
       form.privacy_level = "only_creator"
-      form.owner_type = "Person"
-      form.owner_id = person.id
+      form.owner_type = "Teammate"
+      form.owner_id = creator_teammate.id
       
       expect(form.save).to be true
       expect(goal.creator).to eq(creator_teammate)
@@ -166,8 +166,8 @@ RSpec.describe GoalForm, type: :form do
       form.most_likely_target_date = Date.today + 2.months
       form.latest_target_date = Date.today + 3.months
       form.privacy_level = "only_creator_and_owner"
-      form.owner_type = "Person"
-      form.owner_id = person.id
+      form.owner_type = "Teammate"
+      form.owner_id = creator_teammate.id
       
       expect(form.save).to be true
       expect(goal.title).to eq("My Goal")
@@ -183,8 +183,8 @@ RSpec.describe GoalForm, type: :form do
       form.most_likely_target_date = Date.today + 2.months
       form.latest_target_date = Date.today + 3.months
       form.privacy_level = "only_creator"
-      form.owner_type = "Person"
-      form.owner_id = person.id
+      form.owner_type = "Teammate"
+      form.owner_id = creator_teammate.id
       form.started_at = 1.day.ago
       
       expect(form.save).to be true
@@ -198,8 +198,8 @@ RSpec.describe GoalForm, type: :form do
       form.most_likely_target_date = Date.today + 2.months
       form.latest_target_date = Date.today + 3.months
       form.privacy_level = "only_creator"
-      form.owner_type = "Person"
-      form.owner_id = person.id
+      form.owner_type = "Teammate"
+      form.owner_id = creator_teammate.id
       form.became_top_priority = Time.current
       
       expect(form.save).to be true

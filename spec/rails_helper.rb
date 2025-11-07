@@ -72,11 +72,13 @@ RSpec.configure do |config|
   end
   
   # For system tests, use truncation instead of transactions
+  # IMPORTANT: Clean database at the START of each test to ensure let! statements don't see stale data
+  # This must run before any let! statements are evaluated
   config.before(:each, type: :system) do
     DatabaseCleaner.strategy = :truncation
-  end
-  
-  config.before(:each, type: :system) do
+    # Clean first to remove any stale data from previous tests
+    DatabaseCleaner.clean
+    # Then start tracking for this test
     DatabaseCleaner.start
   end
   

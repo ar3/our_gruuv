@@ -6,11 +6,31 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   after_action :verify_policy_scoped, only: :index
   
   def index
+    # Require owner filter - must specify owner_type and owner_id
+    unless params[:owner_type].present? && params[:owner_id].present?
+      @goals = policy_scope(Goal.none)
+      @current_filters = {
+        timeframe: params[:timeframe],
+        goal_type: params[:goal_type],
+        status: params[:status],
+        sort: params[:sort],
+        direction: params[:direction],
+        view: params[:view] || 'table',
+        spotlight: params[:spotlight],
+        owner_type: params[:owner_type],
+        owner_id: params[:owner_id]
+      }
+      return
+    end
+    
     # Get current teammate for this organization
     current_teammate = current_person.teammates.find_by(organization: @organization)
     
-    # Start with goals visible to the teammate
-    @goals = policy_scope(Goal).for_teammate(current_teammate)
+    # Start with goals visible to the teammate (filtered by company_id via policy scope)
+    @goals = policy_scope(Goal)
+    
+    # Filter by owner
+    @goals = @goals.where(owner_type: params[:owner_type], owner_id: params[:owner_id])
     
     # Apply filters
     @goals = apply_timeframe_filter(@goals, params[:timeframe])
@@ -33,7 +53,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       sort: params[:sort],
       direction: params[:direction],
       view: @view_style,
-      spotlight: params[:spotlight]
+      spotlight: params[:spotlight],
+      owner_type: params[:owner_type],
+      owner_id: params[:owner_id]
     }
   end
   
@@ -49,10 +71,10 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Set defaults
     @form.goal_type = 'inspirational_objective'
     @form.privacy_level = 'everyone_in_company'
-    # Default owner to current person if they have a teammate record
+    # Default owner to current teammate if they have a teammate record
     if @form.current_teammate
-      @form.owner_type = 'Person'
-      @form.owner_id = current_person.id
+      @form.owner_type = 'Teammate'
+      @form.owner_id = @form.current_teammate.id
     end
     authorize @goal
   end
@@ -110,7 +132,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   private
   
   def set_goal
-    # Goals can belong to Person or Organization, so we need to find them differently
+    # Goals can belong to Teammate, Company, Department, or Team, so we need to find them differently
     # We'll search by ID across all goals (policy scope will handle authorization)
     @goal = Goal.find(params[:id])
   rescue ActiveRecord::RecordNotFound
@@ -224,23 +246,29 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   def available_goal_owners
     options = []
     
-    # Add current user
-    options << ["Person: #{current_person.display_name}", "Person_#{current_person.id}"]
+    # Add current teammate
+    current_teammate = current_person.teammates.find_by(organization: @organization)
+    if current_teammate
+      options << ["Teammate: #{current_person.display_name}", "Teammate_#{current_teammate.id}"]
+    end
     
     # Get company (root organization)
     company = @organization.root_company || @organization
     if company.company?
-      options << ["Organization: #{company.display_name}", "Organization_#{company.id}"]
+      options << ["Company: #{company.display_name}", "Company_#{company.id}"]
     end
     
-    # Get direct reports (people managed by current user in this organization)
-    direct_reports = Person.joins(teammates: :employment_tenures)
-                           .where(employment_tenures: { company: company, manager: current_person, ended_at: nil })
-                           .distinct
-                           .order(:last_name, :first_name)
+    # Get teammates managed by current user in this organization
+    company = @organization.root_company || @organization
+    managed_teammates = Teammate.joins(:employment_tenures)
+                                 .where(employment_tenures: { company: company, manager: current_person, ended_at: nil })
+                                 .where.not(id: current_teammate&.id)
+                                 .includes(:person)
+                                 .distinct
+                                 .order('people.last_name', 'people.first_name')
     
-    direct_reports.each do |person|
-      options << ["Person: #{person.display_name}", "Person_#{person.id}"]
+    managed_teammates.each do |teammate|
+      options << ["Teammate: #{teammate.person.display_name}", "Teammate_#{teammate.id}"]
     end
     
     # Get departments and teams the current user is associated with via teammates
@@ -252,7 +280,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
                                   .order(:name)
     
     associated_orgs.each do |org|
-      options << ["Organization: #{org.display_name}", "Organization_#{org.id}"]
+      type_label = org.company? ? 'Company' : (org.department? ? 'Department' : 'Team')
+      options << ["#{type_label}: #{org.display_name}", "#{org.type}_#{org.id}"]
     end
     
     options

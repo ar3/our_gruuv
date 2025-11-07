@@ -93,7 +93,7 @@ class GoalForm < Reform::Form
   end
   
   def owner_selection
-    # If owner_id is provided as a string like "Person_123" or "Organization_456", parse it
+    # If owner_id is provided as a string like "Teammate_123" or "Company_456", parse it
     # Otherwise, validate that both owner_type and owner_id are present
     if owner_id.is_a?(String) && owner_id.include?('_')
       # Already being parsed in parse_owner_selection
@@ -106,7 +106,7 @@ class GoalForm < Reform::Form
   end
   
   def parse_owner_selection
-    # Handle unified owner selection format: "Person_123" or "Organization_456"
+    # Handle unified owner selection format: "Teammate_123", "Company_456", "Department_789", "Team_101"
     if owner_id.is_a?(String) && owner_id.include?('_')
       parts = owner_id.split('_', 2)
       self.owner_type = parts[0]
@@ -139,10 +139,14 @@ class GoalForm < Reform::Form
   def privacy_level_for_owner_type
     return unless owner_type && privacy_level
     
-    if owner_type == 'Organization'
-      if privacy_level == 'only_creator_and_owner' || privacy_level == 'only_creator_owner_and_managers'
+    # Rails polymorphic associations use the base class name for STI, so
+    # Company/Department/Team all show up as "Organization" in owner_type after saving.
+    # But in the form, we might still have "Company", "Department", or "Team" before saving.
+    if owner_type.in?(['Company', 'Department', 'Team', 'Organization'])
+      if privacy_level == 'only_creator_and_owner'
         errors.add(:privacy_level, 'is not valid for Organization owner')
       end
+      # Note: only_creator_owner_and_managers IS valid for Organization owners
     end
   end
   

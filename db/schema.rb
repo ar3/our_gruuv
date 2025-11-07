@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_31_203203) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_06_120012) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -279,7 +279,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_31_203203) do
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "company_id", null: false
     t.index ["cancelled_at"], name: "index_goals_on_cancelled_at"
+    t.index ["company_id"], name: "index_goals_on_company_id"
     t.index ["completed_at"], name: "index_goals_on_completed_at"
     t.index ["creator_id"], name: "index_goals_on_creator_id"
     t.index ["deleted_at"], name: "index_goals_on_deleted_at"
@@ -767,6 +769,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_31_203203) do
   add_foreign_key "employment_tenures", "teammates"
   add_foreign_key "goal_links", "goals", column: "that_goal_id"
   add_foreign_key "goal_links", "goals", column: "this_goal_id"
+  add_foreign_key "goals", "organizations", column: "company_id"
   add_foreign_key "goals", "teammates", column: "creator_id"
   add_foreign_key "huddle_feedbacks", "huddles"
   add_foreign_key "huddle_feedbacks", "teammates"

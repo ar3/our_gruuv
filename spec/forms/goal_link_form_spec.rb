@@ -4,9 +4,9 @@ RSpec.describe GoalLinkForm, type: :form do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
   let(:creator_teammate) { create(:teammate, person: person, organization: company) }
-  let(:goal1) { create(:goal, creator: creator_teammate, owner: person) }
-  let(:goal2) { create(:goal, creator: creator_teammate, owner: person) }
-  let(:goal3) { create(:goal, creator: creator_teammate, owner: person) }
+  let(:goal1) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
+  let(:goal2) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
+  let(:goal3) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
   let(:goal_link) { build(:goal_link, this_goal: goal1, that_goal: goal2) }
   let(:form) { GoalLinkForm.new(goal_link) }
   

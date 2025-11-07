@@ -4,7 +4,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
-  let(:linking_goal) { create(:goal, creator: teammate, owner: person, privacy_level: 'everyone_in_company') }
+  let(:linking_goal) { create(:goal, creator: teammate, owner: teammate, privacy_level: 'everyone_in_company') }
   let(:goal_titles) { ['Goal 1', 'Goal 2', 'Goal 3'] }
   let(:link_type) { 'this_is_key_result_of_that' }
   

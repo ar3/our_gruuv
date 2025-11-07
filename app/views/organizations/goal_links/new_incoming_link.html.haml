@@ -50,7 +50,13 @@
                       %span{title: goal_privacy_tooltip_text(goal), "data-bs-toggle" => "tooltip"}
                         = goal_privacy_rings_with_label(goal)
                       | 
-                      Owner: #{goal.owner.display_name}
+                      Owner: 
+                      - if goal.owner_type == 'Teammate'
+                        = goal.owner.person.display_name
+                      - elsif goal.owner_type == 'Organization'
+                        = goal.owner.display_name
+                      - else
+                        = goal.owner.display_name
                       - if already_linked
                         %span.badge.bg-success.ms-2{style: "font-size: 0.75em;"}
                           Already Linked

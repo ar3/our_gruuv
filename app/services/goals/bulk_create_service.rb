@@ -23,7 +23,10 @@ module Goals
           goal = create_goal_from_title(title)
           if goal.persisted?
             created_goals << goal
-            create_link_for_goal(goal)
+            link_result = create_link_for_goal(goal)
+            unless link_result
+              errors << "Failed to create link for goal '#{title}'"
+            end
           else
             errors << "Failed to create goal '#{title}': #{goal.errors.full_messages.join(', ')}"
           end
@@ -67,21 +70,35 @@ module Goals
     end
 
     def create_link_for_goal(goal)
-      if link_direction == :incoming
+      link = if link_direction == :incoming
         # Incoming: this_goal_id comes from the created goal, that_goal_id is the linking goal
-        GoalLink.create!(
+        GoalLink.new(
           this_goal: goal,
           that_goal: linking_goal,
           link_type: link_type
         )
       else # :outgoing
         # Outgoing: this_goal_id is the linking goal, that_goal_id comes from the created goal
-        GoalLink.create!(
+        GoalLink.new(
           this_goal: linking_goal,
           that_goal: goal,
           link_type: link_type
         )
       end
+      
+      # Explicitly skip circular dependency check for bulk creation
+      # Goals are created in the same transaction, so cycles can't exist yet
+      link.skip_circular_dependency_check = true
+      
+      if link.save
+        true
+      else
+        errors << "Failed to create link for goal '#{goal.title}': #{link.errors.full_messages.join(', ')}"
+        false
+      end
+    rescue => e
+      errors << "Failed to create link: #{e.message}"
+      false
     end
   end
 end

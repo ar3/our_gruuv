@@ -3,12 +3,20 @@ require 'rails_helper'
 RSpec.describe 'Goal Link Creation', type: :system do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let!(:teammate) { create(:teammate, person: person, organization: organization) }
-  let!(:goal1) { create(:goal, creator: teammate, owner: person, title: 'Goal 1', privacy_level: 'everyone_in_company') }
-  let!(:goal2) { create(:goal, creator: teammate, owner: person, title: 'Goal 2', privacy_level: 'everyone_in_company') }
-  let!(:goal3) { create(:goal, creator: teammate, owner: person, title: 'Goal 3', privacy_level: 'everyone_in_company') }
+  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:goal1) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 1', privacy_level: 'everyone_in_company') }
+  let(:goal2) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 2', privacy_level: 'everyone_in_company') }
+  let(:goal3) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 3', privacy_level: 'everyone_in_company') }
   
+  # Create records in before block to ensure they're created AFTER DatabaseCleaner.clean runs
+  # This prevents test isolation issues where stale data from previous tests interferes
   before do
+    # Create records after database is cleaned
+    teammate
+    goal1
+    goal2
+    goal3
+    
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
     allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
   end
@@ -390,7 +398,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
   
   describe 'privacy level visualization' do
     it 'displays privacy levels as concentric circles' do
-      goal_with_privacy = create(:goal, creator: teammate, owner: person, title: 'Private Goal', privacy_level: 'only_creator_and_owner')
+      goal_with_privacy = create(:goal, creator: teammate, owner: teammate, title: 'Private Goal', privacy_level: 'only_creator_and_owner')
       
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
@@ -398,7 +406,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
     end
     
     it 'shows tooltip with privacy level description' do
-      goal_with_privacy = create(:goal, creator: teammate, owner: person, title: 'Private Goal', privacy_level: 'only_creator_and_owner')
+      goal_with_privacy = create(:goal, creator: teammate, owner: teammate, title: 'Private Goal', privacy_level: 'only_creator_and_owner')
       
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       

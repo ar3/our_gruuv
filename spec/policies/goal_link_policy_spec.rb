@@ -12,8 +12,8 @@ RSpec.describe GoalLinkPolicy, type: :policy do
   let(:owner_teammate) { create(:teammate, person: owner_person, organization: company) }
   let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
   
-  let(:goal1) { create(:goal, creator: creator_teammate, owner: creator_person) }
-  let(:goal2) { create(:goal, creator: creator_teammate, owner: owner_person) }
+  let(:goal1) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
+  let(:goal2) { create(:goal, creator: creator_teammate, owner: owner_teammate) }
   let(:goal_link) { build(:goal_link, this_goal: goal1, that_goal: goal2) }
   
   let(:pundit_user_creator) { OpenStruct.new(user: creator_person, pundit_organization: company) }
@@ -28,7 +28,7 @@ RSpec.describe GoalLinkPolicy, type: :policy do
     end
     
     it 'allows owner of this_goal to create link' do
-      goal1.update!(owner: owner_person)
+      goal1.update!(owner: owner_teammate)
       policy = GoalLinkPolicy.new(pundit_user_owner, goal_link)
       expect(policy.create?).to be true
     end
@@ -53,7 +53,7 @@ RSpec.describe GoalLinkPolicy, type: :policy do
     end
     
     it 'allows owner of this_goal to destroy link' do
-      goal1.update!(owner: owner_person)
+      goal1.update!(owner: owner_teammate)
       policy = GoalLinkPolicy.new(pundit_user_owner, goal_link)
       expect(policy.destroy?).to be true
     end

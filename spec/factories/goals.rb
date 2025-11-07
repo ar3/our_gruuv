@@ -9,9 +9,9 @@ FactoryBot.define do
     privacy_level { 'only_creator' }
     
     association :creator, factory: :teammate
-    association :owner, factory: :person
+    association :owner, factory: :teammate
     
-    # Ensure date ordering when most_likely_target_date is overridden
+    # Set company_id based on creator's organization
     after(:build) do |goal|
       if goal.most_likely_target_date.present?
         # If most_likely is set but earliest/latest aren't, or if ordering is invalid, fix it
@@ -21,6 +21,12 @@ FactoryBot.define do
         if goal.latest_target_date.nil? || goal.latest_target_date < goal.most_likely_target_date
           goal.latest_target_date = goal.most_likely_target_date + 1.month
         end
+      end
+      
+      # Set company_id from creator's organization
+      if goal.creator && goal.company_id.nil?
+        company = goal.creator.organization.root_company || goal.creator.organization
+        goal.company_id = company.id if company&.company?
       end
     end
     
@@ -36,16 +42,20 @@ FactoryBot.define do
       goal_type { 'quantitative_key_result' }
     end
     
-    trait :with_person_owner do
-      association :owner, factory: :person
+    trait :with_teammate_owner do
+      association :owner, factory: :teammate
     end
     
     trait :with_company_owner do
-      association :owner, factory: [:organization, :company]
+      association :owner, factory: :company
+    end
+    
+    trait :with_department_owner do
+      association :owner, factory: :department
     end
     
     trait :with_team_owner do
-      association :owner, factory: [:organization, :team]
+      association :owner, factory: :team
     end
     
     trait :only_creator do

@@ -64,7 +64,9 @@
               %em.text-muted No target dates set
           %dt.col-sm-4 Owner:
           %dd.col-sm-8
-            - if @goal.owner_type == 'Person'
+            - if @goal.owner_type == 'Teammate'
+              = @goal.owner.person.display_name
+            - elsif @goal.owner_type.in?(['Company', 'Department', 'Team'])
               = @goal.owner.display_name
             - else
               = @goal.owner.display_name

@@ -4,9 +4,9 @@ RSpec.describe GoalLink, type: :model do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
   let(:creator_teammate) { create(:teammate, person: person, organization: company) }
-  let(:goal1) { create(:goal, creator: creator_teammate, owner: person) }
-  let(:goal2) { create(:goal, creator: creator_teammate, owner: person) }
-  let(:goal3) { create(:goal, creator: creator_teammate, owner: person) }
+  let(:goal1) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
+  let(:goal2) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
+  let(:goal3) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
   
   describe 'associations' do
     it { should belong_to(:this_goal).class_name('Goal') }
@@ -112,7 +112,7 @@ RSpec.describe GoalLink, type: :model do
     
     it 'prevents deeper transitive circular dependency' do
       # goal1 -> goal2 -> goal3 -> goal4, then try goal4 -> goal1
-      goal4 = create(:goal, creator: creator_teammate, owner: person)
+      goal4 = create(:goal, creator: creator_teammate, owner: creator_teammate)
       create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_blocks_that')
       create(:goal_link, this_goal: goal2, that_goal: goal3, link_type: 'this_blocks_that')
       create(:goal_link, this_goal: goal3, that_goal: goal4, link_type: 'this_blocks_that')

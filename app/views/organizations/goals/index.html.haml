@@ -99,7 +99,9 @@
                 %td
                   = goal.incoming_links.count
                 %td
-                  - if goal.owner_type == 'Person'
+                  - if goal.owner_type == 'Teammate'
+                    = goal.owner.person.display_name
+                  - elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
                     = goal.owner.display_name
                   - else
                     = goal.owner.display_name
@@ -107,12 +109,12 @@
       .alert.alert-info
         %h6.mb-2
           %i.bi.bi-info-circle.me-2
-          No Goals Found
-        %p.mb-2
-          - if @current_filters.values.any?(&:present?)
+          - if @current_filters[:owner_type].blank? || @current_filters[:owner_id].blank?
+            Please select an owner to view goals
+          - elsif @current_filters.values.any?(&:present?)
             No goals match your current filters. Try adjusting your filters.
           - else
-            Create your first goal to get started with goal tracking.
+            No goals found for the selected owner.
             = link_to "Create First Goal", new_organization_goal_path(@organization), class: "btn btn-primary btn-sm"
 
 / Modal for Filter & Sort
@@ -131,6 +133,10 @@
               %h6.mb-3
                 %i.bi.bi-funnel.me-2
                 Filters
+              .mb-3
+                %label.form-label Owner (Required)
+                = select_tag :owner_id, options_for_select(available_goal_owners, "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"), { include_blank: 'Select an owner...', class: "form-select", required: true }
+                %small.form-text.text-muted You must select an owner to view goals
               .mb-3
                 %label.form-label Timeframe
                 - %w[all now next later].each do |timeframe|
