@@ -71,19 +71,12 @@ RSpec.configure do |config|
     DatabaseCleaner.clean_with(:truncation)
   end
   
-  # For system tests, use truncation instead of transactions
-  # IMPORTANT: Clean database at the START of each test to ensure let! statements don't see stale data
-  # This must run before any let! statements are evaluated
-  config.before(:each, type: :system) do
-    DatabaseCleaner.strategy = :truncation
-    # Clean first to remove any stale data from previous tests
-    DatabaseCleaner.clean
-    # Then start tracking for this test
-    DatabaseCleaner.start
-  end
-  
-  config.after(:each, type: :system) do
-    DatabaseCleaner.clean
+  # For non-system tests, ensure DatabaseCleaner doesn't interfere with transactional fixtures
+  config.before(:each) do |example|
+    unless example.metadata[:type] == :system
+      # Reset strategy to avoid conflicts with transactional fixtures
+      DatabaseCleaner.strategy = :transaction
+    end
   end
 
   # You can uncomment this line to turn off ActiveRecord support entirely.
@@ -112,6 +105,8 @@ RSpec.configure do |config|
   # config.filter_gems_from_backtrace("gem name")
   
   # Include FactoryBot methods
+  # Note: FactoryBot sequences are automatically reset between tests by FactoryBot itself
+  # No explicit sequence reset is needed
   config.include FactoryBot::Syntax::Methods
   
   # Configure Capybara for JavaScript tests
@@ -123,32 +118,44 @@ RSpec.configure do |config|
     Capybara.use_default_driver
   end
 
-  config.after(:each) do
-    # Always clear ActionMailer deliveries
-    ActionMailer::Base.deliveries.clear
-  end
-
-  # Configure shared database connection for system tests
-  # This allows Capybara to see the same database state as the test thread
-  config.after(:suite) do
-    # Reset all sequences after test suite completes
-    if ActiveRecord::Base.connection.adapter_name.downcase.include?('postgres')
-      ActiveRecord::Base.connection.tables.each do |table|
-        ActiveRecord::Base.connection.reset_pk_sequence!(table) rescue nil
-      end
-    end
-  end
-
-  config.before(:each, type: :system) do
-    # Clear Rails cache
+  # Clear cache, PaperTrail state, and background jobs for all tests to prevent state leakage
+  config.before(:each) do
     Rails.cache.clear
-    
-    # Clear background job queues
+    # Reset PaperTrail request state to prevent leakage between tests
+    if defined?(PaperTrail) && PaperTrail.request.respond_to?(:controller_info=)
+      PaperTrail.request.controller_info = {}
+    end
+    # Clear background job queues for all test types (not just system tests)
     if ActiveJob::Base.queue_adapter.respond_to?(:enqueued_jobs)
       ActiveJob::Base.queue_adapter.enqueued_jobs.clear
       ActiveJob::Base.queue_adapter.performed_jobs.clear rescue nil
     end
-    
+  end
+
+  # Clear session state for request specs to prevent state leakage
+  config.before(:each, type: :request) do
+    # Clear session data to ensure clean state for each request spec
+    # This prevents session data from one test affecting another
+    if respond_to?(:session)
+      session.clear rescue nil
+    end
+  end
+
+  # For system tests, use truncation instead of transactions
+  # IMPORTANT: Clean database at the START of each test to ensure let! statements don't see stale data
+  # This must run before any let! statements are evaluated
+  # Order: DatabaseCleaner → Cache → Jobs → Capybara
+  # Wrap system tests in DatabaseCleaner.cleaning block for proper cleanup
+  config.around(:each, type: :system) do |example|
+    # Set truncation strategy for system tests before cleaning
+    DatabaseCleaner.strategy = :truncation
+    DatabaseCleaner.cleaning do
+      example.run
+    end
+  end
+
+  config.before(:each, type: :system) do
+    # Background jobs are already cleared in the global before(:each) hook
     # Ensure Capybara uses the correct driver
     driven_by(:selenium_chrome)
   end
@@ -165,9 +172,46 @@ RSpec.configure do |config|
         # Session already closed, ignore
       end
     end
-    
-    # Clear ActionMailer deliveries
+  end
+
+  config.after(:each) do
+    # Always clear ActionMailer deliveries for all tests
     ActionMailer::Base.deliveries.clear
+    
+    # Reset time manipulation to prevent time-based state leakage
+    # This ensures any time travel or freezing is reset after each test
+    if defined?(Timecop)
+      Timecop.return rescue nil
+    end
+    # ActiveSupport::Testing::TimeHelpers automatically resets, but ensure it's clean
+    if respond_to?(:travel_back)
+      travel_back rescue nil
+    end
+  end
+
+  # Reset controller instance variables for request specs to prevent state leakage
+  # Note: Each request creates a new controller instance, but this ensures any
+  # memoized state from stubs or mocks is cleared
+  config.after(:each, type: :request) do
+    if respond_to?(:controller) && controller.present?
+      controller.instance_variables.each do |ivar|
+        # Clear memoized instance variables that could leak between tests
+        if ivar.to_s.start_with?('@current_')
+          controller.instance_variable_set(ivar, nil)
+        end
+      end
+    end
+  end
+
+  # Configure shared database connection for system tests
+  # This allows Capybara to see the same database state as the test thread
+  config.after(:suite) do
+    # Reset all sequences after test suite completes
+    if ActiveRecord::Base.connection.adapter_name.downcase.include?('postgres')
+      ActiveRecord::Base.connection.tables.each do |table|
+        ActiveRecord::Base.connection.reset_pk_sequence!(table) rescue nil
+      end
+    end
   end
 end
 
