@@ -155,6 +155,126 @@ module GoalsHelper
       goal.privacy_level.humanize
     end
   end
+  
+  def prepare_visualization_data(goals)
+    goal_ids = goals.pluck(:id)
+    
+    # Load goals with associations
+    goals_with_associations = goals.includes(:outgoing_links, :incoming_links, :owner, :creator, :company)
+    
+    # Get all links involving these goals (both directions)
+    links = GoalLink.where(this_goal_id: goal_ids)
+                    .or(GoalLink.where(that_goal_id: goal_ids))
+                    .includes(:this_goal, :that_goal)
+    
+    # Build category map
+    categories = goals_with_associations.map { |g| [g.id, g.goal_category] }.to_h
+    
+    {
+      goals: goals_with_associations,
+      links: links,
+      categories: categories
+    }
+  end
+  
+  def render_tree_node(goal, depth, parent_child_map, categories, organization)
+    children = parent_child_map[goal.id] || []
+    category = categories[goal.id]
+    badge_class = case category
+    when :vision
+      'bg-info'
+    when :objective
+      'bg-primary'
+    when :key_result
+      'bg-success'
+    when :bad_key_result
+      'bg-danger'
+    else
+      'bg-secondary'
+    end
+    
+    html = content_tag(:div, class: 'tree-node', style: "margin-left: #{depth * 40}px; margin-bottom: 10px;") do
+      content_tag(:div, class: 'd-flex align-items-center') do
+        arrow = depth > 0 ? content_tag(:i, '', class: 'bi bi-arrow-return-right me-2', style: 'color: #999;') : ''
+        card_content = content_tag(:div, class: 'card', style: 'min-width: 300px; max-width: 500px;') do
+          content_tag(:div, class: 'card-body p-2') do
+            content_tag(:div, class: 'd-flex align-items-center justify-content-between') do
+              left = content_tag(:div, class: 'flex-grow-1') do
+                link_to(goal.title, organization_goal_path(organization, goal), class: 'text-decoration-none fw-bold') +
+                tag(:br) +
+                content_tag(:span, goal_category_label(goal), class: "badge #{badge_class}", style: 'font-size: 0.7em;')
+              end
+              right = children.any? ? content_tag(:span, pluralize(children.count, 'child'), class: 'badge bg-light text-dark') : ''
+              left + right
+            end
+          end
+        end
+        arrow + card_content
+      end
+    end
+    
+    children_html = children.map { |child| render_tree_node(child, depth + 1, parent_child_map, categories, organization) }.join.html_safe
+    
+    (html + children_html).html_safe
+  end
+  
+  def render_nested_goal(goal, depth, parent_child_map, categories, organization)
+    children = parent_child_map[goal.id] || []
+    category = categories[goal.id]
+    badge_class = case category
+    when :vision
+      'bg-info'
+    when :objective
+      'bg-primary'
+    when :key_result
+      'bg-success'
+    when :bad_key_result
+      'bg-danger'
+    else
+      'bg-secondary'
+    end
+    
+    border_color = case category
+    when :vision
+      '#17a2b8'
+    when :objective
+      '#007bff'
+    when :key_result
+      '#28a745'
+    when :bad_key_result
+      '#dc3545'
+    else
+      '#6c757d'
+    end
+    
+    html = content_tag(:div, class: 'nested-goal-card', style: "margin-left: #{depth * 30}px; margin-bottom: 15px; border-left: 4px solid #{border_color};") do
+      card = content_tag(:div, class: 'card', style: "background: #{depth == 0 ? '#fff' : '#f8f9fa'};") do
+        content_tag(:div, class: 'card-body') do
+          content_tag(:div, class: 'd-flex align-items-center justify-content-between') do
+            left = content_tag(:div, class: 'flex-grow-1') do
+              link_to(goal.title, organization_goal_path(organization, goal), class: 'text-decoration-none fw-bold') +
+              tag(:br) +
+              content_tag(:span, goal_category_label(goal), class: "badge #{badge_class}", style: 'font-size: 0.7em; margin-top: 5px;')
+            end
+            right = children.any? ? content_tag(:span, pluralize(children.count, 'child'), class: 'badge bg-light text-dark') : ''
+            left + right
+          end
+        end
+      end
+      
+      children_html = if children.any?
+        content_tag(:div, class: 'nested-children', style: 'margin-top: 10px;') do
+          children.map { |child| render_nested_goal(child, depth + 1, parent_child_map, categories, organization) }.join.html_safe
+        end
+      else
+        ''
+      end
+      
+      card + children_html
+    end
+    
+    html.html_safe
+  end
 end
 
 

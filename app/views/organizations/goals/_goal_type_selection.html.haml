@@ -1,0 +1,28 @@
+.mb-3
+  = form.label :goal_type, class: 'form-label' do
+    Goal Type
+    %span.text-danger *
+  .btn-group.w-100{role: "group", "aria-label": "Goal type selection"}
+    = form.radio_button :goal_type, 'inspirational_objective', class: 'btn-check', id: 'goal_type_inspirational_objective', required: true, checked: (@form.goal_type == 'inspirational_objective' || @form.goal_type.blank?)
+    = form.label :goal_type, class: 'btn btn-outline-primary text-start', for: 'goal_type_inspirational_objective' do
+      .fw-bold Inspirational Objective
+      %small.d-block.text-muted Not directly measurable, measured through linked key results
+    
+    = form.radio_button :goal_type, 'qualitative_key_result', class: 'btn-check', id: 'goal_type_qualitative_key_result', required: true, checked: (@form.goal_type == 'qualitative_key_result')
+    = form.label :goal_type, class: 'btn btn-outline-primary text-start', for: 'goal_type_qualitative_key_result' do
+      .fw-bold Qualitative Key Result
+      %small.d-block.text-muted Measurable by sentiment or qualitative assessment
+    
+    = form.radio_button :goal_type, 'quantitative_key_result', class: 'btn-check', id: 'goal_type_quantitative_key_result', required: true, checked: (@form.goal_type == 'quantitative_key_result')
+    = form.label :goal_type, class: 'btn btn-outline-primary text-start', for: 'goal_type_quantitative_key_result' do
+      .fw-bold Quantitative Key Result
+      %small.d-block.text-muted Measurable by counting or percentage
+    
+    = form.radio_button :goal_type, 'stepping_stone_activity', class: 'btn-check', id: 'goal_type_stepping_stone_activity', required: true, checked: (@form.goal_type == 'stepping_stone_activity')
+    = form.label :goal_type, class: 'btn btn-outline-primary text-start', for: 'goal_type_stepping_stone_activity' do
+      .fw-bold Stepping Stone Activity
+      %small.d-block.text-muted These are the activities or outputs that lead to the outcomes we want
+
+
+
+

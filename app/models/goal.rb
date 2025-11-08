@@ -17,7 +17,8 @@ class Goal < ApplicationRecord
   enum :goal_type, {
     inspirational_objective: 'inspirational_objective',
     qualitative_key_result: 'qualitative_key_result',
-    quantitative_key_result: 'quantitative_key_result'
+    quantitative_key_result: 'quantitative_key_result',
+    stepping_stone_activity: 'stepping_stone_activity'
   }
   
   enum :privacy_level, {

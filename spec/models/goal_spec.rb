@@ -20,7 +20,8 @@ RSpec.describe Goal, type: :model do
       expect(Goal.goal_types).to eq({
         'inspirational_objective' => 'inspirational_objective',
         'qualitative_key_result' => 'qualitative_key_result',
-        'quantitative_key_result' => 'quantitative_key_result'
+        'quantitative_key_result' => 'quantitative_key_result',
+        'stepping_stone_activity' => 'stepping_stone_activity'
       })
     end
     

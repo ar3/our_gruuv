@@ -30,8 +30,8 @@ This document defines how the AI agent should behave when working on this projec
 - **Never skip Step 1**: Always reproduce the bug in tests before attempting to fix it
 
 ### Testing Requirements
-- **When creating new forms**: MUST write 2 system specs (simple + complex), MUST tag with `:critical`
-- **When creating new pages**: MUST write 1 system spec (navigation + rendering), MUST tag with `:critical`
+- **When creating new forms**: MUST write 2 system specs (simple + complex)
+- **When creating new pages**: MUST write 1 system spec (navigation + rendering)
 - **When creating new controllers**: MUST write request specs for all actions (authorization, validations, redirects)
 - **System specs are sacred**: Never delete, always update when features change
 - **Use testing pyramid**: Unit specs (many) → Request specs (moderate) → System specs (few)

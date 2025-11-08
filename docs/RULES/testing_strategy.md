@@ -229,18 +229,28 @@ spec/
 │   ├── organizations/
 │   └── ...
 └── system/           # System specs (5%)
-    ├── happy_paths/
-    └── ...
+    ├── abilities/
+    ├── aspirations/
+    ├── assignments/
+    ├── check_ins/
+    ├── finalization/
+    ├── goals/
+    ├── huddles/
+    ├── misc/
+    ├── observations/
+    ├── positions_and_seats/
+    └── teammates/
 ```
+
+### System Spec Organization Rule
+**All system specs must live in a folder underneath `spec/system/`**. System specs should be organized by feature area (e.g., `spec/system/goals/`, `spec/system/check_ins/`) rather than as flat files in the `spec/system/` directory.
 
 ## Running Tests
 
-### Run All Tests
-```bash
-bundle exec rspec
-```
+### ⚠️ IMPORTANT: Never Run Full Spec Suite
+**Rule**: Do NOT run the full spec suite (`bundle exec rspec`) as it takes too long and can cause timeouts. Instead, always run specs in segments by type.
 
-### Run by Type
+### Run by Type (Recommended Approach)
 ```bash
 # Unit tests only
 bundle exec rspec spec/models/
@@ -248,8 +258,18 @@ bundle exec rspec spec/models/
 # Request specs only
 bundle exec rspec spec/requests/
 
-# System specs only
-bundle exec rspec spec/system/
+# System specs - run by folder (each folder is a segment)
+bundle exec rspec spec/system/abilities/
+bundle exec rspec spec/system/aspirations/
+bundle exec rspec spec/system/assignments/
+bundle exec rspec spec/system/check_ins/
+bundle exec rspec spec/system/finalization/
+bundle exec rspec spec/system/goals/
+bundle exec rspec spec/system/huddles/
+bundle exec rspec spec/system/misc/
+bundle exec rspec spec/system/observations/
+bundle exec rspec spec/system/positions_and_seats/
+bundle exec rspec spec/system/teammates/
 ```
 
 ### Run Specific Feature
@@ -257,6 +277,16 @@ bundle exec rspec spec/system/
 # All check-in tests
 bundle exec rspec spec/models/concerns/check_in_behavior_spec.rb spec/requests/organizations/check_ins_spec.rb spec/system/position_check_in_happy_path_spec.rb
 ```
+
+### Full Suite Run Tracking
+When running a full suite (for comprehensive testing), always:
+1. Run in segments as shown above
+2. **Update `Last_full_spec_suite_run.md` immediately after each segment completes** - This includes:
+   - Marking the segment status as "⏳ Running..." when starting
+   - Updating with timing data, examples count, failures, and date/time when complete
+   - Each system spec folder is a separate segment and must be updated individually
+3. Include total examples, failures, and time for each segment
+4. Document any issues found for follow-up
 
 ## Performance Targets
 

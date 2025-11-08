@@ -64,47 +64,68 @@
                 %i.bi.bi-eye.me-1
                 Spotlight: #{@current_filters[:spotlight]&.humanize || 'None'}
 
+/ Performance warning for visualizations
+- if @show_performance_warning
+  .row.justify-content-center.mb-3
+    .col-lg-12
+      .alert.alert-warning.d-flex.align-items-center
+        %i.bi.bi-exclamation-triangle.me-2
+        %div
+          %strong Performance Warning:
+          This visualization may be slow with #{@goal_count} goals. Consider using filters to reduce the number of goals.
+
 .row.justify-content-center
   .col-lg-12
     - if @goals.any?
-      .table-responsive
-        %table.table.table-hover
-          %thead
-            %tr
-              %th Title
-              %th Type
-              %th Timeframe
-              %th Status
-              %th Children
-              %th Parents
-              %th Owner
-          %tbody
-            - @goals.each do |goal|
-              %tr{class: goal_warning_class(goal)}
-                %td
-                  = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
-                %td
-                  %span.badge{class: goal_category_badge_class(goal)}
-                    = goal_category_label(goal)
-                  - if goal.should_show_warning?
-                    %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
-                %td
-                  %span.badge{class: timeframe_badge_class(goal.timeframe), "data-bs-toggle" => "tooltip", "data-bs-title" => timeframe_tooltip_text(goal)}
-                    = goal.timeframe.to_s.humanize
-                %td
-                  %span.badge{class: status_badge_class(goal.status)}
-                    = goal.status.to_s.humanize
-                %td
-                  = goal.outgoing_links.count
-                %td
-                  = goal.incoming_links.count
-                %td
-                  - if goal.owner_type == 'Teammate'
-                    = goal.owner.person.display_name
-                  - elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
-                    = goal.owner.display_name
-                  - else
-                    = goal.owner.display_name
+      - case @view_style
+      - when 'network'
+        = render 'network_view'
+      - when 'tree'
+        = render 'tree_view'
+      - when 'nested'
+        = render 'nested_view'
+      - when 'timeline'
+        = render 'timeline_view'
+      - else
+        / Default table view
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Title
+                %th Type
+                %th Timeframe
+                %th Status
+                %th Children
+                %th Parents
+                %th Owner
+            %tbody
+              - @goals.each do |goal|
+                %tr{class: goal_warning_class(goal)}
+                  %td
+                    = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
+                  %td
+                    %span.badge{class: goal_category_badge_class(goal)}
+                      = goal_category_label(goal)
+                    - if goal.should_show_warning?
+                      %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
+                  %td
+                    %span.badge{class: timeframe_badge_class(goal.timeframe), "data-bs-toggle" => "tooltip", "data-bs-title" => timeframe_tooltip_text(goal)}
+                      = goal.timeframe.to_s.humanize
+                  %td
+                    %span.badge{class: status_badge_class(goal.status)}
+                      = goal.status.to_s.humanize
+                  %td
+                    = goal.outgoing_links.count
+                  %td
+                    = goal.incoming_links.count
+                  %td
+                    - if goal.owner_type == 'Teammate'
+                      = goal.owner.person.display_name
+                    - elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
+                      = goal.owner.display_name
+                    - else
+                      = goal.owner.display_name
     - else
       .alert.alert-info
         %h6.mb-2
@@ -145,7 +166,7 @@
                     = f.label :timeframe, timeframe.humanize, value: timeframe, class: "form-check-label"
               .mb-3
                 %label.form-label Goal Type
-                - %w[inspirational_objective qualitative_key_result quantitative_key_result].each do |goal_type|
+                - %w[inspirational_objective qualitative_key_result quantitative_key_result stepping_stone_activity].each do |goal_type|
                   .form-check
                     = check_box_tag "goal_type[]", goal_type, (@current_filters[:goal_type]&.include?(goal_type) || (params[:goal_type].is_a?(Array) && params[:goal_type].include?(goal_type))), class: "form-check-input", id: "goal_type_#{goal_type}", form: "goals-filter-form"
                     = label_tag "goal_type_#{goal_type}", goal_type.humanize, class: "form-check-label"
@@ -174,6 +195,12 @@
                     = f.radio_button :view, view_style, checked: (@view_style == view_style), class: "form-check-input"
                     = f.label :view, class: "form-check-label" do
                       %i{class: "bi bi-#{view_style == 'table' ? 'table' : view_style == 'cards' ? 'grid' : 'list'} me-2"}
+                      = view_style.humanize
+                - %w[network tree nested timeline].each do |view_style|
+                  .form-check
+                    = f.radio_button :view, view_style, checked: (@view_style == view_style), class: "form-check-input"
+                    = f.label :view, class: "form-check-label" do
+                      %i{class: "bi bi-#{view_style == 'network' ? 'diagram-3' : view_style == 'tree' ? 'diagram-2' : view_style == 'nested' ? 'boxes' : 'calendar-event'} me-2"}
                       = view_style.humanize
               .mb-3
                 %label.form-label Spotlight

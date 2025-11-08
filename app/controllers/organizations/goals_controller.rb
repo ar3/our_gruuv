@@ -6,16 +6,27 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   after_action :verify_policy_scoped, only: :index
   
   def index
+    # Parse owner_id if it's in format "Type_ID" (e.g., "Teammate_123")
+    if params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
+      owner_type, owner_id = params[:owner_id].split('_', 2)
+      params[:owner_type] = owner_type
+      params[:owner_id] = owner_id
+    end
+    
     # Require owner filter - must specify owner_type and owner_id
     unless params[:owner_type].present? && params[:owner_id].present?
       @goals = policy_scope(Goal.none)
+      @view_style = params[:view] || 'table'
+      @view_style = 'table' unless %w[table cards list network tree nested timeline].include?(@view_style)
+      @goal_count = 0
+      @show_performance_warning = false
       @current_filters = {
         timeframe: params[:timeframe],
         goal_type: params[:goal_type],
         status: params[:status],
         sort: params[:sort],
         direction: params[:direction],
-        view: params[:view] || 'table',
+        view: @view_style,
         spotlight: params[:spotlight],
         owner_type: params[:owner_type],
         owner_id: params[:owner_id]
@@ -43,7 +54,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Set view style
     @view_style = params[:view] || 'table'
-    @view_style = 'table' unless %w[table cards list].include?(@view_style)
+    @view_style = 'table' unless %w[table cards list network tree nested timeline].include?(@view_style)
+    
+    # Performance check for visualizations
+    @goal_count = @goals.count
+    @show_performance_warning = @goal_count > 100 && %w[network tree nested timeline].include?(@view_style)
     
     # Store filter/sort params for view
     @current_filters = {
@@ -64,17 +79,22 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   end
   
   def new
-    @goal = Goal.new
+    company = @organization.root_company || @organization
+    @goal = Goal.new(company: company)
+    authorize @goal
+    
     @form = GoalForm.new(@goal)
     @form.current_person = current_person
-    @form.current_teammate = current_person.teammates.find_by(organization: @organization)
+    # Find teammate in the company or any descendant organization
+    company_descendant_ids = company.self_and_descendants.pluck(:id)
+    @form.current_teammate = current_person.teammates.find_by(organization_id: company_descendant_ids)
     # Set defaults
-    @form.goal_type = 'inspirational_objective'
+    @form.goal_type = 'inspirational_objective' # Default to objective
     @form.privacy_level = 'everyone_in_company'
     # Default owner to current teammate if they have a teammate record
+    # Use unified format for the select dropdown
     if @form.current_teammate
-      @form.owner_type = 'Teammate'
-      @form.owner_id = @form.current_teammate.id
+      @form.owner_id = "Teammate_#{@form.current_teammate.id}"
     end
     authorize @goal
   end
@@ -246,20 +266,18 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   def available_goal_owners
     options = []
     
-    # Add current teammate
-    current_teammate = current_person.teammates.find_by(organization: @organization)
+    # Get company (root organization)
+    company = @organization.root_company || @organization
+    
+    # Add current teammate (person themselves) - should be first/default
+    # Find teammate in the company or any descendant organization
+    company_descendant_ids = company.self_and_descendants.pluck(:id)
+    current_teammate = current_person.teammates.find_by(organization_id: company_descendant_ids)
     if current_teammate
       options << ["Teammate: #{current_person.display_name}", "Teammate_#{current_teammate.id}"]
     end
     
-    # Get company (root organization)
-    company = @organization.root_company || @organization
-    if company.company?
-      options << ["Company: #{company.display_name}", "Company_#{company.id}"]
-    end
-    
-    # Get teammates managed by current user in this organization
-    company = @organization.root_company || @organization
+    # Get teammates managed by current user in this organization (their employees)
     managed_teammates = Teammate.joins(:employment_tenures)
                                  .where(employment_tenures: { company: company, manager: current_person, ended_at: nil })
                                  .where.not(id: current_teammate&.id)
@@ -271,17 +289,24 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       options << ["Teammate: #{teammate.person.display_name}", "Teammate_#{teammate.id}"]
     end
     
-    # Get departments and teams the current user is associated with via teammates
-    # This includes organizations where the user has a teammate record
+    # Get departments and teams within the company where the user is a teammate
+    # Only include organizations that are descendants of the company
+    company_descendant_ids = company.self_and_descendants.pluck(:id)
     associated_orgs = Organization.joins(:teammates)
                                   .where(teammates: { person: current_person })
-                                  .where.not(id: company.id) # Exclude company as we already added it
+                                  .where(id: company_descendant_ids)
+                                  .where.not(id: company.id) # Exclude company as we'll add it separately if needed
                                   .distinct
                                   .order(:name)
     
     associated_orgs.each do |org|
       type_label = org.company? ? 'Company' : (org.department? ? 'Department' : 'Team')
       options << ["#{type_label}: #{org.display_name}", "#{org.type}_#{org.id}"]
+    end
+    
+    # Add company at the end
+    if company.company?
+      options << ["Company: #{company.display_name}", "Company_#{company.id}"]
     end
     
     options

@@ -1,0 +1,69 @@
+- viz_data = prepare_visualization_data(@goals)
+- goals = viz_data[:goals].to_a
+- links = viz_data[:links]
+- categories = viz_data[:categories]
+
+- if goals.empty?
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No goals to visualize
+    %p.mb-0
+      Create goals with target dates to see a timeline visualization.
+- else
+  / Group goals by date (using most_likely_target_date)
+  - goals_by_date = goals.group_by { |g| g.most_likely_target_date || Date.today + 1.year }
+  - sorted_dates = goals_by_date.keys.sort
+  
+  .timeline-visualization{style: "padding: 20px; position: relative;"}
+    - sorted_dates.each_with_index do |date, date_index|
+      .timeline-date-group{style: "margin-bottom: 30px; position: relative;"}
+        / Date marker
+        .d-flex.align-items-center.mb-3
+          .timeline-line{style: "width: 4px; height: 40px; background: #007bff; margin-right: 15px;"}
+          .timeline-date-label
+            %h5.mb-0
+              = date.strftime('%B %d, %Y')
+            %small.text-muted
+              = pluralize(goals_by_date[date].count, 'goal')
+        
+        / Goals for this date
+        .timeline-goals{style: "margin-left: 20px;"}
+          - goals_by_date[date].each do |goal|
+            - category = categories[goal.id]
+            - badge_class_map = { vision: 'bg-info', objective: 'bg-primary', key_result: 'bg-success', bad_key_result: 'bg-danger' }
+            - badge_class = badge_class_map[category] || 'bg-secondary'
+            
+            - border_color_map = { vision: '#17a2b8', objective: '#007bff', key_result: '#28a745', bad_key_result: '#dc3545' }
+            - border_color = border_color_map[category] || '#6c757d'
+            
+            .timeline-goal-card.mb-2
+              .card{style: "border-left: 4px solid #{border_color};"}
+                .card-body.p-2
+                  .d-flex.align-items-center.justify-content-between
+                    .flex-grow-1
+                      = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold"
+                      %br
+                      %span.badge{class: badge_class, style: "font-size: 0.7em; margin-top: 5px;"}
+                        = goal_category_label(goal)
+                    .text-end
+                      - if goal.most_likely_target_date.present?
+                        %small.text-muted
+                          %i.bi.bi-calendar.me-1
+                          = goal.most_likely_target_date.strftime('%b %d')
+                      - else
+                        %small.text-muted
+                          No date set
+          
+          / Show links between goals on this timeline
+          - links.each do |link|
+            - if goals_by_date[date].include?(link.this_goal) || goals_by_date[date].include?(link.that_goal)
+              - this_date = link.this_goal.most_likely_target_date || Date.today + 1.year
+              - that_date = link.that_goal.most_likely_target_date || Date.today + 1.year
+              - if this_date != that_date && sorted_dates.include?(this_date) && sorted_dates.include?(that_date)
+                / Draw connection line between dates (simplified - just show indicator)
+                .timeline-connection{style: "margin-left: 20px; margin-top: 5px; margin-bottom: 5px;"}
+                  %small.text-muted
+                    %i.bi.bi-arrow-right.me-1
+                    Connected to goal on #{that_date.strftime('%b %d')}
+

@@ -1,0 +1,56 @@
+- viz_data = prepare_visualization_data(@goals)
+- goals = viz_data[:goals].to_a
+- links = viz_data[:links]
+- categories = viz_data[:categories]
+- goal_ids = goals.map(&:id).to_set
+
+- if goals.empty?
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No goals to visualize
+    %p.mb-0
+      Create goals and link them together to see a tree visualization.
+- else
+  / Build parent-child relationships (focusing on "this_is_key_result_of_that" links)
+  - parent_child_map = {}
+  - root_goals = []
+  
+  - goals.each do |goal|
+    - parent_child_map[goal.id] = []
+    - has_parent = false
+    - links.each do |link|
+      - if link.link_type == 'this_is_key_result_of_that'
+        - if link.this_goal_id == goal.id && goal_ids.include?(link.that_goal.id)
+          - parent_child_map[link.that_goal.id] ||= []
+          - parent_child_map[link.that_goal.id] << goal
+          - has_parent = true
+    - root_goals << goal unless has_parent
+  
+  .tree-visualization{style: "overflow-x: auto; padding: 20px;"}
+    - if root_goals.empty?
+      .alert.alert-warning
+        %i.bi.bi-info-circle.me-2
+        No root goals found. All goals appear to be linked as children.
+        %br
+        %small Showing all goals as a flat list:
+      - goals.each do |goal|
+        - children = parent_child_map[goal.id] || []
+        - category = categories[goal.id]
+        - badge_class_map = { vision: 'bg-info', objective: 'bg-primary', key_result: 'bg-success', bad_key_result: 'bg-danger' }
+        - badge_class = badge_class_map[category] || 'bg-secondary'
+        .tree-node{style: "margin-left: 0px; margin-bottom: 10px;"}
+          .card{style: "min-width: 300px; max-width: 500px;"}
+            .card-body.p-2
+              .d-flex.align-items-center.justify-content-between
+                .flex-grow-1
+                  = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold"
+                  %br
+                  %span.badge{class: badge_class, style: "font-size: 0.7em;"}
+                    = goal_category_label(goal)
+                - if children.any?
+                  %span.badge.bg-light.text-dark
+                    = pluralize(children.count, 'child')
+    - else
+      - root_goals.each do |root_goal|
+        = render_tree_node(root_goal, 0, parent_child_map, categories, @organization)

@@ -1,14 +1,18 @@
 class GoalPolicy < ApplicationPolicy
   def index?
-    admin_bypass? || user_is_teammate?
+    admin_bypass? || user_is_teammate_of_company?
   end
 
   def show?
     admin_bypass? || record.can_be_viewed_by?(actual_user)
   end
 
+  def new?
+    admin_bypass? || user_is_teammate_of_company?
+  end
+
   def create?
-    admin_bypass? || user_is_teammate?
+    admin_bypass? || user_is_teammate_of_company?
   end
 
   def update?
@@ -50,6 +54,19 @@ class GoalPolicy < ApplicationPolicy
     return false unless user.respond_to?(:pundit_organization) && user.pundit_organization
     
     actual_user.teammates.exists?(organization: user.pundit_organization)
+  end
+
+  def user_is_teammate_of_company?
+    return false unless user.respond_to?(:pundit_organization) && user.pundit_organization
+    
+    # Get the company (root organization)
+    organization = user.pundit_organization
+    company = organization.company? ? organization : organization.root_company
+    return false unless company
+    
+    # Check if user is a teammate of the company or any organization within the company
+    company_descendant_ids = company.self_and_descendants.pluck(:id)
+    actual_user.teammates.exists?(organization_id: company_descendant_ids)
   end
 
   def user_is_creator?

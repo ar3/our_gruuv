@@ -1,0 +1,99 @@
+- viz_data = prepare_visualization_data(@goals)
+- goals = viz_data[:goals].to_a
+- links = viz_data[:links]
+- categories = viz_data[:categories]
+- goal_ids = goals.map(&:id).to_set
+
+- if goals.empty?
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No goals to visualize
+    %p.mb-0
+      Create goals and link them together to see a network visualization.
+- else
+  .network-visualization
+    %svg{width: "100%", height: "600", style: "border: 1px solid #e0e0e0; background: #fafafa;"}
+      %defs
+        %marker{id: "arrowhead", markerWidth: "10", markerHeight: "10", refX: "9", refY: "3", orient: "auto"}
+          %polygon{points: "0 0, 10 3, 0 6", fill: "#666"}
+      
+      / Draw links (edges)
+      - links.each do |link|
+        - this_goal = link.this_goal
+        - that_goal = link.that_goal
+        - next unless goal_ids.include?(this_goal.id) && goal_ids.include?(that_goal.id)
+        
+        - this_index = goals.index(this_goal)
+        - that_index = goals.index(that_goal)
+        - total_goals = goals.count
+        
+        / Simple circular layout
+        - this_angle = (this_index * 2 * Math::PI / total_goals) - Math::PI / 2
+        - that_angle = (that_index * 2 * Math::PI / total_goals) - Math::PI / 2
+        - radius = 200
+        - center_x = 400
+        - center_y = 300
+        
+        - this_x = center_x + radius * Math.cos(this_angle)
+        - this_y = center_y + radius * Math.sin(this_angle)
+        - that_x = center_x + radius * Math.cos(that_angle)
+        - that_y = center_y + radius * Math.sin(that_angle)
+        
+        %line{
+          x1: this_x,
+          y1: this_y,
+          x2: that_x,
+          y2: that_y,
+          stroke: "#999",
+          "stroke-width": "1",
+          "marker-end": "url(#arrowhead)"
+        }
+      
+      / Draw goals (nodes)
+      - goals.each_with_index do |goal, index|
+        - total_goals = goals.count
+        - angle = (index * 2 * Math::PI / total_goals) - Math::PI / 2
+        - radius = 200
+        - center_x = 400
+        - center_y = 300
+        - x = center_x + radius * Math.cos(angle)
+        - y = center_y + radius * Math.sin(angle)
+        
+        - category = categories[goal.id]
+        - color_map = { vision: "#17a2b8", objective: "#007bff", key_result: "#28a745", bad_key_result: "#dc3545" }
+        - color = color_map[category] || "#6c757d"
+        
+        / Goal node circle
+        %circle{
+          cx: x,
+          cy: y,
+          r: 25,
+          fill: color,
+          stroke: "#fff",
+          "stroke-width": "2"
+        }
+        
+        / Goal title text (truncated)
+        - title = goal.title.length > 15 ? goal.title[0..14] + "..." : goal.title
+        %text{
+          x: x,
+          y: y + 40,
+          "text-anchor": "middle",
+          "font-size": "10",
+          fill: "#333"
+        }
+          = title
+      
+      / Legend
+      %g{transform: "translate(20, 20)"}
+        %text{x: "0", y: "0", "font-size": "12", "font-weight": "bold", fill: "#333"} Legend:
+        %circle{cx: "10", cy: "25", r: "8", fill: "#17a2b8"}
+        %text{x: "25", y: "30", "font-size": "10", fill: "#333"} Vision
+        %circle{cx: "10", cy: "45", r: "8", fill: "#007bff"}
+        %text{x: "25", y: "50", "font-size": "10", fill: "#333"} Objective
+        %circle{cx: "10", cy: "65", r: "8", fill: "#28a745"}
+        %text{x: "25", y: "70", "font-size": "10", fill: "#333"} Key Result
+        %circle{cx: "10", cy: "85", r: "8", fill: "#dc3545"}
+        %text{x: "25", y: "90", "font-size": "10", fill: "#333"} Bad Key Result
+

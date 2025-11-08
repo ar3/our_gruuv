@@ -46,23 +46,7 @@
             
             .collapse#advancedSettings
               .card.card-body.bg-light.mt-3
-                .mb-3
-                  = form.label :goal_type, class: 'form-label' do
-                    Goal Type
-                    %span.text-danger *
-                  - Goal.goal_types.each do |goal_type, value|
-                    .form-check
-                      = form.radio_button :goal_type, goal_type, class: 'form-check-input', required: true
-                      = form.label :goal_type, goal_type.humanize, value: goal_type, class: 'form-check-label'
-                      - if goal_type == 'inspirational_objective'
-                        %small.text-muted.d-block.ms-4
-                          %em Not directly measurable, measured through linked key results
-                      - elsif goal_type == 'qualitative_key_result'
-                        %small.text-muted.d-block.ms-4
-                          %em Measurable by sentiment or qualitative assessment
-                      - elsif goal_type == 'quantitative_key_result'
-                        %small.text-muted.d-block.ms-4
-                          %em Measurable by counting or percentage
+                = render 'goal_type_selection', form: form
                 
                 .mb-3
                   %label.form-label

@@ -17,7 +17,6 @@
 - Test critical end-to-end user workflows
 - Use real browser (Capybara + Selenium)
 - Test JavaScript interactions, full UI
-- Tagged as `:critical`, excluded by default
 
 ## Form Testing Requirements
 
@@ -47,12 +46,13 @@
 ## Development Workflow
 
 ```bash
-# Fast development (excludes critical system specs)
-bundle exec rspec --tag ~critical
+# Run specs by type (recommended)
+bundle exec rspec spec/models/
+bundle exec rspec spec/requests/
+bundle exec rspec spec/system/abilities/
 
-# Pre-deployment (runs all tests including critical paths)
-bundle exec rspec --tag critical
-bundle exec rspec  # or run all
+# Run all specs (for comprehensive testing)
+bundle exec rspec
 ```
 
 ## Spec Maintenance Rules
