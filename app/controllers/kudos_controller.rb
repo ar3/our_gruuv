@@ -2,11 +2,12 @@ class KudosController < ApplicationController
   before_action :set_observation
   before_action :authorize_view_permalink
 
-  # Override Pundit's default user method to match the organization namespace pattern
+  # Override Pundit's default user method to return Teammate structure
+  # Policies expect a Teammate, not a Person
   def pundit_user
     OpenStruct.new(
-      user: current_person,
-      pundit_organization: nil # KudosController doesn't have organization context
+      user: current_company_teammate,
+      real_user: real_current_teammate
     )
   end
 

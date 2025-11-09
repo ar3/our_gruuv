@@ -16,11 +16,11 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
 
   before do
-    session[:current_person_id] = manager.id
     manager_teammate
     employee_teammate
     employment_tenure
     assignment_tenure
+    sign_in_as_teammate(manager, organization)
   end
 
   describe 'PATCH #update' do
@@ -133,7 +133,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
     end
 
     context 'as employee' do
-      before { session[:current_person_id] = employee.id }
+      before { sign_in_as_teammate(employee, organization) }
 
       it 'updates position check-in with employee fields' do
         position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
@@ -328,7 +328,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
       let(:certifier) { create(:person) }
 
       before do
-        session[:current_person_id] = manager.id
+        sign_in_as_teammate(manager, organization)
         employment_tenure
       end
 

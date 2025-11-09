@@ -4,13 +4,12 @@ RSpec.describe PositionTypesController, type: :controller do
   let(:organization) { create(:organization) }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
-  let(:person) { create(:person, current_organization: organization) }
+  let(:person) { create(:person) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
   let(:source_position) { create(:position, position_type: position_type, position_level: position_level) }
 
   before do
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+    sign_in_as_teammate(person, organization)
   end
 
   describe 'POST #clone_positions' do

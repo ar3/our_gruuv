@@ -14,8 +14,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
   end
 
   before do
-    session[:current_person_id] = observer.id
-    observer_teammate # Ensure observer teammate is created
+    sign_in_as_teammate(observer, company)
   end
 
   describe 'GET #index' do
@@ -44,8 +43,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
       
       before do
-        session[:current_person_id] = other_person.id
-        other_teammate # Ensure teammate is created
+        sign_in_as_teammate(other_person, company)
       end
 
       it 'redirects to kudos page' do
@@ -151,8 +149,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
       
       before do
-        session[:current_person_id] = other_person.id
-        other_teammate # Ensure teammate is created
+        sign_in_as_teammate(other_person, company)
       end
 
       it 'redirects to kudos page' do
@@ -194,8 +191,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
       
       before do
-        session[:current_person_id] = other_person.id
-        other_teammate # Ensure teammate is created
+        sign_in_as_teammate(other_person, company)
       end
 
       it 'redirects to kudos page' do
@@ -229,8 +225,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
       
       before do
-        session[:current_person_id] = other_person.id
-        other_teammate # Ensure teammate is created
+        sign_in_as_teammate(other_person, company)
       end
 
       it 'redirects to kudos page' do

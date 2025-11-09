@@ -23,13 +23,15 @@ class UploadEventPolicy < ApplicationPolicy
     admin_bypass? || can_manage_employment?
   end
 
-  class Scope < Scope
+  class Scope < ApplicationPolicy::Scope
     def resolve
-      if actual_user&.admin?
+      return scope.none unless teammate
+      person = teammate.person
+      if person&.admin?
         scope.all
       elsif can_manage_employment?
         # Users with employment management permission can see upload events for their organization
-        scope.where(organization: pundit_organization)
+        scope.where(organization: actual_organization)
       else
         scope.none
       end
@@ -38,25 +40,23 @@ class UploadEventPolicy < ApplicationPolicy
     private
 
     def can_manage_employment?
-      return false unless pundit_organization
+      return false unless teammate
+      organization = actual_organization
+      return false unless organization
       
-      actual_user&.can_manage_employment?(pundit_organization)
-    end
-
-    def pundit_organization
-      user.respond_to?(:pundit_organization) ? user.pundit_organization : nil
+      person = teammate.person
+      person&.can_manage_employment?(organization)
     end
   end
 
   private
 
   def can_manage_employment?
-    return false unless pundit_organization
+    return false unless teammate
+    organization = actual_organization
+    return false unless organization
     
-    actual_user&.can_manage_employment?(pundit_organization)
-  end
-
-  def pundit_organization
-    user.respond_to?(:pundit_organization) ? user.pundit_organization : nil
+    person = teammate.person
+    person&.can_manage_employment?(organization)
   end
 end

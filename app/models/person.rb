@@ -43,60 +43,41 @@ class Person < ApplicationRecord
   end
 
 
-  def active_assignment_tenures(company=nil)
-    company = current_organization&.root_company if company.nil?
+  def active_assignment_tenures(company)
+    return [] unless company
     teammate = teammates.find_by(organization: company)
     return [] unless teammate
     
-    if company.nil?
-      return teammate.assignment_tenures.active
-    else
-      teammate.assignment_tenures.active.where(assignments: { company: company })
-    end
+    teammate.assignment_tenures.active.where(assignments: { company: company })
   end
 
   # Scopes for active assignments in a specific company
-  def assignments_ready_for_finalization_count(company=nil)
-    company = current_organization&.root_company if company.nil?
+  def assignments_ready_for_finalization_count(company)
+    return 0 unless company
     teammate = teammates.find_by(organization: company)
     return 0 unless teammate
     
-    if company.nil?
-      AssignmentCheckIn.joins(:assignment)
-                       .where(teammate: teammate)
-                       .ready_for_finalization
-                       .count
-    else
-      AssignmentCheckIn.joins(:assignment)
-                       .where(teammate: teammate, assignments: { company: company })
-                       .ready_for_finalization
-                       .count
-    end
+    AssignmentCheckIn.joins(:assignment)
+                     .where(teammate: teammate, assignments: { company: company })
+                     .ready_for_finalization
+                     .count
   end
 
-  def active_assignments(company=nil)
-    company = current_organization&.root_company if company.nil?
+  def active_assignments(company)
+    return [] unless company
     teammate = teammates.find_by(organization: company)
     return [] unless teammate
     
-    if company.nil?
-      return teammate.assignments.joins(:assignment_tenures)
-                         .where('assignment_tenures.anticipated_energy_percentage > 0')
-                         .where(assignment_tenures: { ended_at: nil })
-                         .distinct
-    else
-      teammate.assignments.joins(:assignment_tenures)
-                .where(assignment_tenures: { 
-                  assignments: { company: company }, 
-                  ended_at: nil 
-                })
-                .where('assignment_tenures.anticipated_energy_percentage > 0')
-                .distinct
-    end
+    teammate.assignments.joins(:assignment_tenures)
+            .where(assignment_tenures: { 
+              assignments: { company: company }, 
+              ended_at: nil 
+            })
+            .where('assignment_tenures.anticipated_energy_percentage > 0')
+            .distinct
   end
   has_many :teammates, dependent: :destroy
   has_many :addresses, dependent: :destroy
-  belongs_to :current_organization, class_name: 'Organization', optional: true
   
   # Associations through teammates
   has_many :huddle_participants, through: :teammates, source: :huddle_participants
@@ -186,19 +167,15 @@ class Person < ApplicationRecord
   end
   
   # Organization context methods
-  def current_organization_or_default
-    current_organization || Organization.companies.first
-  end
-  
-  def switch_to_organization(organization)
-    update!(current_organization: organization)
-  end
-  
   def available_organizations
-    # Return organizations where person is at least a follower
+    # Return organizations where person has active teammates (not terminated)
     Organization.joins(:teammates)
-                .where(teammates: { person: self })
+                .where(teammates: { person: self, last_terminated_at: nil })
                 .order(:type, :name)
+  end
+  
+  def active_teammates
+    teammates.where(last_terminated_at: nil)
   end
   
   def available_companies

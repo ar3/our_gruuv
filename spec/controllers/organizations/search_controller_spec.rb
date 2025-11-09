@@ -2,10 +2,10 @@ require 'rails_helper'
 
 RSpec.describe Organizations::SearchController, type: :controller do
   let(:organization) { create(:organization, :company) }
-  let(:person) { create(:person, current_organization: organization) }
+  let(:person) { create(:person) }
 
   before do
-    session[:current_person_id] = person.id
+    sign_in_as_teammate(person, organization)
   end
 
   describe 'GET #show' do

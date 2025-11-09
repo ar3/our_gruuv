@@ -38,22 +38,22 @@ class ApplicationController < ActionController::Base
     end
   end
   
+  helper_method :current_company_teammate
   helper_method :current_person
   helper_method :current_organization
   helper_method :impersonating?
-  helper_method :real_current_person
+  helper_method :real_current_teammate
   
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
   
   # Set up PaperTrail controller info for request tracking
   before_action :set_paper_trail_controller_info
   
-  # Override Pundit's default user method to use current_person with organization context
+  # Override Pundit's default user method to use current_company_teammate
   def pundit_user
     OpenStruct.new(
-      user: current_person,
-      organization: current_person&.current_organization_or_default,
-      real_user: real_current_person
+      user: current_company_teammate,
+      real_user: real_current_teammate
     )
   end
   
@@ -87,11 +87,12 @@ class ApplicationController < ActionController::Base
       end
       
       # Add user context if available
-      if respond_to?(:current_person) && current_person
+      if respond_to?(:current_company_teammate) && current_company_teammate
+        person = current_company_teammate.person
         event.set_user(
-          id: current_person.id,
-          email: current_person.email,
-          name: current_person.display_name
+          id: person.id,
+          email: person.email,
+          name: person.display_name
         )
       end
     end
@@ -122,7 +123,7 @@ class ApplicationController < ActionController::Base
   private
   
   def authenticate_person!
-    unless current_person
+    unless current_company_teammate
       flash[:error] = "You must be logged in to access this page"
       redirect_to root_path
     end
@@ -163,52 +164,62 @@ class ApplicationController < ActionController::Base
   end
   
   def determine_layout
-    current_person ? 'authenticated-v2-0' : 'application'
+    current_company_teammate ? 'authenticated-v2-0' : 'application'
   end
   
-  def current_person
-    return @current_person if defined?(@current_person)
+  def current_company_teammate
+    return @current_company_teammate if defined?(@current_company_teammate)
     
     # In test environment, allow RSpec mocks to override
-    if Rails.env.test? && respond_to?(:current_person_mock)
-      return current_person_mock if current_person_mock
+    if Rails.env.test? && respond_to?(:current_company_teammate_mock)
+      return current_company_teammate_mock if current_company_teammate_mock
     end
     
     # Check if we're impersonating someone
-    if session[:impersonating_person_id]
+    if session[:impersonating_teammate_id]
       begin
-        @current_person = Person.find(session[:impersonating_person_id])
-        return @current_person
+        @current_company_teammate = Teammate.find(session[:impersonating_teammate_id])
+        return @current_company_teammate
       rescue ActiveRecord::RecordNotFound
         # Clear the invalid impersonation session
-        session.delete(:impersonating_person_id)
+        session.delete(:impersonating_teammate_id)
         # Fall through to normal session handling
       end
     end
     
-    if session[:current_person_id]
+    if session[:current_company_teammate_id]
       begin
-        @current_person = Person.find(session[:current_person_id])
+        @current_company_teammate = Teammate.find(session[:current_company_teammate_id])
+        # Ensure teammate is still active (not terminated)
+        if @current_company_teammate.last_terminated_at.present?
+          # Teammate was terminated, clear session
+          session.delete(:current_company_teammate_id)
+          @current_company_teammate = nil
+          flash[:error] = "Your session has expired. Please log in again."
+        end
       rescue ActiveRecord::RecordNotFound
         # Clear the invalid session
-        session.delete(:current_person_id)
-        @current_person = nil
+        session.delete(:current_company_teammate_id)
+        @current_company_teammate = nil
         
         # Show error message
         flash[:error] = "Your session has expired or is invalid. Please log in again."
       end
     else
-      @current_person = nil
+      @current_company_teammate = nil
     end
     
-    @current_person
+    @current_company_teammate
   end
 
-  helper_method :current_organization
-  
+  # Helper method that delegates to current_company_teammate.person for backward compatibility
+  def current_person
+    current_company_teammate&.person
+  end
+
+  # Helper method that delegates to current_company_teammate.organization
   def current_organization
-    return nil unless current_person
-    current_person.current_organization_or_default
+    current_company_teammate&.organization
   end
 
   # Get person from session or create from params
@@ -361,40 +372,65 @@ class ApplicationController < ActionController::Base
 
   # Impersonation helper methods
   def impersonating?
-    session[:impersonating_person_id].present?
+    session[:impersonating_teammate_id].present?
   end
 
-  def real_current_person
-    return nil unless session[:current_person_id]
+  def real_current_teammate
+    return nil unless session[:current_company_teammate_id]
     
     begin
-      Person.find(session[:current_person_id])
+      Teammate.find(session[:current_company_teammate_id])
     rescue ActiveRecord::RecordNotFound
       nil
     end
   end
 
-  def start_impersonation(person)
-    return false unless real_current_person
+  def start_impersonation(teammate)
+    return false unless real_current_teammate
     
-    # Use Pundit policy for authorization
-    policy = PersonPolicy.new(real_current_person, person)
-    return false unless policy.can_impersonate?
+    # Use Pundit policy for authorization (check if real user can impersonate the teammate's person)
+    return false unless policy(teammate.person).can_impersonate?
     
-    session[:impersonating_person_id] = person.id
+    session[:impersonating_teammate_id] = teammate.id
     true
   end
 
   def stop_impersonation
-    session.delete(:impersonating_person_id)
+    session.delete(:impersonating_teammate_id)
   end
   
   # Set PaperTrail controller info for request tracking
   def set_paper_trail_controller_info
     # Only set controller info that can be stored in the meta JSONB column
     PaperTrail.request.controller_info = {
-      current_person_id: current_person&.id,
-      impersonating_person_id: impersonating? ? session[:current_person_id] : nil
+      current_teammate_id: current_company_teammate&.id,
+      impersonating_teammate_id: impersonating? ? session[:impersonating_teammate_id] : nil
     }
+  end
+
+  # Ensure person has at least one active teammate, creating "OurGruuv Demo" teammate if needed
+  def ensure_teammate_for_person(person)
+    return nil unless person
+    
+    # Find active teammates (not terminated)
+    active_teammates = person.active_teammates
+    
+    # If person has active teammates, return the first one
+    return active_teammates.first if active_teammates.any?
+    
+    # No active teammates - create one in "OurGruuv Demo" organization
+    demo_org = Company.find_by(name: 'OurGruuv Demo')
+    unless demo_org
+      Rails.logger.error "OurGruuv Demo organization not found! Run db:seed to create it."
+      raise "OurGruuv Demo organization not found. Please run db:seed."
+    end
+    
+    # Create CompanyTeammate as a follower (no employment dates)
+    person.teammates.create!(
+      organization: demo_org,
+      type: 'CompanyTeammate',
+      first_employed_at: nil,
+      last_terminated_at: nil
+    )
   end
 end

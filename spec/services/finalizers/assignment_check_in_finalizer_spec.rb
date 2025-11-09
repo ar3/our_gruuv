@@ -60,7 +60,8 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         
         new_tenure = AssignmentTenure.last
         expect(new_tenure.assignment).to eq(assignment)
-        expect(new_tenure.teammate).to eq(employee_teammate)
+        expect(new_tenure.teammate).to be_a(Teammate)
+        expect(new_tenure.teammate.id).to eq(employee_teammate.id)
         expect(new_tenure.anticipated_energy_percentage).to eq(75)
         expect(new_tenure.started_at).to eq(Date.current)
         expect(new_tenure.ended_at).to be_nil

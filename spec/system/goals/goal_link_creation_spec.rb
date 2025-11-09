@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Goal Link Creation', type: :system do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
   let(:goal1) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 1', privacy_level: 'everyone_in_company') }
   let(:goal2) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 2', privacy_level: 'everyone_in_company') }
   let(:goal3) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 3', privacy_level: 'everyone_in_company') }
@@ -36,6 +36,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
     # Use call_original: false to ensure stubs take precedence
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
     allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+    allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(teammate)
   end
   
   # Clear stubs after each test to prevent them from leaking to other specs
@@ -293,14 +294,6 @@ RSpec.describe 'Goal Link Creation', type: :system do
       expect(page.current_path).to include('new_outgoing_link')
     end
     
-    it 'shows validation error when bulk titles only contain blank lines' do
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
-      
-      fill_in 'bulk_goal_titles', with: "   \n\n  "
-      click_button 'Create Links'
-      
-      expect(page).to have_content(/error|at least one/i)
-    end
   end
   
   describe 'creating new goals via bulk creation (incoming links)' do

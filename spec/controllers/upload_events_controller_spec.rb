@@ -2,19 +2,19 @@ require 'rails_helper'
 
 RSpec.describe UploadEventsController, type: :controller do
   let(:organization) { create(:organization) }
-  let(:person) { create(:person, current_organization: organization) }
+  let(:person) { create(:person) }
   let(:upload_event) { create(:upload_event, creator: person, initiator: person, organization: organization) }
 
   before do
-    session[:current_person_id] = person.id
-    allow(controller).to receive(:current_organization).and_return(organization)
-    allow(controller).to receive(:current_person).and_return(person)
+    # Create teammate with employment management permission
+    teammate = create(:teammate, person: person, organization: organization, can_manage_employment: true)
+    session[:current_company_teammate_id] = teammate.id
+    @current_company_teammate = nil if defined?(@current_company_teammate)
   end
 
   describe 'GET #index' do
     context 'when user has employment management permission' do
       before do
-        allow(person).to receive(:can_manage_employment?).and_return(true)
         # Create an upload event to ensure the list is not empty
         create(:upload_event, creator: person, initiator: person, organization: organization)
       end
@@ -32,7 +32,9 @@ RSpec.describe UploadEventsController, type: :controller do
 
     context 'when user lacks employment management permission' do
       before do
-        allow(person).to receive(:can_manage_employment?).and_return(false)
+        # Update teammate to remove permission
+        teammate = person.teammates.find_by(organization: organization)
+        teammate.update!(can_manage_employment: false)
       end
 
       it 'redirects to root path' do
@@ -57,9 +59,6 @@ RSpec.describe UploadEventsController, type: :controller do
 
   describe 'GET #new' do
     context 'when user has employment management permission' do
-      before do
-        allow(person).to receive(:can_manage_employment?).and_return(true)
-      end
 
       it 'redirects to index when no type parameter is provided' do
         get :new, params: { organization_id: organization.id }
@@ -75,7 +74,9 @@ RSpec.describe UploadEventsController, type: :controller do
 
     context 'when user lacks employment management permission' do
       before do
-        allow(person).to receive(:can_manage_employment?).and_return(false)
+        # Update teammate to remove permission
+        teammate = person.teammates.find_by(organization: organization)
+        teammate.update!(can_manage_employment: false)
       end
 
       it 'redirects to root path' do
@@ -90,9 +91,6 @@ RSpec.describe UploadEventsController, type: :controller do
     let(:valid_params) { { organization_id: organization.id, upload_event: { file: file, type: 'UploadEvent::UploadAssignmentCheckins' } } }
 
     context 'when user has employment management permission' do
-      before do
-        allow(person).to receive(:can_manage_employment?).and_return(true)
-      end
 
       context 'with valid file' do
         before do
@@ -143,7 +141,9 @@ RSpec.describe UploadEventsController, type: :controller do
 
     context 'when user lacks employment management permission' do
       before do
-        allow(person).to receive(:can_manage_employment?).and_return(false)
+        # Update teammate to remove permission
+        teammate = person.teammates.find_by(organization: organization)
+        teammate.update!(can_manage_employment: false)
       end
 
       it 'redirects to root path' do
@@ -187,7 +187,6 @@ RSpec.describe UploadEventsController, type: :controller do
   describe 'POST #process_upload' do
     context 'when upload event can be processed' do
       before do
-        allow(person).to receive(:can_manage_employment?).and_return(true)
         allow(upload_event).to receive(:can_process?).and_return(true)
         allow(EmploymentDataUploadProcessorJob).to receive(:perform_and_get_result).and_return(true)
       end
@@ -205,7 +204,6 @@ RSpec.describe UploadEventsController, type: :controller do
 
     context 'when upload event cannot be processed' do
       before do
-        allow(person).to receive(:can_manage_employment?).and_return(true)
         upload_event.update!(status: 'completed') # Completed uploads cannot be processed
       end
 
@@ -217,9 +215,6 @@ RSpec.describe UploadEventsController, type: :controller do
     end
 
     context 'when user has employment management permission' do
-      before do
-        allow(person).to receive(:can_manage_employment?).and_return(true)
-      end
 
       it 'processes upload when upload event can be processed' do
         expect(EmploymentDataUploadProcessorJob).to receive(:perform_and_get_result).with(upload_event.id, organization.id).and_return(true)
@@ -266,7 +261,9 @@ RSpec.describe UploadEventsController, type: :controller do
 
     context 'when user lacks employment management permission' do
       before do
-        allow(person).to receive(:can_manage_employment?).and_return(false)
+        # Update teammate to remove permission
+        teammate = person.teammates.find_by(organization: organization)
+        teammate.update!(can_manage_employment: false)
       end
 
       it 'redirects to root path' do
@@ -281,7 +278,6 @@ RSpec.describe UploadEventsController, type: :controller do
 
     context 'when processing employee upload successfully' do
       before do
-        allow(person).to receive(:can_manage_employment?).and_return(true)
         allow(employee_upload_event).to receive(:can_process?).and_return(true)
         allow(UnassignedEmployeeUploadProcessorJob).to receive(:perform_and_get_result).and_return(true)
       end
@@ -341,7 +337,6 @@ RSpec.describe UploadEventsController, type: :controller do
 
     context 'when employee upload processing fails' do
       before do
-        allow(person).to receive(:can_manage_employment?).and_return(true)
         allow(employee_upload_event).to receive(:can_process?).and_return(true)
         allow(UnassignedEmployeeUploadProcessorJob).to receive(:perform_and_get_result).and_return(false)
       end
@@ -356,7 +351,6 @@ RSpec.describe UploadEventsController, type: :controller do
 
     context 'when employee upload cannot be processed' do
       before do
-        allow(person).to receive(:can_manage_employment?).and_return(true)
         employee_upload_event.update!(status: 'completed') # Completed uploads cannot be processed
       end
 
@@ -379,7 +373,6 @@ RSpec.describe UploadEventsController, type: :controller do
       let(:employee_upload_event) { create(:upload_employees, organization: organization, creator: person, initiator: person, file_content: valid_csv_content) }
 
       before do
-        allow(person).to receive(:can_manage_employment?).and_return(true)
         allow(employee_upload_event).to receive(:can_process?).and_return(true)
       end
 

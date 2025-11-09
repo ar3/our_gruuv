@@ -67,3 +67,8 @@ position_levels.each do |level_data|
     level.ideal_assignment_goal_types = level_data[:ideal_assignment_goal_types]
   end
 end
+
+# Seed "OurGruuv Demo" organization - required for all users to have a teammate record
+Company.find_or_create_by!(name: 'OurGruuv Demo') do |org|
+  org.type = 'Company'
+end

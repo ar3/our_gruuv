@@ -3,20 +3,20 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   before_action :require_authentication
   
   def index
-    @organizations = current_person.available_organizations
-    @followable_organizations = current_person.followable_organizations
-    @current_organization = current_person.current_organization_or_default
+    @organizations = current_company_teammate.person.available_organizations
+    @followable_organizations = current_company_teammate.person.followable_organizations
+    @current_organization = current_company_teammate.organization
   end
   
   def switch_page
-    @organizations = current_person.available_companies.companies#.includes(:children)
-    @current_organization = current_person.current_organization_or_default
+    @organizations = Organization.companies.order(:type, :name)
+    @current_organization = current_company_teammate.organization
   end
   
   def dashboard
-    @current_person = current_person
+    @current_person = current_company_teammate.person
     @recent_huddles = Huddle.joins(huddle_participants: :teammate)
-                            .where(teammates: { person: current_person })
+                            .where(teammates: { person: @current_person })
                             .recent
                             .limit(5)
     
@@ -30,12 +30,17 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   def follow
     organization = Organization.find(params[:id])
     
-    if current_person.can_follow_organization?(organization)
+    if current_company_teammate.person.can_follow_organization?(organization)
       # Create a follower teammate (no employment dates)
-      teammate = current_person.teammates.create!(
+      teammate = current_company_teammate.person.teammates.create!(
         organization: organization,
         type: 'CompanyTeammate'
       )
+      
+      # If this is the first teammate, set it as current
+      if current_company_teammate.person.active_teammates.count == 1
+        session[:current_company_teammate_id] = teammate.id
+      end
       
       redirect_to organizations_path, notice: "You are now following #{organization.name}."
     else
@@ -45,9 +50,21 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   
   def unfollow
     organization = Organization.find(params[:id])
-    teammate = current_person.teammates.find_by(organization: organization)
+    teammate = current_company_teammate.person.teammates.find_by(organization: organization)
     
     if teammate&.follower?
+      # If we're unfollowing the current teammate, switch to another one
+      if teammate.id == current_company_teammate.id
+        other_teammate = current_company_teammate.person.active_teammates.where.not(id: teammate.id).first
+        if other_teammate
+          session[:current_company_teammate_id] = other_teammate.id
+        else
+          # No other teammates - ensure "OurGruuv Demo" teammate exists
+          new_teammate = ensure_teammate_for_person(current_company_teammate.person)
+          session[:current_company_teammate_id] = new_teammate.id
+        end
+      end
+      
       teammate.destroy
       redirect_to organizations_path, notice: "You are no longer following #{organization.name}."
     else
@@ -104,11 +121,22 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   end
   
   def switch
-    if current_person.switch_to_organization(@organization)
-      redirect_to organization_path(@organization), notice: "Switched to #{@organization.display_name}"
-    else
-      redirect_to organizations_path, alert: "Failed to switch organization"
+    # Get root_company of target organization
+    root_company = @organization.root_company || @organization
+    
+    # Find or create teammate for the root_company
+    teammate = current_company_teammate.person.teammates.find_or_create_by!(
+      organization: root_company
+    ) do |t|
+      t.type = 'CompanyTeammate'
+      t.first_employed_at = nil
+      t.last_terminated_at = nil
     end
+    
+    # Update session to use the new teammate
+    session[:current_company_teammate_id] = teammate.id
+    
+    redirect_to organization_path(@organization), notice: "Switched to #{@organization.display_name}"
   end
   
   def huddles_review
@@ -207,7 +235,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   end
   
   def require_authentication
-    unless current_person
+    unless current_company_teammate
       redirect_to root_path, alert: 'Please log in to access organizations.'
     end
   end
@@ -307,8 +335,13 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   end
   
   def load_check_ins_dashboard_stats
-    # Find teammate for current person in this organization
-    teammate = current_person.teammates.find_by(organization: @organization)
+    # Use current teammate if it's in this organization, otherwise find teammate for this organization
+    teammate = if current_company_teammate.organization == @organization || 
+                  current_company_teammate.organization.root_company == @organization.root_company
+      current_company_teammate
+    else
+      current_company_teammate.person.teammates.find_by(organization: @organization)
+    end
     
     if teammate
       # Check for check-ins ready for finalization (manager perspective)

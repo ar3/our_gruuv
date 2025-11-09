@@ -8,25 +8,29 @@ RSpec.describe SeatPolicy, type: :policy do
   let(:position_type) { create(:position_type, organization: organization) }
   let(:seat) { create(:seat, position_type: position_type) }
   
-  let(:maap_manager) { create(:person) }
-  let(:active_employee) { create(:person) }
-  let(:external_user) { create(:person) }
+  let(:maap_manager_person) { create(:person) }
+  let(:active_employee_person) { create(:person) }
+  let(:external_user_person) { create(:person) }
+  
+  let(:maap_manager_teammate) { CompanyTeammate.create!(person: maap_manager_person, organization: organization) }
+  let(:active_employee_teammate) { CompanyTeammate.create!(person: active_employee_person, organization: organization) }
+  let(:external_user_teammate) { CompanyTeammate.create!(person: external_user_person, organization: organization) }
 
   before do
     # Set up permissions
-    allow(maap_manager).to receive(:can_manage_maap?).with(organization).and_return(true)
-    allow(maap_manager).to receive(:active_employment_tenure_in?).with(organization).and_return(false)
+    allow(maap_manager_person).to receive(:can_manage_maap?).with(organization).and_return(true)
+    allow(maap_manager_person).to receive(:active_employment_tenure_in?).with(organization).and_return(false)
     
-    allow(active_employee).to receive(:can_manage_maap?).with(organization).and_return(false)
-    allow(active_employee).to receive(:active_employment_tenure_in?).with(organization).and_return(true)
+    allow(active_employee_person).to receive(:can_manage_maap?).with(organization).and_return(false)
+    allow(active_employee_person).to receive(:active_employment_tenure_in?).with(organization).and_return(true)
     
-    allow(external_user).to receive(:can_manage_maap?).with(organization).and_return(false)
-    allow(external_user).to receive(:active_employment_tenure_in?).with(organization).and_return(false)
+    allow(external_user_person).to receive(:can_manage_maap?).with(organization).and_return(false)
+    allow(external_user_person).to receive(:active_employment_tenure_in?).with(organization).and_return(false)
   end
 
-  let(:pundit_user_maap_manager) { OpenStruct.new(user: maap_manager, pundit_organization: organization) }
-  let(:pundit_user_active_employee) { OpenStruct.new(user: active_employee, pundit_organization: organization) }
-  let(:pundit_user_external_user) { OpenStruct.new(user: external_user, pundit_organization: organization) }
+  let(:pundit_user_maap_manager) { OpenStruct.new(user: maap_manager_teammate, real_user: maap_manager_teammate) }
+  let(:pundit_user_active_employee) { OpenStruct.new(user: active_employee_teammate, real_user: active_employee_teammate) }
+  let(:pundit_user_external_user) { OpenStruct.new(user: external_user_teammate, real_user: external_user_teammate) }
 
   permissions :index? do
     it "allows active employees to view seats" do

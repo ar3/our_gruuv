@@ -2,9 +2,12 @@ require 'rails_helper'
 
 RSpec.describe "Organizations", type: :request do
   let(:person) { create(:person) }
+  let(:organization) { create(:organization) }
 
   before do
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
+    # Sign in but don't set organization (for tests that need no organization)
+    sign_in_as_teammate_for_request(person, organization)
+    # Override to nil for tests that specifically need no organization
     allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(nil)
   end
 

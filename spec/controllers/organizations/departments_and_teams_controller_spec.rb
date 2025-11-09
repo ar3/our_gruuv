@@ -7,7 +7,8 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
   let(:current_person) { create(:person) }
 
   before do
-    allow(controller).to receive(:current_person).and_return(current_person)
+    create(:teammate, person: current_person, organization: organization)
+    sign_in_as_teammate(current_person, organization)
     allow(controller).to receive(:set_organization).and_return(true)
     controller.instance_variable_set(:@organization, organization)
   end

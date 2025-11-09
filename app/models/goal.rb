@@ -30,8 +30,10 @@ class Goal < ApplicationRecord
   
   # Validations
   validates :title, :goal_type, :privacy_level, :owner, :creator, presence: true
+  validates :title, exclusion: { in: [nil, ''], message: "can't be blank" }
   # Target dates are optional - they can be set via timeframe selection or explicitly
   
+  validate :title_not_blank_after_strip
   validate :date_ordering
   validate :privacy_level_for_owner_type
   
@@ -232,6 +234,14 @@ class Goal < ApplicationRecord
     
     if most_likely_target_date > latest_target_date
       errors.add(:base, "most_likely_target_date must be less than or equal to latest_target_date")
+    end
+  end
+  
+  def title_not_blank_after_strip
+    return unless title.present?
+    
+    if title.strip.blank?
+      errors.add(:title, "can't be blank or contain only whitespace")
     end
   end
   

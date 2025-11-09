@@ -4,7 +4,9 @@ RSpec.describe PeopleController, type: :controller do
   let(:person) { create(:person, first_name: 'John', last_name: 'Doe', email: 'john@example.com') }
 
   before do
-    session[:current_person_id] = person.id
+    # Create a teammate for the person - use default organization
+    teammate = create(:teammate, person: person, organization: create(:organization, :company))
+    sign_in_as_teammate(person, teammate.organization)
   end
 
   describe 'GET #show' do
@@ -19,7 +21,7 @@ RSpec.describe PeopleController, type: :controller do
     end
 
     context 'when not logged in' do
-      before { session[:current_person_id] = nil }
+      before { session[:current_company_teammate_id] = nil }
 
       it 'redirects to root path' do
         get :show
@@ -40,7 +42,7 @@ RSpec.describe PeopleController, type: :controller do
     end
 
     context 'when not logged in' do
-      before { session[:current_person_id] = nil }
+      before { session[:current_company_teammate_id] = nil }
 
       it 'redirects to root path' do
         get :edit
@@ -159,7 +161,7 @@ RSpec.describe PeopleController, type: :controller do
     end
 
     context 'when not logged in' do
-      before { session[:current_person_id] = nil }
+      before { session[:current_company_teammate_id] = nil }
 
       it 'redirects to root path' do
         patch :update, params: { person: { first_name: 'Jane' } }

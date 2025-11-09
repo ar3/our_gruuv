@@ -4,29 +4,41 @@ class EmploymentTenurePolicy < ApplicationPolicy
   end
 
   def show?
-    admin_bypass? || record.teammate.person == actual_user
+    return false unless teammate
+    person = teammate.person
+    admin_bypass? || record.teammate.person == person
   end
 
   def create?
-    admin_bypass? || record.teammate.person == actual_user
+    return false unless teammate
+    person = teammate.person
+    admin_bypass? || record.teammate.person == person
   end
 
   def new?
     # For new action, we need to check if user can create for the person in the URL
     # This will be handled in the controller by passing the person context
-    admin_bypass? || actual_user == @person
+    return false unless teammate
+    person = teammate.person
+    admin_bypass? || person == @person
   end
 
   def update?
-    admin_bypass? || record.teammate.person == actual_user
+    return false unless teammate
+    person = teammate.person
+    admin_bypass? || record.teammate.person == person
   end
 
   def destroy?
-    admin_bypass? || record.teammate.person == actual_user
+    return false unless teammate
+    person = teammate.person
+    admin_bypass? || record.teammate.person == person
   end
 
   def change?
-    admin_bypass? || record.teammate.person == actual_user
+    return false unless teammate
+    person = teammate.person
+    admin_bypass? || record.teammate.person == person
   end
 
   def add_history?
@@ -34,15 +46,19 @@ class EmploymentTenurePolicy < ApplicationPolicy
   end
 
   def employment_summary?
-    admin_bypass? || record.teammate.person == actual_user
+    return false unless teammate
+    person = teammate.person
+    admin_bypass? || record.teammate.person == person
   end
 
-  class Scope < Scope
+  class Scope < ApplicationPolicy::Scope
     def resolve
-      if actual_user&.admin?
+      return scope.none unless teammate
+      person = teammate.person
+      if person&.admin?
         scope.all
       else
-        scope.joins(:teammate).where(teammates: { person: actual_user })
+        scope.joins(:teammate).where(teammates: { person: person })
       end
     end
   end

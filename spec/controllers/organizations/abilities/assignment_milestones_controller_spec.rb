@@ -10,9 +10,8 @@ RSpec.describe Organizations::Abilities::AssignmentMilestonesController, type: :
   let!(:assignment3) { create(:assignment, company: company) }
 
   before do
-    session[:current_person_id] = person.id
-    create(:teammate, person: person, organization: company, can_manage_maap: true)
-    allow(controller).to receive(:current_person).and_return(person)
+    teammate = create(:teammate, person: person, organization: company, can_manage_maap: true)
+    sign_in_as_teammate(person, company)
   end
 
   describe 'GET #show' do

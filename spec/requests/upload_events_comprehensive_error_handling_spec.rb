@@ -6,9 +6,7 @@ RSpec.describe 'UploadEventsController comprehensive error handling', type: :req
   let(:file) { fixture_file_upload('test.csv', 'text/csv') }
   
   before do
-    # Mock authentication
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+    sign_in_as_teammate_for_request(person, organization)
     allow(person).to receive(:can_manage_employment?).and_return(true)
   end
 

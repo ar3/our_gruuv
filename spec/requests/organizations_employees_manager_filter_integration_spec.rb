@@ -21,7 +21,7 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
     manager_teammate.update!(first_employed_at: 1.month.ago)
     
     # Mock authentication for manager
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)
+    sign_in_as_teammate_for_request(manager, organization)
   end
 
   it 'filters results when manager has direct reports' do
@@ -34,9 +34,9 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
     teammates = assigns(:teammates)
     
     # Should only include direct report, not non-direct report or manager
-    expect(teammates).to include(direct_report_teammate)
-    expect(teammates).not_to include(non_direct_report_teammate)
-    expect(teammates).not_to include(manager_teammate)
+    expect(teammates.map(&:id)).to include(direct_report_teammate.id)
+    expect(teammates.map(&:id)).not_to include(non_direct_report_teammate.id)
+    expect(teammates.map(&:id)).not_to include(manager_teammate.id)
   end
 
   it 'redirects when manager has no direct reports' do

@@ -20,11 +20,11 @@ class HuddlePolicy < ApplicationPolicy
   end
 
   def join_huddle?
-    user.present?
+    teammate.present?
   end
 
   def direct_feedback?
-    user.present?
+    teammate.present?
   end
 
   def feedback?
@@ -59,7 +59,9 @@ class HuddlePolicy < ApplicationPolicy
   private
 
   def user_participant
-    @user_participant ||= record.huddle_participants.joins(:teammate).find_by(teammates: { person: actual_user })
+    return nil unless teammate
+    person = teammate.person
+    @user_participant ||= record.huddle_participants.joins(:teammate).find_by(teammates: { person: person })
   end
 
   def facilitator_or_department_head?
@@ -72,16 +74,17 @@ class HuddlePolicy < ApplicationPolicy
 
   def department_head?
     # The department head is defined by the huddle's organization
-    record.organization&.department_head == actual_user
+    return false unless teammate
+    person = teammate.person
+    record.organization&.department_head == person
   end
 
-  class Scope < Scope
+  class Scope < ApplicationPolicy::Scope
     def resolve
-      if actual_user
-        scope.joins(huddle_participants: :teammate).where(teammates: { person: actual_user })
-      else
-        scope.active
-      end
+      return scope.active unless teammate
+      person = teammate.person
+      return scope.active unless person
+      scope.joins(huddle_participants: :teammate).where(teammates: { person: person })
     end
   end
 end

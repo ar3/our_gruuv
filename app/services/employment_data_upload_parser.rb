@@ -433,6 +433,7 @@ class EmploymentDataUploadParser
     manager_rating = parse_rating(row_hash['manager_rating'])
     employee_rating = parse_rating(row_hash['employee_rating'])
     official_rating = parse_rating(row_hash['official_rating'])
+    employee_personal_alignment = parse_personal_alignment(row_hash['employee_personal_alignment'])
 
     {
       'check_in_date' => check_in_date,
@@ -442,7 +443,7 @@ class EmploymentDataUploadParser
       'official_rating' => official_rating,
       'manager_private_notes' => row_hash['manager_private_notes']&.strip,
       'employee_private_notes' => row_hash['employee_private_notes']&.strip,
-      'employee_personal_alignment' => row_hash['employee_personal_alignment']&.strip,
+      'employee_personal_alignment' => employee_personal_alignment,
       'row' => row_num
     }
   end
@@ -706,6 +707,36 @@ class EmploymentDataUploadParser
     
     rating = value.to_s.strip.downcase
     VALID_RATINGS.include?(rating) ? rating : nil
+  end
+
+  def parse_personal_alignment(value)
+    return nil if value.blank?
+    
+    alignment = value.to_s.strip.downcase
+    
+    # Try exact match with enum values first
+    valid_alignments = %w[love like neutral prefer_not only_if_necessary]
+    return alignment if valid_alignments.include?(alignment)
+    
+    # Map common variations to enum values
+    case alignment
+    when /^love/
+      'love'
+    when /^like/
+      'like'
+    when /^neutral/
+      'neutral'
+    when /^prefer\s*not/
+      'prefer_not'
+    when /^don'?t\s*want/
+      'prefer_not'
+    when /^only\s*if\s*necessary/
+      'only_if_necessary'
+    when /^if\s*necessary/
+      'only_if_necessary'
+    else
+      nil
+    end
   end
 
   private

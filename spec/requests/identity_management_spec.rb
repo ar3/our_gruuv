@@ -2,11 +2,11 @@ require 'rails_helper'
 
 RSpec.describe 'Identity Management', type: :request do
   let(:company) { create(:organization, name: 'Test Company', type: 'Company') }
-  let(:person) { create(:person, current_organization: company) }
+  let(:person) { create(:person) }
   let(:google_identity) { create(:person_identity, person: person, provider: 'google_oauth2', email: 'test@gmail.com') }
 
   before do
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
+    sign_in_as_teammate_for_request(person, company)
   end
 
   describe 'GET /profile' do

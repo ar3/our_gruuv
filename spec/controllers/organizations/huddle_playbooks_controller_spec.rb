@@ -6,7 +6,8 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
   let(:huddle_playbook) { create(:huddle_playbook, organization: organization) }
 
   before do
-    session[:current_person_id] = person.id
+    create(:teammate, person: person, organization: organization)
+    sign_in_as_teammate(person, organization)
   end
 
   describe 'GET #show' do
@@ -33,7 +34,7 @@ RSpec.describe Organizations::HuddlePlaybooksController, type: :controller do
 
     it 'handles huddles with feedback correctly' do
       huddle = create(:huddle, huddle_playbook: huddle_playbook)
-      teammate = create(:teammate, person: person, organization: organization)
+      teammate = person.teammates.find_by(organization: organization)
       feedback = create(:huddle_feedback, huddle: huddle, teammate: teammate, 
                        informed_rating: 4, connected_rating: 4, goals_rating: 4, valuable_rating: 4)
       

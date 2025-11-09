@@ -132,8 +132,5 @@ RSpec.shared_context 'check_in_test_data' do
     support_employee
     support_employee_teammate
     support_employee_employment
-    
-    # Set current organization for manager
-    manager.update!(current_organization: company)
   end
 end

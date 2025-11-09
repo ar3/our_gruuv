@@ -5,9 +5,9 @@ RSpec.describe Organizations::AbilitiesController, type: :controller do
   let(:organization) { create(:organization, name: 'Test Company', type: 'Company') }
 
   before do
-    session[:current_person_id] = person.id
     # Create a teammate for the person in the organization with MAAP management permissions
     create(:teammate, person: person, organization: organization, can_manage_maap: true)
+    sign_in_as_teammate(person, organization)
   end
 
   describe 'GET #new' do
@@ -95,7 +95,8 @@ RSpec.describe Organizations::AbilitiesController, type: :controller do
         version = versions.first
         
         expect(version.meta).to be_present
-        expect(version.meta['current_person_id']).to eq(person.id)
+        teammate = person.teammates.find_by(organization: organization)
+        expect(version.meta['current_teammate_id']).to eq(teammate.id)
       end
     end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_07_123816) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_09_101540) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -461,13 +461,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_07_123816) do
     t.datetime "updated_at", null: false
     t.string "email"
     t.string "timezone"
-    t.integer "current_organization_id"
     t.boolean "og_admin", default: false, null: false
     t.string "preferred_name"
     t.string "gender_identity"
     t.string "pronouns"
     t.string "slack_user_id"
-    t.index ["current_organization_id"], name: "index_people_on_current_organization_id"
     t.index ["og_admin"], name: "index_people_on_og_admin"
     t.index ["unique_textable_phone_number"], name: "index_people_on_unique_textable_phone_number", unique: true
   end
@@ -789,7 +787,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_07_123816) do
   add_foreign_key "observees", "observations"
   add_foreign_key "observees", "teammates"
   add_foreign_key "organizations", "organizations", column: "parent_id"
-  add_foreign_key "people", "organizations", column: "current_organization_id"
   add_foreign_key "person_identities", "people"
   add_foreign_key "position_assignments", "assignments"
   add_foreign_key "position_assignments", "positions"

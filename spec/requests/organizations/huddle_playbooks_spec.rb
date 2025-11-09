@@ -5,7 +5,7 @@ RSpec.describe "Organizations::HuddlePlaybooks", type: :request do
   let(:person) { create(:person) }
 
   before do
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
+    sign_in_as_teammate_for_request(person, organization)
   end
 
   describe "GET /index" do

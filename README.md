@@ -19,6 +19,11 @@ git push origin main && railway up
 
 This is your central guide to understanding OurGruuv's architecture, patterns, and conventions.
 
+To run the full spec suite, use the following command because there are spec leaks that I haven't spent the time to debug:
+
+`1. Review our testing strategy doc`
+`2. Run all specs in segments. Make sure you run each segment and each folder of the system specs separately in different commands, updating the last_full_spec_suite doc after every folder/segment. Do not run multiple segments/folders in one command. Remember to get the real date/time.`
+
 ### 🎯 For AI Agents
 
 **Start here**: [docs/RULES/overview.md](docs/RULES/overview.md) - Complete rules and patterns overview

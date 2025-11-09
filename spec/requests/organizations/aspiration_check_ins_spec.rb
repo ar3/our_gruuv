@@ -7,9 +7,10 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
   let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
   let(:aspiration) { create(:aspiration, organization: organization, name: 'Test Aspiration') }
   
+  let(:manager_teammate) { create(:teammate, person: manager_person, organization: organization) }
+
   before do
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager_person)
-    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+    sign_in_as_teammate_for_request(manager_person, organization)
     allow(manager_person).to receive(:can_manage_employment?).with(organization).and_return(true)
     allow(manager_person).to receive(:can_manage_employment?).and_return(true)
     

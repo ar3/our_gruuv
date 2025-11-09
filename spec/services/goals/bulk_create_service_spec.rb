@@ -46,9 +46,12 @@ RSpec.describe Goals::BulkCreateService, type: :service do
         created_goals.each do |goal|
           expect(goal.goal_type).to eq('quantitative_key_result')
           expect(goal.most_likely_target_date).to be_nil
-          expect(goal.owner).to eq(linking_goal.owner)
+          expect(goal.owner).to be_a(Teammate)
+          expect(goal.owner.id).to eq(linking_goal.owner.id)
           expect(goal.privacy_level).to eq(linking_goal.privacy_level)
-          expect(goal.creator).to eq(teammate)
+          # Approach 1: Compare by ID instead of object identity (STI issue)
+          expect(goal.creator.id).to eq(teammate.id)
+          expect(goal.creator).to be_a(CompanyTeammate)
         end
         
         expect(service.created_goals).to eq(created_goals)
@@ -96,7 +99,8 @@ RSpec.describe Goals::BulkCreateService, type: :service do
         created_goals.each do |goal|
           expect(goal.goal_type).to eq('inspirational_objective')
           expect(goal.most_likely_target_date).to be_nil
-          expect(goal.owner).to eq(linking_goal.owner)
+          expect(goal.owner).to be_a(Teammate)
+          expect(goal.owner.id).to eq(linking_goal.owner.id)
           expect(goal.privacy_level).to eq(linking_goal.privacy_level)
         end
       end

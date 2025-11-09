@@ -20,7 +20,6 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
   let(:huddle_participation) { create(:huddle_participant, huddle: huddle, teammate: create(:teammate, person: huddle_participant, organization: team)) }
 
   before do
-    session[:current_person_id] = person.id
     employment_tenure1
     employment_tenure2
     huddle_participation
@@ -28,6 +27,11 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
     # Set first_employed_at on teammates to make them assigned employees
     employee1_teammate.update!(first_employed_at: 1.year.ago)
     employee2_teammate.update!(first_employed_at: 6.months.ago)
+    
+    # Create teammate for person and sign in
+    person_teammate = create(:teammate, person: person, organization: company)
+    session[:current_company_teammate_id] = person_teammate.id
+    @current_company_teammate = nil if defined?(@current_company_teammate)
   end
 
   describe 'GET #index' do
@@ -40,7 +44,8 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       get :index, params: { organization_id: company.id }
       
       expect(assigns(:organization).id).to eq(company.id)
-      expect(assigns(:teammates)).to include(employee1_teammate, employee2_teammate)
+      # Compare by ID since controller may return different instances
+      expect(assigns(:teammates).map(&:id)).to include(employee1_teammate.id, employee2_teammate.id)
       expect(assigns(:spotlight_stats)).to be_present
       expect(assigns(:spotlight_stats)[:assigned_employees]).to eq(2)
     end
@@ -79,6 +84,10 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
 
     it 'handles organizations with no employees gracefully' do
       empty_company = create(:organization, :company)
+      # Create teammate for person in empty_company and switch session to it
+      empty_teammate = create(:teammate, person: person, organization: empty_company)
+      session[:current_company_teammate_id] = empty_teammate.id
+      @current_company_teammate = nil if defined?(@current_company_teammate)
       
       get :index, params: { organization_id: empty_company.id }
       
@@ -90,19 +99,20 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
 
   describe 'GET #audit' do
     let(:maap_manager) { create(:person) }
-    let(:maap_access) { create(:teammate, person: maap_manager, organization: company, can_manage_maap: true) }
+    let!(:maap_access) { create(:teammate, person: maap_manager, organization: company, can_manage_maap: true) }
     let(:maap_snapshot1) { create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: company, change_type: 'assignment_management') }
     let(:maap_snapshot2) { create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: company, change_type: 'position_tenure') }
 
     before do
-      maap_access
       maap_snapshot1
       maap_snapshot2
     end
 
     context 'when user has MAAP management permissions' do
       before do
-        session[:current_person_id] = maap_manager.id
+        # Use existing teammate to avoid duplicate
+        session[:current_company_teammate_id] = maap_access.id
+        @current_company_teammate = nil if defined?(@current_company_teammate)
       end
 
       it 'returns http success' do
@@ -132,7 +142,8 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       let(:unauthorized_user) { create(:person) }
       
       before do
-        session[:current_person_id] = unauthorized_user.id
+        unauthorized_teammate = create(:teammate, person: unauthorized_user, organization: company)
+        sign_in_as_teammate(unauthorized_user, company)
       end
 
       it 'redirects when authorization fails' do
@@ -144,7 +155,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
 
     context 'when user is the person themselves' do
       before do
-        session[:current_person_id] = employee1.id
+        sign_in_as_teammate(employee1, company)
       end
 
       it 'allows access to own audit view' do

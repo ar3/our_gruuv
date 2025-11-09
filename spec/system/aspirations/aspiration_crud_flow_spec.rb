@@ -1,31 +1,29 @@
 require 'rails_helper'
 
 RSpec.describe 'Aspiration CRUD Flow', type: :system do
-  let(:organization) { create(:organization, :company) }
+  let(:company) { create(:organization, :company) }
+  let(:department) { create(:organization, :department, parent: company) }
   let(:person) { create(:person) }
   let(:maap_user) { create(:person) }
-  let!(:teammate) { create(:teammate, person: person, organization: organization, can_manage_maap: false) }
-  let!(:maap_teammate) { create(:teammate, person: maap_user, organization: organization, can_manage_maap: true) }
+  let!(:company_teammate) { CompanyTeammate.create!(person: maap_user, organization: company, can_manage_maap: true) }
+  let!(:department_teammate) { CompanyTeammate.create!(person: maap_user, organization: department, can_manage_maap: true) }
 
   describe 'Complete Aspiration CRUD Flow' do
     context 'when user has MAAP permissions' do
       before do
-        # Mock authentication
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(maap_user)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
-        allow(maap_user).to receive(:can_manage_maap?).and_return(true)
+        sign_in_as(maap_user, company)
       end
 
-      it 'performs full CRUD operations: index -> new -> create -> show -> index' do
+      it 'performs full CRUD operations on company: index -> new -> create -> show -> index' do
         # Step 1: Visit the aspirations index
-        visit organization_aspirations_path(organization)
+        visit organization_aspirations_path(company)
         
         # Should see the aspirations index page
         expect(page).to have_content('Aspirations')
-        expect(page).to have_link(href: new_organization_aspiration_path(organization))
+        expect(page).to have_link(href: new_organization_aspiration_path(company))
         
         # Step 2: Click to create a new aspiration
-        first(:link, href: new_organization_aspiration_path(organization)).click
+        first(:link, href: new_organization_aspiration_path(company)).click
         
         # Should be on the new aspiration form
         expect(page).to have_content('New Aspiration')
@@ -42,7 +40,8 @@ RSpec.describe 'Aspiration CRUD Flow', type: :system do
         click_button 'Create Aspiration'
         
         # Step 4: Should be redirected to index with success message
-        expect(page).to have_content('Aspiration was successfully created')
+        # Check flash message (may be in DOM but not visible in toast)
+        expect(page).to have_success_flash('Aspiration was successfully created')
         expect(page).to have_content('Aspirations')
         
         # Should see the new aspiration in the list
@@ -63,8 +62,40 @@ RSpec.describe 'Aspiration CRUD Flow', type: :system do
         expect(page).to have_content('Test Aspiration')
       end
 
+      it 'performs full CRUD operations on department' do
+        # Create aspiration on department
+        visit new_organization_aspiration_path(department)
+        expect(page).to have_content('New Aspiration')
+        
+        fill_in 'aspiration_name', with: 'Department Aspiration'
+        fill_in 'aspiration_description', with: 'Aspiration for department'
+        fill_in 'aspiration_sort_order', with: '5'
+        
+        click_button 'Create Aspiration'
+        
+        expect(page).to have_success_flash('Aspiration was successfully created')
+        expect(page).to have_content('Department Aspiration')
+        
+        aspiration = Aspiration.last
+        expect(aspiration.organization).to be_a(Organization)
+        expect(aspiration.organization.id).to eq(department.id)
+        
+        # View on department index
+        visit organization_aspirations_path(department)
+        expect(page).to have_content('Department Aspiration')
+        
+        # Update
+        visit edit_organization_aspiration_path(department, aspiration)
+        fill_in 'aspiration_name', with: 'Updated Department Aspiration'
+        click_button 'Update Aspiration'
+        
+        expect(page).to have_content('Updated Department Aspiration')
+        aspiration.reload
+        expect(aspiration.name).to eq('Updated Department Aspiration')
+      end
+
       it 'shows validation errors for missing required fields' do
-        visit new_organization_aspiration_path(organization)
+        visit new_organization_aspiration_path(company)
         
         # Try to submit empty form
         click_button 'Create Aspiration'
@@ -78,10 +109,10 @@ RSpec.describe 'Aspiration CRUD Flow', type: :system do
 
       it 'handles organization selection properly' do
         # Create a child organization
-        child_org = create(:organization, :company, parent: organization)
-        create(:teammate, person: maap_user, organization: child_org, can_manage_maap: true)
+        child_org = create(:organization, :company, parent: company)
+        CompanyTeammate.create!(person: maap_user, organization: child_org, can_manage_maap: true)
         
-        visit new_organization_aspiration_path(organization)
+        visit new_organization_aspiration_path(company)
         
         # Should see organization dropdown
         expect(page).to have_select('aspiration_organization_id')
@@ -97,7 +128,7 @@ RSpec.describe 'Aspiration CRUD Flow', type: :system do
         click_button 'Create Aspiration'
         
         # Should be redirected with success
-        expect(page).to have_content('Aspiration was successfully created')
+        expect(page).to have_success_flash('Aspiration was successfully created')
         
         # Verify the aspiration was created for the correct organization
         aspiration = Aspiration.find_by(name: 'Child Org Aspiration')
@@ -106,9 +137,9 @@ RSpec.describe 'Aspiration CRUD Flow', type: :system do
 
       it 'prevents duplicate aspiration names within same organization' do
         # Create an existing aspiration
-        existing_aspiration = create(:aspiration, organization: organization, name: 'Existing Aspiration')
+        existing_aspiration = create(:aspiration, organization: company, name: 'Existing Aspiration')
         
-        visit new_organization_aspiration_path(organization)
+        visit new_organization_aspiration_path(company)
         
         # Try to create another with same name
         fill_in 'aspiration_name', with: 'Existing Aspiration'
@@ -126,13 +157,13 @@ RSpec.describe 'Aspiration CRUD Flow', type: :system do
 
       it 'allows same aspiration name in different organizations' do
         # Create a child organization within the same company
-        other_org = create(:organization, :company, parent: organization)
-        create(:teammate, person: maap_user, organization: other_org, can_manage_maap: true)
+        other_org = create(:organization, :company, parent: company)
+        CompanyTeammate.create!(person: maap_user, organization: other_org, can_manage_maap: true)
         
         # Create aspiration in first organization
-        create(:aspiration, organization: organization, name: 'Shared Name')
+        create(:aspiration, organization: company, name: 'Shared Name')
         
-        visit new_organization_aspiration_path(organization)
+        visit new_organization_aspiration_path(company)
         
         # Select other organization
         select other_org.name, from: 'aspiration_organization_id'
@@ -145,7 +176,7 @@ RSpec.describe 'Aspiration CRUD Flow', type: :system do
         click_button 'Create Aspiration'
         
         # Should succeed
-        expect(page).to have_content('Aspiration was successfully created')
+        expect(page).to have_success_flash('Aspiration was successfully created')
         
         # Verify both aspirations exist
         expect(Aspiration.where(name: 'Shared Name').count).to eq(2)
@@ -153,19 +184,18 @@ RSpec.describe 'Aspiration CRUD Flow', type: :system do
     end
 
     context 'when user is a regular teammate' do
+      let!(:regular_teammate) { CompanyTeammate.create!(person: person, organization: company, can_manage_maap: false) }
+      
       before do
-        # Mock authentication
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
-        allow(person).to receive(:can_manage_maap?).and_return(false)
+        sign_in_as(person, company)
       end
 
       it 'can view aspirations but sees disabled buttons with warning icons' do
         # Create an aspiration to view
-        aspiration = create(:aspiration, organization: organization, name: 'Test Aspiration')
+        aspiration = create(:aspiration, organization: company, name: 'Test Aspiration')
         
         # Visit the aspirations index
-        visit organization_aspirations_path(organization)
+        visit organization_aspirations_path(company)
         
         # Should see the aspirations index page
         expect(page).to have_content('Aspirations')

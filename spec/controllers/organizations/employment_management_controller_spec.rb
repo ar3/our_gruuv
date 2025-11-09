@@ -15,12 +15,14 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
     create(:employment_tenure, teammate: manager_teammate, company: organization, position: position)
     
     # Set up person organization access for current user
-    create(:teammate, 
+    person_teammate = create(:teammate, 
            person: person, 
            organization: organization, 
            can_create_employment: true)
     
-    session[:current_person_id] = person.id
+    # Use existing teammate to avoid duplicate
+    session[:current_company_teammate_id] = person_teammate.id
+    @current_company_teammate = nil if defined?(@current_company_teammate)
   end
   
   describe 'GET #index' do
@@ -44,8 +46,9 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
     
     context 'when user lacks create employment permission' do
       before do
-        # Remove the person organization access completely
-        person.teammates.destroy_all
+        # Remove the create employment permission but keep the teammate
+        teammate = person.teammates.find_by(organization: organization)
+        teammate.update!(can_create_employment: false)
         # Verify the permission is actually removed
         expect(person.can_create_employment?(organization)).to be false
       end
@@ -168,8 +171,9 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
     
     context 'when user lacks create employment permission' do
       before do
-        # Remove the person organization access completely
-        person.teammates.destroy_all
+        # Remove the create employment permission but keep the teammate
+        teammate = person.teammates.find_by(organization: organization)
+        teammate.update!(can_create_employment: false)
         # Verify the permission is actually removed
         expect(person.can_create_employment?(organization)).to be false
       end

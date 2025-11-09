@@ -254,7 +254,7 @@ class PeopleController < ApplicationController
   helper_method :employment_has_changes?, :assignment_has_changes?, :milestone_has_changes?, :check_in_has_changes?, :can_see_manager_private_notes?
 
   def change_detection_service
-    @change_detection_service ||= MaapChangeDetectionService.new(person: person, maap_snapshot: maap_snapshot, current_user: current_person)
+    @change_detection_service ||= MaapChangeDetectionService.new(person: person, maap_snapshot: maap_snapshot, current_user: current_company_teammate)
   end
 
   def execute_maap_changes!

@@ -4,13 +4,13 @@ class PagesController < ApplicationController
   def home
     if current_person
       # If logged in but no current organization, redirect to organization switcher
-      if current_person.current_organization.nil?
+      if current_organization.nil?
         redirect_to switch_organizations_path
         return
       end
       
       # If logged in with current organization, redirect to organization dashboard
-      redirect_to dashboard_organization_path(current_person.current_organization)
+      redirect_to dashboard_organization_path(current_organization)
       return
     end
     

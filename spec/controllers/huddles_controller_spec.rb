@@ -10,7 +10,9 @@ RSpec.describe HuddlesController, type: :controller do
   let!(:participant) { create(:huddle_participant, huddle: huddle, teammate: teammate, role: 'active') }
 
   before do
-    session[:current_person_id] = person.id
+    # Use existing teammate to avoid duplicate
+    session[:current_company_teammate_id] = teammate.id
+    @current_company_teammate = nil if defined?(@current_company_teammate)
   end
 
   describe 'GET #show' do
@@ -20,7 +22,7 @@ RSpec.describe HuddlesController, type: :controller do
     end
 
     it 'redirects to join page when user is not logged in' do
-      session[:current_person_id] = nil
+      session[:current_company_teammate_id] = nil
       get :show, params: { id: huddle.id }
       expect(response).to redirect_to(join_huddle_path(huddle))
     end
@@ -247,7 +249,7 @@ RSpec.describe HuddlesController, type: :controller do
 
     context 'when user is not logged in' do
       before do
-        session[:current_person_id] = nil
+        session[:current_company_teammate_id] = nil
       end
 
       it 'redirects to join page' do
@@ -275,9 +277,7 @@ RSpec.describe HuddlesController, type: :controller do
     let(:company) { organization.root_company }
     
     before do
-      session[:current_person_id] = person.id
-      allow(controller).to receive(:current_organization).and_return(organization)
-      allow(controller).to receive(:current_person).and_return(person)
+      sign_in_as_teammate(person, organization)
     end
 
     it 'renders the index view without routing errors' do
@@ -470,7 +470,6 @@ RSpec.describe HuddlesController, type: :controller do
     before do
       allow(controller).to receive(:find_or_create_organization).and_return(team)
       allow(controller).to receive(:get_or_create_person_from_session_or_params).and_return(person)
-      allow(controller).to receive(:current_person).and_return(person)
       allow(Huddles::PostAnnouncementJob).to receive(:perform_and_get_result)
       allow(Huddles::PostSummaryJob).to receive(:perform_and_get_result)
       allow(Companies::WeeklyHuddlesReviewNotificationJob).to receive(:perform_later)
@@ -709,7 +708,7 @@ RSpec.describe HuddlesController, type: :controller do
     end
 
     it 'redirects to auth when user is not logged in' do
-      session[:current_person_id] = nil
+      session[:current_company_teammate_id] = nil
       get :direct_feedback, params: { id: huddle.id }
       expect(response).to redirect_to('/auth/google_oauth2')
     end
@@ -766,7 +765,6 @@ RSpec.describe HuddlesController, type: :controller do
 
       before do
         controller.instance_variable_set(:@current_organization, organization)
-        allow(controller).to receive(:current_person).and_return(person)
       end
 
       it 'returns empty hash when no active huddles exist' do

@@ -272,7 +272,8 @@ RSpec.describe AspirationCheckIn, type: :model do
           }.to change(AspirationCheckIn, :count).by(1)
           
           check_in = AspirationCheckIn.last
-          expect(check_in.teammate).to eq(teammate)
+          expect(check_in.teammate).to be_a(Teammate)
+          expect(check_in.teammate.id).to eq(teammate.id)
           expect(check_in.aspiration).to eq(aspiration)
           expect(check_in.check_in_started_on).to eq(Date.current)
           expect(check_in.official_check_in_completed_at).to be_nil

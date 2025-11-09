@@ -4,8 +4,8 @@ RSpec.describe MaapChangeExecutionService do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:manager) { create(:person) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
-  let(:person_teammate) { create(:teammate, person: person, organization: organization) }
+  let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
+  let(:person_teammate) { CompanyTeammate.create!(person: person, organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
   let(:service) { described_class.new(maap_snapshot: maap_snapshot, current_user: current_user) }
 
@@ -16,7 +16,7 @@ RSpec.describe MaapChangeExecutionService do
 
   describe '#execute!' do
     context 'with assignment_management change type' do
-      let(:current_user) { manager }
+      let(:current_user) { manager_teammate }
       let(:maap_snapshot) do
         create(:maap_snapshot,
                employee: person,
@@ -74,8 +74,9 @@ RSpec.describe MaapChangeExecutionService do
         end
 
         before do
-          allow_any_instance_of(PersonPolicy).to receive(:manage_assignments?).and_return(true)
           check_in # Create the check-in
+          # Stub authorization methods in the service
+          allow_any_instance_of(described_class).to receive(:can_update_manager_check_in_fields?).and_return(true)
         end
 
         it 'updates manager check-in fields' do
@@ -134,7 +135,7 @@ RSpec.describe MaapChangeExecutionService do
       end
 
       context 'when updating employee check-in fields' do
-        let(:current_user) { person }
+        let(:current_user) { person_teammate }
         let(:check_in) do
           create(:assignment_check_in,
                  teammate: person_teammate,
@@ -177,7 +178,7 @@ RSpec.describe MaapChangeExecutionService do
       end
 
       context 'when unchecking employee completion' do
-        let(:current_user) { person }
+        let(:current_user) { person_teammate }
         let(:check_in) do
           create(:assignment_check_in,
                  teammate: person_teammate,
@@ -219,7 +220,7 @@ RSpec.describe MaapChangeExecutionService do
       end
 
       context 'when updating official check-in fields' do
-        let(:current_user) { manager }
+        let(:current_user) { manager_teammate }
         let(:check_in) do
           create(:assignment_check_in,
                  teammate: person_teammate,
@@ -243,8 +244,9 @@ RSpec.describe MaapChangeExecutionService do
         end
 
         before do
-          allow_any_instance_of(PersonPolicy).to receive(:manage_assignments?).and_return(true)
           check_in # Create the check-in
+          # Stub authorization methods in the service
+          allow_any_instance_of(described_class).to receive(:can_finalize_check_in?).and_return(true)
         end
 
         it 'updates official check-in fields' do
@@ -260,7 +262,7 @@ RSpec.describe MaapChangeExecutionService do
       end
 
       context 'when creating a new check-in' do
-        let(:current_user) { manager }
+        let(:current_user) { manager_teammate }
         let(:maap_data) do
           {
             'assignments' => [
@@ -277,7 +279,8 @@ RSpec.describe MaapChangeExecutionService do
         end
 
         before do
-          allow_any_instance_of(PersonPolicy).to receive(:manage_assignments?).and_return(true)
+          # Stub authorization methods in the service
+          allow_any_instance_of(described_class).to receive(:can_update_manager_check_in_fields?).and_return(true)
         end
 
         it 'creates a new check-in' do
@@ -293,7 +296,7 @@ RSpec.describe MaapChangeExecutionService do
       end
 
       context 'when user lacks authorization' do
-        let(:current_user) { person } # Employee trying to update manager fields
+        let(:current_user) { person_teammate } # Employee trying to update manager fields
         let(:check_in) do
           create(:assignment_check_in,
                  teammate: person_teammate,
@@ -329,7 +332,9 @@ RSpec.describe MaapChangeExecutionService do
       end
 
       context 'when admin bypass is enabled' do
-        let(:current_user) { create(:person, og_admin: true) }
+        let(:admin_person) { create(:person, og_admin: true) }
+        let(:admin_teammate) { CompanyTeammate.create!(person: admin_person, organization: organization) }
+        let(:current_user) { admin_teammate }
         let(:check_in) do
           create(:assignment_check_in,
                  teammate: person_teammate,
@@ -366,7 +371,7 @@ RSpec.describe MaapChangeExecutionService do
     end
 
     context 'with unsupported change type' do
-      let(:current_user) { manager }
+      let(:current_user) { manager_teammate }
       let(:maap_snapshot) do
         create(:maap_snapshot,
                employee: person,
@@ -394,7 +399,7 @@ RSpec.describe MaapChangeExecutionService do
     end
 
     context 'when an error occurs' do
-      let(:current_user) { manager }
+      let(:current_user) { manager_teammate }
       let(:maap_snapshot) do
         create(:maap_snapshot,
                employee: person,

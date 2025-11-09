@@ -42,7 +42,7 @@ RSpec.describe KudosController, type: :controller do
 
       context 'when user is authenticated and is the observer' do
         before do
-          session[:current_person_id] = observer.id
+          sign_in_as_teammate(observer, company)
         end
 
         it 'renders the kudos page' do
@@ -63,8 +63,7 @@ RSpec.describe KudosController, type: :controller do
         let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
         
         before do
-          session[:current_person_id] = other_person.id
-          other_teammate # Ensure teammate is created
+          sign_in_as_teammate(other_person, company)
         end
 
         it 'raises NotAuthorizedError' do
@@ -82,7 +81,7 @@ RSpec.describe KudosController, type: :controller do
 
       context 'when user is the observer' do
         before do
-          session[:current_person_id] = observer.id
+          sign_in_as_teammate(observer, company)
         end
 
         it 'renders the kudos page' do
@@ -93,7 +92,7 @@ RSpec.describe KudosController, type: :controller do
 
       context 'when user is an observee' do
         before do
-          session[:current_person_id] = observee_person.id
+          sign_in_as_teammate(observee_person, company)
         end
 
         it 'renders the kudos page' do
@@ -107,8 +106,7 @@ RSpec.describe KudosController, type: :controller do
         let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
         
         before do
-          session[:current_person_id] = other_person.id
-          other_teammate # Ensure teammate is created
+          sign_in_as_teammate(other_person, company)
         end
 
         it 'raises NotAuthorizedError' do

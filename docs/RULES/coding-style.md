@@ -238,24 +238,26 @@ Even then, consider if the readability benefits outweigh the performance costs.
 
 ## Policies
 
-### Always Use `actual_user` Instead of `user`
+### Policies Exclusively Accept CompanyTeammate
+
+**Policies must exclusively receive `CompanyTeammate` objects (with organization type of company), not `Person` objects.**
 
 **✅ Good:**
 ```ruby
 class ObservationPolicy < ApplicationPolicy
   def show?
-    actual_user == record.observer
+    teammate.person == record.observer
   end
 
   def create?
-    actual_user.present?
+    teammate.present?
   end
 
   private
 
   def user_in_observees?
-    return false unless actual_user.is_a?(Person)
-    record.observed_teammates.any? { |teammate| teammate.person == actual_user }
+    person = teammate.person
+    record.observed_teammates.any? { |observed_teammate| observed_teammate.person == person }
   end
 end
 ```
@@ -264,50 +266,87 @@ end
 ```ruby
 class ObservationPolicy < ApplicationPolicy
   def show?
-    user == record.observer  # Wrong - bypasses impersonation
+    actual_user == record.observer  # Wrong - actual_user/actual_person removed
   end
 
   def create?
-    user.present?  # Wrong - bypasses impersonation
+    actual_person.present?  # Wrong - actual_person removed
   end
 end
 ```
-
-### Why Use `actual_user`?
-
-1. **Impersonation Support**: The `user` parameter may be a wrapper object that supports impersonation
-2. **Consistency**: All existing policies use `actual_user` (99+ instances across codebase)
-3. **Admin Bypass**: The `admin_bypass?` method uses `real_user` to prevent impersonation bypass
-4. **Future-Proof**: Supports authentication system changes without breaking policies
 
 ### Policy Pattern
 
 ```ruby
 class ApplicationPolicy
-  # Helper method to get the actual user from pundit_user
-  def actual_user
-    user.respond_to?(:user) ? user.user : user
+  attr_reader :pundit_user, :record
+
+  def initialize(pundit_user, record)
+    @pundit_user = pundit_user
+    @record = record
+    validate_teammate!
+  end
+
+  # Helper method to get the teammate from pundit_user
+  # Returns a CompanyTeammate (or nil if not logged in)
+  def teammate
+    teammate_obj = pundit_user.respond_to?(:user) ? pundit_user.user : pundit_user
+    return nil unless teammate_obj
+    return nil unless teammate_obj.is_a?(CompanyTeammate)
+    
+    teammate_obj
+  end
+
+  # Helper method to get an Organization from the teammate and record context
+  def actual_organization
+    # For OrganizationPolicy, organization comes from the record itself
+    return record if record.is_a?(Organization)
+    
+    # For organization-scoped records, try to get organization from record first
+    if record.respond_to?(:organization) && record.organization
+      return record.organization
+    end
+    
+    # Fall back to teammate's organization
+    teammate&.organization
   end
 
   # Admin bypass - og_admin users get all permissions
   def admin_bypass?
-    # Check if the real user (not impersonated) is an admin
-    real_user = user.respond_to?(:real_user) ? user.real_user : actual_user
-    real_user&.admin?
+    real_teammate = pundit_user.respond_to?(:real_user) ? pundit_user.real_user : teammate
+    return false unless real_teammate
+    
+    real_teammate.person&.og_admin?
+  end
+
+  private
+
+  def validate_teammate!
+    teammate_obj = pundit_user.respond_to?(:user) ? pundit_user.user : pundit_user
+    return if teammate_obj.nil? # Allow nil for unauthenticated checks
+    
+    unless teammate_obj.is_a?(CompanyTeammate)
+      raise ArgumentError, "Policies must receive a CompanyTeammate, got #{teammate_obj.class.name}. Use teammate.person if you need the person."
+    end
   end
 end
 ```
 
 ### Testing Policies
 
-When testing policies, use the actual user object, not wrapper objects:
+When testing policies, create and pass `CompanyTeammate` objects wrapped in OpenStruct:
 
 ```ruby
 # ✅ Good
-expect(subject).to permit(actual_person, record)
+let(:organization) { create(:organization, :company) }
+let(:person) { create(:person) }
+let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization) }
+let(:pundit_user) { OpenStruct.new(user: teammate, real_user: teammate) }
+
+expect(subject).to permit(pundit_user, record)
 
 # ❌ Avoid
-expect(subject).to permit(wrapper_user, record)
+expect(subject).to permit(person, record)  # Wrong - must pass CompanyTeammate
 ```
 
 ## Form Objects & Controller Actions

@@ -3,14 +3,13 @@ require 'rails_helper'
 RSpec.describe Organizations::GoalLinksController, type: :controller do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
-  let(:creator_teammate) { create(:teammate, person: person, organization: company) }
+  let(:creator_teammate) { person.teammates.find_by(organization: company) }
   let(:goal1) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
   let(:goal2) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
   let(:goal3) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
   
   before do
-    session[:current_person_id] = person.id
-    creator_teammate # Ensure teammate is created
+    sign_in_as_teammate(person, company)
   end
   
   describe 'POST #create' do
@@ -190,13 +189,13 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
   
   describe 'authorization' do
     let(:other_person) { create(:person) }
-    let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
-    let(:other_goal) { create(:goal, creator: other_teammate, owner: other_person) }
+    let!(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+    let(:other_goal) { create(:goal, creator: other_teammate, owner: other_teammate) }
     let(:goal_link) { build(:goal_link, this_goal: other_goal, that_goal: goal1) }
     
     context 'when user cannot edit the goal' do
       before do
-        session[:current_person_id] = person.id
+        sign_in_as_teammate(person, company)
         # Ensure other_goal is owned by other_person and has only_creator privacy
         other_goal.update!(
           privacy_level: 'only_creator',

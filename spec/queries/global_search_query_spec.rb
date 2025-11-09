@@ -2,12 +2,13 @@ require 'rails_helper'
 
 RSpec.describe GlobalSearchQuery, type: :query do
   let(:organization) { create(:organization, :company) }
-  let(:person) { create(:person, current_organization: organization) }
-  let(:query) { GlobalSearchQuery.new(query: 'test', current_organization: organization, current_person: person) }
+  let(:person) { create(:person) }
+  let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
+  let(:query) { GlobalSearchQuery.new(query: 'test', current_organization: organization, current_teammate: teammate) }
 
   describe '#call' do
     context 'with empty query' do
-      let(:query) { GlobalSearchQuery.new(query: '', current_organization: organization, current_person: person) }
+      let(:query) { GlobalSearchQuery.new(query: '', current_organization: organization, current_teammate: teammate) }
 
       it 'returns empty results' do
         results = query.call

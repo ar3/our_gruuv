@@ -1,5 +1,5 @@
 - content_for :go_back_link do
-  = link_to organization_person_check_ins_path(@person.current_organization_or_default, @person), class: "go-back-link" do
+  = link_to organization_person_check_ins_path(current_organization, @person), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     Back to #{@person.display_name}'s Assignments
 
@@ -186,59 +186,61 @@
         .row.mt-4
           .col-12
             %h6 Edit Assignment
-            = form_with url: organization_person_check_ins_path(@person.current_organization_or_default, @person), method: :patch, local: true do |form|
-              .row
-                .col-12
-                  .mb-1
-                    %label.form-label Forecasted Energy
-                    = form.select "tenure_#{@assignment.id}_anticipated_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, @tenure&.anticipated_energy_percentage), { prompt: 'Select...' }, { class: "form-select" }
-                  %hr.mb-2
-
-                .col-12
-                  .mb-1
-                    Reflect on the past
-                - if current_person == @person
-                  .col-md-6
-                    .mb-3
-                      %label.form-label Actual Energy
-                      = form.select "check_in_#{@assignment.id}_actual_energy", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, @open_check_in&.actual_energy_percentage), { prompt: 'Select...' }, { class: "form-select" }
-                
-                - if current_person == @person
-                  .col-md-6
-                    .mb-3
-                      %label.form-label Personal Alignment
-                      = form.select "check_in_#{@assignment.id}_personal_alignment", options_for_select([['I love this', 'love'], ['I like this', 'like'], ['I\'m neutral', 'neutral'], ['I prefer not to do this', 'prefer_not'], ['Only if necessary', 'only_if_necessary']], @open_check_in&.employee_personal_alignment), { prompt: 'Select...' }, { class: "form-select" }
-                
-                - if current_person == @person
-                  .col-md-6
-                    .mb-3
-                      %label.form-label My Rating
-                      = form.select "check_in_#{@assignment.id}_employee_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], @open_check_in&.employee_rating), { prompt: 'Select...' }, { class: "form-select" }
-                
-                - if current_person == @person
-                  .col-md-6
-                    .mb-3
-                      %label.form-label Private Notes
-                      = form.text_area "check_in_#{@assignment.id}_employee_private_notes", value: @open_check_in&.employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-                
-                - if current_person != @person
-                  .col-md-6
-                    .mb-3
-                      %label.form-label Manager Rating
-                      = form.select "check_in_#{@assignment.id}_manager_rating", options_for_select([['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding']], @open_check_in&.manager_rating), { prompt: 'Select...' }, { class: "form-select" }
-                
-                - if current_person != @person
-                  .col-md-6
-                    .mb-3
-                      %label.form-label Manager Notes
-                      = form.text_area "check_in_#{@assignment.id}_manager_private_notes", value: @open_check_in&.manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-                
-                .col-12
-                  .mb-3
-                    .form-check.form-switch
-                      = form.check_box "check_in_#{@assignment.id}_#{current_person == @person ? 'employee' : 'manager'}_complete", { checked: @open_check_in&.send("#{current_person == @person ? 'employee' : 'manager'}_completed?") || false, class: "form-check-input" }
-                      %label.form-check-label My Check-in is Complete?
-                
-                .col-12.text-end
-                  = form.submit "Update Assignment", class: "btn btn-primary me-2"
-                  = link_to "Back to All Assignments", organization_person_check_ins_path(@person.current_organization_or_default, @person), class: "btn btn-outline-secondary"
+            - if @open_check_in
+              = form_with url: organization_person_check_ins_path(current_organization, @person), method: :patch, scope: :check_ins, local: true do |form|
+                = form.fields_for :assignment_check_ins, @open_check_in, index: @open_check_in.id do |af|
+                  .row
+                    .col-12
+                      .mb-1
+                        Reflect on the past
+                    - if current_person == @person
+                      .col-md-6
+                        .mb-3
+                          %label.form-label Actual Energy
+                          = af.number_field :actual_energy_percentage, min: 0, max: 100, class: "form-select", placeholder: '0-100%'
+                    
+                    - if current_person == @person
+                      .col-md-6
+                        .mb-3
+                          %label.form-label Personal Alignment
+                          = af.select :employee_personal_alignment, options_for_select([['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Tolerate', 'tolerate']], @open_check_in.employee_personal_alignment), { include_blank: 'Select alignment' }, { class: "form-select" }
+                    
+                    - if current_person == @person
+                      .col-md-6
+                        .mb-3
+                          %label.form-label My Rating
+                          = af.select :employee_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
+                    
+                    - if current_person == @person
+                      .col-md-6
+                        .mb-3
+                          %label.form-label Private Notes
+                          = af.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+                    
+                    - if current_person != @person
+                      .col-md-6
+                        .mb-3
+                          %label.form-label Manager Rating
+                          = af.select :manager_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
+                    
+                    - if current_person != @person
+                      .col-md-6
+                        .mb-3
+                          %label.form-label Manager Notes
+                          = af.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+                    
+                    = af.hidden_field :assignment_id, value: @assignment.id
+                    
+                    .col-12
+                      .mb-3
+                        - is_complete = (current_person == @person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
+                        .form-check
+                          = af.radio_button :status, 'draft', checked: !is_complete, class: 'form-check-input'
+                          = af.label :status_draft, 'Draft', class: 'form-check-label'
+                        .form-check
+                          = af.radio_button :status, 'complete', checked: is_complete, class: 'form-check-input'
+                          = af.label :status_complete, 'Complete', class: 'form-check-label'
+                    
+                    .col-12.text-end
+                      = form.submit "Update Assignment", class: "btn btn-primary me-2"
+                      = link_to "Back to All Assignments", organization_person_check_ins_path(current_organization, @person), class: "btn btn-outline-secondary"

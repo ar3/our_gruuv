@@ -221,7 +221,8 @@ RSpec.describe TeammateIdentity, type: :model do
     describe '.find_teammate_by_slack_id' do
       it 'finds teammate by Slack user ID in specific organization' do
         found_teammate = TeammateIdentity.find_teammate_by_slack_id('U1234567890', organization)
-        expect(found_teammate).to eq(teammate)
+        expect(found_teammate).to be_a(Teammate)
+        expect(found_teammate.id).to eq(teammate.id)
       end
 
       it 'returns nil when Slack user ID not found' do
@@ -241,12 +242,14 @@ RSpec.describe TeammateIdentity, type: :model do
 
       it 'finds teammate by provider and UID in specific organization' do
         found_teammate = TeammateIdentity.find_teammate_by_provider_id('jira', 'jira_user_123', organization)
-        expect(found_teammate).to eq(teammate)
+        expect(found_teammate).to be_a(Teammate)
+        expect(found_teammate.id).to eq(teammate.id)
       end
 
       it 'finds teammate by Slack provider' do
         found_teammate = TeammateIdentity.find_teammate_by_provider_id('slack', 'U1234567890', organization)
-        expect(found_teammate).to eq(teammate)
+        expect(found_teammate).to be_a(Teammate)
+        expect(found_teammate.id).to eq(teammate.id)
       end
 
       it 'returns nil when provider/UID combination not found' do

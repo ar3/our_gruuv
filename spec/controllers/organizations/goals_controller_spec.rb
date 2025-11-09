@@ -3,11 +3,10 @@ require 'rails_helper'
 RSpec.describe Organizations::GoalsController, type: :controller do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
-  let(:creator_teammate) { create(:teammate, person: person, organization: company) }
+  let(:creator_teammate) { person.teammates.find_by(organization: company) }
   
   before do
-    session[:current_person_id] = person.id
-    creator_teammate # Ensure teammate is created
+    sign_in_as_teammate(person, company)
   end
   
   describe 'GET #index' do
@@ -365,11 +364,12 @@ RSpec.describe Organizations::GoalsController, type: :controller do
   describe 'authorization' do
     let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
     let(:other_person) { create(:person) }
-    let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+    let(:other_teammate) { other_person.teammates.find_by(organization: company) }
     
     context 'when user is not authorized' do
       before do
-        session[:current_person_id] = other_person.id
+        other_teammate # Ensure teammate is created
+        sign_in_as_teammate(other_person, company)
       end
       
       it 'prevents access to show' do

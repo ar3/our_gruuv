@@ -35,7 +35,7 @@
           = form.fields_for :assignment_check_ins, check_in, index: check_in.id do |af|
             %tr{data: {check_in_id: check_in.id}}
               %td
-                = link_to history_organization_person_assignment_check_in_path(@organization, @person, check_in.assignment), 
+                = link_to person_assignment_path(@person, check_in.assignment), 
                            target: "_blank", 
                            "data-bs-toggle" => "popover", 
                            "data-bs-trigger" => "hover", 

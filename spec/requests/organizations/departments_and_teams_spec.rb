@@ -7,8 +7,7 @@ RSpec.describe 'Organizations::DepartmentsAndTeams#index', type: :request do
   let(:current_person) { create(:person) }
 
   before do
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(current_person)
-    allow_any_instance_of(Organizations::DepartmentsAndTeamsController).to receive(:organization).and_return(organization)
+    sign_in_as_teammate_for_request(current_person, organization)
   end
 
   describe 'GET /organizations/:id/departments_and_teams' do

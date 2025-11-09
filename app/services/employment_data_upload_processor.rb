@@ -95,6 +95,7 @@ class EmploymentDataUploadProcessor
         
         next unless person && assignment
         
+        # Find or create teammate - this is now handled inside find_or_create_assignment_tenure
         tenure, was_created = find_or_create_assignment_tenure(person, assignment, tenure_data)
         @results[:successes] << {
           type: 'assignment_tenure',
@@ -128,6 +129,7 @@ class EmploymentDataUploadProcessor
         
         next unless person && assignment
         
+        # Find or create teammate - this is now handled inside find_or_create_assignment_check_in
         check_in, was_created = find_or_create_assignment_check_in(person, assignment, check_in_data)
         @results[:successes] << {
           type: 'assignment_check_in',
@@ -252,7 +254,10 @@ class EmploymentDataUploadProcessor
   end
 
   def find_or_create_assignment_tenure(person, assignment, tenure_data)
-    Rails.logger.info "=== TENURE LOGIC FOR PERSON #{person.id} (#{person.display_name}) AND ASSIGNMENT #{assignment.id} (#{assignment.title}) ==="
+    # Find or create teammate for this person and assignment's company
+    teammate = find_or_create_teammate(person, assignment.company)
+    
+    Rails.logger.info "=== TENURE LOGIC FOR TEAMMATE #{teammate.id} (PERSON #{person.id} - #{person.display_name}) AND ASSIGNMENT #{assignment.id} (#{assignment.title}) ==="
     
     # Determine the start date for the tenure
     # Priority: 1) tenure_data start date, 2) today
@@ -263,8 +268,8 @@ class EmploymentDataUploadProcessor
     end
     Rails.logger.info "Tenure start date: #{tenure_start_date} (from data: #{tenure_data['assignment_tenure_start_date']}, fallback: #{Date.current})"
     
-    # Find the most recent active tenure for this person and assignment
-    existing_tenure = AssignmentTenure.most_recent_for(person, assignment)
+    # Find the most recent active tenure for this teammate and assignment
+    existing_tenure = AssignmentTenure.most_recent_for(teammate, assignment)
     
     if existing_tenure
       Rails.logger.info "Found existing tenure: #{existing_tenure.id} (started: #{existing_tenure.started_at}, energy: #{existing_tenure.anticipated_energy_percentage})"
@@ -287,7 +292,7 @@ class EmploymentDataUploadProcessor
         
         # Create new tenure starting on the check-in date
         tenure = AssignmentTenure.create!(
-          person: person,
+          teammate: teammate,
           assignment: assignment,
           started_at: tenure_start_date,
           ended_at: tenure_data['assignment_tenure_end_date'],
@@ -310,7 +315,7 @@ class EmploymentDataUploadProcessor
       
       # No existing tenure, create new one starting on the check-in date
       tenure = AssignmentTenure.create!(
-        person: person,
+        teammate: teammate,
         assignment: assignment,
         started_at: tenure_start_date,
         ended_at: tenure_data['assignment_tenure_end_date'],
@@ -322,9 +327,12 @@ class EmploymentDataUploadProcessor
   end
 
   def find_or_create_assignment_check_in(person, assignment, check_in_data)
+    # Find or create teammate for this person and assignment's company
+    teammate = find_or_create_teammate(person, assignment.company)
+    
     # Try to find existing check-in
     check_in = AssignmentCheckIn.find_by(
-      person: person,
+      teammate: teammate,
       assignment: assignment,
       check_in_started_on: check_in_data['check_in_date']
     )
@@ -332,7 +340,7 @@ class EmploymentDataUploadProcessor
     
     # Create new check-in if not found
     check_in = AssignmentCheckIn.create!(
-      person: person,
+      teammate: teammate,
       assignment: assignment,
       check_in_started_on: check_in_data['check_in_date'],
       actual_energy_percentage: check_in_data['energy_percentage'],
@@ -340,7 +348,8 @@ class EmploymentDataUploadProcessor
       employee_rating: check_in_data['employee_rating'],
       official_rating: check_in_data['official_rating'],
       manager_private_notes: check_in_data['manager_private_notes'],
-      employee_private_notes: check_in_data['employee_private_notes']
+      employee_private_notes: check_in_data['employee_private_notes'],
+      employee_personal_alignment: check_in_data['employee_personal_alignment']
     )
     return check_in, true
   end
@@ -396,6 +405,17 @@ class EmploymentDataUploadProcessor
     end
     
     assignment
+  end
+
+  def find_or_create_teammate(person, organization)
+    # Find or create teammate for person and organization
+    teammate = Teammate.find_or_create_by(person_id: person.id, organization_id: organization.id) do |t|
+      t.can_manage_employment = false
+      t.can_manage_maap = false
+      t.can_create_employment = false
+      t.type = 'CompanyTeammate'
+    end
+    teammate
   end
 
   private

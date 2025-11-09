@@ -19,10 +19,13 @@ RSpec.describe 'Login Page', type: :request do
 
     context 'when user is already logged in' do
       let(:company) { create(:organization, :company) }
-      let(:person) { create(:person, current_organization: company) }
+      let(:person) { create(:person) }
+
+      before do
+        sign_in_as_teammate_for_request(person, company)
+      end
 
       it 'redirects to organization dashboard' do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
         get login_path
         expect(response).to redirect_to(dashboard_organization_path(company))
       end

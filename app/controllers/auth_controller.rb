@@ -3,9 +3,8 @@ class AuthController < ApplicationController
   
   def login
     # Redirect if already logged in
-    if current_person
-      current_org = current_person.current_organization_or_default
-      redirect_to dashboard_organization_path(current_org)
+    if current_company_teammate
+      redirect_to dashboard_organization_path(current_company_teammate.organization)
     end
   end
   
@@ -29,15 +28,20 @@ class AuthController < ApplicationController
       Rails.logger.info "🔐 GOOGLE_OAUTH_RAW_INFO: #{auth.extra.raw_info.inspect}"
       
       # Check if user is already logged in (connecting additional account)
-      if current_person
-        person = current_person
+      if current_company_teammate
+        person = current_company_teammate.person
         create_or_update_google_identity(person, auth)
         redirect_to profile_path, notice: 'Google account connected successfully!'
       else
         # Normal sign-in flow
         person = find_or_create_person_from_google_auth(auth)
         create_or_update_google_identity(person, auth)
-        session[:current_person_id] = person.id
+        
+        # Ensure person has a teammate (creates "OurGruuv Demo" if needed)
+        teammate = ensure_teammate_for_person(person)
+        
+        # Set session to use teammate
+        session[:current_company_teammate_id] = teammate.id
         
         # Check for return path
         if session[:return_to].present?
@@ -45,8 +49,7 @@ class AuthController < ApplicationController
           session[:return_to] = nil
           redirect_to return_path, notice: 'Successfully signed in with Google!'
         else
-          current_org = person.current_organization_or_default
-          redirect_to dashboard_organization_path(current_org), notice: 'Successfully signed in with Google!'
+          redirect_to dashboard_organization_path(teammate.organization), notice: 'Successfully signed in with Google!'
         end
       end
       
@@ -138,22 +141,32 @@ class AuthController < ApplicationController
     # First, try to find by existing Google identity
     existing_identity = PersonIdentity.find_by(provider: 'google_oauth2', uid: auth.uid)
     if existing_identity
-      return existing_identity.person
+      person = existing_identity.person
+      # Ensure teammate exists
+      ensure_teammate_for_person(person)
+      return person
     end
     
     # Then, try to find by email
     email = auth.info.email
     existing_person = Person.find_by(email: email)
     if existing_person
+      # Ensure teammate exists
+      ensure_teammate_for_person(existing_person)
       return existing_person
     end
     
     # Create new person
-    Person.create!(
+    person = Person.create!(
       email: email,
       full_name: auth.info.name || email.split('@').first.titleize,
       timezone: detect_timezone_from_request
     )
+    
+    # Ensure teammate exists (will create "OurGruuv Demo" teammate)
+    ensure_teammate_for_person(person)
+    
+    person
   end
   
   def create_or_update_google_identity(person, auth)

@@ -21,8 +21,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
 
   before do
     # Setup authentication
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)
-    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+    sign_in_as_teammate_for_request(manager, organization)
     allow(manager).to receive(:can_manage_employment?).with(organization).and_return(true)
     allow(manager).to receive(:can_manage_employment?).and_return(true)
     allow(manager).to receive(:in_managerial_hierarchy_of?).and_return(true)
@@ -72,9 +71,12 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
 
     context 'when user is not authorized' do
       let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:teammate, person: other_person, organization: organization) }
       
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(other_person)
+        # Sign in as unauthorized user
+        other_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(other_person, organization)
         allow(other_person).to receive(:can_manage_employment?).with(organization).and_return(false)
         allow(other_person).to receive(:can_manage_employment?).and_return(false)
         allow(other_person).to receive(:in_managerial_hierarchy_of?).and_return(false)
@@ -172,9 +174,12 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
 
     context 'when user is not authorized' do
       let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:teammate, person: other_person, organization: organization) }
       
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(other_person)
+        # Sign in as unauthorized user
+        other_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(other_person, organization)
         allow(other_person).to receive(:can_manage_employment?).with(organization).and_return(false)
         allow(other_person).to receive(:can_manage_employment?).and_return(false)
         allow(other_person).to receive(:in_managerial_hierarchy_of?).and_return(false)

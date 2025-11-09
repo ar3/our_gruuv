@@ -380,11 +380,12 @@ class MaapChangeDetectionService
     
     # If check_in is nil, we're creating a new check-in
     # Employee can create check-ins for themselves
-    return true if check_in.nil? && current_user == person
+    return true if check_in.nil? && current_user.is_a?(CompanyTeammate) && current_user.person == person
     
     # If check_in exists, check if employee can update their own fields
     return false unless check_in&.teammate
-    current_user == check_in.teammate.person || admin_bypass?
+    return false unless current_user.is_a?(CompanyTeammate)
+    current_user.person == check_in.teammate.person || admin_bypass?
   end
 
   def can_update_manager_check_in_fields?(check_in)
@@ -398,7 +399,10 @@ class MaapChangeDetectionService
     # If check_in is nil, we're creating a new check-in
     # Manager can create check-ins for people they manage
     if check_in.nil?
-      policy = PersonPolicy.new(current_user, person)
+      # current_user should be a CompanyTeammate
+      return false unless current_user.is_a?(CompanyTeammate)
+      pundit_user = OpenStruct.new(user: current_user, real_user: current_user)
+      policy = PersonPolicy.new(pundit_user, person)
       return policy.manage_assignments?
     end
     
@@ -406,8 +410,10 @@ class MaapChangeDetectionService
     return false unless check_in&.teammate
     
     # Check if current user can manage this person's assignments
-    # We need to create a policy instance to check permissions
-    policy = PersonPolicy.new(current_user, check_in.teammate.person)
+    # current_user should be a CompanyTeammate
+    return false unless current_user.is_a?(CompanyTeammate)
+    pundit_user = OpenStruct.new(user: current_user, real_user: current_user)
+    policy = PersonPolicy.new(pundit_user, check_in.teammate.person)
     policy.manage_assignments?
   end
 
@@ -422,7 +428,10 @@ class MaapChangeDetectionService
     # If check_in is nil, we're creating a new check-in
     # Manager can finalize check-ins for people they manage
     if check_in.nil?
-      policy = PersonPolicy.new(current_user, person)
+      # current_user should be a CompanyTeammate
+      return false unless current_user.is_a?(CompanyTeammate)
+      pundit_user = OpenStruct.new(user: current_user, real_user: current_user)
+      policy = PersonPolicy.new(pundit_user, person)
       return policy.manage_assignments?
     end
     
@@ -430,12 +439,26 @@ class MaapChangeDetectionService
     return false unless check_in&.teammate
     
     # Check if current user can manage this person's assignments
-    policy = PersonPolicy.new(current_user, check_in.teammate.person)
+    # current_user should be a CompanyTeammate
+    return false unless current_user.is_a?(CompanyTeammate)
+    pundit_user = OpenStruct.new(user: current_user, real_user: current_user)
+    policy = PersonPolicy.new(pundit_user, check_in.teammate.person)
     policy.manage_assignments?
   end
 
+  private
+
   def admin_bypass?
-    current_user&.og_admin?
+    return false unless current_user
+    
+    # Handle both Teammate and Person objects
+    if current_user.is_a?(Teammate)
+      current_user.person&.og_admin?
+    elsif current_user.is_a?(Person)
+      current_user.og_admin?
+    else
+      false
+    end
   end
 
   def milestone_has_changes?(milestone)

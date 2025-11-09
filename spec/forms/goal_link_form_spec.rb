@@ -315,7 +315,8 @@ RSpec.describe GoalLinkForm, type: :form do
         created_goals = Goal.last(2)
         created_goals.each do |goal|
           expect(goal.goal_type).to eq('quantitative_key_result')
-          expect(goal.owner).to eq(goal1.owner)
+          expect(goal.owner).to be_a(Teammate)
+          expect(goal.owner.id).to eq(goal1.owner.id)
           expect(goal.privacy_level).to eq(goal1.privacy_level)
           
           link = GoalLink.find_by(this_goal: goal1, that_goal: goal, link_type: 'this_is_key_result_of_that')

@@ -5,9 +5,7 @@ RSpec.describe 'UploadEvents#new', type: :request do
   let(:person) { create(:person) }
   
   before do
-    # Mock authentication
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+    sign_in_as_teammate_for_request(person, organization)
     allow(person).to receive(:can_manage_employment?).and_return(true)
   end
 

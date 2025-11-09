@@ -3,20 +3,28 @@ class CompanyPolicy < OrganizationPolicy
   # Can override specific methods if needed for company-specific logic
   
   def manage_assignments?
-    admin_bypass? || (actual_user && actual_user.can_manage_maap?(record))
+    return false unless teammate
+    person = teammate.person
+    admin_bypass? || (person && person.can_manage_maap?(record))
   end
 
   def manage_employment?
-    admin_bypass? || (actual_user && actual_user.can_manage_employment?(record))
+    return false unless teammate
+    person = teammate.person
+    admin_bypass? || (person && person.can_manage_employment?(record))
   end
 
   def create_employment?
-    admin_bypass? || (actual_user && actual_user.can_create_employment?(record))
+    return false unless teammate
+    person = teammate.person
+    admin_bypass? || (person && person.can_create_employment?(record))
   end
 
-  class Scope < Scope
+  class Scope < ApplicationPolicy::Scope
     def resolve
-      if actual_user&.admin?
+      return scope.none unless teammate
+      person = teammate.person
+      if person&.admin?
         scope.all
       else
         scope.all # Companies are generally viewable by all authenticated users

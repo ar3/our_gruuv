@@ -4,9 +4,11 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
-  let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
+  
+  # Create teammates first, before they're used in let! blocks
+  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let!(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   
   let!(:assignment_tenure) do
     create(:assignment_tenure,
@@ -34,12 +36,9 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
            manager: manager,
            started_at: 1.month.ago)
     
-    # Set current organization for manager
-    allow(manager).to receive(:current_organization).and_return(organization)
-    
-    # Mock authentication at ApplicationController level
-    allow_any_instance_of(ApplicationController).to receive(:authenticate_person!).and_return(true)
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)
+    # Set up authentication - use existing teammate to avoid duplicate
+    session[:current_company_teammate_id] = manager_teammate.id
+    @current_company_teammate = nil if defined?(@current_company_teammate)
   end
 
   describe 'GET #show' do
@@ -74,14 +73,25 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
     
     context 'when finalization succeeds' do
       it 'calls CheckInFinalizationService with assignment data' do
-        expect(CheckInFinalizationService).to receive(:new).with(
-          teammate: employee_teammate,
-          finalization_params: hash_including(:assignment_check_ins),
-          finalized_by: manager,
-          request_info: hash_including(:ip_address)
-        ).and_return(double(call: Result.ok(snapshot: double, results: {})))
+        service_double = double(call: Result.ok(snapshot: double, results: {}))
+        # Approach 2: Capture arguments and verify separately
+        captured_args = nil
+        allow(CheckInFinalizationService).to receive(:new) do |*args, **kwargs|
+          captured_args = { args: args, kwargs: kwargs }
+          service_double
+        end
         
         post :create, params: finalization_params
+        
+        # Verify the service was called
+        expect(CheckInFinalizationService).to have_received(:new)
+        # Verify arguments - compare by ID for STI types
+        expect(captured_args[:kwargs][:teammate].id).to eq(employee_teammate.id)
+        expect(captured_args[:kwargs][:finalized_by]).to eq(manager)
+        expect(captured_args[:kwargs][:finalization_params]).to be_a(ActionController::Parameters)
+        expect(captured_args[:kwargs][:finalization_params][:assignment_check_ins]).to be_present
+        expect(captured_args[:kwargs][:request_info]).to be_a(Hash)
+        expect(captured_args[:kwargs][:request_info][:ip_address]).to be_present
       end
       
       it 'redirects with success notice' do
@@ -111,7 +121,9 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
     
     context 'when authorization fails' do
       before do
-        allow_any_instance_of(Organizations::FinalizationsController).to receive(:current_person).and_return(employee) # Employee trying to finalize
+        # Employee trying to finalize (should not have permission)
+        employee_teammate # Ensure employee teammate exists
+        sign_in_as_teammate(employee, organization)
         allow_any_instance_of(Organizations::FinalizationsController).to receive(:authorize_finalization).and_raise(Pundit::NotAuthorizedError)
       end
       

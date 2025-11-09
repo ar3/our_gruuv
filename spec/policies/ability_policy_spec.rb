@@ -2,24 +2,20 @@ require 'rails_helper'
 require 'ostruct'
 
 RSpec.describe AbilityPolicy, type: :policy do
-  let(:organization) { create(:organization) }
-  let(:other_organization) { create(:organization) }
+  let(:organization) { create(:organization, :company) }
+  let(:other_organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:admin) { create(:person, :admin) }
   let(:maap_user) { create(:person) }
   let(:ability) { create(:ability, organization: organization) }
 
-  let(:pundit_user_maap) { OpenStruct.new(user: maap_user, pundit_organization: organization) }
-  let(:pundit_user_person) { OpenStruct.new(user: person, pundit_organization: organization) }
-  let(:pundit_user_admin) { OpenStruct.new(user: admin, pundit_organization: organization) }
+  let(:maap_teammate) { CompanyTeammate.create!(person: maap_user, organization: organization, can_manage_maap: true) }
+  let(:person_teammate) { CompanyTeammate.create!(person: person, organization: organization) }
+  let(:admin_teammate) { CompanyTeammate.create!(person: admin, organization: organization) }
 
-  before do
-    # Grant MAAP permissions to maap_user for organization
-    create(:teammate, 
-           person: maap_user, 
-           organization: organization, 
-           can_manage_maap: true)
-  end
+  let(:pundit_user_maap) { OpenStruct.new(user: maap_teammate, real_user: maap_teammate) }
+  let(:pundit_user_person) { OpenStruct.new(user: person_teammate, real_user: person_teammate) }
+  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, real_user: admin_teammate) }
 
   describe 'index?' do
     context 'when user has MAAP permissions' do
@@ -47,35 +43,31 @@ RSpec.describe AbilityPolicy, type: :policy do
   describe 'show?' do
     context 'when user has MAAP permissions for the organization' do
       it 'allows access' do
-        policy = AbilityPolicy.new(maap_user, ability)
+        policy = AbilityPolicy.new(pundit_user_maap, ability)
         expect(policy.show?).to be true
       end
     end
 
     context 'when user lacks MAAP permissions for the organization' do
       it 'denies access' do
-        policy = AbilityPolicy.new(person, ability)
+        policy = AbilityPolicy.new(pundit_user_person, ability)
         expect(policy.show?).to be false
       end
     end
 
     context 'when user has MAAP permissions for different organization' do
-      before do
-        create(:teammate, 
-               person: person, 
-               organization: other_organization, 
-               can_manage_maap: true)
-      end
+      let(:other_org_teammate) { CompanyTeammate.create!(person: person, organization: other_organization, can_manage_maap: true) }
+      let(:pundit_user_other_org) { OpenStruct.new(user: other_org_teammate, real_user: other_org_teammate) }
 
       it 'denies access' do
-        policy = AbilityPolicy.new(person, ability)
+        policy = AbilityPolicy.new(pundit_user_other_org, ability)
         expect(policy.show?).to be false
       end
     end
 
     context 'when user is admin' do
       it 'allows access' do
-        policy = AbilityPolicy.new(admin, ability)
+        policy = AbilityPolicy.new(pundit_user_admin, ability)
         expect(policy.show?).to be true
       end
     end
@@ -107,35 +99,31 @@ RSpec.describe AbilityPolicy, type: :policy do
   describe 'update?' do
     context 'when user has MAAP permissions for the organization' do
       it 'allows access' do
-        policy = AbilityPolicy.new(maap_user, ability)
+        policy = AbilityPolicy.new(pundit_user_maap, ability)
         expect(policy.update?).to be true
       end
     end
 
     context 'when user lacks MAAP permissions for the organization' do
       it 'denies access' do
-        policy = AbilityPolicy.new(person, ability)
+        policy = AbilityPolicy.new(pundit_user_person, ability)
         expect(policy.update?).to be false
       end
     end
 
     context 'when user has MAAP permissions for different organization' do
-      before do
-        create(:teammate, 
-               person: person, 
-               organization: other_organization, 
-               can_manage_maap: true)
-      end
+      let(:other_org_teammate) { CompanyTeammate.create!(person: person, organization: other_organization, can_manage_maap: true) }
+      let(:pundit_user_other_org) { OpenStruct.new(user: other_org_teammate, real_user: other_org_teammate) }
 
       it 'denies access' do
-        policy = AbilityPolicy.new(person, ability)
+        policy = AbilityPolicy.new(pundit_user_other_org, ability)
         expect(policy.update?).to be false
       end
     end
 
     context 'when user is admin' do
       it 'allows access' do
-        policy = AbilityPolicy.new(admin, ability)
+        policy = AbilityPolicy.new(pundit_user_admin, ability)
         expect(policy.update?).to be true
       end
     end
@@ -144,21 +132,21 @@ RSpec.describe AbilityPolicy, type: :policy do
   describe 'destroy?' do
     context 'when user has MAAP permissions for the organization' do
       it 'allows access' do
-        policy = AbilityPolicy.new(maap_user, ability)
+        policy = AbilityPolicy.new(pundit_user_maap, ability)
         expect(policy.destroy?).to be true
       end
     end
 
     context 'when user lacks MAAP permissions for the organization' do
       it 'denies access' do
-        policy = AbilityPolicy.new(person, ability)
+        policy = AbilityPolicy.new(pundit_user_person, ability)
         expect(policy.destroy?).to be false
       end
     end
 
     context 'when user is admin' do
       it 'allows access' do
-        policy = AbilityPolicy.new(admin, ability)
+        policy = AbilityPolicy.new(pundit_user_admin, ability)
         expect(policy.destroy?).to be true
       end
     end

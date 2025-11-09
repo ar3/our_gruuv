@@ -1,13 +1,13 @@
 class SearchPolicy < ApplicationPolicy
   def show?
-    user.present?
+    teammate.present?
   end
 
   def index?
-    user.present?
+    teammate.present?
   end
 
-  class Scope < Scope
+  class Scope < ApplicationPolicy::Scope
     def resolve
       scope
     end

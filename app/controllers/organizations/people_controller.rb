@@ -217,7 +217,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   def execute_maap_changes!
     service = MaapChangeExecutionService.new(
       maap_snapshot: maap_snapshot,
-      current_user: current_person
+      current_user: current_company_teammate
     )
     service.execute!
   end
@@ -230,7 +230,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   end
 
   def change_detection_service
-    @change_detection_service ||= MaapChangeDetectionService.new(person: @person, maap_snapshot: @maap_snapshot, current_user: current_person)
+    @change_detection_service ||= MaapChangeDetectionService.new(person: @person, maap_snapshot: @maap_snapshot, current_user: current_company_teammate)
   end
 
   def can_see_manager_private_data?(employee)

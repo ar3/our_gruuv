@@ -240,14 +240,14 @@ class HuddlesController < ApplicationController
   end
 
   def direct_feedback
-    authorize @huddle, :direct_feedback?
-    
-    # Require authentication
+    # Require authentication first, before authorization
     unless current_person
       session[:return_to] = direct_feedback_huddle_path(@huddle)
       redirect_to '/auth/google_oauth2', alert: 'Please sign in to give feedback.'
       return
     end
+    
+    authorize @huddle, :direct_feedback?
     
     # Check if user is already a participant
     @existing_participant = HuddleParticipant.joins(:teammate).find_by(huddle: @huddle, teammates: { person: current_person })

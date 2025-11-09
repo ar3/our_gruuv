@@ -279,14 +279,83 @@ bundle exec rspec spec/models/concerns/check_in_behavior_spec.rb spec/requests/o
 ```
 
 ### Full Suite Run Tracking
-When running a full suite (for comprehensive testing), always:
-1. Run in segments as shown above
-2. **Update `Last_full_spec_suite_run.md` immediately after each segment completes** - This includes:
-   - Marking the segment status as "⏳ Running..." when starting
-   - Updating with timing data, examples count, failures, and date/time when complete
-   - Each system spec folder is a separate segment and must be updated individually
-3. Include total examples, failures, and time for each segment
-4. Document any issues found for follow-up
+
+**⚠️ CRITICAL RULE: One Segment Per Execution**
+- **NEVER run multiple segments in the same command execution**
+- Each segment must be run separately and tracked individually
+- Wait for one segment to complete before starting the next
+
+**When running a full suite (for comprehensive testing), follow this strict process:**
+
+1. **Before starting each segment:**
+   - Update `Last_full_spec_suite_run.md` to mark the segment status as "⏳ Running..."
+   - **CRITICAL: Use ACTUAL current date/time** - Run `date '+%Y-%m-%d %H:%M:%S'` to get the current timestamp and use it for all date/time fields. NEVER use hardcoded dates or estimated times.
+   - Record the start time for the segment using the actual current timestamp
+
+2. **Run the segment:**
+   - Execute only ONE segment at a time
+   - Use the commands shown in "Run by Type" section above
+   - Each system spec folder is treated as a separate segment
+
+3. **After completing each segment:**
+   - **CRITICAL: Use ACTUAL current date/time** - Run `date '+%Y-%m-%d %H:%M:%S'` immediately after the segment completes to get the exact completion timestamp
+   - Update `Last_full_spec_suite_run.md` immediately with:
+     - Segment status (✅ Complete, ❌ Error, etc.)
+     - Timing data (execution time and total time with load)
+     - Examples count
+     - Failures count (or error details)
+     - **Date/time of completion** - Use the actual timestamp from the `date` command, formatted as `YYYY-MM-DD HH:MM:SS`
+   - If failures exist, parse RSpec output and add details to the "Failure Analysis" section at the bottom of the document
+
+4. **Failure Analysis Section:**
+   - Located at the bottom of `Last_full_spec_suite_run.md`
+   - For each failed spec, include:
+     - Spec file path
+     - Line number (if available)
+     - Test description
+     - Error message (first line or key excerpt)
+     - Suspected issue (based on error pattern)
+   - Group similar failures together when possible
+
+5. **Segment Order (MUST RUN ALL):**
+   The following segments MUST be run in this exact order, and ALL segments must be completed:
+   - Model Specs (`spec/models/`)
+   - Controller Specs (`spec/controllers/`)
+   - Request Specs (`spec/requests/`)
+   - System Specs - Abilities (`spec/system/abilities/`)
+   - System Specs - Aspirations (`spec/system/aspirations/`)
+   - System Specs - Assignments (`spec/system/assignments/`)
+   - System Specs - Check-ins (`spec/system/check_ins/`)
+   - System Specs - Check-in Observations (`spec/system/check_in_observations/`)
+   - System Specs - Finalization (`spec/system/finalization/`)
+   - System Specs - Goals (`spec/system/goals/`)
+   - System Specs - Huddles (`spec/system/huddles/`)
+   - System Specs - Misc (`spec/system/misc/`)
+   - System Specs - Observations (`spec/system/observations/`)
+   - System Specs - Positions and Seats (`spec/system/positions_and_seats/`)
+   - System Specs - Teammates (`spec/system/teammates/`)
+   - System Specs - Audit (`spec/system/audit/`)
+   - ENM Specs (`spec/enm/`)
+   
+   **Do not stop after a few segments - continue until ALL segments are complete.**
+
+### Command Triggers for Segmented Spec Running
+
+The following command phrases will trigger the segmented spec running process:
+- "run full spec suite"
+- "run all specs"
+- "run complete test suite"
+- "run segmented specs"
+- "run specs in segments"
+
+**⚠️ CRITICAL: When any of these phrases are used, the assistant MUST:**
+1. **Run ALL segments** in the order specified above (Model Specs → Controller Specs → Request Specs → all System Spec segments → ENM Specs)
+2. **Never stop early** - Continue running all segments until the complete suite is finished
+3. Run segments one at a time in the order specified above
+4. Update `Last_full_spec_suite_run.md` before and after each segment with **actual current date/time** (use `date '+%Y-%m-%d %H:%M:%S'` command)
+5. Parse failures and add them to the Failure Analysis section
+6. Never run multiple segments in a single execution
+7. Update the "Run Date" and "Started" timestamp at the top of `Last_full_spec_suite_run.md` with the actual current date/time when beginning the run
 
 ## Performance Targets
 

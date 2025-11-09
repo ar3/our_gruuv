@@ -21,7 +21,7 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
     manager_teammate.update!(first_employed_at: 1.month.ago)
     
     # Mock authentication for manager
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)
+    sign_in_as_teammate_for_request(manager, organization)
     allow(manager).to receive(:has_direct_reports?).and_return(true)
   end
 
@@ -32,11 +32,11 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
     teammates = assigns(:teammates)
     
     # Should include direct report
-    expect(teammates).to include(direct_report_teammate)
+    expect(teammates.map(&:id)).to include(direct_report_teammate.id)
     # Should NOT include non-direct report
-    expect(teammates).not_to include(non_direct_report_teammate)
+    expect(teammates.map(&:id)).not_to include(non_direct_report_teammate.id)
     # Should NOT include manager
-    expect(teammates).not_to include(manager_teammate)
+    expect(teammates.map(&:id)).not_to include(manager_teammate.id)
   end
 
   it 'returns all teammates when manager_filter is not set' do
@@ -46,9 +46,9 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
     teammates = assigns(:teammates)
     
     # Should include all teammates
-    expect(teammates).to include(direct_report_teammate)
-    expect(teammates).to include(non_direct_report_teammate)
-    expect(teammates).to include(manager_teammate)
+    expect(teammates.map(&:id)).to include(direct_report_teammate.id)
+    expect(teammates.map(&:id)).to include(non_direct_report_teammate.id)
+    expect(teammates.map(&:id)).to include(manager_teammate.id)
   end
 
   it 'renders the check_in_status display without errors' do

@@ -7,9 +7,6 @@ RSpec.describe Organizations::PeopleController, type: :controller do
   let(:current_access) { create(:teammate, person: person, organization: organization) }
 
   before do
-    # Set up session for authentication
-    session[:current_person_id] = manager.id
-    
     # Grant manager permissions
     manager_teammate = create(:teammate, 
            person: manager, 
@@ -18,6 +15,9 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     
     # Create employment tenure for manager in the organization
     create(:employment_tenure, teammate: manager_teammate, company: organization)
+    
+    # Set up session for authentication
+    sign_in_as_teammate(manager, organization)
   end
 
   describe 'POST #update_permission' do

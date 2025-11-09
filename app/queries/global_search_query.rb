@@ -1,8 +1,9 @@
 class GlobalSearchQuery
-  def initialize(query:, current_organization:, current_person:)
+  def initialize(query:, current_organization:, current_teammate:)
     @query = query.to_s.strip
     @current_organization = current_organization
-    @current_person = current_person
+    @current_teammate = current_teammate
+    @current_person = current_teammate&.person
   end
 
   def call
@@ -91,27 +92,37 @@ class GlobalSearchQuery
                    @current_person.active_employment_tenure_in?(@current_organization)
     
     # Fall back to standard policy for other cases (admins, etc.)
-    policy = PersonPolicy.new(@current_person, person)
+    return false unless @current_teammate
+    pundit_user = OpenStruct.new(user: @current_teammate, real_user: @current_teammate)
+    policy = PersonPolicy.new(pundit_user, person)
     policy.show?
   end
 
   def can_view_organization?(organization)
-    policy = OrganizationPolicy.new(@current_person, organization)
+    return false unless @current_teammate
+    pundit_user = OpenStruct.new(user: @current_teammate, real_user: @current_teammate)
+    policy = OrganizationPolicy.new(pundit_user, organization)
     policy.show?
   end
 
   def can_view_observation?(observation)
-    policy = ObservationPolicy.new(@current_person, observation)
+    return false unless @current_teammate
+    pundit_user = OpenStruct.new(user: @current_teammate, real_user: @current_teammate)
+    policy = ObservationPolicy.new(pundit_user, observation)
     policy.show?
   end
 
   def can_view_assignment?(assignment)
-    policy = AssignmentPolicy.new(@current_person, assignment)
+    return false unless @current_teammate
+    pundit_user = OpenStruct.new(user: @current_teammate, real_user: @current_teammate)
+    policy = AssignmentPolicy.new(pundit_user, assignment)
     policy.show?
   end
 
   def can_view_ability?(ability)
-    policy = AbilityPolicy.new(@current_person, ability)
+    return false unless @current_teammate
+    pundit_user = OpenStruct.new(user: @current_teammate, real_user: @current_teammate)
+    policy = AbilityPolicy.new(pundit_user, ability)
     policy.show?
   end
 

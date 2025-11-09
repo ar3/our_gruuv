@@ -6,10 +6,12 @@ RSpec.describe Organizations::PeopleController, type: :controller do
   let(:manager_access) { create(:teammate, person: manager, organization: organization, can_manage_employment: true) }
   
   before do
-    session[:current_person_id] = manager.id
     manager_access
     # Ensure the manager has an active employment tenure in the organization
     create(:employment_tenure, teammate: manager_access, company: organization, started_at: 1.year.ago, ended_at: nil)
+    # Use existing teammate to avoid duplicate
+    session[:current_company_teammate_id] = manager_access.id
+    @current_company_teammate = nil if defined?(@current_company_teammate)
   end
 
   describe 'GET #complete_picture' do
@@ -217,7 +219,8 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
       context 'when user does not have employment management permissions' do
         before do
-          session[:current_person_id] = unauthorized_user.id
+          unauthorized_teammate = create(:teammate, person: unauthorized_user, organization: organization)
+          sign_in_as_teammate(unauthorized_user, organization)
         end
 
         it 'redirects when authorization fails' do
@@ -230,7 +233,10 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
       context 'when user is the person themselves' do
         before do
-          session[:current_person_id] = person.id
+          person_teammate = create(:teammate, person: person, organization: organization)
+          # Use existing teammate to avoid duplicate
+          session[:current_company_teammate_id] = person_teammate.id
+          @current_company_teammate = nil if defined?(@current_company_teammate)
         end
 
         it 'allows access to own complete picture view' do
@@ -243,7 +249,8 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         let(:admin) { create(:person, :admin) }
 
         before do
-          session[:current_person_id] = admin.id
+          admin_teammate = create(:teammate, person: admin, organization: organization)
+          sign_in_as_teammate(admin, organization)
         end
 
         it 'allows access' do
@@ -275,7 +282,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       let(:person) { create(:person) }
 
       before do
-        session[:current_person_id] = nil
+        session[:current_company_teammate_id] = nil
       end
 
       it 'redirects to login' do

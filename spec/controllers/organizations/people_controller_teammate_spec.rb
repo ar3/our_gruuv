@@ -2,12 +2,10 @@ require 'rails_helper'
 
 RSpec.describe Organizations::PeopleController, type: :controller do
   let(:organization) { create(:organization) }
-  let(:manager) { create(:person, current_organization: organization) }
-  let(:employee) { create(:person, current_organization: organization) }
+  let(:manager) { create(:person) }
+  let(:employee) { create(:person) }
 
   before do
-    session[:current_person_id] = manager.id
-    allow(controller).to receive(:current_person).and_return(manager)
     # Set up organization access for manager
     manager_teammate = create(:teammate, person: manager, organization: organization, can_manage_employment: true)
     # Set up organization access for employee
@@ -16,6 +14,9 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     create(:employment_tenure, teammate: manager_teammate, company: organization)
     # Set up employment for employee
     create(:employment_tenure, teammate: employee_teammate, company: organization)
+    
+    # Set up session for authentication
+    sign_in_as_teammate(manager, organization)
   end
 
   describe 'GET #teammate' do

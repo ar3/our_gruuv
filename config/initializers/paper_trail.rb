@@ -21,23 +21,23 @@ Rails.application.config.after_initialize do
       self.meta = (meta || {}).merge('whodunnit' => value)
     end
     
-    # Prevent PaperTrail from trying to set current_person_id as a direct attribute
-    def current_person_id=(value)
-      self.meta = (meta || {}).merge('current_person_id' => value)
+    # Prevent PaperTrail from trying to set current_teammate_id as a direct attribute
+    def current_teammate_id=(value)
+      self.meta = (meta || {}).merge('current_teammate_id' => value)
     end
     
-    # Prevent PaperTrail from trying to set impersonating_person_id as a direct attribute
-    def impersonating_person_id=(value)
-      self.meta = (meta || {}).merge('impersonating_person_id' => value)
+    # Prevent PaperTrail from trying to set impersonating_teammate_id as a direct attribute
+    def impersonating_teammate_id=(value)
+      self.meta = (meta || {}).merge('impersonating_teammate_id' => value)
     end
     
     # Add getters for these attributes to read from meta
-    def current_person_id
-      meta&.dig('current_person_id')
+    def current_teammate_id
+      meta&.dig('current_teammate_id')
     end
     
-    def impersonating_person_id
-      meta&.dig('impersonating_person_id')
+    def impersonating_teammate_id
+      meta&.dig('impersonating_teammate_id')
     end
     end
   end

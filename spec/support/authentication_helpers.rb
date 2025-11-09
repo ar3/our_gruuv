@@ -1,29 +1,43 @@
 # spec/support/authentication_helpers.rb
 module AuthenticationHelpers
   def sign_in_as(person, organization = nil)
+    # Ensure person has a teammate
+    teammate = person.active_teammates.first
+    if organization
+      # Find or create teammate for the specified organization
+      teammate = person.teammates.find_or_create_by!(organization: organization) do |t|
+        t.type = 'CompanyTeammate'
+        t.first_employed_at = nil
+        t.last_terminated_at = nil
+      end
+    else
+      # Use first active teammate or create "OurGruuv Demo" teammate
+      teammate ||= person.teammates.create!(
+        organization: Company.find_by!(name: 'OurGruuv Demo'),
+        type: 'CompanyTeammate',
+        first_employed_at: nil,
+        last_terminated_at: nil
+      )
+    end
+    
     # For JavaScript tests (Selenium), use HTTP endpoint since rack_session_access doesn't work
     if Capybara.current_driver == Capybara.javascript_driver
-      sign_in_via_http(person, organization)
+      sign_in_via_http(teammate)
     else
       # For non-JS tests, use rack_session_access
       # First, clear any existing session to avoid conflicts
       begin
-        page.set_rack_session(current_person_id: nil)
-        page.set_rack_session(current_person_id: person.id)
+        page.set_rack_session(current_company_teammate_id: nil)
+        page.set_rack_session(current_company_teammate_id: teammate.id)
       rescue Selenium::WebDriver::Error::UnknownError, Selenium::WebDriver::Error::InvalidSessionIdError
         # If session is invalid, visit a page first to establish it
         visit root_path
-        page.set_rack_session(current_person_id: nil)
-        page.set_rack_session(current_person_id: person.id)
+        page.set_rack_session(current_company_teammate_id: nil)
+        page.set_rack_session(current_company_teammate_id: teammate.id)
       end
       
-      # Also set the organization if provided
-      if organization
-        person.update!(current_organization: organization)
-      end
-      
-      # Ensure the person is properly set up
-      person.reload
+      # Ensure the teammate is properly set up
+      teammate.reload
     end
   end
   
@@ -31,7 +45,7 @@ module AuthenticationHelpers
     if Capybara.current_driver == Capybara.javascript_driver
       sign_out_via_http
     else
-      page.set_rack_session(current_person_id: nil)
+      page.set_rack_session(current_company_teammate_id: nil)
     end
   end
   
@@ -46,9 +60,8 @@ module AuthenticationHelpers
   
   private
   
-  def sign_in_via_http(person, organization = nil)
-    params = { person_id: person.id }
-    params[:organization_id] = organization.id if organization
+  def sign_in_via_http(teammate)
+    params = { teammate_id: teammate.id }
     
     # Use Capybara's visit method with query parameters
     query_string = params.map { |k, v| "#{k}=#{v}" }.join('&')
@@ -57,14 +70,20 @@ module AuthenticationHelpers
     # Wait for the request to complete
     sleep(0.1)
     
-    # Ensure the person is properly set up
-    person.reload
+    # Ensure the teammate is properly set up
+    teammate.reload
   end
   
   def sign_in_and_visit(person, organization, target_path)
+    # Ensure person has a teammate for the organization
+    teammate = person.teammates.find_or_create_by!(organization: organization) do |t|
+      t.type = 'CompanyTeammate'
+      t.first_employed_at = nil
+      t.last_terminated_at = nil
+    end
+    
     params = { 
-      person_id: person.id,
-      organization_id: organization.id,
+      teammate_id: teammate.id,
       redirect_to: target_path
     }
     
@@ -72,8 +91,8 @@ module AuthenticationHelpers
     query_string = params.map { |k, v| "#{k}=#{v}" }.join('&')
     visit("/test/auth/sign_in?#{query_string}")
     
-    # Ensure the person is properly set up
-    person.reload
+    # Ensure the teammate is properly set up
+    teammate.reload
   end
   
   def sign_out_via_http

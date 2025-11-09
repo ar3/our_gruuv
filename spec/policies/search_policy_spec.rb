@@ -1,8 +1,11 @@
 require 'rails_helper'
 
 RSpec.describe SearchPolicy, type: :policy do
-  let(:user) { create(:person) }
-  let(:policy) { SearchPolicy.new(user, :search) }
+  let(:organization) { create(:organization, :company) }
+  let(:person) { create(:person) }
+  let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
+  let(:pundit_user) { OpenStruct.new(user: teammate, real_user: teammate) }
+  let(:policy) { SearchPolicy.new(pundit_user, :search) }
 
   describe '#index?' do
     it 'allows authenticated users' do
@@ -10,8 +13,8 @@ RSpec.describe SearchPolicy, type: :policy do
     end
 
     context 'with nil user' do
-      let(:user) { nil }
-      let(:policy) { SearchPolicy.new(user, :search) }
+      let(:pundit_user) { nil }
+      let(:policy) { SearchPolicy.new(pundit_user, :search) }
 
       it 'denies access' do
         expect(policy.index?).to be false

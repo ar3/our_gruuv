@@ -4,23 +4,27 @@ require 'ostruct'
 RSpec.describe UploadEventPolicy, type: :policy do
   subject { described_class }
 
-  let(:organization) { create(:organization) }
-  let(:creator) { create(:person) }
+  let(:organization) { create(:organization, :company) }
+  let(:creator_person) { create(:person) }
   let(:other_person) { create(:person) }
   let(:admin_person) { create(:person, :admin) }
   
-  let(:upload_event) { create(:upload_event, creator: creator, organization: organization) }
+  let(:creator_teammate) { CompanyTeammate.find_or_create_by!(person: creator_person, organization: organization) }
+  let(:other_teammate) { CompanyTeammate.find_or_create_by!(person: other_person, organization: organization) }
+  let(:admin_teammate) { CompanyTeammate.find_or_create_by!(person: admin_person, organization: organization) }
+  
+  let(:upload_event) { create(:upload_event, creator: creator_person, organization: organization) }
   let(:other_upload_event) { create(:upload_event, creator: other_person, organization: organization) }
 
   # Create pundit user objects that match the controller's pundit_user structure
-  let(:pundit_user_creator) { OpenStruct.new(user: creator, pundit_organization: organization) }
-  let(:pundit_user_other) { OpenStruct.new(user: other_person, pundit_organization: organization) }
-  let(:pundit_user_admin) { OpenStruct.new(user: admin_person, pundit_organization: organization) }
+  let(:pundit_user_creator) { OpenStruct.new(user: creator_teammate, real_user: creator_teammate) }
+  let(:pundit_user_other) { OpenStruct.new(user: other_teammate, real_user: other_teammate) }
+  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, real_user: admin_teammate) }
 
   permissions :index? do
     it "allows users with employment management permission" do
-      # Create teammate with employment management permission
-      create(:teammate, person: creator, organization: organization, can_manage_employment: true)
+      # Update teammate with employment management permission
+      creator_teammate.update!(can_manage_employment: true)
       
       expect(subject).to permit(pundit_user_creator, UploadEvent)
     end
@@ -30,8 +34,8 @@ RSpec.describe UploadEventPolicy, type: :policy do
     end
 
     it "denies users without employment management permission" do
-      # Create teammate without employment management permission
-      create(:teammate, person: other_person, organization: organization, can_manage_employment: false)
+      # Update teammate without employment management permission
+      other_teammate.update!(can_manage_employment: false)
       
       expect(subject).not_to permit(pundit_user_other, UploadEvent)
     end
@@ -39,7 +43,7 @@ RSpec.describe UploadEventPolicy, type: :policy do
 
   permissions :show? do
     it "allows users with employment management permission" do
-      create(:teammate, person: creator, organization: organization, can_manage_employment: true)
+      creator_teammate.update!(can_manage_employment: true)
       
       expect(subject).to permit(pundit_user_creator, upload_event)
     end
@@ -57,7 +61,7 @@ RSpec.describe UploadEventPolicy, type: :policy do
 
   permissions :create? do
     it "allows users with employment management permission" do
-      create(:teammate, person: creator, organization: organization, can_manage_employment: true)
+      creator_teammate.update!(can_manage_employment: true)
       
       expect(subject).to permit(pundit_user_creator, UploadEvent)
     end
@@ -75,7 +79,7 @@ RSpec.describe UploadEventPolicy, type: :policy do
 
   permissions :new? do
     it "allows users with employment management permission" do
-      create(:teammate, person: creator, organization: organization, can_manage_employment: true)
+      creator_teammate.update!(can_manage_employment: true)
       
       expect(subject).to permit(pundit_user_creator, UploadEvent)
     end
@@ -93,7 +97,7 @@ RSpec.describe UploadEventPolicy, type: :policy do
 
   permissions :destroy? do
     it "allows users with employment management permission" do
-      create(:teammate, person: creator, organization: organization, can_manage_employment: true)
+      creator_teammate.update!(can_manage_employment: true)
       
       expect(subject).to permit(pundit_user_creator, upload_event)
     end
@@ -111,7 +115,7 @@ RSpec.describe UploadEventPolicy, type: :policy do
 
   permissions :process_upload? do
     it "allows users with employment management permission" do
-      create(:teammate, person: creator, organization: organization, can_manage_employment: true)
+      creator_teammate.update!(can_manage_employment: true)
       
       expect(subject).to permit(pundit_user_creator, upload_event)
     end
@@ -128,12 +132,12 @@ RSpec.describe UploadEventPolicy, type: :policy do
   end
 
   describe "scope" do
-    let!(:upload_event1) { create(:upload_event, creator: creator, organization: organization) }
+    let!(:upload_event1) { create(:upload_event, creator: creator_person, organization: organization) }
     let!(:upload_event2) { create(:upload_event, creator: other_person, organization: organization) }
-    let!(:other_org_upload_event) { create(:upload_event, creator: creator, organization: create(:organization)) }
+    let!(:other_org_upload_event) { create(:upload_event, creator: creator_person, organization: create(:organization, :company)) }
 
     it "shows upload events for users with employment management permission" do
-      create(:teammate, person: creator, organization: organization, can_manage_employment: true)
+      creator_teammate.update!(can_manage_employment: true)
       
       scope = UploadEventPolicy::Scope.new(pundit_user_creator, UploadEvent).resolve
       expect(scope).to include(upload_event1)

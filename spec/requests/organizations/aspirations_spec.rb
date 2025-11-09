@@ -8,19 +8,11 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
   let(:maap_user) { create(:person) }
   let(:aspiration) { create(:aspiration, organization: organization) }
 
+  let(:person_teammate) { create(:teammate, person: person, organization: organization, can_manage_maap: false) }
+  let(:maap_user_teammate) { create(:teammate, person: maap_user, organization: organization, can_manage_maap: true) }
+  let(:admin_teammate) { create(:teammate, person: admin, organization: organization) }
+
   before do
-    # Grant MAAP permissions to maap_user for organization
-    create(:teammate, 
-           person: maap_user, 
-           organization: organization, 
-           can_manage_maap: true)
-    
-    # Create regular teammate for person
-    create(:teammate, 
-           person: person, 
-           organization: organization, 
-           can_manage_maap: false)
-    
     # Temporarily disable PaperTrail for request tests to avoid controller_info issues
     PaperTrail.enabled = false
   end
@@ -33,8 +25,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
   describe 'GET /organizations/:organization_id/aspirations' do
     context 'when user is a regular teammate' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        person_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(person, organization)
       end
 
       it 'allows access to index' do
@@ -46,8 +38,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user has MAAP permissions' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(maap_user)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        maap_user_teammate # Ensure teammate is created with can_manage_maap: true
+        sign_in_as_teammate_for_request(maap_user, organization)
       end
 
       it 'allows access to index' do
@@ -59,8 +51,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user is admin' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(admin)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        admin_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(admin, organization)
       end
 
       it 'allows access to index' do
@@ -74,8 +66,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
   describe 'GET /organizations/:organization_id/aspirations/:id' do
     context 'when user is a regular teammate' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        person_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(person, organization)
       end
 
       it 'allows access to show' do
@@ -87,8 +79,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user has MAAP permissions' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(maap_user)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        maap_user_teammate # Ensure teammate is created with can_manage_maap: true
+        sign_in_as_teammate_for_request(maap_user, organization)
       end
 
       it 'allows access to show' do
@@ -100,8 +92,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user is admin' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(admin)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        admin_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(admin, organization)
       end
 
       it 'allows access to show' do
@@ -115,8 +107,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
   describe 'GET /organizations/:organization_id/aspirations/new' do
     context 'when user is a regular teammate' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        person_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(person, organization)
       end
 
       it 'denies access' do
@@ -128,8 +120,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user has MAAP permissions' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(maap_user)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        maap_user_teammate # Ensure teammate is created with can_manage_maap: true
+        sign_in_as_teammate_for_request(maap_user, organization)
       end
 
       it 'allows access' do
@@ -141,8 +133,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user is admin' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(admin)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        admin_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(admin, organization)
       end
 
       it 'allows access' do
@@ -166,8 +158,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user is a regular teammate' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        person_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(person, organization)
       end
 
       it 'denies access' do
@@ -179,8 +171,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user has MAAP permissions' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(maap_user)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        maap_user_teammate # Ensure teammate is created with can_manage_maap: true
+        sign_in_as_teammate_for_request(maap_user, organization)
       end
 
       it 'allows access and creates aspiration' do
@@ -195,8 +187,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user is admin' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(admin)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        admin_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(admin, organization)
       end
 
       it 'allows access and creates aspiration' do
@@ -213,8 +205,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
   describe 'GET /organizations/:organization_id/aspirations/:id/edit' do
     context 'when user is a regular teammate' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        person_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(person, organization)
       end
 
       it 'denies access' do
@@ -226,8 +218,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user has MAAP permissions' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(maap_user)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        maap_user_teammate # Ensure teammate is created with can_manage_maap: true
+        sign_in_as_teammate_for_request(maap_user, organization)
       end
 
       it 'allows access' do
@@ -239,8 +231,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user is admin' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(admin)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        admin_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(admin, organization)
       end
 
       it 'allows access' do
@@ -263,8 +255,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user is a regular teammate' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        person_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(person, organization)
       end
 
       it 'denies access' do
@@ -277,8 +269,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user has MAAP permissions' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(maap_user)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        maap_user_teammate # Ensure teammate is created with can_manage_maap: true
+        sign_in_as_teammate_for_request(maap_user, organization)
       end
 
       it 'allows access and updates aspiration' do
@@ -290,8 +282,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user is admin' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(admin)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        admin_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(admin, organization)
       end
 
       it 'allows access and updates aspiration' do
@@ -305,8 +297,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
   describe 'DELETE /organizations/:organization_id/aspirations/:id' do
     context 'when user is a regular teammate' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        person_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(person, organization)
       end
 
       it 'denies access' do
@@ -319,8 +311,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user has MAAP permissions' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(maap_user)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        maap_user_teammate # Ensure teammate is created with can_manage_maap: true
+        sign_in_as_teammate_for_request(maap_user, organization)
       end
 
       it 'allows access and soft deletes aspiration' do
@@ -332,8 +324,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user is admin' do
       before do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(admin)
-        allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
+        admin_teammate # Ensure teammate is created
+        sign_in_as_teammate_for_request(admin, organization)
       end
 
       it 'allows access and soft deletes aspiration' do

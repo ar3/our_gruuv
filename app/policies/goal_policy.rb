@@ -4,7 +4,8 @@ class GoalPolicy < ApplicationPolicy
   end
 
   def show?
-    admin_bypass? || record.can_be_viewed_by?(actual_user)
+    return false unless teammate
+    admin_bypass? || record.can_be_viewed_by?(teammate.person)
   end
 
   def new?
@@ -25,25 +26,17 @@ class GoalPolicy < ApplicationPolicy
 
   class Scope < ApplicationPolicy::Scope
     def resolve
-      if actual_user.og_admin?
+      return scope.none unless teammate
+      person = teammate.person
+      if person.og_admin?
         scope.all
-      elsif user.respond_to?(:pundit_organization) && user.pundit_organization
-        company = user.pundit_organization.company? ? user.pundit_organization : user.pundit_organization.root_company
+      else
+        # Use organization from teammate
+        company = actual_organization&.root_company || actual_organization
         return scope.none unless company
         
         # Simplified: only filter by company_id
         scope.where(deleted_at: nil, company_id: company.id)
-      else
-        # Fallback: use first organization where user is a teammate
-        user_org = actual_user.teammates.first&.organization
-        if user_org
-          company = user_org.company? ? user_org : user_org.root_company
-          return scope.none unless company
-          
-          scope.where(deleted_at: nil, company_id: company.id)
-        else
-          scope.none
-        end
       end
     end
   end
@@ -51,45 +44,53 @@ class GoalPolicy < ApplicationPolicy
   private
 
   def user_is_teammate?
-    return false unless user.respond_to?(:pundit_organization) && user.pundit_organization
-    
-    actual_user.teammates.exists?(organization: user.pundit_organization)
+    # User is always a teammate (that's what current_company_teammate is)
+    true
   end
 
   def user_is_teammate_of_company?
-    return false unless user.respond_to?(:pundit_organization) && user.pundit_organization
-    
-    # Get the company (root organization)
-    organization = user.pundit_organization
-    company = organization.company? ? organization : organization.root_company
+    # Get the company (root organization) from teammate
+    company = actual_organization.root_company || actual_organization
     return false unless company
     
-    # Check if user is a teammate of the company or any organization within the company
-    company_descendant_ids = company.self_and_descendants.pluck(:id)
-    actual_user.teammates.exists?(organization_id: company_descendant_ids)
+    # Check if teammate's organization is in the company hierarchy
+    company.self_and_descendants.include?(actual_organization)
   end
 
   def user_is_creator?
     return false unless record&.creator
+    return false unless teammate
     
-    actual_user == record.creator.person
+    teammate.person == record.creator.person
   end
 
   def user_is_creator_or_owner?
     return false unless record
+    return false unless teammate
     
     # User is creator
     return true if user_is_creator?
     
+    person = teammate.person
+    
     # User is owner (if owner is Teammate)
     if record.owner_type == 'Teammate'
-      return true if record.owner.person == actual_user
+      # Check if teammate is the owner Teammate, or if person matches owner's person
+      return true if record.owner == teammate || record.owner.person == person
     end
     
     # User is direct member of owner organization (if owner is Company/Department/Team)
     # Rails polymorphic associations use "Organization" as owner_type for STI subclasses
     if record.owner_type == 'Organization' || record.owner_type.in?(['Company', 'Department', 'Team'])
-      return true if actual_user.teammates.exists?(organization: record.owner)
+      teammate_org = teammate.organization
+      # Check if teammate is directly in the owner organization (not just in the company hierarchy)
+      # For everyone_in_company privacy, allow direct members of owner organization to update
+      # For other privacy levels, also allow direct members
+      return true if teammate_org == record.owner
+      
+      # Don't allow members of descendant organizations to update (only direct members)
+      # This distinguishes "direct member of owner org" from "any member of company"
+      return false
     end
     
     false

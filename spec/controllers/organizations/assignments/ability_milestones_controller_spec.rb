@@ -10,14 +10,12 @@ RSpec.describe Organizations::Assignments::AbilityMilestonesController, type: :c
   let!(:ability3) { create(:ability, organization: company) }
 
   before do
-    session[:current_person_id] = person.id
-    allow(controller).to receive(:current_person).and_return(person)
+    sign_in_as_teammate(person, company)
   end
 
   describe 'GET #show' do
     context 'when user can view assignment' do
       before do
-        create(:teammate, person: person, organization: company)
         allow_any_instance_of(AssignmentPolicy).to receive(:show?).and_return(true)
       end
 
@@ -70,9 +68,6 @@ RSpec.describe Organizations::Assignments::AbilityMilestonesController, type: :c
   end
 
   describe 'PATCH #update' do
-    before do
-      create(:teammate, person: person, organization: company)
-    end
 
     context 'when user can update assignment' do
       before do

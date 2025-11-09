@@ -80,13 +80,17 @@ class MaapChangeExecutionService
       
       # Update check-in
       if assignment_data['employee_check_in'] || assignment_data['manager_check_in'] || assignment_data['official_check_in']
-        update_assignment_check_in(assignment, assignment_data)
+        result = update_assignment_check_in(assignment, assignment_data)
+        return false unless result # Return false if update failed
       end
     end
+    true
   end
 
   def update_assignment_check_in(assignment, check_in_data)
     teammate = person.teammates.find_by(organization: assignment.company)
+    return false unless teammate # Return false if teammate not found
+    
     check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
     
     if check_in
@@ -101,6 +105,7 @@ class MaapChangeExecutionService
       )
       update_check_in_fields(check_in, check_in_data)
     end
+    true
   end
 
   def execute_position_tenure_changes
@@ -154,30 +159,35 @@ class MaapChangeExecutionService
     if check_in_data['official_check_in'] && can_finalize_check_in?(check_in)
       update_official_check_in_fields(check_in, check_in_data['official_check_in'])
     end
+    
+    true # Return true to indicate success
   end
 
   def can_update_employee_check_in_fields?(check_in)
     # Employee can update their own check-in fields
-    current_user == check_in.teammate.person || admin_bypass?
+    return false unless current_user.is_a?(CompanyTeammate)
+    current_user.person == check_in.teammate.person || admin_bypass?
   end
 
   def can_update_manager_check_in_fields?(check_in)
     # Manager can update manager fields if they have management permissions
+    return false unless current_user.is_a?(CompanyTeammate)
     return true if admin_bypass?
     
     # Employee cannot update their own manager fields
-    return false if current_user == check_in.teammate.person
+    return false if current_user.person == check_in.teammate.person
     
     # Check if current user can manage this person's assignments
-    policy(check_in.teammate.person).manage_assignments?
+    policy(check_in.teammate.person)&.manage_assignments? || false
   end
 
   def can_finalize_check_in?(check_in)
     # Only managers can finalize check-ins
+    return false unless current_user.is_a?(CompanyTeammate)
     return true if admin_bypass?
     
     # Check if current user can manage this person's assignments
-    policy(check_in.teammate.person).manage_assignments?
+    policy(check_in.teammate.person)&.manage_assignments? || false
   end
 
   def update_employee_check_in_fields(check_in, employee_data)
@@ -203,7 +213,7 @@ class MaapChangeExecutionService
     )
     
     if manager_data['manager_completed_at']
-      check_in.complete_manager_side!(completed_by: current_user)
+      check_in.complete_manager_side!(completed_by: current_user.person)
     elsif manager_data.key?('manager_completed_at') && manager_data['manager_completed_at'].nil?
       # Explicitly unchecking manager completion
       check_in.uncomplete_manager_side!
@@ -218,15 +228,18 @@ class MaapChangeExecutionService
     )
     
     if official_data['official_check_in_completed_at']
-      check_in.finalize_check_in!(final_rating: official_data['official_rating'], finalized_by: current_user)
+      check_in.finalize_check_in!(final_rating: official_data['official_rating'], finalized_by: current_user.person)
     end
   end
 
   def admin_bypass?
-    current_user&.og_admin?
+    return false unless current_user.is_a?(CompanyTeammate)
+    current_user.person&.og_admin?
   end
 
   def policy(record)
-    PersonPolicy.new(current_user, record)
+    return nil unless current_user.is_a?(CompanyTeammate)
+    pundit_user = OpenStruct.new(user: current_user, real_user: current_user)
+    PersonPolicy.new(pundit_user, record)
   end
 end

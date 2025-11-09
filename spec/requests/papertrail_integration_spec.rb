@@ -2,13 +2,13 @@ require 'rails_helper'
 
 RSpec.describe 'PaperTrail Integration', type: :request do
   let(:organization) { create(:organization, type: 'Company') }
-  let(:person) { create(:person, current_organization: organization) }
+  let(:person) { create(:person) }
   let!(:teammate) { create(:teammate, person: person, organization: organization, can_manage_maap: true) }
 
   before do
     # Enable PaperTrail for these tests
     PaperTrail.enabled = true
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
+    sign_in_as_teammate_for_request(person, organization)
   end
 
   after do
@@ -54,13 +54,14 @@ RSpec.describe 'PaperTrail Integration', type: :request do
       
       version = versions.first
       expect(version.meta).to be_present
-      expect(version.meta['current_person_id']).to eq(person.id)
+      # Controller sets current_teammate_id, not current_person_id
+      expect(version.meta['current_teammate_id']).to eq(teammate.id)
     end
 
     it 'handles impersonation info in meta column' do
-      # Simulate impersonation
+      # Simulate impersonation - controller uses session[:impersonating_teammate_id]
       allow_any_instance_of(ApplicationController).to receive(:impersonating?).and_return(true)
-      allow_any_instance_of(ApplicationController).to receive(:session).and_return({ current_person_id: person.id })
+      allow_any_instance_of(ApplicationController).to receive(:session).and_return({ impersonating_teammate_id: teammate.id })
 
       post "/organizations/#{organization.id}/abilities", params: {
         ability: {
@@ -78,7 +79,8 @@ RSpec.describe 'PaperTrail Integration', type: :request do
       versions = PaperTrail::Version.where(item: ability)
       version = versions.first
       
-      expect(version.meta['impersonating_person_id']).to eq(person.id)
+      # Controller sets impersonating_teammate_id, not impersonating_person_id
+      expect(version.meta['impersonating_teammate_id']).to eq(teammate.id)
     end
 
     it 'does not try to set current_person_id as direct attribute' do

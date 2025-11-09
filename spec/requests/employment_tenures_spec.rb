@@ -3,17 +3,26 @@ require 'rails_helper'
 RSpec.describe "EmploymentTenures", type: :request do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
-  let(:person_teammate) { create(:teammate, person: person, organization: company) }
   let(:position) do
     position_major_level = create(:position_major_level)
     position_type = create(:position_type, organization: company, position_major_level: position_major_level)
     position_level = create(:position_level, position_major_level: position_major_level)
     create(:position, position_type: position_type, position_level: position_level)
   end
+  
+  # Use the teammate created by sign_in_as_teammate_for_request instead of creating a duplicate
+  let(:person_teammate) do
+    # The helper creates a teammate, so we need to find it or create it if it doesn't exist
+    person.teammates.find_by(organization: company) || 
+      create(:teammate, person: person, organization: company)
+  end
   let(:employment_tenure) { create(:employment_tenure, teammate: person_teammate, company: company, position: position) }
 
   before do
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
+    # Sign in but don't set organization (for tests that need no organization)
+    # This creates a teammate, which we'll use via person_teammate
+    sign_in_as_teammate_for_request(person, company)
+    # Override to nil for tests that specifically need no organization
     allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(nil)
   end
 

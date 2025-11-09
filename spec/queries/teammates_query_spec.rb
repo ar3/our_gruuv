@@ -87,8 +87,8 @@ RSpec.describe TeammatesQuery, type: :query do
         query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
         results = query.call
         
-        expect(results).not_to include(direct_report1_teammate)
-        expect(results).to include(direct_report2_teammate)
+        expect(results.map(&:id)).not_to include(direct_report1_teammate.id)
+        expect(results.map(&:id)).to include(direct_report2_teammate.id)
       end
 
       it 'handles teammates with multiple employment tenures' do
@@ -117,8 +117,8 @@ RSpec.describe TeammatesQuery, type: :query do
         query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
         results = query.call
         
-        expect(results).not_to include(direct_report1_teammate)
-        expect(results).to include(direct_report2_teammate)
+        expect(results.map(&:id)).not_to include(direct_report1_teammate.id)
+        expect(results.map(&:id)).to include(direct_report2_teammate.id)
       end
 
       it 'uses distinct to avoid duplicates' do
@@ -220,7 +220,7 @@ RSpec.describe TeammatesQuery, type: :query do
 
         # Should only appear once despite multiple tenures
         expect(results.count { |t| t.id == teammate.id }).to eq(1)
-        expect(results).to include(teammate)
+        expect(results.map(&:id)).to include(teammate.id)
       end
 
       it 'returns distinct teammates without manager filter' do
@@ -237,7 +237,7 @@ RSpec.describe TeammatesQuery, type: :query do
 
         # Should only appear once despite multiple tenures
         expect(results.count { |t| t.id == teammate.id }).to eq(1)
-        expect(results).to include(teammate)
+        expect(results.map(&:id)).to include(teammate.id)
       end
     end
   end
@@ -339,8 +339,8 @@ RSpec.describe TeammatesQuery, type: :query do
       query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports', status: 'assigned_employee' }, current_person: manager)
       results = query.call_with_status_filter
       
-      expect(results).to include(direct_report1_teammate)
-      expect(results).not_to include(direct_report2_teammate) # Not assigned yet
+      expect(results.map(&:id)).to include(direct_report1_teammate.id)
+      expect(results.map(&:id)).not_to include(direct_report2_teammate.id) # Not assigned yet
     end
 
     it 'combines manager filter with permission filter' do

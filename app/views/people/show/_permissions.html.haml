@@ -58,7 +58,7 @@
               .mb-3
                 .d-flex.justify-content-between.align-items-center
                   .permission-dropdown
-                    = form_with url: update_permission_organization_person_path(@person.current_organization_or_default, @person), method: :post, local: true, class: "d-inline" do |f|
+                    = form_with url: update_permission_organization_person_path(current_organization, @person), method: :post, local: true, class: "d-inline" do |f|
                       = f.hidden_field :permission_type, value: "can_manage_employment"
                       - employment_options = [['Yes', 'true'], ['No', 'false'], ['Not Set', 'nil']]
                       - employment_selected = current_access&.can_manage_employment == true ? 'true' : (current_access&.can_manage_employment == false ? 'false' : 'nil')
@@ -67,7 +67,7 @@
               .mb-3
                 .d-flex.justify-content-between.align-items-center
                   .permission-dropdown
-                    = form_with url: update_permission_organization_person_path(@person.current_organization_or_default, @person), method: :post, local: true, class: "d-inline" do |f|
+                    = form_with url: update_permission_organization_person_path(current_organization, @person), method: :post, local: true, class: "d-inline" do |f|
                       = f.hidden_field :permission_type, value: "can_create_employment"
                       - creation_options = [['Yes', 'true'], ['No', 'false'], ['Not Set', 'nil']]
                       - creation_selected = current_access&.can_create_employment == true ? 'true' : (current_access&.can_create_employment == false ? 'false' : 'nil')
@@ -76,7 +76,7 @@
               .mb-3
                 .d-flex.justify-content-between.align-items-center
                   .permission-dropdown
-                    = form_with url: update_permission_organization_person_path(@person.current_organization_or_default, @person), method: :post, local: true, class: "d-inline" do |f|
+                    = form_with url: update_permission_organization_person_path(current_organization, @person), method: :post, local: true, class: "d-inline" do |f|
                       = f.hidden_field :permission_type, value: "can_manage_maap"
                       - maap_options = [['Yes', 'true'], ['No', 'false'], ['Not Set', 'nil']]
                       - maap_selected = current_access&.can_manage_maap == true ? 'true' : (current_access&.can_manage_maap == false ? 'false' : 'nil')

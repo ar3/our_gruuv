@@ -6,8 +6,8 @@ RSpec.describe 'Organizations::Abilities', type: :request do
   let(:teammate) { create(:teammate, person: person, organization: organization, can_manage_maap: true) }
 
   before do
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-    teammate # Ensure teammate is created
+    teammate # Ensure teammate is created with can_manage_maap: true
+    sign_in_as_teammate_for_request(person, organization)
     # Temporarily disable PaperTrail for request tests to avoid controller_info issues
     PaperTrail.enabled = false
   end

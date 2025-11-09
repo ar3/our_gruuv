@@ -1,11 +1,11 @@
 class ObservationPolicy < ApplicationPolicy
   def index?
-    actual_user.present?
+    teammate.present?
   end
 
   def show?
     # Show page is only for the observer
-    actual_user == record.observer
+    teammate.person == record.observer
   end
 
   def new?
@@ -13,7 +13,7 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def create?
-    actual_user.present?
+    teammate.present?
   end
 
   def edit?
@@ -21,29 +21,31 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def update?
-    actual_user == record.observer
+    teammate.person == record.observer
   end
 
   def destroy?
     return true if admin_bypass?
-    return true if actual_user == record.observer && record.created_at > 24.hours.ago
+    return true if teammate.person == record.observer && record.created_at > 24.hours.ago
     false
   end
 
   def view_permalink?
+    return false unless teammate
+    person = teammate.person
     # Draft observations are only visible to their creator
-    return false if record.draft? && actual_user != record.observer
+    return false if record.draft? && person != record.observer
     
     # Permalink page respects privacy settings
     case record.privacy_level
     when 'observer_only'
-      actual_user == record.observer
+      person == record.observer
     when 'observed_only'
-      actual_user == record.observer || user_in_observees?
+      person == record.observer || user_in_observees?
     when 'managers_only'
-      actual_user == record.observer || user_in_management_hierarchy?
+      person == record.observer || user_in_management_hierarchy?
     when 'observed_and_managers'
-      actual_user == record.observer || user_in_observees? || user_in_management_hierarchy? || user_can_manage_employment?
+      person == record.observer || user_in_observees? || user_in_management_hierarchy? || user_can_manage_employment?
     when 'public_observation'
       true
     else
@@ -52,10 +54,11 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def view_negative_ratings?
+    person = teammate.person
     # Negative ratings have additional restrictions beyond privacy level
     return false unless view_permalink?
     
-    actual_user == record.observer || 
+    person == record.observer || 
     user_in_observees? || 
     user_in_management_hierarchy? || 
     user_can_manage_employment?
@@ -73,7 +76,7 @@ class ObservationPolicy < ApplicationPolicy
 
   def post_to_slack?
     # Only observer can post to Slack
-    actual_user == record.observer
+    teammate.person == record.observer
   end
 
   def journal?
@@ -99,15 +102,18 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def view_change_history?
+    person = teammate.person
     # Observer, observed, and those with can_manage_employment can see change history
-    actual_user == record.observer || 
+    person == record.observer || 
     user_in_observees? || 
     user_can_manage_employment?
   end
 
-  class Scope < Scope
+  class Scope < ApplicationPolicy::Scope
     def resolve
-      if user.respond_to?(:og_admin?) && user.og_admin?
+      return scope.none unless teammate
+      person = teammate.person
+      if person.og_admin?
         scope.all
       else
         # Use ObservationVisibilityQuery for complex visibility logic
@@ -120,21 +126,21 @@ class ObservationPolicy < ApplicationPolicy
   private
 
   def user_in_observees?
-    return false unless actual_user.is_a?(Person)
-    
-    record.observed_teammates.any? { |teammate| teammate.person == actual_user }
+    person = teammate.person
+    record.observed_teammates.any? { |observed_teammate| observed_teammate.person == person }
   end
 
   def user_in_management_hierarchy?
-    return false unless actual_user.is_a?(Person)
+    person = teammate.person
     
-    # Use record.company for organization context (KudosController doesn't have organization in pundit_user)
-    organization = user.respond_to?(:pundit_organization) && user.pundit_organization ? user.pundit_organization : record.company
+    # Use organization from teammate, fallback to record.company
+    organization = actual_organization || record.company
     
-    record.observed_teammates.any? { |teammate| actual_user.in_managerial_hierarchy_of?(teammate.person, organization) }
+    record.observed_teammates.any? { |observed_teammate| person.in_managerial_hierarchy_of?(observed_teammate.person, organization) }
   end
 
   def user_can_manage_employment?
-    actual_user.respond_to?(:can_manage_employment?) && actual_user.can_manage_employment?(record.company)
+    person = teammate.person
+    person.can_manage_employment?(record.company)
   end
 end

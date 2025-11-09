@@ -11,7 +11,7 @@ class Organizations::SearchController < Organizations::OrganizationNamespaceBase
       search_query = GlobalSearchQuery.new(
         query: @query,
         current_organization: @organization,
-        current_person: current_person
+        current_teammate: current_company_teammate
       )
       
       @results = search_query.call

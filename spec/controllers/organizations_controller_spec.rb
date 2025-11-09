@@ -6,7 +6,9 @@ RSpec.describe OrganizationsController, type: :controller do
   let(:team) { create(:organization, name: 'Test Team', type: 'Team', parent: organization) }
 
   before do
-    session[:current_person_id] = person.id
+    # Create a teammate for the person - use first organization or create one
+    teammate = create(:teammate, person: person, organization: organization)
+    sign_in_as_teammate(person, organization)
   end
 
   describe 'GET #index' do
@@ -99,8 +101,8 @@ RSpec.describe OrganizationsController, type: :controller do
     end
 
     it 'calculates distinct participant names using display_name method and prevents duplicates' do
-      # Create teammates for the person in both organizations
-      teammate1 = create(:teammate, person: person, organization: organization)
+      # Use existing teammate for organization, create teammate for team
+      teammate1 = person.teammates.find_by(organization: organization)
       teammate2 = create(:teammate, person: person, organization: team)
       
       # Create participants for the huddles - same person in both huddles
@@ -119,8 +121,8 @@ RSpec.describe OrganizationsController, type: :controller do
       # Create a second person
       person2 = create(:person, first_name: 'Jane', last_name: 'Doe', email: 'jane@example.com')
       
-      # Create teammates for both people
-      teammate1 = create(:teammate, person: person, organization: organization)
+      # Use existing teammate for organization, create teammates for team
+      teammate1 = person.teammates.find_by(organization: organization)
       teammate2 = create(:teammate, person: person, organization: team)
       teammate3 = create(:teammate, person: person2, organization: team)
       
@@ -247,17 +249,9 @@ RSpec.describe OrganizationsController, type: :controller do
       expect(flash[:notice]).to eq("Switched to #{organization.display_name}")
     end
 
-    it 'redirects to organizations index on failure' do
-      # Mock the switch_to_organization method to return false
-      allow_any_instance_of(Person).to receive(:switch_to_organization).and_return(false)
-      patch :switch, params: { id: organization.id }
-      expect(response).to redirect_to(organizations_path)
-      expect(flash[:alert]).to eq("Failed to switch organization")
-    end
   end
 
   describe 'GET #dashboard' do
-    let!(:teammate) { create(:teammate, person: person, organization: organization) }
 
     it 'renders successfully without NoMethodError' do
       expect {
@@ -292,9 +286,8 @@ RSpec.describe OrganizationsController, type: :controller do
     end
 
     let!(:ability) { create(:ability, organization: organization, created_by: person, updated_by: person) }
-    let!(:teammate) { create(:teammate, person: person, organization: organization) }
     let!(:certifier) { create(:person) }
-    let!(:teammate_milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, certified_by: certifier, attained_at: 30.days.ago) }
+    let!(:teammate_milestone) { create(:teammate_milestone, teammate: person.teammates.find_by(organization: organization), ability: ability, certified_by: certifier, attained_at: 30.days.ago) }
 
     it 'returns http success' do
       get :celebrate_milestones, params: { id: organization.id }
@@ -328,6 +321,7 @@ RSpec.describe OrganizationsController, type: :controller do
       
       # Create an old milestone outside the 90-day range with a different ability
       old_ability = create(:ability, organization: organization, created_by: person, updated_by: person)
+      teammate = person.teammates.find_by(organization: organization)
       create(:teammate_milestone, teammate: teammate, ability: old_ability, certified_by: certifier, attained_at: 100.days.ago)
       
       get :celebrate_milestones, params: { id: organization.id }

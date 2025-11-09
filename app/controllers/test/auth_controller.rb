@@ -5,25 +5,33 @@ class Test::AuthController < ApplicationController
   before_action :ensure_test_environment
   
   def sign_in
-    person_id = params[:person_id]
-    organization_id = params[:organization_id]
+    teammate_id = params[:teammate_id]
+    person_id = params[:person_id] # Legacy support
+    organization_id = params[:organization_id] # Legacy support
     redirect_to = params[:redirect_to]
     
-    unless person_id.present?
-      render json: { error: 'person_id is required' }, status: :bad_request
+    teammate = if teammate_id.present?
+      Teammate.find(teammate_id)
+    elsif person_id.present?
+      person = Person.find(person_id)
+      # Find or create teammate
+      if organization_id.present?
+        organization = Organization.find(organization_id)
+        person.teammates.find_or_create_by!(organization: organization) do |t|
+          t.type = 'CompanyTeammate'
+          t.first_employed_at = nil
+          t.last_terminated_at = nil
+        end
+      else
+        person.active_teammates.first || ensure_teammate_for_person(person)
+      end
+    else
+      render json: { error: 'teammate_id or person_id is required' }, status: :bad_request
       return
     end
     
-    person = Person.find(person_id)
-    
     # Set session
-    session[:current_person_id] = person.id
-    
-    # Set organization if provided
-    if organization_id.present?
-      organization = Organization.find(organization_id)
-      person.update!(current_organization: organization)
-    end
+    session[:current_company_teammate_id] = teammate.id
     
     # If redirect_to is provided, redirect there instead of returning JSON
     if redirect_to.present?
@@ -31,8 +39,9 @@ class Test::AuthController < ApplicationController
     else
       render json: { 
         success: true, 
-        person: { id: person.id, name: person.display_name },
-        organization: person.current_organization&.name
+        teammate: { id: teammate.id },
+        person: { id: teammate.person.id, name: teammate.person.display_name },
+        organization: teammate.organization.name
       }
     end
   end
@@ -43,11 +52,12 @@ class Test::AuthController < ApplicationController
   end
   
   def current_user
-    if current_person
+    if current_company_teammate
       render json: { 
         success: true, 
+        teammate: { id: current_company_teammate.id },
         person: { id: current_person.id, name: current_person.display_name },
-        organization: current_person.current_organization&.name
+        organization: current_organization.name
       }
     else
       render json: { success: false, message: 'No user signed in' }
