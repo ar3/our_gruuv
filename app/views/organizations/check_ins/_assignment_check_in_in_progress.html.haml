@@ -1,7 +1,7 @@
 -# Assignment Check-In Form Fields
 = form.fields_for :assignment_check_ins, check_in, index: check_in.id do |af|
   .row
-    - if view_mode == :employee || view_mode.nil?
+    - if view_mode == :employee
       .col-md-6
         %h5 Employee Assessment
         .form-group
@@ -20,7 +20,7 @@
           = af.label :employee_private_notes, "Private Notes"
           = render 'organizations/check_ins/form_fields/assignment_employee_private_notes_field', form: af, check_in: check_in, css_class: 'form-control'
 
-    - if view_mode == :manager || view_mode.nil?
+    - if view_mode == :manager
       .col-md-6
         %h5 Manager Assessment
         .form-group

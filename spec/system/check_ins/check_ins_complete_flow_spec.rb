@@ -15,6 +15,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
       teammate: employee_teammate,
       position: position,
       company: company,
+      manager: manager_person,
       started_at: 1.year.ago
     )
   end
@@ -25,11 +26,11 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
   let!(:assignment_tenure1) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, started_at: 6.months.ago) }
   let!(:assignment_tenure2) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment2, started_at: 3.months.ago) }
 
-  before do
-    sign_in_as(manager_person, company)
-  end
-
   describe 'Employee with no prior check-ins, multiple assignments and aspirations' do
+    before do
+      sign_in_as(employee_person, company)
+    end
+
     it 'allows filling out multiple assignments, aspirations, and position in one save' do
       visit organization_person_check_ins_path(company, employee_person)
       
@@ -91,6 +92,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
     let!(:check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment1) }
 
     it 'handles scenario where employee started but manager has not' do
+      sign_in_as(employee_person, company)
       # Employee completes their side
       check_in.update!(
         employee_rating: 'exceeding',
@@ -117,6 +119,8 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
     end
 
     it 'handles scenario where employee completed and manager saved their side' do
+      sign_in_as(manager_person, company)
+      
       # Employee completes
       check_in.update!(
         employee_rating: 'exceeding',
@@ -139,6 +143,8 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
     end
 
     it 'handles scenario where both have completed both sides' do
+      sign_in_as(manager_person, company)
+      
       # Both complete
       check_in.update!(
         employee_rating: 'exceeding',
@@ -164,6 +170,81 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
       # Both employee and manager ratings should be visible
       expect(page).to have_content('Exceeding') || page.has_content?('🟢')
       expect(page).to have_content('Meeting') || page.has_content?('🔵')
+    end
+  end
+
+  describe 'Role-based field visibility' do
+    let!(:assignment) { create(:assignment, company: company, title: 'Test Assignment') }
+    let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 6.months.ago) }
+    let!(:aspiration) { create(:aspiration, organization: company, name: 'Test Aspiration') }
+    let!(:assignment_check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment) }
+    let!(:aspiration_check_in) { AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration) }
+    
+    # Ensure employment_tenure has manager set for manager view mode to work
+    before do
+      employment_tenure.update!(manager: manager_person) if employment_tenure.manager != manager_person
+    end
+
+    describe 'Employee view' do
+      before do
+        sign_in_as(employee_person, company)
+      end
+
+      it 'shows only employee fields and hides manager fields' do
+        visit organization_person_check_ins_path(company, employee_person)
+        
+        # Should see employee fields for assignments
+        expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_rating]")
+        expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][actual_energy_percentage]")
+        expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_personal_alignment]")
+        expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_private_notes]")
+        
+        # Should see employee fields for aspirations
+        expect(page).to have_field("check_ins[aspiration_check_ins][#{aspiration_check_in.id}][employee_rating]")
+        expect(page).to have_field("check_ins[aspiration_check_ins][#{aspiration_check_in.id}][employee_private_notes]")
+        
+        # Should NOT see manager fields for assignments
+        expect(page).not_to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][manager_rating]")
+        expect(page).not_to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][manager_private_notes]")
+        
+        # Should NOT see manager fields for aspirations
+        expect(page).not_to have_field("check_ins[aspiration_check_ins][#{aspiration_check_in.id}][manager_rating]")
+        expect(page).not_to have_field("check_ins[aspiration_check_ins][#{aspiration_check_in.id}][manager_private_notes]")
+        
+        # Should NOT see manager assessment section headers
+        expect(page).not_to have_content('Manager Assessment')
+      end
+    end
+
+    describe 'Manager view' do
+      before do
+        sign_in_as(manager_person, company)
+      end
+
+      it 'shows only manager fields and hides employee fields' do
+        visit organization_person_check_ins_path(company, employee_person)
+        
+        # Should see manager fields for assignments
+        expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][manager_rating]")
+        expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][manager_private_notes]")
+        
+        # Should see manager fields for aspirations
+        expect(page).to have_field("check_ins[aspiration_check_ins][#{aspiration_check_in.id}][manager_rating]")
+        expect(page).to have_field("check_ins[aspiration_check_ins][#{aspiration_check_in.id}][manager_private_notes]")
+        
+        # Should NOT see employee fields for assignments
+        expect(page).not_to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_rating]")
+        expect(page).not_to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][actual_energy_percentage]")
+        expect(page).not_to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_personal_alignment]")
+        expect(page).not_to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_private_notes]")
+        
+        # Should NOT see employee fields for aspirations
+        expect(page).not_to have_field("check_ins[aspiration_check_ins][#{aspiration_check_in.id}][employee_rating]")
+        expect(page).not_to have_field("check_ins[aspiration_check_ins][#{aspiration_check_in.id}][employee_private_notes]")
+        
+        # Should NOT see employee assessment section headers
+        expect(page).not_to have_content('Employee Assessment')
+      end
     end
   end
 end
