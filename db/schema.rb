@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_09_101540) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_11_043601) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -451,6 +451,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_09_101540) do
     t.index ["parent_id"], name: "index_organizations_on_parent_id"
   end
 
+  create_table "page_visits", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.text "url"
+    t.string "page_title"
+    t.text "user_agent"
+    t.datetime "visited_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["person_id", "visited_at"], name: "index_page_visits_on_person_id_and_visited_at"
+    t.index ["person_id"], name: "index_page_visits_on_person_id"
+    t.index ["visited_at"], name: "index_page_visits_on_visited_at"
+  end
+
   create_table "people", force: :cascade do |t|
     t.string "first_name"
     t.string "middle_name"
@@ -787,6 +800,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_09_101540) do
   add_foreign_key "observees", "observations"
   add_foreign_key "observees", "teammates"
   add_foreign_key "organizations", "organizations", column: "parent_id"
+  add_foreign_key "page_visits", "people"
   add_foreign_key "person_identities", "people"
   add_foreign_key "position_assignments", "assignments"
   add_foreign_key "position_assignments", "positions"

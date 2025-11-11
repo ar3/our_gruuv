@@ -102,9 +102,13 @@
                 %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
                   Recently Visited
                 %ul.dropdown-menu
-                  - if current_organization
-                    -#%li= link_to "Observations", organization_observations_path(current_organization), class: "dropdown-item"
-                    %li Coming soon... for now go to the dashboard
+                  - if recent_page_visits.any?
+                    - recent_page_visits.each do |visit|
+                      %li= link_to visit.page_title, visit.url, class: "dropdown-item"
+                  - elsif current_organization
+                    %li= link_to "Dashboard", dashboard_organization_path(current_organization), class: "dropdown-item"
+                  - else
+                    %li.dropdown-item.text-muted No recent visits
               
           %ul.navbar-nav
             - if current_person

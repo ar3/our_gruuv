@@ -43,11 +43,15 @@ class ApplicationController < ActionController::Base
   helper_method :current_organization
   helper_method :impersonating?
   helper_method :real_current_teammate
+  helper_method :recent_page_visits
   
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
   
   # Set up PaperTrail controller info for request tracking
   before_action :set_paper_trail_controller_info
+  
+  # Track page visits for recently visited feature
+  after_action :track_page_visit
   
   # Override Pundit's default user method to use current_company_teammate
   def pundit_user
@@ -432,5 +436,57 @@ class ApplicationController < ActionController::Base
       first_employed_at: nil,
       last_terminated_at: nil
     )
+  end
+
+  # Helper method for recent page visits
+  def recent_page_visits
+    return PageVisit.none unless current_person
+    PageVisit.recent.for_person(current_person).limit(30)
+  end
+
+  # Track page visits for recently visited feature
+  def track_page_visit
+    # Skip tracking if no current person
+    return unless current_person
+    
+    # Skip tracking for root path
+    return if request.path == '/' || request.path == root_path
+    
+    # Skip tracking for non-HTML requests
+    return unless request.format.html?
+    
+    # Skip tracking for AJAX requests
+    return if request.xhr?
+    
+    # Skip tracking for API endpoints (if path starts with /api)
+    return if request.path.start_with?('/api')
+    
+    # Get page title - try to get from content_for, fallback to controller/action
+    # Note: In after_action, content_for may not be directly accessible
+    # We'll use the fallback for now and can improve title extraction later
+    page_title = begin
+      # Try to access content_for if available
+      if respond_to?(:content_for) && content_for?(:title)
+        content_for(:title)
+      else
+        "#{controller_name.humanize} #{action_name.humanize}"
+      end
+    rescue => e
+      # Fallback to controller/action name
+      "#{controller_name.humanize} #{action_name.humanize}"
+    end
+    
+    # Get full URL with query params
+    url = request.fullpath
+    
+    # Get user agent
+    user_agent = request.user_agent
+    Rails.logger.info "🔍 PageVisit: About to call PageVisitJob.perform_now"
+    # Call perform directly on an instance to bypass ActiveJob queue adapter issues
+    PageVisitJob.new.perform(current_person.id, url, page_title, user_agent)
+  rescue => e
+    # Don't let tracking errors break the request
+    Rails.logger.error "PageVisit tracking error: #{e.class} - #{e.message}"
+    Rails.logger.error e.backtrace.first(5).join("\n")
   end
 end
