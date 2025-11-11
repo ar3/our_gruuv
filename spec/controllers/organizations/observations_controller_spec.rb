@@ -440,6 +440,188 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
   end
 
+  describe 'GET #manage_observees' do
+    let(:draft) do
+      obs = build(:observation, observer: observer, company: company, published_at: nil)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs
+    end
+    let(:other_teammate) { create(:teammate, organization: company) }
+
+    it 'renders the manage_observees template' do
+      get :manage_observees, params: { organization_id: company.id, id: draft.id }
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template(:manage_observees)
+      expect(response).to render_template(layout: 'overlay')
+    end
+
+    it 'assigns all teammates (not just unselected)' do
+      get :manage_observees, params: { organization_id: company.id, id: draft.id }
+      expect(assigns(:teammates)).to include(observee_teammate)
+      expect(assigns(:teammates)).to include(other_teammate)
+    end
+
+    it 'requires authorization' do
+      other_person = create(:person)
+      other_teammate_user = create(:teammate, person: other_person, organization: company)
+      sign_in_as_teammate(other_person, company)
+      
+      expect {
+        get :manage_observees, params: { organization_id: company.id, id: draft.id }
+      }.to raise_error(Pundit::NotAuthorizedError)
+    end
+  end
+
+  describe 'PATCH #manage_observees' do
+    let(:draft) do
+      obs = build(:observation, observer: observer, company: company, published_at: nil)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs
+    end
+    let(:new_teammate) { create(:teammate, organization: company) }
+    let(:another_teammate) { create(:teammate, organization: company) }
+
+    context 'when adding new observees' do
+      it 'adds new observees when teammates are checked' do
+        expect {
+          patch :manage_observees, params: {
+            organization_id: company.id,
+            id: draft.id,
+            teammate_ids: [observee_teammate.id, new_teammate.id]
+          }
+        }.to change { draft.observees.count }.by(1)
+        
+        expect(draft.reload.observees.pluck(:teammate_id)).to include(observee_teammate.id, new_teammate.id)
+      end
+
+      it 'shows appropriate success message when adding' do
+        patch :manage_observees, params: {
+          organization_id: company.id,
+          id: draft.id,
+          teammate_ids: [observee_teammate.id, new_teammate.id]
+        }
+        expect(flash[:notice]).to include('Added 1 observee(s)')
+      end
+    end
+
+    context 'when removing observees' do
+      it 'removes observees when teammates are unchecked' do
+        expect {
+          patch :manage_observees, params: {
+            organization_id: company.id,
+            id: draft.id,
+            teammate_ids: []
+          }
+        }.to change { draft.observees.count }.by(-1)
+        
+        expect(draft.reload.observees.pluck(:teammate_id)).not_to include(observee_teammate.id)
+      end
+
+      it 'shows appropriate success message when removing' do
+        patch :manage_observees, params: {
+          organization_id: company.id,
+          id: draft.id,
+          teammate_ids: []
+        }
+        expect(flash[:notice]).to include('Removed 1 observee(s)')
+      end
+    end
+
+    context 'when adding and removing in same submission' do
+      before do
+        draft.observees.create!(teammate: another_teammate)
+      end
+
+      it 'handles mixed add/remove in single submission' do
+        expect {
+          patch :manage_observees, params: {
+            organization_id: company.id,
+            id: draft.id,
+            teammate_ids: [observee_teammate.id, new_teammate.id]
+          }
+        }.to change { draft.observees.count }.by(0) # One removed, one added
+        
+        expect(draft.reload.observees.pluck(:teammate_id)).to include(observee_teammate.id, new_teammate.id)
+        expect(draft.reload.observees.pluck(:teammate_id)).not_to include(another_teammate.id)
+      end
+
+      it 'shows appropriate success message for mixed operations' do
+        patch :manage_observees, params: {
+          organization_id: company.id,
+          id: draft.id,
+          teammate_ids: [observee_teammate.id, new_teammate.id]
+        }
+        expect(flash[:notice]).to include('Added 1 observee(s) and removed 1 observee(s)')
+      end
+    end
+
+    context 'when no changes are made' do
+      it 'shows no changes message' do
+        patch :manage_observees, params: {
+          organization_id: company.id,
+          id: draft.id,
+          teammate_ids: [observee_teammate.id]
+        }
+        expect(flash[:notice]).to eq('No changes made')
+      end
+    end
+
+    context 'edge cases' do
+      it 'handles empty selection (all removed)' do
+        expect {
+          patch :manage_observees, params: {
+            organization_id: company.id,
+            id: draft.id,
+            teammate_ids: []
+          }
+        }.to change { draft.observees.count }.by(-1)
+      end
+
+      it 'handles all teammates selected (all added)' do
+        new_teammate2 = create(:teammate, organization: company)
+        expect {
+          patch :manage_observees, params: {
+            organization_id: company.id,
+            id: draft.id,
+            teammate_ids: [observee_teammate.id, new_teammate.id, new_teammate2.id]
+          }
+        }.to change { draft.observees.count }.by(2)
+      end
+
+      it 'redirects back to new observation page with correct params' do
+        patch :manage_observees, params: {
+          organization_id: company.id,
+          id: draft.id,
+          teammate_ids: [observee_teammate.id],
+          return_url: organization_observations_path(company),
+          return_text: 'Back to Observations'
+        }
+        expect(response).to redirect_to(new_organization_observation_path(
+          company,
+          draft_id: draft.id,
+          return_url: organization_observations_path(company),
+          return_text: 'Back to Observations'
+        ))
+      end
+    end
+
+    it 'requires authorization' do
+      other_person = create(:person)
+      other_teammate_user = create(:teammate, person: other_person, organization: company)
+      sign_in_as_teammate(other_person, company)
+      
+      expect {
+        patch :manage_observees, params: {
+          organization_id: company.id,
+          id: draft.id,
+          teammate_ids: []
+        }
+      }.to raise_error(Pundit::NotAuthorizedError)
+    end
+  end
+
   # Note: CSRF protection is disabled in test environment (config/environments/test.rb)
   # System specs won't catch CSRF issues because allow_forgery_protection = false
   # This is expected Rails behavior - tests don't validate CSRF tokens

@@ -190,10 +190,10 @@ get '/login', to: 'auth#login', as: :login
         get :add_assignments  # Add assignments to draft observation
         get :add_aspirations  # Add aspirations to draft observation
         get :add_abilities    # Add abilities to draft observation
-        get :add_observees    # Add observees to draft observation
+        get :manage_observees    # Manage observees for draft observation
         patch :save_and_add_assignments  # Save draft and navigate to add assignments
         post :add_rateables  # Add rateables to draft observation
-        post :add_observees   # Add observees to draft observation
+        patch :manage_observees   # Manage observees for draft observation
         patch :update_draft, constraints: { id: /[0-9]+|new/ }  # Update draft observation (supports 'new' for new records)
         post :cancel, constraints: { id: /[0-9]+|new/ }  # Cancel and optionally save draft if story has content (supports 'new' for new records)
         post :publish, constraints: { id: /[0-9]+|new/ }  # Publish draft observation (supports 'new' for new records)

@@ -1,5 +1,5 @@
 - content_for :header do
-  Add Observees to Observation
+  Manage Observees
 - content_for :return_url do
   = new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text])
 - content_for :return_text do
@@ -9,9 +9,9 @@
   .card-header
     %h5.mb-0
       %i.bi.bi-people.me-2
-      Select Observees to Add
+      Select Observees
   .card-body
-    = form_with url: add_observees_organization_observation_path(organization, @observation), method: :post, local: true do |form|
+    = form_with url: manage_observees_organization_observation_path(organization, @observation), method: :patch, local: true do |form|
       = hidden_field_tag :authenticity_token, form_authenticity_token
       = hidden_field_tag :return_url, params[:return_url]
       = hidden_field_tag :return_text, params[:return_text]
@@ -33,6 +33,5 @@
         = link_to new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]), class: 'btn btn-outline-secondary' do
           %i.bi.bi-arrow-left.me-1
           = params[:return_text] || 'Draft'
-        = form.submit 'Add Selected Observees', class: 'btn btn-primary'
-
+        = form.submit 'Save Changes', class: 'btn btn-primary'
 
