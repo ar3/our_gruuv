@@ -1,0 +1,73 @@
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-plug.me-2
+      Integrations Health Check
+    .d-flex.align-items-center
+      %small.text-muted.ms-3
+        %i.bi.bi-info-circle.me-1
+        Test and verify integration connections
+
+.mb-4
+  = content_for :go_back_link
+
+- content_for :go_back_link do
+  = link_to root_path, class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Home
+
+.row
+  .col-lg-8
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-bell.me-2
+          NotificationAPI
+      .card-body
+        - if @notification_api_configured
+          .alert.alert-success.mb-3
+            %i.bi.bi-check-circle.me-2
+            NotificationAPI credentials configured
+          
+          .mb-3{"data-controller": "notification-api-test"}
+            %h6 Test SMS Notification
+            %p.text-muted.small
+              Send a test "Hello, world!" SMS message to verify the NotificationAPI connection.
+            
+            .mb-3
+              %label.form-label{for: "phoneNumber"}
+                Phone Number
+              %input.form-control#phoneNumber{type: "text", placeholder: "+13172898859", value: "+13172898859", "data-notification-api-test-target": "phoneNumber"}
+              %small.form-text.text-muted
+                Enter phone number in E.164 format (e.g., +15005550006)
+            
+            %button.btn.btn-primary#testNotificationApiBtn{data: {action: "click->notification-api-test#testNotification"}}
+              %i.bi.bi-send.me-2
+              Send Test Message
+            #notificationApiResult.mt-3
+        - else
+          .alert.alert-warning
+            %i.bi.bi-exclamation-triangle.me-2
+            NotificationAPI not configured
+            %p.mb-0.mt-2.small
+              Please set the following environment variables:
+              %br
+              %code NOTIFICATION_API_CLIENT_ID
+              %br
+              %code NOTIFICATION_API_CLIENT_SECRET
+
+  .col-lg-4
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-info-circle.me-2
+          Integration Status
+      .card-body
+        .mb-3
+          %strong NotificationAPI
+          %br
+          - if @notification_api_configured
+            %span.badge.bg-success Configured
+          - else
+            %span.badge.bg-warning Not Configured
+

@@ -46,6 +46,12 @@ get '/login', to: 'auth#login', as: :login
         post :sync_guides
       end
     end
+    
+    resources :health_check, only: [:index] do
+      collection do
+        post :test_notification_api
+      end
+    end
   end
   
   # Slack OAuth callback (fixed URL for Slack)
