@@ -60,8 +60,58 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
 
   def new
     authorize Observation
-    @observation = organization.observations.build(observer: current_person)
-    @form = ObservationForm.new(@observation)
+    
+    # Load or create draft
+    if params[:draft_id].present?
+      @observation = Observation.find(params[:draft_id])
+      authorize @observation, :edit?
+      
+      # Don't reload - it wipes out fresh data. Just reload associations
+      @observation.observation_ratings.reload if @observation.observation_ratings.loaded?
+      
+      Rails.logger.info "Loading existing draft #{@observation.id}, story: #{@observation.story.inspect}"
+    else
+      # Create new draft
+      @observation = organization.observations.build(observer: current_person)
+      
+      # Set observees from params
+      observee_ids = params[:observee_ids] || []
+      observee_ids.each do |teammate_id|
+        next if teammate_id.blank?
+        @observation.observees.build(teammate_id: teammate_id)
+      end
+      
+      # Set defaults (not saved yet - will be saved when user clicks "Add Assignments" or "Publish")
+      @observation.story = params[:story] || ''
+      @observation.privacy_level = params[:privacy_level] || 'observed_and_managers'
+      @observation.observed_at ||= Time.current
+      
+      # Add initial rateable if provided (build in memory, not saved)
+      # Need to load the rateable so it's available even when observation isn't saved
+      if params[:rateable_type].present? && params[:rateable_id].present?
+        rateable = params[:rateable_type].constantize.find(params[:rateable_id])
+        rating = @observation.observation_ratings.build(
+          rateable_type: params[:rateable_type],
+          rateable_id: params[:rateable_id]
+        )
+        # Pre-load the rateable association so it's available for @observation.assignments
+        rating.rateable = rateable
+      end
+    end
+    
+    # Ensure observation_ratings are loaded for associations
+    @observation.observation_ratings.load if @observation.observation_ratings.loaded?
+    
+    # Load available rateables
+    @assignments = organization.assignments.ordered
+    @aspirations = organization.aspirations
+    @abilities = organization.abilities.order(:name)
+    
+    # Store return context
+    @return_url = params[:return_url] || organization_observations_path(organization)
+    @return_text = params[:return_text] || 'Back'
+    
+    render layout: 'overlay'
   end
 
   def create
@@ -300,61 +350,19 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
                 notice: 'Notifications sent successfully'
   end
 
-  # Quick observation creation from check-ins
+  # Quick observation creation from check-ins (backward compatibility - redirects to new)
   def quick_new
-    authorize Observation
-    
-    # Load or create draft
-    if params[:draft_id].present?
-      @observation = Observation.find(params[:draft_id])
-      authorize @observation, :edit?
-      
-      # Don't reload - it wipes out fresh data. Just reload associations
-      @observation.observation_ratings.reload if @observation.observation_ratings.loaded?
-      
-      Rails.logger.info "Loading existing draft #{@observation.id}, story: #{@observation.story.inspect}"
-    else
-      # Create new draft
-      @observation = organization.observations.build(observer: current_person)
-      
-      # Set observees from params
-      observee_ids = params[:observee_ids] || []
-      observee_ids.each do |teammate_id|
-        next if teammate_id.blank?
-        @observation.observees.build(teammate_id: teammate_id)
-      end
-      
-      # Set defaults (not saved yet - will be saved when user clicks "Add Assignments" or "Publish")
-      @observation.story = params[:story] || ''
-      @observation.privacy_level = params[:privacy_level] || 'observed_and_managers'
-      @observation.observed_at ||= Time.current
-      
-      # Add initial rateable if provided (build in memory, not saved)
-      # Need to load the rateable so it's available even when observation isn't saved
-      if params[:rateable_type].present? && params[:rateable_id].present?
-        rateable = params[:rateable_type].constantize.find(params[:rateable_id])
-        rating = @observation.observation_ratings.build(
-          rateable_type: params[:rateable_type],
-          rateable_id: params[:rateable_id]
-        )
-        # Pre-load the rateable association so it's available for @observation.assignments
-        rating.rateable = rateable
-      end
-    end
-    
-    # Ensure observation_ratings are loaded for associations
-    @observation.observation_ratings.load if @observation.observation_ratings.loaded?
-    
-    # Load available rateables
-    @assignments = organization.assignments.ordered
-    @aspirations = organization.aspirations
-    @abilities = organization.abilities.order(:name)
-    
-    # Store return context
-    @return_url = params[:return_url] || organization_observations_path(organization)
-    @return_text = params[:return_text] || 'Back'
-    
-    render layout: 'overlay'
+    redirect_to new_organization_observation_path(
+      organization,
+      draft_id: params[:draft_id],
+      observee_ids: params[:observee_ids],
+      rateable_type: params[:rateable_type],
+      rateable_id: params[:rateable_id],
+      story: params[:story],
+      privacy_level: params[:privacy_level],
+      return_url: params[:return_url],
+      return_text: params[:return_text]
+    )
   end
 
   # Save draft and navigate to add assignments page
@@ -367,13 +375,13 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       redirect_to add_assignments_organization_observation_path(
         organization, 
         @observation,
-        return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id),
+        return_url: params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id),
         return_text: params[:return_text] || 'Draft'
       )
     else
       # If save fails, redirect back with errors
       flash[:alert] = "Failed to save: #{@observation.errors.full_messages.join(', ')}"
-      redirect_to quick_new_organization_observations_path(
+      redirect_to new_organization_observation_path(
         organization,
         draft_id: @observation.id,
         return_url: params[:return_url],
@@ -391,7 +399,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @assignments = organization.assignments.ordered
     
     # Store return context
-    @return_url = params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id)
+    @return_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
     @return_text = params[:return_text] || 'Back'
     
     render layout: 'overlay'
@@ -404,7 +412,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     @aspirations = organization.aspirations
     
-    @return_url = params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id)
+    @return_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
     @return_text = params[:return_text] || 'Back'
     
     render layout: 'overlay'
@@ -417,7 +425,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     @abilities = organization.abilities.order(:name)
     
-    @return_url = params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id)
+    @return_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
     @return_text = params[:return_text] || 'Back'
     
     render layout: 'overlay'
@@ -463,9 +471,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @observation.reload
     
     # Preserve return_url and return_text when redirecting back
-    redirect_url = params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id)
+    redirect_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
     if params[:return_url].present? || params[:return_text].present?
-      redirect_url = quick_new_organization_observations_path(
+      redirect_url = new_organization_observation_path(
         organization,
         draft_id: @observation.id,
         return_url: params[:return_url],
@@ -489,9 +497,9 @@ def add_observees
       end
     end
     @observation.reload
-    redirect_url = params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id)
+    redirect_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
     if params[:return_url].present? || params[:return_text].present?
-      redirect_url = quick_new_organization_observations_path(
+      redirect_url = new_organization_observation_path(
         organization,
         draft_id: @observation.id,
         return_url: params[:return_url],
@@ -502,7 +510,7 @@ def add_observees
   else
     # GET - render picker
     @teammates = organization.teammates.includes(:person)
-    @return_url = params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id)
+    @return_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
     @return_text = params[:return_text] || 'Back'
     render layout: 'overlay'
   end
@@ -538,7 +546,7 @@ end
         @assignments = organization.assignments.ordered
         @aspirations = organization.aspirations
         @abilities = organization.abilities.order(:name)
-        render :quick_new, layout: 'overlay', status: :unprocessable_entity
+        render :new, layout: 'overlay', status: :unprocessable_entity
         return
       end
     else
@@ -563,32 +571,32 @@ end
         redirect_to add_assignments_organization_observation_path(
           organization, 
           @observation,
-          return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_url: params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
           return_text: params[:return_text] || 'Observation'
         )
       elsif params[:save_and_add_aspirations].present?
         redirect_to add_aspirations_organization_observation_path(
           organization,
           @observation,
-          return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_url: params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
           return_text: params[:return_text] || 'Observation'
         )
       elsif params[:save_and_add_abilities].present?
         redirect_to add_abilities_organization_observation_path(
           organization,
           @observation,
-          return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_url: params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
           return_text: params[:return_text] || 'Observation'
         )
       elsif params[:save_and_add_observees].present?
         redirect_to add_observees_organization_observation_path(
           organization,
           @observation,
-          return_url: params[:return_url] || quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_url: params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
           return_text: params[:return_text] || 'Observation'
         )
       else
-        redirect_to quick_new_organization_observations_path(
+        redirect_to new_organization_observation_path(
           organization, 
           draft_id: @observation.id, 
           return_url: params[:return_url], 
@@ -604,7 +612,7 @@ end
       @assignments = organization.assignments.ordered
       @aspirations = organization.aspirations
       @abilities = organization.abilities.order(:name)
-      render :quick_new, layout: 'overlay', status: :unprocessable_entity
+      render :new, layout: 'overlay', status: :unprocessable_entity
     end
   end
 
@@ -692,7 +700,7 @@ end
         @aspirations = organization.aspirations
         @abilities = organization.abilities.order(:name)
         flash[:alert] = "Cannot publish: #{@form.errors.full_messages.join(', ')}"
-        render :quick_new, layout: 'overlay', status: :unprocessable_entity
+        render :new, layout: 'overlay', status: :unprocessable_entity
         return
       end
     else
@@ -713,31 +721,41 @@ end
           @aspirations = organization.aspirations
           @abilities = organization.abilities.order(:name)
           flash[:alert] = "Cannot publish: #{@form.errors.full_messages.join(', ')}"
-          render :quick_new, layout: 'overlay', status: :unprocessable_entity
+          render :new, layout: 'overlay', status: :unprocessable_entity
           return
         end
       end
     end
     
     # Publish will validate story is present (required for published observations)
-    if @observation.publish!
-      redirect_url = params[:return_url] || organization_observations_path(organization)
+    begin
+      @observation.publish!
+      # If return_url is provided, use it (from form/new page)
+      # Otherwise, redirect to show page (publish from show page)
+      redirect_url = params[:return_url] || organization_observation_path(organization, @observation)
       
-      # Add show_observations_for param if provided
-      if params[:show_observations_for].present?
+      # Add show_observations_for param if provided (only for index redirects)
+      if params[:return_url].present? && params[:show_observations_for].present?
         redirect_url += "?show_observations_for=#{params[:show_observations_for]}"
       end
       
       redirect_to redirect_url, notice: 'Observation was successfully published.'
-    else
-      # Validation failed - redirect back with errors
-      @return_url = params[:return_url] || organization_observations_path(organization)
-      @return_text = params[:return_text] || 'Back'
-      @assignments = organization.assignments.ordered
-      @aspirations = organization.aspirations
-      @abilities = organization.abilities.order(:name)
-      flash[:alert] = "Cannot publish: #{@observation.errors.full_messages.join(', ')}"
-      render :quick_new, layout: 'overlay', status: :unprocessable_entity
+    rescue ActiveRecord::RecordInvalid => e
+      # Validation failed - handle based on context
+      if params[:return_url].present?
+        # From form/new page - render form with errors
+        @return_url = params[:return_url] || organization_observations_path(organization)
+        @return_text = params[:return_text] || 'Back'
+        @assignments = organization.assignments.ordered
+        @aspirations = organization.aspirations
+        @abilities = organization.abilities.order(:name)
+        flash[:alert] = "Cannot publish: #{@observation.errors.full_messages.join(', ')}"
+        render :new, layout: 'overlay', status: :unprocessable_entity
+      else
+        # From show page - redirect back with error
+        redirect_to organization_observation_path(organization, @observation),
+                    alert: "Cannot publish: #{@observation.errors.full_messages.join(', ')}"
+      end
     end
   end
 

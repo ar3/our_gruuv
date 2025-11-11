@@ -26,22 +26,34 @@ RSpec.describe NotificationApiService, type: :service do
         allow(auth_double).to receive(:headers).with('Content-Type' => 'application/json').and_return(headers_double)
         
         post_double = double
+        body_captured = nil
         allow(headers_double).to receive(:post) do |url, options|
-          expect(url).to eq('https://api.notificationapi.com/sender')
-          expect(options[:json]).to include(
-            type: 'initial_test',
-            to: { id: 'ar3@ar3.me', number: '+15005550006' },
-            sms: { message: 'Hello, world!' }
-          )
+          expect(url).to eq("https://api.notificationapi.com/#{client_id}/sender")
+          # Service uses body: (string), not json: (hash)
+          body_captured = options[:body]
           post_double
         end
         
         allow(post_double).to receive(:status).and_return(200)
         allow(post_double).to receive(:body).and_return(double(to_s: '{"success": true}'))
-        allow(JSON).to receive(:parse).with('{"success": true}').and_return({ 'success' => true })
+        # Stub JSON.parse to handle both the request body (any string) and response
+        allow(JSON).to receive(:parse) do |json_string|
+          if json_string == '{"success": true}'
+            { 'success' => true }
+          else
+            # For request body validation, use real JSON.parse
+            JSON.parse(json_string)
+          end
+        end
 
         result = service.test_connection
 
+        # Validate the request body string contains expected values
+        # Note: service uses default parameters: to: { id: 'ar3@ar3.me', number: '+13172898859' }
+        expect(body_captured).to include('"type":"initial_test"')
+        expect(body_captured).to include('"id":"ar3@ar3.me"')
+        expect(body_captured).to include('"number":"+13172898859"')  # Default from service
+        expect(body_captured).to include('"message":"Hello, world!"')
         expect(result).to eq({ 'success' => true })
       end
     end
@@ -55,11 +67,12 @@ RSpec.describe NotificationApiService, type: :service do
         allow(headers_double).to receive(:post).and_return(mock_response)
         allow(mock_response).to receive(:status).and_return(401)
         allow(mock_response).to receive(:body).and_return(double(to_s: '{"error": "Unauthorized"}'))
+        allow(mock_response).to receive(:headers).and_return({})
       end
 
       it 'returns false' do
         result = service.test_connection
-        expect(result).to be false
+        expect(result[:success]).to be false
       end
     end
 
@@ -70,7 +83,8 @@ RSpec.describe NotificationApiService, type: :service do
 
       it 'returns false' do
         result = service.test_connection
-        expect(result).to be false
+        expect(result[:success]).to be false
+        expect(result[:error]).to eq('Network error')
       end
     end
   end
@@ -110,24 +124,31 @@ RSpec.describe NotificationApiService, type: :service do
         allow(auth_double).to receive(:headers).with('Content-Type' => 'application/json').and_return(headers_double)
         
         post_double = double
+        body_captured = nil
         allow(headers_double).to receive(:post) do |url, options|
-          expect(options[:json]).to include(
-            type: notification_type,
-            to: to,
-            sms: sms_params
-          )
+          # Service uses body: (string), not json: (hash)
+          body_captured = options[:body]
           post_double
         end
         
         allow(post_double).to receive(:status).and_return(200)
         allow(post_double).to receive(:body).and_return(double(to_s: '{"id": "notif_123"}'))
+        # Stub JSON.parse only for the response, not for the request body
         allow(JSON).to receive(:parse).with('{"id": "notif_123"}').and_return({ 'id' => 'notif_123' })
+        # Allow real JSON.parse for request body validation
+        allow(JSON).to receive(:parse).and_call_original
 
         service.send_notification(
           type: notification_type,
           to: to,
           sms: sms_params
         )
+        
+        # Validate the request body after the call (using real JSON.parse)
+        payload = JSON.parse(body_captured)
+        expect(payload['type']).to eq(notification_type)
+        expect(payload['to']).to eq(to.stringify_keys)
+        expect(payload['sms']).to eq(sms_params.stringify_keys)
       end
     end
 

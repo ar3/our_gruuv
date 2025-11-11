@@ -109,6 +109,11 @@ class ObservationPolicy < ApplicationPolicy
     user_can_manage_employment?
   end
 
+  def publish?
+    # Only the observer can publish, and only if the observation is a draft
+    teammate.present? && teammate.person == record.observer && record.draft?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless teammate

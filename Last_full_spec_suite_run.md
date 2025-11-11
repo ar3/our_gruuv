@@ -1,7 +1,7 @@
 # Last Full Spec Suite Run
 
 ## Run Date
-2025-11-10
+2025-11-11
 
 ## Execution Method
 Run in segments to avoid timeouts and identify issues more efficiently. Never run `bundle exec rspec` without arguments.
@@ -9,257 +9,282 @@ Run in segments to avoid timeouts and identify issues more efficiently. Never ru
 ## Status
 ✅ **Complete** - Full suite run completed
 
-**Started**: 2025-11-10 09:27:40
-**Completed**: 2025-11-10 09:40:23
+**Started**: 2025-11-11 01:54:13
+**Completed**: 2025-11-11 02:08:15
 
 ## Timing Results
 
 ### Model Specs
 - **Status**: ✅ Complete
-- **Time**: 40.65 seconds (47.36 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:27:40
-- **Examples**: 993
+- **Time**: 35.29 seconds (41.39 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:54:13
+- **Examples**: 994
 - **Failures**: 0
+- **Pending**: 1
 
 ### Controller Specs
-- **Status**: ⚠️ Complete with Failures
-- **Time**: 32.24 seconds (37.86 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:28:50
-- **Examples**: 401
-- **Failures**: 3
+- **Status**: ✅ Complete
+- **Time**: 35.09 seconds (39.31 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:55:18
+- **Examples**: 405
+- **Failures**: 0
 
 ### Request Specs
-- **Status**: ⚠️ Complete with Failures
-- **Time**: 24.68 seconds (29.50 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:29:53
-- **Examples**: 159
-- **Failures**: 25
+- **Status**: ✅ Complete
+- **Time**: 23.40 seconds (28.41 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:56:16
+- **Examples**: 171
+- **Failures**: 0
 
 ### Decorator Specs
 - **Status**: ✅ Complete
-- **Time**: 3.98 seconds (8.65 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:30:31
+- **Time**: 2.66 seconds (6.72 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:56:55
 - **Examples**: 35
 - **Failures**: 0
 
 ### Policy Specs
 - **Status**: ✅ Complete
-- **Time**: 12.39 seconds (16.55 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:30:49
-- **Examples**: 183
+- **Time**: 9.45 seconds (13.55 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:57:14
+- **Examples**: 187
 - **Failures**: 0
 
 ### Service Specs
 - **Status**: ⚠️ Complete with Failures
-- **Time**: 14.92 seconds (20.75 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:31:14
-- **Examples**: 263
-- **Failures**: 6
+- **Time**: 12.29 seconds (17.35 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:57:29
+- **Examples**: 270
+- **Failures**: 5
 
 ### Query Specs
 - **Status**: ✅ Complete
-- **Time**: 44.45 seconds (52.70 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:31:44
+- **Time**: 26.38 seconds (30.49 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:57:49
 - **Examples**: 125
 - **Failures**: 0
 
 ### Job Specs
 - **Status**: ✅ Complete
-- **Time**: 9.09 seconds (14.09 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:32:38
+- **Time**: 6.44 seconds (10.44 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:58:21
 - **Examples**: 67
 - **Failures**: 0
 
 ### Form Specs
 - **Status**: ✅ Complete
-- **Time**: 6.50 seconds (11.19 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:32:54
+- **Time**: 4.04 seconds (8.06 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:58:33
 - **Examples**: 82
 - **Failures**: 0
 
 ### Helper Specs
 - **Status**: ✅ Complete
-- **Time**: 11.75 seconds (17.50 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:33:07
+- **Time**: 8.42 seconds (12.51 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:58:42
 - **Examples**: 82
 - **Failures**: 0
 
 ### System Specs - Abilities
 - **Status**: ✅ Complete
-- **Time**: 20.17 seconds (29.08 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:33:37
+- **Time**: 17.43 seconds (21.71 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:59:35
 - **Examples**: 3
 - **Failures**: 0
 
 ### System Specs - Aspirations
 - **Status**: ✅ Complete
-- **Time**: 23.02 seconds (28.19 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:34:40
+- **Time**: 21.26 seconds (26.21 seconds total with load time)
+- **Date/Time**: 2025-11-11 01:59:59
 - **Examples**: 7
 - **Failures**: 0
 
 ### System Specs - Assignments
 - **Status**: ✅ Complete
-- **Time**: 13.33 seconds (18.29 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:35:16
+- **Time**: 11.42 seconds (16.35 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:00:27
 - **Examples**: 2
 - **Failures**: 0
 
-### System Specs - Audit
-- **Status**: ✅ Complete (3 pending)
-- **Time**: 0.66 seconds (5.48 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:35:36
-- **Examples**: 3
-- **Failures**: 0
-- **Pending**: 3
-
 ### System Specs - Check-in Observations
 - **Status**: ✅ Complete (1 pending)
-- **Time**: 0.69 seconds (3.92 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:35:43
+- **Time**: 0.34 seconds (5.32 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:01:06
 - **Examples**: 1
 - **Failures**: 0
 - **Pending**: 1
 
 ### System Specs - Check-ins
 - **Status**: ✅ Complete
-- **Time**: 14.99 seconds (21.31 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:35:59
-- **Examples**: 4
+- **Time**: 14.17 seconds (18.23 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:00:46
+- **Examples**: 6
 - **Failures**: 0
 
 ### System Specs - Finalization
 - **Status**: ✅ Complete
-- **Time**: 19.59 seconds (24.22 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:36:22
+- **Time**: 16.93 seconds (20.99 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:01:13
 - **Examples**: 3
 - **Failures**: 0
 
 ### System Specs - Goals
 - **Status**: ✅ Complete (7 pending)
-- **Time**: 101.93 seconds (106.59 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:36:48
+- **Time**: 88.35 seconds (93.31 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:01:36
 - **Examples**: 43
 - **Failures**: 0
 - **Pending**: 7
 
 ### System Specs - Huddles
-- **Status**: ⚠️ Complete with Error
-- **Time**: 0.00 seconds (0.60 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:38:54
-- **Examples**: 0
-- **Failures**: 0
-- **Errors**: 1 (outside examples)
+- **Status**: ⚠️ Complete with Failures
+- **Time**: 22.38 seconds (27.52 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:03:12
+- **Examples**: 6
+- **Failures**: 3
 
 ### System Specs - Misc
-- **Status**: ✅ Complete (1 error outside examples)
-- **Time**: 53.78 seconds (59.11 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:38:56
-- **Examples**: 24
-- **Failures**: 0
-- **Errors**: 1 (outside examples)
+- **Status**: ⚠️ Complete with Failures
+- **Time**: 75.96 seconds (80.96 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:03:42
+- **Examples**: 31
+- **Failures**: 4
+
+### System Specs - Observations
+- **Status**: ⚠️ Complete with Failures
+- **Time**: 8.29 seconds (13.23 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:05:05
+- **Examples**: 5
+- **Failures**: 1
 
 ### System Specs - Positions and Seats
 - **Status**: ✅ Complete (3 pending)
-- **Time**: 0.72 seconds (6.56 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:39:57
+- **Time**: 0.39 seconds (4.59 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:05:21
 - **Examples**: 3
 - **Failures**: 0
 - **Pending**: 3
-
-### System Specs - Observations
-- **Status**: N/A (no specs found)
-- **Time**: N/A
-- **Date/Time**: N/A
-- **Examples**: 0
-- **Failures**: 0
 
 ### System Specs - Teammates
 - **Status**: ✅ Complete (3 pending)
-- **Time**: 0.79 seconds (5.88 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:40:15
+- **Time**: 0.38 seconds (4.41 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:05:27
 - **Examples**: 3
 - **Failures**: 0
 - **Pending**: 3
 
+### System Specs - Audit
+- **Status**: ✅ Complete (3 pending)
+- **Time**: 0.37 seconds (4.37 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:05:33
+- **Examples**: 3
+- **Failures**: 0
+- **Pending**: 3
+
+### System Specs - People
+- **Status**: ✅ Complete
+- **Time**: 11.04 seconds (15.16 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:08:19
+- **Examples**: 2
+- **Failures**: 0
+
 ### ENM Specs
 - **Status**: ✅ Complete
-- **Time**: 29.26 seconds (33.09 seconds total with load time)
-- **Date/Time**: 2025-11-10 09:40:23
+- **Time**: 27.78 seconds (31.83 seconds total with load time)
+- **Date/Time**: 2025-11-11 02:05:39
 - **Examples**: 106
 - **Failures**: 0
 
 ## Total Summary
-- **Total Examples**: 2,333 (993 models + 401 controllers + 159 requests + 35 decorators + 183 policies + 263 services + 125 queries + 67 jobs + 82 forms + 82 helpers + 95 system + 106 ENM)
-- **Total Failures**: 34 (0 models + 3 controllers + 25 requests + 0 decorators + 0 policies + 6 services + 0 queries + 0 jobs + 0 forms + 0 helpers + 0 system failures + 0 ENM)
-- **Total Errors**: 2 (outside examples - huddles and misc)
+- **Total Examples**: 2,404 (994 models + 405 controllers + 171 requests + 35 decorators + 187 policies + 270 services + 125 queries + 67 jobs + 82 forms + 82 helpers + 112 system + 106 ENM)
+- **Total Failures**: 13 (0 models + 0 controllers + 0 requests + 0 decorators + 0 policies + 5 services + 0 queries + 0 jobs + 0 forms + 0 helpers + 8 system failures + 0 ENM)
+- **Total Errors**: 0
 - **Total Pending**: 14 (system specs)
-- **Total Time**: ~13 minutes (when run in segments)
-- **System Spec Examples**: 95
-- **System Spec Failures**: 0
+- **Total Time**: ~14 minutes (when run in segments)
+- **System Spec Examples**: 112
+- **System Spec Failures**: 8
 
 ## Failure Analysis
 
 This section contains detailed information about each failed spec from the current run. Failures are grouped by segment and then by pattern/root cause when possible.
 
-### Controller Specs (3 failures)
+### Service Specs (5 failures)
 
-1. **HuddlesController GET #direct_feedback**
-   - **File**: `spec/controllers/huddles_controller_spec.rb:710`
-   - **Error**: Expected redirect to `/auth/google_oauth2` but got redirect to `/`
-   - **Root Cause**: Authentication redirect logic may have changed
-
-2. **Organizations::EmployeesController GET #index**
-   - **File**: `spec/controllers/organizations/employees_controller_spec.rb:43`
-   - **Error**: Expected array to include specific teammate objects but got different instances (STI type mismatch - CompanyTeammate vs Teammate)
-   - **Root Cause**: STI type comparison issue in test expectations
-
-3. **Organizations::FinalizationsController POST #create**
-   - **File**: `spec/controllers/organizations/finalizations_controller_spec.rb:75`
-   - **Error**: Received unexpected arguments to CheckInFinalizationService.new (ActionController::Parameters vs hash_including)
-   - **Root Cause**: Mock expectation too strict - actual parameters wrapped in ActionController::Parameters
-
-### Request Specs (25 failures)
-
-**Primary Issue**: Policy validation errors - policies require CompanyTeammate but receiving Teammate
-
-**Affected Areas**:
-- UploadEventsController (4 failures)
-- EmploymentTenuresController (10 failures)
-- Organizations::CheckInsController (1 failure)
-- Organizations::DepartmentsAndTeamsController (3 failures)
-- Identity Management (2 failures)
-- UploadEventsController comprehensive error handling (5 failures)
-
-**Root Cause**: Tests are creating Teammate instances but policies validate that they must be CompanyTeammate instances. This is a test setup issue where factories or test helpers need to create CompanyTeammate instead of Teammate.
-
-### Service Specs (6 failures)
-
-**Primary Issue**: MaapChangeExecutionService failures related to check-in field updates
+**Primary Issue**: NotificationApiService test failures
 
 **Affected Tests**:
-- `MaapChangeExecutionService#execute! with assignment_management change type` - multiple scenarios around updating manager/employee/official check-in fields and unchecking employee completion
+1. **NotificationApiService#test_connection when an exception occurs**
+   - **File**: `spec/services/notification_api_service_spec.rb:71`
+   - **Error**: Expected `false` but got `Hash` with `{success: false, error: "Network error", ...}`
+   - **Root Cause**: Method returns hash instead of boolean - test expectation needs update
 
-**Root Cause**: Likely timezone or timestamp comparison issues in check-in field updates
+2. **NotificationApiService#test_connection when connection is successful**
+   - **File**: `spec/services/notification_api_service_spec.rb:22`
+   - **Error**: Expected URL `'https://api.notificationapi.com/sender'` but got `'https://api.notificationapi.com/test_client_id/sender'`
+   - **Root Cause**: URL includes client_id in path - test expectation needs update
 
-**Additional Failure**:
-- `Goals::BulkCreateService#call with outgoing links` - creates goals as quantitative_key_result
+3. **NotificationApiService#test_connection when connection fails**
+   - **File**: `spec/services/notification_api_service_spec.rb:60`
+   - **Error**: Similar to #1 - returns hash instead of boolean
+   - **Root Cause**: Method returns hash instead of boolean - test expectation needs update
 
-### System Specs - Huddles (1 error outside examples)
+4. **NotificationApiService#send_notification when notification is sent successfully**
+   - **File**: `spec/services/notification_api_service_spec.rb:106`
+   - **Error**: Channel-specific parameters issue
+   - **Root Cause**: Test expectation mismatch with actual API behavior
 
-**Status**: Error occurred during spec loading, preventing any examples from running
-- **Root Cause**: Load error in huddles spec file (likely a missing require or syntax error)
+5. **EmploymentDataUploadParser#parse with valid XLSX content with header aliases**
+   - **File**: `spec/services/employment_data_upload_parser_spec.rb:114`
+   - **Error**: Header alias parsing issue
+   - **Root Cause**: Header alias parsing logic may have changed
 
-### System Specs - Misc (1 error outside examples)
+### System Specs - Huddles (3 failures)
 
-**Status**: All examples passed but error occurred outside examples
-- **Root Cause**: Error during test suite execution but not related to specific test cases
+**Affected Tests**:
+1. **Huddles Core Flow Create huddle from existing company, department, or team creates huddle from existing company**
+   - **File**: `spec/system/huddles/huddles_core_flow_spec.rb:15`
+   - **Root Cause**: Huddle creation flow issue with company selection
+
+2. **Huddles Core Flow Create huddle from existing company, department, or team creates huddle from existing department**
+   - **File**: `spec/system/huddles/huddles_core_flow_spec.rb:50`
+   - **Root Cause**: Huddle creation flow issue with department selection
+
+3. **Huddles Core Flow Create huddle and create new team in huddle creation flow creates new team during huddle creation**
+   - **File**: `spec/system/huddles/huddles_core_flow_spec.rb:104`
+   - **Root Cause**: Team creation during huddle creation flow issue
+
+### System Specs - Misc (4 failures)
+
+**Affected Tests**:
+1. **Slack Integration Navigation includes Slack integration link in navigation**
+   - **File**: `spec/system/misc/slack_integration_spec.rb:213`
+   - **Root Cause**: Navigation structure may have changed
+
+2. **Slack Integration Navigation navigates to Slack dashboard from navigation**
+   - **File**: `spec/system/misc/slack_integration_spec.rb:234`
+   - **Root Cause**: Navigation link or route may have changed
+
+3. **Organization Dashboard Dashboard navigation navigates to observations creation**
+   - **File**: `spec/system/misc/organization_dashboard_spec.rb:75`
+   - **Root Cause**: Dashboard navigation structure may have changed
+
+4. **Slack Integration Feedback submission with Slack notification submits feedback and triggers Slack notification**
+   - **File**: `spec/system/misc/slack_integration_spec.rb` (line number from screenshot)
+   - **Root Cause**: Slack notification integration issue
+
+### System Specs - Observations (1 failure)
+
+**Affected Tests**:
+1. **Observation Show Page Publish button when observation is a draft does not allow non-observer to access show page**
+   - **File**: `spec/system/observations/show_page_spec.rb:40`
+   - **Root Cause**: Authorization logic for draft observations may have changed
 
 ### Notes
 
-- All system specs passed with 0 failures (14 pending tests marked with xit)
-- Policy specs now pass (0 failures) - previous issues resolved
-- Main failure pattern is policy validation requiring CompanyTeammate vs Teammate in test setup
+- All unit/integration specs (models, controllers, requests, decorators, policies, queries, jobs, forms, helpers) passed with 0 failures
+- Service specs have 5 failures related to NotificationApiService API changes and EmploymentDataUploadParser
+- System specs have 8 failures across 3 segments (huddles, misc, observations) - mostly navigation/UI flow issues
+- 14 pending tests in system specs (marked with xit)
 
 ---
 

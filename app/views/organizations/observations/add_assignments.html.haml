@@ -1,7 +1,7 @@
 - content_for :header do
   Add Assignments to Observation
 - content_for :return_url do
-  = quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text])
+  = new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text])
 - content_for :return_text do
   = params[:return_text] || 'Draft'
 
@@ -37,7 +37,7 @@
       = hidden_field_tag :return_url, params[:return_url]
       = hidden_field_tag :return_text, params[:return_text]
       .d-flex.gap-2.mt-3
-        = link_to quick_new_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]), class: 'btn btn-outline-secondary' do
+        = link_to new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]), class: 'btn btn-outline-secondary' do
           %i.bi.bi-arrow-left.me-1
           = params[:return_text] || 'Draft'
         = form.submit 'Add Selected Assignments', class: 'btn btn-primary'

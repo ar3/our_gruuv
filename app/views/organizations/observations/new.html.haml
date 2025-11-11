@@ -1,117 +1,240 @@
 - content_for :header do
-  .d-flex.justify-content-between.align-items-center.mb-2
-    %h1.mb-0{id: "page-title"}
-      %i.bi.bi-plus-circle.me-2
-      Create Observation
-    .d-flex.align-items-center
-      = content_for :header_action
+  Create Observation
+- content_for :return_url do
+  = @return_url || organization_observations_path(organization)
+- content_for :return_text do
+  = @return_text || 'Back'
 
-- content_for :go_back_link do
-  = link_to organization_observations_path(@organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Observations
-
-- content_for :header_action do
-  .text-muted
-    Step 1 of 3
-
-/ Progress indicator
-.card.mb-4
-  .card-body
-    .progress.mb-3.progress-thin
-      .progress-bar.progress-bar-step-1{role: "progressbar", 'aria-valuenow': "33", 'aria-valuemin': "0", 'aria-valuemax': "100"}
-    .d-flex.justify-content-between
-      .text-primary.fw-bold Step 1: Who, When, What, How
-      .text-muted Step 2: Ratings & Privacy
-      .text-muted Step 3: Review & Manage
-
-.card
+.card.mb-3
   .card-header
     %h5.mb-0
-      %i.bi.bi-person-plus.me-2
-      Who, When, What, How
+      %i.bi.bi-person-check.me-2
+      Observation Details
+      - if @observation.persisted? && @observation.draft?
+        .mt-2
+          %small.text-muted
+            = link_to "draft", organization_observation_path(organization, @observation), class: "text-muted text-decoration-none"
+            = " saved at "
+            = @observation.updated_at.strftime("%l:%M %p on %B %d, %Y")
+      - elsif @observation.new_record?
+        .mt-2
+          %small.text-muted
+            This observation will be saved as a draft when you add assignments or publish.
   .card-body
-    = form_with model: @form, url: organization_observations_path(@organization), local: true, class: 'needs-validation', novalidate: true do |form|
-      - if @form.errors.any?
+    - form_url = @observation.persisted? ? update_draft_organization_observation_path(organization, @observation) : update_draft_organization_observation_path(organization, :new)
+    = form_with model: @observation, url: form_url, method: :post, local: true, data: { turbo: false, turbo_method: false }, html: { id: 'observation_form' } do |form|
+      / Add _method field only for buttons that need PATCH (Add Assignments and default form submission)
+      = hidden_field_tag '_method', 'patch', id: 'form_method_field'
+      / Explicitly include CSRF token (form_with should add this, but ensuring it's present for ngrok)
+      = hidden_field_tag :authenticity_token, form_authenticity_token
+      - if @observation.errors.any?
         .alert.alert-danger
           %h6 Please correct the following errors:
           %ul.mb-0
-            - @form.errors.full_messages.each do |message|
+            - @observation.errors.full_messages.each do |message|
               %li= message
       
-      .row
+      / Hidden fields for publish action
+      = hidden_field_tag :return_url, @return_url
+      = hidden_field_tag :return_text, @return_text
+      = hidden_field_tag :show_observations_for, params[:show_observations_for]
+      -# Preserve observee_ids through form submissions
+      - @observation.observees.each do |observee|
+        = hidden_field_tag "observee_ids[]", observee.teammate_id
+      
+      .container-fluid
+        .row.mb-3
         .col-12
-          .mb-4
-            = form.label :observees, "Who are you observing?", class: 'form-label'
-            .card.border
-              .card-body.teammate-selector-body
-                %h6.text-muted Individuals
-                - @organization.teammates.includes(:person).each do |teammate|
-                  .form-check.mb-2
-                    = check_box_tag 'observation[teammate_ids][]', teammate.id, @form.teammate_ids&.include?(teammate.id.to_s), class: 'form-check-input teammate-checkbox', id: "observation_teammate_ids_#{teammate.id}"
-                    = label_tag "observation_teammate_ids_#{teammate.id}", teammate.person.preferred_name || teammate.person.first_name, class: 'form-check-label'
-                    %small.text-muted.ms-2
-                      = teammate.person.email
-                
-                .text-muted.mt-2#selected-count
-                  No one selected
-          
-          .mb-4
-            = form.label :observed_at, "When did this happen?", class: 'form-label'
-            = form.datetime_local_field :observed_at, class: 'form-control', value: @form.observed_at_for_input, required: true
-        
-        .col-md-12
-          .mb-4
-            = form.label :story, "What happened?", class: 'form-label'
-            = form.text_area :story, class: "form-control #{'is-invalid' if @form.errors[:story].any?}", rows: 8, placeholder: 'Tell the story of what happened... Be specific about what you observed and why it matters.', required: true
-            .form-text Markdown is supported for formatting.
-      = render 'organizations/observations/feelings_fields', form: form, observation: @form, layout: 'row'
-      
-      .d-flex.justify-content-between
-        = link_to 'Cancel', organization_observations_path(@organization), class: 'btn btn-secondary'
-        = form.submit 'Next: Ratings & Privacy', class: 'btn btn-primary', name: 'step', value: '2'
+          %label.form-label
+            %h3 Who are you observing?
+        .row.mb-3
+          .col-1
+            .single-page-wizard-step 1
+          .col-11
+            - @observation.observees.each do |observee|
+              %span.badge.bg-primary.me-1
+                = observee.teammate.person.display_name
+            %br/
+            %br/
+            = form.submit 'Add others who are a part of this story',
+                          class: 'btn btn-sm btn-outline-primary',
+                          name: 'save_and_add_observees',
+                          value: 'Add others who are a part of this story',
+                          onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
 
-:javascript
-  document.addEventListener('DOMContentLoaded', function() {
-    // Handle team selection expanding to individuals
-    document.querySelectorAll('.team-checkbox').forEach(function(checkbox) {
-      checkbox.addEventListener('change', function() {
-        var teamId = this.dataset.teamId;
-        var teamMembers = document.querySelectorAll('[data-team-id="' + teamId + '"]');
+        .row.mb-3
+          .col-12
+            = form.label :story, class: 'form-label' do
+              %h3 What happened?
+        .row.mb-3
+          .col-1
+            .single-page-wizard-step 2
+          .col-11
+            = form.text_area :story, id: 'observation_story', class: 'form-control', rows: 5, placeholder: 'Tell the story of what happened... Be specific about what you observed and why it matters.'
+            .form-text Markdown is supported for formatting.
         
-        if (this.checked) {
-          // Check all team members
-          teamMembers.forEach(function(member) {
-            member.checked = true;
-          });
-        } else {
-          // Uncheck all team members
-          teamMembers.forEach(function(member) {
-            member.checked = false;
-          });
-        }
+        .row.mb-3
+          .col-12
+            = form.label :story, class: 'form-label' do
+              %h3 How did this make you feel?
+        .row.mb-3
+          .col-1
+            .single-page-wizard-step 3
+          .col-11
+            = render 'organizations/observations/feelings_fields', form: form, observation: @observation, layout: 'row'
         
-        updateSelectedCount();
-      });
-    });
-    
-    // Handle individual teammate selection
-    document.querySelectorAll('.teammate-checkbox').forEach(function(checkbox) {
-      checkbox.addEventListener('change', function() {
-        updateSelectedCount();
-      });
-    });
-    
-    function updateSelectedCount() {
-      var selected = document.querySelectorAll('.teammate-checkbox:checked');
-      var countElement = document.getElementById('selected-count');
+        .row.mb-3
+          .col-12
+            = form.label :story, class: 'form-label' do
+              %h3 What was on display in this story?
+        .row.mb-3
+          .col-1
+            .single-page-wizard-step 4
+          .col-11
+            = render 'shared/section_header', 
+                title: 'Assignments/Outcomes', 
+                icon: 'bi-clipboard-check', 
+                include_top_header_margin: false,
+                description: 'Does this story include any noteworthy demonstrations of Assignments?'
+
+            / Rateable sections
+            - if @assignments.any?
+              .mb-3
+                -# For unsaved observations, get assignments from built observation_ratings
+                -# For persisted observations, use the association
+                - assignment_ratings = @observation.observation_ratings.select { |or_obj| or_obj.rateable_type == 'Assignment' }
+                - if assignment_ratings.any?
+                  - assignment_ratings.each do |rating_obj|
+                    - assignment = rating_obj.rateable
+                    - next unless assignment.present?
+                    .card.mb-2
+                      .card-body
+                        .d-flex.justify-content-between.align-items-center
+                          %div
+                            %strong= assignment.title
+                            .mt-2
+                              = render 'organizations/observations/rating_buttons', 
+                                      rating: rating_obj.rating,
+                                      input_name: "observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]"
+                              -# Include hidden fields for rateable_type and rateable_id
+                              - if rating_obj.new_record? || rating_obj.id.nil?
+                                = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
+                                = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
+                              - else
+                                = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][id]", rating_obj.id
+                                = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
+                                = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
+                = form.submit 'Add Assignments', 
+                              class: 'btn btn-sm btn-outline-primary',
+                              name: 'save_and_add_assignments',
+                              value: 'Add Assignments',
+                              onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
+
+            = render 'shared/section_header', 
+                title: 'Abilities/Skills/Knowledge', 
+                icon: 'bi-clipboard-check', 
+                description: 'Does this story include any noteworthy demonstrations of Abilities?'
+
+
+            .mb-3
+              - ability_ratings = @observation.observation_ratings.select { |or_obj| or_obj.rateable_type == 'Ability' }
+              - if ability_ratings.any?
+                - ability_ratings.each do |rating_obj|
+                  - ability = rating_obj.rateable
+                  - next unless ability.present?
+                  .card.mb-2
+                    .card-body
+                      .d-flex.justify-content-between.align-items-center
+                        %div
+                          %strong= ability.name
+                          .mt-2
+                            = render 'organizations/observations/rating_buttons', 
+                                    rating: rating_obj.rating,
+                                    input_name: "observation[observation_ratings_attributes][ability_#{ability.id}][rating]"
+                            - if rating_obj.new_record? || rating_obj.id.nil?
+                              = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_type]", 'Ability'
+                              = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_id]", ability.id
+                            - else
+                              = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][id]", rating_obj.id
+                              = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_type]", 'Ability'
+                              = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_id]", ability.id
+              = form.submit 'Add Abilities',
+                            class: 'btn btn-sm btn-outline-primary',
+                            name: 'save_and_add_abilities',
+                            value: 'Add Abilities',
+                            onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
+
+
+            = render 'shared/section_header', 
+                title: 'Aspirations/Values', 
+                icon: 'bi-clipboard-check', 
+                description: 'Does this story include any noteworthy demonstrations of Aspirations?'
+
+            .mb-3
+              - aspiration_ratings = @observation.observation_ratings.select { |or_obj| or_obj.rateable_type == 'Aspiration' }
+              - if aspiration_ratings.any?
+                - aspiration_ratings.each do |rating_obj|
+                  - aspiration = rating_obj.rateable
+                  - next unless aspiration.present?
+                  .card.mb-2
+                    .card-body
+                      .d-flex.justify-content-between.align-items-center
+                        %div
+                          %strong= aspiration.name
+                          .mt-2
+                            = render 'organizations/observations/rating_buttons', 
+                                    rating: rating_obj.rating,
+                                    input_name: "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rating]"
+                            - if rating_obj.new_record? || rating_obj.id.nil?
+                              = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_type]", 'Aspiration'
+                              = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_id]", aspiration.id
+                            - else
+                              = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][id]", rating_obj.id
+                              = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_type]", 'Aspiration'
+                              = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_id]", aspiration.id
+              = form.submit 'Add Aspirations',
+                            class: 'btn btn-sm btn-outline-primary',
+                            name: 'save_and_add_aspirations',
+                            value: 'Add Aspirations',
+                            onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
+
+      .mb-3
+        %hr/
+
+      .mb-3
+        = form.label :privacy_level, "Privacy Level", class: 'form-label'
+        - Observation.privacy_levels.keys.each do |key|
+          .form-check
+            = form.radio_button :privacy_level, key, class: 'form-check-input'
+            = form.label :"privacy_level_#{key}", class: 'form-check-label' do
+              - case key
+              - when 'observer_only'
+                🔒 Just for me (Journal)
+              - when 'observed_only'
+                👤 Just for them
+              - when 'managers_only'
+                👔 For their managers
+              - when 'observed_and_managers'
+                👥 For them and their managers
+              - when 'public_observation'
+                🌍 Public
       
-      if (selected.length === 0) {
-        countElement.textContent = 'No one selected';
-      } else if (selected.length === 1) {
-        countElement.textContent = '1 person selected';
-      } else {
-        countElement.textContent = selected.length + ' people selected';
-      }
-    }
-  });
+
+      
+      .d-flex.gap-2.mt-3
+        -# Publish button - submit form to publish action (POST, no _method)
+        = form.submit "Publish & Return to #{@return_text.presence || 'Back'}", 
+                      class: 'btn btn-primary',
+                      formaction: publish_organization_observation_path(organization, @observation.new_record? ? :new : @observation),
+                      formmethod: :post,
+                      name: 'publish',
+                      onclick: "document.getElementById('form_method_field').remove(); return true;"
+        -# Cancel button - submit form to cancel action (POST, no _method)
+        - cancel_id = @observation.new_record? ? :new : @observation
+        = form.submit 'Cancel',
+                      class: 'btn btn-outline-danger',
+                      formaction: cancel_organization_observation_path(organization, cancel_id),
+                      formmethod: :post,
+                      name: 'cancel',
+                      onclick: "document.getElementById('form_method_field').remove(); return true;",
+                      data: { disable_with: 'Canceling...' }

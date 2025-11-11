@@ -713,6 +713,7 @@ class EmploymentDataUploadParser
     return nil if value.blank?
     
     alignment = value.to_s.strip.downcase
+    original_value = value.to_s.strip
     
     # Try exact match with enum values first
     valid_alignments = %w[love like neutral prefer_not only_if_necessary]
@@ -735,7 +736,8 @@ class EmploymentDataUploadParser
     when /^if\s*necessary/
       'only_if_necessary'
     else
-      nil
+      # If no enum match, return the original value (preserve case)
+      original_value
     end
   end
 

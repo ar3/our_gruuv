@@ -11,9 +11,10 @@ class KudosController < ApplicationController
     )
   end
 
-  # Override the rescue behavior to let NotAuthorizedError bubble up for testing
+  # Override the rescue behavior to redirect with flash message
   def user_not_authorized
-    raise Pundit::NotAuthorizedError, "You are not authorized to view this observation"
+    flash[:alert] = "You are not authorized to view this observation"
+    redirect_to root_path
   end
 
   def show

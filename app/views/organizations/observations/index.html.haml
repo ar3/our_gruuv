@@ -5,7 +5,7 @@
       Observations
     .d-flex.align-items-center
       - if policy(Observation).create?
-        = link_to new_organization_observation_path(@organization), class: "btn btn-primary ml-2" do
+        = link_to new_organization_observation_path(@organization, return_url: organization_observations_path(@organization), return_text: 'Back to Observations'), class: "btn btn-primary ml-2" do
           %i.bi.bi-plus
       - else
         .btn.btn-primary.disabled.disabled-button
@@ -149,7 +149,7 @@
           No Observations Created
         %p.mb-2 
           Start by creating your first observation to give feedback to your teammates.
-          = link_to "Create First Observation", new_organization_observation_path(@organization), class: "btn btn-primary btn-sm"
+          = link_to "Create First Observation", new_organization_observation_path(@organization, return_url: organization_observations_path(@organization), return_text: 'Back to Observations'), class: "btn btn-primary btn-sm"
 
 / Modal for Filter & Sort
 .modal.fade#observations-filter-modal{"aria-hidden" => "true", "aria-labelledby" => "observations-filter-modal-label", tabindex: "-1"}

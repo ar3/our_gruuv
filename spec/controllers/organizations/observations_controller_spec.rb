@@ -55,16 +55,64 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
   end
 
   describe 'GET #new' do
-    it 'renders the new observation form' do
+    it 'renders the new form (overlay layout)' do
       get :new, params: { organization_id: company.id }
       expect(response).to have_http_status(:success)
+      expect(response).to render_template(:new)
+      expect(response).to render_template(layout: 'overlay')
     end
 
     it 'assigns a new observation' do
       get :new, params: { organization_id: company.id }
       expect(assigns(:observation)).to be_a_new(Observation)
-      expect(assigns(:observation).company).to be_a(Organization)
+      expect(assigns(:observation).company_id).to eq(company.id)
       expect(assigns(:observation).observer).to eq(observer)
+    end
+
+    it 'accepts return_url and return_text params' do
+      get :new, params: {
+        organization_id: company.id,
+        return_url: organization_observations_path(company),
+        return_text: 'Back to Observations'
+      }
+      expect(assigns(:return_url)).to eq(organization_observations_path(company))
+      expect(assigns(:return_text)).to eq('Back to Observations')
+    end
+
+    it 'sets default return_url and return_text when not provided' do
+      get :new, params: { organization_id: company.id }
+      expect(assigns(:return_url)).to eq(organization_observations_path(company))
+      expect(assigns(:return_text)).to eq('Back')
+    end
+
+    it 'accepts draft_id to load existing draft' do
+      draft = build(:observation, observer: observer, company: company, published_at: nil)
+      draft.observees.build(teammate: observee_teammate)
+      draft.save!
+      
+      get :new, params: {
+        organization_id: company.id,
+        draft_id: draft.id
+      }
+      expect(assigns(:observation)).to eq(draft)
+      expect(assigns(:observation).published_at).to be_nil
+    end
+
+    it 'accepts observee_ids to pre-populate observees' do
+      get :new, params: {
+        organization_id: company.id,
+        observee_ids: [observee_teammate.id]
+      }
+      expect(assigns(:observation).observees).to be_present
+      expect(assigns(:observation).observees.first.teammate_id).to eq(observee_teammate.id)
+    end
+
+    it 'assigns available rateables for the organization' do
+      assignment = create(:assignment, company: company)
+      get :new, params: { organization_id: company.id }
+      expect(assigns(:assignments)).to include(assignment)
+      expect(assigns(:aspirations)).to be_a(ActiveRecord::Associations::CollectionProxy)
+      expect(assigns(:abilities)).to be_a(ActiveRecord::Relation)
     end
   end
 
@@ -260,7 +308,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
   describe 'GET #quick_new' do
     let(:assignment) { create(:assignment, company: company) }
     
-    it 'renders the quick_new form' do
+    it 'redirects to new action with all parameters' do
       get :quick_new, params: {
         organization_id: company.id,
         return_url: organization_observations_path(company),
@@ -270,46 +318,15 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         rateable_id: assignment.id,
         privacy_level: 'observed_and_managers'
       }
-      expect(response).to have_http_status(:success)
-    end
-
-    it 'creates a draft observation when draft_id is not provided' do
-      get :quick_new, params: {
-        organization_id: company.id,
+      expect(response).to redirect_to(new_organization_observation_path(
+        company,
         return_url: organization_observations_path(company),
-        observee_ids: [observee_teammate.id]
-      }
-      
-      # quick_new builds the observation in memory but doesn't save it
-      # The observation is saved later via update_draft or publish
-      expect(assigns(:observation)).to be_present
-      expect(assigns(:observation).published_at).to be_nil
-      expect(assigns(:observation).observer).to eq(observer)
-      expect(assigns(:observation).observees).to be_present
-    end
-
-    it 'loads existing draft when draft_id is provided' do
-      draft = build(:observation, observer: observer, company: company, published_at: nil)
-      draft.observees.build(teammate: observee_teammate)
-      draft.save!
-      
-      get :quick_new, params: {
-        organization_id: company.id,
-        draft_id: draft.id,
-        return_url: organization_observations_path(company)
-      }
-      
-      expect(assigns(:observation)).to eq(draft)
-      expect(assigns(:observation).published_at).to be_nil
-    end
-
-    it 'assigns available rateables for the organization' do
-      assignment # Create the assignment
-      get :quick_new, params: {
-        organization_id: company.id,
-        observee_ids: [observee_teammate.id]
-      }
-      expect(assigns(:assignments)).to include(assignment)
+        return_text: 'Check-ins',
+        observee_ids: [observee_teammate.id],
+        rateable_type: 'Assignment',
+        rateable_id: assignment.id,
+        privacy_level: 'observed_and_managers'
+      ))
     end
   end
 
@@ -335,14 +352,14 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(draft.reload.published_at).to be_nil
     end
 
-    it 'redirects back to quick_new' do
+    it 'redirects back to new' do
       post :add_rateables, params: {
         organization_id: company.id,
         id: draft.id,
         rateable_type: 'Assignment',
         rateable_ids: [assignment.id]
       }
-      expect(response).to redirect_to(quick_new_organization_observations_path(company, draft_id: draft.id))
+      expect(response).to redirect_to(new_organization_observation_path(company, draft_id: draft.id))
     end
   end
 
@@ -396,6 +413,30 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         show_observations_for: 'assignment_123'
       }
       expect(response).to redirect_to(organization_observations_path(company) + '?show_observations_for=assignment_123')
+    end
+
+    it 'redirects to show page when return_url is not provided (publish from show page)' do
+      post :publish, params: {
+        organization_id: company.id,
+        id: draft.id
+      }
+      expect(response).to redirect_to(organization_observation_path(company, draft))
+    end
+
+    it 'fails gracefully if validation errors occur when publishing from show page' do
+      # Create a draft without required fields
+      invalid_draft = build(:observation, observer: observer, company: company, published_at: nil, story: nil)
+      invalid_draft.observees.build(teammate: observee_teammate)
+      invalid_draft.save!
+      
+      post :publish, params: {
+        organization_id: company.id,
+        id: invalid_draft.id
+      }
+      invalid_draft.reload
+      expect(invalid_draft.published_at).to be_nil
+      expect(response).to redirect_to(organization_observation_path(company, invalid_draft))
+      expect(flash[:alert]).to be_present
     end
   end
 

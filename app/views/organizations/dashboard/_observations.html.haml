@@ -25,7 +25,7 @@
   header_popover_content: observations_header_popover_content_html,
   header_popover_title: "About Observations",
   description: ['See what\'s good, say what\'s real, grow what works', 'Notice strengths, share insights, nurture growth', 'Observe carefully, communicate clearly, improve continuously', 'See the good, speak the truth, build the future', 'Replace generic feedback with specific observations', 'Turn workplace silence into constructive dialogue'].sample,
-  primary_action_url: new_organization_observation_path(@organization),
+  primary_action_url: new_organization_observation_path(@organization, return_url: dashboard_organization_path(@organization), return_text: 'Back to Dashboard'),
   primary_action_html: observations_primary_html,
   secondary_action_url: organization_observations_path(@organization),
   secondary_action_html: observations_secondary_html,

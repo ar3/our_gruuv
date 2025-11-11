@@ -243,6 +243,49 @@ RSpec.describe ObservationPolicy, type: :policy do
       end
     end
   end
+
+  describe '#publish?' do
+    context 'with draft observation' do
+      let(:draft_observation) do
+        build(:observation, observer: observer, company: company, published_at: nil).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+        end
+      end
+
+      it 'allows observer to publish draft' do
+        policy = ObservationPolicy.new(pundit_user_observer, draft_observation)
+        expect(policy.publish?).to be true
+      end
+
+      it 'denies non-observer from publishing draft' do
+        observee_policy = ObservationPolicy.new(pundit_user_observee, draft_observation)
+        manager_policy = ObservationPolicy.new(pundit_user_manager, draft_observation)
+        random_policy = ObservationPolicy.new(pundit_user_random, draft_observation)
+
+        expect(observee_policy.publish?).to be false
+        expect(manager_policy.publish?).to be false
+        expect(random_policy.publish?).to be false
+      end
+    end
+
+    context 'with published observation' do
+      it 'denies observer from publishing already published observation' do
+        policy = ObservationPolicy.new(pundit_user_observer, observation)
+        expect(policy.publish?).to be false
+      end
+
+      it 'denies non-observer from publishing already published observation' do
+        observee_policy = ObservationPolicy.new(pundit_user_observee, observation)
+        manager_policy = ObservationPolicy.new(pundit_user_manager, observation)
+        random_policy = ObservationPolicy.new(pundit_user_random, observation)
+
+        expect(observee_policy.publish?).to be false
+        expect(manager_policy.publish?).to be false
+        expect(random_policy.publish?).to be false
+      end
+    end
+  end
 end
 
 

@@ -12,22 +12,38 @@ RSpec.describe 'Huddles Core Flow', type: :system do
   end
 
   describe 'Create huddle from existing company, department, or team' do
+    let!(:existing_team) { create(:organization, :team, parent: company, name: 'Existing Team') }
+    let!(:department_as_team) { create(:organization, :team, parent: company, name: department.name) }
+    
     it 'creates huddle from existing company' do
-      # Attempt 1: Select company and team, no name field needed
+      # Approach 2: Fill email if needed, select company, wait for teams, select team, submit
+      initial_huddle_count = Huddle.count
       visit new_huddle_path(organization_id: company.id)
-      select company.name, from: 'Company'
-      # Wait for team dropdown to populate
-      expect(page).to have_select('Team', wait: 5)
-      # Select first team or create new
-      if page.has_select?('Team')
-        team_options = page.find('select#team_selection').all('option').map(&:text)
-        if team_options.any? { |opt| opt != 'Select company first' && opt != '+ Create new team' }
-          select team_options.find { |opt| opt != 'Select company first' && opt != '+ Create new team' }, from: 'Team'
-        end
+      
+      # Ensure email is filled (should be pre-filled if signed in)
+      if page.has_field?('Your email')
+        email_field = page.find_field('Your email')
+        email_field.fill(with: person.email) if email_field.value.blank?
       end
+      
+      select company.name, from: 'Company'
+      # Wait for team dropdown to be enabled and populated via JavaScript
+      expect(page).to have_select('Team', disabled: false, wait: 10)
+      # Wait for teams to load
+      expect(page).to have_css('select[name="huddle[team_selection]"] option:not([value=""])', wait: 10)
+      # Select the existing team
+      select existing_team.name, from: 'Team'
       click_button 'Start Huddle'
-      # Either the page shows the company name or a huddle was created
-      expect(page).to(have_content(company.name)).or(expect(Huddle.last).to be_present)
+      
+      # Wait a moment for the request to complete
+      sleep 1
+      
+      # Verify huddle was created
+      expect(Huddle.count).to eq(initial_huddle_count + 1)
+      huddle = Huddle.last
+      expect(huddle).to be_present
+      # Compare by ID since STI types may differ (Organization vs Team)
+      expect(huddle.huddle_playbook.organization.id).to eq(existing_team.id)
       
       # Approach 2: Check for huddle creation in database
       # visit new_huddle_path(organization_id: company.id)
@@ -48,14 +64,34 @@ RSpec.describe 'Huddles Core Flow', type: :system do
     end
 
     it 'creates huddle from existing department' do
-      # Attempt 1: Select company and department
+      # Approach 2: Departments are teams, so use team with same name
+      # Since departments might not be in teams list, we created department_as_team above
+      initial_huddle_count = Huddle.count
       visit new_huddle_path(organization_id: department.id)
+      
+      # Fill email if needed
+      if page.has_field?('Your email')
+        email_field = page.find_field('Your email')
+        email_field.fill(with: person.email) if email_field.value.blank?
+      end
+      
       select department.parent.name, from: 'Company'
-      expect(page).to have_select('Team', wait: 5)
-      select department.name, from: 'Team'
+      # Wait for team dropdown to be enabled and populated
+      expect(page).to have_select('Team', disabled: false, wait: 10)
+      # Wait for teams to load
+      expect(page).to have_css('select[name="huddle[team_selection]"] option:not([value=""])', wait: 10)
+      # Select the team (not department, as departments aren't in teams list)
+      select department_as_team.name, from: 'Team'
       click_button 'Start Huddle'
-      # Either the page shows the department name or a huddle was created
-      expect(page.has_content?(department.name) || Huddle.last.present?).to be true
+      
+      sleep 1
+      
+      # Verify huddle was created
+      expect(Huddle.count).to eq(initial_huddle_count + 1)
+      huddle = Huddle.last
+      expect(huddle).to be_present
+      # Compare by ID since STI types may differ
+      expect(huddle.huddle_playbook.organization.id).to eq(department_as_team.id)
       
       # Approach 2: Check for huddle creation in database
       # visit new_huddle_path(organization_id: department.id)
@@ -102,16 +138,38 @@ RSpec.describe 'Huddles Core Flow', type: :system do
 
   describe 'Create huddle and create new team in huddle creation flow' do
     it 'creates new team during huddle creation' do
-      # Approach 1: Select "+ Create new team" from dropdown (based on HAML)
+      # Approach 1: Fill email, select company, wait for teams, create new team, submit
+      initial_huddle_count = Huddle.count
       visit new_huddle_path(organization_id: company.id)
-      select company.name, from: 'Company' # Select company first
-      select '+ Create new team', from: 'Team' # This should show the new team field
+      
+      # Ensure email is filled
+      if page.has_field?('Your email')
+        email_field = page.find_field('Your email')
+        email_field.fill(with: person.email) if email_field.value.blank?
+      end
+      
+      select company.name, from: 'Company'
+      # Wait for team dropdown to be enabled and populated
+      expect(page).to have_select('Team', disabled: false, wait: 10)
+      # Wait for teams to load (including "+ Create new team" option)
+      expect(page).to have_css('select[name="huddle[team_selection]"] option[value="new"]', wait: 10)
+      # Select "+ Create new team" option
+      select '+ Create new team', from: 'Team'
+      # Wait for new team name field to be visible
+      expect(page).to have_field('New team name', visible: true, wait: 5)
       fill_in 'New team name', with: 'New Team'
-      # No huddle_name field needed
       click_button 'Start Huddle'
-      new_team = Team.find_by(name: 'New Team')
+      
+      # Wait for request to complete
+      sleep 1
+      
+      # Verify new team and huddle were created
+      expect(Huddle.count).to eq(initial_huddle_count + 1)
+      new_team = Team.find_by(name: 'New Team', parent: company)
       expect(new_team).to be_present
-      expect(Huddle.last).to be_present
+      huddle = Huddle.last
+      expect(huddle).to be_present
+      expect(huddle.huddle_playbook.organization.id).to eq(new_team.id)
       
       # Approach 2: Use JavaScript to trigger team creation
       # visit new_huddle_path(organization_id: company.id)

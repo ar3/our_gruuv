@@ -12,7 +12,16 @@
     Back to Observations
 
 - content_for :header_action do
-  = render 'mode_switcher', organization: @organization, observation: @observation
+  .d-flex.align-items-center.gap-2
+    - if @observation.draft? && policy(@observation).publish?
+      = form_with url: publish_organization_observation_path(@organization, @observation), method: :post, local: true, data: { turbo: false } do |form|
+        = form.submit 'Publish', class: 'btn btn-primary'
+    - elsif @observation.draft? && !policy(@observation).publish?
+      .d-flex.align-items-center.gap-2
+        %button.btn.btn-primary.disabled{disabled: true, "data-bs-toggle" => "tooltip", "data-bs-title" => "Only the creator can publish this observation"}
+          Publish
+        %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Only the creator can publish this observation"}
+    = render 'mode_switcher', organization: @organization, observation: @observation
 
 .mb-4
   = content_for :go_back_link
