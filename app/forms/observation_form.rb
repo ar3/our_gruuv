@@ -86,20 +86,42 @@ class ObservationForm < Reform::Form
     end
     
     # Handle story_extras (GIFs, etc.)
-    if story_extras.present?
+    # Process story_extras if provided (even if empty hash)
+    # story_extras is a virtual property, so it comes from params
+    # Rails strong params may pass it as ActionController::Parameters
+    # Note: Empty hash {} is still "present" in Rails, so we check for nil specifically
+    if !story_extras.nil?
       # story_extras comes as a hash like { "gif_urls" => ["url1", "url2"] }
       # or as nested params like { "gif_urls" => ["url1", "url2"] }
-      extras_hash = story_extras.is_a?(Hash) ? story_extras : {}
+      # Convert ActionController::Parameters to hash if needed
+      # ActionController::Parameters needs to be converted to hash to access values
+      extras_hash = if story_extras.is_a?(ActionController::Parameters)
+        # For permitted parameters, we can safely convert to hash
+        story_extras.to_h
+      elsif story_extras.is_a?(Hash)
+        story_extras
+      elsif story_extras.respond_to?(:to_h)
+        story_extras.to_h
+      else
+        {}
+      end
       
       # Ensure gif_urls is an array and filter out blanks
-      gif_urls = Array(extras_hash['gif_urls'] || extras_hash[:gif_urls]).reject(&:blank?)
+      # Check both string and symbol keys (ActionController::Parameters uses string keys)
+      # Access the gif_urls array directly from the hash
+      raw_gif_urls = extras_hash['gif_urls'] || extras_hash[:gif_urls] || []
+      gif_urls = Array(raw_gif_urls).reject(&:blank?)
       
-      # Build the story_extras hash
+      # Build the story_extras hash - always set it, even if empty array
+      # This ensures story_extras is saved even when all GIFs are removed
       model.story_extras = { 'gif_urls' => gif_urls }
     end
+    # If story_extras is nil (not in params), don't change existing value
+    # This preserves existing story_extras when form doesn't include it
     
     # Sync other form data to model (story, feelings, etc.)
     # Don't let Reform sync observation_ratings since we handled it manually above
+    # Note: story_extras is handled separately above, so don't include it here
     model.assign_attributes(
       story: story,
       privacy_level: privacy_level,

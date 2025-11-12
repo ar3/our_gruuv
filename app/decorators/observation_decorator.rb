@@ -126,13 +126,15 @@ class ObservationDecorator < Draper::Decorator
   end
 
   def gifs_html
-    return '' unless story_extras.present? && story_extras['gif_urls'].present?
+    return '' unless story_extras.present?
     
-    gif_urls = Array(story_extras['gif_urls']).reject(&:blank?)
+    # Handle both hash and string keys, and ensure we have gif_urls
+    gif_urls = story_extras['gif_urls'] || story_extras[:gif_urls] || []
+    gif_urls = Array(gif_urls).reject(&:blank?)
     return '' if gif_urls.empty?
     
     gif_urls.map do |url|
-      "<div class='gif-container mb-3'><img src='#{url}' alt='GIF' class='img-fluid rounded' style='max-width: 100%; height: auto;' /></div>"
+      "<div class='gif-container mb-3'><img src='#{ERB::Util.html_escape(url)}' alt='GIF' class='img-fluid rounded' style='max-width: 100%; height: auto;' /></div>"
     end.join
   end
 

@@ -35,7 +35,7 @@
           %i.bi.bi-chat-text.me-2
           Story
       .card-body
-        = @observation.decorate.story_html
+        = @observation.decorate.story_html.html_safe
         
     .card.mb-4{ role: "region", "aria-labelledby": "observation-details" }
       .card-header
@@ -66,7 +66,7 @@
             - if @observation.primary_feeling.present?
               %p
                 %strong Feelings: 
-                = @observation.decorate.feelings_display_html
+                = @observation.decorate.feelings_display_html.html_safe
             %p
               %strong Permalink: 
               = link_to @observation.decorate.permalink_url, @observation.decorate.permalink_url, target: '_blank', class: 'text-decoration-none'
@@ -95,7 +95,7 @@
         .card-body
           - @observation.observation_ratings.each do |rating|
             .d-flex.align-items-center.mb-2
-              = rating.decorate.to_descriptive_html
+              = rating.decorate.to_descriptive_html.html_safe
 
     - if @observation.notifications.successful.any?
       .card.mb-4{ role: "region", "aria-labelledby": "notification-history" }

@@ -101,5 +101,21 @@ RSpec.describe ObservationForm, type: :form do
       observation.reload
       expect(observation.story_extras['gif_urls']).to eq(['https://media.giphy.com/media/test1/giphy.gif', 'https://media.giphy.com/media/test2/giphy.gif'])
     end
+
+    it 'saves empty gif_urls array when all GIFs are removed' do
+      # First add some GIFs
+      observation.update!(story_extras: { 'gif_urls' => ['https://media.giphy.com/media/test1/giphy.gif'] })
+      
+      # Then remove them all
+      form.story = 'Test story'
+      form.privacy_level = 'observer_only'
+      form.primary_feeling = 'happy'
+      form.story_extras = { 'gif_urls' => [] }
+      
+      expect(form.save).to be true
+      
+      observation.reload
+      expect(observation.story_extras).to eq({ 'gif_urls' => [] })
+    end
   end
 end

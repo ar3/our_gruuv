@@ -83,12 +83,15 @@
             .mt-3{"data-controller": "gif-picker", "data-gif-picker-organization-id-value": organization.id}
               %h6 Add GIFs
               
+              / Hidden inputs for existing GIFs (preserved outside visual container)
+              - if @observation.story_extras.present?
+                - gif_urls = @observation.story_extras['gif_urls'] || @observation.story_extras[:gif_urls] || []
+                - Array(gif_urls).reject(&:blank?).each do |gif_url|
+                  %input{type: "hidden", name: "observation[story_extras][gif_urls][]", value: gif_url, class: "existing-gif-input", data: {gif_url: gif_url}}
+              
               / Selected GIFs Display
               .mb-3.border.rounded.p-2.bg-light#selected_gifs_visual
-                - if @observation.story_extras.present? && @observation.story_extras['gif_urls'].present?
-                  - @observation.story_extras['gif_urls'].each do |gif_url|
-                    / Hidden input for existing GIFs (will be managed by JavaScript)
-                    %input{type: "hidden", name: "observation[story_extras][gif_urls][]", value: gif_url, class: "existing-gif-input", data: {gif_url: gif_url}}
+                / Will be populated by JavaScript
               
               / Search Interface
               .mb-2

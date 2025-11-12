@@ -5,8 +5,10 @@ export default class extends Controller {
   static values = { organizationId: String }
 
   connect() {
-    // Initialize selected GIFs display
-    this.updateSelectedGifsDisplay()
+    // Initialize selected GIFs display after a short delay to ensure DOM is ready
+    setTimeout(() => {
+      this.updateSelectedGifsDisplay()
+    }, 100)
   }
 
   async search(event) {
@@ -170,12 +172,27 @@ export default class extends Controller {
     }
     
     // From existing GIF inputs in the form (from server)
-    document.querySelectorAll('.existing-gif-input[data-gif-url]').forEach(input => {
+    // Look for inputs with class existing-gif-input, either with data-gif-url attribute or just by value
+    document.querySelectorAll('.existing-gif-input').forEach(input => {
       const url = input.dataset.gifUrl || input.value
       if (url) {
         selectedUrls.add(url)
       }
     })
+    
+    // Also check for any hidden inputs with the gif_urls name pattern (fallback)
+    const form = document.getElementById('observation_form')
+    if (form) {
+      form.querySelectorAll('input[type="hidden"][name*="gif_urls"]').forEach(input => {
+        if (input.value && !input.classList.contains('existing-gif-input')) {
+          // Check if it's not already in the container
+          const container = document.getElementById('selected_gifs_container')
+          if (!container || !container.contains(input)) {
+            selectedUrls.add(input.value)
+          }
+        }
+      })
+    }
 
     const gifUrls = Array.from(selectedUrls)
     
