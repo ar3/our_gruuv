@@ -9,7 +9,8 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   end
   
   def switch_page
-    @organizations = Organization.companies.order(:type, :name)
+    # Only show company organizations that the user has access to
+    @organizations = current_company_teammate.person.available_organizations.companies.order(:type, :name)
     @current_organization = current_company_teammate.organization
   end
   
