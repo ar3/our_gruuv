@@ -1,5 +1,6 @@
 class Organizations::ObservationsController < Organizations::OrganizationNamespaceBaseController
   before_action :set_observation, only: [:show, :edit, :update, :destroy, :post_to_slack]
+  
 
   def index
     authorize Observation
@@ -492,79 +493,55 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       teammate_ids = params[:teammate_ids] || []
       teammate_ids = teammate_ids.reject(&:blank?).map(&:to_i)
       
-      # Get current observee teammate IDs
-      current_observee_ids = @observation.observees.pluck(:teammate_id)
+      # Reload to ensure we have fresh data before calculating changes
+      @observation.reload
+      
+      # Get current observee teammate IDs (distinct to handle any duplicates)
+      current_observee_ids = @observation.observees.pluck(:teammate_id).uniq
       
       # Determine which observees to add and which to remove
       observees_to_add = teammate_ids - current_observee_ids
       observees_to_remove = current_observee_ids - teammate_ids
       
-      # Build observees_attributes for nested attributes
-      observees_attributes = {}
-      index = 0
-      
-      # Add existing observees that should remain (with id, no _destroy)
-      @observation.observees.each do |observee|
-        if teammate_ids.include?(observee.teammate_id)
-          observees_attributes[index.to_s] = {
-            id: observee.id,
-            teammate_id: observee.teammate_id
-          }
-          index += 1
-        end
+      # Remove observees that are no longer selected
+      removed_count = 0
+      observees_to_remove.each do |teammate_id|
+        count = @observation.observees.where(teammate_id: teammate_id).count
+        @observation.observees.where(teammate_id: teammate_id).destroy_all
+        removed_count += count
       end
       
-      # Mark observees for removal (with id and _destroy)
-      @observation.observees.each do |observee|
-        if observees_to_remove.include?(observee.teammate_id)
-          observees_attributes[index.to_s] = {
-            id: observee.id,
-            _destroy: '1'
-          }
-          index += 1
-        end
-      end
-      
-      # Add new observees (without id)
+      # Add new observees
+      added_count = 0
       observees_to_add.each do |teammate_id|
-        observees_attributes[index.to_s] = {
-          teammate_id: teammate_id
-        }
-        index += 1
+        # Check if it already exists (might have been added by another process)
+        unless @observation.observees.exists?(teammate_id: teammate_id)
+          @observation.observees.create!(teammate_id: teammate_id)
+          added_count += 1
+        end
       end
       
-      # Update using nested attributes
-      if @observation.update(observees_attributes: observees_attributes)
-        added_count = observees_to_add.count
-        removed_count = observees_to_remove.count
-        
-        if added_count > 0 && removed_count > 0
-          notice = "Added #{added_count} observee(s) and removed #{removed_count} observee(s)"
-        elsif added_count > 0
-          notice = "Added #{added_count} observee(s)"
-        elsif removed_count > 0
-          notice = "Removed #{removed_count} observee(s)"
-        else
-          notice = "No changes made"
-        end
-        
-        redirect_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
-        if params[:return_url].present? || params[:return_text].present?
-          redirect_url = new_organization_observation_path(
-            organization,
-            draft_id: @observation.id,
-            return_url: params[:return_url],
-            return_text: params[:return_text]
-          )
-        end
-        redirect_to redirect_url, notice: notice
+      # Build success message
+      if added_count > 0 && removed_count > 0
+        notice = "Added #{added_count} observee(s) and removed #{removed_count} observee(s)"
+      elsif added_count > 0
+        notice = "Added #{added_count} observee(s)"
+      elsif removed_count > 0
+        notice = "Removed #{removed_count} observee(s)"
       else
-        flash[:alert] = "Failed to update observees: #{@observation.errors.full_messages.join(', ')}"
-        @teammates = organization.teammates.includes(:person)
-        @return_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
-        @return_text = params[:return_text] || 'Back'
-        render :manage_observees, layout: 'overlay', status: :unprocessable_entity
+        notice = "No changes made"
       end
+      
+      redirect_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
+      if params[:return_url].present? || params[:return_text].present?
+        redirect_url = new_organization_observation_path(
+          organization,
+          draft_id: @observation.id,
+          return_url: params[:return_url],
+          return_text: params[:return_text]
+        )
+      end
+      redirect_to redirect_url, notice: notice
     else
       # GET - render picker
       @teammates = organization.teammates.includes(:person)

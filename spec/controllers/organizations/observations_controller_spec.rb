@@ -467,15 +467,16 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       other_teammate_user = create(:teammate, person: other_person, organization: company)
       sign_in_as_teammate(other_person, company)
       
-      expect {
-        get :manage_observees, params: { organization_id: company.id, id: draft.id }
-      }.to raise_error(Pundit::NotAuthorizedError)
+      get :manage_observees, params: { organization_id: company.id, id: draft.id }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to be_present
     end
   end
 
   describe 'PATCH #manage_observees' do
     let(:draft) do
-      obs = build(:observation, observer: observer, company: company, published_at: nil)
+      # Build observation without factory callback to avoid extra observee
+      obs = Observation.new(observer: observer, company: company, published_at: nil, privacy_level: :observed_only, primary_feeling: 'happy', observed_at: Time.current)
       obs.observees.build(teammate: observee_teammate)
       obs.save!
       obs
@@ -612,13 +613,13 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       other_teammate_user = create(:teammate, person: other_person, organization: company)
       sign_in_as_teammate(other_person, company)
       
-      expect {
-        patch :manage_observees, params: {
-          organization_id: company.id,
-          id: draft.id,
-          teammate_ids: []
-        }
-      }.to raise_error(Pundit::NotAuthorizedError)
+      patch :manage_observees, params: {
+        organization_id: company.id,
+        id: draft.id,
+        teammate_ids: []
+      }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to be_present
     end
   end
 

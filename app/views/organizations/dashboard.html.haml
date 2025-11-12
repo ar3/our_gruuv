@@ -7,7 +7,8 @@
   = render 'organizations/dashboard/check_ins'
   = render 'organizations/dashboard/goals'
   = render 'organizations/dashboard/observations'
+  = render 'organizations/dashboard/organization', organization: @organization
+  %hr.mt-5.mb-5/
   = render 'organizations/dashboard/know_section', organization: @organization
   = render 'organizations/dashboard/convo_section', organization: @organization
   = render 'organizations/dashboard/tempo_section', organization: @organization
-  = render 'organizations/dashboard/organization', organization: @organization

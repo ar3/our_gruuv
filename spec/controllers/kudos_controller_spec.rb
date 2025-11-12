@@ -66,10 +66,10 @@ RSpec.describe KudosController, type: :controller do
           sign_in_as_teammate(other_person, company)
         end
 
-        it 'raises NotAuthorizedError' do
-          expect {
-            get :show, params: { date: '2025-10-05', id: observation.id }
-          }.to raise_error(Pundit::NotAuthorizedError)
+        it 'redirects with authorization error' do
+          get :show, params: { date: '2025-10-05', id: observation.id }
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq("You are not authorized to view this observation")
         end
       end
     end
@@ -109,10 +109,10 @@ RSpec.describe KudosController, type: :controller do
           sign_in_as_teammate(other_person, company)
         end
 
-        it 'raises NotAuthorizedError' do
-          expect {
-            get :show, params: { date: '2025-10-05', id: observation.id }
-          }.to raise_error(Pundit::NotAuthorizedError)
+        it 'redirects with authorization error' do
+          get :show, params: { date: '2025-10-05', id: observation.id }
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq("You are not authorized to view this observation")
         end
       end
     end

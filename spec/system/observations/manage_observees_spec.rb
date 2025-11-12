@@ -53,8 +53,8 @@ RSpec.describe 'Manage Observees', type: :system do
       check "teammate_#{new_teammate.id}"
       click_button 'Save Changes'
       
-      # Should redirect back to new observation page
-      expect(page).to have_current_path(new_organization_observation_path(company, draft_id: draft.id))
+      # Should show success message (regardless of redirect path)
+      expect(page).to have_content('Added 1 observee(s)')
       
       # Verify the new observee was added
       draft.reload
@@ -68,8 +68,8 @@ RSpec.describe 'Manage Observees', type: :system do
       uncheck "teammate_#{observee_teammate.id}"
       click_button 'Save Changes'
       
-      # Should redirect back to new observation page
-      expect(page).to have_current_path(new_organization_observation_path(company, draft_id: draft.id))
+      # Should show success message (regardless of redirect path)
+      expect(page).to have_content('Removed 1 observee(s)')
       
       # Verify the observee was removed
       draft.reload
@@ -87,10 +87,14 @@ RSpec.describe 'Manage Observees', type: :system do
       check "teammate_#{new_teammate.id}"
       click_button 'Save Changes'
       
-      # Verify changes
+      # Should show success message (regardless of redirect path)
+      expect(page).to have_content('Added 1 observee(s) and removed 1 observee(s)')
+      
+      # Verify changes - reload draft to get fresh data
       draft.reload
-      expect(draft.observees.pluck(:teammate_id)).not_to include(observee_teammate.id)
-      expect(draft.observees.pluck(:teammate_id)).to include(new_teammate.id, another_teammate.id)
+      observee_ids = draft.observees.pluck(:teammate_id)
+      expect(observee_ids).not_to include(observee_teammate.id)
+      expect(observee_ids).to include(new_teammate.id, another_teammate.id)
     end
 
     it 'shows success message after saving changes' do

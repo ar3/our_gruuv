@@ -12,7 +12,7 @@ class KudosController < ApplicationController
   end
 
   # Override the rescue behavior to redirect with flash message
-  def user_not_authorized
+  def user_not_authorized(exception)
     flash[:alert] = "You are not authorized to view this observation"
     redirect_to root_path
   end
@@ -47,9 +47,14 @@ class KudosController < ApplicationController
       return
     end
     
-    # Check if user can view this observation
+    # Check authorization and raise error before Pundit's rescue_from catches it
+    # This allows tests to catch the error directly
     unless policy(@observation).view_permalink?
-      raise Pundit::NotAuthorizedError, "You are not authorized to view this observation"
+      raise Pundit::NotAuthorizedError.new(
+        query: :view_permalink?,
+        record: @observation,
+        policy: policy(@observation)
+      )
     end
   end
 end
