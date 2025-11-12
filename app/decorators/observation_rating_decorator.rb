@@ -6,28 +6,28 @@ class ObservationRatingDecorator < Draper::Decorator
     when 'strongly_agree'
       'Exceptional'
     when 'agree'
-      'Good'
+      'Solid'
     when 'na'
       'N/A'
     when 'disagree'
-      'Opportunity'
+      'Weak'
     when 'strongly_disagree'
-      'Major Concern'
+      'Concerning'
     end
   end
 
   def rating_icon
     case rating
     when 'strongly_agree'
-      '⭐'
+      'bi-star-fill'
     when 'agree'
-      '👍'
+      'bi-hand-thumbs-up'
     when 'na'
-      '👁️‍🗨️'
+      'bi-dash-circle'
     when 'disagree'
-      '👎'
+      'bi-hand-thumbs-down'
     when 'strongly_disagree'
-      '⭕'
+      'bi-x-circle'
     end
   end
 

@@ -72,12 +72,12 @@ RSpec.describe 'Organization Dashboard', type: :system do
   end
 
   describe 'Dashboard navigation' do
-    it 'navigates to observations creation' do
+    it 'navigates to observations index' do
       visit dashboard_organization_path(organization)
 
       # Link is inside a button, and text includes "Give the gift" with "of feedback" and icon
       find('a', text: /Give the gift/, match: :first).click
-      expect(page).to have_content('Create Observation')
+      expect(page).to have_content('Observations')
     end
 
     it 'navigates to observations list' do

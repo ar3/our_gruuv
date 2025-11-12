@@ -1,0 +1,38 @@
+- current_value ||= local_assigns[:current_value]
+- rating_key ||= local_assigns[:rating_key]
+- rateable_type ||= local_assigns[:rateable_type]
+- rateable_id ||= local_assigns[:rateable_id]
+
+- field_name = "observation[observation_ratings_attributes][#{rating_key}][rating]"
+- strongly_agree_id = "#{rating_key}_strongly_agree"
+- agree_id = "#{rating_key}_agree"
+- na_id = "#{rating_key}_na"
+- disagree_id = "#{rating_key}_disagree"
+- strongly_disagree_id = "#{rating_key}_strongly_disagree"
+
+.btn-group{role: "group", 'aria-label': "Rating options"}
+  %input{type: "radio", name: field_name, value: "strongly_agree", id: strongly_agree_id, checked: (current_value == 'strongly_agree'), class: "btn-check", 'data-rateable-type': rateable_type, 'data-rateable-id': rateable_id, 'data-rating-key': rating_key}
+  %label.btn.btn-outline-success{for: strongly_agree_id}
+    %i.bi.bi-star-fill.me-2
+    Exceptional
+  
+  %input{type: "radio", name: field_name, value: "agree", id: agree_id, checked: (current_value == 'agree'), class: "btn-check", 'data-rateable-type': rateable_type, 'data-rateable-id': rateable_id, 'data-rating-key': rating_key}
+  %label.btn.btn-outline-primary{for: agree_id}
+    %i.bi.bi-hand-thumbs-up.me-2
+    Solid
+  
+  %input{type: "radio", name: field_name, value: "na", id: na_id, checked: (current_value == 'na'), class: "btn-check", 'data-rateable-type': rateable_type, 'data-rateable-id': rateable_id, 'data-rating-key': rating_key}
+  %label.btn.btn-outline-secondary{for: na_id}
+    %i.bi.bi-dash-circle.me-2
+    N/A
+  
+  %input{type: "radio", name: field_name, value: "disagree", id: disagree_id, checked: (current_value == 'disagree'), class: "btn-check", 'data-rateable-type': rateable_type, 'data-rateable-id': rateable_id, 'data-rating-key': rating_key}
+  %label.btn.btn-outline-warning{for: disagree_id}
+    %i.bi.bi-hand-thumbs-down.me-2
+    Weak
+  
+  %input{type: "radio", name: field_name, value: "strongly_disagree", id: strongly_disagree_id, checked: (current_value == 'strongly_disagree'), class: "btn-check", 'data-rateable-type': rateable_type, 'data-rateable-id': rateable_id, 'data-rating-key': rating_key}
+  %label.btn.btn-outline-danger{for: strongly_disagree_id}
+    %i.bi.bi-x-circle.me-2
+    Concerning
+

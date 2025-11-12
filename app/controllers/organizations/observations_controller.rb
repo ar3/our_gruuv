@@ -1022,17 +1022,17 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def rating_icon(rating)
     case rating
     when 'strongly_agree'
-      '⭐'
+      'bi-star-fill'
     when 'agree'
-      '👍'
+      'bi-hand-thumbs-up'
     when 'na'
-      '👁️‍🗨️'
+      'bi-dash-circle'
     when 'disagree'
-      '👎'
+      'bi-hand-thumbs-down'
     when 'strongly_disagree'
-      '⭕'
+      'bi-x-circle'
     else
-      '❓'
+      'bi-question-circle'
     end
   end
 

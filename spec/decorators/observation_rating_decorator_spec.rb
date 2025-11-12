@@ -15,35 +15,35 @@ RSpec.describe ObservationRatingDecorator, type: :decorator do
       expect(decorated_rating.rating_to_words).to eq('Exceptional')
       
       observation_rating.rating = :agree
-      expect(decorated_rating.rating_to_words).to eq('Good')
+      expect(decorated_rating.rating_to_words).to eq('Solid')
       
       observation_rating.rating = :na
       expect(decorated_rating.rating_to_words).to eq('N/A')
       
       observation_rating.rating = :disagree
-      expect(decorated_rating.rating_to_words).to eq('Opportunity')
+      expect(decorated_rating.rating_to_words).to eq('Weak')
       
       observation_rating.rating = :strongly_disagree
-      expect(decorated_rating.rating_to_words).to eq('Major Concern')
+      expect(decorated_rating.rating_to_words).to eq('Concerning')
     end
   end
 
   describe '#rating_icon' do
     it 'returns correct icons for each rating' do
       observation_rating.rating = :strongly_agree
-      expect(decorated_rating.rating_icon).to eq('⭐')
+      expect(decorated_rating.rating_icon).to eq('bi-star-fill')
       
       observation_rating.rating = :agree
-      expect(decorated_rating.rating_icon).to eq('👍')
+      expect(decorated_rating.rating_icon).to eq('bi-hand-thumbs-up')
       
       observation_rating.rating = :na
-      expect(decorated_rating.rating_icon).to eq('👁️‍🗨️')
+      expect(decorated_rating.rating_icon).to eq('bi-dash-circle')
       
       observation_rating.rating = :disagree
-      expect(decorated_rating.rating_icon).to eq('👎')
+      expect(decorated_rating.rating_icon).to eq('bi-hand-thumbs-down')
       
       observation_rating.rating = :strongly_disagree
-      expect(decorated_rating.rating_icon).to eq('⭕')
+      expect(decorated_rating.rating_icon).to eq('bi-x-circle')
     end
   end
 

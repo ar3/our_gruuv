@@ -54,9 +54,8 @@
                 - @available_abilities.each do |ability|
                   .form-group.mb-2
                     = label_tag "ability_#{ability.id}", ability.name, class: 'form-label small'
-                    = select_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rating]", 
-                      options_for_select(rating_options_for_select, (@form.observation_ratings_attributes&.dig("ability_#{ability.id}", 'rating')&.to_s rescue '')), 
-                      { class: 'form-select form-select-sm', include_blank: true, 'data-rateable-type': 'Ability', 'data-rateable-id': ability.id, 'data-rating-key': "ability_#{ability.id}" }
+                    - current_rating = (@form.observation_ratings_attributes&.dig("ability_#{ability.id}", 'rating')&.to_s rescue '')
+                    = render 'organizations/observations/rating_button_group', rating_key: "ability_#{ability.id}", current_value: current_rating, rateable_type: 'Ability', rateable_id: ability.id
                     = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_type]", 'Ability'
                     = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_id]", ability.id
             
@@ -66,9 +65,8 @@
                 - @available_assignments.each do |assignment|
                   .form-group.mb-2
                     = label_tag "assignment_#{assignment.id}", assignment.title, class: 'form-label small'
-                    = select_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]", 
-                      options_for_select(rating_options_for_select, (@form.observation_ratings_attributes&.dig("assignment_#{assignment.id}", 'rating')&.to_s rescue '')), 
-                      { class: 'form-select form-select-sm', include_blank: true, 'data-rateable-type': 'Assignment', 'data-rateable-id': assignment.id, 'data-rating-key': "assignment_#{assignment.id}" }
+                    - current_rating = (@form.observation_ratings_attributes&.dig("assignment_#{assignment.id}", 'rating')&.to_s rescue '')
+                    = render 'organizations/observations/rating_button_group', rating_key: "assignment_#{assignment.id}", current_value: current_rating, rateable_type: 'Assignment', rateable_id: assignment.id
                     = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
                     = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
             
@@ -78,9 +76,8 @@
                 - @available_aspirations.each do |aspiration|
                   .form-group.mb-2
                     = label_tag "aspiration_#{aspiration.id}", aspiration.name, class: 'form-label small'
-                    = select_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rating]", 
-                      options_for_select(rating_options_for_select, (@form.observation_ratings_attributes&.dig("aspiration_#{aspiration.id}", 'rating')&.to_s rescue '')), 
-                      { class: 'form-select form-select-sm', include_blank: true, 'data-rateable-type': 'Aspiration', 'data-rateable-id': aspiration.id, 'data-rating-key': "aspiration_#{aspiration.id}" }
+                    - current_rating = (@form.observation_ratings_attributes&.dig("aspiration_#{aspiration.id}", 'rating')&.to_s rescue '')
+                    = render 'organizations/observations/rating_button_group', rating_key: "aspiration_#{aspiration.id}", current_value: current_rating, rateable_type: 'Aspiration', rateable_id: aspiration.id
                     = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_type]", 'Aspiration'
                     = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_id]", aspiration.id
             
@@ -136,9 +133,9 @@
 
 :javascript
   document.addEventListener('DOMContentLoaded', function() {
-    // Handle rating selection
-    document.querySelectorAll('select[data-rateable-type]').forEach(function(select) {
-      select.addEventListener('change', function() {
+    // Handle rating selection for radio buttons
+    document.querySelectorAll('input.btn-check[data-rateable-type]').forEach(function(radio) {
+      radio.addEventListener('change', function() {
         var rateableType = this.dataset.rateableType;
         var rateableId = this.dataset.rateableId;
         var ratingKey = this.dataset.ratingKey;

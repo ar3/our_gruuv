@@ -72,11 +72,13 @@
           - @form.observation_ratings_attributes.each do |key, rating_attrs|
             - next if rating_attrs['rating'].blank?
             .d-flex.align-items-center.mb-2
-              = rating_icon(rating_attrs['rating'])
-              %span.ms-2
-                %strong= rating_attrs['rating'].humanize
+              - rateable_obj = rating_attrs['rateable_type'].constantize.find(rating_attrs['rateable_id'])
+              - rating_obj = ObservationRating.new(rating: rating_attrs['rating'], rateable: rateable_obj)
+              %i{class: "bi #{rating_obj.decorate.rating_icon} me-2"}
+              %span
+                %strong= rating_obj.decorate.rating_to_words
                 on 
-                %strong= rating_attrs['rateable_type'].constantize.find(rating_attrs['rateable_id']).send(rating_attrs['rateable_type'] == 'Assignment' ? 'title' : 'name')
+                %strong= rateable_obj.send(rating_attrs['rateable_type'] == 'Assignment' ? 'title' : 'name')
         - else
           %hr
           %h6 Ratings:

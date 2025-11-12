@@ -113,17 +113,20 @@
                           %div
                             %strong= assignment.title
                             .mt-2
-                              = render 'organizations/observations/rating_buttons', 
-                                      rating: rating_obj.rating,
-                                      input_name: "observation[observation_ratings_attributes][assignment_#{assignment.id}][rating]"
-                              -# Include hidden fields for rateable_type and rateable_id
-                              - if rating_obj.new_record? || rating_obj.id.nil?
-                                = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
-                                = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
-                              - else
-                                = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][id]", rating_obj.id
-                                = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
-                                = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
+                            - current_rating = rating_obj.rating&.to_s || ''
+                            = render 'organizations/observations/rating_button_group', 
+                                    rating_key: "assignment_#{assignment.id}", 
+                                    current_value: current_rating, 
+                                    rateable_type: 'Assignment', 
+                                    rateable_id: assignment.id
+                            -# Include hidden fields for rateable_type and rateable_id
+                            - if rating_obj.new_record? || rating_obj.id.nil?
+                              = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
+                              = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
+                            - else
+                              = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][id]", rating_obj.id
+                              = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
+                              = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
                 = form.submit 'Add Assignments', 
                               class: 'btn btn-sm btn-outline-primary',
                               name: 'save_and_add_assignments',
@@ -148,9 +151,12 @@
                         %div
                           %strong= ability.name
                           .mt-2
-                            = render 'organizations/observations/rating_buttons', 
-                                    rating: rating_obj.rating,
-                                    input_name: "observation[observation_ratings_attributes][ability_#{ability.id}][rating]"
+                            - current_rating = rating_obj.rating&.to_s || ''
+                            = render 'organizations/observations/rating_button_group', 
+                                    rating_key: "ability_#{ability.id}", 
+                                    current_value: current_rating, 
+                                    rateable_type: 'Ability', 
+                                    rateable_id: ability.id
                             - if rating_obj.new_record? || rating_obj.id.nil?
                               = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_type]", 'Ability'
                               = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_id]", ability.id
@@ -182,9 +188,12 @@
                         %div
                           %strong= aspiration.name
                           .mt-2
-                            = render 'organizations/observations/rating_buttons', 
-                                    rating: rating_obj.rating,
-                                    input_name: "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rating]"
+                            - current_rating = rating_obj.rating&.to_s || ''
+                            = render 'organizations/observations/rating_button_group', 
+                                    rating_key: "aspiration_#{aspiration.id}", 
+                                    current_value: current_rating, 
+                                    rateable_type: 'Aspiration', 
+                                    rateable_id: aspiration.id
                             - if rating_obj.new_record? || rating_obj.id.nil?
                               = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_type]", 'Aspiration'
                               = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_id]", aspiration.id
