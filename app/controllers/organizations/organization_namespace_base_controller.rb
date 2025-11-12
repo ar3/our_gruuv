@@ -6,7 +6,8 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
   # Override Pundit's default user method to use current_company_teammate
   def pundit_user
     OpenStruct.new(
-      user: current_company_teammate
+      user: current_company_teammate,
+      real_user: real_current_teammate
     )
   end
 
