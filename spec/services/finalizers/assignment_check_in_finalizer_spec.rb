@@ -31,6 +31,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
       check_in: assignment_check_in,
       official_rating: 'meeting',
       shared_notes: 'Great work on this assignment',
+      anticipated_energy_percentage: 80,
       finalized_by: manager
     )
   end
@@ -53,7 +54,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         expect(assignment_tenure.reload.official_rating).to eq('meeting')
       end
       
-      it 'creates a new tenure with same assignment and anticipated_energy_percentage' do
+      it 'creates a new tenure with same assignment and uses provided anticipated_energy_percentage' do
         expect { finalizer.finalize }
           .to change { AssignmentTenure.count }
           .by(1)
@@ -62,10 +63,44 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         expect(new_tenure.assignment).to eq(assignment)
         expect(new_tenure.teammate).to be_a(Teammate)
         expect(new_tenure.teammate.id).to eq(employee_teammate.id)
-        expect(new_tenure.anticipated_energy_percentage).to eq(75)
+        expect(new_tenure.anticipated_energy_percentage).to eq(80)
         expect(new_tenure.started_at).to eq(Date.current)
         expect(new_tenure.ended_at).to be_nil
         expect(new_tenure.official_rating).to be_nil
+      end
+      
+      it 'falls back to old tenure anticipated_energy_percentage when provided value is nil' do
+        finalizer_with_nil = described_class.new(
+          check_in: assignment_check_in,
+          official_rating: 'meeting',
+          shared_notes: 'Great work',
+          anticipated_energy_percentage: nil,
+          finalized_by: manager
+        )
+        
+        expect { finalizer_with_nil.finalize }
+          .to change { AssignmentTenure.count }
+          .by(1)
+        
+        new_tenure = AssignmentTenure.last
+        expect(new_tenure.anticipated_energy_percentage).to eq(75)
+      end
+      
+      it 'falls back to old tenure anticipated_energy_percentage when provided value is empty string' do
+        finalizer_with_empty = described_class.new(
+          check_in: assignment_check_in,
+          official_rating: 'meeting',
+          shared_notes: 'Great work',
+          anticipated_energy_percentage: '',
+          finalized_by: manager
+        )
+        
+        expect { finalizer_with_empty.finalize }
+          .to change { AssignmentTenure.count }
+          .by(1)
+        
+        new_tenure = AssignmentTenure.last
+        expect(new_tenure.anticipated_energy_percentage).to eq(75)
       end
       
       it 'updates the check-in with official data' do
@@ -116,6 +151,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
           check_in: assignment_check_in,
           official_rating: nil,
           shared_notes: 'Notes',
+          anticipated_energy_percentage: 50,
           finalized_by: manager
         )
       end

@@ -1,10 +1,11 @@
 module Finalizers
   class AssignmentCheckInFinalizer
     
-    def initialize(check_in:, official_rating:, shared_notes:, finalized_by:)
+    def initialize(check_in:, official_rating:, shared_notes:, anticipated_energy_percentage:, finalized_by:)
       @check_in = check_in
       @official_rating = official_rating
       @shared_notes = shared_notes
+      @anticipated_energy_percentage = anticipated_energy_percentage
       @finalized_by = finalized_by
       @teammate = check_in.teammate
     end
@@ -27,11 +28,14 @@ module Finalizers
       )
       
       # Create new tenure (same assignment, fresh rating period)
+      # Use provided anticipated_energy_percentage, or fallback to old tenure's value if nil
+      energy_percentage = @anticipated_energy_percentage.present? ? @anticipated_energy_percentage.to_i : active_tenure.anticipated_energy_percentage
+      
       new_tenure = AssignmentTenure.create!(
         teammate: @teammate,
         assignment: @check_in.assignment,
         started_at: Date.current,
-        anticipated_energy_percentage: active_tenure.anticipated_energy_percentage,
+        anticipated_energy_percentage: energy_percentage,
         ended_at: nil,
         official_rating: nil
       )

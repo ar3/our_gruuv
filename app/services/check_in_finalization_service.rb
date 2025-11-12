@@ -62,6 +62,7 @@ class CheckInFinalizationService
         check_in: check_in,
         official_rating: assignment_params[:official_rating],
         shared_notes: assignment_params[:shared_notes],
+        anticipated_energy_percentage: assignment_params[:anticipated_energy_percentage],
         finalized_by: @finalized_by
       ).finalize
       

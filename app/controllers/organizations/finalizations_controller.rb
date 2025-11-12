@@ -89,11 +89,22 @@ class Organizations::FinalizationsController < ApplicationController
   end
   
   def finalization_params
-    params.permit(
+    permitted = params.permit(
       position_check_in: [:finalize, :official_rating, :shared_notes],
       assignment_check_ins: {},
       aspiration_check_ins: {}
     )
+    
+    # Explicitly permit nested parameters for assignment_check_ins
+    if permitted[:assignment_check_ins]
+      permitted[:assignment_check_ins].each do |check_in_id, assignment_params|
+        if assignment_params.is_a?(ActionController::Parameters)
+          assignment_params.permit(:finalize, :official_rating, :shared_notes, :anticipated_energy_percentage)
+        end
+      end
+    end
+    
+    permitted
   end
   
   def build_request_info
