@@ -21,6 +21,37 @@
     %i.bi.bi-funnel.me-2
     Filter & Sort
 
+/ Owner Selection Section
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        = form_with url: organization_goals_path(@organization), method: :get, local: true, id: "owner-selection-form" do |f|
+          .row.align-items-end
+            .col-md-10
+              %label.form-label.fw-bold.fs-5.mb-2 Select Owner
+              = select_tag :owner_id, options_for_select(available_goal_owners, "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"), { include_blank: 'Select an owner...', class: "form-select form-select-lg", required: true, id: "owner-select" }
+              %small.form-text.text-muted Choose who owns the goals you want to view
+            .col-md-2
+              = f.submit "Go", class: "btn btn-primary btn-lg w-100"
+          / Preserve other filter parameters
+          - if @current_filters[:timeframe].present?
+            = hidden_field_tag :timeframe, @current_filters[:timeframe]
+          - if @current_filters[:goal_type].present?
+            - Array(@current_filters[:goal_type]).each do |gt|
+              = hidden_field_tag "goal_type[]", gt
+          - if @current_filters[:status].present?
+            - Array(@current_filters[:status]).each do |s|
+              = hidden_field_tag "status[]", s
+          - if @current_filters[:sort].present?
+            = hidden_field_tag :sort, @current_filters[:sort]
+          - if @current_filters[:direction].present?
+            = hidden_field_tag :direction, @current_filters[:direction]
+          - if @current_filters[:view].present?
+            = hidden_field_tag :view, @current_filters[:view]
+          - if @current_filters[:spotlight].present?
+            = hidden_field_tag :spotlight, @current_filters[:spotlight]
+
 / Spotlight Section (optional based on spotlight param)
 - if @current_filters[:spotlight].present? && @current_filters[:spotlight] != 'none'
   .row.justify-content-center.mb-4
@@ -149,15 +180,14 @@
         %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
       .modal-body
         = form_with url: organization_goals_path(@organization), method: :get, local: true, id: "goals-filter-form" do |f|
+          / Preserve owner_id when submitting filter changes
+          - if @current_filters[:owner_type].present? && @current_filters[:owner_id].present?
+            = hidden_field_tag :owner_id, "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"
           .row
             .col-md-6
               %h6.mb-3
                 %i.bi.bi-funnel.me-2
                 Filters
-              .mb-3
-                %label.form-label Owner (Required)
-                = select_tag :owner_id, options_for_select(available_goal_owners, "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"), { include_blank: 'Select an owner...', class: "form-select", required: true }
-                %small.form-text.text-muted You must select an owner to view goals
               .mb-3
                 %label.form-label Timeframe
                 - %w[all now next later].each do |timeframe|

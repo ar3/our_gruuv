@@ -56,6 +56,15 @@ h4, h5, h6 {
   font-size: 0.875rem;
 }
 
+// ===== SELECTED BUTTON STYLES =====
+// Ensure selected buttons (checked radio buttons) have white text
+.button-group-dark-text .btn-check:checked + .btn, .button-group-dark-text .btn-check:checked + small.d-block {
+  color: rgb(240, 240, 240) !important;
+}
+
+.button-group-dark-text .btn-check:unchecked + small.d-block {
+  color: #040d16;
+}
 // Navigation typography
 .navbar-brand {
   font-family: 'Inter', sans-serif;
@@ -440,3 +449,4 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   align-items: center;
   justify-content: center;
 }
+

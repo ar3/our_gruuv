@@ -30,6 +30,9 @@
               = form.label :description, class: 'form-label'
               = form.text_area :description, class: 'form-control', rows: 4
             
+            .mb-4 
+              = render 'goal_type_selection', form: form
+              
             / Timeframe Selection - Large Button Group (shown when advanced settings is closed)
             .mb-4#timeframe-selection
               %label.form-label Timeframe
@@ -57,7 +60,7 @@
             
             .collapse#advancedSettings
               .card.card-body.bg-light.mt-3
-                = render 'goal_type_selection', form: form
+                
                 
                 .mb-3
                   %label.form-label
