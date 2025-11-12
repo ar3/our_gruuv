@@ -15,13 +15,13 @@
           View Mode
       
     %li
-      - if action_name == 'edit'
+      - if action_name == 'new' && (params[:draft_id].present? || params[:id].present?)
         .dropdown-item.text-muted
           %i.bi.bi-pencil.me-2
           Edit Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(observation).update?
-        = link_to edit_organization_observation_path(organization, observation), class: 'dropdown-item' do
+        = link_to new_organization_observation_path(organization, draft_id: observation.id, return_url: organization_observation_path(organization, observation), return_text: 'Back to Observation'), class: 'dropdown-item' do
           %i.bi.bi-pencil.me-2
           Edit Mode
       - else

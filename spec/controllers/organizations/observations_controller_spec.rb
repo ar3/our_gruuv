@@ -184,53 +184,54 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
   end
 
-  describe 'GET #edit' do
+  describe 'GET #new with published observation (editing)' do
+    let(:published_observation) do
+      obs = build(:observation, observer: observer, company: company, published_at: Time.current)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs
+    end
+
     context 'when user is the observer' do
-      it 'renders the edit form' do
-        get :edit, params: { organization_id: company.id, id: observation.id }
-        expect(response).to have_http_status(:success)
-      end
-    end
-
-    context 'when user is not the observer' do
-      let(:other_person) { create(:person) }
-      let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
-      
-      before do
-        sign_in_as_teammate(other_person, company)
-      end
-
-      it 'redirects to kudos page' do
-        get :edit, params: { organization_id: company.id, id: observation.id }
-        date_part = observation.observed_at.strftime('%Y-%m-%d')
-        expect(response).to redirect_to(kudos_path(date: date_part, id: observation.id))
-      end
-    end
-  end
-
-  describe 'PATCH #update' do
-    let(:update_params) do
-      {
-        organization_id: company.id,
-        id: observation.id,
-        observation: {
-          story: 'Updated story content',
-          privacy_level: 'public_observation'
+      it 'loads the published observation via id param' do
+        get :new, params: {
+          organization_id: company.id,
+          id: published_observation.id
         }
-      }
-    end
-
-    context 'when user is the observer' do
-      it 'updates the observation' do
-        patch :update, params: update_params
-        observation.reload
-        expect(observation.story).to eq('Updated story content')
-        expect(observation.privacy_level).to eq('public_observation')
+        expect(assigns(:observation)).to eq(published_observation)
+        expect(assigns(:observation).published_at).to be_present
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:new)
+        expect(response).to render_template(layout: 'overlay')
       end
 
-      it 'redirects to the observation show page' do
-        patch :update, params: update_params
-        expect(response).to redirect_to(organization_observation_path(company, observation))
+      it 'loads the published observation via draft_id param' do
+        get :new, params: {
+          organization_id: company.id,
+          draft_id: published_observation.id
+        }
+        expect(assigns(:observation)).to eq(published_observation)
+        expect(assigns(:observation).published_at).to be_present
+      end
+
+      it 'sets default return_url to show page when editing published observation' do
+        get :new, params: {
+          organization_id: company.id,
+          id: published_observation.id
+        }
+        expect(assigns(:return_url)).to eq(organization_observation_path(company, published_observation))
+        expect(assigns(:return_text)).to eq('Back to Observation')
+      end
+
+      it 'accepts custom return_url and return_text when editing' do
+        get :new, params: {
+          organization_id: company.id,
+          id: published_observation.id,
+          return_url: organization_observations_path(company),
+          return_text: 'Back to List'
+        }
+        expect(assigns(:return_url)).to eq(organization_observations_path(company))
+        expect(assigns(:return_text)).to eq('Back to List')
       end
     end
 
@@ -242,10 +243,13 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         sign_in_as_teammate(other_person, company)
       end
 
-      it 'redirects to kudos page' do
-        patch :update, params: update_params
-        date_part = observation.observed_at.strftime('%Y-%m-%d')
-        expect(response).to redirect_to(kudos_path(date: date_part, id: observation.id))
+      it 'raises authorization error' do
+        expect {
+          get :new, params: {
+            organization_id: company.id,
+            id: published_observation.id
+          }
+        }.to raise_error(Pundit::NotAuthorizedError)
       end
     end
   end
@@ -384,6 +388,34 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(draft.story).to eq('Updated story')
       expect(draft.primary_feeling).to eq('excited')
       expect(draft.published_at).to be_nil
+    end
+
+    context 'when saving a published observation as draft' do
+      let(:published_observation) do
+        obs = build(:observation, observer: observer, company: company, published_at: 1.day.ago)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'converts published observation to draft when save_draft_and_return is present' do
+        expect(published_observation.published_at).to be_present
+        
+        patch :update_draft, params: {
+          organization_id: company.id,
+          id: published_observation.id,
+          save_draft_and_return: '1',
+          observation: {
+            story: 'Updated story',
+            primary_feeling: 'excited'
+          },
+          return_url: organization_observations_path(company)
+        }
+        
+        published_observation.reload
+        expect(published_observation.published_at).to be_nil
+        expect(published_observation.draft?).to be true
+      end
     end
   end
 

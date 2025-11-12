@@ -1,5 +1,5 @@
 class Organizations::ObservationsController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_observation, only: [:show, :edit, :update, :destroy, :post_to_slack]
+  before_action :set_observation, only: [:show, :destroy, :post_to_slack]
   
 
   def index
@@ -62,15 +62,16 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def new
     authorize Observation
     
-    # Load or create draft
-    if params[:draft_id].present?
-      @observation = Observation.find(params[:draft_id])
+    # Load existing observation (draft or published) or create new draft
+    if params[:draft_id].present? || params[:id].present?
+      observation_id = params[:draft_id].presence || params[:id]
+      @observation = Observation.find(observation_id)
       authorize @observation, :edit?
       
       # Don't reload - it wipes out fresh data. Just reload associations
       @observation.observation_ratings.reload if @observation.observation_ratings.loaded?
       
-      Rails.logger.info "Loading existing draft #{@observation.id}, story: #{@observation.story.inspect}"
+      Rails.logger.info "Loading existing observation #{@observation.id} (draft: #{@observation.draft?}), story: #{@observation.story.inspect}"
     else
       # Create new draft
       @observation = organization.observations.build(observer: current_person)
@@ -108,9 +109,14 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @aspirations = organization.aspirations
     @abilities = organization.abilities.order(:name)
     
-    # Store return context
-    @return_url = params[:return_url] || organization_observations_path(organization)
-    @return_text = params[:return_text] || 'Back'
+    # Store return context - default to show page if editing existing observation, otherwise index
+    if @observation.persisted?
+      @return_url = params[:return_url] || organization_observation_path(organization, @observation)
+      @return_text = params[:return_text] || 'Back to Observation'
+    else
+      @return_url = params[:return_url] || organization_observations_path(organization)
+      @return_text = params[:return_text] || 'Back'
+    end
     
     render layout: 'overlay'
   end
@@ -151,38 +157,6 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
   end
 
-  def edit
-    # Edit is only for the observer
-    begin
-      authorize @observation, :edit?
-    rescue Pundit::NotAuthorizedError
-      date_part = @observation.observed_at.strftime('%Y-%m-%d')
-      redirect_to kudos_path(date: date_part, id: @observation.id)
-      return
-    end
-    
-    @form = ObservationForm.new(@observation)
-  end
-
-  def update
-    # Update is only for the observer
-    begin
-      authorize @observation, :update?
-    rescue Pundit::NotAuthorizedError
-      date_part = @observation.observed_at.strftime('%Y-%m-%d')
-      redirect_to kudos_path(date: date_part, id: @observation.id)
-      return
-    end
-
-    @form = ObservationForm.new(@observation)
-    
-    if @form.validate(observation_params) && @form.save
-      redirect_to organization_observation_path(organization, @observation), 
-                  notice: 'Observation was successfully updated.'
-    else
-      render :edit, status: :unprocessable_entity
-    end
-  end
 
   def destroy
     # Destroy is only for the observer (within 24 hours) or admin
@@ -630,6 +604,14 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           return_url: params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
           return_text: params[:return_text] || 'Observation'
         )
+      elsif params[:save_draft_and_return].present?
+        # Convert published observation to draft if it was published
+        if @observation.published_at.present?
+          @observation.update_column(:published_at, nil)
+        end
+        # Save draft and return to the specified return_url
+        redirect_url = params[:return_url] || organization_observations_path(organization)
+        redirect_to redirect_url, notice: 'Draft saved successfully.'
       else
         redirect_to new_organization_observation_path(
           organization, 

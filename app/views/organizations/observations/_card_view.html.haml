@@ -50,7 +50,7 @@
             = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary", title: "Show page" do
               %i.bi.bi-eye
             - if policy(observation).update?
-              = link_to edit_organization_observation_path(@organization, observation), class: "btn btn-outline-secondary" do
+              = link_to new_organization_observation_path(@organization, draft_id: observation.id, return_url: organization_observation_path(@organization, observation), return_text: 'Back to Observation'), class: "btn btn-outline-secondary" do
                 %i.bi.bi-pencil
             - if policy(observation).destroy?
               = link_to organization_observation_path(@organization, observation), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do

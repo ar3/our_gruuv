@@ -52,6 +52,12 @@
               %strong Observed: 
               = @observation.observed_at.strftime('%B %d, %Y at %l:%M %p')
             %p
+              %strong Status: 
+              - if @observation.draft?
+                %span.text-muted Draft
+              - else
+                Published on #{@observation.published_at.strftime('%B %d, %Y at %l:%M %p')}
+            %p
               %strong Privacy: 
               %span{class: @observation.decorate.visibility_text_style}
                 = @observation.decorate.visibility_icon
@@ -129,7 +135,7 @@
                   %i.bi.bi-exclamation-triangle.text-warning.ms-1{title: "Slack integration not yet implemented"}
           
           .d-grid
-            = form.submit 'Send Slack Notifications', class: 'btn btn-primary'
+            = form.submit 'Send Slack Notifications coming soon', class: 'btn btn-primary disabled', disabled: :disabled
           
           %small.text-muted.mt-2
             %i.bi.bi-info-circle.me-1
@@ -165,10 +171,3 @@
           %p
             %strong Last Updated: 
             = @observation.updated_at.strftime('%B %d, %Y')
-        
-        %hr
-        
-        - if policy(@observation).view_change_history?
-          = link_to '#', class: 'btn btn-outline-secondary btn-sm' do
-            %i.bi.bi-clock-history.me-2
-            View Change History

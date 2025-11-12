@@ -1,9 +1,9 @@
 - content_for :header do
-  Create Observation
+  = @observation.persisted? ? 'Edit Observation' : 'Create Observation'
 - content_for :return_url do
-  = @return_url || organization_observations_path(organization)
+  = @return_url || (@observation.persisted? ? organization_observation_path(organization, @observation) : organization_observations_path(organization))
 - content_for :return_text do
-  = @return_text || 'Back'
+  = @return_text || (@observation.persisted? ? 'Back to Observation' : 'Back')
 
 .card.mb-3
   .card-header
@@ -16,6 +16,12 @@
             = link_to "draft", organization_observation_path(organization, @observation), class: "text-muted text-decoration-none"
             = " saved at "
             = @observation.updated_at.strftime("%l:%M %p on %B %d, %Y")
+      - elsif @observation.persisted? && @observation.published?
+        .mt-2
+          %small.text-muted
+            = link_to "published observation", organization_observation_path(organization, @observation), class: "text-muted text-decoration-none"
+            = " published at "
+            = @observation.published_at.strftime("%l:%M %p on %B %d, %Y")
       - elsif @observation.new_record?
         .mt-2
           %small.text-muted
@@ -238,6 +244,12 @@
                       formmethod: :post,
                       name: 'publish',
                       onclick: "document.getElementById('form_method_field').remove(); return true;"
+        -# Save Draft button - submit form to update_draft action (PATCH via _method override)
+        = form.submit "Save Draft & return to #{@return_text.presence || 'Back'}", 
+                      class: 'btn btn-outline-primary',
+                      formaction: update_draft_organization_observation_path(organization, @observation.new_record? ? :new : @observation),
+                      name: 'save_draft_and_return',
+                      onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
         -# Cancel button - submit form to cancel action (POST, no _method)
         - cancel_id = @observation.new_record? ? :new : @observation
         = form.submit 'Cancel',
