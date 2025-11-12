@@ -5,6 +5,8 @@ class Integrations::HealthCheckController < ApplicationController
   def index
     # Check NotificationAPI credentials
     @notification_api_configured = notification_api_configured?
+    # Check GIPHY credentials
+    @giphy_configured = giphy_configured?
   end
 
   def test_notification_api
@@ -73,6 +75,47 @@ class Integrations::HealthCheckController < ApplicationController
     end
   end
 
+  def test_giphy
+    unless giphy_configured?
+      render json: { 
+        success: false, 
+        error: 'GIPHY not configured. Please set GIPHY_API_KEY environment variable.' 
+      }, status: :unprocessable_entity
+      return
+    end
+
+    begin
+      gateway = Giphy::Gateway.new
+      # Perform a simple search to test the connection
+      gifs = gateway.search_gifs(query: 'test', limit: 1)
+      
+      render json: { 
+        success: true, 
+        message: "GIPHY API connection successful! Found #{gifs.length} GIF(s).",
+        gifs_found: gifs.length
+      }
+    rescue Giphy::Gateway::RetryableError => e
+      Rails.logger.error "GIPHY test retryable error: #{e.message}"
+      render json: { 
+        success: false, 
+        error: "Service temporarily unavailable: #{e.message}" 
+      }, status: :service_unavailable
+    rescue Giphy::Gateway::NonRetryableError => e
+      Rails.logger.error "GIPHY test error: #{e.message}"
+      render json: { 
+        success: false, 
+        error: "GIPHY API error: #{e.message}" 
+      }, status: :unprocessable_entity
+    rescue => e
+      Rails.logger.error "GIPHY test unexpected error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      render json: { 
+        success: false, 
+        error: "Error: #{e.message}" 
+      }, status: :unprocessable_entity
+    end
+  end
+
   private
 
   def require_authentication
@@ -83,6 +126,10 @@ class Integrations::HealthCheckController < ApplicationController
 
   def notification_api_configured?
     ENV['NOTIFICATION_API_CLIENT_ID'].present? && ENV['NOTIFICATION_API_CLIENT_SECRET'].present?
+  end
+
+  def giphy_configured?
+    ENV['GIPHY_API_KEY'].present?
   end
 end
 

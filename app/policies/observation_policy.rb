@@ -101,6 +101,11 @@ class ObservationPolicy < ApplicationPolicy
     create?
   end
 
+  def search?
+    # Anyone who can create observations can search for GIFs
+    create?
+  end
+
   def view_change_history?
     person = teammate.person
     # Observer, observed, and those with can_manage_employment can see change history

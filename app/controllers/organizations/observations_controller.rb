@@ -872,7 +872,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         :observed_at, :custom_slug, :send_notifications, :publishing,
         teammate_ids: [], notify_teammate_ids: [],
         observees_attributes: [:id, :teammate_id, :_destroy],
-        observation_ratings_attributes: {}
+        observation_ratings_attributes: {},
+        story_extras: { gif_urls: [] }
       )
     else
       {}
@@ -1021,7 +1022,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def draft_params
     permitted = params.require(:observation).permit(
       :story, :primary_feeling, :secondary_feeling, :privacy_level,
-      observation_ratings_attributes: {}
+      observation_ratings_attributes: {},
+      story_extras: { gif_urls: [] }
     )
     
     # Manually permit the nested observation_ratings_attributes hash with string keys like "assignment_1"

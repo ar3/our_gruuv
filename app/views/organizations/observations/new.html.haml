@@ -78,6 +78,28 @@
           .col-11
             = form.text_area :story, id: 'observation_story', class: 'form-control', rows: 5, placeholder: 'Tell the story of what happened... Be specific about what you observed and why it matters.'
             .form-text Markdown is supported for formatting.
+            
+            / GIF Picker
+            .mt-3{"data-controller": "gif-picker", "data-gif-picker-organization-id-value": organization.id}
+              %h6 Add GIFs
+              
+              / Selected GIFs Display
+              .mb-3.border.rounded.p-2.bg-light#selected_gifs_visual
+                - if @observation.story_extras.present? && @observation.story_extras['gif_urls'].present?
+                  - @observation.story_extras['gif_urls'].each do |gif_url|
+                    / Hidden input for existing GIFs (will be managed by JavaScript)
+                    %input{type: "hidden", name: "observation[story_extras][gif_urls][]", value: gif_url, class: "existing-gif-input", data: {gif_url: gif_url}}
+              
+              / Search Interface
+              .mb-2
+                .input-group
+                  %input.form-control{type: "text", placeholder: "Search for GIFs...", "data-gif-picker-target": "searchInput", "data-action": "keydown->gif-picker#search"}
+                  %button.btn.btn-outline-secondary{type: "button", "data-action": "click->gif-picker#search"}
+                    %i.bi.bi-search.me-1
+                    Search
+              #gifResults{"data-gif-picker-target": "results"}
+              
+              / Hidden inputs for selected GIFs will be added here by JavaScript
         
         .row.mb-3
           .col-12

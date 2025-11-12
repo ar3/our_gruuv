@@ -56,6 +56,35 @@
               %br
               %code NOTIFICATION_API_CLIENT_SECRET
 
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-image.me-2
+          GIPHY
+      .card-body
+        - if @giphy_configured
+          .alert.alert-success.mb-3
+            %i.bi.bi-check-circle.me-2
+            GIPHY API key configured
+          
+          .mb-3{"data-controller": "giphy-test", "data-giphy-test-target": "result"}
+            %h6 Test GIPHY Connection
+            %p.text-muted.small
+              Perform a test search to verify the GIPHY API connection.
+            
+            %button.btn.btn-primary#testGiphyBtn{data: {action: "click->giphy-test#testGiphy"}}
+              %i.bi.bi-search.me-2
+              Test Connection
+            #giphyResult.mt-3{"data-giphy-test-target": "result"}
+        - else
+          .alert.alert-warning
+            %i.bi.bi-exclamation-triangle.me-2
+            GIPHY not configured
+            %p.mb-0.mt-2.small
+              Please set the following environment variable:
+              %br
+              %code GIPHY_API_KEY
+
   .col-lg-4
     .card
       .card-header
@@ -67,6 +96,14 @@
           %strong NotificationAPI
           %br
           - if @notification_api_configured
+            %span.badge.bg-success Configured
+          - else
+            %span.badge.bg-warning Not Configured
+        
+        .mb-3
+          %strong GIPHY
+          %br
+          - if @giphy_configured
             %span.badge.bg-success Configured
           - else
             %span.badge.bg-warning Not Configured

@@ -77,5 +77,29 @@ RSpec.describe ObservationForm, type: :form do
       # The form itself doesn't handle observees, that's done in the controller
       # So we just test that the form saves successfully
     end
+
+    it 'handles story_extras with gif_urls' do
+      form.story = 'Test story'
+      form.privacy_level = 'observer_only'
+      form.primary_feeling = 'happy'
+      form.story_extras = { 'gif_urls' => ['https://media.giphy.com/media/test1/giphy.gif', 'https://media.giphy.com/media/test2/giphy.gif'] }
+      
+      expect(form.save).to be true
+      
+      observation.reload
+      expect(observation.story_extras).to eq({ 'gif_urls' => ['https://media.giphy.com/media/test1/giphy.gif', 'https://media.giphy.com/media/test2/giphy.gif'] })
+    end
+
+    it 'filters out blank gif_urls' do
+      form.story = 'Test story'
+      form.privacy_level = 'observer_only'
+      form.primary_feeling = 'happy'
+      form.story_extras = { 'gif_urls' => ['https://media.giphy.com/media/test1/giphy.gif', '', nil, 'https://media.giphy.com/media/test2/giphy.gif'] }
+      
+      expect(form.save).to be true
+      
+      observation.reload
+      expect(observation.story_extras['gif_urls']).to eq(['https://media.giphy.com/media/test1/giphy.gif', 'https://media.giphy.com/media/test2/giphy.gif'])
+    end
   end
 end

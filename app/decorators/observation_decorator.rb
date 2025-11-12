@@ -110,9 +110,30 @@ class ObservationDecorator < Draper::Decorator
 
   def story_html
     # Simple markdown rendering - can be enhanced later
-    story.gsub(/\*\*(.*?)\*\*/, '<strong>\1</strong>')
-         .gsub(/\*(.*?)\*/, '<em>\1</em>')
-         .gsub(/\n/, '<br>')
+    html = if story.present?
+      story.gsub(/\*\*(.*?)\*\*/, '<strong>\1</strong>')
+           .gsub(/\*(.*?)\*/, '<em>\1</em>')
+           .gsub(/\n/, '<br>')
+    else
+      ''
+    end
+    
+    # Append GIFs if present
+    gifs_html = self.gifs_html
+    html += gifs_html if gifs_html.present?
+    
+    html
+  end
+
+  def gifs_html
+    return '' unless story_extras.present? && story_extras['gif_urls'].present?
+    
+    gif_urls = Array(story_extras['gif_urls']).reject(&:blank?)
+    return '' if gif_urls.empty?
+    
+    gif_urls.map do |url|
+      "<div class='gif-container mb-3'><img src='#{url}' alt='GIF' class='img-fluid rounded' style='max-width: 100%; height: auto;' /></div>"
+    end.join
   end
 
   def timeframe

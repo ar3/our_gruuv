@@ -79,6 +79,20 @@ class Observations::PostNotificationJob < ApplicationJob
       },
     ]
     
+    # Add GIF URLs for unfurling in Slack
+    if observation.story_extras.present? && observation.story_extras['gif_urls'].present?
+      gif_urls = Array(observation.story_extras['gif_urls']).reject(&:blank?)
+      gif_urls.each do |gif_url|
+        blocks << {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: gif_url
+          }
+        }
+      end
+    end
+    
     {
       fallback_text: fallback_text,
       blocks: blocks

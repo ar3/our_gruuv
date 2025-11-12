@@ -34,6 +34,9 @@ class ObservationForm < Reform::Form
   # Virtual property for observation ratings attributes (used in wizard)
   property :observation_ratings_attributes, virtual: true
   
+  # Virtual property for story_extras (GIFs, etc.)
+  property :story_extras, virtual: true
+  
   validates :story, presence: true, if: :publishing?
   validates :privacy_level, presence: true
   validates :primary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true, allow_blank: true
@@ -80,6 +83,19 @@ class ObservationForm < Reform::Form
           )
         end
       end
+    end
+    
+    # Handle story_extras (GIFs, etc.)
+    if story_extras.present?
+      # story_extras comes as a hash like { "gif_urls" => ["url1", "url2"] }
+      # or as nested params like { "gif_urls" => ["url1", "url2"] }
+      extras_hash = story_extras.is_a?(Hash) ? story_extras : {}
+      
+      # Ensure gif_urls is an array and filter out blanks
+      gif_urls = Array(extras_hash['gif_urls'] || extras_hash[:gif_urls]).reject(&:blank?)
+      
+      # Build the story_extras hash
+      model.story_extras = { 'gif_urls' => gif_urls }
     end
     
     # Sync other form data to model (story, feelings, etc.)

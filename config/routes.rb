@@ -50,6 +50,7 @@ get '/login', to: 'auth#login', as: :login
     resources :health_check, only: [:index] do
       collection do
         post :test_notification_api
+        post :test_giphy
       end
     end
   end
@@ -174,6 +175,9 @@ get '/login', to: 'auth#login', as: :login
         end
       end
     end
+    
+    # GIF search
+    get 'gifs/search', to: 'organizations/gifs#search'
     
     # Observations management
     resources :observations, module: :organizations do
