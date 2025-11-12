@@ -13,14 +13,15 @@
     %tbody
       %tr
         %td
-          = link_to history_organization_person_position_check_ins_path(@organization, @person), 
-                     target: "_blank", 
-                     "data-bs-toggle" => "popover", 
-                     "data-bs-trigger" => "hover", 
-                     "data-bs-placement" => "right", 
-                     "data-bs-html" => "true", 
-                     "data-bs-content" => latest_position_check_in_popover_content(check_in.teammate),
-                     class: "text-decoration-none" do
+          = button_tag type: "submit", 
+                       name: "redirect_to", 
+                       value: history_organization_person_position_check_ins_path(@organization, @person),
+                       "data-bs-toggle" => "popover", 
+                       "data-bs-trigger" => "hover", 
+                       "data-bs-placement" => "right", 
+                       "data-bs-html" => "true", 
+                       "data-bs-content" => latest_position_check_in_popover_content(check_in.teammate),
+                       class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start" do
             = check_in.employment_tenure.position.display_name
             %i.bi.bi-clock-history.ms-1.text-muted
         %td

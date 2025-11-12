@@ -35,14 +35,15 @@
           = form.fields_for :assignment_check_ins, check_in, index: check_in.id do |af|
             %tr{data: {check_in_id: check_in.id}}
               %td
-                = link_to person_assignment_path(@person, check_in.assignment), 
-                           target: "_blank", 
-                           "data-bs-toggle" => "popover", 
-                           "data-bs-trigger" => "hover", 
-                           "data-bs-placement" => "right", 
-                           "data-bs-html" => "true", 
-                           "data-bs-content" => latest_assignment_check_in_popover_content(check_in.teammate, check_in.assignment),
-                           class: "text-decoration-none" do
+                = button_tag type: "submit", 
+                             name: "redirect_to", 
+                             value: person_assignment_path(@person, check_in.assignment),
+                             "data-bs-toggle" => "popover", 
+                             "data-bs-trigger" => "hover", 
+                             "data-bs-placement" => "right", 
+                             "data-bs-html" => "true", 
+                             "data-bs-content" => latest_assignment_check_in_popover_content(check_in.teammate, check_in.assignment),
+                             class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start" do
                   = check_in.assignment.title
                   %i.bi.bi-clock-history.ms-1.text-muted
               = render partial_name, check_in: check_in, form: af, view_mode: view_mode

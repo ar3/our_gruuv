@@ -27,8 +27,9 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
     update_aspiration_check_ins(check_ins_params) if check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"]
     
-    redirect_to organization_person_check_ins_path(@organization, @person),
-                notice: 'Check-ins saved successfully.'
+    # Redirect to specified URL if provided, otherwise redirect back to check-ins page
+    redirect_url = params[:redirect_to].presence || organization_person_check_ins_path(@organization, @person)
+    redirect_to redirect_url, notice: 'Check-ins saved successfully.'
   end
   
   private
