@@ -28,8 +28,26 @@
       / Secondary Actions
       .row.g-2.mt-auto
         .col-6
-          = link_to secondary_action_url, class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center small", style: "min-height: 50px;" do
-            = secondary_action_html
+          - secondary_enabled = local_assigns.fetch(:secondary_action_enabled, true)
+          - if secondary_enabled
+            = link_to secondary_action_url, class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center small", style: "min-height: 50px;" do
+              = secondary_action_html
+          - else
+            .d-flex.align-items-center.gap-2.w-100
+              .flex-grow-1
+                = link_to secondary_action_url, class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center small", style: "min-height: 50px;", disabled: true do
+                  = secondary_action_html
+              - if defined?(secondary_action_disabled_tooltip) && secondary_action_disabled_tooltip
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: secondary_action_disabled_tooltip}}
         .col-6
-          = link_to tertiary_action_url, class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center small", style: "min-height: 50px;" do
-            = tertiary_action_html
+          - tertiary_enabled = local_assigns.fetch(:tertiary_action_enabled, true)
+          - if tertiary_enabled
+            = link_to tertiary_action_url, class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center small", style: "min-height: 50px;" do
+              = tertiary_action_html
+          - else
+            .d-flex.align-items-center.gap-2.w-100
+              .flex-grow-1
+                = link_to tertiary_action_url, class: "btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center small", style: "min-height: 50px;", disabled: true do
+                  = tertiary_action_html
+              - if defined?(tertiary_action_disabled_tooltip) && tertiary_action_disabled_tooltip
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: tertiary_action_disabled_tooltip}}

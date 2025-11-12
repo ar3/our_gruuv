@@ -1,0 +1,116 @@
+/ ADMIN Section
+.row.mb-4.mt-5
+  .col-12.mt-5
+    .d-flex.align-items-center.mb-3
+      %h3.text-primary.mb-0.me-3
+        %i.bi.bi-gear.me-2
+        ADMIN
+      .flex-grow-1
+        %hr.border-primary
+      %small.text-muted.ms-3 Setup company data
+
+.row.mt-4
+  / Seats Card
+  - seats_header_html = capture do
+    %i.bi.bi-briefcase.me-2
+    Seats
+  - seats_primary_html = capture do
+    %i.bi.bi-list.me-2
+    Manage Seats
+  - seats_secondary_html = capture do
+    %i.bi.bi-tag.me-1
+    Position Types
+  - seats_tertiary_html = capture do
+    %i.bi.bi-briefcase.me-1
+    Positions
+  - seats_popover_content = capture do
+    Seats represent the actual positions people hold within your organization. They connect people to positions and track employment relationships.
+    %hr.mt-1.mb-1/
+    Position types define the framework and titles used across your organization, while positions represent specific instances of those types.
+  
+  = render 'organizations/dashboard/dashboard_card',
+    header_html: seats_header_html,
+    header_popover_content: seats_popover_content,
+    header_popover_title: "About Seats",
+    description: ['Structure your organization', 'Define roles and positions', 'Manage team structure'].sample,
+    primary_action_url: organization_seats_path(organization),
+    primary_action_html: seats_primary_html,
+    primary_action_style: 'not_urgent',
+    secondary_action_url: position_types_path,
+    secondary_action_html: seats_secondary_html,
+    tertiary_action_url: organization_positions_path(organization),
+    tertiary_action_html: seats_tertiary_html
+
+  / A's Card
+  - as_header_html = capture do
+    %i.bi.bi-check-circle.me-2
+    A's
+  - as_primary_html = capture do
+    %i.bi.bi-list.me-2
+    Manage Assignments
+  - as_secondary_html = capture do
+    %i.bi.bi-award.me-1
+    Abilities
+  - as_tertiary_html = capture do
+    %i.bi.bi-star.me-1
+    Aspirations
+  - as_popover_content = capture do
+    The A's represent the core components of job architecture: Assignments, Abilities, and Aspirations.
+    %hr.mt-1.mb-1/
+    %strong Assignments
+    %p Specific outcomes and responsibilities that define what people do in their roles.
+    %br/
+    %strong Abilities
+    %p The skills, knowledge, and behaviors that enable people to succeed in their assignments.
+    %br/
+    %strong Aspirations
+    %p The growth goals and career development targets that motivate and guide professional development.
+  
+  = render 'organizations/dashboard/dashboard_card',
+    header_html: as_header_html,
+    header_popover_content: as_popover_content,
+    header_popover_title: "About A's",
+    description: ['Assignments, Abilities, Aspirations', 'Define what people do, can do, and want to do', 'Structure accountability and growth'].sample,
+    primary_action_url: organization_assignments_path(organization),
+    primary_action_html: as_primary_html,
+    primary_action_style: 'not_urgent',
+    secondary_action_url: organization_abilities_path(organization),
+    secondary_action_html: as_secondary_html,
+    tertiary_action_url: organization_aspirations_path(organization),
+    tertiary_action_html: as_tertiary_html
+
+  / Health Card
+  - health_header_html = capture do
+    %i.bi.bi-heart-pulse.me-2
+    Health
+  - health_primary_html = capture do
+    %i.bi.bi-clipboard-check.me-2
+    Check-ins Health
+  - health_secondary_html = capture do
+    %i.bi.bi-upload.me-1
+    Bulk Upload
+  - health_tertiary_html = capture do
+    %i.bi.bi-building.me-1
+    Organization
+  - health_popover_content = capture do
+    Health monitoring helps track the pulse of your organization through check-ins and data management.
+    %hr.mt-1.mb-1/
+    Use the check-ins health dashboard to monitor completion rates and identify areas needing attention. Bulk upload allows you to efficiently import employee and check-in data. The organization page provides comprehensive settings and configuration options.
+  
+  - bulk_upload_enabled = current_person&.can_manage_maap?(organization) || false
+  
+  = render 'organizations/dashboard/dashboard_card',
+    header_html: health_header_html,
+    header_popover_content: health_popover_content,
+    header_popover_title: "About Health",
+    description: ['Monitor check-ins, manage data, configure settings', 'Track team health and manage organization data', 'Keep your organization running smoothly'].sample,
+    primary_action_url: organization_check_ins_health_path(organization),
+    primary_action_html: health_primary_html,
+    primary_action_style: 'not_urgent',
+    secondary_action_url: new_organization_upload_event_path(organization),
+    secondary_action_html: health_secondary_html,
+    secondary_action_enabled: bulk_upload_enabled,
+    secondary_action_disabled_tooltip: "Requires manage Maap permission",
+    tertiary_action_url: organization_path(organization),
+    tertiary_action_html: health_tertiary_html
+

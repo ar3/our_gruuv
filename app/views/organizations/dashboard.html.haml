@@ -5,9 +5,12 @@
 
 .container-fluid.py-4
   = render 'organizations/dashboard/check_ins'
-  = render 'organizations/dashboard/goals'
   = render 'organizations/dashboard/observations'
+  = render 'organizations/dashboard/goals'
+  %hr.mt-5.mb-5/ 
   = render 'organizations/dashboard/organization', organization: @organization
+  %hr.mt-5.mb-5/
+  = render 'organizations/dashboard/admin_section', organization: @organization
   %hr.mt-5.mb-5/
   = render 'organizations/dashboard/know_section', organization: @organization
   = render 'organizations/dashboard/convo_section', organization: @organization
