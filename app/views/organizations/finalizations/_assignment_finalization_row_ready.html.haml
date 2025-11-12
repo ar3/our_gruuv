@@ -28,7 +28,7 @@
         %small.text-muted Waiting for manager to set
       - else
         - default_energy = check_in.actual_energy_percentage || check_in.assignment_tenure&.anticipated_energy_percentage || 0
-        = form.select "assignment_check_ins[#{check_in.id}][anticipated_energy_percentage]", options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, default_energy), {}, { class: "form-select form-select-sm", required: true }
+        = form.select "assignment_check_ins[#{check_in.id}][anticipated_energy_percentage]", options_for_select(energy_percentage_options, default_energy), {}, { class: "form-select form-select-sm", required: true }
   %td.text-center
     - if view_mode == :employee
       = form.check_box "assignment_check_ins[#{check_in.id}][finalize]", { class: "form-check-input", disabled: true }, "1", "0"

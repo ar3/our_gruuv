@@ -11,15 +11,6 @@ class People::AssignmentsController < ApplicationController
     load_tenure_history
   end
 
-  def check_in_history
-    authorize @person, :manager?, policy_class: PersonPolicy
-    teammate = @person.teammates.find_by(organization: @assignment.company)
-    @check_ins = teammate ? AssignmentCheckIn
-      .where(teammate: teammate, assignment: @assignment)
-      .includes(:manager_completed_by, :finalized_by)
-      .order(check_in_started_on: :desc) : []
-  end
-
   private
 
   def set_person

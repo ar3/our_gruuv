@@ -36,7 +36,7 @@
                   
                   %td
                     = select_tag "assignment_management[tenures][#{data[:assignment].id}][anticipated_energy_percentage]", 
-                                  options_for_select((0..20).map { |i| ["#{i * 5}%", i * 5] }, data[:tenure]&.anticipated_energy_percentage), 
+                                  options_for_select(energy_percentage_options, data[:tenure]&.anticipated_energy_percentage), 
                                   { prompt: 'Select...', class: "form-select form-select-sm energy-select" }
                   
                   %td

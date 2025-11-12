@@ -1,25 +1,32 @@
 - content_for :go_back_link do
-  = link_to organization_person_check_ins_path(current_organization, @person), class: "go-back-link" do
+  = link_to organization_person_check_ins_path(@organization, @teammate.person), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
-    Back to #{@person.display_name}'s Assignments
+    Back to Check-ins
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center
-    %h1.mb-0 Check-in History
-    %small.text-muted #{@person.display_name} - #{@assignment.title}
-
-- content_for :header_action do
-  = link_to person_assignment_path(@person, @assignment), class: "btn btn-outline-primary" do
-    %i.bi.bi-eye.me-2
-    View Assignment Details
+    %h1.mb-0 Position Check-ins
+    %small.text-muted #{@teammate.person.display_name}
 
 .row.justify-content-center
   .col-lg-12
-    .card
-      .card-header
-        %h5.mb-0 All Check-ins for #{@assignment.title}
-        %small.text-muted Complete history of check-ins between #{@person.display_name} and their managers
+    / Position Details Section
+    - if @current_employment
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Current Position
+        .card-body
+          %p.mb-0
+            %strong= @current_employment.position.display_name
+            - if @current_employment.manager
+              %br
+              %small.text-muted Manager: #{@current_employment.manager.display_name}
 
+    / Check-in History Table
+    .card.mb-4
+      .card-header
+        %h5.mb-0 All Position Check-ins
+        %small.text-muted Complete history of position check-ins across all employment tenures
       .card-body
         - if @check_ins.any?
           .table-responsive
@@ -68,7 +75,7 @@
                           %br
                           %small.text-muted by #{check_in.finalized_by.display_name}
                         %br
-                        %small.text-muted Rating: #{check_in.official_rating&.humanize}
+                        %small.text-muted Rating: #{position_rating_display(check_in.official_rating)}
                       - elsif check_in.ready_for_finalization?
                         %span.badge.bg-warning Ready for Finalization
                       - else
@@ -86,9 +93,9 @@
                       - if check_in.officially_completed?
                         = link_to "View Details", "#", class: "btn btn-sm btn-outline-primary", "data-bs-toggle" => "modal", "data-bs-target" => "#checkInModal#{check_in.id}"
                       - elsif check_in.ready_for_finalization?
-                        = link_to "Finalize", organization_person_check_ins_path(current_organization, @person), class: "btn btn-sm btn-warning"
+                        = link_to "Finalize", organization_person_check_ins_path(@organization, @teammate.person), class: "btn btn-sm btn-warning"
                       - else
-                        = link_to "Continue", organization_person_check_ins_path(current_organization, @person), class: "btn btn-sm btn-primary"
+                        = link_to "Continue", organization_person_check_ins_path(@organization, @teammate.person), class: "btn btn-sm btn-primary"
 
           - @check_ins.each do |check_in|
             / Modal for each check-in
@@ -104,14 +111,8 @@
                       .col-md-6
                         %h6 Employee Responses
                         .mb-3
-                          %label.form-label Actual Energy %
-                          .form-control-plaintext= "#{check_in.actual_energy_percentage}%" if check_in.actual_energy_percentage
-                        .mb-3
-                          %label.form-label Personal Alignment
-                          .form-control-plaintext= check_in.employee_personal_alignment&.humanize || 'Not provided'
-                        .mb-3
                           %label.form-label Employee Rating
-                          .form-control-plaintext= check_in.employee_rating&.humanize || 'Not provided'
+                          .form-control-plaintext= position_rating_display(check_in.employee_rating)
                         .mb-3
                           %label.form-label Private Notes
                           .form-control-plaintext= check_in.employee_private_notes || 'No notes'
@@ -120,7 +121,7 @@
                         %h6 Manager Responses
                         .mb-3
                           %label.form-label Manager Rating
-                          .form-control-plaintext= check_in.manager_rating&.humanize || 'Not provided'
+                          .form-control-plaintext= position_rating_display(check_in.manager_rating)
                         .mb-3
                           %label.form-label Manager Private Notes
                           .form-control-plaintext= check_in.manager_private_notes || 'No notes'
@@ -130,7 +131,7 @@
                           %h6 Finalization
                           .mb-3
                             %label.form-label Final Rating
-                            .form-control-plaintext= check_in.official_rating&.humanize
+                            .form-control-plaintext= position_rating_display(check_in.official_rating)
                           .mb-3
                             %label.form-label Shared Notes
                             .form-control-plaintext= check_in.shared_notes || 'No shared notes'
@@ -141,5 +142,14 @@
             %h6.mb-2
               %i.bi.bi-info-circle.me-2
               No Check-ins Found
-            %p.mb-0 No check-ins have been created for this assignment yet.
-            = link_to "Start First Check-in", organization_person_check_ins_path(current_organization, @person), class: "btn btn-primary btn-sm mt-2"
+            %p.mb-0 No position check-ins have been created yet.
+            = link_to "Start First Check-in", organization_person_check_ins_path(@organization, @teammate.person), class: "btn btn-primary btn-sm mt-2"
+
+    / Current Check-in Form (if open check-in exists)
+    - if @open_check_in
+      .card
+        .card-header
+          %h5.mb-0 Current Check-in
+        .card-body
+          %p.text-muted Use the main check-ins page to complete your position check-in.
+

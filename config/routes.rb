@@ -132,25 +132,13 @@ get '/login', to: 'auth#login', as: :login
       resource :finalization, only: [:show, :create] do
         patch :acknowledge, on: :member
       end
-      
-      # Check-in history pages
-      resource :position_check_ins, only: [] do
-        collection do
-          get :history
-        end
-      end
-      
-      resources :assignment_check_ins, only: [] do
-        member do
-          get :history
-        end
-      end
-      
-      resources :aspiration_check_ins, only: [] do
-        member do
-          get :history
-        end
-      end
+    end
+    
+    # Teammates resource routes for position, assignments, and aspirations
+    resources :teammates, module: :organizations, only: [] do
+      resource :position, only: [:show], controller: 'teammates/position'
+      resources :assignments, only: [:show], controller: 'teammates/assignments'
+      resources :aspirations, only: [:show], controller: 'teammates/aspirations'
     end
     
     # Positions management

@@ -197,7 +197,7 @@
                       .col-md-6
                         .mb-3
                           %label.form-label Actual Energy
-                          = af.number_field :actual_energy_percentage, min: 0, max: 100, class: "form-select", placeholder: '0-100%'
+                          = af.select :actual_energy_percentage, energy_percentage_options, { include_blank: 'Select percentage...', selected: @open_check_in.actual_energy_percentage }, { class: "form-select" }
                     
                     - if current_person == @person
                       .col-md-6

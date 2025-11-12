@@ -1,7 +1,7 @@
-= form.number_field :actual_energy_percentage,
-                    min: 0, max: 100,
-                    class: css_class || 'form-control form-control-sm',
-                    placeholder: '0-100%'
+= form.select :actual_energy_percentage,
+              energy_percentage_options,
+              { include_blank: 'Select percentage...' },
+              class: css_class || 'form-select form-select-sm'
 
 
 

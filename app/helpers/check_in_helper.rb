@@ -49,6 +49,10 @@ module CheckInHelper
     end
   end
   
+  def energy_percentage_options
+    (0..20).map { |i| ["#{i * 5}%", i * 5] }
+  end
+  
   def check_in_status_badge(check_in)
     return content_tag(:span, '📝 In Progress', class: 'badge badge-secondary') unless check_in
     

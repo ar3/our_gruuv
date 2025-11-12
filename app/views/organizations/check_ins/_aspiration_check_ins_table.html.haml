@@ -33,7 +33,7 @@
               %td
                 = button_tag type: "submit", 
                              name: "redirect_to", 
-                             value: history_organization_person_aspiration_check_in_path(@organization, @person, check_in.aspiration),
+                             value: organization_teammate_aspiration_path(@organization, check_in.teammate, check_in.aspiration),
                              "data-bs-toggle" => "popover", 
                              "data-bs-trigger" => "hover", 
                              "data-bs-placement" => "right", 

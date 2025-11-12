@@ -37,7 +37,7 @@
               %td
                 = button_tag type: "submit", 
                              name: "redirect_to", 
-                             value: person_assignment_path(@person, check_in.assignment),
+                             value: organization_teammate_assignment_path(@organization, check_in.teammate, check_in.assignment),
                              "data-bs-toggle" => "popover", 
                              "data-bs-trigger" => "hover", 
                              "data-bs-placement" => "right", 
