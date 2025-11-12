@@ -50,7 +50,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       check_in = AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
       
       # Fill form with nested format
-      fill_in "check_ins[assignment_check_ins][#{check_in.id}][actual_energy_percentage]", with: '75'
+      select '75%', from: "check_ins[assignment_check_ins][#{check_in.id}][actual_energy_percentage]"
       select 'Love', from: "check_ins[assignment_check_ins][#{check_in.id}][employee_personal_alignment]"
       select '🟢 Exceeding', from: "check_ins[assignment_check_ins][#{check_in.id}][employee_rating]"
       fill_in "check_ins[assignment_check_ins][#{check_in.id}][employee_private_notes]", with: 'Great assignment!'
@@ -58,6 +58,9 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       
       # Submit form
       click_button 'Update Assignment'
+      
+      # Wait for redirect to check-ins page
+      expect(page).to have_current_path(organization_person_check_ins_path(company, employee_person))
       
       # Should see success message
       expect(page).to have_content('Check-ins saved successfully')
@@ -107,6 +110,9 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       
       # Submit form
       click_button 'Update Assignment'
+      
+      # Wait for redirect to check-ins page
+      expect(page).to have_current_path(organization_person_check_ins_path(company, employee_person))
       
       # Should see success message
       expect(page).to have_content('Check-ins saved successfully')

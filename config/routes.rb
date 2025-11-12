@@ -194,6 +194,10 @@ get '/login', to: 'auth#login', as: :login
     
     # Seats management
     resources :seats, module: :organizations do
+      collection do
+        post :create_missing_employee_seats
+        post :create_missing_position_type_seats
+      end
       member do
         patch :reconcile
       end

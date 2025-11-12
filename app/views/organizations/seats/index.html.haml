@@ -15,6 +15,96 @@
     %i.bi.bi-funnel.me-2
     Filter & Sort
 
+/ Spotlight Section - Employee Seats
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            / Main statistics/metrics area
+            .row.text-center
+              .col-3
+                .h3.text-primary= @spotlight_stats[:employees][:total]
+                %small.text-muted Total Active Employees
+              .col-3
+                .h3.text-success= @spotlight_stats[:employees][:with_seats]
+                %small.text-muted With Seats
+              .col-3
+                .h3.text-warning= @spotlight_stats[:employees][:without_seats]
+                %small.text-muted Without Seats
+              .col-3
+                - if @spotlight_stats[:employees][:without_seats] > 0
+                  - if policy(Seat).create?
+                    = button_to create_missing_employee_seats_organization_seats_path(organization), method: :post, class: "btn btn-primary btn-sm", data: { confirm: "Create seats for #{@spotlight_stats[:employees][:without_seats]} employee(s) without seats?" } do
+                      %i.bi.bi-plus-circle.me-2
+                      Create Missing Seats
+                  - else
+                    .d-flex.align-items-center.justify-content-center
+                      .btn.btn-primary.btn-sm.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+                        %i.bi.bi-plus-circle.me-2
+                        Create Missing Seats
+                      %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to create seats"}
+                - else
+                  .h3.text-success= "✓"
+                  %small.text-muted All Covered
+          
+          .col-md-4
+            / Action alerts or status messages
+            - if @spotlight_stats[:employees][:without_seats] > 0
+              .alert.alert-warning.small
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong #{@spotlight_stats[:employees][:without_seats]} employee#{'s' if @spotlight_stats[:employees][:without_seats] != 1} #{'does' if @spotlight_stats[:employees][:without_seats] == 1} #{'do' if @spotlight_stats[:employees][:without_seats] != 1} not have a seat assigned
+            - else
+              .alert.alert-success.small
+                %i.bi.bi-check-circle.me-2
+                %strong All active employees have seats assigned
+
+/ Spotlight Section - Position Type Seats
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            / Main statistics/metrics area
+            .row.text-center
+              .col-3
+                .h3.text-primary= @spotlight_stats[:position_types][:total]
+                %small.text-muted Total Position Types
+              .col-3
+                .h3.text-success= @spotlight_stats[:position_types][:with_seats]
+                %small.text-muted With Seats
+              .col-3
+                .h3.text-warning= @spotlight_stats[:position_types][:without_seats]
+                %small.text-muted Without Seats
+              .col-3
+                - if @spotlight_stats[:position_types][:without_seats] > 0
+                  - if policy(Seat).create?
+                    = button_to create_missing_position_type_seats_organization_seats_path(organization), method: :post, class: "btn btn-primary btn-sm", data: { confirm: "Create seats for #{@spotlight_stats[:position_types][:without_seats]} position type(s) without seats?" } do
+                      %i.bi.bi-plus-circle.me-2
+                      Create Missing Seats
+                  - else
+                    .d-flex.align-items-center.justify-content-center
+                      .btn.btn-primary.btn-sm.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+                        %i.bi.bi-plus-circle.me-2
+                        Create Missing Seats
+                      %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization to create seats"}
+                - else
+                  .h3.text-success= "✓"
+                  %small.text-muted All Covered
+          
+          .col-md-4
+            / Action alerts or status messages
+            - if @spotlight_stats[:position_types][:without_seats] > 0
+              .alert.alert-warning.small
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong #{@spotlight_stats[:position_types][:without_seats]} position type#{'s' if @spotlight_stats[:position_types][:without_seats] != 1} #{'does' if @spotlight_stats[:position_types][:without_seats] == 1} #{'do' if @spotlight_stats[:position_types][:without_seats] != 1} not have any seats
+            - else
+              .alert.alert-success.small
+                %i.bi.bi-check-circle.me-2
+                %strong All position types have at least one seat
+
 .row.justify-content-center
   .col-lg-12
 
@@ -32,11 +122,15 @@
             - @seats.each do |seat|
               %tr
                 %td
-                  = link_to seat.position_type.external_title, position_type_path(seat.position_type), class: "text-decoration-none"
+                  = link_to seat.position_type.external_title, organization_seat_path(organization, seat), class: "text-decoration-none"
                 %td= seat.seat_needed_by.strftime('%B %d, %Y')
                 %td
                   %span.badge{class: seat_state_badge_class(seat.state)}
                     = seat.state.titleize
+                    - if seat.filled?
+                      - active_tenure = seat.employment_tenures.active.first
+                      - if active_tenure&.teammate&.person
+                        = " by #{active_tenure.teammate.person.first_name}"
                   - if seat.needs_reconciliation?
                     %span.badge.bg-warning.ms-1
                       %i.bi.bi-exclamation-triangle
