@@ -1036,6 +1036,18 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       permitted[:observation_ratings_attributes] = ratings_attrs
     end
     
+    # Handle empty gif_urls array - Rails strong params filters out empty arrays by default
+    # Check if gif_urls was explicitly set to empty array in original params
+    if params[:observation][:story_extras].present?
+      original_gif_urls = params[:observation][:story_extras][:gif_urls]
+      if original_gif_urls.is_a?(Array) && original_gif_urls.empty?
+        # Ensure story_extras hash exists and set empty array
+        # Convert to regular hash to allow modification
+        permitted[:story_extras] = (permitted[:story_extras] || {}).to_h
+        permitted[:story_extras]['gif_urls'] = []
+      end
+    end
+    
     # Convert empty strings to nil for optional fields
     permitted[:secondary_feeling] = nil if permitted[:secondary_feeling].blank?
     permitted[:primary_feeling] = nil if permitted[:primary_feeling].blank?

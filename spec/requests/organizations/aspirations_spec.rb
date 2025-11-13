@@ -133,6 +133,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
 
     context 'when user is admin' do
       before do
+        # Ensure admin person has og_admin set
+        admin.update!(og_admin: true) unless admin.og_admin?
         admin_teammate # Ensure teammate is created
         sign_in_as_teammate_for_request(admin, organization)
       end

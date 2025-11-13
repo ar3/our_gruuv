@@ -90,7 +90,8 @@ class ObservationForm < Reform::Form
     # story_extras is a virtual property, so it comes from params
     # Rails strong params may pass it as ActionController::Parameters
     # Note: Empty hash {} is still "present" in Rails, so we check for nil specifically
-    if !story_extras.nil?
+    # Also check if story_extras was explicitly passed (even if empty) by checking if it's a hash
+    if !story_extras.nil? || (story_extras.is_a?(Hash) && story_extras.empty?)
       # story_extras comes as a hash like { "gif_urls" => ["url1", "url2"] }
       # or as nested params like { "gif_urls" => ["url1", "url2"] }
       # Convert ActionController::Parameters to hash if needed
@@ -109,8 +110,27 @@ class ObservationForm < Reform::Form
       # Ensure gif_urls is an array and filter out blanks
       # Check both string and symbol keys (ActionController::Parameters uses string keys)
       # Access the gif_urls array directly from the hash
-      raw_gif_urls = extras_hash['gif_urls'] || extras_hash[:gif_urls] || []
-      gif_urls = Array(raw_gif_urls).reject(&:blank?)
+      # If gif_urls key exists (even if empty), use it; otherwise default to empty array
+      has_gif_urls_key = extras_hash.key?('gif_urls') || extras_hash.key?(:gif_urls)
+      raw_gif_urls = if extras_hash.key?('gif_urls')
+        extras_hash['gif_urls']
+      elsif extras_hash.key?(:gif_urls)
+        extras_hash[:gif_urls]
+      else
+        []
+      end
+      
+      # Convert to array - if it's explicitly an empty array or nil with key present, keep it empty
+      # Otherwise filter out blanks
+      gif_urls = if raw_gif_urls.is_a?(Array)
+        raw_gif_urls.empty? ? [] : raw_gif_urls.reject(&:blank?)
+      elsif raw_gif_urls.nil? && has_gif_urls_key
+        # Key exists but value is nil - Rails strong params may have filtered out empty array
+        # Treat as empty array (user explicitly cleared all GIFs)
+        []
+      else
+        Array(raw_gif_urls).reject(&:blank?)
+      end
       
       # Build the story_extras hash - always set it, even if empty array
       # This ensures story_extras is saved even when all GIFs are removed

@@ -87,7 +87,8 @@ class EmploymentTenure < ApplicationRecord
   def seat_position_type_matches_position
     return unless seat && position
     
-    unless seat.position_type == position.position_type
+    # Compare IDs to avoid object identity issues
+    unless seat.position_type_id == position.position_type_id
       errors.add(:seat, "must match the position type of the selected position")
     end
   end

@@ -93,7 +93,8 @@ RSpec.describe 'Organization Dashboard', type: :system do
       # pluralize(0, 'Ability') returns "0 Ability" (singular), not "0 Abilities"
       # Link is inside a button in the Milestones card
       # Find by URL instead of text since text might have icons/spacing
-      find("a[href='#{organization_abilities_path(organization)}']").click
+      # Use first to handle multiple links with same href
+      find("a[href='#{organization_abilities_path(organization)}']", match: :first).click
       expect(page).to have_content('Abilities')
     end
 

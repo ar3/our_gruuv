@@ -13,9 +13,14 @@ module Seats
                                                      .where(seat_id: nil)
                                                      .includes(:position, :teammate)
         
-        # Group tenures by position_type and date to handle duplicates
+        # Preload position_type_ids to ensure correct grouping
+        position_ids = active_employment_tenures.map(&:position_id).uniq
+        positions_by_id = Position.where(id: position_ids).pluck(:id, :position_type_id).to_h
+        
+        # Group tenures by position_type_id and date to handle duplicates
         tenures_by_seat_key = active_employment_tenures.group_by do |tenure|
-          [tenure.position.position_type_id, tenure.started_at.to_date]
+          position_type_id = positions_by_id[tenure.position_id] || tenure.position.position_type_id
+          [position_type_id, tenure.started_at.to_date]
         end
         
         tenures_by_seat_key.each do |(position_type_id, seat_needed_by), tenures|

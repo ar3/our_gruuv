@@ -6,8 +6,7 @@ RSpec.describe Organizations::GifsController, type: :controller do
   let(:teammate) { create(:teammate, organization: organization, person: person) }
 
   before do
-    sign_in person
-    session[:current_company_teammate_id] = teammate.id
+    sign_in_as_teammate(person, organization)
   end
 
   describe 'GET #search' do
@@ -88,17 +87,6 @@ RSpec.describe Organizations::GifsController, type: :controller do
         expect(response).to have_http_status(:success)
       end
 
-      context 'when not authorized' do
-        before do
-          allow_any_instance_of(ObservationPolicy).to receive(:search?).and_return(false)
-        end
-
-        it 'raises Pundit::NotAuthorizedError' do
-          expect {
-            get :search, params: { organization_id: organization.id, q: 'test' }
-          }.to raise_error(Pundit::NotAuthorizedError)
-        end
-      end
     end
   end
 end

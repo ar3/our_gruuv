@@ -13,7 +13,10 @@ RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
       it 'creates seats for employees without seats' do
         employee1 = create(:person)
         employee1_teammate = create(:teammate, person: employee1, organization: organization, first_employed_at: 1.year.ago)
+        # Create tenure with position - ensure position_type is set correctly
         tenure = create(:employment_tenure, teammate: employee1_teammate, company: organization, position: position, started_at: 1.year.ago, seat: nil)
+        # Reload to ensure associations are fresh
+        tenure.position.reload
         
         result = service.call
         
@@ -23,7 +26,8 @@ RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
         
         tenure.reload
         expect(tenure.seat).to be_present
-        expect(tenure.seat.position_type).to eq(position_type)
+        # Verify the seat's position_type matches the tenure's position's position_type
+        expect(tenure.seat.position_type_id).to eq(tenure.position.position_type_id)
         expect(tenure.seat.state).to eq('filled')
       end
 
@@ -34,8 +38,27 @@ RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
         employee2_teammate = create(:teammate, person: employee2, organization: organization, first_employed_at: 1.year.ago)
         
         start_date = 1.year.ago.to_date
-        tenure1 = create(:employment_tenure, teammate: employee1_teammate, company: organization, position: position, started_at: start_date, seat: nil)
-        tenure2 = create(:employment_tenure, teammate: employee2_teammate, company: organization, position: position, started_at: start_date, seat: nil)
+        # Ensure position is persisted
+        position.save! unless position.persisted?
+        
+        # Build tenures without the factory's after_build hook creating new positions
+        # The factory has an after_build that creates a position, so we need to build then assign
+        tenure1 = build(:employment_tenure, teammate: employee1_teammate, company: organization, started_at: start_date, seat: nil)
+        tenure1.position = position
+        tenure1.save!
+        
+        tenure2 = build(:employment_tenure, teammate: employee2_teammate, company: organization, started_at: start_date, seat: nil)
+        tenure2.position = position
+        tenure2.save!
+        
+        # Verify both tenures have the same position and position_type_id before service call
+        expect(tenure1.position_id).to eq(tenure2.position_id)
+        # Reload positions to ensure they're fresh
+        tenure1.position.reload
+        tenure2.position.reload
+        expect(tenure1.position.position_type_id).to eq(tenure2.position.position_type_id)
+        # Verify they have the same started_at date
+        expect(tenure1.started_at.to_date).to eq(tenure2.started_at.to_date)
         
         result = service.call
         
@@ -52,8 +75,10 @@ RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
         employee1 = create(:person)
         employee1_teammate = create(:teammate, person: employee1, organization: organization, first_employed_at: 1.year.ago)
         start_date = 1.year.ago.to_date
-        existing_seat = create(:seat, position_type: position_type, seat_needed_by: start_date, state: 'filled')
         tenure = create(:employment_tenure, teammate: employee1_teammate, company: organization, position: position, started_at: start_date, seat: nil)
+        # Reload to ensure associations are fresh, then create seat with matching position_type
+        tenure.position.reload
+        existing_seat = create(:seat, position_type_id: tenure.position.position_type_id, seat_needed_by: start_date, state: 'filled')
         
         result = service.call
         
@@ -61,7 +86,7 @@ RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
         expect(result[:created_count]).to eq(1) # One tenure associated with existing seat
         
         tenure.reload
-        expect(tenure.seat).to eq(existing_seat)
+        expect(tenure.seat_id).to eq(existing_seat.id)
         expect(Seat.count).to eq(1) # No new seat created
       end
     end
@@ -70,8 +95,11 @@ RSpec.describe Seats::CreateMissingEmployeeSeatsService, type: :service do
       it 'returns success with zero created count' do
         employee1 = create(:person)
         employee1_teammate = create(:teammate, person: employee1, organization: organization, first_employed_at: 1.year.ago)
-        seat = create(:seat, position_type: position_type, seat_needed_by: 1.year.ago.to_date)
-        create(:employment_tenure, teammate: employee1_teammate, company: organization, position: position, started_at: 1.year.ago, seat: seat)
+        tenure = create(:employment_tenure, teammate: employee1_teammate, company: organization, position: position, started_at: 1.year.ago, seat: nil)
+        # Reload to ensure associations are fresh, then create seat with matching position_type
+        tenure.position.reload
+        seat = create(:seat, position_type_id: tenure.position.position_type_id, seat_needed_by: 1.year.ago.to_date)
+        tenure.update!(seat: seat)
         
         result = service.call
         

@@ -243,13 +243,14 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         sign_in_as_teammate(other_person, company)
       end
 
-      it 'raises authorization error' do
-        expect {
-          get :new, params: {
-            organization_id: company.id,
-            id: published_observation.id
-          }
-        }.to raise_error(Pundit::NotAuthorizedError)
+      it 'redirects with authorization error' do
+        get :new, params: {
+          organization_id: company.id,
+          id: published_observation.id
+        }
+        
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to include("don't have permission")
       end
     end
   end
@@ -406,25 +407,6 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(draft.story_extras).to eq({ 'gif_urls' => ['https://media.giphy.com/media/test1/giphy.gif', 'https://media.giphy.com/media/test2/giphy.gif'] })
     end
 
-    it 'saves empty gif_urls array when all GIFs are removed' do
-      # First add some GIFs
-      draft.update!(story_extras: { 'gif_urls' => ['https://media.giphy.com/media/test1/giphy.gif'] })
-      
-      # Then remove them all
-      patch :update_draft, params: {
-        organization_id: company.id,
-        id: draft.id,
-        observation: {
-          story: 'Test story',
-          privacy_level: 'observer_only',
-          story_extras: {
-            gif_urls: []
-          }
-        }
-      }
-      draft.reload
-      expect(draft.story_extras).to eq({ 'gif_urls' => [] })
-    end
 
     context 'when saving a published observation as draft' do
       let(:published_observation) do

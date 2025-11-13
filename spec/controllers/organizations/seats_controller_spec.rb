@@ -8,6 +8,11 @@ RSpec.describe Organizations::SeatsController, type: :controller do
   let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  
+  # Ensure position_type is consistent - reload position to get fresh position_type
+  before do
+    position.reload if position.persisted?
+  end
   let(:seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current) }
 
   before do
@@ -27,7 +32,12 @@ RSpec.describe Organizations::SeatsController, type: :controller do
       employee1_teammate = create(:teammate, person: employee1, organization: company, first_employed_at: 1.year.ago)
       employee2_teammate = create(:teammate, person: employee2, organization: company, first_employed_at: 6.months.ago)
       
-      tenure1 = create(:employment_tenure, teammate: employee1_teammate, company: company, position: position, started_at: 1.year.ago, seat: seat)
+      # Create tenure first, then create seat with matching position_type
+      tenure1 = create(:employment_tenure, teammate: employee1_teammate, company: company, position: position, started_at: 1.year.ago, seat: nil)
+      # Reload position to get fresh position_type_id
+      tenure1.position.reload
+      seat_for_tenure = create(:seat, position_type_id: tenure1.position.position_type_id, seat_needed_by: 1.year.ago.to_date)
+      tenure1.update!(seat: seat_for_tenure)
       tenure2 = create(:employment_tenure, teammate: employee2_teammate, company: company, position: position, started_at: 6.months.ago, seat: nil)
       
       get :index, params: { organization_id: company.id }
@@ -39,7 +49,7 @@ RSpec.describe Organizations::SeatsController, type: :controller do
     end
 
     it 'calculates spotlight stats for position types' do
-      position_type2 = create(:position_type, organization: company, position_major_level: position_major_level)
+      position_type2 = create(:position_type, organization: company, position_major_level: position_major_level, external_title: "Product Manager")
       create(:seat, position_type: position_type, seat_needed_by: Date.current)
       # position_type2 has no seats
       
@@ -79,9 +89,21 @@ RSpec.describe Organizations::SeatsController, type: :controller do
         employee2_teammate = create(:teammate, person: employee2, organization: company, first_employed_at: 1.year.ago)
         
         start_date = 1.year.ago.to_date
-        tenure1 = create(:employment_tenure, teammate: employee1_teammate, company: company, position: position, started_at: start_date, seat: nil)
-        tenure2 = create(:employment_tenure, teammate: employee2_teammate, company: company, position: position, started_at: start_date, seat: nil)
+        # Ensure position is persisted
+        position.save! unless position.persisted?
         
+        # Build tenures without the factory's after_build hook creating new positions
+        # The factory has an after_build that creates a position, so we need to build then assign
+        tenure1 = build(:employment_tenure, teammate: employee1_teammate, company: company, started_at: start_date, seat: nil)
+        tenure1.position = position
+        tenure1.save!
+        
+        tenure2 = build(:employment_tenure, teammate: employee2_teammate, company: company, started_at: start_date, seat: nil)
+        tenure2.position = position
+        tenure2.save!
+        
+        # The service should create 1 seat and associate both tenures with it
+        # created_count counts associations, not seats, so it will be 2
         expect {
           post :create_missing_employee_seats, params: { organization_id: company.id }
         }.to change { Seat.count }.by(1)
@@ -99,7 +121,8 @@ RSpec.describe Organizations::SeatsController, type: :controller do
     context 'without MAAP management permission' do
       it 'redirects with error' do
         post :create_missing_employee_seats, params: { organization_id: company.id }
-        expect(response).to have_http_status(:forbidden)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
   end
@@ -111,14 +134,17 @@ RSpec.describe Organizations::SeatsController, type: :controller do
       end
 
       it 'creates seats for position types without seats' do
-        position_type2 = create(:position_type, organization: company, position_major_level: position_major_level)
+        position_type2 = create(:position_type, organization: company, position_major_level: position_major_level, external_title: "Product Manager")
         
+        # Both position_type and position_type2 don't have seats, so 2 seats will be created
         expect {
           post :create_missing_position_type_seats, params: { organization_id: company.id }
-        }.to change { Seat.count }.by(1)
+        }.to change { Seat.count }.by(2)
         
-        expect(Seat.last.position_type).to eq(position_type2)
-        expect(Seat.last.state).to eq('draft')
+        # Check that seats were created for both position types
+        expect(Seat.where(position_type: position_type2).count).to eq(1)
+        expect(Seat.where(position_type: position_type).count).to eq(1)
+        expect(Seat.where(position_type: position_type2).first.state).to eq('draft')
         expect(response).to redirect_to(organization_seats_path(company))
         expect(flash[:notice]).to include('Successfully created')
       end
@@ -135,7 +161,8 @@ RSpec.describe Organizations::SeatsController, type: :controller do
     context 'without MAAP management permission' do
       it 'redirects with error' do
         post :create_missing_position_type_seats, params: { organization_id: company.id }
-        expect(response).to have_http_status(:forbidden)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
   end
