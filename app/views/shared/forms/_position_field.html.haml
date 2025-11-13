@@ -1,0 +1,6 @@
+.mb-3
+  = form.label :position_id, "Position", class: "form-label"
+  = form.collection_select :position_id, positions, :id, :display_name,
+    { prompt: 'Select a position', selected: form.model.position_id },
+    { class: "form-select", required: true, disabled: disabled }
+

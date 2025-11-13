@@ -23,6 +23,23 @@ class PositionType < ApplicationRecord
   def display_name
     external_title
   end
+
+  # MAAP Maturity methods
+  def maap_maturity_phase
+    PositionTypeMaturityService.calculate_phase(self)
+  end
+
+  def maap_maturity_phase_display
+    "Phase #{maap_maturity_phase}"
+  end
+
+  def maap_maturity_next_steps
+    PositionTypeMaturityService.next_steps_message(self)
+  end
+
+  def maap_maturity_phase_status
+    PositionTypeMaturityService.phase_status(self)
+  end
   
   # External reference convenience methods
   def published_url

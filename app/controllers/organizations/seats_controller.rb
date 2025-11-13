@@ -3,9 +3,22 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
   def index
-    @seats = policy_scope(Seat.for_organization(organization))
-              .includes(:position_type, employment_tenures: { teammate: :person })
-              .ordered
+    seats = policy_scope(Seat.for_organization(organization))
+            .includes(:position_type, employment_tenures: { teammate: :person })
+            .ordered
+    
+    # Group seats by position type
+    @seats_by_position_type = seats.group_by(&:position_type)
+    
+    # Get all position types that have seats, ordered
+    @position_types = @seats_by_position_type.keys.sort_by(&:external_title)
+    
+    # Preload maturity data for all position types
+    @position_types.each do |position_type|
+      # Trigger calculation to warm up any caches
+      position_type.maap_maturity_phase
+    end
+    
     @spotlight_stats = calculate_spotlight_stats
     render layout: 'authenticated-v2-0'
   end

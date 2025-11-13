@@ -107,45 +107,69 @@
 
 .row.justify-content-center
   .col-lg-12
-
-    - if @seats.any?
-      .table-responsive
-        %table.table.table-hover
-          %thead
-            %tr
-              %th Position Type
-              %th Needed By
-              %th State
-              %th Why Now
-              %th Actions
-          %tbody
-            - @seats.each do |seat|
-              %tr
-                %td
-                  = link_to seat.position_type.external_title, organization_seat_path(organization, seat), class: "text-decoration-none"
-                %td= seat.seat_needed_by.strftime('%B %d, %Y')
-                %td
-                  %span.badge{class: seat_state_badge_class(seat.state)}
-                    = seat.state.titleize
-                    - if seat.filled?
-                      - active_tenure = seat.employment_tenures.active.first
-                      - if active_tenure&.teammate&.person
-                        = " by #{active_tenure.teammate.person.first_name}"
-                  - if seat.needs_reconciliation?
-                    %span.badge.bg-warning.ms-1
-                      %i.bi.bi-exclamation-triangle
-                %td= seat.why_now.to_s[0..300]
-                %td
-                  .btn-group.btn-group-sm
-                    = link_to organization_seat_path(organization, seat), class: "btn btn-outline-primary" do
-                      %i.bi.bi-eye
-                    = link_to edit_organization_seat_path(organization, seat), class: "btn btn-outline-secondary" do
-                      %i.bi.bi-pencil
-                    - if seat.needs_reconciliation?
-                      = link_to reconcile_organization_seat_path(organization, seat), method: :patch, class: "btn btn-outline-warning", data: { confirm: "Reconcile seat state?" } do
-                        %i.bi.bi-arrow-clockwise
-                    = link_to organization_seat_path(organization, seat), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
-                      %i.bi.bi-trash
+    - if @position_types&.any?
+      - @position_types.each do |position_type|
+        .card.mb-3
+          .card-header.d-flex.justify-content-between.align-items-center
+            .d-flex.align-items-center.flex-grow-1
+              %a.text-decoration-none.text-dark.fw-bold{"data-bs-toggle" => "collapse", "data-bs-target" => "#positionType#{position_type.id}", "aria-expanded" => "false", "aria-controls" => "positionType#{position_type.id}", style: "cursor: pointer;"}
+                %span.not-collapsed{id: "positionTypeExpandIcon#{position_type.id}"}
+                  %i.bi.bi-chevron-down.me-2
+                %span.collapsed{id: "positionTypeCollapseIcon#{position_type.id}"}
+                  %i.bi.bi-chevron-right.me-2
+                = position_type.external_title
+              %span.badge.bg-secondary.ms-2= "#{@seats_by_position_type[position_type].count} seat#{'s' if @seats_by_position_type[position_type].count != 1}"
+            .text-muted
+              %small= position_type.position_major_level.set_name
+          
+          .collapse{"id" => "positionType#{position_type.id}"}
+            .card-body
+              / MAAP Maturity Status Bar
+              .mb-3
+                = maap_maturity_status_bar(position_type)
+                = maap_maturity_next_steps_text(position_type)
+              
+              / Seats Table
+              - seats = @seats_by_position_type[position_type]
+              - if seats.any?
+                .table-responsive
+                  %table.table.table-hover.mb-0
+                    %thead.table-light
+                      %tr
+                        %th Needed By
+                        %th State
+                        %th Why Now
+                        %th Actions
+                    %tbody
+                      - seats.each do |seat|
+                        %tr
+                          %td= seat.seat_needed_by.strftime('%B %d, %Y')
+                          %td
+                            %span.badge{class: seat_state_badge_class(seat.state)}
+                              = seat.state.titleize
+                              - if seat.filled?
+                                - active_tenure = seat.employment_tenures.active.first
+                                - if active_tenure&.teammate&.person
+                                  = " by #{active_tenure.teammate.person.first_name}"
+                            - if seat.needs_reconciliation?
+                              %span.badge.bg-warning.ms-1
+                                %i.bi.bi-exclamation-triangle
+                          %td= seat.why_now.to_s[0..300]
+                          %td
+                            .btn-group.btn-group-sm
+                              = link_to organization_seat_path(organization, seat), class: "btn btn-outline-primary" do
+                                %i.bi.bi-eye
+                              = link_to edit_organization_seat_path(organization, seat), class: "btn btn-outline-secondary" do
+                                %i.bi.bi-pencil
+                              - if seat.needs_reconciliation?
+                                = link_to reconcile_organization_seat_path(organization, seat), method: :patch, class: "btn btn-outline-warning", data: { confirm: "Reconcile seat state?" } do
+                                  %i.bi.bi-arrow-clockwise
+                              = link_to organization_seat_path(organization, seat), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
+                                %i.bi.bi-trash
+              - else
+                .p-3.text-center.text-muted
+                  %i.bi.bi-info-circle.me-2
+                  No seats for this position type.
     - else
       .alert.alert-info
         %h6.mb-2

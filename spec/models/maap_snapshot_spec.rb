@@ -210,5 +210,25 @@ RSpec.describe MaapSnapshot, type: :model do
         expect(assignment_data['manager_check_in']['manager_completed_at']).to be_present
       end
     end
+    
+    describe '.build_for_employee with position_tenure change_type' do
+      it 'creates a snapshot for position tenure changes' do
+        snapshot = MaapSnapshot.build_for_employee(
+          employee: employee,
+          created_by: created_by,
+          change_type: 'position_tenure',
+          reason: 'Position change',
+          request_info: { ip_address: '127.0.0.1' }
+        )
+        
+        expect(snapshot.employee).to eq(employee)
+        expect(snapshot.created_by).to eq(created_by)
+        expect(snapshot.company.id).to eq(company.id)
+        expect(snapshot.change_type).to eq('position_tenure')
+        expect(snapshot.reason).to eq('Position change')
+        expect(snapshot.manager_request_info['ip_address']).to eq('127.0.0.1')
+        expect(snapshot.maap_data['employment_tenure']).to be_present
+      end
+    end
   end
 end

@@ -1,0 +1,6 @@
+.mb-3
+  = form.label :seat_id, "Seat (Optional)", class: "form-label"
+  = form.collection_select :seat_id, seats, :id, :display_name,
+    { prompt: 'Select a seat (optional)', include_blank: 'No Seat', selected: form.model.seat_id },
+    { class: "form-select", disabled: disabled }
+
