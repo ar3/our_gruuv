@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_12_120936) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_13_112513) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -597,6 +597,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_12_120936) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "became_public_at"
+    t.text "eligibility_requirements_summary"
     t.index ["became_public_at"], name: "index_positions_on_became_public_at"
     t.index ["position_level_id"], name: "index_positions_on_position_level_id"
     t.index ["position_type_id", "position_level_id"], name: "index_positions_on_type_and_level_unique", unique: true

@@ -26,6 +26,12 @@
             %i.bi.bi-file-text.me-2
             Summary
           %p= @position.position_summary
+        
+        - if @position.eligibility_requirements_summary.present?
+          %h5.mb-2.mt-3
+            %i.bi.bi-check-circle.me-2
+            Eligibility Requirements
+          %p.text-pre-wrap= @position.eligibility_requirements_summary
 
       .col-md-4.col-sm-12
         - if @position.required_assignments.any? || @position.suggested_assignments.any?

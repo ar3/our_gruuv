@@ -91,6 +91,6 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def position_params
-    params.require(:position).permit(:position_type_id, :position_level_id, :external_title, :position_summary)
+    params.require(:position).permit(:position_type_id, :position_level_id, :external_title, :position_summary, :eligibility_requirements_summary)
   end
 end

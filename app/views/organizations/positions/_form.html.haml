@@ -39,6 +39,23 @@
         placeholder: "Optional description of this position's responsibilities and expectations..."
       %small.form-text.text-muted A brief description of what this position entails
 
+- level_1_template = "• Living Values. Above the bar on all Values for 2+ quarters in the last 4 quarters \n\n• Meeting Required Assignments: Has met expectations of 80% of Required Assignments for 2 quarters in a row\n\n• Demonstrated Abilities: \n\nManager says, \"I want to entrust this person with more responsibility, because they have demonstrated the Abilities needed for the Assignments they are taking on\"\n\n• Achievement\n\nWTWT. If your team is meeting expectations for 2+ quarters in a row that directly contributes to every member of that team "
+- level_2_template = "• Living Values. Above the bar on all Values for 2+ quarters in a row\n\n• Meeting Required Assignments: Has met expectations of 100% of Required Assignments for 2 quarters in a row\n\n• Demonstrated Abilities: \n\nManager says, \"I want to entrust this person with more responsibility, because they have demonstrated the Abilities needed for the Assignments they are taking on, and are above the expected milestone for 33% of the Abilities.\" \n\n• Achievement\n\nWTWT. If your team is exceeding expectations for 2+ quarters in a row that directly contributes to every member of that team "
+- level_3_template = "• Living Values. Above the bar on all Values for 2+ quarters in a row\n\n• Meeting Required Assignments: Has met expectations of 100% of Required Assignments, and exceeding expectations for 50% of those, for 2 quarters in a row\n\n• Additional Assignment \n\nHas a \"Unique-to-You Assignment\" and has met expectations on it for 2 of the last 4 quarters. \n\n• Demonstrated Abilities: \n\nManager says, \"I want to entrust this person with more responsibility, because they have demonstrated the Abilities needed for the Assignments they are taking on, and are above the expected milestone for 33% of the Abilities.\" \n\n• Achievement\n\nWTWT. If your team is exceeding expectations for 2+ quarters in a row that directly contributes to every member of that team "
+- eligibility_template = (@position.persisted? && @position.position_level) ? (minor_level = @position.position_level.level.split('.').last.to_i; case minor_level; when 1; level_1_template; when 2; level_2_template; when 3; level_3_template; else; level_1_template; end) : level_1_template
+
+.row
+  .col-md-12
+    .mb-3
+      .d-flex.justify-content-between.align-items-center.mb-2
+        = form.label :eligibility_requirements_summary, "Eligibility Requirements Summary", class: "form-label mb-0"
+        - if @position.persisted?
+          %button.btn.btn-sm.btn-outline-secondary{type: "button", id: "use_template_btn"}
+            Use Template
+      = form.text_area :eligibility_requirements_summary, class: "form-control", rows: 8,
+        placeholder: eligibility_template, id: "eligibility_requirements_summary_textarea"
+      %small.form-text.text-muted Requirements for eligibility at this position level
+
 .row{"data-controller" => "position-assignments"}
   .col-md-6
     .mb-3
@@ -145,6 +162,15 @@
         } else {
           positionLevelSelect.innerHTML = '<option value="">Select a position level</option>';
         }
+      });
+    }
+    
+    const useTemplateBtn = document.getElementById('use_template_btn');
+    const eligibilityTextarea = document.getElementById('eligibility_requirements_summary_textarea');
+    
+    if (useTemplateBtn && eligibilityTextarea) {
+      useTemplateBtn.addEventListener('click', function() {
+        eligibilityTextarea.value = eligibilityTextarea.placeholder;
       });
     }
   }); 

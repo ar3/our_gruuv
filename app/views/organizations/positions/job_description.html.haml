@@ -14,6 +14,11 @@
     %h3
       %strong Summary:
     %p= @position.position_summary.present? ? @position.position_summary : "No summary provided"
+    
+    - if @position.eligibility_requirements_summary.present?
+      %h3.mt-4
+        %strong Eligibility Requirements:
+      %p.text-pre-wrap= @position.eligibility_requirements_summary
 
   -# Required Assignments
   - if @position.required_assignments.any?

@@ -450,3 +450,8 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   justify-content: center;
 }
 
+// ===== TEXT UTILITY CLASSES =====
+.text-pre-wrap {
+  white-space: pre-wrap;
+}
+

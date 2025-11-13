@@ -17,6 +17,9 @@ class Position < ApplicationRecord
   validates :position_level, uniqueness: { scope: :position_type_id }
   validates :position_level, inclusion: { in: ->(position) { position.position_type&.position_major_level&.position_levels || [] } }
   
+  # Callbacks
+  before_save :normalize_eligibility_requirements_summary
+  
   # Scopes
   scope :ordered, -> { joins(:position_type, :position_level).order('position_types.external_title, position_levels.level') }
   scope :for_company, ->(company) { joins(position_type: :organization).where(organizations: { id: company.id }) }
@@ -89,4 +92,10 @@ class Position < ApplicationRecord
       position_type: [:external_title],
       position_level: [:level]
     }
+  
+  private
+  
+  def normalize_eligibility_requirements_summary
+    self.eligibility_requirements_summary = nil unless eligibility_requirements_summary.present?
+  end
 end 
