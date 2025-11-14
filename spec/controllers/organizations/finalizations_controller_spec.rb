@@ -50,7 +50,7 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
     end
     
     it 'authorizes access to finalization' do
-      expect(controller).to receive(:authorize).with(employee, :view_check_ins?)
+      expect(controller).to receive(:authorize).with(employee, :view_check_ins?, hash_including(policy_class: PersonPolicy))
       
       get :show, params: { organization_id: organization.id, person_id: employee.id }
     end

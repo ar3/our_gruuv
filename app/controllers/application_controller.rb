@@ -158,13 +158,13 @@ class ApplicationController < ActionController::Base
 
 
   # Override Pundit's authorize method to capture context for custom redirects
-  def authorize(record, query = nil, policy_class: nil)
+  def authorize(record, query = nil, **options)
     query ||= params[:action].to_s + "?"
     
     @_pundit_policy_record = record
     @_pundit_policy_query = query
     
-    super
+    super(record, query, **options)
   end
   
   def determine_layout

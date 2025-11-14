@@ -10,12 +10,21 @@ RSpec.describe ApplicationController, type: :controller do
       locale = params[:locale]
       render plain: TimezoneService.map_locale_to_timezone(locale) || 'nil'
     end
+
+    def test_authorize
+      record = params[:record_type].constantize.find(params[:record_id])
+      query = params[:query]&.to_sym
+      options = params[:options]&.permit!.to_h || {}
+      authorize(record, query, **options)
+      render plain: 'authorized'
+    end
   end
 
   before do
     routes.draw do
       get 'test_detect_timezone' => 'anonymous#test_detect_timezone'
       get 'test_map_locale_to_timezone' => 'anonymous#test_map_locale_to_timezone'
+      post 'test_authorize' => 'anonymous#test_authorize'
     end
   end
 
@@ -90,6 +99,74 @@ RSpec.describe ApplicationController, type: :controller do
     it 'handles nil locale' do
       get :test_map_locale_to_timezone, params: { locale: nil }
       expect(response.body).to eq('nil')
+    end
+  end
+
+  describe '#authorize' do
+    let(:organization) { create(:organization, :company) }
+    let(:person) { create(:person) }
+    let(:teammate) { create(:teammate, person: person, organization: organization, type: 'CompanyTeammate') }
+    let(:huddle) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization)) }
+
+    before do
+      session[:current_company_teammate_id] = teammate.id
+    end
+
+    it 'forwards all keyword arguments to Pundit without InvalidConstructorError' do
+      # This test ensures that the authorize method override properly forwards all keyword arguments
+      # using **options, which prevents Pundit::InvalidConstructorError
+      # The fix was changing from policy_class: nil to **options to forward all kwargs
+      expect {
+        post :test_authorize, params: {
+          record_type: 'Huddle',
+          record_id: huddle.id,
+          query: 'join?'
+        }
+      }.not_to raise_error(Pundit::InvalidConstructorError)
+      
+      expect(response).to have_http_status(:success)
+      expect(controller.instance_variable_get(:@_pundit_policy_record)).to eq(huddle)
+    end
+
+    it 'sets instance variables for custom redirects' do
+      post :test_authorize, params: {
+        record_type: 'Huddle',
+        record_id: huddle.id,
+        query: 'join?'
+      }
+      
+      expect(controller.instance_variable_get(:@_pundit_policy_record)).to eq(huddle)
+      expect(controller.instance_variable_get(:@_pundit_policy_query)).to eq(:join?)
+    end
+
+    it 'works with unauthenticated users' do
+      session[:current_company_teammate_id] = nil
+      
+      # join? should allow unauthenticated access
+      expect {
+        post :test_authorize, params: {
+          record_type: 'Huddle',
+          record_id: huddle.id,
+          query: 'join?'
+        }
+      }.not_to raise_error(Pundit::InvalidConstructorError)
+      
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'defaults query to action name when not provided' do
+      # When query is nil, it should default to action name + "?"
+      # But since test_authorize? doesn't exist on HuddlePolicy, we'll get NotAuthorizedError
+      # which is expected - the important thing is it doesn't raise InvalidConstructorError
+      expect {
+        post :test_authorize, params: {
+          record_type: 'Huddle',
+          record_id: huddle.id
+        }
+      }.not_to raise_error(Pundit::InvalidConstructorError)
+      
+      # Should have attempted to use test_authorize? as the query (stored as string)
+      expect(controller.instance_variable_get(:@_pundit_policy_query)).to eq('test_authorize?')
     end
   end
 end 
