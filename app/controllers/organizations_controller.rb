@@ -40,7 +40,9 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       
       # If this is the first teammate, set it as current
       if current_company_teammate.person.active_teammates.count == 1
-        session[:current_company_teammate_id] = teammate.id
+        # Ensure it's a CompanyTeammate for root company
+        company_teammate = ensure_company_teammate(teammate) || teammate
+        session[:current_company_teammate_id] = company_teammate.id
       end
       
       redirect_to organizations_path, notice: "You are now following #{organization.name}."
@@ -58,9 +60,11 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       if teammate.id == current_company_teammate.id
         other_teammate = current_company_teammate.person.active_teammates.where.not(id: teammate.id).first
         if other_teammate
-          session[:current_company_teammate_id] = other_teammate.id
+          # Ensure it's a CompanyTeammate for root company
+          company_teammate = ensure_company_teammate(other_teammate) || other_teammate
+          session[:current_company_teammate_id] = company_teammate.id
         else
-          # No other teammates - ensure "OurGruuv Demo" teammate exists
+          # No other teammates - ensure "OurGruuv Demo" teammate exists (already returns CompanyTeammate)
           new_teammate = ensure_teammate_for_person(current_company_teammate.person)
           session[:current_company_teammate_id] = new_teammate.id
         end
@@ -134,8 +138,9 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       t.last_terminated_at = nil
     end
     
-    # Update session to use the new teammate
-    session[:current_company_teammate_id] = teammate.id
+    # Ensure it's a CompanyTeammate for root company before setting session
+    company_teammate = ensure_company_teammate(teammate) || teammate
+    session[:current_company_teammate_id] = company_teammate.id
     
     redirect_to organization_path(@organization), notice: "Switched to #{@organization.display_name}"
   end

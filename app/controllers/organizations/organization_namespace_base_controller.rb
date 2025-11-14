@@ -31,8 +31,10 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
                                                  .first
     
     if active_teammate
+      # Ensure it's a CompanyTeammate for root company
+      company_teammate = ensure_company_teammate(active_teammate) || active_teammate
       # Switch to the teammate for this organization
-      session[:current_company_teammate_id] = active_teammate.id
+      session[:current_company_teammate_id] = company_teammate.id
       # Clear cached teammate so it reloads
       @current_company_teammate = nil
     else

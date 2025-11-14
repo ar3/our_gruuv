@@ -11,24 +11,39 @@ class Test::AuthController < ApplicationController
     redirect_to = params[:redirect_to]
     
     teammate = if teammate_id.present?
-      Teammate.find(teammate_id)
+      found_teammate = Teammate.find(teammate_id)
+      # Ensure it's a CompanyTeammate for root company
+      ensure_company_teammate(found_teammate) || found_teammate
     elsif person_id.present?
       person = Person.find(person_id)
       # Find or create teammate
       if organization_id.present?
         organization = Organization.find(organization_id)
-        person.teammates.find_or_create_by!(organization: organization) do |t|
-          t.type = 'CompanyTeammate'
-          t.first_employed_at = nil
-          t.last_terminated_at = nil
+        root_company = organization.root_company || organization
+        # Ensure we create/find CompanyTeammate for root company
+        if root_company.is_a?(Company) && root_company.parent.nil?
+          ensure_company_teammate_for_person(person, root_company) || person.teammates.find_or_create_by!(organization: root_company) do |t|
+            t.type = 'CompanyTeammate'
+            t.first_employed_at = nil
+            t.last_terminated_at = nil
+          end
+        else
+          person.teammates.find_or_create_by!(organization: organization) do |t|
+            t.type = 'CompanyTeammate'
+            t.first_employed_at = nil
+            t.last_terminated_at = nil
+          end
         end
       else
-        person.active_teammates.first || ensure_teammate_for_person(person)
+        ensure_teammate_for_person(person)
       end
     else
       render json: { error: 'teammate_id or person_id is required' }, status: :bad_request
       return
     end
+    
+    # Ensure teammate is a CompanyTeammate before setting session
+    teammate = ensure_company_teammate(teammate) || teammate
     
     # Set session
     session[:current_company_teammate_id] = teammate.id
