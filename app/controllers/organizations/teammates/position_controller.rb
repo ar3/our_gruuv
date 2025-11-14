@@ -5,7 +5,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
   after_action :verify_authorized
 
   def show
-    authorize @teammate.person, :view_check_ins?
+    authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
     
     @check_ins = PositionCheckIn
       .where(teammate: @teammate)
@@ -20,7 +20,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
   end
 
   def update
-    authorize @teammate.person, :change_employment?
+    authorize @teammate.person, :change_employment?, policy_class: PersonPolicy
     
     @current_employment = @teammate.employment_tenures.active.first
     

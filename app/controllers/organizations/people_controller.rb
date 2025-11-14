@@ -5,7 +5,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   after_action :verify_authorized
 
   def show
-    authorize @person
+    authorize @person, policy_class: PersonPolicy
     # Organization-scoped person view - filtered by the organization from the route
     teammate = @person.teammates.find_by(organization: organization)
     @employment_tenures = teammate&.employment_tenures&.includes(:company, :position, :manager)
@@ -31,7 +31,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   end
 
   def complete_picture
-    authorize @person, :manager?
+    authorize @person, :manager?, policy_class: PersonPolicy
     # Complete picture view - detailed view for managers to see person's position, assignments, and milestones
     # Filter by the organization from the route
     teammate = @person.teammates.find_by(organization: organization)
@@ -56,7 +56,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   end
 
   def teammate
-    authorize @person
+    authorize @person, policy_class: PersonPolicy
     # Teammate view - organization-specific data for active employees
     @current_organization = organization
     teammate = @person.teammates.find_by(organization: organization)
@@ -68,7 +68,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   end
 
   def update_permission
-    authorize @person, :manager?
+    authorize @person, :manager?, policy_class: PersonPolicy
     
     permission_type = params[:permission_type]
     permission_value = params[:permission_value]
@@ -99,7 +99,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   end
 
   def assignment_selection
-    authorize @person, :manage_assignments?
+    authorize @person, :manage_assignments?, policy_class: PersonPolicy
     
     @teammate = @person.teammates.find_by(organization: organization)
     @assignments = organization.assignments.includes(:position_assignments).ordered
@@ -121,7 +121,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   end
 
   def update_assignments
-    authorize @person, :manage_assignments?
+    authorize @person, :manage_assignments?, policy_class: PersonPolicy
     
     @teammate = @person.teammates.find_by(organization: organization)
     

@@ -85,7 +85,7 @@ class Organizations::FinalizationsController < ApplicationController
   
   def authorize_finalization
     # Manager can finalize, employee can acknowledge
-    authorize @person, :view_check_ins?
+    authorize @person, :view_check_ins?, policy_class: PersonPolicy
   end
   
   def finalization_params

@@ -5,7 +5,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   before_action :determine_view_mode
 
   def show
-    authorize @person, :view_check_ins?
+    authorize @person, :view_check_ins?, policy_class: PersonPolicy
     
     # Determine view mode (card or table)
     @view_mode_param = params[:view] || 'table'  # Default to table view

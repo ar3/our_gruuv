@@ -8,7 +8,7 @@ class PeopleController < ApplicationController
 
 
   def show
-    authorize person
+    authorize person, policy_class: PersonPolicy
     # Get all employment tenures across all organizations through teammates
     @employment_tenures = EmploymentTenure.joins(:teammate)
                                         .where(teammates: { person: person })
@@ -34,7 +34,7 @@ class PeopleController < ApplicationController
   end
 
   def public
-    authorize person
+    authorize person, policy_class: PersonPolicy
     # Public view - minimal data, no sensitive information
     @employment_tenures = EmploymentTenure.joins(:teammate)
                                          .where(teammates: { person: person })
@@ -44,11 +44,11 @@ class PeopleController < ApplicationController
   end
 
   def edit
-    authorize person
+    authorize person, policy_class: PersonPolicy
   end
 
   def update
-    authorize person
+    authorize person, policy_class: PersonPolicy
     if person.update(person_params)
       redirect_to profile_path, notice: 'Profile updated successfully!'
     else
@@ -87,12 +87,12 @@ class PeopleController < ApplicationController
   end
 
   def connect_google_identity
-    authorize person
+    authorize person, policy_class: PersonPolicy
     redirect_to "/auth/google_oauth2", data: { turbo: false }
   end
 
   def disconnect_identity
-    authorize person
+    authorize person, policy_class: PersonPolicy
     identity = person.person_identities.find(params[:id])
     
     unless person.can_disconnect_identity?(identity)

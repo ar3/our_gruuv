@@ -93,7 +93,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     @person = @organization.employees.find(params[:id])
     
     # Authorize access to audit view (organization context passed via pundit_user)
-    authorize @person, :audit?
+    authorize @person, :audit?, policy_class: PersonPolicy
     
     # Get MAAP snapshots for this person within this organization
     @maap_snapshots = MaapSnapshot.for_employee(@person)
@@ -113,7 +113,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     @person = @organization.employees.find(params[:id])
     
     # Authorize access to audit view
-    authorize @person, :audit?
+    authorize @person, :audit?, policy_class: PersonPolicy
     
     # Only allow employees to acknowledge their own snapshots
     unless current_person == @person

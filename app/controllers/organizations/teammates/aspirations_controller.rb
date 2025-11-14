@@ -6,7 +6,7 @@ class Organizations::Teammates::AspirationsController < Organizations::Organizat
   after_action :verify_authorized
 
   def show
-    authorize @teammate.person, :view_check_ins?
+    authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
     
     # Load all check-ins (full history)
     @check_ins = AspirationCheckIn
