@@ -438,6 +438,30 @@ class ApplicationController < ActionController::Base
     )
   end
 
+  # Ensure teammate is a CompanyTeammate for the root company
+  # If the teammate is already a CompanyTeammate for the root company, return it
+  # Otherwise, find or create a CompanyTeammate for the root company
+  def ensure_company_teammate(teammate)
+    return nil unless teammate
+    
+    root_company = teammate.organization.root_company || teammate.organization
+    return nil unless root_company.is_a?(Company)
+    
+    # If teammate is already a CompanyTeammate for the root company, return it
+    if teammate.is_a?(CompanyTeammate) && teammate.organization == root_company
+      return teammate
+    end
+    
+    # Find or create CompanyTeammate for root company
+    teammate.person.teammates.find_or_create_by!(
+      organization: root_company
+    ) do |t|
+      t.type = 'CompanyTeammate'
+      t.first_employed_at = nil
+      t.last_terminated_at = nil
+    end
+  end
+
   # Helper method for recent page visits
   def recent_page_visits
     return PageVisit.none unless current_person
