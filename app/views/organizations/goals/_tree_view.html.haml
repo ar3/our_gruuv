@@ -47,10 +47,10 @@
                   = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none fw-bold"
                   %br
                   %span.badge{class: badge_class, style: "font-size: 0.7em;"}
-                    = goal_category_label(goal)
+                    = goal_category_label(goal).html_safe
                 - if children.any?
                   %span.badge.bg-light.text-dark
-                    = pluralize(children.count, 'child')
+                    = pluralize(children.count, 'child').html_safe
     - else
       - root_goals.each do |root_goal|
-        = render_tree_node(root_goal, 0, parent_child_map, categories, @organization)
+        = render_tree_node(root_goal, 0, parent_child_map, categories, @organization).html_safe

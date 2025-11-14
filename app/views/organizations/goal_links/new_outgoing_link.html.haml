@@ -21,7 +21,30 @@
       = hidden_field_tag :link_type, 'this_is_key_result_of_that'
       = hidden_field_tag :return_url, @return_url
       = hidden_field_tag :return_text, @return_text
+
+      .mb-4
+        %label.form-label.fw-bold
+          Create New Sub-Goals / Stepping Stone Activities / Pre-requisite Key Results
+          %small.text-muted (Optional)
+        %small.text-muted.d-block.mb-2
+          Enter one goal title per line. Each will become a new Key Result goal linked to this goal.
+        = text_area_tag "bulk_goal_titles", "", rows: 5, class: "form-control", placeholder: "Goal 1\nGoal 2\nGoal 3"
+        %small.form-text.text-muted
+          New goals will match the owner and privacy level of this goal.
       
+      .mb-3
+        %label.form-label
+          Notes
+          %small.text-muted (Optional)
+        = text_area_tag "metadata_notes", "", rows: 3, class: "form-control", placeholder: "Add any notes about these links..."
+      
+      .d-flex.gap-2.mt-3
+        = link_to @return_url, class: 'btn btn-outline-secondary' do
+          %i.bi.bi-arrow-left.me-1
+          = @return_text || 'Cancel'
+        = f.submit 'Create Links', class: 'btn btn-primary'
+
+      %hr.mt-4.mb-4
       - if @available_goals_with_status.any?
         .mb-4
           %label.form-label.fw-bold Existing Goals
@@ -68,22 +91,6 @@
         .alert.alert-info
           %i.bi.bi-info-circle.me-2
           No other goals available to link. Create new goals using the textarea below.
-      
-      .mb-4
-        %label.form-label.fw-bold
-          Create New Goals
-          %small.text-muted (Optional)
-        %small.text-muted.d-block.mb-2
-          Enter one goal title per line. Each will become a new Key Result goal linked to this goal.
-        = text_area_tag "bulk_goal_titles", "", rows: 5, class: "form-control", placeholder: "Goal 1\nGoal 2\nGoal 3"
-        %small.form-text.text-muted
-          New goals will match the owner and privacy level of this goal.
-      
-      .mb-3
-        %label.form-label
-          Notes
-          %small.text-muted (Optional)
-        = text_area_tag "metadata_notes", "", rows: 3, class: "form-control", placeholder: "Add any notes about these links..."
       
       .d-flex.gap-2.mt-3
         = link_to @return_url, class: 'btn btn-outline-secondary' do

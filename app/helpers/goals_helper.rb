@@ -215,7 +215,7 @@ module GoalsHelper
     
     children_html = children.map { |child| render_tree_node(child, depth + 1, parent_child_map, categories, organization) }.join.html_safe
     
-    (html + children_html).html_safe
+    (html + children_html)
   end
   
   def render_nested_goal(goal, depth, parent_child_map, categories, organization)
@@ -273,7 +273,7 @@ module GoalsHelper
       card + children_html
     end
     
-    html.html_safe
+    html
   end
 end
 
