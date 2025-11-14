@@ -249,6 +249,54 @@ RSpec.describe OrganizationsController, type: :controller do
       expect(flash[:notice]).to eq("Switched to #{organization.display_name}")
     end
 
+    it 'sets the session to the correct teammate for the root company' do
+      patch :switch, params: { id: organization.id }
+      
+      root_company = organization.root_company || organization
+      expected_teammate = person.teammates.find_by(organization: root_company)
+      
+      expect(session[:current_company_teammate_id]).to eq(expected_teammate.id)
+      expect(expected_teammate).to be_a(CompanyTeammate)
+    end
+
+    it 'finds or creates a teammate for the root company' do
+      root_company = organization.root_company || organization
+      
+      # Verify teammate exists after switch (either found or created)
+      patch :switch, params: { id: organization.id }
+      
+      created_teammate = person.teammates.find_by(organization: root_company)
+      expect(created_teammate).to be_present
+      expect(created_teammate).to be_a(CompanyTeammate)
+      expect(session[:current_company_teammate_id]).to eq(created_teammate.id)
+    end
+
+    it 'uses the root company when switching to a team' do
+      # Create a team under the organization
+      team_org = create(:organization, name: 'Test Team', type: 'Team', parent: organization)
+      
+      patch :switch, params: { id: team_org.id }
+      
+      # Should create/find teammate for the root company, not the team
+      root_company = team_org.root_company || team_org
+      expected_teammate = person.teammates.find_by(organization: root_company)
+      
+      expect(session[:current_company_teammate_id]).to eq(expected_teammate.id)
+      expect(expected_teammate.organization.id).to eq(organization.id)
+    end
+
+    it 'does not create duplicate teammates when switching multiple times' do
+      root_company = organization.root_company || organization
+      
+      # Switch once
+      patch :switch, params: { id: organization.id }
+      initial_count = person.teammates.where(organization: root_company).count
+      
+      # Switch again
+      patch :switch, params: { id: organization.id }
+      
+      expect(person.teammates.where(organization: root_company).count).to eq(initial_count)
+    end
   end
 
   describe 'GET #dashboard' do

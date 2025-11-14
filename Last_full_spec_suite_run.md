@@ -1,204 +1,205 @@
 # Last Full Spec Suite Run
 
 ## Run Date
-2025-11-13
+2025-11-14
 
 ## Execution Method
 Run in segments to avoid timeouts and identify issues more efficiently. Never run `bundle exec rspec` without arguments.
 
 ## Status
-⚠️ **Complete** - 9 failures identified
+⚠️ **Complete** - 14 failures identified
 
-**Started**: 2025-11-13 18:51:30 EST
-**Last Updated**: 2025-11-13 19:15:00 EST
+**Started**: 2025-11-14 07:17:15 EST
+**Last Updated**: 2025-11-14 07:43:16 EST
 
 ## Timing Results
 
 ### Model Specs
 - **Status**: ✅ Complete
-- **Time**: 26.94 seconds (33.14 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:51:30 EST
+- **Time**: 44.14 seconds (49.47 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:17:15 EST
 - **Examples**: 995
 - **Failures**: 0
 - **Pending**: 1
 
 ### Controller Specs
 - **Status**: ✅ Complete
-- **Time**: 29.08 seconds (32.52 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:52:05 EST
-- **Examples**: 435
+- **Time**: 30.87 seconds (35.81 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:18:19 EST
+- **Examples**: 439
 - **Failures**: 0
 
 ### Request Specs
 - **Status**: ✅ Complete
-- **Time**: 24.98 seconds (30.09 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:52:35 EST
+- **Time**: 17.52 seconds (22.33 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:19:25 EST
 - **Examples**: 185
 - **Failures**: 0
 
 ### Decorator Specs
 - **Status**: ✅ Complete
-- **Time**: 2.75 seconds (7.66 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:53:05 EST
+- **Time**: 2.23 seconds (6.08 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:20:18 EST
 - **Examples**: 35
 - **Failures**: 0
 
 ### Policy Specs
 - **Status**: ✅ Complete
-- **Time**: 9.07 seconds (13.07 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:53:08 EST
+- **Time**: 5.90 seconds (8.84 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:21:16 EST
 - **Examples**: 187
 - **Failures**: 0
 
 ### Service Specs
-- **Status**: ⚠️ Complete (1 failure)
-- **Time**: 16.26 seconds (20.37 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:53:17 EST
+- **Status**: ✅ Complete
+- **Time**: 18.78 seconds (23.37 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:22:16 EST
 - **Examples**: 326
-- **Failures**: 1
+- **Failures**: 0
+- **Pending**: 1
 
 ### Query Specs
 - **Status**: ✅ Complete
-- **Time**: 26.35 seconds (30.42 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:53:33 EST
+- **Time**: 17.26 seconds (20.22 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:23:16 EST
 - **Examples**: 125
 - **Failures**: 0
 
 ### Job Specs
 - **Status**: ✅ Complete
-- **Time**: 6.53 seconds (10.58 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:53:40 EST
+- **Time**: 4.96 seconds (8.23 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:24:16 EST
 - **Examples**: 67
 - **Failures**: 0
 
 ### Form Specs
 - **Status**: ✅ Complete
-- **Time**: 5.19 seconds (9.23 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:53:46 EST
+- **Time**: 4.38 seconds (7.85 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:25:16 EST
 - **Examples**: 102
 - **Failures**: 0
 
 ### Helper Specs
 - **Status**: ✅ Complete
-- **Time**: 8.73 seconds (12.70 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:53:51 EST
+- **Time**: 5.99 seconds (10.57 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:26:16 EST
 - **Examples**: 82
 - **Failures**: 0
 
 ### System Specs - Abilities
 - **Status**: ✅ Complete
-- **Time**: 17.84 seconds (21.73 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:54:10 EST
+- **Time**: 16.49 seconds (21.05 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:27:21 EST
 - **Examples**: 3
 - **Failures**: 0
 
 ### System Specs - Aspirations
 - **Status**: ✅ Complete
-- **Time**: 20.95 seconds (25.81 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:54:28 EST
+- **Time**: 19.17 seconds (23.23 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:28:16 EST
 - **Examples**: 7
 - **Failures**: 0
 
 ### System Specs - Assignments
 - **Status**: ✅ Complete
-- **Time**: 11.36 seconds (16.40 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:54:49 EST
+- **Time**: 10.61 seconds (13.79 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:29:16 EST
 - **Examples**: 2
 - **Failures**: 0
 
 ### System Specs - Audit
 - **Status**: ✅ Complete (3 pending)
-- **Time**: 0.34 seconds (4.33 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:55:00 EST
+- **Time**: 0.32 seconds (3.48 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:30:16 EST
 - **Examples**: 3
 - **Failures**: 0
 - **Pending**: 3
 
 ### System Specs - Check-in Observations
 - **Status**: ✅ Complete (1 pending)
-- **Time**: 0.37 seconds (4.61 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:55:05 EST
+- **Time**: 0.43 seconds (3.37 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:30:21 EST
 - **Examples**: 1
 - **Failures**: 0
 - **Pending**: 1
 
 ### System Specs - Check-ins
 - **Status**: ✅ Complete
-- **Time**: 14.18 seconds (18.11 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:55:10 EST
+- **Time**: 12.80 seconds (15.68 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:30:26 EST
 - **Examples**: 6
 - **Failures**: 0
 
 ### System Specs - Finalization
 - **Status**: ✅ Complete
-- **Time**: 17.23 seconds (21.47 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:55:24 EST
+- **Time**: 16.03 seconds (19.04 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:31:16 EST
 - **Examples**: 3
 - **Failures**: 0
 
 ### System Specs - Goals
-- **Status**: ✅ Complete (7 pending)
-- **Time**: 96.39 seconds (101.39 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:55:41 EST
+- **Status**: ⚠️ Complete (14 failures, 7 pending)
+- **Time**: 132.40 seconds (135.48 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:32:16 EST
 - **Examples**: 43
-- **Failures**: 0
+- **Failures**: 14
 - **Pending**: 7
 
 ### System Specs - Huddles
 - **Status**: ✅ Complete
-- **Time**: 18.15 seconds (23.20 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:57:18 EST
+- **Time**: 16.85 seconds (21.46 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:35:16 EST
 - **Examples**: 6
 - **Failures**: 0
 
 ### System Specs - Misc
 - **Status**: ✅ Complete
-- **Time**: 76.82 seconds (81.02 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:57:36 EST
+- **Time**: 70.05 seconds (73.50 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:36:16 EST
 - **Examples**: 31
 - **Failures**: 0
 
 ### System Specs - Observations
 - **Status**: ✅ Complete
-- **Time**: 20.16 seconds (25.13 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:58:53 EST
+- **Time**: 22.90 seconds (27.65 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:38:17 EST
 - **Examples**: 12
 - **Failures**: 0
 
 ### System Specs - Organizations/Teammates
-- **Status**: ⚠️ Complete (8 failures)
-- **Time**: 5.36 seconds (10.21 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:59:13 EST
+- **Status**: ✅ Complete
+- **Time**: 24.20 seconds (29.25 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:39:16 EST
 - **Examples**: 8
-- **Failures**: 8
+- **Failures**: 0
 
 ### System Specs - People
 - **Status**: ✅ Complete
-- **Time**: 10.64 seconds (15.88 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:59:19 EST
+- **Time**: 12.49 seconds (17.52 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:40:16 EST
 - **Examples**: 2
 - **Failures**: 0
 
 ### System Specs - Positions and Seats
 - **Status**: ✅ Complete (3 pending)
-- **Time**: 0.43 seconds (4.59 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:59:30 EST
+- **Time**: 0.81 seconds (5.31 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:41:16 EST
 - **Examples**: 3
 - **Failures**: 0
 - **Pending**: 3
 
 ### System Specs - Teammates
 - **Status**: ✅ Complete (3 pending)
-- **Time**: 0.54 seconds (4.65 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:59:35 EST
+- **Time**: 0.80 seconds (5.99 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:42:16 EST
 - **Examples**: 3
 - **Failures**: 0
 - **Pending**: 3
 
 ### ENM Specs
 - **Status**: ✅ Complete
-- **Time**: 29.66 seconds (33.83 seconds total with load time)
-- **Date/Time**: 2025-11-13 18:59:40 EST
+- **Time**: 34.96 seconds (39.20 seconds total with load time)
+- **Date/Time**: 2025-11-14 07:43:16 EST
 - **Examples**: 106
 - **Failures**: 0
 
@@ -206,27 +207,27 @@ Run in segments to avoid timeouts and identify issues more efficiently. Never ru
 
 ### Overall Summary
 - **Total Examples**: 2,707 (2,476 unit + 125 system + 106 ENM)
-- **Total Failures**: 9 ⚠️
-- **Total Pending**: 15 (1 model + 3 audit + 1 check-in observations + 7 goals + 3 positions_and_seats + 3 teammates)
-- **Unit Specs**: ⚠️ 1 failure (1 service)
-- **System Specs**: ⚠️ 8 failures (all in organizations/teammates/position_update_spec.rb)
+- **Total Failures**: 14 ⚠️
+- **Total Pending**: 15 (1 model + 1 service + 3 audit + 1 check-in observations + 7 goals + 3 positions_and_seats + 3 teammates)
+- **Unit Specs**: ✅ All passing (2,476 examples, 0 failures)
+- **System Specs**: ⚠️ 14 failures (all in goals folder)
 - **ENM Specs**: ✅ All passing (106 examples)
 
 ### Unit Specs Summary
-- **Total**: 2,476 examples, 1 failure
+- **Total**: 2,476 examples, 0 failures
   - Models: 995 (1 pending) ✅
-  - Controllers: 435 ✅
+  - Controllers: 439 ✅
   - Requests: 185 ✅
   - Decorators: 35 ✅
   - Policies: 187 ✅
-  - Services: 326 (1 failure) ⚠️
+  - Services: 326 (1 pending) ✅
   - Queries: 125 ✅
   - Jobs: 67 ✅
   - Forms: 102 ✅
   - Helpers: 82 ✅
 
 ### System Specs Summary
-- **Total**: 125 examples, 8 failures, 14 pending
+- **Total**: 125 examples, 14 failures, 14 pending
   - Abilities: 3 ✅
   - Aspirations: 7 ✅
   - Assignments: 2 ✅
@@ -234,98 +235,81 @@ Run in segments to avoid timeouts and identify issues more efficiently. Never ru
   - Check-in Observations: 1 (1 pending) ✅
   - Check-ins: 6 ✅
   - Finalization: 3 ✅
-  - Goals: 43 (7 pending) ✅
+  - Goals: 43 (14 failures, 7 pending) ⚠️
   - Huddles: 6 ✅
   - Misc: 31 ✅
   - Observations: 12 ✅
-  - Organizations/Teammates: 8 (8 failures) ⚠️
+  - Organizations/Teammates: 8 ✅
   - People: 2 ✅
   - Positions and Seats: 3 (3 pending) ✅
   - Teammates: 3 (3 pending) ✅
 
 ## Failure Analysis
 
-### Unit Spec Failures (1 total)
+### Unit Spec Failures
+**None!** ✅ All unit specs are passing.
 
-#### Service Specs (1 failure)
+### System Spec Failures (14 total)
 
-**1. PositionTypeMaturityService - Phase 9 calculation**
-- **File**: `spec/services/position_type_maturity_service_spec.rb:412`
-- **Test**: `Phase 9 returns 8 when <10% have published observations`
-- **Error**: Expected phase 8, got phase 9
-- **Root Cause**: The test expects phase 8 when <10% have published observations, but the service is returning phase 9. This suggests that `phase_nine_met?` is returning `true` when it should return `false`, or the phase calculation logic is incorrect.
-- **Analysis**: Looking at the service code, `phase_nine_met?` checks if ≥10% of entities have published observations. The test sets up 0 published observations (0%), which should fail `phase_nine_met?` and return phase 8. However, the service is returning phase 9, suggesting either:
-  1. The phase calculation logic is wrong (should return 8 when phase_nine_met? is false)
-  2. The test setup is incorrect and phase_nine_met? is actually returning true
-  3. There's an issue with how the percentage is calculated
+#### Goals System Specs (14 failures)
 
-**Plan of Action**:
-1. Review the test setup in `spec/services/position_type_maturity_service_spec.rb:412-442` to verify it correctly sets up 0 published observations
-2. Review `PositionTypeMaturityService#phase_nine_met?` to verify the calculation logic
-3. Add debug output to understand why phase_nine_met? is returning true when it should return false
-4. Fix the logic or test expectation based on findings
+**All failures in**: `spec/system/goals/goal_link_creation_spec.rb` and `spec/system/goals/goals_crud_flow_spec.rb`
 
-### System Spec Failures (8 total)
+**Error**: `Capybara::Ambiguous: Ambiguous match, found 2 elements matching visible button "Create Links" that is not disabled`
 
-#### Organizations/Teammates/Position Update Specs (8 failures)
-
-**All failures in**: `spec/system/organizations/teammates/position_update_spec.rb`
-
-**Error**: `Validation failed: Position level is not included in the list`
-
-**Root Cause**: When updating an employment tenure's position, the new position's `position_level` must belong to the same `position_major_level` as the position type. The Position model has a validation:
-```ruby
-validates :position_level, inclusion: { in: ->(position) { position.position_type&.position_major_level&.position_levels || [] } }
-```
-
-The system specs are creating positions with `position_level` that don't match the `position_type`'s `position_major_level`, causing validation failures when the form tries to update the employment tenure.
+**Root Cause**: The goal link creation forms have duplicate "Create Links" buttons on the page, causing Capybara to be unable to determine which button to click. This is a UI issue where there are 2 buttons with the same text and visibility state.
 
 **Affected Tests**:
-1. `Simple submission allows manager to update manager field` (line 33)
-2. `Complex submission allows manager to update all fields with multiple changes` (line 51)
-3. `Complex submission handles termination date update` (line 76)
-4. `Complex submission shows validation error when reason provided without major changes` (line 92)
-5. `Complex submission handles form errors gracefully` (line 103)
-6. `Permission-based UI when user has can_manage_employment permission shows enabled form fields` (line 114)
-7. `Permission-based UI when user does not have can_manage_employment permission shows form but with disabled fields` (line 124)
-8. `Permission-based UI when user does not have can_manage_employment permission shows disabled button with warning icon and tooltip` (line 134)
+1. `Goals CRUD Flow Goal Linking Workflow creates a link between goals` (goals_crud_flow_spec.rb:422)
+2. `Goal Link Creation error handling returns to return_url without creating links when cancel is clicked` (goal_link_creation_spec.rb:380)
+3. `Goal Link Creation error handling redirects to return_url after successful creation` (goal_link_creation_spec.rb:368)
+4. `Goal Link Creation error handling displays validation errors on overlay page` (goal_link_creation_spec.rb:358)
+5. `Goal Link Creation combining existing + bulk creation allows selecting existing goals AND entering bulk titles in one submission` (goal_link_creation_spec.rb:335)
+6. `Goal Link Creation selecting existing goals (outgoing links) creates multiple links when selecting multiple existing goals` (goal_link_creation_spec.rb:124)
+7. `Goal Link Creation selecting existing goals (outgoing links) creates a link when selecting a single existing goal` (goal_link_creation_spec.rb:108)
+8. `Goal Link Creation selecting existing goals (outgoing links) shows validation error when no goals selected and no bulk titles provided` (goal_link_creation_spec.rb:142)
+9. `Goal Link Creation creating new goals via bulk creation (outgoing links) creates new goals with no target dates` (goal_link_creation_spec.rb:252)
+10. `Goal Link Creation creating new goals via bulk creation (outgoing links) shows validation error when bulk titles are blank` (goal_link_creation_spec.rb:287)
+11. `Goal Link Creation creating new goals via bulk creation (outgoing links) creates new goals as quantitative_key_result for outgoing links` (goal_link_creation_spec.rb:219)
+12. `Goal Link Creation creating new goals via bulk creation (outgoing links) accepts multiple goal titles in textarea (one per line)` (goal_link_creation_spec.rb:203)
+13. `Goal Link Creation creating new goals via bulk creation (outgoing links) automatically links new goals to current goal` (goal_link_creation_spec.rb:270)
+14. `Goal Link Creation creating new goals via bulk creation (outgoing links) creates new goals matching owner and privacy_level of linking goal` (goal_link_creation_spec.rb:235)
 
 **Plan of Action**:
-1. Review the test setup in `position_update_spec.rb` to understand how positions are created
-2. Ensure that when creating `position` and `new_position` in the specs, their `position_level` belongs to the same `position_major_level` as their `position_type`
-3. Update the factory or test setup to create positions with compatible position levels
-4. Verify that the form/service correctly handles position changes and validates position_level compatibility
-5. Consider adding a validation or check in the form/service to provide a better error message when position_level is incompatible
+1. Review the goal link creation view templates to identify where duplicate "Create Links" buttons are being rendered
+2. Check if there are multiple forms on the same page (e.g., one for existing goals, one for bulk creation)
+3. Add unique identifiers (data attributes, IDs, or classes) to distinguish between the buttons
+4. Update the system specs to use more specific selectors (e.g., `find('button[data-action="create-existing-links"]')` or `find('button[data-action="create-bulk-links"]')`)
+5. Alternatively, if both buttons should be present but only one should be visible at a time, ensure proper visibility logic
+6. Consider using `within` blocks in specs to scope button clicks to specific form sections
+7. Re-run the goals system specs to verify fixes
 
 **Specific Fix Steps**:
-1. Check how `position` and `new_position` are created in the spec (lines 11-12)
-2. Ensure both positions use `position_level` from the same `position_major_level` as their `position_type`
-3. Update the factory calls or add explicit setup to ensure compatibility
-4. Re-run the specs to verify fixes
+1. Examine `app/views/organizations/goal_links/new_outgoing_link.html.haml` and `new_incoming_link.html.haml` for duplicate buttons
+2. Check if there's a partial or shared form that's being rendered multiple times
+3. Add unique `id` or `data-test-id` attributes to each button
+4. Update all 14 failing specs to use the specific button selector
+5. Verify that the UI still works correctly after changes
+6. Re-run `bundle exec rspec spec/system/goals/` to confirm all fixes
 
 ## Notes
 
-- **Unit Specs**: Excellent progress - only 1 failure remaining (down from previous runs)
-- **System Specs**: 8 failures all related to position update validation - appears to be a test setup issue
+- **Unit Specs**: ✅ Excellent - all passing! (2,476 examples, 0 failures)
+- **System Specs**: 14 failures all related to ambiguous button selection in goal link creation - UI/test selector issue
 - **ENM Specs**: ✅ All passing (106 examples)
 - **Pending Tests**: 15 total - these are intentionally skipped with `xit` and don't affect suite status
-- **Total Execution Time**: Approximately 15-20 minutes for full suite when run in segments
+- **Total Execution Time**: Approximately 25-30 minutes for full suite when run in segments
 
 ## Next Steps
 
-### Priority 1: Fix System Spec Failures (8 failures)
-1. Review `spec/system/organizations/teammates/position_update_spec.rb` test setup
-2. Fix position/position_level compatibility in test factories
-3. Verify position_level validation logic in Position model
-4. Re-run system specs to confirm fixes
+### Priority 1: Fix Goals System Spec Failures (14 failures)
+1. Review goal link creation view templates for duplicate buttons
+2. Add unique identifiers to distinguish between buttons
+3. Update system specs to use specific selectors
+4. Verify UI functionality after changes
+5. Re-run goals system specs to confirm fixes
 
-### Priority 2: Fix Service Spec Failure (1 failure)
-1. Debug `PositionTypeMaturityService#phase_nine_met?` calculation
-2. Review test setup for phase 9 test
-3. Fix logic or test expectation
-4. Re-run service specs to confirm fix
-
-### Priority 3: Review Pending Tests
+### Priority 2: Review Pending Tests
 - Review the 15 pending tests to determine if they should be:
   - Implemented and enabled
   - Removed if no longer relevant
