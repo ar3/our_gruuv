@@ -7,217 +7,216 @@
 Run in segments to avoid timeouts and identify issues more efficiently. Never run `bundle exec rspec` without arguments.
 
 ## Status
-✅ **Complete** - All specs passing! (1 failure fixed)
+✅ **Complete** - All specs passing!
 
-**Started**: 2025-11-14 11:44:36 EST
-**Last Updated**: 2025-11-14 12:19:31 EST
-**Fixed**: 2025-11-14 12:25:00 EST
+**Started**: 2025-11-14 12:56:25 EST
+**Last Updated**: 2025-11-14 13:37:09 EST
 
 ## Timing Results
 
 ### Model Specs
 - **Status**: ✅ Complete
-- **Time**: 63.44 seconds (70.24 seconds total with load time)
-- **Date/Time**: 2025-11-14 11:45:46 EST
+- **Time**: 40.27 seconds (47.13 seconds total with load time)
+- **Date/Time**: 2025-11-14 12:56:25 EST
 - **Examples**: 995
 - **Failures**: 0
 - **Pending**: 1
 
 ### Controller Specs
-- **Status**: ✅ Complete (fixed)
-- **Time**: 61.6 seconds (65.8 seconds total with load time)
-- **Date/Time**: 2025-11-14 12:25:00 EST
-- **Examples**: 439
+- **Status**: ✅ Complete
+- **Time**: 40.49 seconds (43.74 seconds total with load time)
+- **Date/Time**: 2025-11-14 12:57:09 EST
+- **Examples**: 443
 - **Failures**: 0
 
 ### Request Specs
 - **Status**: ✅ Complete
-- **Time**: 34.22 seconds (39.32 seconds total with load time)
-- **Date/Time**: 2025-11-14 11:49:19 EST
+- **Time**: 32.47 seconds (37.38 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:00:00 EST
 - **Examples**: 185
 - **Failures**: 0
 
 ### Decorator Specs
 - **Status**: ✅ Complete
-- **Time**: Combined with other unit specs
-- **Date/Time**: 2025-11-14 11:50:31 EST
+- **Time**: 3.32 seconds (7.52 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:00:30 EST
 - **Examples**: 35
 - **Failures**: 0
 
 ### Policy Specs
 - **Status**: ✅ Complete
-- **Time**: Combined with other unit specs
-- **Date/Time**: 2025-11-14 11:50:31 EST
+- **Time**: 12.81 seconds (16.34 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:01:00 EST
 - **Examples**: 187
 - **Failures**: 0
 
 ### Service Specs
 - **Status**: ✅ Complete
-- **Time**: Combined with other unit specs
-- **Date/Time**: 2025-11-14 11:50:31 EST
+- **Time**: 44.3 seconds (49.72 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:02:00 EST
 - **Examples**: 326
 - **Failures**: 0
 - **Pending**: 1
 
 ### Query Specs
 - **Status**: ✅ Complete
-- **Time**: Combined with other unit specs
-- **Date/Time**: 2025-11-14 11:50:31 EST
+- **Time**: 62.79 seconds (69.43 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:03:00 EST
 - **Examples**: 125
 - **Failures**: 0
 
 ### Job Specs
 - **Status**: ✅ Complete
-- **Time**: Combined with other unit specs
-- **Date/Time**: 2025-11-14 11:50:31 EST
+- **Time**: 12.8 seconds (19.04 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:04:00 EST
 - **Examples**: 67
 - **Failures**: 0
 
 ### Form Specs
 - **Status**: ✅ Complete
-- **Time**: Combined with other unit specs
-- **Date/Time**: 2025-11-14 11:50:31 EST
+- **Time**: 18.77 seconds (26.02 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:05:00 EST
 - **Examples**: 102
 - **Failures**: 0
 
 ### Helper Specs
 - **Status**: ✅ Complete
-- **Time**: Combined with other unit specs (124.4 seconds total)
-- **Date/Time**: 2025-11-14 11:50:31 EST
+- **Time**: 17.8 seconds (24.08 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:06:00 EST
 - **Examples**: 82
 - **Failures**: 0
 
 ### System Specs - Abilities
 - **Status**: ✅ Complete
-- **Time**: 17.21 seconds (22.14 seconds total with load time)
-- **Date/Time**: 2025-11-14 11:53:31 EST
+- **Time**: 26.71 seconds (32.82 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:10:12 EST
 - **Examples**: 3
 - **Failures**: 0
 
 ### System Specs - Aspirations
 - **Status**: ✅ Complete
-- **Time**: 28.98 seconds (36.42 seconds total with load time)
-- **Date/Time**: 2025-11-14 11:56:29 EST
+- **Time**: 40.14 seconds (45.89 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:12:05 EST
 - **Examples**: 7
 - **Failures**: 0
 
 ### System Specs - Assignments
 - **Status**: ✅ Complete
-- **Time**: 10.35 seconds (16.7 seconds total with load time)
-- **Date/Time**: 2025-11-14 11:57:15 EST
+- **Time**: 30.56 seconds (38.93 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:13:28 EST
 - **Examples**: 2
 - **Failures**: 0
 
 ### System Specs - Audit
 - **Status**: ✅ Complete (3 pending)
-- **Time**: 0.72 seconds (5.58 seconds total with load time)
-- **Date/Time**: 2025-11-14 11:57:32 EST
+- **Time**: 1.42 seconds (11.78 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:14:29 EST
 - **Examples**: 3
 - **Failures**: 0
 - **Pending**: 3
 
 ### System Specs - Check-in Observations
 - **Status**: ✅ Complete (1 pending)
-- **Time**: 0.68 seconds (5.28 seconds total with load time)
-- **Date/Time**: 2025-11-14 11:57:38 EST
+- **Time**: 1.54 seconds (10.14 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:15:28 EST
 - **Examples**: 1
 - **Failures**: 0
 - **Pending**: 1
 
 ### System Specs - Check-ins
 - **Status**: ✅ Complete
-- **Time**: 18.31 seconds (23.14 seconds total with load time)
-- **Date/Time**: 2025-11-14 11:57:44 EST
+- **Time**: 46.14 seconds (55.61 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:16:28 EST
 - **Examples**: 6
 - **Failures**: 0
 
 ### System Specs - Finalization
 - **Status**: ✅ Complete
-- **Time**: 17.2 seconds (23.38 seconds total with load time)
-- **Date/Time**: 2025-11-14 11:58:08 EST
+- **Time**: 29.17 seconds (39.68 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:18:28 EST
 - **Examples**: 3
 - **Failures**: 0
 
 ### System Specs - Goals
 - **Status**: ✅ Complete (7 pending)
-- **Time**: 132.81 seconds (138.8 seconds total with load time)
-- **Date/Time**: 2025-11-14 11:58:31 EST
+- **Time**: 170.8 seconds (178.89 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:19:28 EST
 - **Examples**: 43
 - **Failures**: 0
 - **Pending**: 7
 
 ### System Specs - Huddles
 - **Status**: ✅ Complete
-- **Time**: 17.34 seconds (22.37 seconds total with load time)
-- **Date/Time**: 2025-11-14 12:00:50 EST
+- **Time**: 29.77 seconds (36.43 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:23:28 EST
 - **Examples**: 6
 - **Failures**: 0
 
 ### System Specs - Misc
 - **Status**: ✅ Complete
-- **Time**: 126.13 seconds (131.4 seconds total with load time)
-- **Date/Time**: 2025-11-14 12:01:12 EST
+- **Time**: 171.7 seconds (180.32 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:24:30 EST
 - **Examples**: 31
 - **Failures**: 0
 
 ### System Specs - Observations
 - **Status**: ✅ Complete
-- **Time**: 19.91 seconds (25.11 seconds total with load time)
-- **Date/Time**: 2025-11-14 12:03:23 EST
+- **Time**: 29.28 seconds (34.46 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:31:29 EST
 - **Examples**: 12
 - **Failures**: 0
 
 ### System Specs - Organizations/Teammates
 - **Status**: ✅ Complete
-- **Time**: 20.14 seconds (24.36 seconds total with load time)
-- **Date/Time**: 2025-11-14 12:03:48 EST
+- **Time**: 32.09 seconds (37.92 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:32:10 EST
 - **Examples**: 8
 - **Failures**: 0
 
 ### System Specs - People
 - **Status**: ✅ Complete
-- **Time**: 7.68 seconds (12.67 seconds total with load time)
-- **Date/Time**: 2025-11-14 12:04:13 EST
+- **Time**: 12.73 seconds (17.77 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:33:30 EST
 - **Examples**: 2
 - **Failures**: 0
 
 ### System Specs - Positions and Seats
 - **Status**: ✅ Complete (3 pending)
-- **Time**: 0.68 seconds (5.17 seconds total with load time)
-- **Date/Time**: 2025-11-14 12:04:26 EST
+- **Time**: 0.98 seconds (10.51 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:35:40 EST
 - **Examples**: 3
 - **Failures**: 0
 - **Pending**: 3
 
 ### System Specs - Teammates
 - **Status**: ✅ Complete (3 pending)
-- **Time**: 0.73 seconds (6.8 seconds total with load time)
-- **Date/Time**: 2025-11-14 12:04:33 EST
+- **Time**: 0.78 seconds (5.36 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:36:52 EST
 - **Examples**: 3
 - **Failures**: 0
 - **Pending**: 3
 
 ### ENM Specs
 - **Status**: ✅ Complete
-- **Time**: 31.72 seconds (39.76 seconds total with load time)
-- **Date/Time**: 2025-11-14 12:04:40 EST
+- **Time**: 34.66 seconds (39.15 seconds total with load time)
+- **Date/Time**: 2025-11-14 13:37:09 EST
 - **Examples**: 106
 - **Failures**: 0
 
 ## Total Summary
 
 ### Overall Summary
-- **Total Examples**: 2,707 (2,476 unit + 125 system + 106 ENM)
+- **Total Examples**: 2,711 (2,480 unit + 125 system + 106 ENM)
 - **Total Failures**: 0 ✅
 - **Total Pending**: 15 (1 model + 1 service + 3 audit + 1 check-in observations + 7 goals + 3 positions_and_seats + 3 teammates)
-- **Unit Specs**: ✅ All passing (2,476 examples, 0 failures)
+- **Unit Specs**: ✅ All passing (2,480 examples, 0 failures)
 - **System Specs**: ✅ All passing (125 examples, 0 failures)
 - **ENM Specs**: ✅ All passing (106 examples)
 
 ### Unit Specs Summary
-- **Total**: 2,476 examples, 0 failures
+- **Total**: 2,480 examples, 0 failures
   - Models: 995 (1 pending) ✅
-  - Controllers: 439 ✅
+  - Controllers: 443 ✅
   - Requests: 185 ✅
   - Decorators: 35 ✅
   - Policies: 187 ✅
@@ -250,14 +249,6 @@ Run in segments to avoid timeouts and identify issues more efficiently. Never ru
 ### Unit Spec Failures
 **None!** ✅ All unit specs are passing.
 
-**Fixed Issue**:
-- **File**: `spec/controllers/organizations/finalizations_controller_spec.rb:52`
-- **Fix Applied**: Updated test expectation to include `policy_class: PersonPolicy` keyword argument:
-  ```ruby
-  expect(controller).to receive(:authorize).with(employee, :view_check_ins?, hash_including(policy_class: PersonPolicy))
-  ```
-- **Status**: ✅ Fixed and verified - all controller specs now passing
-
 ### System Spec Failures
 **None!** ✅ All system specs are passing.
 
@@ -266,12 +257,12 @@ Run in segments to avoid timeouts and identify issues more efficiently. Never ru
 
 ## Notes
 
-- **Unit Specs**: ✅ Excellent - all passing! (2,476 examples, 0 failures)
+- **Unit Specs**: ✅ Excellent - all passing! (2,480 examples, 0 failures)
 - **System Specs**: ✅ Excellent - all passing! (125 examples, 0 failures)
 - **ENM Specs**: ✅ All passing (106 examples)
 - **Pending Tests**: 15 total - these are intentionally skipped with `xit` and don't affect suite status
-- **Total Execution Time**: Approximately 35 minutes for full suite when run in segments
-- **All Specs Status**: ✅ **PERFECT** - Zero failures across all 2,707 examples!
+- **Total Execution Time**: Approximately 41 minutes for full suite when run in segments
+- **All Specs Status**: ✅ **PERFECT** - Zero failures across all 2,711 examples!
 
 ## Next Steps
 

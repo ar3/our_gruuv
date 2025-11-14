@@ -383,7 +383,8 @@ class ApplicationController < ActionController::Base
     return nil unless session[:current_company_teammate_id]
     
     begin
-      Teammate.find(session[:current_company_teammate_id])
+      teammate = Teammate.find(session[:current_company_teammate_id])
+      ensure_company_teammate(teammate) || teammate
     rescue ActiveRecord::RecordNotFound
       nil
     end
@@ -417,7 +418,7 @@ class ApplicationController < ActionController::Base
     return nil unless person
     
     # Find active teammates (not terminated)
-    active_teammates = person.active_teammates
+    active_teammates = person.active_teammates.where(type: 'CompanyTeammate')
     
     # If person has active teammates, return the first one
     return active_teammates.first if active_teammates.any?
@@ -444,15 +445,17 @@ class ApplicationController < ActionController::Base
   def ensure_company_teammate(teammate)
     return nil unless teammate
     
+    # If teammate is already a CompanyTeammate for the root company, return it
+    return teammate if teammate.is_a?(CompanyTeammate)
+
+    # If person has active teammates, return the first one
+    active_teammates = teammate.person.active_teammates.where(type: 'CompanyTeammate')
+    return active_teammates.first if active_teammates.any?
+
     root_company = teammate.organization.root_company || teammate.organization
     return nil unless root_company.is_a?(Company)
     
-    # If teammate is already a CompanyTeammate for the root company, return it
-    if teammate.is_a?(CompanyTeammate) && teammate.organization == root_company
-      return teammate
-    end
-    
-    # Find or create CompanyTeammate for root company
+    # Find or create CompanyTeammate for root company... because the only way this is possible is if the person is a member of a department or team within a company.. this will make them a watcher of that company.
     teammate.person.teammates.find_or_create_by!(
       organization: root_company
     ) do |t|
