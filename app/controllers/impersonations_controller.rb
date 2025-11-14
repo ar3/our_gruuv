@@ -4,7 +4,21 @@ class ImpersonationsController < ApplicationController
   before_action :ensure_admin!
 
   def create
-    person = Person.find(params[:person_id])
+    # Accept either person_id or email parameter
+    if params[:email].present?
+      person = Person.find_by(email: params[:email])
+      unless person
+        flash[:error] = "No user found with email: #{params[:email]}"
+        redirect_back(fallback_location: root_path)
+        return
+      end
+    elsif params[:person_id].present?
+      person = Person.find(params[:person_id])
+    else
+      flash[:error] = "Either person_id or email must be provided"
+      redirect_back(fallback_location: root_path)
+      return
+    end
     
     # Find or create a teammate for the person (prefer active teammates)
     teammate = person.active_teammates.first || ensure_teammate_for_person(person)
