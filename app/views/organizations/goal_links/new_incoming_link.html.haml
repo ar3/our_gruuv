@@ -88,5 +88,5 @@
         = link_to @return_url, class: 'btn btn-outline-secondary' do
           %i.bi.bi-arrow-left.me-1
           = @return_text || 'Cancel'
-        = f.submit 'Create Links', class: 'btn btn-primary'
+        = f.submit 'Create Links', class: 'btn btn-primary', id: 'create-existing-links-btn', data: { test_id: 'create-existing-links' }
 

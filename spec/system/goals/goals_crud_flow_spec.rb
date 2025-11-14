@@ -437,7 +437,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       check "goal_ids_#{goal2.id}"
       
       # Submit form
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-existing-links-btn'
       
       # Should be redirected to goal show page with success
       expect(page).to have_current_path(organization_goal_path(organization, goal1))

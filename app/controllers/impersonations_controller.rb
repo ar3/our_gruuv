@@ -21,7 +21,7 @@ class ImpersonationsController < ApplicationController
     end
     
     # Find or create a teammate for the person (prefer active teammates)
-    teammate = person.active_teammates.type('CompanyTeammate').first || ensure_teammate_for_person(person)
+    teammate = person.active_teammates.where(type: 'CompanyTeammate').first || ensure_teammate_for_person(person)
     
     if start_impersonation(teammate)
       flash[:notice] = "Now impersonating #{person.display_name}"

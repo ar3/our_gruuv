@@ -42,7 +42,7 @@
         = link_to @return_url, class: 'btn btn-outline-secondary' do
           %i.bi.bi-arrow-left.me-1
           = @return_text || 'Cancel'
-        = f.submit 'Create Links', class: 'btn btn-primary'
+        = f.submit 'Create Links', class: 'btn btn-primary', id: 'create-bulk-links-btn', data: { test_id: 'create-bulk-links' }
 
       %hr.mt-4.mb-4
       - if @available_goals_with_status.any?
@@ -96,5 +96,5 @@
         = link_to @return_url, class: 'btn btn-outline-secondary' do
           %i.bi.bi-arrow-left.me-1
           = @return_text || 'Cancel'
-        = f.submit 'Create Links', class: 'btn btn-primary'
+        = f.submit 'Create Links', class: 'btn btn-primary', id: 'create-existing-links-btn', data: { test_id: 'create-existing-links' }
 

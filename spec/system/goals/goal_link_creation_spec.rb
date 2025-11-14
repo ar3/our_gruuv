@@ -110,7 +110,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       
       check "goal_ids_#{goal2.id}"
       
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-existing-links-btn'
       
       # Check for toast element in DOM (may not be visible immediately due to JS)
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
@@ -127,7 +127,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       check "goal_ids_#{goal2.id}"
       check "goal_ids_#{goal3.id}"
       
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-existing-links-btn'
       
       # Check for toast element in DOM (may not be visible immediately due to JS)
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
@@ -142,7 +142,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
     it 'shows validation error when no goals selected and no bulk titles provided' do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-existing-links-btn'
       
       expect(page).to have_content(/error|required|select/i)
       expect(page).to have_current_path(new_outgoing_link_organization_goal_goal_links_path(organization, goal1))
@@ -188,7 +188,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_incoming_link_organization_goal_goal_links_path(organization, goal1)
       
       check "goal_ids_#{goal2.id}"
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-existing-links-btn'
       
       # Check for toast element in DOM (may not be visible immediately due to JS)
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
@@ -206,7 +206,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: titles.join("\n")
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-bulk-links-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -221,7 +221,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-bulk-links-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -237,7 +237,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-bulk-links-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -254,7 +254,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-bulk-links-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -272,7 +272,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-bulk-links-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -288,7 +288,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: ""
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-bulk-links-btn'
       
       expect(page).to have_css('.toast, .alert', text: /select at least one|provide at least one/i, visible: :hidden)
       expect(page.current_path).to include('new_outgoing_link')
@@ -302,7 +302,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_incoming_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-existing-links-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -318,7 +318,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_incoming_link_organization_goal_goal_links_path(organization, goal1)
       
       fill_in 'bulk_goal_titles', with: unique_title
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-existing-links-btn'
       
       # Wait for redirect and success message before checking database
       expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
@@ -337,7 +337,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       
       check "goal_ids_#{goal2.id}"
       fill_in 'bulk_goal_titles', with: "Bulk Goal"
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-existing-links-btn'
       
       # Check for toast element in DOM (may not be visible immediately due to JS)
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
@@ -359,7 +359,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
       # Try to submit without selecting anything
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-existing-links-btn'
       
       expect(page).to have_css('.toast, .alert', text: /select at least one|provide at least one/i, visible: :hidden)
       expect(page.current_path).to include('new_outgoing_link')
@@ -370,7 +370,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1, return_url: return_url, return_text: 'Goal')
       
       check "goal_ids_#{goal2.id}"
-      click_button 'Create Links'
+      click_button 'Create Links', id: 'create-existing-links-btn'
       
       expect(page).to have_current_path(return_url)
       # Check for toast element in DOM (may not be visible immediately due to JS)
@@ -381,8 +381,8 @@ RSpec.describe 'Goal Link Creation', type: :system do
       return_url = organization_goal_path(organization, goal1)
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1, return_url: return_url, return_text: 'Goal')
       
-      # Find the cancel link - it should have the return text
-      click_link href: return_url
+      # Find the cancel link - there are two, use the first one
+      first('a.btn-outline-secondary', text: /Goal|Cancel/).click
       
       expect(page).to have_current_path(return_url)
       expect(GoalLink.count).to eq(0)
