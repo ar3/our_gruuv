@@ -24,7 +24,7 @@ class PositionTypeMaturityService
     return 6 unless phase_six_met?
     return 7 unless phase_seven_met?
     return 8 unless phase_eight_met?
-    return 9 unless phase_nine_met?
+    return 8 unless phase_nine_met?  # If phase 8 is met but phase 9 is not, return 8
     9
   end
 
@@ -92,33 +92,39 @@ class PositionTypeMaturityService
   # Phase 3: At least one position has employment_tenure AND there exists ≥1 AssignmentCheckIn for required assignments
   def phase_three_met?
     # Check if any position has an employment tenure
-    positions_with_tenures = position_type.positions
-                                         .joins(:employment_tenures)
-                                         .distinct
+    position_ids = position_type.positions.pluck(:id)
+    return false if position_ids.empty?
+
+    positions_with_tenures = EmploymentTenure
+      .where(position_id: position_ids)
+      .active  # Only count active employment tenures
+      .distinct
+      .pluck(:position_id)
 
     return false if positions_with_tenures.empty?
 
-    # Get all required assignments for positions with tenures
-    required_assignments = PositionAssignment
-      .where(position: positions_with_tenures, assignment_type: 'required')
-      .includes(:assignment)
-      .map(&:assignment)
+    # Get all required assignment IDs for positions with tenures
+    required_assignment_ids = PositionAssignment
+      .where(position_id: positions_with_tenures, assignment_type: 'required')
+      .pluck(:assignment_id)
+      .uniq
 
-    return false if required_assignments.empty?
+    return false if required_assignment_ids.empty?
 
     # Check if there's at least one AssignmentCheckIn for any of these assignments
     # We need to find teammates associated with employment tenures for these positions
     employment_tenures = EmploymentTenure
-      .where(position: positions_with_tenures)
+      .where(position_id: positions_with_tenures)
+      .active  # Only count active employment tenures
       .includes(:teammate)
 
-    teammates = employment_tenures.map(&:teammate).compact.uniq
+    teammate_ids = employment_tenures.map(&:teammate).compact.uniq.map(&:id)
 
-    return false if teammates.empty?
+    return false if teammate_ids.empty?
 
     # Check for AssignmentCheckIns for these teammates and required assignments
     AssignmentCheckIn
-      .where(teammate: teammates, assignment: required_assignments)
+      .where(teammate_id: teammate_ids, assignment_id: required_assignment_ids)
       .exists?
   end
 

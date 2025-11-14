@@ -1,6 +1,6 @@
 .mb-3
   = form.label :manager_id, "Manager (Optional)", class: "form-label"
   = form.collection_select :manager_id, managers, :id, :display_name,
-    { prompt: 'Select a manager (optional)', include_blank: 'No Manager', selected: form.model.manager_id },
+    { prompt: 'Select a manager (optional)', include_blank: 'No Manager', selected: form.object.manager_id },
     { class: "form-select", disabled: disabled }
 

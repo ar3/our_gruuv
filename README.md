@@ -21,8 +21,15 @@ This is your central guide to understanding OurGruuv's architecture, patterns, a
 
 To run the full spec suite, use the following command because there are spec leaks that I haven't spent the time to debug:
 
-`1. Review our testing strategy doc`
-`2. Run all specs in segments. Make sure you run each segment and each folder of the system specs separately in different commands, updating the last_full_spec_suite doc after every folder/segment. Do not run multiple segments/folders in one command. Remember to get the real date/time.`
+---
+
+1. Review our testing strategy doc
+2. Run all specs in segments. Make sure you run each segment and each folder of the system specs separately in different commands, updating the last_full_spec_suite doc after every folder/segment. Do not run multiple segments/folders in one command. Remember to get the real date/time.
+
+Review our coding standards and rules, which can be found linked in the readme
+
+
+---
 
 ### 🎯 For AI Agents
 

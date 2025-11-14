@@ -18,11 +18,28 @@ class EmploymentTenureUpdateForm < Reform::Form
 
   # Override validate to store original params
   def validate(params)
-    # Store original params with both string and symbol keys for compatibility
-    @original_params = params.dup
-    # Convert to hash with indifferent access
-    @original_params = @original_params.with_indifferent_access if @original_params.respond_to?(:with_indifferent_access)
-    super
+    # Store original params BEFORE calling super (Reform may filter/modify params)
+    # Handle ActionController::Parameters by converting to hash
+    params_hash = params.respond_to?(:to_unsafe_h) ? params.to_unsafe_h : (params.respond_to?(:to_h) ? params.to_h : params)
+    @original_params = params_hash.dup
+    # Convert to hash with string keys for consistency
+    @original_params = @original_params.stringify_keys if @original_params.respond_to?(:stringify_keys)
+    # Ensure we have a plain hash
+    @original_params = @original_params.to_h if @original_params.respond_to?(:to_h) && !@original_params.is_a?(Hash)
+    
+    # Debug: Log termination_date before Reform processes it
+    if @original_params['termination_date'].present?
+      Rails.logger.debug "DEBUG EmploymentTenureUpdateForm: termination_date BEFORE super: #{@original_params['termination_date'].inspect}, class: #{@original_params['termination_date'].class}"
+    end
+    
+    result = super
+    
+    # Debug: Log termination_date after Reform processes it
+    if respond_to?(:termination_date) && termination_date.present?
+      Rails.logger.debug "DEBUG EmploymentTenureUpdateForm: termination_date AFTER super: #{termination_date.inspect}, class: #{termination_date.class}"
+    end
+    
+    result
   end
 
   # Reform automatically handles save - we customize the logic
@@ -30,15 +47,56 @@ class EmploymentTenureUpdateForm < Reform::Form
     return false unless valid?
     
     # Call the service instead of saving the model directly
-    # Use original params so service can detect what was actually provided vs what came from model
-    # Convert to symbol keys for service
+    # Build service params from @original_params (what was actually submitted)
+    # The service needs all submitted params to detect changes correctly
     service_params = {}
-    @original_params.each do |key, value|
-      service_params[key.to_sym] = value
+    
+    # Use @original_params as primary source (what was actually submitted)
+    # This is critical - the service needs to know what was actually submitted to detect changes
+    if @original_params && @original_params.any?
+      @original_params.each do |key, value|
+        key_sym = key.to_sym
+        # Convert ID values to integers if they're strings
+        if [:manager_id, :position_id, :seat_id].include?(key_sym)
+          if value.is_a?(String) && value.present?
+            service_params[key_sym] = value.to_i
+          elsif value.nil? || value == ''
+            service_params[key_sym] = nil
+          else
+            service_params[key_sym] = value
+          end
+        elsif key_sym == :termination_date
+          # Keep termination_date as string - don't convert it to integer
+          # Ensure it's a proper date string format
+          if value.present?
+            service_params[key_sym] = value.to_s.strip
+          else
+            service_params[key_sym] = nil
+          end
+        else
+          service_params[key_sym] = value
+        end
+      end
     end
     
+    # Fallback to form properties if @original_params not available
+    # But prefer @original_params since it contains what was actually submitted
+    service_params[:manager_id] ||= manager_id if respond_to?(:manager_id)
+    service_params[:position_id] ||= position_id if respond_to?(:position_id) && position_id.present?
+    service_params[:employment_type] ||= employment_type if respond_to?(:employment_type) && employment_type.present?
+    service_params[:seat_id] ||= seat_id if respond_to?(:seat_id)
+    # For termination_date, always use @original_params value if available, otherwise use form property
+    # But ensure it's a string, not converted to integer
+    if @original_params && @original_params['termination_date'].present?
+      service_params[:termination_date] = @original_params['termination_date'].to_s.strip
+    elsif respond_to?(:termination_date) && termination_date.present?
+      service_params[:termination_date] = termination_date.to_s.strip
+    end
+    service_params[:reason] ||= reason if respond_to?(:reason) && reason.present?
+    
     # Ensure position_id is always present (required field)
-    service_params[:position_id] ||= position_id
+    service_params[:position_id] ||= position_id if respond_to?(:position_id)
+    
     
     result = UpdateEmploymentTenureService.call(
       teammate: teammate,
@@ -79,8 +137,18 @@ class EmploymentTenureUpdateForm < Reform::Form
 
   def position_exists
     return if position_id.blank?
-    unless Position.exists?(id: position_id)
+    # Convert to integer if it's a string
+    pos_id = position_id.is_a?(String) ? position_id.to_i : position_id
+    
+    # Check if position exists
+    position = Position.find_by(id: pos_id)
+    unless position
       errors.add(:position_id, 'does not exist')
+      return
+    end
+    # Add validation check for position validity
+    unless position.valid?
+      errors.add(:position_id, 'is invalid - position level must be compatible with position type')
     end
   end
 

@@ -110,25 +110,26 @@
     - if @position_types&.any?
       - @position_types.each do |position_type|
         .card.mb-3
-          .card-header.d-flex.justify-content-between.align-items-center
-            .d-flex.align-items-center.flex-grow-1
-              %a.text-decoration-none.text-dark.fw-bold{"data-bs-toggle" => "collapse", "data-bs-target" => "#positionType#{position_type.id}", "aria-expanded" => "false", "aria-controls" => "positionType#{position_type.id}", style: "cursor: pointer;"}
-                %span.not-collapsed{id: "positionTypeExpandIcon#{position_type.id}"}
-                  %i.bi.bi-chevron-down.me-2
-                %span.collapsed{id: "positionTypeCollapseIcon#{position_type.id}"}
-                  %i.bi.bi-chevron-right.me-2
-                = position_type.external_title
-              %span.badge.bg-secondary.ms-2= "#{@seats_by_position_type[position_type].count} seat#{'s' if @seats_by_position_type[position_type].count != 1}"
-            .text-muted
-              %small= position_type.position_major_level.set_name
+          .card-header.d-flex.flex-column
+            .d-flex.justify-content-between.align-items-center
+              .d-flex.align-items-center.flex-grow-1
+                %a.text-decoration-none.text-dark.fw-bold{"data-bs-toggle" => "collapse", "data-bs-target" => "#positionType#{position_type.id}", "aria-expanded" => "false", "aria-controls" => "positionType#{position_type.id}", style: "cursor: pointer;"}
+                  %span.not-collapsed{id: "positionTypeExpandIcon#{position_type.id}"}
+                    %i.bi.bi-chevron-down.me-2
+                  %span.collapsed{id: "positionTypeCollapseIcon#{position_type.id}"}
+                    %i.bi.bi-chevron-right.me-2
+                  = position_type.external_title
+                %span.badge.bg-secondary.ms-2= "#{@seats_by_position_type[position_type].count} seat#{'s' if @seats_by_position_type[position_type].count != 1}"
+              .text-muted
+                %small= position_type.position_major_level.set_name
           
+            .mt-1.mb-1
+              = maap_maturity_status_bar(position_type)
+              = maap_maturity_next_steps_text(position_type)
+            
           .collapse{"id" => "positionType#{position_type.id}"}
             .card-body
               / MAAP Maturity Status Bar
-              .mb-3
-                = maap_maturity_status_bar(position_type)
-                = maap_maturity_next_steps_text(position_type)
-              
               / Seats Table
               - seats = @seats_by_position_type[position_type]
               - if seats.any?

@@ -30,6 +30,13 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       return
     end
     
+    # Load check-ins for the view (in case validation fails and we render :show)
+    @check_ins = PositionCheckIn
+                   .where(teammate: @teammate)
+                   .includes(:position_check_in_ratings)
+                   .order(created_at: :desc)
+    @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
+    
     # Load form data first (this sets @managers, @positions, @seats)
     company = organization.root_company || organization
     
@@ -62,7 +69,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     @form.current_person = current_person
     @form.teammate = @teammate
     
-    employment_params = params[:employment_tenure] || {}
+    employment_params = params[:employment_tenure_update] || params[:employment_tenure] || {}
     
     if @form.validate(employment_params) && @form.save
       redirect_to organization_teammate_position_path(organization, @teammate),

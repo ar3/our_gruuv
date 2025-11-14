@@ -12,6 +12,7 @@ class UpdateEmploymentTenureService
 
   def call
     ApplicationRecord.transaction do
+      
       # Detect what changed
       manager_changed = manager_id_changed?
       position_changed = position_id_changed?
@@ -25,8 +26,57 @@ class UpdateEmploymentTenureService
       needs_snapshot = major_changes || termination_date_provided
       
       if termination_date_provided
+        # Parse termination_date string to Date
+        term_date_param = @params[:termination_date]
+        
+        # Debug: Log what we're receiving
+        Rails.logger.debug "DEBUG UpdateEmploymentTenureService: termination_date param class: #{term_date_param.class}, value: #{term_date_param.inspect}"
+        
+        # Ensure we have a string - if it's already a Date, use it directly
+        parsed_date = if term_date_param.is_a?(Date)
+          term_date_param
+        elsif term_date_param.is_a?(Time) || term_date_param.is_a?(DateTime)
+          term_date_param.to_date
+        elsif term_date_param.is_a?(String)
+          # Handle YYYY-MM-DD format (HTML5 date input format)
+          date_str = term_date_param.strip
+          Rails.logger.debug "DEBUG UpdateEmploymentTenureService: date_str: #{date_str.inspect}"
+          # Validate format first - must be exactly YYYY-MM-DD
+          if date_str.match?(/\A\d{4}-\d{2}-\d{2}\z/)
+            Date.strptime(date_str, '%Y-%m-%d')
+          else
+            # Fallback to Date.parse for other formats
+            Date.parse(date_str)
+          end
+        elsif term_date_param.is_a?(Integer) || term_date_param.is_a?(Float)
+          # If we get a number, it's likely corrupted - try to reconstruct from it
+          num_str = term_date_param.to_s
+          Rails.logger.debug "DEBUG UpdateEmploymentTenureService: Received numeric date param: #{term_date_param.inspect}, num_str: #{num_str.inspect}"
+          if num_str.length == 8 && num_str.match?(/\A\d{8}\z/)
+            # Might be YYYYMMDD format without dashes (e.g., 20251128)
+            Date.strptime(num_str, '%Y%m%d')
+          else
+            # Can't parse as date - raise error
+            raise ArgumentError, "Invalid date parameter (numeric): #{term_date_param}. Expected string format YYYY-MM-DD."
+          end
+        else
+          # Convert to string and parse
+          date_str = term_date_param.to_s.strip
+          Rails.logger.debug "DEBUG UpdateEmploymentTenureService: Converting to string: #{date_str.inspect}"
+          if date_str.match?(/\A\d{4}-\d{2}-\d{2}\z/)
+            Date.strptime(date_str, '%Y-%m-%d')
+          elsif date_str.match?(/\A\d{8}\z/)
+            # Handle YYYYMMDD format without dashes
+            Date.strptime(date_str, '%Y%m%d')
+          else
+            Date.parse(date_str)
+          end
+        end
+        
+        Rails.logger.debug "DEBUG UpdateEmploymentTenureService: parsed_date: #{parsed_date.inspect}"
+        
         # Update current tenure's ended_at
-        @current_tenure.update!(ended_at: @params[:termination_date])
+        @current_tenure.update!(ended_at: parsed_date)
         updated_tenure = @current_tenure
       elsif needs_new_tenure
         # End current tenure and create new one
@@ -114,7 +164,15 @@ class UpdateEmploymentTenureService
   end
 
   def create_maap_snapshot(tenure)
-    effective_date = params[:termination_date] || Date.current
+    effective_date = if params[:termination_date].present?
+      if params[:termination_date].is_a?(String)
+        Date.strptime(params[:termination_date], '%Y-%m-%d')
+      else
+        params[:termination_date]
+      end
+    else
+      Date.current
+    end
     
     maap_data = {
       employment_tenure: {

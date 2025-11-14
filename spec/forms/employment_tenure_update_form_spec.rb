@@ -187,10 +187,17 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
 
   describe '#save' do
     it 'calls UpdateEmploymentTenureService with validated params' do
-      form.manager_id = new_manager.id
-      form.position_id = position.id
-      form.employment_type = 'full_time'
-      form.seat_id = seat.id
+      form.current_person = create(:person)
+      form.teammate = teammate
+      
+      # Validate with params to set up @original_params
+      params = {
+        manager_id: new_manager.id,
+        position_id: position.id,
+        employment_type: 'full_time',
+        seat_id: seat.id
+      }
+      form.validate(params)
       
       expect(UpdateEmploymentTenureService).to receive(:call).with(
         teammate: teammate,
@@ -204,8 +211,6 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
         created_by: anything
       ).and_return(Result.ok(current_tenure))
       
-      form.current_person = create(:person)
-      form.teammate = teammate
       form.save
     end
 
