@@ -1,0 +1,64 @@
+/ 4x4 Matrix: Categories (rows) × Timeframes (columns)
+:css
+  .goals-overview-table th:nth-child(1),
+  .goals-overview-table td:nth-child(1) {
+    width: 20%;
+  }
+  .goals-overview-table th:nth-child(2),
+  .goals-overview-table td:nth-child(2),
+  .goals-overview-table th:nth-child(3),
+  .goals-overview-table td:nth-child(3),
+  .goals-overview-table th:nth-child(4),
+  .goals-overview-table td:nth-child(4),
+  .goals-overview-table th:nth-child(5),
+  .goals-overview-table td:nth-child(5) {
+    width: 15%;
+  }
+  .goals-overview-table th:nth-child(6),
+  .goals-overview-table td:nth-child(6) {
+    width: 20%;
+  }
+.table-responsive
+  %table.table.table-borderless.table-hover.table-sm.text-center.goals-overview-table
+    %thead
+      %tr
+        %th
+        %th{"data-bs-toggle" => "tooltip", "data-bs-title" => "Goals with target dates within the next 3 months"}
+          Now
+        %th{"data-bs-toggle" => "tooltip", "data-bs-title" => "Goals with target dates 3-9 months away"}
+          Next
+        %th{"data-bs-toggle" => "tooltip", "data-bs-title" => "Goals with target dates 9+ months away"}
+          Later
+        %th{"data-bs-toggle" => "tooltip", "data-bs-title" => "Goals that haven't been started yet or have invalid/missing target dates"}
+          Not Started/Invalid
+        %th
+    %tbody
+      %tr
+        %td.fw-bold.text-end Visions
+        %td= @spotlight_stats[:visions_now]
+        %td -
+        %td -
+        %td= @spotlight_stats[:visions_not_started]
+        %td.fw-bold.text-start Visions
+      %tr
+        %td.fw-bold.text-end Objectives
+        %td= @spotlight_stats[:objectives_now]
+        %td= @spotlight_stats[:objectives_next]
+        %td= @spotlight_stats[:objectives_later]
+        %td= @spotlight_stats[:objectives_not_started]
+        %td.fw-bold.text-start Objectives
+      %tr
+        %td.fw-bold.text-end Outcomes
+        %td= @spotlight_stats[:outcomes_now]
+        %td= @spotlight_stats[:outcomes_next]
+        %td= @spotlight_stats[:outcomes_later]
+        %td= @spotlight_stats[:outcomes_not_started]
+        %td.fw-bold.text-start Outcomes
+      %tr
+        %td.fw-bold.text-end Stepping Stones / Activities
+        %td= @spotlight_stats[:stepping_stones_now]
+        %td= @spotlight_stats[:stepping_stones_next]
+        %td= @spotlight_stats[:stepping_stones_later]
+        %td= @spotlight_stats[:stepping_stones_not_started]
+        %td.fw-bold.text-start Stepping Stones / Activities
+

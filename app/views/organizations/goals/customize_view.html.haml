@@ -1,0 +1,172 @@
+- content_for :header do
+  Customize Goals View
+- content_for :return_url do
+  = @return_url || organization_goals_path(@organization)
+- content_for :return_text do
+  = @return_text || 'Back to Goals'
+
+= form_with url: update_view_organization_goals_path(@organization), method: :patch, local: true do |form|
+  / Preserve owner selection
+  - if @current_filters[:owner_type].present? && @current_filters[:owner_id].present?
+    = hidden_field_tag :owner_id, "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"
+  
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Goals You See
+    
+    .col-md-8
+      / Filters Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Goals You See
+          
+          .mb-3
+            %label.form-label Timeframe
+            .form-check
+              = radio_button_tag 'timeframe', 'all', (@current_filters[:timeframe].blank? || @current_filters[:timeframe] == 'all'), class: 'form-check-input', id: 'timeframe_all'
+              = label_tag 'timeframe_all', 'All', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'timeframe', 'now', @current_filters[:timeframe] == 'now', class: 'form-check-input', id: 'timeframe_now'
+              = label_tag 'timeframe_now', 'Now', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'timeframe', 'next', @current_filters[:timeframe] == 'next', class: 'form-check-input', id: 'timeframe_next'
+              = label_tag 'timeframe_next', 'Next', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'timeframe', 'later', @current_filters[:timeframe] == 'later', class: 'form-check-input', id: 'timeframe_later'
+              = label_tag 'timeframe_later', 'Later', class: 'form-check-label'
+          
+          .mb-3
+            %label.form-label Goal Type
+            .form-check
+              = check_box_tag 'goal_type[]', 'inspirational_objective', @current_filters[:goal_type]&.include?('inspirational_objective'), class: 'form-check-input', id: 'goal_type_objective'
+              = label_tag 'goal_type_objective', 'Inspirational Objective', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'goal_type[]', 'qualitative_key_result', @current_filters[:goal_type]&.include?('qualitative_key_result'), class: 'form-check-input', id: 'goal_type_qualitative'
+              = label_tag 'goal_type_qualitative', 'Qualitative Key Result', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'goal_type[]', 'quantitative_key_result', @current_filters[:goal_type]&.include?('quantitative_key_result'), class: 'form-check-input', id: 'goal_type_quantitative'
+              = label_tag 'goal_type_quantitative', 'Quantitative Key Result', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'goal_type[]', 'stepping_stone_activity', @current_filters[:goal_type]&.include?('stepping_stone_activity'), class: 'form-check-input', id: 'goal_type_stepping'
+              = label_tag 'goal_type_stepping', 'Stepping Stone Activity', class: 'form-check-label'
+          
+          .mb-3
+            %label.form-label Status
+            .form-check
+              = check_box_tag 'status[]', 'draft', @current_filters[:status]&.include?('draft'), class: 'form-check-input', id: 'status_draft'
+              = label_tag 'status_draft', 'Draft', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'status[]', 'active', @current_filters[:status]&.include?('active'), class: 'form-check-input', id: 'status_active'
+              = label_tag 'status_active', 'Active', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'status[]', 'completed', @current_filters[:status]&.include?('completed'), class: 'form-check-input', id: 'status_completed'
+              = label_tag 'status_completed', 'Completed', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'status[]', 'cancelled', @current_filters[:status]&.include?('cancelled'), class: 'form-check-input', id: 'status_cancelled'
+              = label_tag 'status_cancelled', 'Cancelled', class: 'form-check-label'
+  
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Order You See Them In
+    
+    .col-md-8
+      / Sort Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Order You See Them In
+          .mb-3
+            %label.form-label Sort By
+            - sort_options = [['Most Likely Date', 'most_likely_target_date'], ['Earliest Date', 'earliest_target_date'], ['Latest Date', 'latest_target_date'], ['Created Date', 'created_at'], ['Title (A-Z)', 'title']]
+            = select_tag 'sort', options_for_select(sort_options, @current_sort), class: 'form-select', id: 'sort_select'
+          .mb-3
+            %label.form-label Direction
+            - direction_options = [['Ascending', 'asc'], ['Descending', 'desc']]
+            = select_tag 'direction', options_for_select(direction_options, @current_filters[:direction] || 'asc'), class: 'form-select', id: 'direction_select'
+  
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select How They Appear
+    
+    .col-md-8
+      / View Style Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select How They Appear
+          .form-check
+            = radio_button_tag 'view', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
+            = label_tag 'view_table', class: 'form-check-label' do
+              %i.bi.bi-table.me-2
+              Table View
+          .form-check
+            = radio_button_tag 'view', 'cards', @current_view == 'cards', class: 'form-check-input', id: 'view_cards'
+            = label_tag 'view_cards', class: 'form-check-label' do
+              %i.bi.bi-grid.me-2
+              Card View
+          .form-check
+            = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
+            = label_tag 'view_list', class: 'form-check-label' do
+              %i.bi.bi-list.me-2
+              List View
+          .form-check
+            = radio_button_tag 'view', 'network', @current_view == 'network', class: 'form-check-input', id: 'view_network'
+            = label_tag 'view_network', class: 'form-check-label' do
+              %i.bi.bi-diagram-3.me-2
+              Network View
+          .form-check
+            = radio_button_tag 'view', 'tree', @current_view == 'tree', class: 'form-check-input', id: 'view_tree'
+            = label_tag 'view_tree', class: 'form-check-label' do
+              %i.bi.bi-diagram-2.me-2
+              Tree View
+          .form-check
+            = radio_button_tag 'view', 'nested', @current_view == 'nested', class: 'form-check-input', id: 'view_nested'
+            = label_tag 'view_nested', class: 'form-check-label' do
+              %i.bi.bi-boxes.me-2
+              Nested View
+          .form-check
+            = radio_button_tag 'view', 'timeline', @current_view == 'timeline', class: 'form-check-input', id: 'view_timeline'
+            = label_tag 'view_timeline', class: 'form-check-label' do
+              %i.bi.bi-calendar-event.me-2
+              Timeline View
+          .form-check
+            = radio_button_tag 'view', 'check-in', @current_view == 'check-in', class: 'form-check-input', id: 'view_check_in'
+            = label_tag 'view_check_in', class: 'form-check-label' do
+              %i.bi.bi-check-circle.me-2
+              Check-in View
+  
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select the Spotlight for Them
+    
+    .col-md-8
+      / Spotlight Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select the Spotlight for Them
+          .form-check
+            = radio_button_tag 'spotlight', 'goals_overview', (@current_spotlight.blank? || @current_spotlight == 'goals_overview'), class: 'form-check-input', id: 'spotlight_goals_overview'
+            = label_tag 'spotlight_goals_overview', 'Goals Overview', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'none', @current_spotlight == 'none', class: 'form-check-input', id: 'spotlight_none'
+            = label_tag 'spotlight_none', 'No Spotlight', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'top_priority', @current_spotlight == 'top_priority', class: 'form-check-input', id: 'spotlight_top_priority'
+            = label_tag 'spotlight_top_priority', 'Top Priority', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'recently_added', @current_spotlight == 'recently_added', class: 'form-check-input', id: 'spotlight_recently_added'
+            = label_tag 'spotlight_recently_added', 'Recently Added', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'overdue', @current_spotlight == 'overdue', class: 'form-check-input', id: 'spotlight_overdue'
+            = label_tag 'spotlight_overdue', 'Overdue', class: 'form-check-label'
+  
+  .row
+    .col-12
+      / Form Actions
+      .d-flex.gap-2.mt-4.mb-4
+        = form.submit 'Apply View', class: 'btn btn-primary'
+        = link_to 'Cancel', @return_url || organization_goals_path(@organization), class: 'btn btn-outline-secondary'
+
+

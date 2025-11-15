@@ -275,6 +275,113 @@ module GoalsHelper
     
     html
   end
+  
+  def confidence_percentage_options
+    options = [['Not Done (0%)', 0]]
+    (5..95).step(5).each do |percent|
+      options << ["#{percent}%", percent]
+    end
+    options << ['Done (100%)', 100]
+    options
+  end
+  
+  def current_week_start
+    Date.current.beginning_of_week(:monday)
+  end
+  
+  def current_week_range
+    start = current_week_start
+    finish = start.end_of_week(:sunday)
+    "#{start.strftime('%a, %b %d')} - #{finish.strftime('%a, %b %d, %Y')}"
+  end
+  
+  def goal_check_in_tooltip_content(check_in)
+    lines = []
+    lines << "<strong>Week:</strong> #{check_in.week_display}"
+    lines << "<strong>Confidence:</strong> #{check_in.confidence_percentage}%"
+    if check_in.confidence_reason.present?
+      lines << "<strong>Reason:</strong> #{check_in.confidence_reason}"
+    end
+    lines << "<strong>Reported by:</strong> #{check_in.confidence_reporter.display_name}"
+    lines.join('<br>')
+  end
+  
+  def calculate_goals_overview_stats(goals)
+    stats = {
+      visions_now: 0,
+      visions_not_started: 0,
+      objectives_now: 0,
+      objectives_next: 0,
+      objectives_later: 0,
+      objectives_not_started: 0,
+      outcomes_now: 0,
+      outcomes_next: 0,
+      outcomes_later: 0,
+      outcomes_not_started: 0,
+      stepping_stones_now: 0,
+      stepping_stones_next: 0,
+      stepping_stones_later: 0,
+      stepping_stones_not_started: 0
+    }
+    
+    goals.each do |goal|
+      # Visions: inspirational_objective with no due date
+      if goal.goal_type == 'inspirational_objective' && goal.most_likely_target_date.nil?
+        if goal.started_at.present?
+          stats[:visions_now] += 1
+        else
+          stats[:visions_not_started] += 1
+        end
+      # Objectives: inspirational_objective with due date
+      elsif goal.goal_type == 'inspirational_objective' && goal.most_likely_target_date.present?
+        if goal.started_at.nil?
+          stats[:objectives_not_started] += 1
+        else
+          timeframe = goal.timeframe
+          case timeframe
+          when :now
+            stats[:objectives_now] += 1
+          when :next
+            stats[:objectives_next] += 1
+          when :later
+            stats[:objectives_later] += 1
+          end
+        end
+      # Outcomes: qualitative or quantitative key results
+      elsif goal.goal_type.in?(['qualitative_key_result', 'quantitative_key_result'])
+        if goal.most_likely_target_date.nil? || goal.started_at.nil?
+          stats[:outcomes_not_started] += 1
+        else
+          timeframe = goal.timeframe
+          case timeframe
+          when :now
+            stats[:outcomes_now] += 1
+          when :next
+            stats[:outcomes_next] += 1
+          when :later
+            stats[:outcomes_later] += 1
+          end
+        end
+      # Stepping Stones: stepping_stone_activity
+      elsif goal.goal_type == 'stepping_stone_activity'
+        if goal.started_at.nil? || goal.most_likely_target_date.nil?
+          stats[:stepping_stones_not_started] += 1
+        else
+          timeframe = goal.timeframe
+          case timeframe
+          when :now
+            stats[:stepping_stones_now] += 1
+          when :next
+            stats[:stepping_stones_next] += 1
+          when :later
+            stats[:stepping_stones_later] += 1
+          end
+        end
+      end
+    end
+    
+    stats
+  end
 end
 
 

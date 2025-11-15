@@ -1,0 +1,40 @@
+.row
+  - @goals.each do |goal|
+    .col-md-6.col-lg-4.mb-4
+      .card.h-100{class: goal_warning_class(goal)}
+        .card-body
+          %h5.card-title
+            = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
+            - if goal.should_show_warning?
+              %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
+          %p.card-text
+            %span.badge.me-2{class: goal_category_badge_class(goal)}
+              = goal_category_label(goal)
+            %span.badge.me-2{class: timeframe_badge_class(goal.timeframe), "data-bs-toggle" => "tooltip", "data-bs-title" => timeframe_tooltip_text(goal)}
+              = goal.timeframe.to_s.humanize
+            %span.badge.me-2{class: status_badge_class(goal.status)}
+              = goal.status.to_s.humanize
+            - if goal.most_likely_target_date.present?
+              %br
+              %small.text-muted
+                %i.bi.bi-calendar.me-1
+                = goal.most_likely_target_date.strftime('%b %d, %Y')
+        .card-footer.bg-transparent.border-top-0
+          %small.text-muted
+            - if goal.owner_type == 'Teammate'
+              Owner: #{goal.owner.person.display_name}
+            - elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
+              Owner: #{goal.owner.display_name}
+            - else
+              Owner: #{goal.owner.display_name}
+            - if goal.outgoing_links.any? || goal.incoming_links.any?
+              |  • 
+              - links = []
+              - links << pluralize(goal.outgoing_links.count, 'child') if goal.outgoing_links.any?
+              - links << pluralize(goal.incoming_links.count, 'parent') if goal.incoming_links.any?
+              = links.join(', ')
+          .mt-2
+            = link_to organization_goal_path(@organization, goal), class: "btn btn-outline-primary btn-sm" do
+              %i.bi.bi-eye
+              View
+

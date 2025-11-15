@@ -1,0 +1,22 @@
+/ Default spotlight display
+.row
+  .col-md-8
+    .row.text-center
+      .col-3
+        .h3.text-primary= @goals.count
+        %small.text-muted Total Goals
+      .col-3
+        .h3.text-success= @goals.active.count
+        %small.text-muted Active Goals
+      .col-3
+        .h3.text-info= @goals.now.count
+        %small.text-muted Now Timeframe
+      .col-3
+        .h3.text-warning= @goals.select { |g| g.became_top_priority.present? }.count
+        %small.text-muted Top Priority
+  .col-md-4
+    - if @goals.any?
+      .alert.alert-success.small
+        %i.bi.bi-check-circle.me-2
+        %strong #{pluralize(@goals.count, 'goal')} found!
+

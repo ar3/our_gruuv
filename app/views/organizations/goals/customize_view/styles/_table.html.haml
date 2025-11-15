@@ -1,0 +1,39 @@
+.table-responsive
+  %table.table.table-hover
+    %thead
+      %tr
+        %th Title
+        %th Type
+        %th Timeframe
+        %th Status
+        %th Children
+        %th Parents
+        %th Owner
+    %tbody
+      - @goals.each do |goal|
+        %tr{class: goal_warning_class(goal)}
+          %td
+            = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
+          %td
+            %span.badge{class: goal_category_badge_class(goal)}
+              = goal_category_label(goal)
+            - if goal.should_show_warning?
+              %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
+          %td
+            %span.badge{class: timeframe_badge_class(goal.timeframe), "data-bs-toggle" => "tooltip", "data-bs-title" => timeframe_tooltip_text(goal)}
+              = goal.timeframe.to_s.humanize
+          %td
+            %span.badge{class: status_badge_class(goal.status)}
+              = goal.status.to_s.humanize
+          %td
+            = goal.outgoing_links.count
+          %td
+            = goal.incoming_links.count
+          %td
+            - if goal.owner_type == 'Teammate'
+              = goal.owner.person.display_name
+            - elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
+              = goal.owner.display_name
+            - else
+              = goal.owner.display_name
+

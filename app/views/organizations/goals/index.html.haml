@@ -17,9 +17,10 @@
         %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be a teammate to create goals"}
 
 - content_for :header_action do
-  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#goalsFilterModal", type: "button"}
-    %i.bi.bi-funnel.me-2
-    Filter & Sort
+  - customize_params = params.except(:controller, :action, :page).permit!.to_h
+  = link_to customize_view_organization_goals_path(@organization, customize_params), class: "btn btn-outline-secondary" do
+    %i.bi.bi-sliders.me-2
+    Customize View
 
 / Owner Selection Section
 .row.justify-content-center.mb-4
@@ -30,7 +31,7 @@
           .row.align-items-end
             .col-md-10
               %label.form-label.fw-bold.fs-5.mb-2 Select Owner
-              = select_tag :owner_id, options_for_select(available_goal_owners, "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"), { include_blank: 'Select an owner...', class: "form-select form-select-lg", required: true, id: "owner-select" }
+              = select_tag :owner_id, options_for_select(available_goal_owners, "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"), { class: "form-select form-select-lg", required: true, id: "owner-select" }
               %small.form-text.text-muted Choose who owns the goals you want to view
             .col-md-2
               = f.submit "Go", class: "btn btn-primary btn-lg w-100"
@@ -52,48 +53,42 @@
           - if @current_filters[:spotlight].present?
             = hidden_field_tag :spotlight, @current_filters[:spotlight]
 
-/ Spotlight Section (optional based on spotlight param)
-- if @current_filters[:spotlight].present? && @current_filters[:spotlight] != 'none'
-  .row.justify-content-center.mb-4
-    .col-lg-12
-      .card.border-0.shadow-sm
-        .card-body
-          .row
-            .col-md-8
-              .row.text-center
-                .col-3
-                  .h3.text-primary= @goals.count
-                  %small.text-muted Total Goals
-                .col-3
-                  .h3.text-success= @goals.active.count
-                  %small.text-muted Active Goals
-                .col-3
-                  .h3.text-info= @goals.now.count
-                  %small.text-muted Now Timeframe
-                .col-3
-                  .h3.text-warning= @goals.select { |g| g.became_top_priority.present? }.count
-                  %small.text-muted Top Priority
-          .col-md-4
-            - if @goals.any?
-              .alert.alert-success.small
-                %i.bi.bi-check-circle.me-2
-                %strong #{pluralize(@goals.count, 'goal')} found!
-        .card-footer.bg-light
-          .row.align-items-center
-            .col-md-6
-              %small.text-muted
-                %i.bi.bi-funnel.me-1
-                Filters: #{@current_filters[:timeframe] || 'All'} / #{@current_filters[:goal_type] || 'All'} / #{@current_filters[:status] || 'All'}
+/ Spotlight Section (always shown)
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        - case @current_spotlight
+        - when 'goals_overview'
+          = render partial: 'organizations/goals/customize_view/spotlights/goals_overview'
+        - when 'top_priority'
+          = render partial: 'organizations/goals/customize_view/spotlights/top_priority'
+        - when 'recently_added'
+          = render partial: 'organizations/goals/customize_view/spotlights/recently_added'
+        - when 'overdue'
+          = render partial: 'organizations/goals/customize_view/spotlights/overdue'
+        - else
+          = render partial: 'organizations/goals/customize_view/spotlights/default'
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-funnel.me-1
+              Filters: #{@current_filters[:timeframe] || 'All'} / #{@current_filters[:goal_type] || 'All'} / #{@current_filters[:status] || 'All'}
+              - if @view_style == 'check-in'
                 %br
-                %i.bi.bi-sort-down.me-1
-                Sort: #{@current_filters[:sort] || 'Most Likely Date'} (#{@current_filters[:direction] || 'asc'})
-            .col-md-6.text-end
-              %small.text-muted
-                %i.bi.bi-table.me-1
-                View: #{@view_style.capitalize}
-                %br
-                %i.bi.bi-eye.me-1
-                Spotlight: #{@current_filters[:spotlight]&.humanize || 'None'}
+                %i.bi.bi-check-circle.me-1
+                Check-in Eligible (applied because of the view style)
+              %br
+              %i.bi.bi-sort-down.me-1
+              Sort: #{@current_filters[:sort] || 'Most Likely Date'} (#{@current_filters[:direction] || 'asc'})
+          .col-md-6.text-end
+            %small.text-muted
+              %i.bi.bi-table.me-1
+              View: #{@view_style.capitalize}
+              %br
+              %i.bi.bi-eye.me-1
+              Spotlight: #{@current_spotlight&.humanize || 'None'}
 
 / Performance warning for visualizations
 - if @show_performance_warning
@@ -109,54 +104,25 @@
   .col-lg-12
     - if @goals.any?
       - case @view_style
+      - when 'list'
+        = render partial: 'organizations/goals/customize_view/styles/list'
+      - when 'table'
+        = render partial: 'organizations/goals/customize_view/styles/table'
+      - when 'cards'
+        = render partial: 'organizations/goals/customize_view/styles/cards'
       - when 'network'
-        = render 'network_view'
+        = render partial: 'organizations/goals/customize_view/styles/network'
       - when 'tree'
-        = render 'tree_view'
+        = render partial: 'organizations/goals/customize_view/styles/tree'
       - when 'nested'
-        = render 'nested_view'
+        = render partial: 'organizations/goals/customize_view/styles/nested'
       - when 'timeline'
-        = render 'timeline_view'
+        = render partial: 'organizations/goals/customize_view/styles/timeline'
+      - when 'check-in'
+        = render partial: 'organizations/goals/customize_view/styles/check_in'
       - else
-        / Default table view
-        .table-responsive
-          %table.table.table-hover
-            %thead
-              %tr
-                %th Title
-                %th Type
-                %th Timeframe
-                %th Status
-                %th Children
-                %th Parents
-                %th Owner
-            %tbody
-              - @goals.each do |goal|
-                %tr{class: goal_warning_class(goal)}
-                  %td
-                    = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
-                  %td
-                    %span.badge{class: goal_category_badge_class(goal)}
-                      = goal_category_label(goal)
-                    - if goal.should_show_warning?
-                      %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
-                  %td
-                    %span.badge{class: timeframe_badge_class(goal.timeframe), "data-bs-toggle" => "tooltip", "data-bs-title" => timeframe_tooltip_text(goal)}
-                      = goal.timeframe.to_s.humanize
-                  %td
-                    %span.badge{class: status_badge_class(goal.status)}
-                      = goal.status.to_s.humanize
-                  %td
-                    = goal.outgoing_links.count
-                  %td
-                    = goal.incoming_links.count
-                  %td
-                    - if goal.owner_type == 'Teammate'
-                      = goal.owner.person.display_name
-                    - elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
-                      = goal.owner.display_name
-                    - else
-                      = goal.owner.display_name
+        / Default to list view
+        = render partial: 'organizations/goals/customize_view/styles/list'
     - else
       .alert.alert-info
         %h6.mb-2
@@ -169,76 +135,4 @@
             No goals found for the selected owner.
             = link_to "Create First Goal", new_organization_goal_path(@organization), class: "btn btn-primary btn-sm"
 
-/ Modal for Filter & Sort
-#goalsFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "goalsFilterModalLabel", tabindex: "-1"}
-  .modal-dialog.modal-lg
-    .modal-content
-      .modal-header
-        %h5.modal-title#goalsFilterModalLabel
-          %i.bi.bi-funnel.me-2
-          Filter & Sort Goals
-        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-      .modal-body
-        = form_with url: organization_goals_path(@organization), method: :get, local: true, id: "goals-filter-form" do |f|
-          / Preserve owner_id when submitting filter changes
-          - if @current_filters[:owner_type].present? && @current_filters[:owner_id].present?
-            = hidden_field_tag :owner_id, "#{@current_filters[:owner_type]}_#{@current_filters[:owner_id]}"
-          .row
-            .col-md-6
-              %h6.mb-3
-                %i.bi.bi-funnel.me-2
-                Filters
-              .mb-3
-                %label.form-label Timeframe
-                - %w[all now next later].each do |timeframe|
-                  .form-check
-                    = f.radio_button :timeframe, timeframe, checked: (@current_filters[:timeframe] == timeframe || (timeframe == 'all' && @current_filters[:timeframe].blank?)), class: "form-check-input"
-                    = f.label :timeframe, timeframe.humanize, value: timeframe, class: "form-check-label"
-              .mb-3
-                %label.form-label Goal Type
-                - %w[inspirational_objective qualitative_key_result quantitative_key_result stepping_stone_activity].each do |goal_type|
-                  .form-check
-                    = check_box_tag "goal_type[]", goal_type, (@current_filters[:goal_type]&.include?(goal_type) || (params[:goal_type].is_a?(Array) && params[:goal_type].include?(goal_type))), class: "form-check-input", id: "goal_type_#{goal_type}", form: "goals-filter-form"
-                    = label_tag "goal_type_#{goal_type}", goal_type.humanize, class: "form-check-label"
-              .mb-3
-                %label.form-label Status
-                - %w[draft active completed cancelled].each do |status|
-                  .form-check
-                    = check_box_tag "status[]", status, (@current_filters[:status]&.include?(status) || (params[:status].is_a?(Array) && params[:status].include?(status))), class: "form-check-input", id: "status_#{status}", form: "goals-filter-form"
-                    = label_tag "status_#{status}", status.humanize, class: "form-check-label"
-            .col-md-6
-              %h6.mb-3
-                %i.bi.bi-sort-down.me-2
-                Sort Options
-              .mb-3
-                %label.form-label Sort By
-                - sort_options = [['Most Likely Date', 'most_likely_target_date'], ['Earliest Date', 'earliest_target_date'], ['Latest Date', 'latest_target_date'], ['Created Date', 'created_at'], ['Title (A-Z)', 'title']]
-                = f.select :sort, options_for_select(sort_options, @current_filters[:sort] || 'most_likely_target_date'), {}, class: "form-select"
-              .mb-3
-                %label.form-label Direction
-                - direction_options = [['Ascending', 'asc'], ['Descending', 'desc']]
-                = f.select :direction, options_for_select(direction_options, @current_filters[:direction] || 'asc'), {}, class: "form-select"
-              .mb-3
-                %label.form-label View Style
-                - %w[table cards list].each do |view_style|
-                  .form-check
-                    = f.radio_button :view, view_style, checked: (@view_style == view_style), class: "form-check-input"
-                    = f.label :view, class: "form-check-label" do
-                      %i{class: "bi bi-#{view_style == 'table' ? 'table' : view_style == 'cards' ? 'grid' : 'list'} me-2"}
-                      = view_style.humanize
-                - %w[network tree nested timeline].each do |view_style|
-                  .form-check
-                    = f.radio_button :view, view_style, checked: (@view_style == view_style), class: "form-check-input"
-                    = f.label :view, class: "form-check-label" do
-                      %i{class: "bi bi-#{view_style == 'network' ? 'diagram-3' : view_style == 'tree' ? 'diagram-2' : view_style == 'nested' ? 'boxes' : 'calendar-event'} me-2"}
-                      = view_style.humanize
-              .mb-3
-                %label.form-label Spotlight
-                - spotlight_options = [['No Spotlight', 'none'], ['Top Priority', 'top_priority'], ['Recently Added', 'recently_added'], ['Overdue', 'overdue']]
-                = f.select :spotlight, options_for_select(spotlight_options, @current_filters[:spotlight] || 'none'), {}, class: "form-select"
-          .modal-footer
-            = link_to organization_goals_path(@organization), class: "btn btn-secondary" do
-              Reset Filters
-            %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
-            = f.submit "Apply Filters", class: "btn btn-primary"
 

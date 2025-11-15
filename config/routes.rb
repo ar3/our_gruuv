@@ -157,6 +157,11 @@ get '/login', to: 'auth#login', as: :login
     
     # Goals management
     resources :goals, module: :organizations do
+      collection do
+        get :customize_view
+        patch :update_view
+        post :bulk_update_check_ins
+      end
       resources :goal_links, only: [:create, :destroy] do
         collection do
           get :new_outgoing_link

@@ -10,6 +10,9 @@ class Goal < ApplicationRecord
   has_many :incoming_links, class_name: 'GoalLink', foreign_key: 'that_goal_id', dependent: :destroy
   has_many :linking_goals, through: :incoming_links, source: :this_goal
   
+  has_many :goal_check_ins, dependent: :destroy
+  has_many :recent_check_ins, -> { recent.limit(3) }, class_name: 'GoalCheckIn'
+  
   # Callbacks
   before_validation :set_company_id
   
@@ -74,6 +77,11 @@ class Goal < ApplicationRecord
   scope :completed, -> { where.not(completed_at: nil) }
   scope :cancelled, -> { where.not(cancelled_at: nil) }
   
+  scope :check_in_eligible, -> {
+    where.not(goal_type: 'inspirational_objective')
+         .where.not(most_likely_target_date: nil)
+  }
+  
   # Soft delete
   default_scope { where(deleted_at: nil) }
   scope :with_deleted, -> { unscope(where: :deleted_at) }
@@ -123,6 +131,10 @@ class Goal < ApplicationRecord
   
   def bad_key_result?
     goal_category == :bad_key_result
+  end
+  
+  def check_in_eligible?
+    !objective? && most_likely_target_date.present?
   end
   
   def has_sub_goals?

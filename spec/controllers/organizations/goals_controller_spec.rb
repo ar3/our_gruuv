@@ -19,9 +19,11 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(response).to have_http_status(:success)
     end
     
-    it 'requires owner filter' do
+    it 'defaults to logged in user when no owner filter is provided' do
       get :index, params: { organization_id: company.id }
-      expect(assigns(:goals)).to be_empty
+      # Should default to current teammate's goals
+      expect(assigns(:goals)).to include(personal_goal, later_goal)
+      expect(assigns(:goals)).not_to include(team_goal) # team_goal has different owner
     end
     
     it 'assigns goals for the teammate when owner filter is provided' do
@@ -136,9 +138,9 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:view_style)).to eq('cards')
     end
     
-    it 'defaults view style to table' do
+    it 'defaults view style to list' do
       get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id }
-      expect(assigns(:view_style)).to eq('table')
+      expect(assigns(:view_style)).to eq('list')
     end
   end
   

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_15_163832) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_15_170655) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -242,6 +242,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_15_163832) do
     t.datetime "updated_at", null: false
     t.index ["referable_type", "referable_id", "reference_type"], name: "index_external_references_on_referable_and_type"
     t.index ["referable_type", "referable_id"], name: "index_external_references_on_referable"
+  end
+
+  create_table "goal_check_ins", force: :cascade do |t|
+    t.bigint "goal_id", null: false
+    t.date "check_in_week_start", null: false
+    t.integer "confidence_percentage", null: false
+    t.text "confidence_reason"
+    t.bigint "confidence_reporter_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["check_in_week_start"], name: "index_goal_check_ins_on_check_in_week_start"
+    t.index ["confidence_reporter_id"], name: "index_goal_check_ins_on_confidence_reporter_id"
+    t.index ["goal_id", "check_in_week_start"], name: "index_goal_check_ins_on_goal_and_week", unique: true
+    t.index ["goal_id"], name: "index_goal_check_ins_on_goal_id"
   end
 
   create_table "goal_links", force: :cascade do |t|
@@ -775,6 +789,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_15_163832) do
   add_foreign_key "employment_tenures", "positions"
   add_foreign_key "employment_tenures", "seats"
   add_foreign_key "employment_tenures", "teammates"
+  add_foreign_key "goal_check_ins", "goals"
+  add_foreign_key "goal_check_ins", "people", column: "confidence_reporter_id"
   add_foreign_key "goal_links", "goals", column: "that_goal_id"
   add_foreign_key "goal_links", "goals", column: "this_goal_id"
   add_foreign_key "goals", "organizations", column: "company_id"
