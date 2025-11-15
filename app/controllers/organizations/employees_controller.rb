@@ -285,8 +285,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       # Auto-select manager_overview if manager filter is active
       return 'manager_overview' if params[:manager_filter] == 'direct_reports'
       
-      # Default to teammates_overview
-      'teammates_overview'
+      # Default to teammate_tenures
+      'teammate_tenures'
     end
 
     def eager_load_check_in_data(teammates)

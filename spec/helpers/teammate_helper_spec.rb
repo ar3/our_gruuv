@@ -546,4 +546,137 @@ RSpec.describe TeammateHelper, type: :helper do
       expect(result[:total]).to eq(0)
     end
   end
+
+  describe '#teammate_organization_display' do
+    let(:company) { create(:organization, :company, name: 'Acme Corp') }
+    let(:department1) { create(:organization, :department, name: 'Engineering', parent: company) }
+    let(:department2) { create(:organization, :department, name: 'Sales', parent: company) }
+    let(:team1) { create(:organization, :team, name: 'Frontend Team', parent: department1) }
+    let(:team2) { create(:organization, :team, name: 'Backend Team', parent: department1) }
+    
+    before do
+      @organization = company
+    end
+
+    context 'when person has teammates in multiple departments and teams' do
+      let!(:teammate_dept1) { create(:teammate, person: person, organization: department1) }
+      let!(:teammate_dept2) { create(:teammate, person: person, organization: department2) }
+      let!(:teammate_team1) { create(:teammate, person: person, organization: team1) }
+      let!(:teammate_team2) { create(:teammate, person: person, organization: team2) }
+
+      it 'displays all departments and teams as comma-separated list' do
+        result = helper.teammate_organization_display(teammate_dept1)
+        expect(result).to include('Backend Team')
+        expect(result).to include('Engineering')
+        expect(result).to include('Frontend Team')
+        expect(result).to include('Sales')
+        expect(result).not_to include('Acme Corp')
+      end
+
+      it 'sorts organizations alphabetically' do
+        result = helper.teammate_organization_display(teammate_dept1)
+        # Check that names appear in alphabetical order
+        expect(result).to match(/Backend Team.*Engineering.*Frontend Team.*Sales/)
+      end
+
+      it 'excludes the company from the list' do
+        result = helper.teammate_organization_display(teammate_dept1)
+        expect(result).not_to include('Acme Corp')
+      end
+    end
+
+    context 'when person only has teammate in company (no departments/teams)' do
+      let!(:teammate_company) { create(:teammate, person: person, organization: company) }
+
+      it 'displays em dash when no departments/teams' do
+        result = helper.teammate_organization_display(teammate_company)
+        expect(result).to include('—')
+      end
+    end
+
+    context 'when person has teammates in departments only' do
+      let!(:teammate_dept1) { create(:teammate, person: person, organization: department1) }
+      let!(:teammate_dept2) { create(:teammate, person: person, organization: department2) }
+
+      it 'displays only departments' do
+        result = helper.teammate_organization_display(teammate_dept1)
+        expect(result).to include('Engineering')
+        expect(result).to include('Sales')
+        expect(result).not_to include('Acme Corp')
+      end
+    end
+
+    context 'when person has teammates in teams only' do
+      let!(:teammate_team1) { create(:teammate, person: person, organization: team1) }
+      let!(:teammate_team2) { create(:teammate, person: person, organization: team2) }
+
+      it 'displays only teams' do
+        result = helper.teammate_organization_display(teammate_team1)
+        expect(result).to include('Backend Team')
+        expect(result).to include('Frontend Team')
+        expect(result).not_to include('Acme Corp')
+        expect(result).not_to include('Engineering')
+      end
+    end
+
+    context 'when viewing from a department context' do
+      before do
+        @organization = department1
+      end
+
+      let!(:teammate_dept1) { create(:teammate, person: person, organization: department1) }
+      let!(:teammate_team1) { create(:teammate, person: person, organization: team1) }
+
+      it 'still finds all departments/teams within the company hierarchy' do
+        result = helper.teammate_organization_display(teammate_dept1)
+        expect(result).to include('Engineering')
+        expect(result).to include('Frontend Team')
+        expect(result).not_to include('Acme Corp')
+      end
+    end
+
+    context 'when person has teammates in different companies' do
+      let(:other_company) { create(:organization, :company, name: 'Other Corp') }
+      let(:other_dept) { create(:organization, :department, name: 'Other Dept', parent: other_company) }
+      let!(:teammate_dept1) { create(:teammate, person: person, organization: department1) }
+      let!(:teammate_other_dept) { create(:teammate, person: person, organization: other_dept) }
+
+      it 'only shows departments/teams from the current company' do
+        result = helper.teammate_organization_display(teammate_dept1)
+        expect(result).to include('Engineering')
+        expect(result).not_to include('Other Dept')
+        expect(result).not_to include('Other Corp')
+      end
+    end
+
+    context 'edge cases' do
+      it 'handles nil teammate gracefully' do
+        result = helper.teammate_organization_display(nil)
+        expect(result).to eq('')
+      end
+
+      it 'handles teammate with nil person gracefully' do
+        teammate_nil_person = build(:teammate, person: nil)
+        result = helper.teammate_organization_display(teammate_nil_person)
+        expect(result).to eq('')
+      end
+
+      it 'handles nil @organization gracefully' do
+        @organization = nil
+        teammate = create(:teammate, person: person, organization: department1)
+        result = helper.teammate_organization_display(teammate)
+        expect(result).to eq('')
+      end
+
+      it 'handles multiple teammates in same organization gracefully' do
+        # Create teammate in department
+        teammate1 = create(:teammate, person: person, organization: department1)
+        
+        result = helper.teammate_organization_display(teammate1)
+        # Should only show department once (even if queried multiple times)
+        expect(result.scan('Engineering').count).to eq(1)
+        expect(result).to include('Engineering')
+      end
+    end
+  end
 end

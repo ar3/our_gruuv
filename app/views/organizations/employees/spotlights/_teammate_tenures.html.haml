@@ -4,10 +4,12 @@
     .card.border-0.shadow-sm
       .card-body
         .row
-          .col-md-8
+          .col-12
             / Main statistics/metrics area
             .row.text-center
               - tenure_distribution = @spotlight_stats
+              .col-1
+                %nbsp;
               .col-2
                 .h3.text-primary= tenure_distribution[:less_than_one_year]
                 %small.text-muted < 1 Year
@@ -24,14 +26,6 @@
                 .h3.text-danger= tenure_distribution[:ten_plus_years]
                 %small.text-muted 10+ Years
           
-          .col-md-4
-            / Summary information
-            .alert.alert-info.small
-              %i.bi.bi-info-circle.me-2
-              %strong Tenure Distribution
-              %br
-              Based on first consecutive employment tenure start date
-      
       .card-footer.bg-light
         .row.align-items-center
           .col-md-6

@@ -125,10 +125,10 @@
         .card-body
           %label.form-label.fw-bold Select the Spotlight for Them
           .form-check
-            = radio_button_tag 'spotlight', 'teammates_overview', (@current_spotlight || 'teammates_overview') == 'teammates_overview', class: 'form-check-input', id: 'spotlight_overview'
+            = radio_button_tag 'spotlight', 'teammates_overview', (@current_spotlight || 'teammate_tenures') == 'teammates_overview', class: 'form-check-input', id: 'spotlight_overview'
             = label_tag 'spotlight_overview', 'Teammates Overview', class: 'form-check-label'
           .form-check
-            = radio_button_tag 'spotlight', 'teammate_tenures', @current_spotlight == 'teammate_tenures', class: 'form-check-input', id: 'spotlight_tenures'
+            = radio_button_tag 'spotlight', 'teammate_tenures', (@current_spotlight || 'teammate_tenures') == 'teammate_tenures', class: 'form-check-input', id: 'spotlight_tenures'
             = label_tag 'spotlight_tenures', 'Teammate Tenures', class: 'form-check-label'
           .form-check
             = radio_button_tag 'spotlight', 'employee_locations', @current_spotlight == 'employee_locations', class: 'form-check-input', id: 'spotlight_locations'

@@ -47,7 +47,7 @@ class TeammatesQuery
     # Prioritize display over view, but fall back if display is empty
     return params[:display] unless params[:display].blank?
     return params[:view] unless params[:view].blank?
-    'table'
+    'list'
   end
 
   def current_spotlight

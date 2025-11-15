@@ -34,10 +34,28 @@ module TeammateHelper
   end
 
   def teammate_organization_display(teammate)
-    if teammate.organization == @organization
-      content_tag :span, teammate.organization.name, class: "text-primary fw-bold"
+    return '' unless teammate&.person && @organization
+    
+    # Get the company (root organization)
+    company = @organization.root_company || @organization
+    
+    # Find all teammates for this person within the company hierarchy (excluding the company itself)
+    associated_orgs = teammate.person.teammates
+                              .joins(:organization)
+                              .where(organization: company.self_and_descendants)
+                              .where.not(organization: company) # Exclude company
+                              .includes(:organization)
+                              .map(&:organization)
+                              .uniq
+                              .sort_by(&:name)
+    
+    if associated_orgs.any?
+      # Display as comma-separated list
+      org_names = associated_orgs.map(&:name).join(', ')
+      content_tag :span, org_names, class: "text-muted"
     else
-      content_tag :span, teammate.organization.display_name, class: "text-muted"
+      # If no departments/teams, show empty or a message
+      content_tag :span, '—', class: "text-muted"
     end
   end
 
