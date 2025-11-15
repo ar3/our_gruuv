@@ -7,6 +7,9 @@ class Organizations::Teammates::PositionController < Organizations::Organization
   def show
     authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
     
+    # Set @person for view switcher
+    @person = @teammate.person
+    
     @check_ins = PositionCheckIn
       .where(teammate: @teammate)
       .includes(:finalized_by, :manager_completed_by, :employment_tenure)
@@ -75,6 +78,8 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       redirect_to organization_teammate_position_path(organization, @teammate),
                   notice: 'Position information was successfully updated.'
     else
+      # Set @person for view switcher
+      @person = @teammate.person
       render :show, status: :unprocessable_entity
     end
   end

@@ -7,121 +7,128 @@
       - if action_name == 'public'
         .dropdown-item.text-muted
           %i.bi.bi-globe.me-2
-          Public Mode (Active)
+          Public View (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - else
         = link_to public_person_path(@person), class: 'dropdown-item' do
           %i.bi.bi-globe.me-2
-          Public Mode
+          Public View
       
     %li
       - if action_name == 'teammate'
         .dropdown-item.text-muted
           %i.bi.bi-people.me-2
-          Teammate Mode (Active)
+          Teammate View (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).teammate?
         = link_to teammate_organization_person_path(current_organization, @person), class: 'dropdown-item' do
           %i.bi.bi-people.me-2
-          Teammate Mode
+          Teammate View
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-people.me-2
-          Teammate Mode
+          Teammate View
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You must be an active employee in the same organization to view the teammate version"}
       
     %li
       - if action_name == 'complete_picture'
         .dropdown-item.text-muted
           %i.bi.bi-graph-up.me-2
-          Complete Picture (Active)
+          Active Job View (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).can_view_manage_mode?
         = link_to complete_picture_organization_person_path(current_organization, @person), class: 'dropdown-item' do
           %i.bi.bi-graph-up.me-2
-          Complete Picture
+          Active Job View
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-graph-up.me-2
-          Complete Picture
+          Active Job View
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"}
       
     %li
       - if action_name == 'show' && controller_name == 'check_ins'
         .dropdown-item.text-muted
           %i.bi.bi-chat-square-text.me-2
-          Check-In Mode (Active)
+          Self-Check-In Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).can_view_manage_mode?
         = link_to organization_person_check_ins_path(current_organization, @person), class: 'dropdown-item' do
           %i.bi.bi-chat-square-text.me-2
-          Check-In Mode
+          Self-Check-In Mode
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-chat-square-text.me-2
-          Check-In Mode
+          Self-Check-In Mode
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
     
     %li
       - if action_name == 'show' && controller_name == 'finalizations'
         .dropdown-item.text-muted
           %i.bi.bi-check-circle.me-2
-          Finalization Mode (Active)
+          Manager-Check-In Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).can_view_manage_mode?
         = link_to organization_person_finalization_path(current_organization, @person), class: 'dropdown-item' do
           %i.bi.bi-check-circle.me-2
-          Finalization Mode
+          Manager-Check-In Mode
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-check-circle.me-2
-          Finalization Mode
+          Manager-Check-In Mode
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access finalization features"}
       
     %li
-      - if action_name == 'show' && controller_name == 'check_ins'
+      - if action_name == 'audit'
         .dropdown-item.text-muted
-          %i.bi.bi-clipboard-check.me-2
-          Check-Ins (Active)
+          %i.bi.bi-clock-history.me-2
+          Acknowledge-Check-In Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif policy(@person).can_view_manage_mode?
-        = link_to organization_person_check_ins_path(current_organization, @person), class: 'dropdown-item' do
-          %i.bi.bi-clipboard-check.me-2
-          Check-Ins
+      - elsif policy(@person).audit?
+        = link_to audit_organization_employee_path(current_organization, @person), class: 'dropdown-item' do
+          %i.bi.bi-clock-history.me-2
+          Acknowledge-Check-In Mode
       - else
         .dropdown-item.text-muted.disabled
-          %i.bi.bi-clipboard-check.me-2
-          Check-Ins
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
+          %i.bi.bi-clock-history.me-2
+          Acknowledge-Check-In Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization or to be in the managerial hierarchy to access audit features"}
+      
+    %li
+      - if action_name == 'show' && controller_name == 'position'
+        .dropdown-item.text-muted
+          %i.bi.bi-briefcase.me-2
+          Seat History Mode (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif current_organization && policy(@person).can_view_manage_mode?
+        - teammate = @person.teammates.find_by(organization: current_organization)
+        - if teammate
+          = link_to organization_teammate_position_path(current_organization, teammate), class: 'dropdown-item' do
+            %i.bi.bi-briefcase.me-2
+            Seat History Mode
+        - else
+          .dropdown-item.text-muted.disabled
+            %i.bi.bi-briefcase.me-2
+            Seat History Mode
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access seat history"}
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-briefcase.me-2
+          Seat History Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access seat history"}
       
     %li
       - if action_name == 'show' && controller_name == 'people'
         .dropdown-item.text-muted
           %i.bi.bi-gear.me-2
-          Management Mode (Active)
+          Manage Profile Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).can_view_manage_mode?
         = link_to person_path(@person), class: 'dropdown-item' do
           %i.bi.bi-gear.me-2
-          Management Mode
+          Manage Profile Mode
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-gear.me-2
-          Management Mode
+          Manage Profile Mode
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access management features"}
-    
-    %li
-      - if action_name == 'audit'
-        .dropdown-item.text-muted
-          %i.bi.bi-clock-history.me-2
-          Audit View (Active)
-          %i.bi.bi-check-circle.text-success.ms-2
-      - elsif policy(@person).audit?
-        = link_to audit_organization_employee_path(current_organization, @person), class: 'dropdown-item' do
-          %i.bi.bi-clock-history.me-2
-          Audit View
-      - else
-        .dropdown-item.text-muted.disabled
-          %i.bi.bi-clock-history.me-2
-          Audit View
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization or to be in the managerial hierarchy to access audit features"}

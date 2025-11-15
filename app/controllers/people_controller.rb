@@ -35,12 +35,33 @@ class PeopleController < ApplicationController
 
   def public
     authorize person, policy_class: PersonPolicy
-    # Public view - minimal data, no sensitive information
-    @employment_tenures = EmploymentTenure.joins(:teammate)
-                                         .where(teammates: { person: person })
-                                         .includes(:company)
-                                         .order(started_at: :desc)
-                                         .decorate
+    # Public view - showcase public observations and milestones across all organizations
+    # Use unauthenticated layout
+    render layout: 'application'
+    
+    # Get all public observations where this person is observed
+    teammate_ids = person.teammates.pluck(:id)
+    @public_observations = if teammate_ids.any?
+      Observation.public_observations
+        .joins(:observees)
+        .where(observees: { teammate_id: teammate_ids })
+        .published
+        .includes(:observer, :observed_teammates)
+        .order(observed_at: :desc)
+        .decorate
+    else
+      Observation.none.decorate
+    end
+    
+    # Get all milestones across all organizations
+    @milestones = if person.teammates.exists?
+      TeammateMilestone.joins(:teammate)
+        .where(teammates: { person: person })
+        .includes(:ability, :certified_by)
+        .order(attained_at: :desc)
+    else
+      TeammateMilestone.none
+    end
   end
 
   def edit

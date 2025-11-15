@@ -8,6 +8,9 @@
     %h1.mb-0 Position Check-ins
     %small.text-muted #{@teammate.person.display_name}
 
+- content_for :header_action do
+  = render 'people/view_switcher'
+
 .row.justify-content-center
   .col-lg-12
     / Position Details Section

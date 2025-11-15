@@ -101,6 +101,11 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       
       expect(assigns(:seats)).to include(current_tenure.seat)
     end
+
+    it 'sets @person for view switcher' do
+      get organization_teammate_position_path(organization, employee_teammate)
+      expect(assigns(:person)).to eq(employee_person)
+    end
   end
 
   describe 'PATCH /organizations/:id/teammates/:id/position' do

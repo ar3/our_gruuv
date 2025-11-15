@@ -1,64 +1,79 @@
-- content_for :header do
-  %h1.mb-0
-    %i.bi.bi-person-badge.me-2
-    = @person.full_name
+.container.mt-4
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1.mb-0
+          %i.bi.bi-person-badge.me-2
+          = "#{@person.first_name}#{' ' + @person.last_name[0] + '.' if @person.last_name.present?}"
+        - if current_person && current_organization && policy(@person).teammate?
+          = link_to teammate_organization_person_path(current_organization, @person), class: "btn btn-outline-primary btn-sm" do
+            %i.bi.bi-people.me-2
+            View Teammate Profile
 
-- content_for :header_action do
-  = render 'view_switcher'
-
-- content_for :go_back_link do
-  = link_to organization_employees_path(current_organization), class: "text-muted text-decoration-none" do
-    %i.bi.bi-arrow-left.me-2
-    ="Back to Teammates in #{current_organization.display_name}"
-
-.row
-  .col-12
-    .card
-      .card-body
-        / Basic Information
-        .row.mb-4
-          .col-md-6
-            %h5.text-muted Basic Information
-            %p
-              %strong Name:
-              = @person.full_name
-            - if @person.timezone.present?
-              %p
-                %strong Timezone:
-                = @person.timezone
-        
-        / Organizational Affiliations
-        .row.mb-4
-          .col-12
-            %h5.text-muted Organizational Affiliations
-            - if @employment_tenures.any?
-              .table-responsive
-                %table.table.table-hover
-                  %thead
-                    %tr
-                      %th Organization
-                      %th Status
-                      %th Start Date
-                  %tbody
-                    - @employment_tenures.each do |tenure|
-                      %tr
-                        %td= tenure.company.name
-                        %td
-                          - if tenure.ended_at.nil?
-                            %span.badge.bg-success Active Employee
-                          - else
-                            %span.badge.bg-secondary Former Employee
-                        %td= tenure.started_at.strftime("%B %Y")
-            - else
-              %p.text-muted No organizational affiliations found.
-        
-        / Placeholder for Future Features
-        .row.mb-4
-          .col-12
-            %h5.text-muted Professional Achievements
-            .alert.alert-info
+  .row
+    .col-12
+      / Public Observations Section
+      - if @public_observations&.any?
+        .card.mb-4
+          .card-header
+            %h5.mb-0
+              %i.bi.bi-star.me-2
+              Public Observations
+          .card-body
+            %p.text-muted.mb-3
+              These are public observations where #{@person.first_name} was recognized.
+            - @public_observations.each do |observation|
+              .mb-3.pb-3.border-bottom
+                .d-flex.justify-content-between.align-items-start
+                  .flex-grow-1
+                    %p.mb-1
+                      = observation.decorate.story_html.html_safe
+                    %small.text-muted
+                      - if observation.observer
+                        Observed by #{observation.observer.preferred_name || observation.observer.first_name}
+                      - if observation.observed_at
+                        %span.mx-1 •
+                        = observation.observed_at.strftime('%B %d, %Y')
+                  .ms-3
+                    = link_to observation.decorate.permalink_path, class: "btn btn-sm btn-outline-primary", title: "View permalink" do
+                      %i.bi.bi-link-45deg
+            - if @public_observations.count > 10
+              %p.text-muted.mt-3
+                %small Showing all #{@public_observations.count} public observations
+      - else
+        .card.mb-4
+          .card-body
+            %p.text-muted.mb-0
               %i.bi.bi-info-circle.me-2
-              %strong Coming Soon:
-              This profile will include huddle participation stats, observations, and milestone achievements that you can carry with you across all organizations using OurGruuv.
+              No public observations yet.
 
-
+      / Milestones Section
+      - if @milestones&.any?
+        .card.mb-4
+          .card-header
+            %h5.mb-0
+              %i.bi.bi-trophy.me-2
+              Milestones Attained
+          .card-body
+            %p.text-muted.mb-3
+              These are the ability milestones #{@person.first_name} has achieved across all organizations.
+            - @milestones.group_by(&:ability).each do |ability, ability_milestones|
+              .mb-3.pb-3.border-bottom
+                %h6.mb-2
+                  = link_to ability.name, organization_public_maap_ability_path(ability.organization, ability), class: "text-decoration-none"
+                  %small.text-muted.ms-2 (#{ability.organization.display_name})
+                - ability_milestones.sort_by(&:milestone_level).each do |milestone|
+                  .d-flex.justify-content-between.align-items-center.mb-1
+                    %div
+                      %strong Milestone #{milestone.milestone_level}
+                      - if milestone.certified_by
+                        %small.text-muted.ms-2
+                          Certified by #{milestone.certified_by.display_name}
+                    %small.text-muted
+                      = milestone.attained_at.strftime('%B %Y')
+      - else
+        .card.mb-4
+          .card-body
+            %p.text-muted.mb-0
+              %i.bi.bi-info-circle.me-2
+              No milestones attained yet.
