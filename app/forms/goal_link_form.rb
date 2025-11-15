@@ -9,6 +9,7 @@ class GoalLinkForm < Reform::Form
   property :link_direction, virtual: true # :outgoing or :incoming
   property :bulk_goal_titles, virtual: true # text area input, one per line
   property :bulk_create_mode, virtual: true # boolean
+  property :goal_type, virtual: true # goal type for bulk creation
   
   # Access to current context (set by controller)
   attr_accessor :organization, :current_person, :current_teammate, :linking_goal, :bulk_create_service
@@ -67,7 +68,8 @@ class GoalLinkForm < Reform::Form
       current_teammate,
       linking_goal,
       link_direction.to_sym,
-      titles
+      titles,
+      goal_type
     )
     
     if @bulk_create_service.call

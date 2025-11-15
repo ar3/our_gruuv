@@ -18,6 +18,15 @@ RSpec.describe Goals::BulkCreateService, type: :service do
       expect(service.linking_goal).to eq(linking_goal)
       expect(service.link_direction).to eq(:outgoing)
       expect(service.goal_titles).to eq(goal_titles)
+      expect(service.goal_type).to be_nil
+    end
+    
+    it 'sets goal_type when provided' do
+      service = described_class.new(
+        organization, person, teammate, linking_goal, :outgoing, goal_titles, 'quantitative_key_result'
+      )
+      
+      expect(service.goal_type).to eq('quantitative_key_result')
     end
     
     it 'rejects blank titles' do
@@ -32,7 +41,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
   
   describe '#call' do
     context 'with outgoing links' do
-      it 'creates goals as quantitative_key_result' do
+      it 'creates goals as stepping_stone_activity by default' do
         service = described_class.new(
           organization, person, teammate, linking_goal, :outgoing, goal_titles
         )
@@ -41,7 +50,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
         
         created_goals = Goal.last(3)
         created_goals.each do |goal|
-          expect(goal.goal_type).to eq('quantitative_key_result')
+          expect(goal.goal_type).to eq('stepping_stone_activity')
           expect(goal.most_likely_target_date).to be_nil
           expect(goal.owner).to be_a(Teammate)
           expect(goal.owner.id).to eq(linking_goal.owner.id)
@@ -53,6 +62,19 @@ RSpec.describe Goals::BulkCreateService, type: :service do
         
         expect(service.created_goals).to eq(created_goals)
         expect(service.errors).to be_empty
+      end
+      
+      it 'creates goals with specified goal_type when provided' do
+        service = described_class.new(
+          organization, person, teammate, linking_goal, :outgoing, goal_titles, 'quantitative_key_result'
+        )
+        
+        expect { service.call }.to change { Goal.count }.by(3)
+        
+        created_goals = Goal.last(3)
+        created_goals.each do |goal|
+          expect(goal.goal_type).to eq('quantitative_key_result')
+        end
       end
       
       it 'creates links from linking_goal to created goals' do

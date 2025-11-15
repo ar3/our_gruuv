@@ -102,33 +102,51 @@
 
     / Outgoing Links Card
     .card.mb-4{ role: "region", "aria-labelledby": "outgoing-links" }
-      .card-header.d-flex.justify-content-between.align-items-center
+      .card-header
         %h5.mb-0{ id: "outgoing-links" }
           %i.bi.bi-arrow-right-circle.me-2
           In pursuit of #{@goal.title}, here are some things that will help get there.
-        - if policy(@goal).update?
-          = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-primary" do
-            %i.bi.bi-plus.me-1
-            Add Link
       .card-body
-        - if @goal.outgoing_links.any?
-          %ul.list-unstyled
-            - @goal.outgoing_links.each do |link|
-              %li.mb-2
-                .d-flex.justify-content-between.align-items-start
-                  .flex-grow-1
-                    = link_to organization_goal_path(@organization, link.child), class: "text-decoration-none" do
-                      %strong= link.child.title
-                    - if link.metadata.present? && link.metadata['notes'].present?
-                      %small.text-muted.d-block.mt-1= link.metadata['notes']
-                  - if policy(link).destroy?
-                    = link_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger ms-2", data: { confirm: "Are you sure you want to remove this link?" } do
-                      %i.bi.bi-trash
-        - else
-          %em.text-muted No outgoing links. This goal doesn't relate to any other goals yet.
-          - if policy(@goal).update?
-            = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "text-decoration-none" do
-              Add a link
+        - grouped_links = @goal.outgoing_links.includes(:child).group_by { |link| link.child.goal_type }
+        - goal_types = ['stepping_stone_activity', 'quantitative_key_result', 'qualitative_key_result', 'inspirational_objective']
+        - goal_type_labels = { 'stepping_stone_activity' => 'Stepping Stones/Activities', 'quantitative_key_result' => 'Measurable Outcomes', 'qualitative_key_result' => 'Sentiment Outcomes', 'inspirational_objective' => 'Objectives' }
+        
+        - goal_types.each do |goal_type|
+          - links_for_type = grouped_links[goal_type] || []
+          - if links_for_type.any?
+            .mb-4
+              %h6.mb-2
+                = goal_type_labels[goal_type]
+                %span.badge{class: goal_badge_class(goal_type), style: "font-size: 0.75em;"}
+                  = pluralize(links_for_type.count, 'goal')
+              %ul.list-unstyled
+                - links_for_type.each do |link|
+                  %li.mb-2
+                    .d-flex.justify-content-between.align-items-start
+                      .flex-grow-1
+                        = link_to organization_goal_path(@organization, link.child), class: "text-decoration-none" do
+                          %strong= link.child.title
+                        - if link.metadata.present? && link.metadata['notes'].present?
+                          %small.text-muted.d-block.mt-1= link.metadata['notes']
+                      - if policy(link).destroy?
+                        = button_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger ms-2", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this link?" } do
+                          %i.bi.bi-trash
+        
+        - if policy(@goal).update?
+          .mt-4.pt-3.border-top
+            .d-grid.gap-2
+              = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-primary" do
+                %i.bi.bi-plus.me-1
+                Add stepping stones/activities that need to happen in order to achieve #{@goal.title}
+              = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'quantitative_key_result', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-primary" do
+                %i.bi.bi-plus.me-1
+                Add measurable outcomes that need to happen in order to achieve #{@goal.title}
+              = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'qualitative_key_result', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-primary" do
+                %i.bi.bi-plus.me-1
+                Add sentiment outcomes that need to happen in order to achieve #{@goal.title}
+              = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'inspirational_objective', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-primary" do
+                %i.bi.bi-plus.me-1
+                Add objectives that need to happen in order to achieve #{@goal.title}
 
     / Incoming Links Card
     .card.mb-4{ role: "region", "aria-labelledby": "incoming-links" }
@@ -152,7 +170,7 @@
                     - if link.metadata.present? && link.metadata['notes'].present?
                       %small.text-muted.d-block.mt-1= link.metadata['notes']
                   - if policy(link).destroy?
-                    = link_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger ms-2", data: { confirm: "Are you sure you want to remove this link?" } do
+                    = button_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger ms-2", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this link?" } do
                       %i.bi.bi-trash
         - else
           %em.text-muted No incoming links. No other goals relate to this goal yet.

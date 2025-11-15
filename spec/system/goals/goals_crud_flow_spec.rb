@@ -460,6 +460,41 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       expect(page).to have_field("goal_ids_#{goal2.id}")
     end
     
+    it 'deletes a goal link' do
+      # Create link between goals
+      link = create(:goal_link, parent: goal1, child: goal2)
+      link_id = link.id
+      
+      visit organization_goal_path(organization, goal1)
+      
+      # Verify link is displayed on page in the outgoing links section
+      expect(page).to have_content('In pursuit of')
+      expect(page).to have_content(goal2.title)
+      
+      # Find delete button - button_to creates a form with a button inside
+      # Look for the button within a form that posts to the delete path
+      delete_form = find("form[action='#{organization_goal_goal_link_path(organization, goal1, link)}']")
+      expect(delete_form).to be_present
+      
+      # Set up JavaScript confirm to return true before clicking
+      page.execute_script("window.confirm = function() { return true; }")
+      
+      # Click the delete button (button_to creates a button inside a form)
+      within(delete_form) do
+        click_button
+      end
+      
+      # Wait for redirect using Capybara's built-in waiting
+      expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 10)
+      
+      # Verify database deletion first (this confirms the action worked)
+      expect(GoalLink.find_by(id: link_id)).to be_nil
+      
+      # Verify link is gone from page (uses built-in waiting)
+      # Use have_no_content which waits automatically and doesn't require within
+      expect(page).to have_no_content(goal2.title)
+    end
+    
   end
   
   describe 'Privacy Level Restrictions' do

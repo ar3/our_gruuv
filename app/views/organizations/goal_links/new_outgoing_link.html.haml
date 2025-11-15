@@ -1,5 +1,7 @@
 - content_for :header do
-  In pursuit of "#{@goal.title}", here are some things that will help get there.
+  - goal_type_labels = { 'stepping_stone_activity' => 'stepping stones/activities', 'quantitative_key_result' => 'measurable outcomes', 'qualitative_key_result' => 'sentiment outcomes', 'inspirational_objective' => 'objectives' }
+  - goal_type_label = goal_type_labels[@goal_type] || 'goals'
+  In pursuit of "#{@goal.title}", add #{goal_type_label} that need to happen in order to achieve this goal.
 
 - content_for :return_url do
   = @return_url || organization_goal_path(@organization, @goal)
@@ -8,25 +10,31 @@
   = @return_text || "Back to the #{@goal.title} goal"
 
 
+- goal_type_labels = { 'stepping_stone_activity' => 'stepping stones/activities', 'quantitative_key_result' => 'measurable outcomes', 'qualitative_key_result' => 'sentiment outcomes', 'inspirational_objective' => 'objectives' }
+- goal_type_singular_labels = { 'stepping_stone_activity' => 'stepping stone/activity', 'quantitative_key_result' => 'measurable outcome', 'qualitative_key_result' => 'sentiment outcome', 'inspirational_objective' => 'objective' }
+- goal_type_label = goal_type_labels[@goal_type] || 'goals'
+- goal_type_singular_label = goal_type_singular_labels[@goal_type] || 'goal'
+
 .card.mb-3
   .card-header
     %h5.mb-0
       %i.bi.bi-link-45deg.me-2
       Create Links to Other Goals
       %small.text-muted.ms-2
-        Each selected goal or new goal will become a Key Result of this goal.
+        Each selected goal or new goal will become a #{goal_type_singular_label} of this goal.
   .card-body
     = form_with url: organization_goal_goal_links_path(@organization, @goal), method: :post, local: true do |f|
       = hidden_field_tag :link_direction, 'outgoing'
+      = hidden_field_tag :goal_type, @goal_type
       = hidden_field_tag :return_url, @return_url
       = hidden_field_tag :return_text, @return_text
 
       .mb-4
         %label.form-label.fw-bold
-          Create New Sub-Goals / Stepping Stone Activities / Pre-requisite Key Results
+          Create New #{goal_type_label.humanize}
           %small.text-muted (Optional)
         %small.text-muted.d-block.mb-2
-          Enter one goal title per line. Each will become a new Key Result goal linked to this goal.
+          Enter one goal title per line. Each will become a new #{goal_type_singular_label} goal linked to this goal.
         = text_area_tag "bulk_goal_titles", "", rows: 5, class: "form-control", placeholder: "Goal 1\nGoal 2\nGoal 3"
         %small.form-text.text-muted
           New goals will match the owner and privacy level of this goal.

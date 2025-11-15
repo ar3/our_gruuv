@@ -1,15 +1,16 @@
 module Goals
   class BulkCreateService
     attr_reader :organization, :current_person, :current_teammate, :linking_goal, 
-                :link_direction, :goal_titles, :created_goals, :errors
+                :link_direction, :goal_titles, :goal_type, :created_goals, :errors
 
-    def initialize(organization, current_person, current_teammate, linking_goal, link_direction, goal_titles)
+    def initialize(organization, current_person, current_teammate, linking_goal, link_direction, goal_titles, goal_type = nil)
       @organization = organization
       @current_person = current_person
       @current_teammate = current_teammate
       @linking_goal = linking_goal
       @link_direction = link_direction.to_sym
       @goal_titles = goal_titles.reject(&:blank?)
+      @goal_type = goal_type
       @created_goals = []
       @errors = []
     end
@@ -61,10 +62,12 @@ module Goals
     end
 
     def determine_goal_type
-      if link_direction == :incoming
+      if goal_type.present?
+        goal_type
+      elsif link_direction == :incoming
         'inspirational_objective'
       else # :outgoing
-        'quantitative_key_result'
+        'stepping_stone_activity'
       end
     end
 

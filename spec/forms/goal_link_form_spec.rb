@@ -271,13 +271,26 @@ RSpec.describe GoalLinkForm, type: :form do
         
         created_goals = Goal.last(2)
         created_goals.each do |goal|
-          expect(goal.goal_type).to eq('quantitative_key_result')
+          expect(goal.goal_type).to eq('stepping_stone_activity')
           expect(goal.owner).to be_a(Teammate)
           expect(goal.owner.id).to eq(goal1.owner.id)
           expect(goal.privacy_level).to eq(goal1.privacy_level)
           
           link = GoalLink.find_by(parent: goal1, child: goal)
           expect(link).to be_present
+        end
+      end
+      
+      it 'creates goals with specified goal_type when provided' do
+        form.bulk_goal_titles = "New Goal 1\nNew Goal 2"
+        form.goal_type = 'quantitative_key_result'
+        
+        expect { form.save }.to change { Goal.count }.by(2)
+        expect(form.save).to be true
+        
+        created_goals = Goal.last(2)
+        created_goals.each do |goal|
+          expect(goal.goal_type).to eq('quantitative_key_result')
         end
       end
       

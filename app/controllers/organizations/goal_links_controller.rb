@@ -10,8 +10,10 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     authorize @goal, :update?
     
     @direction = 'outgoing'
+    @goal_type = params[:goal_type] || 'stepping_stone_activity'
     available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization))
                           .where.not(id: @goal.id)
+                          .where(goal_type: @goal_type)
     
     @available_goals_with_status = available_goals.map do |candidate_goal|
       {
@@ -59,6 +61,7 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     goal_ids = params[:goal_ids] || []
     bulk_goal_titles = params[:bulk_goal_titles]
     link_direction = params[:link_direction] || goal_link_params[:link_direction] || 'outgoing'
+    goal_type = params[:goal_type] || (link_direction == 'outgoing' ? 'stepping_stone_activity' : 'inspirational_objective')
     return_url = params[:return_url] || organization_goal_path(@organization, @goal)
     
     # Validate that at least one option is provided
@@ -71,7 +74,7 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
         redirect_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: return_url, return_text: params[:return_text]),
                     alert: error_msg
       else
-        redirect_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, return_url: return_url, return_text: params[:return_text]),
+        redirect_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: goal_type, return_url: return_url, return_text: params[:return_text]),
                     alert: error_msg
       end
       return
@@ -131,7 +134,8 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
         form_params = {
           link_direction: link_direction,
           bulk_create_mode: true,
-          bulk_goal_titles: titles.join("\n")
+          bulk_goal_titles: titles.join("\n"),
+          goal_type: goal_type
         }
         
         # Add metadata notes if provided
@@ -159,7 +163,7 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
         redirect_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: return_url, return_text: params[:return_text]),
                     alert: "Failed to create links: #{errors.join(', ')}"
       else
-        redirect_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, return_url: return_url, return_text: params[:return_text]),
+        redirect_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: goal_type, return_url: return_url, return_text: params[:return_text]),
                     alert: "Failed to create links: #{errors.join(', ')}"
       end
     end
