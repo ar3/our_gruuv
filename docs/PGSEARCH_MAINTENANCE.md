@@ -150,3 +150,4 @@ The following models use `multisearchable`:
 - `lib/tasks/pg_search.rake` - Maintenance rake tasks
 - `app/queries/global_search_query.rb` - Search query implementation
 
+

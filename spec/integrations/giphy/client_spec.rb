@@ -74,3 +74,4 @@ RSpec.describe Giphy::Client do
   end
 end
 
+

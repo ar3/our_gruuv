@@ -5,3 +5,4 @@ class Organizations::PublicMaap::Controller < Organizations::PublicMaap::BaseCon
   end
 end
 
+

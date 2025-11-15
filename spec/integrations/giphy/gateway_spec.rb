@@ -83,3 +83,4 @@ RSpec.describe Giphy::Gateway do
   end
 end
 
+

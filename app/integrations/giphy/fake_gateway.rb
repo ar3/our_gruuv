@@ -21,3 +21,4 @@ class Giphy::FakeGateway
   end
 end
 
+

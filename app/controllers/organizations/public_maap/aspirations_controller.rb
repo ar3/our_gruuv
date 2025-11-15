@@ -30,3 +30,4 @@ class Organizations::PublicMaap::AspirationsController < Organizations::PublicMa
   end
 end
 
+

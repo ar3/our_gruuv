@@ -125,3 +125,4 @@ RSpec.describe Aspiration, type: :model do
   end
 end
 
+

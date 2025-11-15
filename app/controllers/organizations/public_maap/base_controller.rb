@@ -15,3 +15,4 @@ class Organizations::PublicMaap::BaseController < ApplicationController
   end
 end
 
+
