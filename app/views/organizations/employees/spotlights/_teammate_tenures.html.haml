@@ -8,18 +8,21 @@
             / Main statistics/metrics area
             .row.text-center
               - tenure_distribution = @spotlight_stats
-              .col-3
+              .col-2
                 .h3.text-primary= tenure_distribution[:less_than_one_year]
                 %small.text-muted < 1 Year
-              .col-3
+              .col-2
                 .h3.text-info= tenure_distribution[:one_to_two_years]
                 %small.text-muted 1-2 Years
-              .col-3
+              .col-2
                 .h3.text-success= tenure_distribution[:two_to_five_years]
                 %small.text-muted 2-5 Years
-              .col-3
-                .h3.text-warning= tenure_distribution[:five_plus_years]
-                %small.text-muted 5+ Years
+              .col-2
+                .h3.text-warning= tenure_distribution[:five_to_ten_years]
+                %small.text-muted 5-10 Years
+              .col-2
+                .h3.text-danger= tenure_distribution[:ten_plus_years]
+                %small.text-muted 10+ Years
           
           .col-md-4
             / Summary information

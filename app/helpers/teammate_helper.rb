@@ -413,7 +413,8 @@ module TeammateHelper
     less_than_one = 0
     one_to_two = 0
     two_to_five = 0
-    five_plus = 0
+    five_to_ten = 0
+    ten_plus = 0
     
     teammates.each do |teammate|
       next unless teammate.first_employed_at
@@ -426,8 +427,10 @@ module TeammateHelper
         one_to_two += 1
       elsif tenure_years < 5
         two_to_five += 1
+      elsif tenure_years < 10
+        five_to_ten += 1
       else
-        five_plus += 1
+        ten_plus += 1
       end
     end
     
@@ -435,7 +438,8 @@ module TeammateHelper
       less_than_one_year: less_than_one,
       one_to_two_years: one_to_two,
       two_to_five_years: two_to_five,
-      five_plus_years: five_plus
+      five_to_ten_years: five_to_ten,
+      ten_plus_years: ten_plus
     }
   end
 
