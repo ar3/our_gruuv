@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::GoalsController, type: :controller do
+  include ActiveSupport::Testing::TimeHelpers
+  
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
   let(:creator_teammate) { person.teammates.find_by(organization: company) }
@@ -171,6 +173,38 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       
       get :show, params: { organization_id: company.id, id: goal.id }
       expect(assigns(:goal).incoming_links).to include(link)
+    end
+    
+    context 'when goal is started' do
+      let(:started_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago) }
+      let(:current_week_start) { Date.current.beginning_of_week(:monday) }
+      
+      it 'loads current week check-in if it exists' do
+        check_in = create(:goal_check_in, goal: started_goal, check_in_week_start: current_week_start, confidence_reporter: person)
+        
+        get :show, params: { organization_id: company.id, id: started_goal.id }
+        
+        expect(assigns(:current_check_in)).to eq(check_in)
+        expect(assigns(:current_week_start)).to eq(current_week_start)
+      end
+      
+      it 'loads last check-in if it exists' do
+        last_week_start = current_week_start - 1.week
+        last_check_in = create(:goal_check_in, goal: started_goal, check_in_week_start: last_week_start, confidence_reporter: person)
+        
+        get :show, params: { organization_id: company.id, id: started_goal.id }
+        
+        expect(assigns(:last_check_in)).to eq(last_check_in)
+      end
+      
+      it 'does not load check-ins when goal is not started' do
+        unstarted_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil)
+        
+        get :show, params: { organization_id: company.id, id: unstarted_goal.id }
+        
+        expect(assigns(:current_check_in)).to be_nil
+        expect(assigns(:last_check_in)).to be_nil
+      end
     end
   end
   
@@ -360,6 +394,155 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     it 'shows flash notice on success' do
       delete :destroy, params: { organization_id: company.id, id: goal.id }
       expect(flash[:notice]).to eq('Goal was successfully deleted.')
+    end
+  end
+  
+  describe 'PATCH #start' do
+    let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil) }
+    
+    it 'sets started_at to current time' do
+      travel_to Time.current do
+        patch :start, params: { organization_id: company.id, id: goal.id }
+        
+        goal.reload
+        expect(goal.started_at).to be_within(1.second).of(Time.current)
+      end
+    end
+    
+    it 'redirects to the goal show page' do
+      patch :start, params: { organization_id: company.id, id: goal.id }
+      expect(response).to redirect_to(organization_goal_path(company, goal))
+    end
+    
+    it 'shows flash notice on success' do
+      patch :start, params: { organization_id: company.id, id: goal.id }
+      expect(flash[:notice]).to eq('Goal started successfully.')
+    end
+    
+    it 'prevents starting an already started goal' do
+      started_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago)
+      original_started_at = started_goal.started_at
+      
+      patch :start, params: { organization_id: company.id, id: started_goal.id }
+      
+      started_goal.reload
+      expect(started_goal.started_at).to eq(original_started_at)
+      expect(flash[:alert]).to eq('Goal has already been started.')
+    end
+    
+    context 'when user is not authorized' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { other_person.teammates.find_by(organization: company) }
+      let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil, privacy_level: 'only_creator') }
+      
+      before do
+        other_teammate # Ensure teammate is created
+        sign_in_as_teammate(other_person, company)
+      end
+      
+      it 'prevents starting the goal' do
+        patch :start, params: { organization_id: company.id, id: goal.id }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to match(/permission|not authorized/i)
+      end
+    end
+  end
+  
+  describe 'POST #check_in' do
+    let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago) }
+    let(:current_week_start) { Date.current.beginning_of_week(:monday) }
+    
+    it 'creates a new check-in for the current week' do
+      expect {
+        post :check_in, params: { 
+          organization_id: company.id, 
+          id: goal.id,
+          confidence_percentage: 75,
+          confidence_reason: 'Making good progress'
+        }
+      }.to change(GoalCheckIn, :count).by(1)
+      
+      check_in = GoalCheckIn.last
+      expect(check_in.goal).to eq(goal)
+      expect(check_in.check_in_week_start).to eq(current_week_start)
+      expect(check_in.confidence_percentage).to eq(75)
+      expect(check_in.confidence_reason).to eq('Making good progress')
+      expect(check_in.confidence_reporter).to eq(person)
+    end
+    
+    it 'updates existing check-in for the current week' do
+      existing_check_in = create(:goal_check_in, 
+        goal: goal, 
+        check_in_week_start: current_week_start,
+        confidence_percentage: 50,
+        confidence_reason: 'Old reason',
+        confidence_reporter: person
+      )
+      
+      expect {
+        post :check_in, params: { 
+          organization_id: company.id, 
+          id: goal.id,
+          confidence_percentage: 80,
+          confidence_reason: 'New reason'
+        }
+      }.not_to change(GoalCheckIn, :count)
+      
+      existing_check_in.reload
+      expect(existing_check_in.confidence_percentage).to eq(80)
+      expect(existing_check_in.confidence_reason).to eq('New reason')
+    end
+    
+    it 'redirects to the goal show page' do
+      post :check_in, params: { 
+        organization_id: company.id, 
+        id: goal.id,
+        confidence_percentage: 75
+      }
+      expect(response).to redirect_to(organization_goal_path(company, goal))
+    end
+    
+    it 'shows flash notice on success' do
+      post :check_in, params: { 
+        organization_id: company.id, 
+        id: goal.id,
+        confidence_percentage: 75
+      }
+      expect(flash[:notice]).to eq('Check-in saved successfully.')
+    end
+    
+    it 'handles validation errors' do
+      post :check_in, params: { 
+        organization_id: company.id, 
+        id: goal.id,
+        confidence_percentage: 150  # Invalid - should be 0-100
+      }
+      
+      expect(response).to redirect_to(organization_goal_path(company, goal))
+      expect(flash[:alert]).to match(/Failed to save check-in/)
+    end
+    
+    context 'when user is not authorized to view goal' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { other_person.teammates.find_by(organization: company) }
+      let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago, privacy_level: 'only_creator') }
+      
+      before do
+        other_teammate # Ensure teammate is created
+        sign_in_as_teammate(other_person, company)
+      end
+      
+      it 'prevents creating check-in' do
+        post :check_in, params: { 
+          organization_id: company.id, 
+          id: goal.id,
+          confidence_percentage: 75
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to match(/permission|not authorized/i)
+      end
     end
   end
   

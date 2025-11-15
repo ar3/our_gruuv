@@ -1,6 +1,6 @@
 class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_goal, only: [:show, :edit, :update, :destroy]
+  before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe]
   
   after_action :verify_authorized, except: :index
   after_action :verify_policy_scoped, only: :index
@@ -117,6 +117,22 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   def show
     authorize @goal
+    
+    # Load check-in data for started goals
+    if @goal.started_at.present?
+      @current_week_start = Date.current.beginning_of_week(:monday)
+      @current_check_in = @goal.goal_check_ins
+        .for_week(@current_week_start)
+        .includes(:confidence_reporter)
+        .first
+      
+      # Load last check-in (most recent before current week)
+      @last_check_in = @goal.goal_check_ins
+        .where('check_in_week_start < ?', @current_week_start)
+        .includes(:confidence_reporter)
+        .recent
+        .first
+    end
   end
   
   def new
@@ -188,6 +204,137 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @goal.soft_delete!
     redirect_to organization_goals_path(@organization), 
                 notice: 'Goal was successfully deleted.'
+  end
+  
+  def start
+    authorize @goal, :update?
+    
+    if @goal.started_at.present?
+      redirect_to organization_goal_path(@organization, @goal),
+                  alert: 'Goal has already been started.'
+      return
+    end
+    
+    if @goal.update(started_at: Time.current)
+      redirect_to organization_goal_path(@organization, @goal),
+                  notice: 'Goal started successfully.'
+    else
+      redirect_to organization_goal_path(@organization, @goal),
+                  alert: 'Failed to start goal.'
+    end
+  end
+  
+  def check_in
+    authorize @goal, :show?
+    
+    # Check authorization for check-in
+    check_in_record = GoalCheckIn.new(goal: @goal)
+    authorize check_in_record, :create?
+    
+    week_start = Date.current.beginning_of_week(:monday)
+    confidence_percentage = params[:confidence_percentage]&.to_i
+    confidence_reason = params[:confidence_reason]&.strip
+    
+    # Set PaperTrail whodunnit for version tracking
+    PaperTrail.request.whodunnit = current_person.id.to_s
+    
+    # Find or initialize check-in for current week
+    check_in = GoalCheckIn.find_or_initialize_by(
+      goal: @goal,
+      check_in_week_start: week_start
+    )
+    
+    check_in.assign_attributes(
+      confidence_percentage: confidence_percentage,
+      confidence_reason: confidence_reason,
+      confidence_reporter: current_person
+    )
+    
+    if check_in.save
+      redirect_to organization_goal_path(@organization, @goal),
+                  notice: 'Check-in saved successfully.'
+    else
+      redirect_to organization_goal_path(@organization, @goal),
+                  alert: "Failed to save check-in: #{check_in.errors.full_messages.join(', ')}"
+    end
+  end
+  
+  def set_timeframe
+    authorize @goal, :update?
+    
+    timeframe = params[:timeframe]
+    
+    unless %w[near_term medium_term long_term vision].include?(timeframe)
+      redirect_to organization_goal_path(@organization, @goal),
+                  alert: 'Invalid timeframe selected.'
+      return
+    end
+    
+    @form = GoalForm.new(@goal)
+    @form.current_person = current_person
+    @form.current_teammate = current_person.teammates.find_by(organization: @organization)
+    
+    goal_params = {}
+    
+    if timeframe == 'vision'
+      # Convert to vision goal - only change goal_type, don't set target dates
+      goal_params = {
+        goal_type: 'inspirational_objective',
+        title: @goal.title,
+        description: @goal.description,
+        privacy_level: @goal.privacy_level,
+        owner_type: @goal.owner_type,
+        owner_id: @goal.owner_id
+      }
+    else
+      # Set target dates based on timeframe
+      today = Date.current
+      case timeframe
+      when 'near_term'
+        most_likely = today + 90.days
+        earliest = today + 30.days
+        latest = today + 120.days
+      when 'medium_term'
+        most_likely = today + 270.days
+        earliest = today + 180.days
+        latest = today + 360.days
+      when 'long_term'
+        most_likely = today + 3.years
+        earliest = today + 2.years
+        latest = today + 4.years
+      end
+      
+      goal_params = {
+        title: @goal.title,
+        description: @goal.description,
+        goal_type: @goal.goal_type,
+        earliest_target_date: earliest,
+        most_likely_target_date: most_likely,
+        latest_target_date: latest,
+        privacy_level: @goal.privacy_level,
+        owner_type: @goal.owner_type,
+        owner_id: @goal.owner_id
+      }
+    end
+    
+    if @form.validate(goal_params) && @form.save
+      notice_message = case timeframe
+      when 'vision'
+        'Goal converted to vision successfully.'
+      when 'near_term'
+        'Goal set to near-term timeframe successfully.'
+      when 'medium_term'
+        'Goal set to medium-term timeframe successfully.'
+      when 'long_term'
+        'Goal set to long-term timeframe successfully.'
+      end
+      
+      redirect_to organization_goal_path(@organization, @goal),
+                  notice: notice_message
+    else
+      redirect_to organization_goal_path(@organization, @goal),
+                  alert: "Failed to set timeframe: #{@form.errors.full_messages.join(', ')}"
+    end
   end
   
   def customize_view

@@ -24,8 +24,8 @@
         %tr
           %th Goal Title
           %th Due Date
-          %th Current Week Confidence
           %th Last 3 Weeks
+          %th Current Week Confidence
           %th Reason
       %tbody
         - @goals.each do |goal|
@@ -40,10 +40,6 @@
               - else
                 %span.text-muted Not set
             %td
-              = select_tag "goal_check_ins[#{goal.id}][confidence_percentage]", 
-                  options_for_select(confidence_percentage_options, check_in&.confidence_percentage),
-                  { include_blank: 'Select confidence...', class: 'form-select form-select-sm', required: true }
-            %td
               - if recent_check_ins.any?
                 .d-flex.gap-2
                   - recent_check_ins.each do |ci|
@@ -56,6 +52,11 @@
                       = "#{ci.confidence_percentage}%"
               - else
                 %span.text-muted No previous check-ins
+
+            %td
+              = select_tag "goal_check_ins[#{goal.id}][confidence_percentage]", 
+                  options_for_select(confidence_percentage_options, check_in&.confidence_percentage),
+                  { include_blank: 'Select confidence...', class: 'form-select form-select-sm', required: true }
             %td
               = text_area_tag "goal_check_ins[#{goal.id}][confidence_reason]", 
                   check_in&.confidence_reason,

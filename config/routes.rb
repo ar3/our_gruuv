@@ -162,6 +162,11 @@ get '/login', to: 'auth#login', as: :login
         patch :update_view
         post :bulk_update_check_ins
       end
+      member do
+        patch :start
+        post :check_in
+        patch :set_timeframe
+      end
       resources :goal_links, only: [:create, :destroy] do
         collection do
           get :new_outgoing_link

@@ -168,14 +168,88 @@
           %i.bi.bi-gear.me-2
           Actions
       .card-body
-        .d-grid.gap-2
-          - if policy(@goal).update?
-            = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-primary" do
-              %i.bi.bi-pencil.me-2
-              Edit Goal
-          - if policy(@goal).destroy?
-            = link_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to delete this goal? This action cannot be undone." } do
-              %i.bi.bi-trash.me-2
-              Delete Goal
+        - if @goal.started_at.nil?
+          / Unstarted goal - show Start Now button
+          .d-grid.gap-2
+            - if policy(@goal).update?
+              = button_to start_organization_goal_path(@organization, @goal), method: :patch, class: "btn btn-primary w-100" do
+                %i.bi.bi-play-circle.me-2
+                Start Now
+            - if policy(@goal).update?
+              = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary" do
+                %i.bi.bi-pencil.me-2
+                Edit Goal
+            - if policy(@goal).destroy?
+              = link_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to delete this goal? This action cannot be undone." } do
+                %i.bi.bi-trash.me-2
+                Delete Goal
+        - else
+          / Started goal - show weekly check-in form
+          - current_week_start = @current_week_start || Date.current.beginning_of_week(:monday)
+          - current_week_end = current_week_start.end_of_week(:sunday)
+          
+          %h6.mb-3 Weekly Check-In
+          %p.small.text-muted.mb-3
+            Week of #{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}
+          
+          - if @current_check_in.present?
+            %p.small.text-muted.mb-3
+              Filled out by #{@current_check_in.confidence_reporter.display_name} on #{@current_check_in.created_at.strftime('%B %d, %Y at %I:%M %p')}
+          
+          = form_with url: check_in_organization_goal_path(@organization, @goal), method: :post, local: true do |f|
+            .mb-3
+              = f.label :confidence_percentage, "Confidence", class: "form-label"
+              = f.select :confidence_percentage, 
+                  options_for_select(confidence_percentage_options, @current_check_in&.confidence_percentage),
+                  { include_blank: 'Select confidence...' },
+                  { class: 'form-select', required: true }
+            
+            .mb-3
+              = f.label :confidence_reason, "Notes", class: "form-label"
+              = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control', rows: 3, placeholder: 'Optional notes...'
+            
+            .d-grid
+              = f.submit "Save Check-In", class: "btn btn-primary"
+          
+          - if @last_check_in.present?
+            .mt-4.pt-3.border-top
+              %h6.mb-2 Last Check-In
+              %p.small.mb-1
+                %strong Week:
+                = @last_check_in.week_display
+              %p.small.mb-1
+                %strong Confidence:
+                = "#{@last_check_in.confidence_percentage}%"
+              - if @last_check_in.confidence_reason.present?
+                %p.small.mb-1
+                  %strong Notes:
+                  = @last_check_in.confidence_reason
+              %p.small.text-muted.mb-0
+                By #{@last_check_in.confidence_reporter.display_name} on #{@last_check_in.created_at.strftime('%B %d, %Y')}
+          
+          .mt-3.pt-3.border-top
+            .d-grid.gap-2
+              - if policy(@goal).update?
+                = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary btn-sm" do
+                  %i.bi.bi-pencil.me-2
+                  Edit Goal
+              - if policy(@goal).destroy?
+                = link_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger btn-sm", data: { confirm: "Are you sure you want to delete this goal? This action cannot be undone." } do
+                  %i.bi.bi-trash.me-2
+                  Delete Goal
+        
+        - if @goal.goal_type != 'inspirational_objective' && @goal.most_likely_target_date.nil?
+          .mt-3.pt-3.border-top
+            %p.small.text-muted.mb-3
+              These types of goals should have due dates... what is your due date?
+            .btn-group-vertical.w-100{role: "group", "aria-label": "Timeframe selection"}
+              = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'near_term' }, class: "btn btn-outline-primary mb-2" do
+                Near-Term (< 3 months)
+              = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'medium_term' }, class: "btn btn-outline-primary mb-2" do
+                Medium-Term (< 3 quarters)
+              = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'long_term' }, class: "btn btn-outline-primary mb-2" do
+                Long-Term (< 3 years)
+              = button_to set_timeframe_organization_goal_path(@organization, @goal), method: :patch, params: { timeframe: 'vision' }, class: "btn btn-outline-primary" do
+                This is a vision, not a goal
 
 
