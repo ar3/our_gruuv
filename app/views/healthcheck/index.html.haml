@@ -1,97 +1,9 @@
-%h1 Healthcheck - Working!
+%h1 Healthcheck
 
 %h2 Environment
 %p
   Rails Environment: 
   %strong= @rails_env
-
-%h2 OAuth Health Check
-%p
-  Google Client ID: 
-  %strong{class: @google_client_id.present? ? "text-success" : "text-danger"}= @google_client_id.present? ? "SET" : "MISSING"
-%p
-  Google Client Secret: 
-  %strong{class: @google_client_secret.present? ? "text-success" : "text-danger"}= @google_client_secret.present? ? "SET" : "MISSING"
-%p
-  OAuth Environment Variables: 
-  %strong{class: @oauth_env_vars_present ? "text-success" : "text-danger"}= @oauth_env_vars_present ? "PRESENT" : "MISSING"
-
-%p
-  OmniAuth Configured: 
-  %strong{class: @omniauth_configured ? "text-success" : "text-danger"}= @omniauth_configured ? "YES" : "NO"
-%p
-  OmniAuth Allowed Methods: 
-  %strong= @omniauth_allowed_methods.inspect
-%p
-  OmniAuth Full Host: 
-  %strong= @omniauth_full_host
-
-%p
-  OAuth Routes Count: 
-  %strong= @oauth_routes_count
-%p
-  AuthController Exists: 
-  %strong{class: @auth_controller_exists ? "text-success" : "text-danger"}= @auth_controller_exists ? "YES" : "NO"
-- if @auth_controller_methods
-  %p
-    AuthController Methods: 
-    %strong= @auth_controller_methods.join(", ")
-
-%p
-  PersonIdentity Model: 
-  %strong{class: @person_identity_exists ? "text-success" : "text-danger"}= @person_identity_exists ? "EXISTS" : "MISSING"
-- if @person_identity_count
-  %p
-    PersonIdentity Records: 
-    %strong= @person_identity_count
-
-%p
-  OAuth Test URL: 
-  %strong= @oauth_test_url
-%p
-  OAuth Test Success: 
-  %strong{class: @oauth_test_success ? "text-success" : "text-danger"}= @oauth_test_success ? "YES" : "NO"
-- if @oauth_test_error
-  %p
-    OAuth Test Error: 
-    %strong{style: "color: red;"}= @oauth_test_error
-
-%h3 Current Request Info
-%p
-  Current URL: 
-  %strong= @current_url
-%p
-  Current Host: 
-  %strong= @current_host
-%p
-  Current Port: 
-  %strong= @current_port
-%p
-  Current Protocol: 
-  %strong= @current_protocol
-
-%h3 Generated OAuth URLs
-%p
-  OAuth Callback URL: 
-  %strong= @oauth_callback_url
-%p
-  OAuth Authorize URL: 
-  %strong= @oauth_authorize_url
-%p
-  Can Generate OAuth URLs: 
-  %strong{class: @can_generate_oauth_urls ? "text-success" : "text-danger"}= @can_generate_oauth_urls ? "YES" : "NO"
-- if @oauth_url_generation_error
-  %p
-    OAuth URL Generation Error: 
-    %strong{style: "color: red;"}= @oauth_url_generation_error
-
-%h3 Test OAuth Flow
-%p
-  %strong Test the OAuth flow directly:
-%p
-  = button_to "Test Google OAuth", "/auth/google_oauth2", method: :post, class: "btn btn-primary", data: { turbo: false }
-%p
-  %small.text-muted This will attempt to initiate the OAuth flow and show any errors in the logs.
 
 %h2 Database Status
 %p
@@ -104,6 +16,48 @@
   %p
     Database Error: 
     %strong{style: "color: red;"}= @db_error
+
+- if @show_env_vars
+  %h2 Environment Variables (Names and Character Counts)
+  - if @env_vars.any?
+    %ul
+      - @env_vars.each do |var|
+        %li
+          =var
+  - else
+    %p No relevant environment variables found
+  %p
+    %small.text-muted
+      Add 
+      %code ?show_env_vars=true
+      to the URL to see this section
+
+%h2 Health Check Links
+.row.mt-4
+  .col-md-6.mb-3
+    = link_to healthcheck_oauth_path, class: "btn btn-lg btn-primary w-100 d-flex align-items-center justify-content-center", style: "min-height: 80px;" do
+      %i.bi.bi-shield-check.me-2{style: "font-size: 2rem;"}
+      %div
+        %div OAuth Health Check
+        %small.text-white-50 OAuth configuration and status
+  .col-md-6.mb-3
+    = link_to healthcheck_search_path, class: "btn btn-lg btn-info w-100 d-flex align-items-center justify-content-center", style: "min-height: 80px;" do
+      %i.bi.bi-search.me-2{style: "font-size: 2rem;"}
+      %div
+        %div Search Index Health
+        %small.text-white-50 PgSearch index status
+  .col-md-6.mb-3
+    = link_to healthcheck_notification_api_path, class: "btn btn-lg btn-success w-100 d-flex align-items-center justify-content-center", style: "min-height: 80px;" do
+      %i.bi.bi-bell.me-2{style: "font-size: 2rem;"}
+      %div
+        %div NotificationAPI Health
+        %small.text-white-50 SMS notification service
+  .col-md-6.mb-3
+    = link_to healthcheck_giphy_path, class: "btn btn-lg btn-warning w-100 d-flex align-items-center justify-content-center", style: "min-height: 80px;" do
+      %i.bi.bi-image.me-2{style: "font-size: 2rem;"}
+      %div
+        %div GIPHY Health
+        %small.text-white-50 GIF search service
 
 %h2 Rails URL Configuration
 %p
@@ -128,26 +82,8 @@
   URL Generation Works: 
   %strong{class: @url_generation_works ? "text-success" : "text-danger"}= @url_generation_works ? "YES" : "NO"
 %p
-  Join Huddle URL: 
-  - begin
-    - if Huddle.last.present?
-      %strong= Rails.application.routes.url_helpers.join_huddle_url(Huddle.last)
-    - else
-      %strong No Huddle found
-  - rescue => e
-    %strong{style: "color: red;"}= "ERROR: #{e.message}"
-%p
   Routes Loaded: 
   %strong= @routes_loaded
 %p
   Routes Count: 
   %strong= @routes_count
-
-%h2 Environment Variables (Names and Character Counts)
-- if @env_vars.any?
-  %ul
-    - @env_vars.each do |var|
-      %li
-        =var
-- else
-  %p No relevant environment variables found

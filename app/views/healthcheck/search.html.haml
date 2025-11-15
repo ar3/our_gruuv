@@ -1,0 +1,63 @@
+%h1 Search Index Health Check
+
+= link_to healthcheck_index_path, class: "btn btn-secondary mb-4" do
+  %i.bi.bi-arrow-left.me-2
+  Back to Healthcheck
+
+- if @search_error
+  .alert.alert-danger
+    %strong Error checking search health:
+    = @search_error
+
+- elsif @search_health
+  - if @search_healthy
+    .alert.alert-success
+      %i.bi.bi-check-circle.me-2
+      %strong All search indexes are healthy!
+  - else
+    .alert.alert-warning
+      %i.bi.bi-exclamation-triangle.me-2
+      %strong Some search indexes are out of sync
+
+  %h2 Model Status
+  - @search_health[:models].each do |model_name, model_result|
+    .card.mb-3
+      .card-header{class: model_result[:healthy] ? "bg-success text-white" : "bg-warning"}
+        %h5.mb-0
+          - if model_result[:healthy]
+            %i.bi.bi-check-circle.me-2
+          - else
+            %i.bi.bi-exclamation-triangle.me-2
+          = model_name
+      .card-body
+        %p
+          %strong Actual records:
+          = model_result[:actual_count]
+        %p
+          %strong Search documents:
+          = model_result[:search_doc_count]
+        %p
+          %strong Difference:
+          %span{class: model_result[:difference] == 0 ? "text-success" : "text-danger"}
+            = model_result[:difference]
+        %p
+          %strong Orphaned documents:
+          %span{class: model_result[:orphaned_count] == 0 ? "text-success" : "text-danger"}
+            = model_result[:orphaned_count]
+        - if model_result[:missing_sample][:count] > 0
+          .alert.alert-warning.mt-3
+            %strong Missing documents (sample):
+            = model_result[:missing_sample][:count]
+            %br
+            %small Estimated total missing: ~#{model_result[:missing_sample][:estimated_total_missing]}
+
+  %p.text-muted
+    Last checked: #{@search_health[:timestamp]}
+
+  %h2 Actions
+  %p
+    = link_to "Rebuild All Indexes", healthcheck_index_path, class: "btn btn-primary", data: { confirm: "This will rebuild all search indexes. Continue?" }
+    %small.text-muted.ms-2
+      Or run: 
+      %code rake pg_search:rebuild
+

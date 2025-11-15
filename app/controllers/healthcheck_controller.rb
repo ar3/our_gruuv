@@ -1,7 +1,11 @@
 class HealthcheckController < ApplicationController
   def index
     @rails_env = Rails.env
-    @env_vars = ENV.keys.map { |k| "#{k} :: #{ENV[k].size}" }.sort
+    @show_env_vars = params[:show_env_vars] == 'true'
+    
+    if @show_env_vars
+      @env_vars = ENV.keys.map { |k| "#{k} :: #{ENV[k].size}" }.sort
+    end
     
     # Get Rails URL configuration
     @action_mailer_url_options = Rails.application.config.action_mailer.default_url_options
@@ -34,9 +38,7 @@ class HealthcheckController < ApplicationController
       @url_generation_works = false
     end
     
-    # OAuth Health Check
-    check_oauth_health
-    
+    # Database Health Check
     begin
       @person_count = Person.count
       @db_status = "Connected"
@@ -54,34 +56,131 @@ class HealthcheckController < ApplicationController
     render :index
   end
   
-  def oauth_test
-    # Test OAuth configuration
-    @oauth_config = {
-      google_client_id: ENV['GOOGLE_CLIENT_ID'],
-      google_client_secret: ENV['GOOGLE_CLIENT_SECRET'],
-      omniauth_full_host: OmniAuth.config.full_host,
-      omniauth_allowed_methods: OmniAuth.config.allowed_request_methods,
-      current_request_url: request.url,
-      current_request_host: request.host,
-      generated_callback_url: "#{OmniAuth.config.full_host}/auth/google_oauth2/callback",
-      generated_authorize_url: "#{OmniAuth.config.full_host}/auth/google_oauth2"
-    }
-    
-    # Test if we can make a request to the OAuth endpoint
-    begin
-      test_response = Net::HTTP.get_response(URI("#{OmniAuth.config.full_host}/auth/google_oauth2"))
-      @oauth_endpoint_response = test_response.code
-      @oauth_endpoint_success = test_response.code == "200" || test_response.code == "302"
-    rescue => e
-      @oauth_endpoint_response = "ERROR: #{e.message}"
-      @oauth_endpoint_success = false
+  def oauth
+    check_oauth_health
+    render :oauth
+  end
+
+  def search
+    check_search_health
+    render :search
+  end
+
+  def notification_api
+    check_notification_api_health
+    render :notification_api
+  end
+
+  def giphy
+    check_giphy_health
+    render :giphy
+  end
+
+  def test_notification_api
+    unless notification_api_configured?
+      render json: { 
+        success: false, 
+        error: 'NotificationAPI not configured. Please set NOTIFICATION_API_CLIENT_ID and NOTIFICATION_API_CLIENT_SECRET environment variables.' 
+      }, status: :unprocessable_entity
+      return
     end
+
+    phone_number = params[:phone_number] || '+13172898859'
     
-    render json: {
-      oauth_config: @oauth_config,
-      oauth_endpoint_response: @oauth_endpoint_response,
-      oauth_endpoint_success: @oauth_endpoint_success
-    }
+    # Validate phone number format (basic E.164 format check)
+    unless phone_number.match?(/^\+[1-9]\d{1,14}$/)
+      render json: { 
+        success: false, 
+        error: 'Invalid phone number format. Please use E.164 format (e.g., +15005550006)' 
+      }, status: :unprocessable_entity
+      return
+    end
+
+    begin
+      service = NotificationApiService.new(
+        client_id: ENV['NOTIFICATION_API_CLIENT_ID'],
+        client_secret: ENV['NOTIFICATION_API_CLIENT_SECRET']
+      )
+      
+      # Use the provided phone number or default
+      result = service.test_connection(
+        to: {
+          id: phone_number,
+          number: phone_number
+        }
+      )
+      
+      if result.is_a?(Hash) && result[:success] == false
+        # Service returned error details
+        render json: { 
+          success: false, 
+          error: result[:error],
+          status: result[:status],
+          headers: result[:headers],
+          backtrace: result[:backtrace],
+          full_response: result
+        }, status: :unprocessable_entity
+      elsif result
+        render json: { 
+          success: true, 
+          message: "Test notification sent successfully to #{phone_number}!",
+          response: result
+        }
+      else
+        render json: { 
+          success: false, 
+          error: 'Failed to send test notification. Check logs for details.' 
+        }, status: :unprocessable_entity
+      end
+    rescue => e
+      Rails.logger.error "NotificationAPI test error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      render json: { 
+        success: false, 
+        error: "Error: #{e.message}" 
+      }, status: :unprocessable_entity
+    end
+  end
+
+  def test_giphy
+    unless giphy_configured?
+      render json: { 
+        success: false, 
+        error: 'GIPHY not configured. Please set GIPHY_API_KEY environment variable.' 
+      }, status: :unprocessable_entity
+      return
+    end
+
+    begin
+      gateway = Giphy::Gateway.new
+      # Perform a simple search to test the connection
+      gifs = gateway.search_gifs(query: 'test', limit: 1)
+      
+      render json: { 
+        success: true, 
+        message: "GIPHY API connection successful! Found #{gifs.length} GIF(s).",
+        gifs_found: gifs.length
+      }
+    rescue Giphy::Gateway::RetryableError => e
+      Rails.logger.error "GIPHY test retryable error: #{e.message}"
+      render json: { 
+        success: false, 
+        error: "Service temporarily unavailable: #{e.message}" 
+      }, status: :service_unavailable
+    rescue Giphy::Gateway::NonRetryableError => e
+      Rails.logger.error "GIPHY test error: #{e.message}"
+      render json: { 
+        success: false, 
+        error: "GIPHY API error: #{e.message}" 
+      }, status: :unprocessable_entity
+    rescue => e
+      Rails.logger.error "GIPHY test unexpected error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      render json: { 
+        success: false, 
+        error: "Error: #{e.message}" 
+      }, status: :unprocessable_entity
+    end
   end
   
   private
@@ -153,5 +252,37 @@ class HealthcheckController < ApplicationController
       @oauth_url_generation_error = "#{e.class}: #{e.message}"
       return false
     end
+  end
+
+  def check_search_health
+    begin
+      @search_health = PgSearchHealthService.check
+      @search_healthy = @search_health[:healthy]
+      @search_error = nil
+    rescue => e
+      capture_error_in_sentry(e, {
+        method: 'healthcheck_search',
+        component: 'pg_search_indexes'
+      })
+      @search_health = nil
+      @search_healthy = false
+      @search_error = "#{e.class}: #{e.message}"
+    end
+  end
+
+  def check_notification_api_health
+    @notification_api_configured = notification_api_configured?
+  end
+
+  def check_giphy_health
+    @giphy_configured = giphy_configured?
+  end
+
+  def notification_api_configured?
+    ENV['NOTIFICATION_API_CLIENT_ID'].present? && ENV['NOTIFICATION_API_CLIENT_SECRET'].present?
+  end
+
+  def giphy_configured?
+    ENV['GIPHY_API_KEY'].present?
   end
 end

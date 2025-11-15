@@ -14,7 +14,7 @@ export default class extends Controller {
     }
 
     try {
-      const response = await fetch('/integrations/health_check/test_giphy', {
+      const response = await fetch('/healthcheck/test_giphy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

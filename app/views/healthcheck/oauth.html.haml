@@ -1,0 +1,98 @@
+%h1 OAuth Health Check
+
+= link_to healthcheck_index_path, class: "btn btn-secondary mb-4" do
+  %i.bi.bi-arrow-left.me-2
+  Back to Healthcheck
+
+%h2 Environment Variables
+%p
+  Google Client ID: 
+  %strong{class: @google_client_id.present? ? "text-success" : "text-danger"}= @google_client_id.present? ? "SET" : "MISSING"
+%p
+  Google Client Secret: 
+  %strong{class: @google_client_secret.present? ? "text-success" : "text-danger"}= @google_client_secret.present? ? "SET" : "MISSING"
+%p
+  OAuth Environment Variables: 
+  %strong{class: @oauth_env_vars_present ? "text-success" : "text-danger"}= @oauth_env_vars_present ? "PRESENT" : "MISSING"
+
+%h2 OmniAuth Configuration
+%p
+  OmniAuth Configured: 
+  %strong{class: @omniauth_configured ? "text-success" : "text-danger"}= @omniauth_configured ? "YES" : "NO"
+%p
+  OmniAuth Allowed Methods: 
+  %strong= @omniauth_allowed_methods.inspect
+%p
+  OmniAuth Full Host: 
+  %strong= @omniauth_full_host
+
+%h2 Routes
+%p
+  OAuth Routes Count: 
+  %strong= @oauth_routes_count
+%p
+  AuthController Exists: 
+  %strong{class: @auth_controller_exists ? "text-success" : "text-danger"}= @auth_controller_exists ? "YES" : "NO"
+- if @auth_controller_methods
+  %p
+    AuthController Methods: 
+    %strong= @auth_controller_methods.join(", ")
+
+%h2 Models
+%p
+  PersonIdentity Model: 
+  %strong{class: @person_identity_exists ? "text-success" : "text-danger"}= @person_identity_exists ? "EXISTS" : "MISSING"
+- if @person_identity_count
+  %p
+    PersonIdentity Records: 
+    %strong= @person_identity_count
+
+%h2 Current Request Info
+%p
+  Current URL: 
+  %strong= @current_url
+%p
+  Current Host: 
+  %strong= @current_host
+%p
+  Current Port: 
+  %strong= @current_port
+%p
+  Current Protocol: 
+  %strong= @current_protocol
+
+%h2 Generated OAuth URLs
+%p
+  OAuth Callback URL: 
+  %strong= @oauth_callback_url
+%p
+  OAuth Authorize URL: 
+  %strong= @oauth_authorize_url
+%p
+  Can Generate OAuth URLs: 
+  %strong{class: @can_generate_oauth_urls ? "text-success" : "text-danger"}= @can_generate_oauth_urls ? "YES" : "NO"
+- if @oauth_url_generation_error
+  %p
+    OAuth URL Generation Error: 
+    %strong{style: "color: red;"}= @oauth_url_generation_error
+
+%h2 OAuth Test
+%p
+  OAuth Test URL: 
+  %strong= @oauth_test_url
+%p
+  OAuth Test Success: 
+  %strong{class: @oauth_test_success ? "text-success" : "text-danger"}= @oauth_test_success ? "YES" : "NO"
+- if @oauth_test_error
+  %p
+    OAuth Test Error: 
+    %strong{style: "color: red;"}= @oauth_test_error
+
+%h3 Test OAuth Flow
+%p
+  %strong Test the OAuth flow directly:
+%p
+  = button_to "Test Google OAuth", "/auth/google_oauth2", method: :post, class: "btn btn-primary", data: { turbo: false }
+%p
+  %small.text-muted This will attempt to initiate the OAuth flow and show any errors in the logs.
+

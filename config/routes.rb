@@ -13,7 +13,12 @@ Rails.application.routes.draw do
   root "pages#home"
   get "healthcheck/index"
   get "/healthcheck", to: "healthcheck#index"
-  get "/healthcheck/oauth_test", to: "healthcheck#oauth_test"
+  get "/healthcheck/oauth", to: "healthcheck#oauth", as: :healthcheck_oauth
+  get "/healthcheck/search", to: "healthcheck#search", as: :healthcheck_search
+  get "/healthcheck/notification_api", to: "healthcheck#notification_api", as: :healthcheck_notification_api
+  get "/healthcheck/giphy", to: "healthcheck#giphy", as: :healthcheck_giphy
+  post "/healthcheck/test_notification_api", to: "healthcheck#test_notification_api"
+  post "/healthcheck/test_giphy", to: "healthcheck#test_giphy"
   
   
   # OAuth debug route
@@ -47,12 +52,6 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
-    resources :health_check, only: [:index] do
-      collection do
-        post :test_notification_api
-        post :test_giphy
-      end
-    end
   end
   
   # Slack OAuth callback (fixed URL for Slack)

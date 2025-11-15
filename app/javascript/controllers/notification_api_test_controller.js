@@ -25,7 +25,7 @@ export default class extends Controller {
     this.setButtonLoading(button, 'Sending...', 'bi-send')
     resultDiv.innerHTML = ''
     
-    fetch('/integrations/health_check/test_notification_api', {
+    fetch('/healthcheck/test_notification_api', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
