@@ -335,6 +335,21 @@ delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconn
   # Kudos permalinks (public observation links)
   get '/kudos/:date/:id', to: 'kudos#show', as: :kudos
 
+  # Public MAAP routes
+  get '/public_maap', to: 'public_maap/index#index', as: :public_maap
+  
+  # Public MAAP under organizations namespace
+  resources :organizations, only: [] do
+    get 'public_maap', to: 'organizations/public_maap#show', as: :public_maap
+    
+    namespace :public_maap, module: 'organizations/public_maap' do
+      resources :positions, only: [:index, :show], controller: 'positions'
+      resources :assignments, only: [:index, :show], controller: 'assignments'
+      resources :abilities, only: [:index, :show], controller: 'abilities'
+      resources :aspirations, only: [:index, :show], controller: 'aspirations'
+    end
+  end
+
   # ENM Alignment Typology App (completely isolated namespace)
   namespace :enm do
     root 'home#index'

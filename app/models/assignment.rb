@@ -28,8 +28,16 @@ class Assignment < ApplicationRecord
   
   # Scopes
   scope :ordered, -> { order(:title) }
-  scope :publicly_available, -> { where.not(became_public_at: nil) }
-  scope :private_only, -> { where(became_public_at: nil) }
+
+  # Finder method that handles both id and id-name formats
+  def self.find_by_param(param)
+    # If param is just a number, use it as id
+    return find(param) if param.to_s.match?(/\A\d+\z/)
+    
+    # Otherwise, extract id from id-name format
+    id = param.to_s.split('-').first
+    find(id)
+  end
   
   # Instance methods
   def display_name
@@ -39,27 +47,15 @@ class Assignment < ApplicationRecord
   def name
     title
   end
+
+  def to_param
+    "#{id}-#{title.parameterize}"
+  end
   
   def company_name
     company&.display_name
   end
 
-  # Public/private methods
-  def public?
-    became_public_at.present?
-  end
-
-  def private?
-    became_public_at.nil?
-  end
-
-  def make_public!
-    update!(became_public_at: Time.current)
-  end
-
-  def make_private!
-    update!(became_public_at: nil)
-  end
 
   # Ability-related methods
   def required_abilities

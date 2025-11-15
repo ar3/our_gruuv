@@ -342,4 +342,47 @@ RSpec.describe Ability, type: :model do
       end
     end
   end
+
+  describe '#to_param' do
+    let(:organization) { create(:organization, :company) }
+    let(:created_by) { create(:person) }
+    let(:updated_by) { create(:person) }
+    let(:ability) { create(:ability, organization: organization, name: 'Ruby Programming', created_by: created_by, updated_by: updated_by) }
+
+    it 'returns id-name-parameterized format based on name' do
+      expect(ability.to_param).to eq("#{ability.id}-ruby-programming")
+    end
+
+    it 'handles special characters in name' do
+      ability = create(:ability, organization: organization, name: 'C++ & Python!', created_by: created_by, updated_by: updated_by)
+      expect(ability.to_param).to eq("#{ability.id}-c-python")
+    end
+  end
+
+  describe '.find_by_param' do
+    let(:organization) { create(:organization, :company) }
+    let(:created_by) { create(:person) }
+    let(:updated_by) { create(:person) }
+    let(:ability) { create(:ability, organization: organization, name: 'Test Ability', created_by: created_by, updated_by: updated_by) }
+
+    it 'finds by numeric id' do
+      expect(Ability.find_by_param(ability.id.to_s)).to eq(ability)
+    end
+
+    it 'finds by id-name-parameterized format' do
+      param = "#{ability.id}-test-ability"
+      expect(Ability.find_by_param(param)).to eq(ability)
+    end
+
+    it 'extracts id from id-name format' do
+      param = "#{ability.id}-some-other-name"
+      expect(Ability.find_by_param(param)).to eq(ability)
+    end
+
+    it 'raises error for invalid id' do
+      expect {
+        Ability.find_by_param('999999')
+      }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
 end

@@ -10,9 +10,12 @@
   = link_to organization_abilities_path(@organization), class: "text-muted text-decoration-none" do
     %i.bi.bi-arrow-left.me-2
     Back to Abilities
+  %span.text-muted.mx-2 |
+  = link_to "View Public Version", organization_public_maap_ability_path(@organization, @ability), class: "text-muted text-decoration-none"
 
 - content_for :header_action do
   = render 'mode_switcher'
+  = link_to "View Public Version", organization_public_maap_ability_path(@organization, @ability), class: "btn btn-outline-secondary btn-sm ms-2"
 
 .row
   .col-md-8

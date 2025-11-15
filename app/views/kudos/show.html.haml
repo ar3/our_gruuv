@@ -72,6 +72,35 @@
               = rating.decorate.to_descriptive_html
               - if rating.negative? && !policy(@observation).view_negative_ratings?
                 %small.text-muted.ms-2 (Restricted visibility)
+          
+          / Links to public MAAP resources
+          - rated_abilities = @observation.abilities
+          - rated_assignments = @observation.assignments
+          - rated_aspirations = @observation.aspirations
+          - if rated_abilities.any? || rated_assignments.any? || rated_aspirations.any?
+            %hr
+            %h6.mb-3 Related Public MAAP Resources
+            - if rated_abilities.any?
+              %p.mb-2
+                %strong Abilities:
+                - rated_abilities.each_with_index do |ability, index|
+                  = link_to ability.name, organization_public_maap_ability_path(ability.organization, ability), class: "text-decoration-none"
+                  - unless index == rated_abilities.count - 1
+                    %span.text-muted , 
+            - if rated_assignments.any?
+              %p.mb-2
+                %strong Assignments:
+                - rated_assignments.each_with_index do |assignment, index|
+                  = link_to assignment.title, organization_public_maap_assignment_path(assignment.company, assignment), class: "text-decoration-none"
+                  - unless index == rated_assignments.count - 1
+                    %span.text-muted , 
+            - if rated_aspirations.any?
+              %p.mb-2
+                %strong Aspirations:
+                - rated_aspirations.each_with_index do |aspiration, index|
+                  = link_to aspiration.name, organization_public_maap_aspiration_path(aspiration.organization, aspiration), class: "text-decoration-none"
+                  - unless index == rated_aspirations.count - 1
+                    %span.text-muted , 
     
     - if @observation.notifications.successful.any?
       .card.mb-4

@@ -1,0 +1,22 @@
+%h1.mb-4 Public MAAP
+%p.lead.text-muted
+  Browse public Positions, Assignments, Abilities, and Aspirations from organizations using OurGruuv.
+
+- if @companies.any?
+  .row
+    - @companies.each do |company|
+      .col-md-6.mb-4
+        .card.h-100
+          .card-body
+            %h5.card-title= company.name
+            %p.card-text.text-muted
+              Browse public MAAP resources for #{company.name}
+            = link_to "View Public MAAP", organization_public_maap_path(company), class: "btn btn-primary"
+- else
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No Public Content Available
+    %p.mb-0
+      There are currently no organizations with public MAAP content available.
+

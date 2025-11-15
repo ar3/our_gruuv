@@ -1,0 +1,41 @@
+.mb-3
+  = link_to organization_public_maap_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@organization.name} Public MAAP
+
+%h1.mb-4 Public Assignments
+
+- if current_person
+  .mb-3
+    = link_to organization_assignments_path(@organization), class: "text-muted text-decoration-none" do
+      %i.bi.bi-lock.me-2
+      View Authenticated Version
+
+- if @assignments.any?
+  - company = @organization.root_company || @organization
+  - hierarchy = build_organization_hierarchy(company)
+  
+  .card.mb-4
+    .card-header
+      %h5.mb-0 Assignments by Organization
+    .card-body
+      / Show company-level assignments
+      - company_assignments = @assignments_by_org[company] || []
+      - if company_assignments.any?
+        %h6.mb-3= company.name
+        %ul.list-unstyled.ms-3
+          - company_assignments.each do |assignment|
+            %li.mb-2
+              = link_to assignment.title, organization_public_maap_assignment_path(@organization, assignment), class: "text-decoration-none"
+      
+      / Show department-level assignments with indentation
+      - hierarchy.each do |item|
+        = render 'organization_hierarchy_item', item: item, assignments_by_org: @assignments_by_org, organization: @organization
+- else
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No Public Assignments Available
+    %p.mb-0
+      There are currently no public assignments available for this organization.
+

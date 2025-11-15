@@ -1,0 +1,95 @@
+!!!
+%html
+  %head
+    %title= content_for(:title) || "Public MAAP - OurGruuv"
+    %meta{name: "viewport", content: "width=device-width,initial-scale=1"}
+    %meta{name: "apple-mobile-web-app-capable", content: "yes"}
+    %meta{name: "mobile-web-app-capable", content: "yes"}
+    = csrf_meta_tags
+    = csp_meta_tag
+
+    = yield :head
+
+    / Enable PWA manifest for installable apps
+    = tag.link rel: "manifest", href: pwa_manifest_path(format: :json)
+
+    / Favicon links for all devices and browsers
+    %link{rel: "icon", href: "/favicon.ico", type: "image/x-icon"}
+    %link{rel: "icon", href: "/favicon-16x16.png", type: "image/png", sizes: "16x16"}
+    %link{rel: "icon", href: "/favicon-32x32.png", type: "image/png", sizes: "32x32"}
+    %link{rel: "apple-touch-icon", href: "/apple-touch-icon.png"}
+    %link{rel: "icon", href: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png"}
+    %link{rel: "icon", href: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png"}
+
+    / Google Fonts - Inter + Source Sans Pro
+    %link{rel: "preconnect", href: "https://fonts.googleapis.com"}
+    %link{rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: true}
+    %link{rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Sans+Pro:wght@400;600&display=swap"}
+    
+    / Includes all stylesheet files in app/assets/stylesheets
+    = stylesheet_link_tag "application", "data-turbo-track": "reload"
+    = javascript_importmap_tags
+
+  %body
+    / Toast Container
+    .toast-container.position-fixed.top-0.end-0.p-3{style: "z-index: 1055;"}
+      - if notice
+        .toast.align-items-center.text-white.bg-success.border-0{role: "alert", "aria-live": "assertive", "aria-atomic": "true", "data-bs-autohide": "true", "data-bs-delay": "5000"}
+          .d-flex
+            .toast-body
+              %i.bi.bi-check-circle.me-2
+              = notice
+            %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
+      
+      - if alert
+        .toast.align-items-center.text-white.bg-danger.border-0{role: "alert", "aria-live": "assertive", "aria-atomic": "true", "data-bs-autohide": "true", "data-bs-delay": "5000"}
+          .d-flex
+            .toast-body
+              %i.bi.bi-exclamation-triangle.me-2
+              = alert
+            %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
+      
+      - if flash[:error]
+        .toast.align-items-center.text-white.bg-danger.border-0{role: "alert", "aria-live": "assertive", "aria-atomic": "true", "data-bs-autohide": "true", "data-bs-delay": "5000"}
+          .d-flex
+            .toast-body
+              %i.bi.bi-x-circle.me-2
+              = flash[:error]
+            %button.btn-close.btn-close-white.me-2.m-auto{type: "button", "data-bs-dismiss": "toast", "aria-label": "Close"}
+    
+    / Public MAAP Header
+    %nav.navbar.navbar-expand-lg.navbar-light.bg-light.border-bottom
+      .container
+        = link_to "Public MAAP", public_maap_path, class: "navbar-brand fw-bold"
+        .navbar-nav.ms-auto
+          - if current_person
+            .nav-item.dropdown
+              %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                = current_person.full_name
+              %ul.dropdown-menu
+                - if current_organization
+                  %li
+                    = link_to "View Authenticated Version", organization_path(current_organization), class: "dropdown-item"
+                %li
+                  %hr.dropdown-divider
+                %li= button_to "Logout", logout_path, method: :delete, class: "dropdown-item", form: { style: "display: inline;" }
+          - else
+            .nav-item
+              = link_to "Login", login_path, class: "nav-link"
+    
+    / Main Content
+    .container.mt-4.mb-5
+      = yield
+    
+    / Footer
+    %footer.bg-light.border-top.mt-5.py-4
+      .container
+        .row
+          .col-md-6
+            %p.mb-0.text-muted
+              %small Powered by 
+              = link_to "OurGruuv", root_path, class: "text-decoration-none"
+          .col-md-6.text-end
+            %p.mb-0.text-muted
+              %small Public MAAP - Browse Positions, Assignments, Abilities, and Aspirations
+

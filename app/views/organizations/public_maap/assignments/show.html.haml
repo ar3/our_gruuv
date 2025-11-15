@@ -1,0 +1,72 @@
+%h1.mb-4= @assignment.title
+
+.mb-3
+  = link_to organization_public_maap_assignments_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Assignments
+  - if current_person
+    %span.text-muted.mx-2 |
+    = link_to "View Authenticated Version", organization_assignment_path(@organization, @assignment), class: "text-muted text-decoration-none"
+
+.row
+  .col-md-8
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Assignment Details
+      .card-body
+        - if @assignment.tagline.present?
+          .mb-3
+            %h6.text-muted Tagline
+            %p.mb-0= @assignment.tagline
+        
+        .mb-3
+          %h6.text-muted Company
+          %p.mb-0= @assignment.company_name
+        
+        - if @assignment.assignment_outcomes.any?
+          .mb-3
+            %h6.text-muted Outcomes
+            - @assignment.assignment_outcomes.ordered.each do |outcome|
+              .card.mb-2
+                .card-body.py-2
+                  .d-flex.justify-content-between.align-items-start
+                    .flex-grow-1
+                      .markdown-content
+                        = render_markdown(outcome.description)
+                    %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
+                      = outcome.outcome_type.titleize
+        
+        - if @assignment.handbook.present?
+          .mb-3
+            %h6.text-muted Handbook
+            .markdown-content.markdown-content--bordered
+              = render_markdown(@assignment.handbook)
+
+    - if @observations.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-star.me-2
+            Public Observations
+        .card-body
+          - @observations.each do |observation|
+            .card.mb-3
+              .card-body
+                %p.mb-2= observation.decorate.story_html.html_safe
+                .d-flex.justify-content-between.align-items-center
+                  .small.text-muted
+                    From: #{observation.observer.preferred_name || observation.observer.first_name}
+                    - if observation.observed_teammates.any?
+                      |  • Recognizing: 
+                      - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }
+                      = names.join(', ')
+                  = link_to "View Observation", kudos_path(date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id), class: "btn btn-sm btn-outline-primary"
+
+  .col-md-4
+    - if current_person
+      .card.mb-4
+        .card-header
+          %h6.mb-0 Quick Actions
+        .card-body
+          = link_to "View Authenticated Version", organization_assignment_path(@organization, @assignment), class: "btn btn-outline-primary btn-sm w-100"
+

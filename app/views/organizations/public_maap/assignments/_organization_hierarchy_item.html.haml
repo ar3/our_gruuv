@@ -1,0 +1,20 @@
+- org = item[:organization]
+- level = item[:level]
+- children = item[:children]
+- org_assignments = assignments_by_org[org] || []
+
+- if org_assignments.any? || children.any?
+  %div{style: "margin-left: #{level * 20}px;"}
+    - if org_assignments.any?
+      %h6.mb-3
+        - if level > 0
+          %i.bi.bi-arrow-return-right.me-2.text-muted
+        = org.name
+      %ul.list-unstyled.ms-3
+        - org_assignments.each do |assignment|
+          %li.mb-2
+            = link_to assignment.title, organization_public_maap_assignment_path(organization, assignment), class: "text-decoration-none"
+    
+    - children.each do |child_item|
+      = render 'organization_hierarchy_item', item: child_item, assignments_by_org: assignments_by_org, organization: organization
+

@@ -122,15 +122,15 @@
                               %strong= organization.name
                           %td
                             .badge-group
-                              - if organization.assignments.publicly_available.exists?
+                              - if organization.assignments.exists?
                                 %span.badge.bg-info.me-1
                                   %i.bi.bi-clipboard-check.me-1
                                   Assignments
-                              - if organization.abilities.publicly_available.exists?
+                              - if organization.abilities.exists?
                                 %span.badge.bg-success.me-1
                                   %i.bi.bi-award.me-1
                                   Abilities
-                              - if organization.positions.publicly_available.exists?
+                              - if organization.positions.exists?
                                 %span.badge.bg-warning.me-1
                                   %i.bi.bi-briefcase.me-1
                                   Positions

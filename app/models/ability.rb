@@ -13,8 +13,17 @@ class Ability < ApplicationRecord
   has_many :observations, through: :observation_ratings
 
   # Scopes
-  scope :publicly_available, -> { where.not(became_public_at: nil) }
-  scope :private_only, -> { where(became_public_at: nil) }
+  scope :ordered, -> { order(:name) }
+
+  # Finder method that handles both id and id-name formats
+  def self.find_by_param(param)
+    # If param is just a number, use it as id
+    return find(param) if param.to_s.match?(/\A\d+\z/)
+    
+    # Otherwise, extract id from id-name format
+    id = param.to_s.split('-').first
+    find(id)
+  end
 
   # Person milestone-related methods
   def person_attainments
@@ -91,6 +100,10 @@ class Ability < ApplicationRecord
     "#{name} v#{semantic_version}"
   end
 
+  def to_param
+    "#{id}-#{name.parameterize}"
+  end
+
   def version_with_guidance
     return display_name unless versions.any?
 
@@ -146,22 +159,6 @@ class Ability < ApplicationRecord
     end
   end
 
-  # Public/private methods
-  def public?
-    became_public_at.present?
-  end
-
-  def private?
-    became_public_at.nil?
-  end
-
-  def make_public!
-    update!(became_public_at: Time.current)
-  end
-
-  def make_private!
-    update!(became_public_at: nil)
-  end
   
   # pg_search configuration
   pg_search_scope :search_by_full_text,

@@ -25,4 +25,18 @@ class Aspiration < ApplicationRecord
   scope :within_hierarchy, ->(organization) {
     where(organization: organization.self_and_descendants)
   }
+
+  # Finder method that handles both id and id-name formats
+  def self.find_by_param(param)
+    # If param is just a number, use it as id
+    return find(param) if param.to_s.match?(/\A\d+\z/)
+    
+    # Otherwise, extract id from id-name format
+    id = param.to_s.split('-').first
+    find(id)
+  end
+
+  def to_param
+    "#{id}-#{name.parameterize}"
+  end
 end

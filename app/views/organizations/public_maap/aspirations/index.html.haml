@@ -1,0 +1,41 @@
+.mb-3
+  = link_to organization_public_maap_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@organization.name} Public MAAP
+
+%h1.mb-4 Public Aspirations
+
+- if current_person
+  .mb-3
+    = link_to organization_aspirations_path(@organization), class: "text-muted text-decoration-none" do
+      %i.bi.bi-lock.me-2
+      View Authenticated Version
+
+- if @aspirations.any?
+  - company = @organization.root_company || @organization
+  - hierarchy = build_organization_hierarchy(company)
+  
+  .card.mb-4
+    .card-header
+      %h5.mb-0 Aspirations by Organization
+    .card-body
+      / Show company-level aspirations
+      - company_aspirations = @aspirations_by_org[company] || []
+      - if company_aspirations.any?
+        %h6.mb-3= company.name
+        %ul.list-unstyled.ms-3
+          - company_aspirations.each do |aspiration|
+            %li.mb-2
+              = link_to aspiration.name, organization_public_maap_aspiration_path(@organization, aspiration), class: "text-decoration-none"
+      
+      / Show department-level aspirations with indentation
+      - hierarchy.each do |item|
+        = render 'organization_hierarchy_item', item: item, aspirations_by_org: @aspirations_by_org, organization: @organization
+- else
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No Aspirations Available
+    %p.mb-0
+      There are currently no aspirations available for this organization.
+

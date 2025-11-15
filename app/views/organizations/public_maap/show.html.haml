@@ -1,0 +1,51 @@
+%h1.mb-4 Public MAAP - #{@organization.name}
+
+.mb-3
+  = link_to public_maap_path, class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Public MAAP
+  - if current_person
+    %span.text-muted.mx-2 |
+    = link_to "View Authenticated Version", organization_path(@organization), class: "text-muted text-decoration-none"
+
+.row
+  .col-md-6.mb-4
+    .card.h-100
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-briefcase.me-2
+          Positions
+      .card-body
+        %p Browse public positions for #{@organization.name}
+        = link_to "View Positions", organization_public_maap_positions_path(@organization), class: "btn btn-primary"
+  
+  .col-md-6.mb-4
+    .card.h-100
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-clipboard-check.me-2
+          Assignments
+      .card-body
+        %p Browse public assignments for #{@organization.name}
+        = link_to "View Assignments", organization_public_maap_assignments_path(@organization), class: "btn btn-primary"
+  
+  .col-md-6.mb-4
+    .card.h-100
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-lightning.me-2
+          Abilities
+      .card-body
+        %p Browse public abilities for #{@organization.name}
+        = link_to "View Abilities", organization_public_maap_abilities_path(@organization), class: "btn btn-primary"
+  
+  .col-md-6.mb-4
+    .card.h-100
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-star.me-2
+          Aspirations
+      .card-body
+        %p Browse aspirations for #{@organization.name}
+        = link_to "View Aspirations", organization_public_maap_aspirations_path(@organization), class: "btn btn-primary"
+

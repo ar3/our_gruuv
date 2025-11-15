@@ -244,4 +244,40 @@ RSpec.describe Assignment, type: :model do
       expect(assignment.assignment_outcomes.count).to eq(0)
     end
   end
+
+  describe '#to_param' do
+    it 'returns id-name-parameterized format based on title' do
+      assignment = create(:assignment, company: organization, title: 'Frontend Development')
+      expect(assignment.to_param).to eq("#{assignment.id}-frontend-development")
+    end
+
+    it 'handles special characters in title' do
+      assignment = create(:assignment, company: organization, title: 'Backend & API Development!')
+      expect(assignment.to_param).to eq("#{assignment.id}-backend-api-development")
+    end
+  end
+
+  describe '.find_by_param' do
+    let(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
+
+    it 'finds by numeric id' do
+      expect(Assignment.find_by_param(assignment.id.to_s)).to eq(assignment)
+    end
+
+    it 'finds by id-name-parameterized format' do
+      param = "#{assignment.id}-test-assignment"
+      expect(Assignment.find_by_param(param)).to eq(assignment)
+    end
+
+    it 'extracts id from id-name format' do
+      param = "#{assignment.id}-some-other-name"
+      expect(Assignment.find_by_param(param)).to eq(assignment)
+    end
+
+    it 'raises error for invalid id' do
+      expect {
+        Assignment.find_by_param('999999')
+      }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
 end

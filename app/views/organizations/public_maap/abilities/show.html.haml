@@ -1,0 +1,74 @@
+%h1.mb-4= @ability.name
+
+.mb-3
+  = link_to organization_public_maap_abilities_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Abilities
+  - if current_person
+    %span.text-muted.mx-2 |
+    = link_to "View Authenticated Version", organization_ability_path(@organization, @ability), class: "text-muted text-decoration-none"
+
+.row
+  .col-md-8
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Ability Details
+      .card-body
+        %dl.row
+          %dt.col-sm-3 Name:
+          %dd.col-sm-9= @ability.name
+          %dt.col-sm-3 Description:
+          %dd.col-sm-9
+            - if @ability.description.present?
+              = render_markdown(@ability.description)
+            - else
+              %em.text-muted No description provided
+          %dt.col-sm-3 Version:
+          %dd.col-sm-9
+            %span.badge.bg-primary= @ability.semantic_version
+          %dt.col-sm-3 Organization:
+          %dd.col-sm-9= @ability.organization.display_name
+
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-list-ol.me-2
+          Milestone Descriptions
+      .card-body
+        - (1..5).each do |level|
+          - description = @ability.send("milestone_#{level}_description")
+          - if description.present?
+            .mb-3
+              %h6.text-primary Milestone #{level}
+              = render_markdown(description)
+        - if (1..5).all? { |level| @ability.send("milestone_#{level}_description").blank? }
+          %em.text-muted No milestone descriptions provided
+
+    - if @observations.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-star.me-2
+            Public Observations
+        .card-body
+          - @observations.each do |observation|
+            .card.mb-3
+              .card-body
+                %p.mb-2= observation.decorate.story_html.html_safe
+                .d-flex.justify-content-between.align-items-center
+                  .small.text-muted
+                    From: #{observation.observer.preferred_name || observation.observer.first_name}
+                    - if observation.observed_teammates.any?
+                      |  • Recognizing: 
+                      - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }
+                      = names.join(', ')
+                  = link_to "View Observation", kudos_path(date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id), class: "btn btn-sm btn-outline-primary"
+
+  .col-md-4
+    - if current_person
+      .card.mb-4
+        .card-header
+          %h6.mb-0 Quick Actions
+        .card-body
+          = link_to "View Authenticated Version", organization_ability_path(@organization, @ability), class: "btn btn-outline-primary btn-sm w-100"
+

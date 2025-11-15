@@ -30,6 +30,16 @@ class Organization < ApplicationRecord
   scope :teams, -> { where(type: 'Team') }
   scope :departments, -> { where(type: 'Department') }
   scope :ordered, -> { order(:name) }
+
+  # Finder method that handles both id and id-name formats
+  def self.find_by_param(param)
+    # If param is just a number, use it as id
+    return find(param) if param.to_s.match?(/\A\d+\z/)
+    
+    # Otherwise, extract id from id-name format
+    id = param.to_s.split('-').first
+    find(id)
+  end
   
   # Instance methods
   def company?
@@ -62,6 +72,10 @@ class Organization < ApplicationRecord
     else
       name
     end
+  end
+
+  def to_param
+    "#{id}-#{name.parameterize}"
   end
   
   def slack_configured?

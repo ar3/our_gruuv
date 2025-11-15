@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_13_112513) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_15_163832) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -28,8 +28,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_13_112513) do
     t.text "milestone_3_description"
     t.text "milestone_4_description"
     t.text "milestone_5_description"
-    t.datetime "became_public_at"
-    t.index ["became_public_at"], name: "index_abilities_on_became_public_at"
     t.index ["created_by_id"], name: "index_abilities_on_created_by_id"
     t.index ["name", "organization_id"], name: "index_abilities_on_name_and_organization_id", unique: true
     t.index ["organization_id"], name: "index_abilities_on_organization_id"
@@ -166,9 +164,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_13_112513) do
     t.bigint "company_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.datetime "became_public_at"
     t.bigint "department_id"
-    t.index ["became_public_at"], name: "index_assignments_on_became_public_at"
     t.index ["company_id"], name: "index_assignments_on_company_id"
     t.index ["department_id"], name: "index_assignments_on_department_id"
   end
@@ -596,9 +592,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_13_112513) do
     t.text "position_summary"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.datetime "became_public_at"
     t.text "eligibility_requirements_summary"
-    t.index ["became_public_at"], name: "index_positions_on_became_public_at"
     t.index ["position_level_id"], name: "index_positions_on_position_level_id"
     t.index ["position_type_id", "position_level_id"], name: "index_positions_on_type_and_level_unique", unique: true
     t.index ["position_type_id"], name: "index_positions_on_position_type_id"

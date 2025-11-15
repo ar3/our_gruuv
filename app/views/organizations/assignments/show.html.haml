@@ -40,6 +40,8 @@
   = link_to organization_assignments_path(@organization), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     Back to Assignments
+  %span.text-muted.mx-2 |
+  = link_to "View Public Version", organization_public_maap_assignment_path(@organization, @assignment), class: "text-muted text-decoration-none"
 
 .row.justify-content-center
   .col-lg-10

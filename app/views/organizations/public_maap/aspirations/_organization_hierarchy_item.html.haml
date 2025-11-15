@@ -1,0 +1,20 @@
+- org = item[:organization]
+- level = item[:level]
+- children = item[:children]
+- org_aspirations = aspirations_by_org[org] || []
+
+- if org_aspirations.any? || children.any?
+  %div{style: "margin-left: #{level * 20}px;"}
+    - if org_aspirations.any?
+      %h6.mb-3
+        - if level > 0
+          %i.bi.bi-arrow-return-right.me-2.text-muted
+        = org.name
+      %ul.list-unstyled.ms-3
+        - org_aspirations.each do |aspiration|
+          %li.mb-2
+            = link_to aspiration.name, organization_public_maap_aspiration_path(organization, aspiration), class: "text-decoration-none"
+    
+    - children.each do |child_item|
+      = render 'organization_hierarchy_item', item: child_item, aspirations_by_org: aspirations_by_org, organization: organization
+

@@ -155,4 +155,39 @@ RSpec.describe Position, type: :model do
       end
     end
   end
+
+  describe '#to_param' do
+    it 'returns id-name-parameterized format based on display_name' do
+      position_type = create(:position_type, external_title: 'Software Engineer', organization: company, position_major_level: position_major_level)
+      position_level = create(:position_level, level: '1.2', position_major_level: position_major_level)
+      position = create(:position, position_type: position_type, position_level: position_level)
+      
+      expected_param = "#{position.id}-#{position.display_name.parameterize}"
+      expect(position.to_param).to eq(expected_param)
+    end
+  end
+
+  describe '.find_by_param' do
+    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+
+    it 'finds by numeric id' do
+      expect(Position.find_by_param(position.id.to_s)).to eq(position)
+    end
+
+    it 'finds by id-name-parameterized format' do
+      param = "#{position.id}-#{position.display_name.parameterize}"
+      expect(Position.find_by_param(param)).to eq(position)
+    end
+
+    it 'extracts id from id-name format' do
+      param = "#{position.id}-some-other-name"
+      expect(Position.find_by_param(param)).to eq(position)
+    end
+
+    it 'raises error for invalid id' do
+      expect {
+        Position.find_by_param('999999')
+      }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
 end 

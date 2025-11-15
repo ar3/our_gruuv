@@ -129,4 +129,46 @@ RSpec.describe Organization, type: :model do
       expect(result).to be_empty
     end
   end
+
+  describe '#to_param' do
+    it 'returns id-name-parameterized format' do
+      company = create(:organization, :company, name: 'Test Company')
+      expect(company.to_param).to eq("#{company.id}-test-company")
+    end
+
+    it 'handles special characters in name' do
+      company = create(:organization, :company, name: 'Test & Company!')
+      expect(company.to_param).to eq("#{company.id}-test-company")
+    end
+  end
+
+  describe '.find_by_param' do
+    let(:company) { create(:organization, :company, name: 'Test Company') }
+
+    it 'finds by numeric id' do
+      found = Organization.find_by_param(company.id.to_s)
+      expect(found.id).to eq(company.id)
+      expect(found).to be_a(Organization)
+    end
+
+    it 'finds by id-name-parameterized format' do
+      param = "#{company.id}-test-company"
+      found = Organization.find_by_param(param)
+      expect(found.id).to eq(company.id)
+      expect(found).to be_a(Organization)
+    end
+
+    it 'extracts id from id-name format' do
+      param = "#{company.id}-some-other-name"
+      found = Organization.find_by_param(param)
+      expect(found.id).to eq(company.id)
+      expect(found).to be_a(Organization)
+    end
+
+    it 'raises error for invalid id' do
+      expect {
+        Organization.find_by_param('999999')
+      }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
 end 
