@@ -1,8 +1,7 @@
 class GoalLinkForm < Reform::Form
   # Define form properties - Reform handles Rails integration automatically
-  property :this_goal_id
-  property :that_goal_id
-  property :link_type
+  property :parent_id
+  property :child_id
   property :metadata
   
   # Virtual properties
@@ -15,14 +14,12 @@ class GoalLinkForm < Reform::Form
   attr_accessor :organization, :current_person, :current_teammate, :linking_goal, :bulk_create_service
   
   # Use ActiveModel validations
-  validates :link_type, presence: true
   validates :link_direction, presence: true, inclusion: { in: %w[outgoing incoming] }
   validate :validate_goal_selection
   validate :validate_bulk_titles
   validate :no_self_linking, unless: :bulk_create_mode?
   validate :no_circular_dependencies, unless: :bulk_create_mode?
   validate :uniqueness_of_link, unless: :bulk_create_mode?
-  validate :link_type_inclusion
   
   # Reform automatically handles save - we just need to customize the logic
   def save
@@ -40,16 +37,14 @@ class GoalLinkForm < Reform::Form
   def save_single_link
     # Set the goal associations based on direction
     if link_direction == 'incoming'
-      # Incoming: this_goal_id comes from selected goal, that_goal_id is the linking goal
-      model.this_goal_id = this_goal_id
-      model.that_goal_id = linking_goal.id
+      # Incoming: selected goal becomes the parent, linking goal becomes the child
+      model.parent_id = parent_id
+      model.child_id = linking_goal.id
     else # outgoing
-      # Outgoing: this_goal_id is the linking goal, that_goal_id comes from selected goal
-      model.this_goal_id = linking_goal.id
-      model.that_goal_id = that_goal_id
+      # Outgoing: linking goal becomes the parent, selected goal becomes the child
+      model.parent_id = linking_goal.id
+      model.child_id = child_id
     end
-    
-    model.link_type = link_type
     
     # Handle metadata - either from metadata param or metadata_notes virtual property
     if metadata_notes.present?
@@ -72,8 +67,7 @@ class GoalLinkForm < Reform::Form
       current_teammate,
       linking_goal,
       link_direction.to_sym,
-      titles,
-      link_type
+      titles
     )
     
     if @bulk_create_service.call
@@ -92,9 +86,9 @@ class GoalLinkForm < Reform::Form
     return if bulk_create_mode?
     
     if link_direction == 'incoming'
-      errors.add(:this_goal_id, "can't be blank") if this_goal_id.blank?
+      errors.add(:parent_id, "can't be blank") if parent_id.blank?
     else
-      errors.add(:that_goal_id, "can't be blank") if that_goal_id.blank?
+      errors.add(:child_id, "can't be blank") if child_id.blank?
     end
   end
   
@@ -113,15 +107,15 @@ class GoalLinkForm < Reform::Form
   
   def no_self_linking
     if link_direction == 'incoming'
-      return unless this_goal_id && linking_goal
+      return unless parent_id && linking_goal
       
-      if this_goal_id.to_i == linking_goal.id
+      if parent_id.to_i == linking_goal.id
         errors.add(:base, "cannot link a goal to itself")
       end
     else
-      return unless that_goal_id && linking_goal
+      return unless child_id && linking_goal
       
-      if that_goal_id.to_i == linking_goal.id
+      if child_id.to_i == linking_goal.id
         errors.add(:base, "cannot link a goal to itself")
       end
     end
@@ -129,41 +123,41 @@ class GoalLinkForm < Reform::Form
   
   def no_circular_dependencies
     if link_direction == 'incoming'
-      return unless this_goal_id && linking_goal
+      return unless parent_id && linking_goal
       
-      this_goal = Goal.find_by(id: this_goal_id)
-      return unless this_goal
+      parent_goal = Goal.find_by(id: parent_id)
+      return unless parent_goal
       
-      if creates_cycle?(this_goal, linking_goal)
+      if creates_cycle?(parent_goal, linking_goal)
         errors.add(:base, "This link would create a circular dependency")
       end
     else
-      return unless that_goal_id && linking_goal
+      return unless child_id && linking_goal
       
-      that_goal = Goal.find_by(id: that_goal_id)
-      return unless that_goal
+      child_goal = Goal.find_by(id: child_id)
+      return unless child_goal
       
-      if creates_cycle?(linking_goal, that_goal)
+      if creates_cycle?(linking_goal, child_goal)
         errors.add(:base, "This link would create a circular dependency")
       end
     end
   end
   
-  def creates_cycle?(this_goal, that_goal)
-    # BFS to check if that_goal eventually links back to this_goal
+  def creates_cycle?(parent_goal, child_goal)
+    # BFS to check if child_goal eventually links back to parent_goal
     visited = Set.new
-    queue = [that_goal]
+    queue = [child_goal]
     
     while queue.any?
       current = queue.shift
-      return true if current.id == this_goal.id
+      return true if current.id == parent_goal.id
       
       next if visited.include?(current.id)
       visited.add(current.id)
       
-      # Follow outgoing links from current goal
+      # Follow outgoing links from current goal (goals where current is the parent)
       current.outgoing_links.each do |link|
-        queue << link.that_goal
+        queue << link.child
       end
     end
     
@@ -172,37 +166,27 @@ class GoalLinkForm < Reform::Form
   
   def uniqueness_of_link
     if link_direction == 'incoming'
-      return unless this_goal_id && linking_goal && link_type
+      return unless parent_id && linking_goal
       
       existing = GoalLink.where(
-        this_goal_id: this_goal_id,
-        that_goal_id: linking_goal.id,
-        link_type: link_type
+        parent_id: parent_id,
+        child_id: linking_goal.id
       ).where.not(id: model.id).exists?
       
       if existing
         errors.add(:base, "link already exists")
       end
     else
-      return unless that_goal_id && linking_goal && link_type
+      return unless child_id && linking_goal
       
       existing = GoalLink.where(
-        this_goal_id: linking_goal.id,
-        that_goal_id: that_goal_id,
-        link_type: link_type
+        parent_id: linking_goal.id,
+        child_id: child_id
       ).where.not(id: model.id).exists?
       
       if existing
         errors.add(:base, "link already exists")
       end
-    end
-  end
-  
-  def link_type_inclusion
-    return unless link_type
-    
-    unless GoalLink.link_types.key?(link_type)
-      errors.add(:link_type, 'is not included in the list')
     end
   end
 end

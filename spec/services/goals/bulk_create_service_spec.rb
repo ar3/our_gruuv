@@ -6,12 +6,10 @@ RSpec.describe Goals::BulkCreateService, type: :service do
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:linking_goal) { create(:goal, creator: teammate, owner: teammate, privacy_level: 'everyone_in_company') }
   let(:goal_titles) { ['Goal 1', 'Goal 2', 'Goal 3'] }
-  let(:link_type) { 'this_is_key_result_of_that' }
-  
   describe '#initialize' do
     it 'sets instance variables correctly' do
       service = described_class.new(
-        organization, person, teammate, linking_goal, :outgoing, goal_titles, link_type
+        organization, person, teammate, linking_goal, :outgoing, goal_titles
       )
       
       expect(service.organization).to eq(organization)
@@ -20,13 +18,12 @@ RSpec.describe Goals::BulkCreateService, type: :service do
       expect(service.linking_goal).to eq(linking_goal)
       expect(service.link_direction).to eq(:outgoing)
       expect(service.goal_titles).to eq(goal_titles)
-      expect(service.link_type).to eq(link_type)
     end
     
     it 'rejects blank titles' do
       titles = ['Goal 1', '', '  ', 'Goal 2']
       service = described_class.new(
-        organization, person, teammate, linking_goal, :outgoing, titles, link_type
+        organization, person, teammate, linking_goal, :outgoing, titles
       )
       
       expect(service.goal_titles).to eq(['Goal 1', 'Goal 2'])
@@ -37,7 +34,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
     context 'with outgoing links' do
       it 'creates goals as quantitative_key_result' do
         service = described_class.new(
-          organization, person, teammate, linking_goal, :outgoing, goal_titles, link_type
+          organization, person, teammate, linking_goal, :outgoing, goal_titles
         )
         
         expect { service.call }.to change { Goal.count }.by(3)
@@ -60,21 +57,21 @@ RSpec.describe Goals::BulkCreateService, type: :service do
       
       it 'creates links from linking_goal to created goals' do
         service = described_class.new(
-          organization, person, teammate, linking_goal, :outgoing, goal_titles, link_type
+          organization, person, teammate, linking_goal, :outgoing, goal_titles
         )
         
         expect { service.call }.to change { GoalLink.count }.by(3)
         
         created_goals = Goal.last(3)
         created_goals.each do |goal|
-          link = GoalLink.find_by(this_goal: linking_goal, that_goal: goal, link_type: link_type)
+          link = GoalLink.find_by(parent: linking_goal, child: goal)
           expect(link).to be_present
         end
       end
       
       it 'sets title and description to the same value' do
         service = described_class.new(
-          organization, person, teammate, linking_goal, :outgoing, goal_titles, link_type
+          organization, person, teammate, linking_goal, :outgoing, goal_titles
         )
         
         service.call
@@ -90,7 +87,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
     context 'with incoming links' do
       it 'creates goals as inspirational_objective' do
         service = described_class.new(
-          organization, person, teammate, linking_goal, :incoming, goal_titles, link_type
+          organization, person, teammate, linking_goal, :incoming, goal_titles
         )
         
         expect { service.call }.to change { Goal.count }.by(3)
@@ -107,14 +104,14 @@ RSpec.describe Goals::BulkCreateService, type: :service do
       
       it 'creates links from created goals to linking_goal' do
         service = described_class.new(
-          organization, person, teammate, linking_goal, :incoming, goal_titles, link_type
+          organization, person, teammate, linking_goal, :incoming, goal_titles
         )
         
         expect { service.call }.to change { GoalLink.count }.by(3)
         
         created_goals = Goal.last(3)
         created_goals.each do |goal|
-          link = GoalLink.find_by(this_goal: goal, that_goal: linking_goal, link_type: link_type)
+          link = GoalLink.find_by(parent: goal, child: linking_goal)
           expect(link).to be_present
         end
       end
@@ -123,7 +120,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
     context 'with empty titles' do
       it 'returns false and does not create any goals' do
         service = described_class.new(
-          organization, person, teammate, linking_goal, :outgoing, [], link_type
+          organization, person, teammate, linking_goal, :outgoing, []
         )
         
         expect { service.call }.not_to change { Goal.count }
@@ -135,7 +132,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
       it 'returns false and collects errors' do
         # Create a goal with invalid data by stubbing save to return false
         service = described_class.new(
-          organization, person, teammate, linking_goal, :outgoing, ['Goal 1'], link_type
+          organization, person, teammate, linking_goal, :outgoing, ['Goal 1']
         )
         
         allow_any_instance_of(Goal).to receive(:save).and_return(false)
@@ -152,7 +149,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
     context 'transaction rollback' do
       it 'rolls back all changes if any goal creation fails' do
         service = described_class.new(
-          organization, person, teammate, linking_goal, :outgoing, goal_titles, link_type
+          organization, person, teammate, linking_goal, :outgoing, goal_titles
         )
         
         # Make the second goal creation fail by stubbing save to return false for one goal

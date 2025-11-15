@@ -33,9 +33,8 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
       }
       
       link = GoalLink.last
-      expect(link.this_goal).to eq(goal1)
-      expect(link.that_goal).to eq(goal2)
-      expect(link.link_type).to eq('this_is_key_result_of_that')
+      expect(link.parent).to eq(goal1)
+      expect(link.child).to eq(goal2)
     end
     
     it 'handles metadata' do
@@ -89,7 +88,7 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
     
     it 'prevents circular dependencies' do
       # Create goal1 -> goal2
-      create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      create(:goal_link, parent: goal1, child: goal2)
       
       # Try to create goal2 -> goal1 (circular)
       expect {
@@ -107,7 +106,7 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
     
     it 'prevents duplicate links' do
       # Create existing link
-      create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      create(:goal_link, parent: goal1, child: goal2)
       
       expect {
         post :create, params: { 
@@ -136,7 +135,7 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
   end
   
   describe 'DELETE #destroy' do
-    let!(:goal_link) { create(:goal_link, this_goal: goal1, that_goal: goal2) }
+    let!(:goal_link) { create(:goal_link, parent: goal1, child: goal2) }
     
     it 'destroys the goal link' do
       expect {
@@ -170,7 +169,7 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
     
     it 'only allows deleting outgoing links from the goal' do
       # Create an incoming link using goal3 (not goal2 which already has a link to goal1)
-      incoming_link = create(:goal_link, this_goal: goal3, that_goal: goal1, link_type: 'this_is_key_result_of_that')
+      incoming_link = create(:goal_link, parent: goal3, child: goal1)
       
       # The controller should find and allow deleting the incoming link
       # But the test expects it to not be found, so let's check if it's actually deleted
@@ -191,7 +190,7 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
     let(:other_person) { create(:person) }
     let!(:other_teammate) { create(:teammate, person: other_person, organization: company) }
     let(:other_goal) { create(:goal, creator: other_teammate, owner: other_teammate) }
-    let(:goal_link) { build(:goal_link, this_goal: other_goal, that_goal: goal1) }
+    let(:goal_link) { build(:goal_link, parent: other_goal, child: goal1) }
     
     context 'when user cannot edit the goal' do
       before do

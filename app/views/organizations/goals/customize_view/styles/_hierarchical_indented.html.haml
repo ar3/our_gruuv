@@ -1,0 +1,32 @@
+- hierarchy = Goals::HierarchyQuery.new(goals: @goals).call
+- root_goals = hierarchy[:root_goals]
+- parent_child_map = hierarchy[:parent_child_map]
+
+- if @goals.empty?
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No goals to display
+- else
+  
+  .list-group
+    - if root_goals.empty?
+      - @goals.each do |goal|
+        .list-group-item{class: goal_warning_class(goal)}
+          .d-flex.w-100.justify-content-between.align-items-start
+            .flex-grow-1
+              %h5.mb-1
+                = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
+                %span.ms-2.badge{class: goal_category_badge_class(goal)}
+                  = goal_category_label(goal)
+                - if goal.should_show_warning?
+                  %i.bi.bi-exclamation-triangle.text-warning.ms-1{"data-bs-toggle" => "tooltip", "data-bs-title" => goal_warning_message(goal)}
+              %p.mb-1
+                %span.badge.me-2{class: timeframe_badge_class(goal.timeframe), "data-bs-toggle" => "tooltip", "data-bs-title" => timeframe_tooltip_text(goal)}
+                  = goal.timeframe.to_s.humanize
+                %span.badge.me-2{class: status_badge_class(goal.status)}
+                  = goal.status.to_s.humanize
+    - else
+      - root_goals.each do |root_goal|
+        != render_hierarchical_indented_goal(root_goal, 0, parent_child_map, @organization)
+

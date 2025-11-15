@@ -163,9 +163,9 @@ module GoalsHelper
     goals_with_associations = goals.includes(:outgoing_links, :incoming_links, :owner, :creator, :company)
     
     # Get all links involving these goals (both directions)
-    links = GoalLink.where(this_goal_id: goal_ids)
-                    .or(GoalLink.where(that_goal_id: goal_ids))
-                    .includes(:this_goal, :that_goal)
+    links = GoalLink.where(parent_id: goal_ids)
+                    .or(GoalLink.where(child_id: goal_ids))
+                    .includes(:parent, :child)
     
     # Build category map
     categories = goals_with_associations.map { |g| [g.id, g.goal_category] }.to_h
@@ -195,27 +195,29 @@ module GoalsHelper
     
     html = content_tag(:div, class: 'tree-node', style: "margin-left: #{depth * 40}px; margin-bottom: 10px;") do
       content_tag(:div, class: 'd-flex align-items-center') do
-        arrow = depth > 0 ? content_tag(:i, '', class: 'bi bi-arrow-return-right me-2', style: 'color: #999;') : ''
+        arrow = depth > 0 ? content_tag(:i, '', class: 'bi bi-arrow-return-right me-2', style: 'color: #999;') : ''.html_safe
         card_content = content_tag(:div, class: 'card', style: 'min-width: 300px; max-width: 500px;') do
           content_tag(:div, class: 'card-body p-2') do
             content_tag(:div, class: 'd-flex align-items-center justify-content-between') do
               left = content_tag(:div, class: 'flex-grow-1') do
-                link_to(goal.title, organization_goal_path(organization, goal), class: 'text-decoration-none fw-bold') +
-                tag(:br) +
-                content_tag(:span, goal_category_label(goal), class: "badge #{badge_class}", style: 'font-size: 0.7em;')
+                safe_join([
+                  link_to(goal.title, organization_goal_path(organization, goal), class: 'text-decoration-none fw-bold'),
+                  tag(:br),
+                  content_tag(:span, goal_category_label(goal), class: "badge #{badge_class}", style: 'font-size: 0.7em;')
+                ])
               end
-              right = children.any? ? content_tag(:span, pluralize(children.count, 'child'), class: 'badge bg-light text-dark') : ''
-              left + right
+              right = children.any? ? content_tag(:span, pluralize(children.count, 'child'), class: 'badge bg-light text-dark') : ''.html_safe
+              safe_join([left, right])
             end
           end
         end
-        arrow + card_content
+        safe_join([arrow, card_content])
       end
     end
     
-    children_html = children.map { |child| render_tree_node(child, depth + 1, parent_child_map, categories, organization) }.join.html_safe
+    children_html = children.map { |child| render_tree_node(child, depth + 1, parent_child_map, categories, organization) }
     
-    (html + children_html)
+    safe_join([html] + children_html)
   end
   
   def render_nested_goal(goal, depth, parent_child_map, categories, organization)
@@ -305,6 +307,36 @@ module GoalsHelper
     lines << "<strong>Reported by:</strong> #{check_in.confidence_reporter.display_name}"
     lines.join('<br>')
   end
+  
+  def render_hierarchical_indented_goal(goal, depth, parent_child_map, organization)
+    children = parent_child_map[goal.id] || []
+    indent_px = depth * 30
+    warning_class = goal_warning_class(goal)
+    border_style = depth > 0 ? 'border-left: 2px solid #dee2e6; padding-left: 15px;' : ''
+    
+    html = content_tag(:div, class: "list-group-item #{warning_class}", style: "margin-left: #{indent_px}px; #{border_style}") do
+      content_tag(:div, class: 'd-flex w-100 justify-content-between align-items-start') do
+        flex_grow = content_tag(:div, class: 'flex-grow-1') do
+          title = content_tag(:h5, class: 'mb-1') do
+            link_to(goal.title, organization_goal_path(organization, goal), class: 'text-decoration-none') +
+            content_tag(:span, goal_category_label(goal), class: "badge ms-2 #{goal_category_badge_class(goal)}") +
+            (goal.should_show_warning? ? content_tag(:i, '', class: 'bi bi-exclamation-triangle text-warning ms-1', 'data-bs-toggle': 'tooltip', 'data-bs-title': goal_warning_message(goal)) : '')
+          end
+          badges = content_tag(:p, class: 'mb-1') do
+            content_tag(:span, goal.timeframe.to_s.humanize, class: "badge me-2 #{timeframe_badge_class(goal.timeframe)}", 'data-bs-toggle': 'tooltip', 'data-bs-title': timeframe_tooltip_text(goal)) +
+            content_tag(:span, goal.status.to_s.humanize, class: "badge me-2 #{status_badge_class(goal.status)}")
+          end
+          title + badges
+        end
+        flex_grow
+      end
+    end
+    
+    children_html = children.map { |child| render_hierarchical_indented_goal(child, depth + 1, parent_child_map, organization) }.join.html_safe
+    
+    (html + children_html).html_safe
+  end
+  
   
   def calculate_goals_overview_stats(goals)
     stats = {

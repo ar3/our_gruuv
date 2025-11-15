@@ -9,10 +9,10 @@ RSpec.describe Goal, type: :model do
   describe 'associations' do
     it { should belong_to(:owner).optional(false) }
     it { should belong_to(:creator).class_name('Teammate') }
-    it { should have_many(:outgoing_links).class_name('GoalLink').with_foreign_key('this_goal_id').dependent(:destroy) }
-    it { should have_many(:linked_goals).through(:outgoing_links).source(:that_goal) }
-    it { should have_many(:incoming_links).class_name('GoalLink').with_foreign_key('that_goal_id').dependent(:destroy) }
-    it { should have_many(:linking_goals).through(:incoming_links).source(:this_goal) }
+    it { should have_many(:outgoing_links).class_name('GoalLink').with_foreign_key('parent_id').dependent(:destroy) }
+    it { should have_many(:linked_goals).through(:outgoing_links).source(:child) }
+    it { should have_many(:incoming_links).class_name('GoalLink').with_foreign_key('child_id').dependent(:destroy) }
+    it { should have_many(:linking_goals).through(:incoming_links).source(:parent) }
   end
   
   describe 'enums' do
@@ -768,17 +768,12 @@ RSpec.describe Goal, type: :model do
       let(:goal1) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
       let(:goal2) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
       
-      it 'returns true when goal has outgoing links with this_is_key_result_of_that' do
-        create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      it 'returns true when goal has outgoing links' do
+        create(:goal_link, parent: goal1, child: goal2)
         expect(goal1.has_sub_goals?).to be true
       end
       
       it 'returns false when goal has no outgoing links' do
-        expect(goal1.has_sub_goals?).to be false
-      end
-      
-      it 'returns false when goal has outgoing links but not this_is_key_result_of_that' do
-        create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_blocks_that')
         expect(goal1.has_sub_goals?).to be false
       end
     end
@@ -794,7 +789,7 @@ RSpec.describe Goal, type: :model do
         end
         
         it 'returns false when vision has sub-goals' do
-          create(:goal_link, this_goal: vision_goal, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+          create(:goal_link, parent: vision_goal, child: goal2)
           expect(vision_goal.should_show_warning?).to be false
         end
       end
@@ -807,7 +802,7 @@ RSpec.describe Goal, type: :model do
         end
         
         it 'returns false when objective has sub-goals' do
-          create(:goal_link, this_goal: objective_goal, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+          create(:goal_link, parent: objective_goal, child: goal2)
           expect(objective_goal.should_show_warning?).to be false
         end
       end
@@ -819,7 +814,7 @@ RSpec.describe Goal, type: :model do
           expect(bad_key_result_goal.should_show_warning?).to be true
           
           # Even with sub-goals, bad key result should show warning
-          create(:goal_link, this_goal: bad_key_result_goal, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+          create(:goal_link, parent: bad_key_result_goal, child: goal2)
           expect(bad_key_result_goal.should_show_warning?).to be true
         end
       end

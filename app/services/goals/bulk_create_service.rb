@@ -1,16 +1,15 @@
 module Goals
   class BulkCreateService
     attr_reader :organization, :current_person, :current_teammate, :linking_goal, 
-                :link_direction, :goal_titles, :link_type, :created_goals, :errors
+                :link_direction, :goal_titles, :created_goals, :errors
 
-    def initialize(organization, current_person, current_teammate, linking_goal, link_direction, goal_titles, link_type)
+    def initialize(organization, current_person, current_teammate, linking_goal, link_direction, goal_titles)
       @organization = organization
       @current_person = current_person
       @current_teammate = current_teammate
       @linking_goal = linking_goal
       @link_direction = link_direction.to_sym
       @goal_titles = goal_titles.reject(&:blank?)
-      @link_type = link_type
       @created_goals = []
       @errors = []
     end
@@ -71,18 +70,16 @@ module Goals
 
     def create_link_for_goal(goal)
       link = if link_direction == :incoming
-        # Incoming: this_goal_id comes from the created goal, that_goal_id is the linking goal
+        # Incoming: created goal becomes the parent, linking goal becomes the child
         GoalLink.new(
-          this_goal: goal,
-          that_goal: linking_goal,
-          link_type: link_type
+          parent: goal,
+          child: linking_goal
         )
       else # :outgoing
-        # Outgoing: this_goal_id is the linking goal, that_goal_id comes from the created goal
+        # Outgoing: linking goal becomes the parent, created goal becomes the child
         GoalLink.new(
-          this_goal: linking_goal,
-          that_goal: goal,
-          link_type: link_type
+          parent: linking_goal,
+          child: goal
         )
       end
       

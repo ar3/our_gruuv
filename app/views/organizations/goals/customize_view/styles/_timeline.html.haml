@@ -57,13 +57,13 @@
           
           / Show links between goals on this timeline
           - links.each do |link|
-            - if goals_by_date[date].include?(link.this_goal) || goals_by_date[date].include?(link.that_goal)
-              - this_date = link.this_goal.most_likely_target_date || Date.today + 1.year
-              - that_date = link.that_goal.most_likely_target_date || Date.today + 1.year
-              - if this_date != that_date && sorted_dates.include?(this_date) && sorted_dates.include?(that_date)
+            - if goals_by_date[date].include?(link.parent) || goals_by_date[date].include?(link.child)
+              - parent_date = link.parent.most_likely_target_date || Date.today + 1.year
+              - child_date = link.child.most_likely_target_date || Date.today + 1.year
+              - if parent_date != child_date && sorted_dates.include?(parent_date) && sorted_dates.include?(child_date)
                 / Draw connection line between dates (simplified - just show indicator)
                 .timeline-connection{style: "margin-left: 20px; margin-top: 5px; margin-bottom: 5px;"}
                   %small.text-muted
                     %i.bi.bi-arrow-right.me-1
-                    Connected to goal on #{that_date.strftime('%b %d')}
+                    Connected to goal on #{child_date.strftime('%b %d')}
 

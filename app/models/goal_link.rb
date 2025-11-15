@@ -1,23 +1,13 @@
 class GoalLink < ApplicationRecord
   # Associations
-  belongs_to :this_goal, class_name: 'Goal', foreign_key: 'this_goal_id'
-  belongs_to :that_goal, class_name: 'Goal', foreign_key: 'that_goal_id'
-  
-  # Enums
-  enum :link_type, {
-    if_this_then_that: 'if_this_then_that',
-    this_blocks_that: 'this_blocks_that',
-    this_makes_that_easier: 'this_makes_that_easier',
-    this_makes_that_unnecessary: 'this_makes_that_unnecessary',
-    this_is_key_result_of_that: 'this_is_key_result_of_that',
-    this_supports_that: 'this_supports_that'
-  }
+  belongs_to :parent, class_name: 'Goal', foreign_key: 'parent_id'
+  belongs_to :child, class_name: 'Goal', foreign_key: 'child_id'
   
   # Flag to skip circular dependency check (used by BulkCreateService)
   attr_accessor :skip_circular_dependency_check
   
   # Validations
-  validates :this_goal, :that_goal, :link_type, presence: true
+  validates :parent, :child, presence: true
   validate :no_self_linking
   validate :no_circular_dependencies, unless: :should_skip_circular_dependency_check?
   validate :uniqueness_of_link
@@ -25,15 +15,15 @@ class GoalLink < ApplicationRecord
   private
   
   def no_self_linking
-    return unless this_goal && that_goal
+    return unless parent && child
     
-    if this_goal_id == that_goal_id
+    if parent_id == child_id
       errors.add(:base, "cannot link a goal to itself")
     end
   end
   
   def no_circular_dependencies
-    return unless this_goal && that_goal
+    return unless parent && child
     
     if creates_cycle?
       errors.add(:base, "This link would create a circular dependency")
@@ -41,21 +31,21 @@ class GoalLink < ApplicationRecord
   end
   
   def creates_cycle?
-    # BFS to check if that_goal eventually links back to this_goal
+    # BFS to check if child eventually links back to parent
     visited = Set.new
-    queue = [that_goal]
+    queue = [child]
     
     while queue.any?
       current = queue.shift
-      return true if current.id == this_goal.id
+      return true if current.id == parent.id
       
       next if visited.include?(current.id)
       visited.add(current.id)
       
-      # Follow outgoing links from current goal
+      # Follow outgoing links from current goal (goals where current is the parent)
       # Reload to ensure we get fresh associations
       current.outgoing_links.reload.each do |link|
-        queue << link.that_goal
+        queue << link.child
       end
     end
     
@@ -63,12 +53,11 @@ class GoalLink < ApplicationRecord
   end
   
   def uniqueness_of_link
-    return unless this_goal && that_goal && link_type
+    return unless parent && child
     
     existing = GoalLink.where(
-      this_goal_id: this_goal_id,
-      that_goal_id: that_goal_id,
-      link_type: link_type
+      parent_id: parent_id,
+      child_id: child_id
     ).where.not(id: id).exists?
     
     if existing
@@ -87,18 +76,18 @@ class GoalLink < ApplicationRecord
   def newly_created_goal?
     # Check if one goal was created very recently and the other is older
     # This indicates bulk creation where a new goal is created and immediately linked to an existing one
-    return false unless this_goal&.created_at && that_goal&.created_at
+    return false unless parent&.created_at && child&.created_at
     
     now = Time.current
-    this_recent = this_goal.created_at > 1.second.ago
-    that_recent = that_goal.created_at > 1.second.ago
+    parent_recent = parent.created_at > 1.second.ago
+    child_recent = child.created_at > 1.second.ago
     
     # If both are recent, they might both be from test setup - don't skip validation
-    return false if this_recent && that_recent
+    return false if parent_recent && child_recent
     
     # If one is recent and the other is not, it's likely bulk creation
     # Check if the newer goal was created in the current second
-    newer_goal = this_goal.created_at > that_goal.created_at ? this_goal : that_goal
+    newer_goal = parent.created_at > child.created_at ? parent : child
     newer_goal.created_at.to_i == now.to_i
   end
 end

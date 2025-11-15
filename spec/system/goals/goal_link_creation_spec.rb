@@ -117,7 +117,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       expect(page).to have_current_path(organization_goal_path(organization, goal1))
       expect(page).to have_content('Goal 2')
       
-      link = GoalLink.find_by(this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      link = GoalLink.find_by(parent: goal1, child: goal2)
       expect(link).to be_present
     end
     
@@ -133,8 +133,8 @@ RSpec.describe 'Goal Link Creation', type: :system do
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       expect(page).to have_current_path(organization_goal_path(organization, goal1))
       
-      link2 = GoalLink.find_by(this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
-      link3 = GoalLink.find_by(this_goal: goal1, that_goal: goal3, link_type: 'this_is_key_result_of_that')
+      link2 = GoalLink.find_by(parent: goal1, child: goal2)
+      link3 = GoalLink.find_by(parent: goal1, child: goal3)
       expect(link2).to be_present
       expect(link3).to be_present
     end
@@ -159,7 +159,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
     
     it 'prevents duplicate links' do
       # Create existing link
-      create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      create(:goal_link, parent: goal1, child: goal2)
       
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
@@ -171,7 +171,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       expect(page).to have_content('Already Linked')
       
       # Should only have one link
-      expect(GoalLink.where(this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that').count).to eq(1)
+      expect(GoalLink.where(parent: goal1, child: goal2).count).to eq(1)
     end
   end
   
@@ -194,7 +194,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       expect(page).to have_current_path(organization_goal_path(organization, goal1))
       
-      link = GoalLink.find_by(this_goal: goal2, that_goal: goal1, link_type: 'this_is_key_result_of_that')
+      link = GoalLink.find_by(parent: goal2, child: goal1)
       expect(link).to be_present
     end
   end
@@ -280,7 +280,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       
       created_goal = Goal.find_by(title: unique_title)
       expect(created_goal).to be_present
-      link = GoalLink.find_by(this_goal: goal1, that_goal: created_goal, link_type: 'this_is_key_result_of_that')
+      link = GoalLink.find_by(parent: goal1, child: created_goal)
       expect(link).to be_present
     end
     
@@ -326,7 +326,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       
       created_goal = Goal.find_by(title: unique_title)
       expect(created_goal).to be_present
-      link = GoalLink.find_by(this_goal: created_goal, that_goal: goal1, link_type: 'this_is_key_result_of_that')
+      link = GoalLink.find_by(parent: created_goal, child: goal1)
       expect(link).to be_present
     end
   end
@@ -343,13 +343,13 @@ RSpec.describe 'Goal Link Creation', type: :system do
       expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden)
       
       # Check existing link was created
-      existing_link = GoalLink.find_by(this_goal: goal1, that_goal: goal2)
+      existing_link = GoalLink.find_by(parent: goal1, child: goal2)
       expect(existing_link).to be_present
       
       # Check new goal was created and linked
       bulk_goal = Goal.find_by(title: 'Bulk Goal')
       expect(bulk_goal).to be_present
-      bulk_link = GoalLink.find_by(this_goal: goal1, that_goal: bulk_goal)
+      bulk_link = GoalLink.find_by(parent: goal1, child: bulk_goal)
       expect(bulk_link).to be_present
     end
   end
@@ -392,7 +392,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
   describe 'circular dependency prevention' do
     it 'disables checkboxes for goals that would create circular dependencies' do
       # Create goal chain: goal1 -> goal2 -> goal3
-      create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      create(:goal_link, parent: goal1, child: goal2)
       create(:goal_link, this_goal: goal2, that_goal: goal3, link_type: 'this_is_key_result_of_that')
       
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal3)
@@ -413,7 +413,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
     
     it 'allows selection of goals that don\'t create cycles' do
       # Create goal1 -> goal2 (no cycle with goal3)
-      create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      create(:goal_link, parent: goal1, child: goal2)
       
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal3)
       
@@ -429,7 +429,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
   describe 'existing link detection' do
     it 'checks and disables already-linked goals' do
       # Create existing link
-      create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      create(:goal_link, parent: goal1, child: goal2)
       
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
@@ -443,7 +443,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
     
     it 'allows selection of goals that are not already linked' do
       # Create link between goal1 and goal2
-      create(:goal_link, this_goal: goal1, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      create(:goal_link, parent: goal1, child: goal2)
       
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       

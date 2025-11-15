@@ -23,8 +23,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         params[:owner_id] = current_teammate.id.to_s
       else
         @goals = policy_scope(Goal.none)
-        @view_style = params[:view] || 'list'
-        @view_style = 'list' unless %w[table cards list network tree nested timeline check-in].include?(@view_style)
+        @view_style = params[:view] || 'hierarchical-indented'
+        @view_style = 'hierarchical-indented' unless %w[table cards list network tree nested timeline check-in hierarchical-indented].include?(@view_style)
         @goal_count = 0
         @show_performance_warning = false
         @current_filters = {
@@ -70,8 +70,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @goals = apply_sorting(@goals, params[:sort], params[:direction])
     
     # Set view style
-    @view_style = params[:view] || 'list'
-    @view_style = 'list' unless %w[table cards list network tree nested timeline check-in].include?(@view_style)
+    @view_style = params[:view] || 'hierarchical-indented'
+    @view_style = 'hierarchical-indented' unless %w[table cards list network tree nested timeline check-in hierarchical-indented].include?(@view_style)
     
     # For check-in view, filter to eligible goals and load check-ins
     if @view_style == 'check-in'
@@ -216,7 +216,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       status: params[:status],
       sort: params[:sort] || 'most_likely_target_date',
       direction: params[:direction] || 'asc',
-      view: params[:view] || 'list',
+      view: params[:view] || 'hierarchical-indented',
       spotlight: params[:spotlight] || 'goals_overview',
       owner_type: params[:owner_type],
       owner_id: params[:owner_id]

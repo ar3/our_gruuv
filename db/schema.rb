@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_15_170655) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_15_200153) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -259,16 +259,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_15_170655) do
   end
 
   create_table "goal_links", force: :cascade do |t|
-    t.bigint "this_goal_id", null: false
-    t.bigint "that_goal_id", null: false
-    t.string "link_type", null: false
+    t.bigint "parent_id", null: false
+    t.bigint "child_id", null: false
     t.jsonb "metadata"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["link_type"], name: "index_goal_links_on_link_type"
-    t.index ["that_goal_id"], name: "index_goal_links_on_that_goal_id"
-    t.index ["this_goal_id", "that_goal_id", "link_type"], name: "index_goal_links_unique", unique: true
-    t.index ["this_goal_id"], name: "index_goal_links_on_this_goal_id"
+    t.index ["child_id"], name: "index_goal_links_on_child_id"
+    t.index ["parent_id", "child_id"], name: "index_goal_links_unique", unique: true
+    t.index ["parent_id"], name: "index_goal_links_on_parent_id"
   end
 
   create_table "goals", force: :cascade do |t|
@@ -791,8 +789,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_15_170655) do
   add_foreign_key "employment_tenures", "teammates"
   add_foreign_key "goal_check_ins", "goals"
   add_foreign_key "goal_check_ins", "people", column: "confidence_reporter_id"
-  add_foreign_key "goal_links", "goals", column: "that_goal_id"
-  add_foreign_key "goal_links", "goals", column: "this_goal_id"
+  add_foreign_key "goal_links", "goals", column: "child_id"
+  add_foreign_key "goal_links", "goals", column: "parent_id"
   add_foreign_key "goals", "organizations", column: "company_id"
   add_foreign_key "goals", "teammates", column: "creator_id"
   add_foreign_key "huddle_feedbacks", "huddles"

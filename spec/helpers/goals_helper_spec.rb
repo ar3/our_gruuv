@@ -77,7 +77,7 @@ RSpec.describe GoalsHelper, type: :helper do
     it 'returns empty string for goals that should not show warning' do
       goal2 = create(:goal, creator: creator_teammate, owner: creator_teammate)
       vision_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'inspirational_objective', most_likely_target_date: nil)
-      create(:goal_link, this_goal: vision_goal, that_goal: goal2, link_type: 'this_is_key_result_of_that')
+      create(:goal_link, parent: vision_goal, child: goal2)
       
       expect(helper.goal_warning_class(vision_goal)).to eq('')
       

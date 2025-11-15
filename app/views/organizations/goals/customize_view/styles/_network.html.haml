@@ -20,31 +20,31 @@
       
       / Draw links (edges)
       - links.each do |link|
-        - this_goal = link.this_goal
-        - that_goal = link.that_goal
-        - next unless goal_ids.include?(this_goal.id) && goal_ids.include?(that_goal.id)
+        - parent_goal = link.parent
+        - child_goal = link.child
+        - next unless goal_ids.include?(parent_goal.id) && goal_ids.include?(child_goal.id)
         
-        - this_index = goals.index(this_goal)
-        - that_index = goals.index(that_goal)
+        - parent_index = goals.index(parent_goal)
+        - child_index = goals.index(child_goal)
         - total_goals = goals.count
         
         / Simple circular layout
-        - this_angle = (this_index * 2 * Math::PI / total_goals) - Math::PI / 2
-        - that_angle = (that_index * 2 * Math::PI / total_goals) - Math::PI / 2
+        - parent_angle = (parent_index * 2 * Math::PI / total_goals) - Math::PI / 2
+        - child_angle = (child_index * 2 * Math::PI / total_goals) - Math::PI / 2
         - radius = 200
         - center_x = 400
         - center_y = 300
         
-        - this_x = center_x + radius * Math.cos(this_angle)
-        - this_y = center_y + radius * Math.sin(this_angle)
-        - that_x = center_x + radius * Math.cos(that_angle)
-        - that_y = center_y + radius * Math.sin(that_angle)
+        - parent_x = center_x + radius * Math.cos(parent_angle)
+        - parent_y = center_y + radius * Math.sin(parent_angle)
+        - child_x = center_x + radius * Math.cos(child_angle)
+        - child_y = center_y + radius * Math.sin(child_angle)
         
         %line{
-          x1: this_x,
-          y1: this_y,
-          x2: that_x,
-          y2: that_y,
+          x1: parent_x,
+          y1: parent_y,
+          x2: child_x,
+          y2: child_y,
           stroke: "#999",
           "stroke-width": "1",
           "marker-end": "url(#arrowhead)"

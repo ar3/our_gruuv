@@ -74,11 +74,12 @@
           .col-md-6
             %small.text-muted
               %i.bi.bi-funnel.me-1
-              Filters: #{@current_filters[:timeframe] || 'All'} / #{@current_filters[:goal_type] || 'All'} / #{@current_filters[:status] || 'All'}
+              Filters: 
               - if @view_style == 'check-in'
-                %br
-                %i.bi.bi-check-circle.me-1
                 Check-in Eligible (applied because of the view style)
+              - else
+                #{@current_filters[:timeframe] || 'All'} / #{@current_filters[:goal_type] || 'All'} / #{@current_filters[:status] || 'All'}
+                
               %br
               %i.bi.bi-sort-down.me-1
               Sort: #{@current_filters[:sort] || 'Most Likely Date'} (#{@current_filters[:direction] || 'asc'})
@@ -120,9 +121,11 @@
         = render partial: 'organizations/goals/customize_view/styles/timeline'
       - when 'check-in'
         = render partial: 'organizations/goals/customize_view/styles/check_in'
+      - when 'hierarchical-indented'
+        = render partial: 'organizations/goals/customize_view/styles/hierarchical_indented'
       - else
-        / Default to list view
-        = render partial: 'organizations/goals/customize_view/styles/list'
+        / Default to hierarchical-indented view
+        = render partial: 'organizations/goals/customize_view/styles/hierarchical_indented'
     - else
       .alert.alert-info
         %h6.mb-2

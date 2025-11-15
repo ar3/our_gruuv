@@ -4,11 +4,11 @@ class Goal < ApplicationRecord
   belongs_to :creator, class_name: 'Teammate'
   belongs_to :company, class_name: 'Organization'
   
-  has_many :outgoing_links, class_name: 'GoalLink', foreign_key: 'this_goal_id', dependent: :destroy
-  has_many :linked_goals, through: :outgoing_links, source: :that_goal
+  has_many :outgoing_links, class_name: 'GoalLink', foreign_key: 'parent_id', dependent: :destroy
+  has_many :linked_goals, through: :outgoing_links, source: :child
   
-  has_many :incoming_links, class_name: 'GoalLink', foreign_key: 'that_goal_id', dependent: :destroy
-  has_many :linking_goals, through: :incoming_links, source: :this_goal
+  has_many :incoming_links, class_name: 'GoalLink', foreign_key: 'child_id', dependent: :destroy
+  has_many :linking_goals, through: :incoming_links, source: :parent
   
   has_many :goal_check_ins, dependent: :destroy
   has_many :recent_check_ins, -> { recent.limit(3) }, class_name: 'GoalCheckIn'
@@ -138,7 +138,7 @@ class Goal < ApplicationRecord
   end
   
   def has_sub_goals?
-    outgoing_links.exists?(link_type: 'this_is_key_result_of_that')
+    outgoing_links.exists?
   end
   
   def should_show_warning?
