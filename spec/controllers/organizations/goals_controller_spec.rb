@@ -140,9 +140,9 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:view_style)).to eq('cards')
     end
     
-    it 'defaults view style to list' do
+    it 'defaults view style to hierarchical-indented' do
       get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id }
-      expect(assigns(:view_style)).to eq('list')
+      expect(assigns(:view_style)).to eq('hierarchical-indented')
     end
   end
   
@@ -161,7 +161,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     
     it 'includes outgoing links' do
       linked_goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
-      link = create(:goal_link, this_goal: goal, that_goal: linked_goal)
+      link = create(:goal_link, parent: goal, child: linked_goal)
       
       get :show, params: { organization_id: company.id, id: goal.id }
       expect(assigns(:goal).outgoing_links).to include(link)
@@ -169,7 +169,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     
     it 'includes incoming links' do
       linking_goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
-      link = create(:goal_link, this_goal: linking_goal, that_goal: goal)
+      link = create(:goal_link, parent: linking_goal, child: goal)
       
       get :show, params: { organization_id: company.id, id: goal.id }
       expect(assigns(:goal).incoming_links).to include(link)

@@ -393,7 +393,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
     it 'disables checkboxes for goals that would create circular dependencies' do
       # Create goal chain: goal1 -> goal2 -> goal3
       create(:goal_link, parent: goal1, child: goal2)
-      create(:goal_link, this_goal: goal2, that_goal: goal3, link_type: 'this_is_key_result_of_that')
+      create(:goal_link, parent: goal2, child: goal3)
       
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal3)
       

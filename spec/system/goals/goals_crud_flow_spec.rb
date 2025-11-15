@@ -655,17 +655,31 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       expect(page).to have_field('goal_title')
     end
     
-    it 'links to check-ins from goals hero card' do
+    it 'links to goals check-in view from goals hero card' do
       visit dashboard_organization_path(organization)
       
       # Should see goals hero card with check-in button
       expect(page).to have_content('Check-In on Your Goals')
       
-      # Click tertiary button
-      click_link 'Check-In on Your Goals', href: organization_person_check_ins_path(organization, person)
+      # Find the link and verify it has the correct href
+      check_in_link = find("a", text: 'Check-In on Your Goals')
+      expect(check_in_link).to be_present
       
-      # Should be on check-ins page
+      # Verify the href contains the expected parameters
+      href = check_in_link[:href]
+      expect(href).to include('goals')
+      expect(href).to include('view=check-in')
+      expect(href).to include('owner_id')
+      
+      # Navigate directly to verify the URL works
+      visit href
+      
+      # Should be on goals index page with check-in view
+      expect(current_path).to eq(organization_goals_path(organization))
       expect(page).to have_content(/check.?in/i)
+      # Verify URL has correct parameters
+      expect(URI.parse(current_url).query).to include('view=check-in')
+      expect(URI.parse(current_url).query).to include('owner_id')
     end
   end
 end
