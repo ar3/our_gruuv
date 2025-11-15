@@ -10,7 +10,7 @@
         %th Employment Dates
         %th Actions
     %tbody
-      - @teammates.each do |teammate|
+      - @filtered_and_paginated_teammates.each do |teammate|
         %tr
           %td
             = link_to teammate.person.display_name, teammate_organization_person_path(@organization, teammate.person), class: "text-decoration-none fw-bold"

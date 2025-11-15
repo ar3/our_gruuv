@@ -11,6 +11,12 @@ class Huddles::PostAnnouncementJob < ApplicationJob
       return result
     end
     
+    if !huddle.slack_channel.present?
+      result = { success: false, error: "Slack channel not configured for organization #{huddle.organization&.id}" }
+      Rails.logger.info "Slack channel not configured for organization #{huddle.organization&.id}, skipping announcement"
+      return result
+    end
+
     # Check if announcement already exists
     existing_announcement = huddle.notifications.announcements.successful.first
     

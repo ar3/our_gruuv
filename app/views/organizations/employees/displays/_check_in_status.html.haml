@@ -11,9 +11,9 @@
             %span.badge.bg-info.ms-2 Stale/Active (&gt; 90 days, in progress)
             %span.badge.bg-warning.ms-2 Stale/Inactive (&gt; 90 days, no activity)
     
-    - if @teammates.any?
+    - if @filtered_and_paginated_teammates.any?
       .row
-        - @teammates.each do |teammate|
+        - @filtered_and_paginated_teammates.each do |teammate|
           .col-lg-12.mb-4
             .card.border-0.shadow-sm
               .card-body

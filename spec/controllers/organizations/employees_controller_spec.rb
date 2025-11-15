@@ -45,7 +45,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       
       expect(assigns(:organization).id).to eq(company.id)
       # Compare by ID since controller may return different instances
-      expect(assigns(:teammates).map(&:id)).to include(employee1_teammate.id, employee2_teammate.id)
+      expect(assigns(:filtered_and_paginated_teammates).map(&:id)).to include(employee1_teammate.id, employee2_teammate.id)
       expect(assigns(:spotlight_stats)).to be_present
       expect(assigns(:spotlight_stats)[:assigned_employees]).to eq(2)
     end
@@ -92,7 +92,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       get :index, params: { organization_id: empty_company.id }
       
       expect(response).to have_http_status(:success)
-      expect(assigns(:teammates)).to be_empty
+      expect(assigns(:filtered_and_paginated_teammates)).to be_empty
       expect(assigns(:spotlight_stats)[:assigned_employees]).to eq(0)
     end
   end

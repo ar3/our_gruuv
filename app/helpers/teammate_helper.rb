@@ -384,4 +384,77 @@ module TeammateHelper
       total: snapshots.count
     }
   end
+
+  def available_presets_for_select(organization, current_person)
+    presets = []
+    
+    # My Direct Reports - Check-in Status Style 1
+    if current_person&.has_direct_reports?(organization)
+      presets << ['My Direct Reports - Check-in Status Style 1', 'my_direct_reports_check_in_status_1']
+    end
+    
+    # My Direct Reports - Check-in Status Style 2
+    if current_person&.has_direct_reports?(organization) && current_person&.can_manage_employment?(organization)
+      presets << ['My Direct Reports - Check-in Status Style 2', 'my_direct_reports_check_in_status_2']
+    end
+    
+    # All Employees - Check-in Status Style 1
+    presets << ['All Employees - Check-in Status Style 1', 'all_employees_check_in_status_1']
+    
+    # All Employees - Check-in Status Style 2
+    if current_person&.can_manage_employment?(organization)
+      presets << ['All Employees - Check-in Status Style 2', 'all_employees_check_in_status_2']
+    end
+    
+    presets
+  end
+
+  def calculate_tenure_distribution(teammates)
+    less_than_one = 0
+    one_to_two = 0
+    two_to_five = 0
+    five_plus = 0
+    
+    teammates.each do |teammate|
+      next unless teammate.first_employed_at
+      
+      tenure_years = (Date.current - teammate.first_employed_at.to_date).to_f / 365.25
+      
+      if tenure_years < 1
+        less_than_one += 1
+      elsif tenure_years < 2
+        one_to_two += 1
+      elsif tenure_years < 5
+        two_to_five += 1
+      else
+        five_plus += 1
+      end
+    end
+    
+    {
+      less_than_one_year: less_than_one,
+      one_to_two_years: one_to_two,
+      two_to_five_years: two_to_five,
+      five_plus_years: five_plus
+    }
+  end
+
+  def calculate_location_distribution(teammates)
+    state_counts = Hash.new(0)
+    
+    teammates.each do |teammate|
+      primary_address = teammate.person.addresses.primary.first
+      state = primary_address&.state_province
+      state_counts[state] += 1
+    end
+    
+    # Separate states with multiple employees from those with single employee
+    states_multiple = state_counts.select { |_, count| count > 1 }.sort_by { |_, count| -count }
+    states_single = state_counts.select { |_, count| count == 1 }.keys.sort
+    
+    {
+      states_multiple: states_multiple,
+      states_single: states_single
+    }
+  end
 end

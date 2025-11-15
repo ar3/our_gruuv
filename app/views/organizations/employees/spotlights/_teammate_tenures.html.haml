@@ -1,0 +1,45 @@
+/ Spotlight Section
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            / Main statistics/metrics area
+            .row.text-center
+              - tenure_distribution = @spotlight_stats
+              .col-3
+                .h3.text-primary= tenure_distribution[:less_than_one_year]
+                %small.text-muted < 1 Year
+              .col-3
+                .h3.text-info= tenure_distribution[:one_to_two_years]
+                %small.text-muted 1-2 Years
+              .col-3
+                .h3.text-success= tenure_distribution[:two_to_five_years]
+                %small.text-muted 2-5 Years
+              .col-3
+                .h3.text-warning= tenure_distribution[:five_plus_years]
+                %small.text-muted 5+ Years
+          
+          .col-md-4
+            / Summary information
+            .alert.alert-info.small
+              %i.bi.bi-info-circle.me-2
+              %strong Tenure Distribution
+              %br
+              Based on first consecutive employment tenure start date
+      
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-building.me-1
+              Organization: #{@organization.display_name}
+              %br
+              %i.bi.bi-people.me-1
+              Showing teammates from company and descendants
+          .col-md-6.text-end
+            %small.text-muted
+              %i.bi.bi-eye.me-1
+              Spotlight: Teammate Tenures
+

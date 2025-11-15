@@ -28,7 +28,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
   it 'sets up all required instance variables' do
     get organization_employees_path(organization)
     expect(assigns(:organization)).to be_a(Organization)
-    expect(assigns(:teammates)).to be_an(Array) # After pagination, teammates is an Array
+    expect(assigns(:filtered_and_paginated_teammates)).to be_an(Array) # After pagination, teammates is an Array
     expect(assigns(:spotlight_stats)).to be_present
     expect(assigns(:current_filters)).to be_present
     expect(assigns(:current_sort)).to be_present
@@ -57,12 +57,12 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
     it 'sets manager spotlight type when manager filter is active' do
       get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
-      expect(assigns(:spotlight_type)).to eq('manager_overview')
+      expect(assigns(:current_spotlight)).to eq('manager_overview')
     end
 
     it 'sets teammates spotlight type when no manager filter' do
       get organization_employees_path(organization)
-      expect(assigns(:spotlight_type)).to eq('teammates_overview')
+      expect(assigns(:current_spotlight)).to eq('teammates_overview')
     end
 
     it 'includes manager filter in current_filters' do
@@ -88,7 +88,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
       
       # Should have eager loaded associations
-      expect(assigns(:teammates)).to be_present
+      expect(assigns(:filtered_and_paginated_teammates)).to be_present
       # The teammates should be properly loaded with associations
     end
 
@@ -111,7 +111,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
       
       expect(response).to be_successful
-      expect(assigns(:teammates)).to be_empty
+      expect(assigns(:filtered_and_paginated_teammates)).to be_empty
     end
 
     it 'maintains pagination with manager filter' do
@@ -125,7 +125,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       get organization_employees_path(organization, manager_filter: 'direct_reports', page: 2)
       
       expect(response).to be_successful
-      expect(assigns(:teammates)).to be_present
+      expect(assigns(:filtered_and_paginated_teammates)).to be_present
     end
   end
 
@@ -256,7 +256,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
         expect(assigns(:current_filters)[:status]).to include('assigned_employee', 'unassigned_employee')
         
         # Should only include active employees
-        teammate_ids = assigns(:teammates).map(&:id)
+        teammate_ids = assigns(:filtered_and_paginated_teammates).map(&:id)
         expect(teammate_ids).to include(active_teammate.id)
         expect(teammate_ids).to include(unassigned_teammate.id)
         expect(teammate_ids).not_to include(terminated_teammate.id)
@@ -271,7 +271,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
         expect(assigns(:current_filters)[:status]).to include('assigned_employee', 'unassigned_employee', 'terminated')
         
         # Should include all ever-employed teammates
-        teammate_ids = assigns(:teammates).map(&:id)
+        teammate_ids = assigns(:filtered_and_paginated_teammates).map(&:id)
         expect(teammate_ids).to include(active_teammate.id)
         expect(teammate_ids).to include(unassigned_teammate.id)
         expect(teammate_ids).to include(terminated_teammate.id)
@@ -284,7 +284,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
         get organization_employees_path(organization)
         
         expect(response).to be_successful
-        teammate_ids = assigns(:teammates).map(&:id)
+        teammate_ids = assigns(:filtered_and_paginated_teammates).map(&:id)
         expect(teammate_ids).not_to include(huddle_only_teammate.id)
       end
 
@@ -292,7 +292,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
         get organization_employees_path(organization, status: 'all_employed')
         
         expect(response).to be_successful
-        teammate_ids = assigns(:teammates).map(&:id)
+        teammate_ids = assigns(:filtered_and_paginated_teammates).map(&:id)
         expect(teammate_ids).not_to include(huddle_only_teammate.id)
       end
     end
@@ -310,7 +310,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
         get organization_employees_path(organization)
         
         expect(response).to be_successful
-        teammate_ids = assigns(:teammates).map(&:id)
+        teammate_ids = assigns(:filtered_and_paginated_teammates).map(&:id)
         # Should only appear once despite multiple tenures
         expect(teammate_ids.count { |id| id == teammate_with_tenures.id }).to eq(1)
       end

@@ -1,0 +1,43 @@
+/ Spotlight Section
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            / Main statistics/metrics area
+            .row.text-center
+              .col-3
+                .h3.text-primary= @spotlight_stats[:total_employees]
+                %small.text-muted Total Active Employees
+              .col-3
+                .h3.text-success= @spotlight_stats[:all_healthy]
+                %small.text-muted All Healthy
+              .col-3
+                .h3.text-warning= @spotlight_stats[:needing_attention]
+                %small.text-muted Need Attention
+              .col-3
+                .h3.text-info= "#{@spotlight_stats[:completion_rate]}%"
+                %small.text-muted Completion Rate
+          
+          .col-md-4
+            / Action alerts or status messages
+            - if @spotlight_stats[:needing_attention] > 0
+              .alert.alert-warning.small
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong #{@spotlight_stats[:needing_attention]} employee#{'s' if @spotlight_stats[:needing_attention] != 1} need#{'s' if @spotlight_stats[:needing_attention] == 1} attention
+      
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-building.me-1
+              Organization: #{@organization.display_name}
+              %br
+              %i.bi.bi-people.me-1
+              Showing active employees from company and descendants
+          .col-md-6.text-end
+            %small.text-muted
+              %i.bi.bi-clipboard-check.me-1
+              Spotlight: Check-ins Health Overview
+

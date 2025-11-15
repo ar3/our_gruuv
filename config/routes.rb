@@ -75,6 +75,8 @@ get '/login', to: 'auth#login', as: :login
       collection do
         get :new_employee
         post :create_employee
+        get :customize_view
+        patch :update_view
       end
       member do
         get :audit

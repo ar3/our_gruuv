@@ -1,0 +1,47 @@
+/ Spotlight Section
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            / Main statistics/metrics area
+            - location_distribution = @spotlight_stats
+            - states_multiple = location_distribution[:states_multiple]
+            - states_single = location_distribution[:states_single]
+            
+            - if states_multiple.any?
+              .row.mb-3
+                - states_multiple.each do |state, count|
+                  .col-3.mb-2
+                    .h5.text-primary= count
+                    %small.text-muted= state || 'Unknown'
+            
+            - if states_single.any?
+              .row.mt-3
+                .col-12
+                  %h6.text-muted States with 1 employee:
+                  %small.text-muted= states_single.join(', ')
+          
+          .col-md-4
+            / Summary information
+            .alert.alert-info.small
+              %i.bi.bi-geo-alt.me-2
+              %strong Employee Locations
+              %br
+              Based on primary address state
+      
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-building.me-1
+              Organization: #{@organization.display_name}
+              %br
+              %i.bi.bi-people.me-1
+              Showing teammates from company and descendants
+          .col-md-6.text-end
+            %small.text-muted
+              %i.bi.bi-eye.me-1
+              Spotlight: Employee Locations
+

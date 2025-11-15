@@ -8,6 +8,9 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Basic authorization - user should be able to view the organization
     authorize @organization, :show?
     
+    # Handle preset application (if preset is selected and no discrete options changed)
+    apply_preset_if_selected
+    
     # Set default status to 'active' only when status is nil (not when it's an empty string)
     # This allows the UI to explicitly request other statuses
     params[:status] = 'active' if params[:status].nil?
@@ -19,36 +22,111 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       return
     end
     
+    # Determine spotlight type
+    @current_spotlight = determine_spotlight
+    
     # Use TeammatesQuery for filtering and sorting
     query = TeammatesQuery.new(@organization, params, current_person: current_person)
     
     # Get teammates with all filters except status (to keep ActiveRecord relation)
     filtered_teammates = query.call
     
-    # Eager load associations for check-in status display BEFORE pagination to preserve filters
-    if query.current_view == 'check_in_status'
-      filtered_teammates = eager_load_check_in_data(filtered_teammates)
+    # Handle check_ins_health view
+    if query.current_view == 'check_ins_health'
+      # Filter to active employees only for check-ins health
+      filtered_teammates = filtered_teammates.where.not(first_employed_at: nil).where(last_terminated_at: nil)
+      
+      # Create filtered_teammates: filtered but unpaginated (for spotlight calculations)
+      @filtered_teammates = filtered_teammates
+      
+      # Calculate health data for all active employees
+      all_employee_health_data = @filtered_teammates.map do |teammate|
+        health_data = CheckInHealthService.call(teammate, @organization)
+        {
+          teammate: teammate,
+          person: teammate.person,
+          health: health_data
+        }
+      end
+      
+      # Calculate spotlight statistics from all data (before pagination)
+      @spotlight_stats = calculate_check_ins_health_stats(all_employee_health_data)
+      
+      # Paginate
+      @pagy = Pagy.new(count: all_employee_health_data.count, page: params[:page] || 1, items: 25)
+      @filtered_and_paginated_employee_health_data = all_employee_health_data[@pagy.offset, @pagy.items]
+      @filtered_and_paginated_teammates = [] # Empty for check_ins_health view
+    else
+      # Eager load associations for check-in status display BEFORE pagination to preserve filters
+      if query.current_view == 'check_in_status'
+        filtered_teammates = eager_load_check_in_data(filtered_teammates)
+      end
+      
+      # Apply status filter (converts to Array if granular statuses are used)
+      status_filtered_teammates = query.filter_by_status(filtered_teammates)
+      
+      # Create filtered_teammates: filtered but unpaginated (for spotlight calculations)
+      # Keep as Array if that's what filter_by_status returned, otherwise keep as relation
+      @filtered_teammates = status_filtered_teammates
+      
+      # Paginate the status-filtered teammates (for display)
+      @pagy = Pagy.new(count: status_filtered_teammates.count, page: params[:page] || 1, items: 25)
+      @filtered_and_paginated_teammates = status_filtered_teammates[@pagy.offset, @pagy.items]
+      
+      # For spotlight calculations, we need the original relation (before status filtering) for joins
+      # but use filtered_teammates for counts. Pass both to calculate_spotlight_stats.
+      filtered_teammates_for_joins = filtered_teammates
+      
+      # Eager load associations on filtered_teammates_for_joins as needed (for spotlight calculations)
+      if @current_spotlight == 'employee_locations'
+        filtered_teammates_for_joins = filtered_teammates_for_joins.includes(person: :addresses)
+      end
+      
+      # Calculate spotlight statistics from filtered_teammates (honors filters, not pagination)
+      # Pass both filtered array and original relation for proper join calculations
+      @spotlight_stats = calculate_spotlight_stats(@filtered_teammates, @current_spotlight, filtered_teammates_for_joins)
     end
-    
-    # Apply status filter (converts to Array)
-    status_filtered_teammates = query.filter_by_status(filtered_teammates)
-    
-    # Paginate the status-filtered teammates using Kaminari-style pagination
-    @pagy = Pagy.new(count: status_filtered_teammates.count, page: params[:page] || 1, items: 25)
-    @teammates = status_filtered_teammates[@pagy.offset, @pagy.items]
-    
-    # Calculate spotlight statistics from all teammates (not filtered, not paginated)
-    all_teammates = query.call
-    @spotlight_stats = calculate_spotlight_stats(all_teammates)
-    
-    # Use manager spotlight if manager filter is active
-    @spotlight_type = params[:manager_filter] == 'direct_reports' ? 'manager_overview' : 'teammates_overview'
     
     # Store current filter/sort state for view
     @current_filters = query.current_filters
     @current_sort = query.current_sort
     @current_view = query.current_view
     @has_active_filters = query.has_active_filters?
+  end
+
+  def customize_view
+    # Authorization: require ability to view organization
+    authorize @organization, :show?
+    
+    # Load current state from params or defaults
+    query = TeammatesQuery.new(@organization, params, current_person: current_person)
+    
+    @current_filters = query.current_filters
+    @current_sort = query.current_sort
+    @current_view = query.current_view
+    @current_spotlight = determine_spotlight
+    @has_active_filters = query.has_active_filters?
+    
+    # Preserve current params for return URL (excluding controller/action/page)
+    return_params = params.except(:controller, :action, :page).permit!.to_h
+    @return_url = organization_employees_path(@organization, return_params)
+    @return_text = "Back to Teammates"
+    
+    render layout: 'overlay'
+  end
+
+  def update_view
+    # Authorization: require ability to view organization
+    authorize @organization, :show?
+    
+    # Handle preset application if selected
+    apply_preset_if_selected
+    
+    # Build redirect URL with all the view customization params
+    # Preserve all params except Rails internal ones
+    redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h.compact
+    
+    redirect_to organization_employees_path(@organization, redirect_params), notice: 'View updated successfully.'
   end
 
   def new_employee
@@ -155,6 +233,62 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   
   private
 
+    def apply_preset_if_selected
+      return unless params[:preset].present?
+      
+      # Check if user has modified any discrete options (if so, ignore preset)
+      # For now, we'll apply preset immediately as specified
+      preset_params = preset_to_params(params[:preset])
+      
+      if preset_params
+        preset_params.each do |key, value|
+          # Only override if the param wasn't explicitly set by user
+          # For presets, we override everything
+          params[key] = value
+        end
+      end
+    end
+
+    def preset_to_params(preset_name)
+      case preset_name.to_s
+      when 'my_direct_reports_check_in_status_1'
+        {
+          display: 'check_in_status',
+          manager_filter: 'direct_reports'
+        }
+      when 'my_direct_reports_check_in_status_2'
+        {
+          display: 'check_ins_health',
+          spotlight: 'check_ins_health',
+          manager_filter: 'direct_reports'
+        }
+      when 'all_employees_check_in_status_1'
+        {
+          display: 'check_in_status',
+          status: 'active'
+        }
+      when 'all_employees_check_in_status_2'
+        {
+          display: 'check_ins_health',
+          spotlight: 'check_ins_health',
+          status: 'active'
+        }
+      else
+        nil
+      end
+    end
+
+    def determine_spotlight
+      # If spotlight param is set, use it
+      return params[:spotlight] if params[:spotlight].present?
+      
+      # Auto-select manager_overview if manager filter is active
+      return 'manager_overview' if params[:manager_filter] == 'direct_reports'
+      
+      # Default to teammates_overview
+      'teammates_overview'
+    end
+
     def eager_load_check_in_data(teammates)
       # Convert array back to ActiveRecord relation for eager loading if needed
       if teammates.is_a?(Array)
@@ -176,17 +310,42 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       )
     end
 
-    def calculate_spotlight_stats(teammates)
-      # Always use ActiveRecord relation for spotlight stats to ensure proper joins
-      if teammates.is_a?(Array)
-        # Convert Array back to ActiveRecord relation for proper joins
-        teammate_ids = teammates.map(&:id)
+    def calculate_spotlight_stats(teammates, spotlight_type = nil, teammates_for_joins = nil)
+      spotlight_type ||= determine_spotlight
+      
+      # Use teammates_for_joins if provided (original relation before status filtering), otherwise use teammates
+      teammates_for_joins ||= teammates
+      
+      case spotlight_type
+      when 'check_ins_health'
+        # This should not be called for check_ins_health spotlight
+        # Use calculate_check_ins_health_stats instead
+        {}
+      when 'teammate_tenures'
+        calculate_tenure_stats(teammates)
+      when 'employee_locations'
+        calculate_location_stats(teammates)
+      when 'manager_overview'
+        calculate_manager_overview_stats(teammates, teammates_for_joins)
+      else # 'teammates_overview' or default
+        calculate_teammates_overview_stats(teammates, teammates_for_joins)
+      end
+    end
+
+    def calculate_teammates_overview_stats(teammates, teammates_for_joins = nil)
+      # Use teammates_for_joins for joins (original relation before status filtering)
+      # Use teammates for counts (filtered array/relation)
+      teammates_for_joins ||= teammates
+      
+      # Ensure teammates_for_joins is a relation for proper joins
+      if teammates_for_joins.is_a?(Array)
+        teammate_ids = teammates_for_joins.map(&:id)
         teammates_relation = Teammate.where(id: teammate_ids)
       else
-        teammates_relation = teammates
+        teammates_relation = teammates_for_joins
       end
 
-      base_stats = {
+      {
         total_teammates: teammates.count,
         followers: teammates.select { |t| TeammateStatus.new(t).status == :follower }.count,
         huddlers: teammates.select { |t| TeammateStatus.new(t).status == :huddler }.count,
@@ -197,14 +356,92 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         huddle_participants: teammates_relation.joins(:huddle_participants).distinct.count,
         non_employee_participants: teammates_relation.joins(:huddle_participants).where(first_employed_at: nil).distinct.count
       }
+    end
 
-      # Add manager-specific stats if this is a manager view
-      if params[:manager_filter] == 'direct_reports' && current_person
-        manager_stats = calculate_manager_stats(teammates, teammates_relation)
-        base_stats.merge(manager_stats)
+    def calculate_manager_overview_stats(teammates, teammates_for_joins = nil)
+      # Use teammates_for_joins for joins (original relation before status filtering)
+      teammates_for_joins ||= teammates
+      
+      # Always use ActiveRecord relation for spotlight stats to ensure proper joins
+      if teammates_for_joins.is_a?(Array)
+        # Convert Array back to ActiveRecord relation for proper joins
+        teammate_ids = teammates_for_joins.map(&:id)
+        teammates_relation = Teammate.where(id: teammate_ids)
       else
-        base_stats
+        teammates_relation = teammates_for_joins
       end
+
+      manager_stats = calculate_manager_stats(teammates, teammates_relation)
+      calculate_teammates_overview_stats(teammates, teammates_for_joins).merge(manager_stats)
+    end
+
+    def calculate_tenure_stats(teammates)
+      helpers.calculate_tenure_distribution(teammates)
+    end
+
+    def calculate_location_stats(teammates)
+      helpers.calculate_location_distribution(teammates)
+    end
+
+    def calculate_check_ins_health_stats(employee_health_data)
+      total_employees = employee_health_data.count
+      
+      # Count employees with all concerns healthy (all success or no requirements)
+      all_healthy = employee_health_data.count do |data|
+        health = data[:health]
+        health[:position][:status] == :success &&
+        (health[:assignments][:status] == :success || health[:assignments][:total_count] == 0) &&
+        (health[:aspirations][:status] == :success || health[:aspirations][:total_count] == 0) &&
+        (health[:milestones][:status] == :success || health[:milestones][:required_count] == 0)
+      end
+      
+      # Count employees needing attention (any alarm or warning)
+      needing_attention = employee_health_data.count do |data|
+        health = data[:health]
+        [:alarm, :warning].include?(health[:position][:status]) ||
+        [:alarm, :warning].include?(health[:assignments][:status]) ||
+        [:alarm, :warning].include?(health[:aspirations][:status]) ||
+        [:alarm, :warning].include?(health[:milestones][:status])
+      end
+      
+      # Calculate average check-in completion rate
+      total_concerns = 0
+      completed_concerns = 0
+      
+      employee_health_data.each do |data|
+        health = data[:health]
+        
+        # Position
+        total_concerns += 1
+        completed_concerns += 1 if health[:position][:status] == :success
+        
+        # Assignments
+        if health[:assignments][:total_count] > 0
+          total_concerns += 1
+          completed_concerns += 1 if health[:assignments][:status] == :success
+        end
+        
+        # Aspirations
+        if health[:aspirations][:total_count] > 0
+          total_concerns += 1
+          completed_concerns += 1 if health[:aspirations][:status] == :success
+        end
+        
+        # Milestones
+        if health[:milestones][:required_count] > 0
+          total_concerns += 1
+          completed_concerns += 1 if health[:milestones][:status] == :success
+        end
+      end
+      
+      completion_rate = total_concerns > 0 ? (completed_concerns.to_f / total_concerns * 100).round(1) : 0
+      
+      {
+        total_employees: total_employees,
+        all_healthy: all_healthy,
+        needing_attention: needing_attention,
+        completion_rate: completion_rate
+      }
     end
 
     def calculate_manager_stats(teammates, teammates_relation)

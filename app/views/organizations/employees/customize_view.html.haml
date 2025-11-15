@@ -1,0 +1,146 @@
+- content_for :header do
+  Customize TeammatesView
+- content_for :return_url do
+  = @return_url || organization_employees_path(@organization)
+- content_for :return_text do
+  = @return_text || 'Back to Teammates'
+
+= form_with url: update_view_organization_employees_path(@organization), method: :patch, local: true do |form|
+  .row
+    / Left column (4 cols) - Section titles
+    .col-md-4
+      .mb-4
+        %h2 Choose Preset
+    .col-md-6
+      / Preset Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Choose Preset
+          = select_tag 'preset', options_for_select(available_presets_for_select(@organization, current_person), params[:preset]), { include_blank: 'Select a preset...', class: 'form-select', id: 'preset_select', onchange: 'if(this.value) { this.form.submit(); }' }
+          %small.form-text.text-muted Select a preset to apply its settings immediately
+    .col-2 
+      = form.submit 'Apply View', class: 'btn btn-primary'
+  .row
+    .col-12.text-center
+      %hr/
+      %h1.text-muted --OR--
+      %small.text-muted Customize Your View
+      %hr/
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Teammates You See
+    
+    .col-md-8
+      / Filters Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Teammates You See
+          
+          .mb-3
+            %label.form-label Employment Status
+            .form-check
+              = check_box_tag 'status[]', 'follower', @current_filters[:status]&.include?('follower'), class: 'form-check-input', id: 'filter_followers'
+              = label_tag 'filter_followers', 'Followers', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'status[]', 'huddler', @current_filters[:status]&.include?('huddler'), class: 'form-check-input', id: 'filter_huddlers'
+              = label_tag 'filter_huddlers', 'Huddlers', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'status[]', 'unassigned_employee', @current_filters[:status]&.include?('unassigned_employee'), class: 'form-check-input', id: 'filter_unassigned'
+              = label_tag 'filter_unassigned', 'Unassigned Employees', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'status[]', 'assigned_employee', @current_filters[:status]&.include?('assigned_employee'), class: 'form-check-input', id: 'filter_assigned'
+              = label_tag 'filter_assigned', 'Active Employees', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'status[]', 'terminated', @current_filters[:status]&.include?('terminated'), class: 'form-check-input', id: 'filter_terminated'
+              = label_tag 'filter_terminated', 'Terminated', class: 'form-check-label'
+          
+          .mb-3
+            %label.form-label Manager Relationship
+            .form-check
+              = radio_button_tag 'manager_filter', '', @current_filters[:manager_filter].blank?, class: 'form-check-input', id: 'manager_all'
+              = label_tag 'manager_all', 'All Teammates', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'manager_filter', 'direct_reports', @current_filters[:manager_filter] == 'direct_reports', class: 'form-check-input', id: 'manager_direct'
+              = label_tag 'manager_direct', 'My Direct Reports', class: 'form-check-label'
+          
+          .mb-3
+            %label.form-label Organization
+            = select_tag 'organization_id', options_from_collection_for_select([@organization] + @organization.descendants, :id, :name, @current_filters[:organization_id]), { include_blank: 'All Organizations', class: 'form-select' }
+          
+          .mb-3
+            %label.form-label Permissions
+            .form-check
+              = check_box_tag 'permission[]', 'employment_mgmt', @current_filters[:permission]&.include?('employment_mgmt'), class: 'form-check-input', id: 'perm_employment_mgmt'
+              = label_tag 'perm_employment_mgmt', 'Employment Management', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'permission[]', 'employment_create', @current_filters[:permission]&.include?('employment_create'), class: 'form-check-input', id: 'perm_employment_create'
+              = label_tag 'perm_employment_create', 'Employment Creation', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'permission[]', 'maap_mgmt', @current_filters[:permission]&.include?('maap_mgmt'), class: 'form-check-input', id: 'perm_maap_mgmt'
+              = label_tag 'perm_maap_mgmt', 'MAAP Management', class: 'form-check-label'
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Order You See Them In
+    
+    .col-md-8
+      / Sort Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Order You See Them In
+          = select_tag 'sort', options_for_select([['Name (A-Z)', 'name_asc'], ['Name (Z-A)', 'name_desc'], ['Employment Status', 'status'], ['Organization', 'organization'], ['Employment Date', 'employment_date']], @current_sort), class: 'form-select', id: 'sort_select'
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select How They Appear
+    
+    .col-md-8
+      / View Style Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select How They Appear
+          .form-check
+            = radio_button_tag 'view', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
+            = label_tag 'view_table', 'Table View', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'view', 'cards', @current_view == 'cards', class: 'form-check-input', id: 'view_cards'
+            = label_tag 'view_cards', 'Card View', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
+            = label_tag 'view_list', 'List View', class: 'form-check-label'
+          - if current_person&.can_manage_employment?(@organization)
+            .form-check
+              = radio_button_tag 'display', 'check_ins_health', @current_view == 'check_ins_health', class: 'form-check-input', id: 'view_check_ins_health'
+              = label_tag 'view_check_ins_health', 'Check-ins Health', class: 'form-check-label'
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select the Spotlight for Them
+    
+    .col-md-8
+    
+      / Spotlight Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select the Spotlight for Them
+          .form-check
+            = radio_button_tag 'spotlight', 'teammates_overview', (@current_spotlight || 'teammates_overview') == 'teammates_overview', class: 'form-check-input', id: 'spotlight_overview'
+            = label_tag 'spotlight_overview', 'Teammates Overview', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'teammate_tenures', @current_spotlight == 'teammate_tenures', class: 'form-check-input', id: 'spotlight_tenures'
+            = label_tag 'spotlight_tenures', 'Teammate Tenures', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'employee_locations', @current_spotlight == 'employee_locations', class: 'form-check-input', id: 'spotlight_locations'
+            = label_tag 'spotlight_locations', 'Employee Locations', class: 'form-check-label'
+          - if current_person&.can_manage_employment?(@organization)
+            .form-check
+              = radio_button_tag 'spotlight', 'check_ins_health', @current_spotlight == 'check_ins_health', class: 'form-check-input', id: 'spotlight_check_ins_health'
+              = label_tag 'spotlight_check_ins_health', 'Check-ins Health', class: 'form-check-label'
+  .row
+    .col-12
+      / Form Actions
+      .d-flex.gap-2.mt-4.mb-4
+        = form.submit 'Apply View', class: 'btn btn-primary'
+        = link_to 'Cancel', @return_url || organization_employees_path(@organization), class: 'btn btn-outline-secondary'
+

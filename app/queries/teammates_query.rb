@@ -50,6 +50,10 @@ class TeammatesQuery
     'table'
   end
 
+  def current_spotlight
+    params[:spotlight] || 'teammates_overview'
+  end
+
   def has_active_filters?
     # Check if any filter has a value (even empty string counts as an active filter for UI state)
     current_filters.any?
