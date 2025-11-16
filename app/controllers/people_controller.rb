@@ -64,10 +64,6 @@ class PeopleController < ApplicationController
     end
   end
 
-  def edit
-    authorize person, policy_class: PersonPolicy
-  end
-
   def update
     authorize person, policy_class: PersonPolicy
     if person.update(person_params)
@@ -78,7 +74,8 @@ class PeopleController < ApplicationController
         person_id: person.id,
         validation_errors: person.errors.full_messages
       })
-      render :edit, status: :unprocessable_entity
+      setup_show_instance_variables
+      render :show, status: :unprocessable_entity
     end
   rescue ActiveRecord::RecordNotUnique => e
     # Handle unique constraint violations (like duplicate phone numbers)
@@ -88,7 +85,8 @@ class PeopleController < ApplicationController
       error_type: 'unique_constraint_violation'
     })
     person.errors.add(:unique_textable_phone_number, 'is already taken by another user')
-    render :edit, status: :unprocessable_entity
+    setup_show_instance_variables
+    render :show, status: :unprocessable_entity
   rescue ActiveRecord::StatementInvalid => e
     # Handle other database constraint violations
     capture_error_in_sentry(e, {
@@ -97,14 +95,16 @@ class PeopleController < ApplicationController
       error_type: 'database_constraint_violation'
     })
     person.errors.add(:base, 'Unable to update profile due to a database constraint. Please try again.')
-    render :edit, status: :unprocessable_entity
+    setup_show_instance_variables
+    render :show, status: :unprocessable_entity
   rescue => e
     capture_error_in_sentry(e, {
       method: 'update_profile',
       person_id: person&.id
     })
     person.errors.add(:base, 'An unexpected error occurred while updating your profile. Please try again.')
-    render :edit, status: :unprocessable_entity
+    setup_show_instance_variables
+    render :show, status: :unprocessable_entity
   end
 
   def connect_google_identity
@@ -136,6 +136,31 @@ class PeopleController < ApplicationController
                 else
                   current_person
                 end
+  end
+
+  def setup_show_instance_variables
+    # Get all employment tenures across all organizations through teammates
+    @employment_tenures = EmploymentTenure.joins(:teammate)
+                                        .where(teammates: { person: person })
+                                        .includes(:company, :position, :manager)
+                                        .order(started_at: :desc)
+                                        .decorate
+    # Get all assignment tenures across all organizations through teammates
+    @assignment_tenures = AssignmentTenure.joins(:teammate)
+                                         .where(teammates: { person: person })
+                                         .includes(:assignment)
+                                         .order(started_at: :desc)
+    @teammates = person.teammates.includes(:organization)
+    
+    # Preload huddle associations to avoid N+1 queries
+    HuddleParticipant.joins(:teammate)
+                    .where(teammates: { person: person })
+                    .includes(:huddle, huddle: :huddle_playbook)
+                    .load
+    HuddleFeedback.joins(:teammate)
+                  .where(teammates: { person: person })
+                  .includes(:huddle)
+                  .load
   end
 
   def maap_snapshot
@@ -468,6 +493,7 @@ class PeopleController < ApplicationController
 
   def person_params
     params.require(:person).permit(:first_name, :last_name, :middle_name, :suffix, 
-                                  :email, :unique_textable_phone_number, :timezone)
+                                  :unique_textable_phone_number, :timezone,
+                                  :preferred_name, :gender_identity, :pronouns)
   end
 end 

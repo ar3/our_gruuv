@@ -30,27 +30,6 @@ RSpec.describe PeopleController, type: :controller do
     end
   end
 
-  describe 'GET #edit' do
-    it 'returns http success' do
-      get :edit
-      expect(response).to have_http_status(:success)
-    end
-
-    it 'assigns @person' do
-      get :edit
-      expect(assigns(:person)).to eq(person)
-    end
-
-    context 'when not logged in' do
-      before { session[:current_company_teammate_id] = nil }
-
-      it 'redirects to root path' do
-        get :edit
-        expect(response).to redirect_to(root_path)
-      end
-    end
-  end
-
   describe 'PATCH #update' do
     context 'with valid parameters' do
       let(:valid_params) do
@@ -78,25 +57,55 @@ RSpec.describe PeopleController, type: :controller do
       end
     end
 
+    context 'with new fields' do
+      let(:new_fields_params) do
+        {
+          person: {
+            preferred_name: 'Johnny',
+            gender_identity: 'man',
+            pronouns: 'he/him'
+          }
+        }
+      end
+
+      it 'updates preferred_name' do
+        patch :update, params: new_fields_params
+        person.reload
+        expect(person.preferred_name).to eq('Johnny')
+      end
+
+      it 'updates gender_identity' do
+        patch :update, params: new_fields_params
+        person.reload
+        expect(person.gender_identity).to eq('man')
+      end
+
+      it 'updates pronouns' do
+        patch :update, params: new_fields_params
+        person.reload
+        expect(person.pronouns).to eq('he/him')
+      end
+    end
+
     context 'with invalid parameters' do
       let(:invalid_params) do
         {
           person: {
-            email: 'invalid-email'
+            gender_identity: 'invalid_gender'
           }
         }
       end
 
       it 'does not update the person' do
-        original_email = person.email
+        original_gender = person.gender_identity
         patch :update, params: invalid_params
         person.reload
-        expect(person.email).to eq(original_email)
+        expect(person.gender_identity).to eq(original_gender)
       end
 
-      it 'renders edit template' do
+      it 'renders show template' do
         patch :update, params: invalid_params
-        expect(response).to render_template(:edit)
+        expect(response).to render_template(:show)
       end
     end
 
@@ -129,7 +138,7 @@ RSpec.describe PeopleController, type: :controller do
 
       it 'handles unique constraint violation gracefully' do
         patch :update, params: duplicate_phone_params
-        expect(response).to render_template(:edit)
+        expect(response).to render_template(:show)
         expect(assigns(:person).errors[:unique_textable_phone_number]).to include('has already been taken')
       end
     end
@@ -143,7 +152,7 @@ RSpec.describe PeopleController, type: :controller do
 
       it 'handles database constraint violation gracefully' do
         patch :update, params: { person: { first_name: 'Jane' } }
-        expect(response).to render_template(:edit)
+        expect(response).to render_template(:show)
         expect(assigns(:person).errors[:base]).to include('Unable to update profile due to a database constraint. Please try again.')
       end
     end
@@ -155,7 +164,7 @@ RSpec.describe PeopleController, type: :controller do
 
       it 'handles unexpected errors gracefully' do
         patch :update, params: { person: { first_name: 'Jane' } }
-        expect(response).to render_template(:edit)
+        expect(response).to render_template(:show)
         expect(assigns(:person).errors[:base]).to include('An unexpected error occurred while updating your profile. Please try again.')
       end
     end
@@ -167,6 +176,62 @@ RSpec.describe PeopleController, type: :controller do
         patch :update, params: { person: { first_name: 'Jane' } }
         expect(response).to redirect_to(root_path)
       end
+    end
+
+    context 'authorization' do
+      let(:organization) { create(:organization, :company) }
+      let(:target_person) { create(:person, first_name: 'Target', last_name: 'Person') }
+      let(:target_teammate) { create(:teammate, person: target_person, organization: organization) }
+      
+      before do
+        # Create active employment tenure for target person
+        create(:employment_tenure, teammate: target_teammate, company: organization, ended_at: nil)
+      end
+
+      context 'when user is a manager with employment management permissions' do
+        let(:manager) { create(:person) }
+        let(:manager_teammate) { create(:teammate, person: manager, organization: organization, can_manage_employment: true) }
+        
+        before do
+          create(:employment_tenure, teammate: manager_teammate, company: organization, ended_at: nil)
+          sign_in_as_teammate(manager, organization)
+        end
+
+        it 'allows updating the target person via person_path' do
+          patch :update, params: { id: target_person.id, person: { first_name: 'Updated' } }
+          target_person.reload
+          expect(target_person.first_name).to eq('Updated')
+        end
+
+        it 'redirects to profile path with notice' do
+          patch :update, params: { id: target_person.id, person: { first_name: 'Updated' } }
+          expect(response).to redirect_to(profile_path)
+          expect(flash[:notice]).to eq('Profile updated successfully!')
+        end
+      end
+
+      context 'when user is in managerial hierarchy' do
+        let(:manager) { create(:person) }
+        let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+        
+        before do
+          # Create active employment tenure for manager
+          create(:employment_tenure, teammate: manager_teammate, company: organization, ended_at: nil)
+          # Set manager as the manager of target person's active employment tenure
+          target_employment = target_person.employment_tenures.find_by(company: organization)
+          target_employment.update!(manager: manager, ended_at: nil)
+          sign_in_as_teammate(manager, organization)
+        end
+
+        it 'allows updating the target person via person_path' do
+          patch :update, params: { id: target_person.id, person: { first_name: 'Updated' } }
+          target_person.reload
+          expect(target_person.first_name).to eq('Updated')
+        end
+      end
+
+      # Note: Authorization is tested in spec/policies/person_policy_spec.rb
+      # The controller test focuses on the update functionality when authorized
     end
   end
 

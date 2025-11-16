@@ -4,67 +4,151 @@
       %i.bi.bi-person.me-2
       About Me
   .card-body
-    .row.mt-3
-      .col-12.col-md-8
-        .row
-          .col-md-6.col-12
-            %p
-              %strong Name:
-              = @person.full_name
-            %p
-              %strong Email:
-              = @person.email
-            %p
-              %strong Phone:
-              = @person.unique_textable_phone_number.present? ? @person.unique_textable_phone_number : "Not provided"
+    - can_edit = policy(@person).edit?
+    - if can_edit
+      = form_with model: @person, url: profile_path, method: :patch, local: true do |form|
+        - if @person.errors.any?
+          .alert.alert-danger.mb-3
+            %h5 Please fix the following errors:
+            %ul.mb-0
+              - @person.errors.full_messages.each do |message|
+                %li= message
+        .row.mt-3
+          .col-12.col-md-8
+            .row
+              .col-md-6.col-12
+                .mb-3
+                  = form.label :first_name, "First Name", class: "form-label"
+                  = form.text_field :first_name, class: "form-control", required: true
+              
+                .mb-3
+                  = form.label :middle_name, "Middle Name", class: "form-label"
+                  = form.text_field :middle_name, class: "form-control"
+              
+                .mb-3
+                  = form.label :last_name, "Last Name", class: "form-label"
+                  = form.text_field :last_name, class: "form-control", required: true
+              
+                .mb-3
+                  = form.label :suffix, "Suffix (Jr., Sr., etc.)", class: "form-label"
+                  = form.text_field :suffix, class: "form-control"
+              
+                .mb-3
+                  = form.label :preferred_name, "Preferred Name", class: "form-label"
+                  = form.text_field :preferred_name, class: "form-control"
+                  %small.form-text.text-muted Optional - how you'd like to be addressed
 
-          .col-md-6.col-12
-            %p
-              %strong Time zone:
-              - if @person.timezone.present?
-                = @person.timezone
-                %small.text-muted Timezone
-              - else
-                Eastern Time
-                %small.text-muted Timezone (Default)
-            %p
-              %strong Gruuvin' Since:
-              = @person.created_at.strftime("%b %Y")
+              .col-md-6.col-12
+                .mb-3
+                  %strong Email:
+                  %br
+                  = @person.email
+                  %small.form-text.text-muted.d-block This is your login email and cannot be changed
+              
+                .mb-3
+                  = form.label :unique_textable_phone_number, "Phone Number", class: "form-label"
+                  = form.telephone_field :unique_textable_phone_number, class: "form-control", placeholder: "+1234567890"
+                  %small.form-text.text-muted Optional - for SMS notifications (future feature)
+              
+                .mb-3
+                  = form.label :timezone, "Timezone", class: "form-label"
+                  = form.select :timezone, available_timezones, { selected: @person.timezone, prompt: 'Select your timezone' }, { class: "form-select" }
+                  %small.form-text.text-muted This helps us show times in your local timezone
+                  - if @person.errors[:timezone].any?
+                    .invalid-feedback.d-block
+                      = @person.errors[:timezone].join(', ')
+              
+                .mb-3
+                  = form.label :gender_identity, "Gender Identity", class: "form-label"
+                  = form.select :gender_identity, [['', ''], ['Man', 'man'], ['Woman', 'woman'], ['Non-binary', 'non_binary'], ['Genderqueer', 'genderqueer'], ['Genderfluid', 'genderfluid'], ['Agender', 'agender'], ['Two-Spirit', 'two_spirit'], ['Prefer not to say', 'prefer_not_to_say'], ['Other', 'other']], { selected: @person.gender_identity }, { class: "form-select" }
+                  %small.form-text.text-muted Optional
+              
+                .mb-3
+                  = form.label :pronouns, "Pronouns", class: "form-label"
+                  = form.select :pronouns, [['', ''], ['He/him', 'he/him'], ['She/her', 'she/her'], ['They/them', 'they/them'], ['He/they', 'he/they'], ['She/they', 'she/they'], ['Other', 'other'], ['Prefer not to say', 'prefer_not_to_say']], { selected: @person.pronouns }, { class: "form-select" }
+                  %small.form-text.text-muted Optional
             
-            / Other Companies Section (only visible to person themselves or og_admin)
-            - if policy(@person).view_other_companies?
-              .mt-4
-                %h6.text-muted.border-bottom.pb-2 Other Companies
-                - other_companies = @employment_tenures.select { |t| t.company != current_organization }.map(&:company).uniq
-                - if other_companies.any?
-                  - other_companies.each do |company|
-                    .d-flex.justify-content-between.align-items-center.py-2.border-bottom.border-light
-                      .flex-grow-1
-                        %strong= company.name
-                        %br
-                        %small.text-muted
-                          - company_tenures = @employment_tenures.select { |t| t.company == company }
-                          - first_tenure = company_tenures.sort_by(&:started_at).first
-                          - last_tenure = company_tenures.sort_by { |t| t.ended_at || Time.current }.last
-                          - if first_tenure
-                            = "From #{first_tenure.started_at.strftime('%b %Y')}"
-                            - if last_tenure&.ended_at
-                              = " to #{last_tenure.ended_at.strftime('%b %Y')}"
-                            - else
-                              = " to Present"
-                          .ms-2
-                            = link_to organization_path(company), class: 'btn btn-sm btn-outline-secondary' do
-                              %i.bi.bi-arrow-up-right.me-1
-                              View
+            .d-grid.gap-2.d-md-flex.justify-content-md-end.mt-3
+              = form.submit "Update Profile", class: "btn btn-primary"
+          
+          .col-md-4.col-12.border-start.border-secondary
+            .d-grid.gap-2
+              - if policy(@person).can_impersonate?
+                = button_to impersonations_path, method: :post, params: { person_id: @person.id }, class: "btn btn-danger", data: { confirm: "Are you sure you want to impersonate #{@person.display_name}? This will switch your session to act as this user.", "bs-toggle": "tooltip", "bs-title": "Switch your session to act as this user for testing and support purposes" } do
+                  %i.bi.bi-person-gear.me-2
+                  Impersonate
+    
+    - else
+      .row.mt-3
+        .col-12.col-md-8
+          .row
+            .col-md-6.col-12
+              %p
+                %strong Name:
+                = @person.full_name
+              - if @person.preferred_name.present?
+                %p
+                  %strong Preferred Name:
+                  = @person.preferred_name
+              %p
+                %strong Email:
+                = @person.email
+              %p
+                %strong Phone:
+                = @person.unique_textable_phone_number.present? ? @person.unique_textable_phone_number : "Not provided"
+              - if @person.gender_identity.present?
+                %p
+                  %strong Gender Identity:
+                  = @person.gender_identity.humanize
+              - if @person.pronouns.present?
+                %p
+                  %strong Pronouns:
+                  = @person.pronouns
+
+            .col-md-6.col-12
+              %p
+                %strong Time zone:
+                - if @person.timezone.present?
+                  = @person.timezone
+                  %small.text-muted Timezone
                 - else
-                  %p.text-muted No other companies found.
-      .col-md-4.col-12.border-start.border-secondary
-        .d-grid.gap-2
-          - if @person == @current_person
-            = link_to edit_profile_path, class: "btn btn-primary" do
-              %i.bi.bi-pencil.me-2
-              Edit Profile
-          - elsif policy(@person).can_impersonate?
-            = button_to impersonations_path, method: :post, params: { person_id: @person.id }, class: "btn btn-danger", data: { confirm: "Are you sure you want to impersonate #{@person.display_name}? This will switch your session to act as this user.", "bs-toggle": "tooltip", "bs-title": "Switch your session to act as this user for testing and support purposes" } do
-              %i.bi.bi-person-gear.me-2
-              Impersonate
+                  Eastern Time
+                  %small.text-muted Timezone (Default)
+              %p
+                %strong Gruuvin' Since:
+                = @person.created_at.strftime("%b %Y")
+              
+              / Other Companies Section (only visible to person themselves or og_admin)
+              - if policy(@person).view_other_companies?
+                .mt-4
+                  %h6.text-muted.border-bottom.pb-2 Other Companies
+                  - other_companies = @employment_tenures.select { |t| t.company != current_organization }.map(&:company).uniq
+                  - if other_companies.any?
+                    - other_companies.each do |company|
+                      .d-flex.justify-content-between.align-items-center.py-2.border-bottom.border-light
+                        .flex-grow-1
+                          %strong= company.name
+                          %br
+                          %small.text-muted
+                            - company_tenures = @employment_tenures.select { |t| t.company == company }
+                            - first_tenure = company_tenures.sort_by(&:started_at).first
+                            - last_tenure = company_tenures.sort_by { |t| t.ended_at || Time.current }.last
+                            - if first_tenure
+                              = "From #{first_tenure.started_at.strftime('%b %Y')}"
+                              - if last_tenure&.ended_at
+                                = " to #{last_tenure.ended_at.strftime('%b %Y')}"
+                              - else
+                                = " to Present"
+                        .ms-2
+                          = link_to organization_path(company), class: 'btn btn-sm btn-outline-secondary' do
+                            %i.bi.bi-arrow-up-right.me-1
+                            View
+                  - else
+                    %p.text-muted No other companies found.
+        
+        .col-md-4.col-12.border-start.border-secondary
+          .d-grid.gap-2
+            - if policy(@person).can_impersonate?
+              = button_to impersonations_path, method: :post, params: { person_id: @person.id }, class: "btn btn-danger", data: { confirm: "Are you sure you want to impersonate #{@person.display_name}? This will switch your session to act as this user.", "bs-toggle": "tooltip", "bs-title": "Switch your session to act as this user for testing and support purposes" } do
+                %i.bi.bi-person-gear.me-2
+                Impersonate

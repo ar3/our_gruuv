@@ -27,8 +27,42 @@ RSpec.describe PersonPolicy, type: :policy do
       expect(subject).to permit(pundit_user, person)
     end
 
-    it "denies users from editing other profiles" do
+    it "denies regular users from editing other profiles" do
       expect(subject).not_to permit(pundit_user, other_person)
+    end
+
+    context "when user has employment management permissions" do
+      let(:manager) { create(:person) }
+      let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization, can_manage_employment: true) }
+      let(:manager_pundit_user) { OpenStruct.new(user: manager_teammate, real_user: manager_teammate) }
+      
+      before do
+        # Create employment tenure for manager
+        create(:employment_tenure, teammate: manager_teammate, company: organization)
+        # Create employment tenure for other_person
+        create(:employment_tenure, teammate: other_person_teammate, company: organization)
+      end
+
+      it "allows managers with employment management permissions to edit other profiles" do
+        expect(subject).to permit(manager_pundit_user, other_person)
+      end
+    end
+
+    context "when user is in managerial hierarchy" do
+      let(:manager) { create(:person) }
+      let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
+      let(:manager_pundit_user) { OpenStruct.new(user: manager_teammate, real_user: manager_teammate) }
+      let(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, company: organization) }
+      let(:employee_employment) { create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: manager) }
+      
+      before do
+        manager_employment
+        employee_employment
+      end
+
+      it "allows managers in hierarchy to edit their employees' profiles" do
+        expect(subject).to permit(manager_pundit_user, other_person)
+      end
     end
   end
 
@@ -37,8 +71,42 @@ RSpec.describe PersonPolicy, type: :policy do
       expect(subject).to permit(pundit_user, person)
     end
 
-    it "denies users from updating other profiles" do
+    it "denies regular users from updating other profiles" do
       expect(subject).not_to permit(pundit_user, other_person)
+    end
+
+    context "when user has employment management permissions" do
+      let(:manager) { create(:person) }
+      let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization, can_manage_employment: true) }
+      let(:manager_pundit_user) { OpenStruct.new(user: manager_teammate, real_user: manager_teammate) }
+      
+      before do
+        # Create employment tenure for manager
+        create(:employment_tenure, teammate: manager_teammate, company: organization)
+        # Create employment tenure for other_person
+        create(:employment_tenure, teammate: other_person_teammate, company: organization)
+      end
+
+      it "allows managers with employment management permissions to update other profiles" do
+        expect(subject).to permit(manager_pundit_user, other_person)
+      end
+    end
+
+    context "when user is in managerial hierarchy" do
+      let(:manager) { create(:person) }
+      let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
+      let(:manager_pundit_user) { OpenStruct.new(user: manager_teammate, real_user: manager_teammate) }
+      let(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, company: organization) }
+      let(:employee_employment) { create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: manager) }
+      
+      before do
+        manager_employment
+        employee_employment
+      end
+
+      it "allows managers in hierarchy to update their employees' profiles" do
+        expect(subject).to permit(manager_pundit_user, other_person)
+      end
     end
   end
 

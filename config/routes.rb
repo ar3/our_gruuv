@@ -292,7 +292,6 @@ get '/login', to: 'auth#login', as: :login
 
 # Profile management
 get '/profile', to: 'people#show', as: :profile
-get '/profile/edit', to: 'people#edit', as: :edit_profile
 patch '/profile', to: 'people#update', as: :update_profile
 
 # Impersonation routes

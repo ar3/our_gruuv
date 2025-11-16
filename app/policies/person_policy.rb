@@ -212,13 +212,39 @@ class PersonPolicy < ApplicationPolicy
 
 
   def edit?
-    # Users can only edit their own profile
-    admin_bypass? || teammate.person == record
+    # Users can edit profiles if they are:
+    # 1. The person themselves (employees can edit their own profile)
+    # 2. In their managerial hierarchy 
+    # 3. Have employment management permissions for any organization
+    person = teammate.person
+    return true if admin_bypass? || person == record
+    
+    # Check if user is in managerial hierarchy for any organization
+    user_employment_orgs = person.employment_tenures.includes(:company).map(&:company)
+    return true if user_employment_orgs.any? { |org| person.in_managerial_hierarchy_of?(record, org) }
+    
+    # Check if user has employment management permissions in any organization
+    user_has_employment_management = user_employment_orgs.any? { |org| person.can_manage_employment?(org) }
+    
+    user_has_employment_management
   end
 
   def update?
-    # Users can update their own profile and assignments, admins can update any
-    admin_bypass? || teammate.person == record
+    # Users can update profiles if they are:
+    # 1. The person themselves (employees can update their own profile)
+    # 2. In their managerial hierarchy 
+    # 3. Have employment management permissions for any organization
+    person = teammate.person
+    return true if admin_bypass? || person == record
+    
+    # Check if user is in managerial hierarchy for any organization
+    user_employment_orgs = person.employment_tenures.includes(:company).map(&:company)
+    return true if user_employment_orgs.any? { |org| person.in_managerial_hierarchy_of?(record, org) }
+    
+    # Check if user has employment management permissions in any organization
+    user_has_employment_management = user_employment_orgs.any? { |org| person.can_manage_employment?(org) }
+    
+    user_has_employment_management
   end
 
   def create?
