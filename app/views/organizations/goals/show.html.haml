@@ -88,7 +88,17 @@
 
           - if @goal.completed_at.present?
             %dt.col-sm-4 Completed:
-            %dd.col-sm-8= @goal.completed_at.strftime("%B %d, %Y at %I:%M %p")
+            %dd.col-sm-8
+              - completion_badge = goal_completion_badge_text(@goal)
+              - if completion_badge
+                %span.badge{class: completion_badge == 'Missed' ? 'bg-danger' : completion_badge == 'Hit (Late)' ? 'bg-warning' : 'bg-success', style: "margin-right: 0.5rem;"}
+                  = completion_badge
+              = @goal.completed_at.strftime("%B %d, %Y at %I:%M %p")
+              - last_check_in = @goal.goal_check_ins.recent.first
+              - if last_check_in && last_check_in.confidence_reason.present?
+                .mt-2
+                  %strong Learnings:
+                  = simple_format(last_check_in.confidence_reason)
           - if @goal.cancelled_at.present?
             %dt.col-sm-4 Cancelled:
             %dd.col-sm-8= @goal.cancelled_at.strftime("%B %d, %Y at %I:%M %p")
@@ -121,16 +131,36 @@
                   = pluralize(links_for_type.count, 'goal')
               %ul.list-unstyled
                 - links_for_type.each do |link|
+                  - linked_goal = link.child
+                  - most_recent_check_in = @linked_goal_check_ins[linked_goal.id]
+                  - status_icon = goal_status_icon(linked_goal)
+                  - is_struck_through = goal_should_be_struck_through?(linked_goal)
                   %li.mb-2
                     .d-flex.justify-content-between.align-items-start
                       .flex-grow-1
-                        = link_to organization_goal_path(@organization, link.child), class: "text-decoration-none" do
-                          %strong= link.child.title
+                        = link_to organization_goal_path(@organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
+                          %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
+                          %strong= linked_goal.title
+                        - if most_recent_check_in.present?
+                          %small.text-muted.d-block.mt-1
+                            As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
                         - if link.metadata.present? && link.metadata['notes'].present?
                           %small.text-muted.d-block.mt-1= link.metadata['notes']
-                      - if policy(link).destroy?
-                        = button_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger ms-2", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this link?" } do
-                          %i.bi.bi-trash
+                      .d-flex.gap-1
+                        - action_button = child_goal_action_button(linked_goal)
+                        - if action_button.present? && policy(linked_goal).update?
+                          - if action_button[:type] == 'fix'
+                            = link_to organization_goal_path(@organization, linked_goal), class: "btn btn-sm #{action_button[:class]}", target: "_blank" do
+                              = action_button[:text]
+                          - elsif action_button[:type] == 'start'
+                            = button_to start_organization_goal_path(@organization, linked_goal, parent_goal_id: @goal.id), method: :patch, class: "btn btn-sm #{action_button[:class]}", form: { style: "display: inline-block;" } do
+                              = action_button[:text]
+                        - if policy(linked_goal).update? && !goal_is_completed?(linked_goal) && linked_goal.started_at.present?
+                          = link_to done_organization_goal_path(@organization, linked_goal), class: "btn btn-sm btn-outline-success" do
+                            %i.bi.bi-check-circle
+                        - if policy(link).destroy?
+                          = button_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this link?" } do
+                            %i.bi.bi-trash
         
         - if policy(@goal).update?
           .mt-4.pt-3.border-top
@@ -162,16 +192,36 @@
         - if @goal.incoming_links.any?
           %ul.list-unstyled
             - @goal.incoming_links.each do |link|
+              - linked_goal = link.parent
+              - most_recent_check_in = @linked_goal_check_ins[linked_goal.id]
+              - status_icon = goal_status_icon(linked_goal)
+              - is_struck_through = goal_should_be_struck_through?(linked_goal)
               %li.mb-2
                 .d-flex.justify-content-between.align-items-start
                   .flex-grow-1
-                    = link_to organization_goal_path(@organization, link.parent), class: "text-decoration-none" do
-                      %strong= link.parent.title
+                    = link_to organization_goal_path(@organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
+                      %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
+                      %strong= linked_goal.title
+                    - if most_recent_check_in.present?
+                      %small.text-muted.d-block.mt-1
+                        As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
                     - if link.metadata.present? && link.metadata['notes'].present?
                       %small.text-muted.d-block.mt-1= link.metadata['notes']
-                  - if policy(link).destroy?
-                    = button_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger ms-2", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this link?" } do
-                      %i.bi.bi-trash
+                  .d-flex.gap-1
+                    - action_button = child_goal_action_button(linked_goal)
+                    - if action_button.present? && policy(linked_goal).update?
+                      - if action_button[:type] == 'fix'
+                        = link_to organization_goal_path(@organization, linked_goal), class: "btn btn-sm #{action_button[:class]}", target: "_blank" do
+                          = action_button[:text]
+                      - elsif action_button[:type] == 'start'
+                        = button_to start_organization_goal_path(@organization, linked_goal, parent_goal_id: @goal.id), method: :patch, class: "btn btn-sm #{action_button[:class]}", form: { style: "display: inline-block;" } do
+                          = action_button[:text]
+                    - if policy(linked_goal).update? && !goal_is_completed?(linked_goal) && linked_goal.started_at.present?
+                      = link_to done_organization_goal_path(@organization, linked_goal), class: "btn btn-sm btn-outline-success" do
+                        %i.bi.bi-check-circle
+                    - if policy(link).destroy?
+                      = button_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this link?" } do
+                        %i.bi.bi-trash
         - else
           %em.text-muted No incoming links. No other goals relate to this goal yet.
           - if policy(@goal).update?

@@ -414,6 +414,80 @@ module GoalsHelper
     
     stats
   end
+  
+  def goal_is_completed?(goal)
+    goal.completed_at.present?
+  end
+  
+  def goal_completion_outcome(goal)
+    return nil unless goal_is_completed?(goal)
+    
+    last_check_in = goal.goal_check_ins.recent.first
+    return nil unless last_check_in
+    
+    if last_check_in.confidence_percentage == 100
+      # Check if completed late
+      if goal.most_likely_target_date.present? && goal.completed_at.to_date > goal.most_likely_target_date
+        :hit_late
+      else
+        :hit
+      end
+    elsif last_check_in.confidence_percentage == 0
+      :miss
+    else
+      nil
+    end
+  end
+  
+  def goal_status_icon(goal)
+    return 'bi-tools' unless goal_is_completed?(goal)
+    
+    last_check_in = goal.goal_check_ins.recent.first
+    return 'bi-tools' unless last_check_in
+    
+    if last_check_in.confidence_percentage == 100
+      'bi-check-circle'
+    elsif last_check_in.confidence_percentage == 0
+      'bi-x-circle'
+    else
+      'bi-tools'
+    end
+  end
+  
+  def goal_should_be_struck_through?(goal)
+    return false unless goal_is_completed?(goal)
+    
+    last_check_in = goal.goal_check_ins.recent.first
+    return false unless last_check_in
+    
+    last_check_in.confidence_percentage == 100
+  end
+  
+  def goal_completion_badge_text(goal)
+    outcome = goal_completion_outcome(goal)
+    return nil unless outcome
+    
+    case outcome
+    when :hit
+      'Hit'
+    when :hit_late
+      'Hit (Late)'
+    when :miss
+      'Missed'
+    else
+      nil
+    end
+  end
+  
+  def child_goal_action_button(goal)
+    if goal.needs_target_date?
+      { type: 'fix', text: 'Fix Goal', class: 'btn-danger' }
+    elsif goal.needs_start?
+      { type: 'start', text: 'Start', class: 'btn-primary' }
+    else
+      nil
+    end
+  end
 end
 
 

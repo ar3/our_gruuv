@@ -166,6 +166,8 @@ get '/login', to: 'auth#login', as: :login
         patch :start
         post :check_in
         patch :set_timeframe
+        get :done
+        post :complete
       end
       resources :goal_links, only: [:create, :destroy] do
         collection do

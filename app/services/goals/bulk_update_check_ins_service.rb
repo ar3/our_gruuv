@@ -32,6 +32,11 @@ module Goals
       goal = Goal.find_by(id: goal_id, company: organization)
       return add_error(goal_id, "Goal not found") unless goal
 
+      # Skip completed goals - they should not have check-ins updated
+      if goal.completed_at.present?
+        return
+      end
+
       # Check authorization - user must be able to view the goal
       unless goal.can_be_viewed_by?(current_person)
         return add_error(goal_id, "You don't have permission to update check-ins for this goal")

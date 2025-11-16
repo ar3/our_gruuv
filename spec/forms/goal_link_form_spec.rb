@@ -272,6 +272,7 @@ RSpec.describe GoalLinkForm, type: :form do
         created_goals = Goal.last(2)
         created_goals.each do |goal|
           expect(goal.goal_type).to eq('stepping_stone_activity')
+          expect(goal.most_likely_target_date).to be_present
           expect(goal.owner).to be_a(Teammate)
           expect(goal.owner.id).to eq(goal1.owner.id)
           expect(goal.privacy_level).to eq(goal1.privacy_level)
@@ -279,6 +280,27 @@ RSpec.describe GoalLinkForm, type: :form do
           link = GoalLink.find_by(parent: goal1, child: goal)
           expect(link).to be_present
         end
+      end
+      
+      it 'sets most_likely_target_date from parent goal when parent has target date' do
+        parent_date = Date.current + 60.days
+        goal1.update!(most_likely_target_date: parent_date)
+        form.bulk_goal_titles = "New Goal 1"
+        
+        form.save
+        
+        created_goal = Goal.last
+        expect(created_goal.most_likely_target_date).to eq(parent_date)
+      end
+      
+      it 'sets most_likely_target_date to 90 days from now when parent has no target date' do
+        goal1.update!(most_likely_target_date: nil)
+        form.bulk_goal_titles = "New Goal 1"
+        
+        form.save
+        
+        created_goal = Goal.last
+        expect(created_goal.most_likely_target_date).to eq(Date.current + 90.days)
       end
       
       it 'creates goals with specified goal_type when provided' do

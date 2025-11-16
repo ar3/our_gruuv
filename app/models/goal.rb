@@ -133,6 +133,14 @@ class Goal < ApplicationRecord
     goal_category == :bad_key_result
   end
   
+  def needs_target_date?
+    goal_type != 'inspirational_objective' && most_likely_target_date.nil?
+  end
+  
+  def needs_start?
+    goal_type != 'inspirational_objective' && most_likely_target_date.present? && started_at.nil?
+  end
+  
   def check_in_eligible?
     !objective? && most_likely_target_date.present?
   end

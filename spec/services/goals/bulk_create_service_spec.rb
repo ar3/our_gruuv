@@ -42,6 +42,9 @@ RSpec.describe Goals::BulkCreateService, type: :service do
   describe '#call' do
     context 'with outgoing links' do
       it 'creates goals as stepping_stone_activity by default' do
+        # Ensure linking goal has no target date so we test the 90-day default
+        linking_goal.update!(most_likely_target_date: nil)
+        
         service = described_class.new(
           organization, person, teammate, linking_goal, :outgoing, goal_titles
         )
@@ -51,7 +54,10 @@ RSpec.describe Goals::BulkCreateService, type: :service do
         created_goals = Goal.last(3)
         created_goals.each do |goal|
           expect(goal.goal_type).to eq('stepping_stone_activity')
-          expect(goal.most_likely_target_date).to be_nil
+          expect(goal.most_likely_target_date).to be_present
+          expect(goal.most_likely_target_date).to eq(Date.current + 90.days)
+          expect(goal.earliest_target_date).to be_nil
+          expect(goal.latest_target_date).to be_nil
           expect(goal.owner).to be_a(Teammate)
           expect(goal.owner.id).to eq(linking_goal.owner.id)
           expect(goal.privacy_level).to eq(linking_goal.privacy_level)
@@ -117,10 +123,56 @@ RSpec.describe Goals::BulkCreateService, type: :service do
         created_goals = Goal.last(3)
         created_goals.each do |goal|
           expect(goal.goal_type).to eq('inspirational_objective')
+          # Objectives don't get target dates set (they're objectives, not non-objectives)
           expect(goal.most_likely_target_date).to be_nil
           expect(goal.owner).to be_a(Teammate)
           expect(goal.owner.id).to eq(linking_goal.owner.id)
           expect(goal.privacy_level).to eq(linking_goal.privacy_level)
+        end
+      end
+      
+      it 'sets most_likely_target_date from parent goal when parent has target date' do
+        parent_date = Date.current + 60.days
+        linking_goal.update!(most_likely_target_date: parent_date)
+        
+        service = described_class.new(
+          organization, person, teammate, linking_goal, :outgoing, goal_titles
+        )
+        
+        service.call
+        
+        created_goals = Goal.last(3)
+        created_goals.each do |goal|
+          expect(goal.most_likely_target_date).to eq(parent_date)
+        end
+      end
+      
+      it 'sets most_likely_target_date to 90 days from now when parent has no target date' do
+        linking_goal.update!(most_likely_target_date: nil)
+        
+        service = described_class.new(
+          organization, person, teammate, linking_goal, :outgoing, goal_titles
+        )
+        
+        service.call
+        
+        created_goals = Goal.last(3)
+        created_goals.each do |goal|
+          expect(goal.most_likely_target_date).to eq(Date.current + 90.days)
+        end
+      end
+      
+      it 'does not set earliest_target_date or latest_target_date' do
+        service = described_class.new(
+          organization, person, teammate, linking_goal, :outgoing, goal_titles
+        )
+        
+        service.call
+        
+        created_goals = Goal.last(3)
+        created_goals.each do |goal|
+          expect(goal.earliest_target_date).to be_nil
+          expect(goal.latest_target_date).to be_nil
         end
       end
       

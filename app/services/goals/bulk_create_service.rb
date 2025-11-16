@@ -52,9 +52,19 @@ module Goals
         creator: current_teammate
       )
 
-      # No due dates for bulk created goals
+      # Set most_likely_target_date based on parent goal (only for non-objective goals)
+      goal_type_value = determine_goal_type
+      if goal_type_value != 'inspirational_objective'
+        # Non-objective goals should have target dates
+        if linking_goal.most_likely_target_date.present?
+          goal.most_likely_target_date = linking_goal.most_likely_target_date
+        else
+          goal.most_likely_target_date = Date.current + 90.days
+        end
+      end
+
+      # Don't set earliest or latest target dates
       goal.earliest_target_date = nil
-      goal.most_likely_target_date = nil
       goal.latest_target_date = nil
 
       goal.save

@@ -417,7 +417,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
   describe 'Goal Linking Workflow' do
     let!(:teammate) { person.teammates.find_by(organization: organization) || CompanyTeammate.create!(person: person, organization: organization) }
     let!(:goal1) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 1') }
-    let!(:goal2) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 2') }
+    let!(:goal2) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 2', goal_type: 'stepping_stone_activity') }
     
     it 'creates a link between goals' do
       visit organization_goal_path(organization, goal1)
@@ -425,10 +425,8 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       # Should see outgoing links section
       expect(page).to have_content(/In pursuit of|Goal/i)
       
-      # Click Add Link link - this goes to a separate overlay page
-      # The link is in the card-header, not within the h5
-      # Find by href to avoid ambiguity
-      find('a[href*="new_outgoing_link"]', text: 'Add Link').click
+      # Click one of the type-specific Add buttons - use stepping stones/activities button
+      find('a[href*="new_outgoing_link"][href*="goal_type=stepping_stone_activity"]').click
       
       # Should be on the new outgoing link page (overlay)
       expect(page).to have_content('Create Links to Other Goals')
@@ -447,8 +445,8 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
     it 'prevents self-linking' do
       visit organization_goal_path(organization, goal1)
       
-      # The link is in the card-header, find by href to avoid ambiguity
-      find('a[href*="new_outgoing_link"]', text: 'Add Link').click
+      # Click one of the type-specific Add buttons - use stepping stones/activities button
+      find('a[href*="new_outgoing_link"][href*="goal_type=stepping_stone_activity"]').click
       
       # Should be on the new outgoing link page
       expect(page).to have_content('Create Links to Other Goals')
@@ -493,6 +491,93 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       # Verify link is gone from page (uses built-in waiting)
       # Use have_no_content which waits automatically and doesn't require within
       expect(page).to have_no_content(goal2.title)
+    end
+    
+    it 'shows Fix Goal button for child goal without target date' do
+      # Create a child goal without target date
+      child_goal = create(:goal, creator: teammate, owner: teammate, title: 'Child Goal', goal_type: 'stepping_stone_activity', most_likely_target_date: nil)
+      create(:goal_link, parent: goal1, child: child_goal)
+      
+      visit organization_goal_path(organization, goal1)
+      
+      # Should see Fix Goal link (it's a link_to, not a button)
+      expect(page).to have_link('Fix Goal')
+      
+      # Link should have danger class
+      fix_link = find_link('Fix Goal')
+      expect(fix_link[:class]).to include('btn-danger')
+    end
+    
+    it 'shows Start button for child goal with target date but not started' do
+      # Create a child goal with target date but not started
+      child_goal = create(:goal, creator: teammate, owner: teammate, title: 'Child Goal', goal_type: 'stepping_stone_activity', most_likely_target_date: Date.current + 90.days, started_at: nil)
+      create(:goal_link, parent: goal1, child: child_goal)
+      
+      visit organization_goal_path(organization, goal1)
+      
+      # Should see Start button (within the linked goal section, not the main goal's Start Now button)
+      within('li', text: child_goal.title) do
+        expect(page).to have_button('Start')
+        
+        # Button should be primary color
+        start_button = find_button('Start')
+        expect(start_button[:class]).to include('btn-primary')
+      end
+    end
+    
+    it 'Fix Goal button links to goal show page and opens in new window' do
+      child_goal = create(:goal, creator: teammate, owner: teammate, title: 'Child Goal', goal_type: 'stepping_stone_activity', most_likely_target_date: nil)
+      create(:goal_link, parent: goal1, child: child_goal)
+      
+      visit organization_goal_path(organization, goal1)
+      
+      fix_link = find_link('Fix Goal')
+      expect(fix_link[:target]).to eq('_blank')
+      expect(fix_link[:href]).to include(organization_goal_path(organization, child_goal))
+    end
+    
+    it 'Start button starts the goal' do
+      child_goal = create(:goal, creator: teammate, owner: teammate, title: 'Child Goal', goal_type: 'stepping_stone_activity', most_likely_target_date: Date.current + 90.days, started_at: nil)
+      create(:goal_link, parent: goal1, child: child_goal)
+      
+      visit organization_goal_path(organization, goal1)
+      
+      # Find Start button within the linked goal's section
+      within('li', text: child_goal.title) do
+        expect {
+          click_button 'Start'
+        }.to change { child_goal.reload.started_at }.from(nil)
+      end
+      
+      # Should redirect back to parent goal's page
+      expect(page).to have_current_path(organization_goal_path(organization, goal1))
+      expect(page).to have_content('Goal started successfully')
+    end
+    
+    it 'does not show buttons for objective goals' do
+      objective_goal = create(:goal, creator: teammate, owner: teammate, title: 'Objective Goal', goal_type: 'inspirational_objective', most_likely_target_date: nil)
+      create(:goal_link, parent: goal1, child: objective_goal)
+      
+      visit organization_goal_path(organization, goal1)
+      
+      # Check within the linked goal's section to avoid false positives from main goal's buttons
+      within('li', text: objective_goal.title) do
+        expect(page).not_to have_link('Fix Goal')
+        expect(page).not_to have_button('Start')
+      end
+    end
+    
+    it 'does not show buttons for completed goals' do
+      completed_goal = create(:goal, creator: teammate, owner: teammate, title: 'Completed Goal', goal_type: 'stepping_stone_activity', most_likely_target_date: Date.current + 90.days, started_at: 1.week.ago, completed_at: 1.day.ago)
+      create(:goal_link, parent: goal1, child: completed_goal)
+      
+      visit organization_goal_path(organization, goal1)
+      
+      # Check within the linked goal's section to avoid false positives from main goal's buttons
+      within('li', text: completed_goal.title) do
+        expect(page).not_to have_link('Fix Goal')
+        expect(page).not_to have_button('Start')
+      end
     end
     
   end

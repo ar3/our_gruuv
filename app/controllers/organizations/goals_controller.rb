@@ -1,6 +1,6 @@
 class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe]
+  before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe, :done, :complete]
   
   after_action :verify_authorized, except: :index
   after_action :verify_policy_scoped, only: :index
@@ -133,6 +133,23 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         .recent
         .first
     end
+    
+    # Preload check-ins for linked goals (for displaying check-in info and status icons)
+    # Eager load check-ins on linked goals to avoid N+1 queries
+    @goal.outgoing_links.includes(child: :goal_check_ins).load
+    @goal.incoming_links.includes(parent: :goal_check_ins).load
+    
+    linked_goal_ids = (@goal.outgoing_links.pluck(:child_id) + @goal.incoming_links.pluck(:parent_id)).uniq
+    if linked_goal_ids.any?
+      @linked_goal_check_ins = GoalCheckIn
+        .where(goal_id: linked_goal_ids)
+        .includes(:confidence_reporter, :goal)
+        .recent
+        .group_by(&:goal_id)
+        .transform_values { |check_ins| check_ins.first }
+    else
+      @linked_goal_check_ins = {}
+    end
   end
   
   def new
@@ -210,16 +227,25 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     authorize @goal, :update?
     
     if @goal.started_at.present?
-      redirect_to organization_goal_path(@organization, @goal),
+      redirect_path = params[:parent_goal_id].present? ? 
+        organization_goal_path(@organization, params[:parent_goal_id]) : 
+        organization_goal_path(@organization, @goal)
+      redirect_to redirect_path,
                   alert: 'Goal has already been started.'
       return
     end
     
     if @goal.update(started_at: Time.current)
-      redirect_to organization_goal_path(@organization, @goal),
+      redirect_path = params[:parent_goal_id].present? ? 
+        organization_goal_path(@organization, params[:parent_goal_id]) : 
+        organization_goal_path(@organization, @goal)
+      redirect_to redirect_path,
                   notice: 'Goal started successfully.'
     else
-      redirect_to organization_goal_path(@organization, @goal),
+      redirect_path = params[:parent_goal_id].present? ? 
+        organization_goal_path(@organization, params[:parent_goal_id]) : 
+        organization_goal_path(@organization, @goal)
+      redirect_to redirect_path,
                   alert: 'Failed to start goal.'
     end
   end
@@ -412,6 +438,77 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     else
       redirect_to organization_goals_path(@organization, params.except(:controller, :action, :goal_check_ins, :authenticity_token, :commit).permit!.to_h),
                   alert: "Failed to save check-ins: #{result.error}"
+    end
+  end
+  
+  def done
+    authorize @goal, :update?
+    
+    @check_ins = @goal.goal_check_ins
+      .includes(:confidence_reporter)
+      .order(check_in_week_start: :desc)
+    
+    @current_week_start = Date.current.beginning_of_week(:monday)
+  end
+  
+  def complete
+    authorize @goal, :update?
+    
+    completed_outcome = params[:completed_outcome]
+    learnings = params[:learnings]&.strip
+    
+    if learnings.blank?
+      @check_ins = @goal.goal_check_ins
+        .includes(:confidence_reporter)
+        .order(check_in_week_start: :desc)
+      @current_week_start = Date.current.beginning_of_week(:monday)
+      flash.now[:alert] = 'Learnings are required.'
+      render :done, status: :unprocessable_entity
+      return
+    end
+    
+    unless %w[hit hit_late miss].include?(completed_outcome)
+      @check_ins = @goal.goal_check_ins
+        .includes(:confidence_reporter)
+        .order(check_in_week_start: :desc)
+      @current_week_start = Date.current.beginning_of_week(:monday)
+      flash.now[:alert] = 'Invalid completion outcome.'
+      render :done, status: :unprocessable_entity
+      return
+    end
+    
+    # Determine confidence percentage
+    confidence_percentage = (completed_outcome.in?(%w[hit hit_late])) ? 100 : 0
+    
+    # Get current week start
+    current_week_start = Date.current.beginning_of_week(:monday)
+    
+    # Set PaperTrail whodunnit for version tracking
+    PaperTrail.request.whodunnit = current_person.id.to_s
+    
+    # Create or update final check-in
+    check_in = GoalCheckIn.find_or_initialize_by(
+      goal: @goal,
+      check_in_week_start: current_week_start
+    )
+    
+    check_in.assign_attributes(
+      confidence_percentage: confidence_percentage,
+      confidence_reason: learnings,
+      confidence_reporter: current_person
+    )
+    
+    if check_in.save && @goal.update(completed_at: Time.current)
+      redirect_to organization_goal_path(@organization, @goal),
+                  notice: 'Goal marked as done successfully.'
+    else
+      @check_ins = @goal.goal_check_ins
+        .includes(:confidence_reporter)
+        .order(check_in_week_start: :desc)
+      @current_week_start = Date.current.beginning_of_week(:monday)
+      errors = check_in.errors.full_messages + @goal.errors.full_messages
+      flash.now[:alert] = "Failed to complete goal: #{errors.join(', ')}"
+      render :done, status: :unprocessable_entity
     end
   end
   

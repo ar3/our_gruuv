@@ -1,0 +1,82 @@
+- content_for :header do
+  %h1.mb-0 Mark Goal as Done: #{@goal.title}
+
+- content_for :go_back_link do
+  = link_to organization_goal_path(@organization, @goal), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Goal
+
+.row.justify-content-center
+  .col-lg-10
+    / Check-in History Section
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-clock-history.me-2
+          Check-in History
+      .card-body
+        - if @check_ins.any?
+          .table-responsive
+            %table.table.table-hover
+              %thead.table-light
+                %tr
+                  %th Week
+                  %th Confidence
+                  %th Reason
+                  %th Reported By
+                  %th Reported On
+              %tbody
+                - @check_ins.each do |check_in|
+                  %tr
+                    %td
+                      %strong= check_in.week_display
+                    %td
+                      %span.badge{class: check_in.confidence_percentage == 100 ? 'bg-success' : check_in.confidence_percentage == 0 ? 'bg-danger' : 'bg-secondary'}
+                        = "#{check_in.confidence_percentage}%"
+                    %td
+                      - if check_in.confidence_reason.present?
+                        = simple_format(check_in.confidence_reason)
+                      - else
+                        %em.text-muted No reason provided
+                    %td= check_in.confidence_reporter.display_name
+                    %td= check_in.created_at.strftime('%b %d, %Y at %I:%M %p')
+        - else
+          %p.text-muted No check-ins recorded yet.
+
+    / Record Final Check-in and Learnings Form
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-check-circle.me-2
+          Record Final Check-in and Learnings
+      .card-body
+        = form_with url: complete_organization_goal_path(@organization, @goal), method: :post, local: true do |f|
+          - if flash[:alert].present?
+            .alert.alert-danger
+              = flash[:alert]
+          
+          .mb-3
+            %label.form-label.fw-bold Outcome
+            .form-check
+              = radio_button_tag :completed_outcome, 'hit', false, class: 'form-check-input', id: 'outcome_hit', required: true
+              %label.form-check-label{for: 'outcome_hit'}
+                Learned and hit goal
+            .form-check
+              = radio_button_tag :completed_outcome, 'hit_late', false, class: 'form-check-input', id: 'outcome_hit_late'
+              %label.form-check-label{for: 'outcome_hit_late'}
+                Learned and hit goal (late)
+            .form-check
+              = radio_button_tag :completed_outcome, 'miss', false, class: 'form-check-input', id: 'outcome_miss'
+              %label.form-check-label{for: 'outcome_miss'}
+                Learned and missed goal
+          
+          .mb-3
+            = label_tag :learnings, "What did you learn?", class: "form-label fw-bold"
+            = text_area_tag :learnings, "", rows: 5, class: "form-control", required: true, placeholder: "Describe what you learned from working on this goal..."
+            %small.form-text.text-muted
+              This will be saved as the reason for your final check-in.
+          
+          .d-flex.gap-2
+            = submit_tag "Mark Goal as Done", class: "btn btn-primary"
+            = link_to "Cancel", organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary"
+

@@ -762,6 +762,52 @@ RSpec.describe Goal, type: :model do
           expect(bad_key_result_goal.bad_key_result?).to be true
         end
       end
+      
+      describe '#needs_target_date?' do
+        let(:stepping_stone_no_date) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'stepping_stone_activity', most_likely_target_date: nil) }
+        let(:stepping_stone_with_date) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'stepping_stone_activity', most_likely_target_date: Date.today + 90.days) }
+        let(:quantitative_no_date) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'quantitative_key_result', most_likely_target_date: nil) }
+        let(:qualitative_no_date) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'qualitative_key_result', most_likely_target_date: nil) }
+        
+        it 'returns true for non-objective goals without target date' do
+          expect(stepping_stone_no_date.needs_target_date?).to be true
+          expect(quantitative_no_date.needs_target_date?).to be true
+          expect(qualitative_no_date.needs_target_date?).to be true
+        end
+        
+        it 'returns false for non-objective goals with target date' do
+          expect(stepping_stone_with_date.needs_target_date?).to be false
+          expect(key_result_goal.needs_target_date?).to be false
+        end
+        
+        it 'returns false for objective goals even without target date' do
+          expect(vision_goal.needs_target_date?).to be false
+          expect(objective_goal.needs_target_date?).to be false
+        end
+      end
+      
+      describe '#needs_start?' do
+        let(:stepping_stone_not_started) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'stepping_stone_activity', most_likely_target_date: Date.today + 90.days, started_at: nil) }
+        let(:stepping_stone_started) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'stepping_stone_activity', most_likely_target_date: Date.today + 90.days, started_at: 1.day.ago) }
+        let(:stepping_stone_no_date) { create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'stepping_stone_activity', most_likely_target_date: nil, started_at: nil) }
+        
+        it 'returns true for non-objective goals with target date but not started' do
+          expect(stepping_stone_not_started.needs_start?).to be true
+        end
+        
+        it 'returns false for non-objective goals without target date' do
+          expect(stepping_stone_no_date.needs_start?).to be false
+        end
+        
+        it 'returns false for started goals' do
+          expect(stepping_stone_started.needs_start?).to be false
+        end
+        
+        it 'returns false for objective goals' do
+          expect(vision_goal.needs_start?).to be false
+          expect(objective_goal.needs_start?).to be false
+        end
+      end
     end
     
     describe '#has_sub_goals?' do
