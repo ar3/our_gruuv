@@ -184,6 +184,48 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         expect(assignment_check_in.employee_completed?).to be true
       end
 
+      it 'raises ArgumentError when employee_personal_alignment is set to invalid value "tolerate"' do
+        assignment_check_in = create(:assignment_check_in, teammate: employee.teammates.first, assignment: assignment)
+        
+        # The error should be raised when trying to update with invalid enum value
+        # ApplicationController re-raises errors in test mode, so RSpec should catch it
+        expect {
+          patch :update, params: {
+            organization_id: organization.id,
+            person_id: employee.id,
+            assignment_check_ins: {
+              assignment_check_in.id => {
+                assignment_id: assignment.id,
+                employee_personal_alignment: 'tolerate',
+                status: 'complete'
+              }
+            }
+          }
+        }.to raise_error(ArgumentError) do |error|
+          expect(error.message).to match(/'tolerate' is not a valid employee_personal_alignment/)
+        end
+      end
+
+      it 'raises ArgumentError when employee_personal_alignment is set to invalid value "tolerate" as draft' do
+        assignment_check_in = create(:assignment_check_in, teammate: employee.teammates.first, assignment: assignment)
+        
+        expect {
+          patch :update, params: {
+            organization_id: organization.id,
+            person_id: employee.id,
+            assignment_check_ins: {
+              assignment_check_in.id => {
+                assignment_id: assignment.id,
+                employee_personal_alignment: 'tolerate',
+                status: 'draft'
+              }
+            }
+          }
+        }.to raise_error(ArgumentError) do |error|
+          expect(error.message).to match(/'tolerate' is not a valid employee_personal_alignment/)
+        end
+      end
+
       it 'updates aspiration check-ins with employee fields' do
         aspiration_check_in = create(:aspiration_check_in, teammate: employee.teammates.first, aspiration: aspiration)
         

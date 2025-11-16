@@ -38,26 +38,11 @@
                     %th Change Type
                     %th Finalized By
                     %th Reason
-                    %th Actions
+                    %th Acknowledgement
+                    %th Details
                 %tbody
                   - @pending_snapshots.each do |snapshot|
-                    %tr
-                      %td
-                        = check_box_tag 'snapshot_ids[]', snapshot.id, false, 
-                                        class: 'snapshot-checkbox',
-                                        id: "snapshot_#{snapshot.id}"
-                      %td
-                        = snapshot.created_at.strftime("%Y-%m-%d %I:%M %p")
-                      %td
-                        %span.badge.bg-primary= snapshot.change_type.humanize
-                      %td
-                        = snapshot.created_by&.display_name || "System"
-                      %td
-                        = truncate(snapshot.reason, length: 50)
-                      %td
-                        = link_to 'View Details', '#', 
-                                  class: 'btn btn-sm btn-outline-info',
-                                  data: { bs_toggle: 'modal', bs_target: "#snapshot_#{snapshot.id}_modal" }
+                    = render partial: 'organizations/employees/audit/snapshot_row', locals: { snapshot: snapshot, show_checkbox: true, person: @person, organization: @organization }
             
             .mt-3
               = f.submit 'Acknowledge Selected Check-ins', 
@@ -88,50 +73,10 @@
                   %th Status
                   - if current_person == @person
                     %th Acknowledgement
+                  %th Details
               %tbody
                 - @maap_snapshots.each do |snapshot|
-                  %tr
-                    %td
-                      = snapshot.created_at.strftime("%Y-%m-%d %I:%M %p")
-                    %td
-                      %span.badge.bg-primary= snapshot.change_type.humanize
-                    %td
-                      = snapshot.created_by&.display_name || "System"
-                    %td
-                      = truncate(snapshot.reason, length: 50)
-                    %td
-                      - if snapshot.executed?
-                        %span.badge.bg-success Executed
-                        %br
-                        %small.text-muted= "on #{snapshot.effective_date.strftime('%Y-%m-%d')}"
-                      - else
-                        %span.badge.bg-warning Pending
-                    - if current_person == @person
-                      %td
-                        - if snapshot.executed?
-                          - if snapshot.acknowledged?
-                            %span.badge.bg-success
-                              %i.bi.bi-check-circle.me-1
-                              Acknowledged
-                            %br
-                            %small.text-muted= "on #{snapshot.employee_acknowledged_at.strftime('%Y-%m-%d')}"
-                          - else
-                            %span.badge.bg-warning
-                              %i.bi.bi-exclamation-triangle.me-1
-                              Pending
-                        - else
-                          %span.text-muted.text-decoration-none
-                            %i.bi.bi-clock.me-1
-                            Not Executed
-                    -# %td
-                    -#   - if snapshot.executed?
-                    -#     %span.text-muted.text-decoration-none
-                    -#       %i.bi.bi-eye.me-1
-                    -#       View Details
-                    -#   - else
-                    -#     = link_to execute_changes_organization_person_path(@organization, @person, snapshot), class: "btn btn-sm btn-outline-primary" do
-                    -#       %i.bi.bi-play-circle.me-1
-                    -#       Execute
+                  = render partial: 'organizations/employees/audit/snapshot_row', locals: { snapshot: snapshot, show_checkbox: false, person: @person, organization: @organization }
         - else
           .text-center.py-5
             %i.bi.bi-clock-history.text-muted{style: "font-size: 3rem;"}

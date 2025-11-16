@@ -162,6 +162,49 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
         get :audit, params: { organization_id: company.id, id: employee1.id }
         expect(response).to have_http_status(:success)
       end
+      
+      it 'assigns pending snapshots when user is the person' do
+        executed_snapshot = create(:maap_snapshot, 
+          employee: employee1, 
+          created_by: maap_manager, 
+          company: company, 
+          change_type: 'assignment_management',
+          effective_date: 1.day.ago,
+          employee_acknowledged_at: nil
+        )
+        
+        get :audit, params: { organization_id: company.id, id: employee1.id }
+        
+        expect(assigns(:pending_snapshots)).to include(executed_snapshot)
+      end
+      
+      it 'assigns acknowledged snapshots when user is the person' do
+        acknowledged_snapshot = create(:maap_snapshot, 
+          employee: employee1, 
+          created_by: maap_manager, 
+          company: company, 
+          change_type: 'assignment_management',
+          effective_date: 2.days.ago,
+          employee_acknowledged_at: 1.day.ago
+        )
+        
+        get :audit, params: { organization_id: company.id, id: employee1.id }
+        
+        expect(assigns(:acknowledged_snapshots)).to include(acknowledged_snapshot)
+      end
+      
+      it 'renders the audit view template' do
+        get :audit, params: { organization_id: company.id, id: employee1.id }
+        expect(response).to render_template(:audit)
+      end
+      
+      it 'renders audit view with snapshots' do
+        get :audit, params: { organization_id: company.id, id: employee1.id }
+        expect(response).to have_http_status(:success)
+        expect(assigns(:maap_snapshots)).to include(maap_snapshot1, maap_snapshot2)
+        # Verify the view renders without errors
+        expect(response).to render_template(:audit)
+      end
     end
   end
 end

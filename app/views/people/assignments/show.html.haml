@@ -203,7 +203,7 @@
                       .col-md-6
                         .mb-3
                           %label.form-label Personal Alignment
-                          = af.select :employee_personal_alignment, options_for_select([['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Tolerate', 'tolerate']], @open_check_in.employee_personal_alignment), { include_blank: 'Select alignment' }, { class: "form-select" }
+                          = af.select :employee_personal_alignment, options_for_select([['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Only If Necessary', 'only_if_necessary']], @open_check_in.employee_personal_alignment), { include_blank: 'Select alignment' }, { class: "form-select" }
                     
                     - if current_person == @person
                       .col-md-6

@@ -278,7 +278,7 @@ class MaapChangeDetectionService
       
       if milestone_changes.any?
         changes << {
-          ability: milestone.ability.title,
+          ability: milestone.ability.name,
           ability_id: milestone.ability_id,
           changes: milestone_changes
         }

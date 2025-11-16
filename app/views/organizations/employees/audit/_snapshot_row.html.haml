@@ -1,0 +1,127 @@
+-# Local variables expected:
+  -# - snapshot: MaapSnapshot instance
+  -# - show_checkbox: boolean, whether to show checkbox column (for pending acknowledgements)
+  -# - person: Person instance
+  -# - organization: Organization instance
+- changes = format_snapshot_changes(snapshot, person, organization)
+- has_changes = changes.present? && (changes[:employment].present? || changes[:assignments].present? || changes[:milestones].present?)
+- show_acknowledgement = current_person == person
+- # Calculate total columns: checkbox (if shown) + date + type + created_by + reason + status (if not checkbox) + acknowledgement (if shown) + details
+- total_cols = (show_checkbox ? 1 : 0) + 4 + (show_checkbox ? 0 : 1) + (show_acknowledgement ? 1 : 0) + 1
+%tr
+  - if show_checkbox
+    %td
+      = check_box_tag 'snapshot_ids[]', snapshot.id, false, 
+                      class: 'snapshot-checkbox',
+                      id: "snapshot_#{snapshot.id}"
+  %td
+    = snapshot.created_at.strftime("%Y-%m-%d %I:%M %p")
+  %td
+    %span.badge.bg-primary= snapshot.change_type.humanize
+  %td
+    = snapshot.created_by&.display_name || "System"
+  %td
+    = truncate(snapshot.reason, length: 50)
+  - unless show_checkbox
+    %td
+      - if snapshot.executed?
+        %span.badge.bg-success Executed
+        %br
+        %small.text-muted= "on #{snapshot.effective_date.strftime('%Y-%m-%d')}"
+      - else
+        %span.badge.bg-warning Pending
+  - if show_acknowledgement
+    %td
+      - if snapshot.executed?
+        - if snapshot.acknowledged?
+          %span.badge.bg-success
+            %i.bi.bi-check-circle.me-1
+            Acknowledged
+          %br
+          %small.text-muted= "on #{snapshot.employee_acknowledged_at.strftime('%Y-%m-%d')}"
+        - else
+          %span.badge.bg-warning
+            %i.bi.bi-exclamation-triangle.me-1
+            Pending
+      - else
+        %span.text-muted.text-decoration-none
+          %i.bi.bi-clock.me-1
+          Not Executed
+  %td
+    - if has_changes
+      %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#snapshot_#{snapshot.id}_details", "aria-expanded" => "false", "aria-controls" => "snapshot_#{snapshot.id}_details", style: "cursor: pointer;"}
+        %span.not-collapsed
+          %i.bi.bi-chevron-up.me-1
+          %small.text-muted Hide details
+        %span.collapsed
+          %i.bi.bi-chevron-down.me-1
+          %small.text-muted Show details
+    - else
+      %small.text-muted No changes to display
+
+- if has_changes
+  %tr
+    %td{colspan: total_cols, style: "padding: 0;"}
+      .collapse{id: "snapshot_#{snapshot.id}_details"}
+        .card.border-light.m-2
+          .card-body
+            - if changes[:employment].present?
+              .mb-3
+                %h6.text-muted.mb-2
+                  %i.bi.bi-briefcase.me-2
+                  Employment Changes
+                %table.table.table-sm.table-bordered
+                  %thead
+                    %tr
+                      %th Field
+                      %th Current
+                      %th Proposed
+                  %tbody
+                    - changes[:employment].each do |change|
+                      %tr
+                        %td= change[:label]
+                        %td= change[:current]
+                        %td= change[:proposed]
+            
+            - if changes[:assignments].present?
+              .mb-3
+                %h6.text-muted.mb-2
+                  %i.bi.bi-clipboard-check.me-2
+                  Assignment Changes
+                - changes[:assignments].each do |assignment|
+                  .mb-3
+                    %strong= assignment[:assignment_name]
+                    %table.table.table-sm.table-bordered.mt-2
+                      %thead
+                        %tr
+                          %th Field
+                          %th Current
+                          %th Proposed
+                      %tbody
+                        - assignment[:changes].each do |change|
+                          %tr
+                            %td= change[:label]
+                            %td= change[:current]
+                            %td= change[:proposed]
+            
+            - if changes[:milestones].present?
+              .mb-3
+                %h6.text-muted.mb-2
+                  %i.bi.bi-trophy.me-2
+                  Milestone Changes
+                - changes[:milestones].each do |milestone|
+                  .mb-3
+                    %strong= milestone[:ability_name]
+                    %table.table.table-sm.table-bordered.mt-2
+                      %thead
+                        %tr
+                          %th Field
+                          %th Current
+                          %th Proposed
+                      %tbody
+                        - milestone[:changes].each do |change|
+                          %tr
+                            %td= change[:label]
+                            %td= change[:current]
+                            %td= change[:proposed]
+
