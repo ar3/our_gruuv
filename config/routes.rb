@@ -168,6 +168,7 @@ get '/login', to: 'auth#login', as: :login
         patch :set_timeframe
         get :done
         post :complete
+        patch :undelete
       end
       resources :goal_links, only: [:create, :destroy] do
         collection do
@@ -185,6 +186,7 @@ get '/login', to: 'auth#login', as: :login
       collection do
         get :journal  # Shortcut to apply "My Journal" workspace
         get :quick_new  # Quick observation creation from check-ins
+        get :filtered_observations  # Filtered observations page (overlay) for check-ins
       end
       member do
         get :set_ratings, action: :set_ratings

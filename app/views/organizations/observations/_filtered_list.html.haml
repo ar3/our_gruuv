@@ -1,4 +1,5 @@
-- observations = Observation.published.includes(:observer, :observation_ratings, :observed_teammates)
+- observations = visible_observations_for_person(current_person, @organization)
+- observations = observations.includes(:observer, :observation_ratings, :observed_teammates)
 - observations = observations.joins(:observed_teammates).where(teammates: { id: observee_ids }) if observee_ids.present?
 - observations = observations.joins(:observation_ratings).where(observation_ratings: { rateable_type: rateable_type, rateable_id: rateable_id }) if rateable_type.present? && rateable_id.present?
 - observations = observations.where('observed_at >= ?', start_date) if start_date.present?

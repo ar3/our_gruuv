@@ -43,6 +43,29 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include('80%')
     end
     
+    it 'can access done page for completed goal' do
+      completed_goal = create(:goal, creator: teammate, owner: teammate, title: 'Completed Goal', started_at: 1.week.ago, completed_at: 1.day.ago)
+      
+      get done_organization_goal_path(organization, completed_goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Mark Goal as Done')
+      expect(response.body).to include(completed_goal.title)
+    end
+    
+    it 'accepts return_url and return_text params' do
+      return_url = organization_goals_path(organization)
+      return_text = 'Back to Goals'
+      
+      get done_organization_goal_path(organization, goal), params: {
+        return_url: return_url,
+        return_text: return_text
+      }
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(return_url)
+    end
+    
     context 'when user is not authorized' do
       let(:other_person) { create(:person) }
       let(:other_teammate) do
@@ -64,6 +87,17 @@ RSpec.describe 'Organizations::Goals', type: :request do
         
         expect(response).to have_http_status(:redirect)
       end
+    end
+  end
+  
+  describe 'GET /organizations/:organization_id/goals/:id' do
+    it 'can access show page for completed goal' do
+      completed_goal = create(:goal, creator: teammate, owner: teammate, title: 'Completed Goal', started_at: 1.week.ago, completed_at: 1.day.ago)
+      
+      get organization_goal_path(organization, completed_goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(completed_goal.title)
     end
   end
   
@@ -186,7 +220,8 @@ RSpec.describe 'Organizations::Goals', type: :request do
       get organization_goals_path(organization), params: {
         view: 'check-in',
         owner_type: 'Teammate',
-        owner_id: teammate.id
+        owner_id: teammate.id,
+        show_completed: '1'
       }
       
       expect(response).to have_http_status(:success)
@@ -304,6 +339,29 @@ RSpec.describe 'Organizations::Goals', type: :request do
         
         follow_redirect!
         expect(response.body).to include('Goal marked as done successfully')
+      end
+      
+      it 'redirects to return_url when provided' do
+        return_url = organization_goals_path(organization)
+        
+        post complete_organization_goal_path(organization, goal), params: {
+          completed_outcome: 'hit',
+          learnings: 'Test learnings',
+          return_url: return_url
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(return_url)
+      end
+      
+      it 'redirects to goal show page when return_url not provided' do
+        post complete_organization_goal_path(organization, goal), params: {
+          completed_outcome: 'hit',
+          learnings: 'Test learnings'
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(organization_goal_path(organization, goal))
       end
     end
     

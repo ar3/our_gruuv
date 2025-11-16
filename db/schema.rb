@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_15_200153) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_16_013505) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -282,13 +282,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_15_200153) do
     t.string "privacy_level", null: false
     t.datetime "started_at"
     t.datetime "completed_at"
-    t.datetime "cancelled_at"
     t.datetime "became_top_priority"
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "company_id", null: false
-    t.index ["cancelled_at"], name: "index_goals_on_cancelled_at"
     t.index ["company_id"], name: "index_goals_on_company_id"
     t.index ["completed_at"], name: "index_goals_on_completed_at"
     t.index ["creator_id"], name: "index_goals_on_creator_id"

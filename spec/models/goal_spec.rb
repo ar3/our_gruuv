@@ -266,12 +266,12 @@ RSpec.describe Goal, type: :model do
       let!(:draft_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil) }
       let!(:active_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago) }
       let!(:completed_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago, completed_at: 1.day.ago) }
-      let!(:cancelled_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago, cancelled_at: 1.day.ago) }
+      let!(:deleted_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago, deleted_at: 1.day.ago) }
       
-      it 'returns goals with started_at but no completed_at or cancelled_at' do
+      it 'returns goals with started_at but no completed_at' do
         result = described_class.active
         expect(result).to include(active_goal)
-        expect(result).not_to include(draft_goal, completed_goal, cancelled_goal)
+        expect(result).not_to include(draft_goal, completed_goal, deleted_goal)
       end
     end
     
@@ -280,20 +280,31 @@ RSpec.describe Goal, type: :model do
       let!(:completed_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, completed_at: 1.day.ago) }
       
       it 'returns goals with completed_at' do
-        result = described_class.completed
+        result = described_class.with_completed.completed
         expect(result).to include(completed_goal)
         expect(result).not_to include(active_goal)
       end
     end
     
-    describe '.cancelled' do
+    describe 'default scope' do
       let!(:active_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago) }
-      let!(:cancelled_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, cancelled_at: 1.day.ago) }
+      let!(:completed_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, completed_at: 1.day.ago) }
+      let!(:deleted_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, deleted_at: 1.day.ago) }
       
-      it 'returns goals with cancelled_at' do
-        result = described_class.cancelled
-        expect(result).to include(cancelled_goal)
-        expect(result).not_to include(active_goal)
+      it 'excludes completed and deleted goals by default' do
+        result = described_class.all
+        expect(result).to include(active_goal)
+        expect(result).not_to include(completed_goal, deleted_goal)
+      end
+    end
+    
+    describe '.with_completed' do
+      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago) }
+      let!(:completed_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, completed_at: 1.day.ago) }
+      
+      it 'includes completed goals' do
+        result = described_class.with_completed
+        expect(result).to include(active_goal, completed_goal)
       end
     end
   end
@@ -337,17 +348,17 @@ RSpec.describe Goal, type: :model do
         expect(goal.status).to eq(:draft)
       end
       
-      it 'returns :cancelled when cancelled_at is present' do
-        goal.update!(started_at: 1.day.ago, cancelled_at: 1.hour.ago)
-        expect(goal.status).to eq(:cancelled)
+      it 'returns :deleted when deleted_at is present' do
+        goal.update!(started_at: 1.day.ago, deleted_at: 1.hour.ago)
+        expect(goal.status).to eq(:deleted)
       end
       
-      it 'returns :cancelled when both cancelled_at and completed_at are present (cancelled takes priority)' do
-        goal.update!(started_at: 1.day.ago, completed_at: 1.hour.ago, cancelled_at: 30.minutes.ago)
-        expect(goal.status).to eq(:cancelled)
+      it 'returns :deleted when both deleted_at and completed_at are present (deleted takes priority)' do
+        goal.update!(started_at: 1.day.ago, completed_at: 1.hour.ago, deleted_at: 30.minutes.ago)
+        expect(goal.status).to eq(:deleted)
       end
       
-      it 'returns :active when started_at exists without completed_at or cancelled_at' do
+      it 'returns :active when started_at exists without completed_at' do
         goal.update!(started_at: 1.day.ago)
         expect(goal.status).to eq(:active)
       end

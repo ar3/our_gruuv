@@ -48,6 +48,12 @@ This document provides a comprehensive overview of all rules and conventions for
 - **Use consistent scope names**: `:active`, `:inactive`, `:recent`
 - **Test association includes** to catch naming mismatches early
 
+### Display & Presentation
+- **Always use timezone conversion** for DateTime/Time fields when displaying to users
+- **Use `format_time_in_user_timezone` helper** - never use `.strftime()` directly on datetime fields
+- **Date fields don't need conversion** - only DateTime/Time fields require timezone math
+- **Convert to UTC when saving** - store all timestamps in UTC, convert only when displaying
+
 ### Code Quality
 - **Keep methods small and focused** (Sandi Metz rules)
 - **Use decorators for presentation logic**
@@ -101,6 +107,8 @@ When working on any feature:
 - [ ] Test policies independently
 - [ ] Keep methods small and focused
 - [ ] Avoid silent failures
+- [ ] Use timezone conversion for all DateTime/Time displays
+- [ ] Never use `.strftime()` directly on datetime fields
 
 **Project Workflow:**
 - [ ] Show toast notifications for actions
@@ -135,6 +143,18 @@ Model.includes(:associations).decorate
 
 # Bad
 Model.decorate.includes(:associations)
+```
+
+### Timezone Handling
+```ruby
+# Good - Uses timezone conversion
+= format_time_in_user_timezone(@goal.created_at)
+
+# Bad - No timezone conversion
+= @goal.created_at.strftime("%B %d, %Y at %I:%M %p")
+
+# Good - Date fields don't need conversion
+= @goal.most_likely_target_date.strftime("%B %d, %Y")
 ```
 
 ### Error Handling

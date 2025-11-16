@@ -48,6 +48,53 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @current_spotlight = query.current_spotlight
   end
 
+  def filtered_observations
+    authorize Observation, :index?
+    
+    # Extract filter parameters
+    @rateable_type = params[:rateable_type]
+    @rateable_id = params[:rateable_id]
+    @observee_ids = Array(params[:observee_ids]).reject(&:blank?)
+    
+    # Parse dates from URL parameters (Rails converts Time objects to ISO8601 strings in URLs)
+    @start_date = if params[:start_date].present?
+      begin
+        Time.parse(params[:start_date])
+      rescue ArgumentError
+        nil
+      end
+    else
+      nil
+    end
+    
+    @end_date = if params[:end_date].present?
+      begin
+        Time.parse(params[:end_date])
+      rescue ArgumentError
+        nil
+      end
+    else
+      nil
+    end
+    
+    # Build modal title based on filters
+    if @rateable_type.present? && @rateable_id.present?
+      rateable = @rateable_type.constantize.find(@rateable_id)
+      @modal_title = "Observations for #{rateable.name || rateable.title}"
+    elsif @observee_ids.any?
+      teammate = Teammate.find(@observee_ids.first)
+      @modal_title = "Observations for #{teammate.person.display_name}"
+    else
+      @modal_title = "Observations"
+    end
+    
+    # Set return URL and text for overlay
+    @return_url = params[:return_url] || organization_observations_path(organization)
+    @return_text = params[:return_text] || 'Back to Observations'
+    
+    render layout: 'overlay'
+  end
+
   def show
     # Show page is only for the observer
     begin

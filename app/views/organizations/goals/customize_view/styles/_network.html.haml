@@ -22,6 +22,7 @@
       - links.each do |link|
         - parent_goal = link.parent
         - child_goal = link.child
+        - next unless parent_goal.present? && child_goal.present?
         - next unless goal_ids.include?(parent_goal.id) && goal_ids.include?(child_goal.id)
         
         - parent_index = goals.index(parent_goal)

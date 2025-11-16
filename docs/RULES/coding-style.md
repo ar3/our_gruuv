@@ -106,6 +106,126 @@ Before committing partials:
 - **Apply includes before decorate** for performance: `Model.includes(:associations).decorate`
 - **Create dedicated decorator classes** for complex presentation logic
 
+### Timezone Handling for Dates and Times
+
+**Critical Rule**: Always use timezone conversion when displaying DateTime/Time fields to users.
+
+#### When Timezone Conversion is Required
+
+- **DateTime/Time fields** (`created_at`, `updated_at`, `started_at`, `completed_at`, `observed_at`, `published_at`, etc.) - **ALWAYS** require timezone conversion
+- **Date fields** (`earliest_target_date`, `check_in_started_on`, `attained_at`, etc.) - **DO NOT** require timezone conversion (they represent calendar dates, not moments in time)
+- **Any field ending in `_at`** - Typically DateTime/Time, requires conversion
+- **Any field ending in `_on`** - Typically Date, does not require conversion
+
+#### Display Pattern
+
+**✅ Good - Uses timezone conversion:**
+```ruby
+# Full datetime with timezone
+= format_time_in_user_timezone(@goal.created_at)
+
+# Date-only format (still needs conversion for correct date display)
+= format_time_in_user_timezone(@goal.created_at).split(' at ').first
+```
+
+**❌ Bad - No timezone conversion:**
+```ruby
+# Direct strftime on datetime field - WRONG
+= @goal.created_at.strftime("%B %d, %Y at %I:%M %p")
+
+# Even date-only formatting needs conversion
+= @goal.created_at.strftime("%B %d, %Y")  # WRONG - date may be wrong in different timezones
+```
+
+**✅ Good - Date fields don't need conversion:**
+```ruby
+# Date fields are calendar dates, not moments in time
+= @goal.most_likely_target_date.strftime("%B %d, %Y")
+= check_in.check_in_started_on.strftime('%B %d, %Y')
+```
+
+#### Helper Method
+
+Use the `format_time_in_user_timezone` helper method available in `ApplicationHelper`:
+
+```ruby
+def format_time_in_user_timezone(time, user = nil)
+  user ||= current_person if respond_to?(:current_person)
+  return time.in_time_zone('Eastern Time (US & Canada)').strftime('%B %d, %Y at %I:%M %p %Z') unless user&.timezone.present?
+  
+  time.in_time_zone(user.timezone).strftime('%B %d, %Y at %I:%M %p %Z')
+end
+```
+
+This helper:
+- Automatically uses `current_person`'s timezone preference
+- Falls back to 'Eastern Time (US & Canada)' if no timezone is set
+- Formats with timezone abbreviation (`%Z`) for clarity
+
+#### When Capturing Time Input
+
+When capturing time input from users in forms:
+- **Convert to UTC** before saving to the database
+- Store all timestamps in UTC in the database
+- Convert back to user's timezone only when displaying
+
+**Example:**
+```ruby
+# In a form or controller
+def create
+  # If user submits "2025-01-15 3:00 PM" in their timezone
+  user_timezone = current_person.timezone_or_default
+  local_time = Time.zone.parse(params[:scheduled_at])
+  @record.scheduled_at = local_time.in_time_zone('UTC')
+  @record.save
+end
+```
+
+#### Common Patterns
+
+**Date-only display from DateTime:**
+```ruby
+# Extract date portion after timezone conversion
+= format_time_in_user_timezone(@goal.created_at).split(' at ').first
+```
+
+**Custom formatting:**
+If you need custom formatting, convert to user's timezone first:
+```ruby
+- user_tz = current_person&.timezone || 'Eastern Time (US & Canada)'
+- local_time = @goal.created_at.in_time_zone(user_tz)
+= local_time.strftime('%m/%d/%Y')
+```
+
+#### Testing Timezone Conversion
+
+When testing views that display dates/times:
+- Test with users in different timezones
+- Verify dates display correctly (especially around midnight boundaries)
+- Ensure timezone abbreviations are shown correctly
+
+#### Anti-Patterns to Avoid
+
+**❌ Never use `.strftime()` directly on DateTime/Time fields:**
+```ruby
+= @goal.created_at.strftime("%B %d, %Y")  # WRONG
+```
+
+**❌ Never assume server timezone:**
+```ruby
+= Time.now.strftime("%B %d, %Y")  # WRONG - uses server timezone
+```
+
+**❌ Never convert Date fields:**
+```ruby
+# Date fields don't have time components, so conversion is unnecessary
+= @goal.most_likely_target_date.in_time_zone(user.timezone)  # WRONG - unnecessary
+```
+
+#### Reference
+
+See `docs/TIMEZONE_INVENTORY.md` for a complete inventory of datetime displays that need timezone conversion.
+
 ## Database & Query Optimization
 
 ### Database Field Naming

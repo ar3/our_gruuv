@@ -23,7 +23,7 @@
       %thead
         %tr
           %th Goal Title
-          %th Due Date
+          %th Started / Due Date
           %th Last 3 Weeks
           %th Current Week Confidence
           %th Reason
@@ -37,10 +37,20 @@
             %td
               = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
             %td
-              - if goal.most_likely_target_date.present?
-                = goal.most_likely_target_date.strftime('%b %d, %Y')
-              - else
-                %span.text-muted Not set
+              .d-flex.gap-2
+                - if goal.started_at.present?
+                  %span
+                    %strong Started:
+                    = goal.started_at.strftime('%b %d, %Y')
+                - else
+                  %span.text-muted Started: Not set
+                %span |
+                - if goal.most_likely_target_date.present?
+                  %span
+                    %strong Due:
+                    = goal.most_likely_target_date.strftime('%b %d, %Y')
+                - else
+                  %span.text-muted Due: Not set
             %td
               - if recent_check_ins.any?
                 .d-flex.gap-2

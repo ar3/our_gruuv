@@ -57,6 +57,7 @@
           
           / Show links between goals on this timeline
           - links.each do |link|
+            - next unless link.parent.present? && link.child.present?
             - if goals_by_date[date].include?(link.parent) || goals_by_date[date].include?(link.child)
               - parent_date = link.parent.most_likely_target_date || Date.today + 1.year
               - child_date = link.child.most_likely_target_date || Date.today + 1.year

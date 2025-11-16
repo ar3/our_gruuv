@@ -71,11 +71,9 @@ class Goal < ApplicationRecord
   scope :active, -> {
     where.not(started_at: nil)
       .where(completed_at: nil)
-      .where(cancelled_at: nil)
   }
   
   scope :completed, -> { where.not(completed_at: nil) }
-  scope :cancelled, -> { where.not(cancelled_at: nil) }
   
   scope :check_in_eligible, -> {
     where.not(goal_type: 'inspirational_objective')
@@ -83,8 +81,9 @@ class Goal < ApplicationRecord
   }
   
   # Soft delete
-  default_scope { where(deleted_at: nil) }
+  default_scope { where(deleted_at: nil).where(completed_at: nil) }
   scope :with_deleted, -> { unscope(where: :deleted_at) }
+  scope :with_completed, -> { unscope(where: :completed_at) }
   
   # Instance methods
   def timeframe
@@ -103,7 +102,7 @@ class Goal < ApplicationRecord
   end
   
   def status
-    return :cancelled if cancelled_at.present?
+    return :deleted if deleted_at.present?
     return :completed if completed_at.present?
     return :active if started_at.present?
     :draft

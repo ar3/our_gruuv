@@ -39,6 +39,14 @@ class PositionCheckIn < ApplicationRecord
       .order(official_check_in_completed_at: :desc)
       .first
   end
+
+  def previous_finalized_check_in
+    @previous_finalized_check_in ||= PositionCheckIn
+      .where(teammate: teammate)
+      .closed
+      .order(:official_check_in_completed_at)
+      .last
+  end
   
   private
   

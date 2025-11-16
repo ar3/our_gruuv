@@ -49,19 +49,24 @@
               %textarea.form-control.form-control-sm{rows: "2", placeholder: "Coming Soon... Ability notes..." }
               .mt-2
                 - since_date = 1.year.ago
-                - observation_count = ability.observations.published.where('observed_at >= ?', since_date).count
                 - teammate = person.teammates.find_by(organization: @organization)
-                - if observation_count > 0 || teammate
+                - if teammate
+                  - observations = visible_observations_for_person(current_person, @organization)
+                  - observations = observations.joins(:observed_teammates).where(teammates: { id: teammate.id })
+                  - observations = observations.joins(:observation_ratings).where(observation_ratings: { rateable_type: 'Ability', rateable_id: ability.id })
+                  - observations = observations.where('observed_at >= ?', since_date) if since_date.present?
+                  - observation_count = observations.count
                   .d-flex.flex-column.gap-1
-                    - if observation_count > 0
-                      - time_ago = time_ago_in_words(since_date)
-                      = link_to "#", class: "text-muted text-decoration-none small", "data-bs-toggle" => "modal", "data-bs-target" => "#observationsModal_ability_#{ability.id}" do
-                        %i.bi.bi-eye.me-1
+                    - time_ago = time_ago_in_words(since_date)
+                    = link_to filtered_observations_organization_observations_path(@organization, rateable_type: 'Ability', rateable_id: ability.id, observee_ids: [teammate.id], start_date: since_date), target: '_blank', class: "text-muted text-decoration-none small" do
+                      %i.bi.bi-eye.me-1
+                      - if observation_count > 0
                         #{pluralize(observation_count, 'observation')} on this since #{time_ago} ago
-                    - if teammate
-                      = link_to new_organization_observation_path(@organization, return_url: organization_person_check_ins_path(@organization, person, show_observations_for: "ability_#{ability.id}"), return_text: "Check-ins", observee_ids: [teammate.id], rateable_type: 'Ability', rateable_id: ability.id, privacy_level: 'observed_and_managers'), class: "text-muted text-decoration-none small" do
-                        %i.bi.bi-plus-circle.me-1
-                        Add Win / Challenge
+                      - else
+                        No notes to show since #{time_ago} ago
+                    = link_to new_organization_observation_path(@organization, return_url: organization_person_check_ins_path(@organization, person, show_observations_for: "ability_#{ability.id}"), return_text: "Check-ins", observee_ids: [teammate.id], rateable_type: 'Ability', rateable_id: ability.id, privacy_level: 'observed_and_managers'), class: "text-muted text-decoration-none small" do
+                      %i.bi.bi-plus-circle.me-1
+                      Add Win / Challenge
             %td
               .btn-group-vertical{role: "group", "aria-label": "Ability goal selection"}
                 = radio_button_tag "ability_goal[#{ability.id}]", "na", true, class: "btn-check", id: "ability_goal_#{ability.id}_na", disabled: true
@@ -76,20 +81,6 @@
                 = label_tag "ability_goal_#{ability.id}_m4", "M4: Distinguished", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m4"
                 = radio_button_tag "ability_goal[#{ability.id}]", "m5", false, class: "btn-check", id: "ability_goal_#{ability.id}_m5", disabled: true
                 = label_tag "ability_goal_#{ability.id}_m5", "M5: Industry-Recognized", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m5"
-    -# Observation modals for each ability
-    - relevant_abilities.each do |ability_data|
-      - ability = ability_data[:ability]
-      - since_date = 1.year.ago
-      - teammate = person.teammates.find_by(organization: @organization)
-      - if teammate
-        = render 'organizations/observations/list_modal',
-                 modal_id: "observationsModal_ability_#{ability.id}",
-                 modal_title: "Observations for #{ability.name}",
-                 rateable_type: 'Ability',
-                 rateable_id: ability.id,
-                 observee_ids: [teammate.id],
-                 start_date: since_date,
-                 end_date: nil
 - else
   .alert.alert-info{data: {abilities_empty_state: true}}
     %i.bi.bi-info-circle.me-2

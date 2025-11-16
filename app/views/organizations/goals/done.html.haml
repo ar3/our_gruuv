@@ -51,6 +51,8 @@
           Record Final Check-in and Learnings
       .card-body
         = form_with url: complete_organization_goal_path(@organization, @goal), method: :post, local: true do |f|
+          = hidden_field_tag :return_url, @return_url
+          = hidden_field_tag :return_text, @return_text
           - if flash[:alert].present?
             .alert.alert-danger
               = flash[:alert]
@@ -78,5 +80,5 @@
           
           .d-flex.gap-2
             = submit_tag "Mark Goal as Done", class: "btn btn-primary"
-            = link_to "Cancel", organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary"
+            = link_to "Cancel", @return_url, class: "btn btn-outline-secondary"
 

@@ -1,6 +1,6 @@
 class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe, :done, :complete]
+  before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe, :done, :complete, :undelete]
   
   after_action :verify_authorized, except: :index
   after_action :verify_policy_scoped, only: :index
@@ -36,7 +36,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
           view: @view_style,
           spotlight: params[:spotlight],
           owner_type: params[:owner_type],
-          owner_id: params[:owner_id]
+          owner_id: params[:owner_id],
+          show_deleted: params[:show_deleted],
+          show_completed: params[:show_completed]
         }
         return
       end
@@ -44,6 +46,16 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Start with goals visible to the teammate (filtered by company_id via policy scope)
     @goals = policy_scope(Goal)
+    
+    # Apply show_deleted filter if requested
+    if params[:show_deleted] == '1'
+      @goals = @goals.with_deleted
+    end
+    
+    # Apply show_completed filter if requested
+    if params[:show_completed] == '1'
+      @goals = @goals.with_completed
+    end
     
     # Filter by owner
     @goals = @goals.where(owner_type: params[:owner_type], owner_id: params[:owner_id])
@@ -57,6 +69,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Calculate spotlight stats for goals_overview (before other filters)
     if spotlight_param == 'goals_overview'
       all_goals_for_owner = policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
+      # Include completed/deleted if requested for stats
+      all_goals_for_owner = all_goals_for_owner.with_completed if params[:show_completed] == '1'
+      all_goals_for_owner = all_goals_for_owner.with_deleted if params[:show_deleted] == '1'
       @spotlight_stats = helpers.calculate_goals_overview_stats(all_goals_for_owner)
     end
     
@@ -108,7 +123,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       view: @view_style,
       spotlight: spotlight_param,
       owner_type: params[:owner_type],
-      owner_id: params[:owner_id]
+      owner_id: params[:owner_id],
+      show_deleted: params[:show_deleted],
+      show_completed: params[:show_completed]
     }
     
     # Set current spotlight for view
@@ -117,6 +134,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   def show
     authorize @goal
+    
+    # Load all check-ins chronologically (oldest first) for display
+    @all_check_ins = @goal.goal_check_ins
+      .includes(:confidence_reporter)
+      .order(check_in_week_start: :asc)
     
     # Load check-in data for started goals
     if @goal.started_at.present?
@@ -136,11 +158,23 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Preload check-ins for linked goals (for displaying check-in info and status icons)
     # Eager load check-ins on linked goals to avoid N+1 queries
+    # Use with_completed to show all linked goals regardless of completion status
     @goal.outgoing_links.includes(child: :goal_check_ins).load
     @goal.incoming_links.includes(parent: :goal_check_ins).load
     
+    # Load linked goals with completed scope to show all linked goals
+    # This ensures completed goals are visible when linked to the current goal
     linked_goal_ids = (@goal.outgoing_links.pluck(:child_id) + @goal.incoming_links.pluck(:parent_id)).uniq
     if linked_goal_ids.any?
+      @linked_goals = Goal.with_completed.where(id: linked_goal_ids).index_by(&:id)
+      # Reload associations to use the with_completed goals
+      @goal.outgoing_links.each do |link|
+        link.association(:child).target = @linked_goals[link.child_id] if @linked_goals[link.child_id]
+      end
+      @goal.incoming_links.each do |link|
+        link.association(:parent).target = @linked_goals[link.parent_id] if @linked_goals[link.parent_id]
+      end
+      
       @linked_goal_check_ins = GoalCheckIn
         .where(goal_id: linked_goal_ids)
         .includes(:confidence_reporter, :goal)
@@ -148,6 +182,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         .group_by(&:goal_id)
         .transform_values { |check_ins| check_ins.first }
     else
+      @linked_goals = {}
       @linked_goal_check_ins = {}
     end
   end
@@ -223,6 +258,14 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
                 notice: 'Goal was successfully deleted.'
   end
   
+  def undelete
+    authorize @goal, :update?
+    
+    @goal.update!(deleted_at: nil)
+    redirect_to organization_goal_path(@organization, @goal),
+                notice: 'Goal was successfully restored.'
+  end
+  
   def start
     authorize @goal, :update?
     
@@ -277,6 +320,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     )
     
     if check_in.save
+      # Auto-complete goal if confidence is 0% or 100%
+      if (confidence_percentage == 0 || confidence_percentage == 100) && @goal.completed_at.nil?
+        @goal.update(completed_at: Time.current)
+      end
+      
       redirect_to organization_goal_path(@organization, @goal),
                   notice: 'Check-in saved successfully.'
     else
@@ -392,7 +440,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       view: params[:view] || 'hierarchical-indented',
       spotlight: params[:spotlight] || 'goals_overview',
       owner_type: params[:owner_type],
-      owner_id: params[:owner_id]
+      owner_id: params[:owner_id],
+      show_deleted: params[:show_deleted],
+      show_completed: params[:show_completed]
     }
     
     @current_sort = @current_filters[:sort]
@@ -443,6 +493,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   
   def done
     authorize @goal, :update?
+    
+    @return_url = params[:return_url] || organization_goal_path(@organization, @goal)
+    @return_text = params[:return_text] || 'Goal'
     
     @check_ins = @goal.goal_check_ins
       .includes(:confidence_reporter)
@@ -499,7 +552,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     )
     
     if check_in.save && @goal.update(completed_at: Time.current)
-      redirect_to organization_goal_path(@organization, @goal),
+      redirect_url = params[:return_url] || organization_goal_path(@organization, @goal)
+      redirect_to redirect_url,
                   notice: 'Goal marked as done successfully.'
     else
       @check_ins = @goal.goal_check_ins
@@ -515,14 +569,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   private
   
   def set_goal
-    # Goals can belong to Teammate, Company, Department, or Team, so we need to find them differently
-    # We'll search by ID across all goals (policy scope will handle authorization)
-    @goal = Goal.find(params[:id])
-  rescue ActiveRecord::RecordNotFound
-    # If not found, it might be due to soft delete or authorization
-    # Let policy handle this
-    @goal = Goal.with_deleted.find(params[:id]) rescue nil
-    raise ActiveRecord::RecordNotFound unless @goal
+    # Use unscoped to bypass default scope (which excludes deleted and completed goals)
+    # Policy will handle authorization checks
+    @goal = Goal.unscoped.find(params[:id])
   end
   
   def apply_timeframe_filter(goals, timeframe)
@@ -554,41 +603,33 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     return goals unless status.present?
     return goals if status == 'all' || (status.is_a?(Array) && status.include?('all'))
     
-    # Handle array of statuses
-    if status.is_a?(Array)
-      # Build query for multiple statuses
-      status_scope = nil
-      status.each do |s|
-        case s
-        when 'draft'
-          scope = goals.draft
-        when 'active'
-          scope = goals.active
-        when 'completed'
-          scope = goals.completed
-        when 'cancelled'
-          scope = goals.cancelled
-        else
-          next
+      # Handle array of statuses
+      if status.is_a?(Array)
+        # Build query for multiple statuses
+        status_scope = nil
+        status.each do |s|
+          case s
+          when 'draft'
+            scope = goals.draft
+          when 'active'
+            scope = goals.active
+          else
+            next
+          end
+          
+          status_scope = status_scope ? status_scope.or(scope) : scope
         end
-        
-        status_scope = status_scope ? status_scope.or(scope) : scope
-      end
-      status_scope || goals
-    else
-      case status
-      when 'draft'
-        goals.draft
-      when 'active'
-        goals.active
-      when 'completed'
-        goals.completed
-      when 'cancelled'
-        goals.cancelled
+        status_scope || goals
       else
-        goals
+        case status
+        when 'draft'
+          goals.draft
+        when 'active'
+          goals.active
+        else
+          goals
+        end
       end
-    end
   end
   
   def apply_spotlight_filter(goals, spotlight)

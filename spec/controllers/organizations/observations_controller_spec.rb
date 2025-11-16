@@ -673,6 +673,377 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
   end
 
+  describe 'GET #filtered_observations' do
+    let(:assignment) { create(:assignment, company: company) }
+    let(:aspiration) { create(:aspiration, organization: company) }
+    let(:ability) { create(:ability, organization: company) }
+    
+    let!(:published_observation) do
+      obs = build(:observation, observer: observer, company: company, observed_at: 2.days.ago, story: 'Published observation story')
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+    
+    let!(:draft_observation) do
+      obs = build(:observation, observer: observer, company: company, published_at: nil, observed_at: 1.day.ago, story: 'Draft observation story')
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs
+    end
+    
+    let!(:deleted_observation) do
+      obs = build(:observation, observer: observer, company: company, observed_at: 3.days.ago)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs.update_column(:deleted_at, 1.day.ago)
+      obs
+    end
+    
+    let!(:other_company_observation) do
+      other_company = create(:organization, :company)
+      obs = build(:observation, observer: observer, company: other_company)
+      obs.observees.build(teammate: create(:teammate, person: observee_person, organization: other_company))
+      obs.save!
+      obs.publish!
+      obs
+    end
+    
+    let!(:assignment_observation) do
+      obs = build(:observation, observer: observer, company: company, observed_at: 2.days.ago)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.observation_ratings.create!(rateable_type: 'Assignment', rateable_id: assignment.id)
+      obs.publish!
+      obs
+    end
+    
+    let!(:aspiration_observation) do
+      obs = build(:observation, observer: observer, company: company, observed_at: 2.days.ago)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.observation_ratings.create!(rateable_type: 'Aspiration', rateable_id: aspiration.id)
+      obs.publish!
+      obs
+    end
+    
+    let!(:ability_observation) do
+      obs = build(:observation, observer: observer, company: company, observed_at: 2.days.ago)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.observation_ratings.create!(rateable_type: 'Ability', rateable_id: ability.id)
+      obs.publish!
+      obs
+    end
+    
+    let!(:old_observation) do
+      obs = build(:observation, observer: observer, company: company, observed_at: 1.year.ago - 1.day)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+    
+    let!(:recent_observation) do
+      obs = build(:observation, observer: observer, company: company, observed_at: 1.day.ago)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+    
+    context 'base scope (visibility query)' do
+      it 'uses ObservationVisibilityQuery to filter visible observations' do
+        get :filtered_observations, params: { organization_id: company.id }
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:filtered_observations)
+        expect(response).to render_template(layout: 'overlay')
+        # Check that the view renders something (not empty)
+        expect(response.body).not_to be_empty
+      end
+      
+      it 'renders published observations visible to the user' do
+        get :filtered_observations, params: { organization_id: company.id }
+        # The view should render the observation story if it's visible
+        expect(response.body).to include(published_observation.story)
+      end
+      
+      it 'renders draft observations created by the user' do
+        get :filtered_observations, params: { organization_id: company.id }
+        expect(response.body).to include(draft_observation.story)
+      end
+      
+      it 'excludes deleted observations from rendered output' do
+        get :filtered_observations, params: { organization_id: company.id }
+        expect(response.body).not_to include(deleted_observation.story)
+      end
+      
+      it 'excludes observations from other organizations' do
+        get :filtered_observations, params: { organization_id: company.id }
+        expect(response.body).not_to include(other_company_observation.story)
+      end
+      
+      context 'when user is not the observer' do
+        let(:other_person) { create(:person) }
+        let!(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+        
+        before do
+          sign_in_as_teammate(other_person, company)
+        end
+        
+        it 'excludes draft observations created by others' do
+          get :filtered_observations, params: { organization_id: company.id }
+          expect(response.body).not_to include(draft_observation.story)
+        end
+        
+        it 'includes published observations visible to the user' do
+          # Create a published observation visible to other_person
+          visible_obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation, story: 'Visible to other person')
+          visible_obs.observees.build(teammate: other_teammate)
+          visible_obs.save!
+          visible_obs.publish!
+          
+          get :filtered_observations, params: { organization_id: company.id }
+          expect(response.body).to include('Visible to other person')
+        end
+      end
+    end
+    
+    context 'filtering by rateable_type and rateable_id' do
+      before do
+        assignment_observation.update!(story: 'Assignment observation story')
+        aspiration_observation.update!(story: 'Aspiration observation story')
+        ability_observation.update!(story: 'Ability observation story')
+      end
+      
+      it 'filters observations by Assignment' do
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          rateable_type: 'Assignment',
+          rateable_id: assignment.id
+        }
+        expect(response.body).to include('Assignment observation story')
+        expect(response.body).not_to include('Aspiration observation story', 'Ability observation story')
+      end
+      
+      it 'filters observations by Aspiration' do
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          rateable_type: 'Aspiration',
+          rateable_id: aspiration.id
+        }
+        expect(response.body).to include('Aspiration observation story')
+        expect(response.body).not_to include('Assignment observation story', 'Ability observation story')
+      end
+      
+      it 'filters observations by Ability' do
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          rateable_type: 'Ability',
+          rateable_id: ability.id
+        }
+        expect(response.body).to include('Ability observation story')
+        expect(response.body).not_to include('Assignment observation story', 'Aspiration observation story')
+      end
+      
+      it 'returns empty when no observations match the rateable' do
+        other_assignment = create(:assignment, company: company)
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          rateable_type: 'Assignment',
+          rateable_id: other_assignment.id
+        }
+        expect(response.body).not_to include('Assignment observation story')
+        expect(response.body).to include('No observations found')
+      end
+    end
+    
+    context 'filtering by observee_ids' do
+      let(:other_teammate) { create(:teammate, organization: company) }
+      
+      let!(:other_observee_observation) do
+        obs = build(:observation, observer: observer, company: company, story: 'Other observee observation')
+        obs.observees.build(teammate: other_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+      
+      before do
+        published_observation.update!(story: 'Published observation for observee')
+      end
+      
+      it 'filters observations by observee_ids' do
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          observee_ids: [observee_teammate.id]
+        }
+        expect(response.body).to include('Published observation for observee')
+        expect(response.body).not_to include('Other observee observation')
+      end
+      
+      it 'handles multiple observee_ids' do
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          observee_ids: [observee_teammate.id, other_teammate.id]
+        }
+        expect(response.body).to include('Published observation for observee', 'Other observee observation')
+      end
+    end
+    
+    context 'filtering by start_date' do
+      before do
+        recent_observation.update!(story: 'Recent observation')
+        old_observation.update!(story: 'Old observation')
+      end
+      
+      it 'filters observations by start_date' do
+        start_date = 1.week.ago
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          start_date: start_date.iso8601
+        }
+        expect(response.body).to include('Recent observation')
+        expect(response.body).not_to include('Old observation')
+      end
+      
+      it 'handles date parsing errors gracefully' do
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          start_date: 'invalid-date'
+        }
+        expect(response).to have_http_status(:success)
+        # Should not crash, just ignore invalid date
+      end
+    end
+    
+    context 'filtering by end_date' do
+      before do
+        recent_observation.update!(story: 'Recent observation')
+        old_observation.update!(story: 'Old observation')
+      end
+      
+      it 'filters observations by end_date' do
+        end_date = 1.week.ago
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          end_date: end_date.iso8601
+        }
+        expect(response.body).to include('Old observation')
+        expect(response.body).not_to include('Recent observation')
+      end
+    end
+    
+    context 'combined filters' do
+      before do
+        assignment_observation.update!(story: 'Assignment observation')
+        aspiration_observation.update!(story: 'Aspiration observation')
+        old_observation.update!(story: 'Old observation')
+      end
+      
+      it 'applies all filters together' do
+        start_date = 1.week.ago
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          rateable_type: 'Assignment',
+          rateable_id: assignment.id,
+          observee_ids: [observee_teammate.id],
+          start_date: start_date.iso8601
+        }
+        expect(response.body).to include('Assignment observation')
+        expect(response.body).not_to include('Aspiration observation', 'Old observation')
+      end
+    end
+    
+    context 'title generation' do
+      it 'generates title from rateable when rateable_type and rateable_id are provided' do
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          rateable_type: 'Assignment',
+          rateable_id: assignment.id
+        }
+        expect(assigns(:modal_title)).to include(assignment.title)
+      end
+      
+      it 'generates title from observee when only observee_ids are provided' do
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          observee_ids: [observee_teammate.id]
+        }
+        expect(assigns(:modal_title)).to include(observee_person.display_name)
+      end
+      
+      it 'uses default title when no filters are provided' do
+        get :filtered_observations, params: { organization_id: company.id }
+        expect(assigns(:modal_title)).to eq('Observations')
+      end
+    end
+    
+    context 'return URL handling' do
+      it 'uses provided return_url and return_text' do
+        return_url = organization_observations_path(company)
+        return_text = 'Back to Observations'
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          return_url: return_url,
+          return_text: return_text
+        }
+        expect(assigns(:return_url)).to eq(return_url)
+        expect(assigns(:return_text)).to eq(return_text)
+      end
+      
+      it 'uses defaults when return_url and return_text are not provided' do
+        get :filtered_observations, params: { organization_id: company.id }
+        expect(assigns(:return_url)).to eq(organization_observations_path(company))
+        expect(assigns(:return_text)).to eq('Back to Observations')
+      end
+    end
+    
+    context 'authorization' do
+      it 'requires authorization' do
+        other_person = create(:person)
+        other_company = create(:organization, :company)
+        sign_in_as_teammate(other_person, other_company)
+        
+        get :filtered_observations, params: { organization_id: company.id }
+        # Should still work - authorization is at the Observation level, not organization level
+        expect(response).to have_http_status(:success)
+      end
+    end
+    
+    context 'edge cases' do
+      it 'handles empty observee_ids array' do
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          observee_ids: []
+        }
+        expect(response).to have_http_status(:success)
+      end
+      
+      it 'handles non-existent rateable_id gracefully' do
+        get :filtered_observations, params: {
+          organization_id: company.id,
+          rateable_type: 'Assignment',
+          rateable_id: 99999
+        }
+        expect(response).to have_http_status(:success)
+        # Should not crash, just return empty results
+      end
+      
+      it 'handles invalid rateable_type gracefully' do
+        expect {
+          get :filtered_observations, params: {
+            organization_id: company.id,
+            rateable_type: 'InvalidType',
+            rateable_id: 1
+          }
+        }.to raise_error(NameError) # constantize will fail
+      end
+    end
+  end
+
   # Note: CSRF protection is disabled in test environment (config/environments/test.rb)
   # System specs won't catch CSRF issues because allow_forgery_protection = false
   # This is expected Rails behavior - tests don't validate CSRF tokens

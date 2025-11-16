@@ -1,0 +1,16 @@
+- content_for :header do
+  = @modal_title
+
+- content_for :return_url do
+  = @return_url
+
+- content_for :return_text do
+  = @return_text
+
+= render 'organizations/observations/filtered_list',
+         rateable_type: @rateable_type,
+         rateable_id: @rateable_id,
+         observee_ids: @observee_ids,
+         start_date: @start_date,
+         end_date: @end_date
+

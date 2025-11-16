@@ -188,7 +188,9 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
   private
   
   def set_goal
-    @goal = Goal.find(params[:goal_id])
+    # Use unscoped to bypass default scope (which excludes deleted and completed goals)
+    # Policy will handle authorization checks
+    @goal = Goal.unscoped.find(params[:goal_id])
     @organization = Organization.find(params[:organization_id])
     authorize @goal
   end

@@ -61,6 +61,11 @@ module Goals
       )
 
       if check_in.save
+        # Auto-complete goal if confidence is 0% or 100%
+        if (confidence_percentage == 0 || confidence_percentage == 100) && goal.completed_at.nil?
+          goal.update(completed_at: Time.current)
+        end
+        
         @success_count += 1
       else
         @failure_count += 1
