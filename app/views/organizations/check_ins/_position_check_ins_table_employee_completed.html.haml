@@ -48,12 +48,11 @@
     = pf.hidden_field :employee_rating, value: check_in.employee_rating
     = pf.hidden_field :employee_private_notes, value: check_in.employee_private_notes
     
-    .form-check
-      = pf.radio_button :status, 'complete', checked: true
-      = pf.label :status_complete, 'Ready for Manager', class: 'form-check-label'
-    .form-check
-      = pf.radio_button :status, 'draft'
-      = pf.label :status_draft, 'Make Changes', class: 'form-check-label'
+    .btn-group-vertical{role: "group", "aria-label": "Status selection"}
+      = pf.radio_button :status, 'draft', checked: !check_in.employee_completed?, class: 'btn-check', id: "position_employee_completed_status_draft_#{check_in.id}"
+      = pf.label :status_draft, 'Make Changes', class: 'btn btn-outline-secondary', for: "position_employee_completed_status_draft_#{check_in.id}"
+      = pf.radio_button :status, 'complete', checked: check_in.employee_completed?, class: 'btn-check', id: "position_employee_completed_status_complete_#{check_in.id}"
+      = pf.label :status_complete, 'Ready for Manager', class: 'btn btn-outline-primary', for: "position_employee_completed_status_complete_#{check_in.id}"
   
   .small.text-muted.mt-1
     Select "Make Changes" to edit your assessment and notes

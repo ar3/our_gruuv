@@ -14,12 +14,11 @@
   = form.hidden_field :manager_rating, value: check_in.manager_rating
   = form.hidden_field :manager_private_notes, value: check_in.manager_private_notes
   
-  .form-check
-    = form.radio_button :status, 'complete', checked: true
-    = form.label :status_complete, 'Ready for Finalization', class: 'form-check-label'
-  .form-check
-    = form.radio_button :status, 'draft'
-    = form.label :status_draft, 'Make Changes', class: 'form-check-label'
+  .btn-group-vertical{role: "group", "aria-label": "Status selection"}
+    = form.radio_button :status, 'draft', checked: !check_in.manager_completed?, class: 'btn-check', id: "assignment_table_manager_status_draft_#{check_in.id}"
+    = form.label :status_draft, 'Make Changes', class: 'btn btn-outline-secondary', for: "assignment_table_manager_status_draft_#{check_in.id}"
+    = form.radio_button :status, 'complete', checked: check_in.manager_completed?, class: 'btn-check', id: "assignment_table_manager_status_complete_#{check_in.id}"
+    = form.label :status_complete, 'Ready for Finalization', class: 'btn btn-outline-primary', for: "assignment_table_manager_status_complete_#{check_in.id}"
 
   .small.text-muted.mt-1
     Select "Make Changes" to edit your assessment and notes

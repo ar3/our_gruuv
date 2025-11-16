@@ -6,11 +6,17 @@ RSpec.shared_examples "position check-in form fields" do |view_type|
     # Position fields should be present
     expect(page).to have_css('select[name*="position_check_in"][name*="manager_rating"]')
     expect(page).to have_css('textarea[name*="position_check_in"][name*="manager_private_notes"]')
-    expect(page).to have_css('input[name*="position_check_in"][name*="status"][type="radio"]')
     
-    # Should have both draft and complete radio options
-    expect(page).to have_css('input[name*="position_check_in"][name*="status"][value="draft"]')
-    expect(page).to have_css('input[name*="position_check_in"][name*="status"][value="complete"]')
+    # Should have button group for status selection
+    expect(page).to have_css('.btn-group-vertical[role="group"][aria-label="Status selection"]')
+    
+    # Should have both draft and complete radio options (hidden with btn-check)
+    expect(page).to have_css('input[name*="position_check_in"][name*="status"][type="radio"][value="draft"]', visible: :hidden)
+    expect(page).to have_css('input[name*="position_check_in"][name*="status"][type="radio"][value="complete"]', visible: :hidden)
+    
+    # Should have button labels
+    expect(page).to have_button('Make Changes', class: 'btn-outline-secondary')
+    expect(page).to have_button('Ready', class: 'btn-outline-primary')
   end
 end
 
@@ -22,11 +28,17 @@ RSpec.shared_examples "assignment check-in form fields" do |view_type|
     # Assignment fields should be present
     expect(page).to have_css('select[name*="assignment_check_ins"][name*="manager_rating"]')
     expect(page).to have_css('textarea[name*="assignment_check_ins"][name*="manager_private_notes"]')
-    expect(page).to have_css('input[name*="assignment_check_ins"][name*="status"][type="radio"]')
     
-    # Should have both draft and complete radio options
-    expect(page).to have_css('input[name*="assignment_check_ins"][name*="status"][value="draft"]')
-    expect(page).to have_css('input[name*="assignment_check_ins"][name*="status"][value="complete"]')
+    # Should have button group for status selection
+    expect(page).to have_css('.btn-group-vertical[role="group"][aria-label="Status selection"]')
+    
+    # Should have both draft and complete radio options (hidden with btn-check)
+    expect(page).to have_css('input[name*="assignment_check_ins"][name*="status"][type="radio"][value="draft"]', visible: :hidden)
+    expect(page).to have_css('input[name*="assignment_check_ins"][name*="status"][type="radio"][value="complete"]', visible: :hidden)
+    
+    # Should have button labels
+    expect(page).to have_button('Make Changes', class: 'btn-outline-secondary')
+    expect(page).to have_button('Ready', class: 'btn-outline-primary')
   end
 end
 
@@ -38,11 +50,17 @@ RSpec.shared_examples "aspiration check-in form fields" do |view_type|
     # Aspiration fields should be present
     expect(page).to have_css('select[name*="aspiration_check_ins"][name*="manager_rating"]')
     expect(page).to have_css('textarea[name*="aspiration_check_ins"][name*="manager_private_notes"]')
-    expect(page).to have_css('input[name*="aspiration_check_ins"][name*="status"][type="radio"]')
     
-    # Should have both draft and complete radio options
-    expect(page).to have_css('input[name*="aspiration_check_ins"][name*="status"][value="draft"]')
-    expect(page).to have_css('input[name*="aspiration_check_ins"][name*="status"][value="complete"]')
+    # Should have button group for status selection
+    expect(page).to have_css('.btn-group-vertical[role="group"][aria-label="Status selection"]')
+    
+    # Should have both draft and complete radio options (hidden with btn-check)
+    expect(page).to have_css('input[name*="aspiration_check_ins"][name*="status"][type="radio"][value="draft"]', visible: :hidden)
+    expect(page).to have_css('input[name*="aspiration_check_ins"][name*="status"][type="radio"][value="complete"]', visible: :hidden)
+    
+    # Should have button labels
+    expect(page).to have_button('Make Changes', class: 'btn-outline-secondary')
+    expect(page).to have_button('Ready', class: 'btn-outline-primary')
   end
 end
 

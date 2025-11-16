@@ -29,12 +29,11 @@
     %label Status
     = form.fields_for :assignment_check_ins, check_in, index: check_in.id do |af|
       = af.hidden_field :assignment_id, value: check_in.assignment.id
-      .form-check
-        = af.radio_button :status, 'complete', checked: true
-        = af.label :status_complete, 'Ready for Manager', class: 'form-check-label'
-      .form-check
-        = af.radio_button :status, 'draft'
-        = af.label :status_draft, 'Make Changes', class: 'form-check-label'
+      .btn-group-vertical{role: "group", "aria-label": "Status selection"}
+        = af.radio_button :status, 'draft', checked: !check_in.employee_completed?, class: 'btn-check', id: "assignment_employee_status_draft_#{check_in.id}"
+        = af.label :status_draft, 'Make Changes', class: 'btn btn-outline-secondary', for: "assignment_employee_status_draft_#{check_in.id}"
+        = af.radio_button :status, 'complete', checked: check_in.employee_completed?, class: 'btn-check', id: "assignment_employee_status_complete_#{check_in.id}"
+        = af.label :status_complete, 'Ready for Manager', class: 'btn btn-outline-primary', for: "assignment_employee_status_complete_#{check_in.id}"
 
     .small.text-muted.mt-1
       Select "Make Changes" to edit your assessment and notes

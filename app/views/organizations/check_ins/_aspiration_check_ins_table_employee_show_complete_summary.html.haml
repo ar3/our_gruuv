@@ -15,12 +15,11 @@
   = form.hidden_field :employee_private_notes, value: check_in.employee_private_notes
   = form.hidden_field :aspiration_id, value: check_in.aspiration_id
   
-  .form-check
-    = form.radio_button :status, 'complete', checked: true
-    = form.label :status_complete, 'Ready for Manager', class: 'form-check-label'
-  .form-check
-    = form.radio_button :status, 'draft'
-    = form.label :status_draft, 'Make Changes', class: 'form-check-label'
+  .btn-group-vertical{role: "group", "aria-label": "Status selection"}
+    = form.radio_button :status, 'draft', checked: !check_in.employee_completed?, class: 'btn-check', id: "aspiration_table_employee_status_draft_#{check_in.id}"
+    = form.label :status_draft, 'Make Changes', class: 'btn btn-outline-secondary', for: "aspiration_table_employee_status_draft_#{check_in.id}"
+    = form.radio_button :status, 'complete', checked: check_in.employee_completed?, class: 'btn-check', id: "aspiration_table_employee_status_complete_#{check_in.id}"
+    = form.label :status_complete, 'Ready for Manager', class: 'btn btn-outline-primary', for: "aspiration_table_employee_status_complete_#{check_in.id}"
 
 .small.text-muted.mt-1
   Select "Make Changes" to edit your assessment and notes
