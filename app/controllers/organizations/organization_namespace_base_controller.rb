@@ -37,11 +37,22 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
       session[:current_company_teammate_id] = company_teammate.id
       # Clear cached teammate so it reloads
       @current_company_teammate = nil
+    elsif allow_authorization_for_different_org?
+      # For people views, allow authorization check to determine access
+      # The organization context is still set via set_organization
+      return
     else
       # User doesn't have access to this organization
       flash[:alert] = "You don't have access to that organization."
       redirect_to organizations_path
     end
+  end
+
+  # Override this method in child controllers to allow authorization checks
+  # even when user doesn't have access to the organization
+  # (e.g., for people views that should redirect to public view on failure)
+  def allow_authorization_for_different_org?
+    false
   end
 
   def set_organization

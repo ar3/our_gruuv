@@ -14,6 +14,107 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     @current_company_teammate = nil if defined?(@current_company_teammate)
   end
 
+  describe 'GET #show' do
+    let(:person) { create(:person) }
+    let(:person_teammate) { create(:teammate, person: person, organization: organization) }
+    let(:regular_teammate_person) { create(:person) }
+    let(:regular_teammate) { create(:teammate, person: regular_teammate_person, organization: organization) }
+
+    before do
+      # Create active employment for person
+      create(:employment_tenure, teammate: person_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      # Create active employment for regular teammate
+      create(:employment_tenure, teammate: regular_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      # Set manager relationship
+      person_teammate.employment_tenures.first.update!(manager: manager)
+    end
+
+    context 'authorization' do
+      context 'when user is the person themselves' do
+        before do
+          session[:current_company_teammate_id] = person_teammate.id
+          @current_company_teammate = nil if defined?(@current_company_teammate)
+        end
+
+        it 'allows access' do
+          get :show, params: { organization_id: organization.id, id: person.id }
+          expect(response).to have_http_status(:success)
+        end
+      end
+
+      context 'when user is the manager of the person' do
+        it 'allows access' do
+          get :show, params: { organization_id: organization.id, id: person.id }
+          expect(response).to have_http_status(:success)
+        end
+      end
+
+      context 'when user has employment management permissions' do
+        it 'allows access' do
+          get :show, params: { organization_id: organization.id, id: person.id }
+          expect(response).to have_http_status(:success)
+        end
+      end
+
+      context 'when user is regular teammate (not manager, no permissions)' do
+        before do
+          session[:current_company_teammate_id] = regular_teammate.id
+          @current_company_teammate = nil if defined?(@current_company_teammate)
+        end
+
+        it 'denies access' do
+          get :show, params: { organization_id: organization.id, id: person.id }
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to(public_person_path(person))
+        end
+      end
+
+      context 'when user is from different organization' do
+        let(:other_organization) { create(:organization, :company) }
+        let(:other_org_person) { create(:person) }
+        let(:other_org_teammate) { create(:teammate, person: other_org_person, organization: other_organization) }
+
+        before do
+          create(:employment_tenure, teammate: other_org_teammate, company: other_organization, started_at: 1.year.ago, ended_at: nil)
+          session[:current_company_teammate_id] = other_org_teammate.id
+          @current_company_teammate = nil if defined?(@current_company_teammate)
+        end
+
+        it 'denies access' do
+          get :show, params: { organization_id: organization.id, id: person.id }
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to(public_person_path(person))
+        end
+      end
+
+      context 'when user is unauthenticated' do
+        before do
+          session[:current_company_teammate_id] = nil
+        end
+
+        it 'redirects to login' do
+          get :show, params: { organization_id: organization.id, id: person.id }
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to(root_path)
+        end
+      end
+
+      context 'when user is an admin' do
+        let(:admin) { create(:person, :admin) }
+
+        before do
+          admin_teammate = create(:teammate, person: admin, organization: organization)
+          sign_in_as_teammate(admin, organization)
+        end
+
+        it 'allows access' do
+          get :show, params: { organization_id: organization.id, id: person.id }
+          expect(response).to have_http_status(:success)
+        end
+      end
+    end
+  end
+
   describe 'GET #complete_picture' do
     context 'when person has an active employment tenure' do
       let(:person) { create(:person) }
@@ -135,25 +236,38 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
     context 'when person has no employment tenures at all' do
       let(:person) { create(:person) }
+      let(:person_teammate) { create(:teammate, person: person, organization: organization) }
+
+      before do
+        # Create active employment for person (required for teammate? policy)
+        create(:employment_tenure, teammate: person_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      end
 
       it 'returns http success' do
         get :complete_picture, params: { organization_id: organization.id, id: person.id }
         expect(response).to have_http_status(:success)
       end
 
-      it 'assigns empty employment tenures collection' do
+      it 'assigns empty employment tenures collection when filtered' do
+        # Clear employment tenures for this test (but keep one for authorization)
+        # Actually, we need to keep employment for authorization, so let's just test with ended employment
+        person_teammate.employment_tenures.update_all(ended_at: 1.day.ago)
         get :complete_picture, params: { organization_id: organization.id, id: person.id }
         
         employment_tenures = assigns(:employment_tenures)
-        expect(employment_tenures).to be_empty
+        # Should have the ended employment tenure
+        expect(employment_tenures).to be_present
+        expect(employment_tenures.all? { |t| t.ended_at.present? }).to be true
       end
 
-      it 'assigns nil for current employment tenure' do
+      it 'assigns nil for current employment tenure when none active' do
+        # End the employment
+        person_teammate.employment_tenures.update_all(ended_at: 1.day.ago)
         get :complete_picture, params: { organization_id: organization.id, id: person.id }
         expect(assigns(:current_employment)).to be_nil
       end
 
-      it 'assigns nil for current organization' do
+      it 'assigns the organization from the route' do
         get :complete_picture, params: { organization_id: organization.id, id: person.id }
         expect(assigns(:current_organization)).to be_a(Organization)
         expect(assigns(:current_organization).id).to eq(organization.id)
@@ -208,33 +322,46 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
     context 'authorization' do
       let(:person) { create(:person) }
+      let(:person_teammate) { create(:teammate, person: person, organization: organization) }
       let(:unauthorized_user) { create(:person) }
 
-      context 'when user has employment management permissions' do
+      before do
+        # Create active employment for person
+        create(:employment_tenure, teammate: person_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      end
+
+      context 'when user is an active teammate in same organization' do
+        let(:viewer) { create(:person) }
+        let(:viewer_teammate) { create(:teammate, person: viewer, organization: organization) }
+
+        before do
+          create(:employment_tenure, teammate: viewer_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+          session[:current_company_teammate_id] = viewer_teammate.id
+          @current_company_teammate = nil if defined?(@current_company_teammate)
+        end
+
         it 'allows access' do
           get :complete_picture, params: { organization_id: organization.id, id: person.id }
           expect(response).to have_http_status(:success)
         end
       end
 
-      context 'when user does not have employment management permissions' do
+      context 'when user has employment management permissions but is not active teammate' do
         before do
-          unauthorized_teammate = create(:teammate, person: unauthorized_user, organization: organization)
+          unauthorized_teammate = create(:teammate, person: unauthorized_user, organization: organization, can_manage_employment: true)
+          create(:employment_tenure, teammate: unauthorized_teammate, company: organization, started_at: 2.years.ago, ended_at: 1.year.ago) # Past employment
           sign_in_as_teammate(unauthorized_user, organization)
         end
 
-        it 'redirects when authorization fails' do
+        it 'redirects when authorization fails (inactive teammate)' do
           get :complete_picture, params: { organization_id: organization.id, id: person.id }
           expect(response).to have_http_status(:redirect)
-          # The policy redirects to public view instead of root
           expect(response).to redirect_to(public_person_path(person))
         end
       end
 
       context 'when user is the person themselves' do
         before do
-          person_teammate = create(:teammate, person: person, organization: organization)
-          # Use existing teammate to avoid duplicate
           session[:current_company_teammate_id] = person_teammate.id
           @current_company_teammate = nil if defined?(@current_company_teammate)
         end

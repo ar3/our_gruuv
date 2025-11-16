@@ -4,8 +4,14 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   before_action :set_person
   after_action :verify_authorized
 
+  # Allow authorization checks even when user doesn't have access to organization
+  # This allows proper redirects to public view instead of organizations_path
+  def allow_authorization_for_different_org?
+    true
+  end
+
   def show
-    authorize @person, policy_class: PersonPolicy
+    authorize @person, :view_check_ins?, policy_class: PersonPolicy
     # Organization-scoped person view - filtered by the organization from the route
     teammate = @person.teammates.find_by(organization: organization)
     @employment_tenures = teammate&.employment_tenures&.includes(:company, :position, :manager)
@@ -31,7 +37,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   end
 
   def complete_picture
-    authorize @person, :manager?, policy_class: PersonPolicy
+    authorize @person, :teammate?, policy_class: PersonPolicy
     # Complete picture view - detailed view for managers to see person's position, assignments, and milestones
     # Filter by the organization from the route
     teammate = @person.teammates.find_by(organization: organization)

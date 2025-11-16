@@ -8,7 +8,7 @@ class PeopleController < ApplicationController
 
 
   def show
-    authorize person, policy_class: PersonPolicy
+    authorize person, :view_check_ins?, policy_class: PersonPolicy
     # Get all employment tenures across all organizations through teammates
     @employment_tenures = EmploymentTenure.joins(:teammate)
                                         .where(teammates: { person: person })

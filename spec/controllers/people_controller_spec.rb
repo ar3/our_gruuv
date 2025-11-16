@@ -28,6 +28,105 @@ RSpec.describe PeopleController, type: :controller do
         expect(response).to redirect_to(root_path)
       end
     end
+
+    context 'authorization' do
+      let(:organization) { create(:organization, :company) }
+      let(:target_person) { create(:person) }
+      let(:target_teammate) { create(:teammate, person: target_person, organization: organization) }
+      let(:manager) { create(:person) }
+      let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+      let(:employment_manager) { create(:person) }
+      let(:employment_manager_teammate) { create(:teammate, person: employment_manager, organization: organization, can_manage_employment: true) }
+      let(:regular_teammate_person) { create(:person) }
+      let(:regular_teammate) { create(:teammate, person: regular_teammate_person, organization: organization) }
+
+      before do
+        # Create active employment for target person
+        create(:employment_tenure, teammate: target_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+        # Create active employment for manager
+        create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+        # Create active employment for employment manager
+        create(:employment_tenure, teammate: employment_manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+        # Create active employment for regular teammate
+        create(:employment_tenure, teammate: regular_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+        # Set manager relationship
+        target_teammate.employment_tenures.first.update!(manager: manager)
+      end
+
+      context 'when user is the person themselves' do
+        before do
+          sign_in_as_teammate(target_person, organization)
+        end
+
+        it 'allows access' do
+          get :show, params: { id: target_person.id }
+          expect(response).to have_http_status(:success)
+        end
+      end
+
+      context 'when user is the manager of the person' do
+        before do
+          sign_in_as_teammate(manager, organization)
+        end
+
+        it 'allows access' do
+          get :show, params: { id: target_person.id }
+          expect(response).to have_http_status(:success)
+        end
+      end
+
+      context 'when user has employment management permissions' do
+        before do
+          sign_in_as_teammate(employment_manager, organization)
+        end
+
+        it 'allows access' do
+          get :show, params: { id: target_person.id }
+          expect(response).to have_http_status(:success)
+        end
+      end
+
+      context 'when user is regular teammate (not manager, no permissions)' do
+        before do
+          sign_in_as_teammate(regular_teammate_person, organization)
+        end
+
+        it 'denies access' do
+          get :show, params: { id: target_person.id }
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to(public_person_path(target_person))
+        end
+      end
+
+      context 'when user is from different organization' do
+        let(:other_organization) { create(:organization, :company) }
+        let(:other_org_person) { create(:person) }
+        let(:other_org_teammate) { create(:teammate, person: other_org_person, organization: other_organization) }
+
+        before do
+          create(:employment_tenure, teammate: other_org_teammate, company: other_organization, started_at: 1.year.ago, ended_at: nil)
+          sign_in_as_teammate(other_org_person, other_organization)
+        end
+
+        it 'denies access' do
+          get :show, params: { id: target_person.id }
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to(public_person_path(target_person))
+        end
+      end
+
+      context 'when user is unauthenticated' do
+        before do
+          session[:current_company_teammate_id] = nil
+        end
+
+        it 'redirects to login' do
+          get :show, params: { id: target_person.id }
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to(root_path)
+        end
+      end
+    end
   end
 
   describe 'PATCH #update' do

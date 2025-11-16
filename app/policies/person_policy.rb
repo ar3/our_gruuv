@@ -195,18 +195,32 @@ class PersonPolicy < ApplicationPolicy
     # 1. The person themselves
     # 2. In their managerial hierarchy 
     # 3. Have employment management permissions for the specific organization
+    return false unless teammate
     person = teammate.person
     return true if admin_bypass? || person == record
     
-    # Get organization from teammate
+    # Get organization from context (may be nil for non-org-scoped controllers)
     user_org = actual_organization
-    return false unless user_org
     
-    # Check if user is in managerial hierarchy for the specific organization
-    return true if person.in_managerial_hierarchy_of?(record, user_org)
+    # If we have an organization context, check that specific organization
+    if user_org
+      # Check if user is in managerial hierarchy for the specific organization
+      return true if person.in_managerial_hierarchy_of?(record, user_org)
+      
+      # Check if user has employment management permissions in the SPECIFIC organization
+      return true if person.can_manage_employment?(user_org)
+    end
     
-    # Check if user has employment management permissions in the SPECIFIC organization
-    person.can_manage_employment?(user_org)
+    # For non-organization-scoped controllers, check all shared organizations
+    # Find organizations where both user and record have teammates
+    user_orgs = person.teammates.map(&:organization)
+    record_orgs = record.teammates.map(&:organization)
+    shared_orgs = user_orgs & record_orgs
+    
+    # Check if user can access record in any shared organization
+    shared_orgs.any? do |org|
+      person.in_managerial_hierarchy_of?(record, org) || person.can_manage_employment?(org)
+    end
   end
 
 

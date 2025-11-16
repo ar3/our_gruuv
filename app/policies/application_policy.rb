@@ -10,13 +10,16 @@ class ApplicationPolicy
   end
 
   # Admin bypass - og_admin users get all permissions
+  # When impersonating, use the impersonated user's permissions (not the admin's)
   def admin_bypass?
-    # Check if the real user (not impersonated) is an admin
+    # Check if the current user (impersonated if impersonating, otherwise real user) is an admin
     # pundit_user should always be an OpenStruct from pundit_user when called through Pundit's policy helper
-    real_teammate = pundit_user.respond_to?(:real_user) ? pundit_user.real_user : teammate
-    return false unless real_teammate
+    # Use 'user' (the impersonated person) instead of 'real_user' (the admin) to ensure
+    # impersonated users only have their own permissions
+    current_teammate = teammate
+    return false unless current_teammate
     
-    real_teammate.person&.og_admin?
+    current_teammate.person&.og_admin?
   end
 
   # Helper method to get the teammate from pundit_user

@@ -49,12 +49,13 @@
                   %tbody
                     - @results[:people].each do |person|
                       %tr
-                        %td= person.display_name
+                        %td
+                          = link_to person.display_name, teammate_organization_person_path(@organization, person), class: "text-decoration-none fw-bold"
                         %td= person.email
                         %td= @organization.display_name
                         %td
                           .btn-group.btn-group-sm
-                            = link_to person_path(person), class: "btn btn-outline-primary" do
+                            = link_to teammate_organization_person_path(@organization, person), class: "btn btn-outline-primary" do
                               %i.bi.bi-eye
 
         - if @results[:organizations].any?

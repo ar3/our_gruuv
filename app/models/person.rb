@@ -84,6 +84,7 @@ class Person < ApplicationRecord
   has_many :huddle_participants, through: :teammates, source: :huddle_participants
   has_many :huddle_feedbacks, through: :teammates, source: :huddle_feedbacks
   has_many :employment_tenures, through: :teammates, source: :employment_tenures
+  has_many :slack_identities, -> { where(provider: 'slack') }, through: :teammates, source: :teammate_identities
   
   # Callbacks
   before_save :normalize_phone_number
@@ -411,11 +412,17 @@ class Person < ApplicationRecord
       first_name: 'A',
       last_name: 'A',
       middle_name: 'B',
-      email: 'C'
+      preferred_name: 'A',
+      suffix: 'B',
+      email: 'C',
+      unique_textable_phone_number: 'C'
     },
     using: {
       tsearch: { prefix: true, any_word: true }
     }
   
-  multisearchable against: [:first_name, :last_name, :email]
+  multisearchable against: [:first_name, :last_name, :middle_name, :preferred_name, :suffix, :email, :unique_textable_phone_number],
+    associated_against: {
+      slack_identities: [:name]
+    }
 end

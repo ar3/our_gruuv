@@ -143,6 +143,205 @@ RSpec.describe PersonPolicy, type: :policy do
     end
   end
 
+  permissions :public? do
+    it "allows anyone to access public view (unauthenticated)" do
+      unauthenticated_user = OpenStruct.new(user: nil, real_user: nil)
+      expect(subject).to permit(unauthenticated_user, person)
+    end
+
+    it "allows authenticated users to access public view" do
+      expect(subject).to permit(pundit_user, person)
+    end
+
+    it "allows users from different organizations to access public view" do
+      other_org = create(:organization, :company)
+      other_org_teammate = CompanyTeammate.create!(person: person, organization: other_org)
+      other_org_pundit_user = OpenStruct.new(user: other_org_teammate, real_user: other_org_teammate)
+      expect(subject).to permit(other_org_pundit_user, other_person)
+    end
+  end
+
+  permissions :teammate? do
+    let(:other_organization) { create(:organization, :company) }
+    let(:viewer_teammate) { CompanyTeammate.create!(person: person, organization: organization) }
+    let(:viewer_pundit_user) { OpenStruct.new(user: viewer_teammate, real_user: viewer_teammate) }
+
+    before do
+      # Create active employment for viewer
+      create(:employment_tenure, teammate: viewer_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      # Create active employment for other_person in same org
+      create(:employment_tenure, teammate: other_person_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+    end
+
+    it "allows active teammate in same organization to view" do
+      expect(subject).to permit(viewer_pundit_user, other_person)
+    end
+
+    it "denies unauthenticated users" do
+      unauthenticated_user = OpenStruct.new(user: nil, real_user: nil)
+      expect(subject).not_to permit(unauthenticated_user, person)
+    end
+
+    it "denies active teammate from different organization" do
+      other_org_teammate = CompanyTeammate.create!(person: person, organization: other_organization)
+      create(:employment_tenure, teammate: other_org_teammate, company: other_organization, started_at: 1.year.ago, ended_at: nil)
+      other_org_pundit_user = OpenStruct.new(user: other_org_teammate, real_user: other_org_teammate)
+      expect(subject).not_to permit(other_org_pundit_user, other_person)
+    end
+
+    it "denies inactive teammate (no active employment)" do
+      inactive_person = create(:person)
+      inactive_teammate = CompanyTeammate.create!(person: inactive_person, organization: organization)
+      # Create past employment (ended)
+      create(:employment_tenure, teammate: inactive_teammate, company: organization, started_at: 2.years.ago, ended_at: 1.year.ago)
+      inactive_pundit_user = OpenStruct.new(user: inactive_teammate, real_user: inactive_teammate)
+      expect(subject).not_to permit(inactive_pundit_user, other_person)
+    end
+
+    it "denies when person has no employment in organization" do
+      person_without_employment = create(:person)
+      expect(subject).not_to permit(viewer_pundit_user, person_without_employment)
+    end
+
+    it "allows admin bypass when admin is not impersonating" do
+      admin_person = create(:person, :admin)
+      admin_teammate = CompanyTeammate.create!(person: admin_person, organization: organization)
+      admin_pundit_user = OpenStruct.new(user: admin_teammate, real_user: admin_teammate)
+      expect(subject).to permit(admin_pundit_user, other_person)
+    end
+
+    context "when admin is impersonating regular user" do
+      let(:admin_person) { create(:person, :admin) }
+      let(:admin_teammate) { CompanyTeammate.create!(person: admin_person, organization: organization) }
+
+      before do
+        create(:employment_tenure, teammate: admin_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      end
+
+      it "allows access if impersonated user is active teammate (uses impersonated user's permissions)" do
+        impersonated_pundit_user = OpenStruct.new(
+          user: viewer_teammate,       # The impersonated user
+          real_user: admin_teammate    # The admin doing the impersonating
+        )
+        expect(subject).to permit(impersonated_pundit_user, other_person)
+      end
+
+      it "denies access if impersonated user is inactive" do
+        inactive_person = create(:person)
+        inactive_teammate = CompanyTeammate.create!(person: inactive_person, organization: organization)
+        create(:employment_tenure, teammate: inactive_teammate, company: organization, started_at: 2.years.ago, ended_at: 1.year.ago)
+        impersonated_pundit_user = OpenStruct.new(
+          user: inactive_teammate,     # The impersonated user (inactive)
+          real_user: admin_teammate    # The admin doing the impersonating
+        )
+        expect(subject).not_to permit(impersonated_pundit_user, other_person)
+      end
+    end
+  end
+
+  permissions :view_check_ins? do
+    let(:manager) { create(:person) }
+    let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
+    let(:manager_pundit_user) { OpenStruct.new(user: manager_teammate, real_user: manager_teammate) }
+    let(:employment_manager) { create(:person) }
+    let(:employment_manager_teammate) { CompanyTeammate.create!(person: employment_manager, organization: organization, can_manage_employment: true) }
+    let(:employment_manager_pundit_user) { OpenStruct.new(user: employment_manager_teammate, real_user: employment_manager_teammate) }
+    let(:regular_teammate) { CompanyTeammate.create!(person: person, organization: organization) }
+    let(:regular_pundit_user) { OpenStruct.new(user: regular_teammate, real_user: regular_teammate) }
+    let(:other_organization) { create(:organization, :company) }
+
+    before do
+      # Create active employment for manager
+      create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      # Create active employment for employment manager
+      create(:employment_tenure, teammate: employment_manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      # Create active employment for regular teammate
+      create(:employment_tenure, teammate: regular_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      # Create active employment for other_person and set manager
+      create(:employment_tenure, teammate: other_person_teammate, company: organization, started_at: 1.year.ago, ended_at: nil, manager: manager)
+    end
+
+    it "allows person themselves to view their check-ins" do
+      person_self_pundit_user = OpenStruct.new(user: regular_teammate, real_user: regular_teammate)
+      policy = PersonPolicy.new(person_self_pundit_user, person)
+      # Set organization context
+      allow(policy).to receive(:actual_organization).and_return(organization)
+      expect(policy.view_check_ins?).to be true
+    end
+
+    it "allows manager of person to view check-ins" do
+      policy = PersonPolicy.new(manager_pundit_user, other_person)
+      allow(policy).to receive(:actual_organization).and_return(organization)
+      expect(policy.view_check_ins?).to be true
+    end
+
+    it "allows user with employment management permissions to view check-ins" do
+      policy = PersonPolicy.new(employment_manager_pundit_user, other_person)
+      allow(policy).to receive(:actual_organization).and_return(organization)
+      expect(policy.view_check_ins?).to be true
+    end
+
+    it "denies unauthenticated users" do
+      unauthenticated_user = OpenStruct.new(user: nil, real_user: nil)
+      policy = PersonPolicy.new(unauthenticated_user, person)
+      allow(policy).to receive(:actual_organization).and_return(organization)
+      expect(policy.view_check_ins?).to be false
+    end
+
+    it "denies regular teammate (not manager, no permissions)" do
+      policy = PersonPolicy.new(regular_pundit_user, other_person)
+      allow(policy).to receive(:actual_organization).and_return(organization)
+      expect(policy.view_check_ins?).to be false
+    end
+
+    it "denies user from different organization" do
+      other_org_teammate = CompanyTeammate.create!(person: person, organization: other_organization)
+      create(:employment_tenure, teammate: other_org_teammate, company: other_organization, started_at: 1.year.ago, ended_at: nil)
+      other_org_pundit_user = OpenStruct.new(user: other_org_teammate, real_user: other_org_teammate)
+      policy = PersonPolicy.new(other_org_pundit_user, other_person)
+      allow(policy).to receive(:actual_organization).and_return(other_organization)
+      expect(policy.view_check_ins?).to be false
+    end
+
+    it "allows admin bypass when admin is not impersonating" do
+      admin_person = create(:person, :admin)
+      admin_teammate = CompanyTeammate.create!(person: admin_person, organization: organization)
+      admin_pundit_user = OpenStruct.new(user: admin_teammate, real_user: admin_teammate)
+      policy = PersonPolicy.new(admin_pundit_user, other_person)
+      allow(policy).to receive(:actual_organization).and_return(organization)
+      expect(policy.view_check_ins?).to be true
+    end
+
+    context "when admin is impersonating regular user" do
+      let(:admin_person) { create(:person, :admin) }
+      let(:admin_teammate) { CompanyTeammate.create!(person: admin_person, organization: organization) }
+
+      before do
+        create(:employment_tenure, teammate: admin_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      end
+
+      it "denies access (uses impersonated user's permissions, not admin's)" do
+        impersonated_pundit_user = OpenStruct.new(
+          user: regular_teammate,      # The impersonated user
+          real_user: admin_teammate     # The admin doing the impersonating
+        )
+        policy = PersonPolicy.new(impersonated_pundit_user, other_person)
+        allow(policy).to receive(:actual_organization).and_return(organization)
+        expect(policy.view_check_ins?).to be false
+      end
+
+      it "allows access if impersonated user is the target person" do
+        impersonated_pundit_user = OpenStruct.new(
+          user: regular_teammate,      # The impersonated user (same as target)
+          real_user: admin_teammate     # The admin doing the impersonating
+        )
+        policy = PersonPolicy.new(impersonated_pundit_user, person)
+        allow(policy).to receive(:actual_organization).and_return(organization)
+        expect(policy.view_check_ins?).to be true
+      end
+    end
+  end
+
   permissions :audit? do
     let(:maap_manager) { create(:person) }
     let(:maap_teammate) { CompanyTeammate.create!(person: maap_manager, organization: organization, can_manage_maap: true) }

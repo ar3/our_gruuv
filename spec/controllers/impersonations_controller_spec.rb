@@ -59,18 +59,49 @@ RSpec.describe ImpersonationsController, type: :controller do
   end
 
   describe 'DELETE #destroy' do
-    before do
-      # Create teammate for regular_person and set up impersonation
-      regular_teammate = create(:teammate, person: regular_person, organization: create(:organization, :company))
-      session[:impersonating_teammate_id] = regular_teammate.id
+    context 'when admin is impersonating' do
+      before do
+        # Create teammate for regular_person and set up impersonation
+        regular_teammate = create(:teammate, person: regular_person, organization: create(:organization, :company))
+        session[:impersonating_teammate_id] = regular_teammate.id
+      end
+
+      it 'stops impersonation' do
+        delete :destroy, params: { id: 1 }
+        
+        expect(session[:impersonating_teammate_id]).to be_nil
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to include("Stopped impersonation")
+      end
     end
 
-    it 'stops impersonation' do
-      delete :destroy, params: { id: 1 }
-      
-      expect(session[:impersonating_teammate_id]).to be_nil
-      expect(response).to redirect_to(root_path)
-      expect(flash[:notice]).to include("Stopped impersonation")
+    context 'when non-admin is impersonating (e.g., admin impersonated them)' do
+      let(:regular_person_org) { create(:organization, :company) }
+      let(:regular_person_teammate) { create(:teammate, person: regular_person, organization: regular_person_org) }
+
+      before do
+        # Set up impersonation session
+        session[:impersonating_teammate_id] = regular_person_teammate.id
+        # Sign in as the regular person (who is being impersonated)
+        sign_in_as_teammate(regular_person, regular_person_org)
+      end
+
+      it 'allows anyone to stop impersonation' do
+        delete :destroy, params: { id: 1 }
+        
+        expect(session[:impersonating_teammate_id]).to be_nil
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to include("Stopped impersonation")
+      end
+    end
+
+    context 'when not impersonating' do
+      it 'denies access' do
+        delete :destroy, params: { id: 1 }
+        
+        expect(response).to redirect_to(root_path)
+        expect(flash[:error]).to include("You are not currently impersonating anyone")
+      end
     end
   end
 end

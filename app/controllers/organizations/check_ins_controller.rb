@@ -4,6 +4,12 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   before_action :set_teammate
   before_action :determine_view_mode
 
+  # Allow authorization checks even when user doesn't have access to organization
+  # This allows proper redirects to public view instead of organizations_path
+  def allow_authorization_for_different_org?
+    true
+  end
+
   def show
     authorize @person, :view_check_ins?, policy_class: PersonPolicy
     

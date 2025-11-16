@@ -1,7 +1,8 @@
 class ImpersonationsController < ApplicationController
   layout 'authenticated-v2-0'
   before_action :authenticate_person!
-  before_action :ensure_admin!
+  before_action :ensure_admin!, except: [:destroy]
+  before_action :ensure_impersonating!, only: [:destroy]
 
   def create
     # Accept either person_id or email parameter
@@ -65,6 +66,13 @@ class ImpersonationsController < ApplicationController
     # Use Pundit policy for authorization
     unless policy(real_current_teammate.person).can_impersonate_anyone?
       flash[:error] = "Only administrators can impersonate users"
+      redirect_to root_path
+    end
+  end
+
+  def ensure_impersonating!
+    unless impersonating?
+      flash[:error] = "You are not currently impersonating anyone"
       redirect_to root_path
     end
   end

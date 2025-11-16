@@ -144,7 +144,7 @@ class ApplicationController < ActionController::Base
     
     # For person-related actions, redirect to public view if possible
     if @_pundit_policy_record.is_a?(Person) && 
-       [:show?, :teammate?, :manager?].include?(@_pundit_policy_query&.to_sym)
+       [:show?, :teammate?, :manager?, :view_check_ins?].include?(@_pundit_policy_query&.to_sym)
       flash[:alert] = "You don't have permission to view that profile. Here's the public information that's available to you."
       redirect_to public_person_path(@_pundit_policy_record)
       return
