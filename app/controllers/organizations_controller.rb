@@ -1,6 +1,8 @@
+require 'set'
+
 class OrganizationsController < Organizations::OrganizationNamespaceBaseController
   layout 'authenticated-v2-0'
-  before_action :require_authentication
+  before_action :require_authentication, except: [:pundit_healthcheck]
   
   def index
     @organizations = current_company_teammate.person.available_organizations
@@ -228,12 +230,226 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     @total_milestones = @recent_milestones.count
     @unique_people = @milestones_by_person.keys.count
   end
+
+  def pundit_healthcheck
+    # Skip authentication and organization setup for this debugging route
+    # Try to get organization from params if available
+    route_org_id = params[:organization_id] || params[:id]
+    @route_organization = Organization.find_by(id: route_org_id) if route_org_id
+    
+    # Organization Context Sources
+    @org_from_params = route_org_id
+    @org_from_instance = @organization if defined?(@organization)
+    @org_from_teammate = current_company_teammate&.organization
+    # Try to get organization from helper method (works even if skip_organization_setup)
+    begin
+      @org_from_helper = organization if respond_to?(:organization)
+    rescue => e
+      @org_from_helper = "Error: #{e.message}"
+    end
+    
+    # Simulate actual_organization from policy (for Person records)
+    @simulated_actual_org = if @route_organization&.is_a?(Organization)
+      @route_organization
+    elsif @current_person && @pundit_user_struct
+      # Simulate what actual_organization would return in PersonPolicy
+      policy = PersonPolicy.new(@pundit_user_struct, @current_person)
+      policy.send(:actual_organization) rescue current_company_teammate&.organization
+    else
+      current_company_teammate&.organization
+    end
+    
+    # Impersonation Status
+    @is_impersonating = impersonating? if respond_to?(:impersonating?)
+    @impersonating_teammate_id = session[:impersonating_teammate_id]
+    @real_teammate = real_current_teammate if respond_to?(:real_current_teammate)
+    @current_teammate = current_company_teammate
+    
+    # Teammate Details
+    if @current_teammate
+      @current_teammate_id = @current_teammate.id
+      @current_teammate_type = @current_teammate.type
+      @current_teammate_org = @current_teammate.organization
+      @current_teammate_permissions = {
+        can_manage_employment: @current_teammate.can_manage_employment?,
+        can_create_employment: @current_teammate.can_create_employment?,
+        can_manage_maap: @current_teammate.can_manage_maap?
+      }
+      
+      @current_person = @current_teammate.person
+      @all_teammates = @current_person.teammates.includes(:organization).map do |t|
+        {
+          id: t.id,
+          type: t.type,
+          organization_id: t.organization_id,
+          organization_name: t.organization.name,
+          can_manage_employment: t.can_manage_employment?,
+          can_create_employment: t.can_create_employment?,
+          can_manage_maap: t.can_manage_maap?
+        }
+      end
+    else
+      @current_teammate_id = nil
+      @current_person = nil
+      @all_teammates = []
+    end
+    
+    @session_teammate_id = session[:current_company_teammate_id]
+    
+    # Pundit User Structure
+    @pundit_user_struct = pundit_user if respond_to?(:pundit_user)
+    @pundit_user_user = @pundit_user_struct&.user if @pundit_user_struct
+    @pundit_user_real_user = @pundit_user_struct&.real_user if @pundit_user_struct
+    
+    # Managerial Hierarchy
+    if @current_person && @route_organization
+      # Get all managers up the chain
+      @managers = []
+      visited_managers = Set.new
+      
+      # Start with current person's active employment tenures
+      current_tenures = EmploymentTenure.joins(:teammate)
+                                       .where(teammates: { person: @current_person, organization: @route_organization })
+                                       .active
+                                       .includes(:manager, :company)
+      
+      current_tenures.each do |tenure|
+        manager = tenure.manager
+        next unless manager && !visited_managers.include?(manager.id)
+        
+        visited_managers.add(manager.id)
+        manager_tenure = EmploymentTenure.joins(:teammate)
+                                        .where(teammates: { person: manager, organization: @route_organization })
+                                        .active
+                                        .first
+        
+        @managers << {
+          person_id: manager.id,
+          name: manager.display_name,
+          email: manager.email,
+          organization_id: @route_organization.id,
+          organization_name: @route_organization.name,
+          tenure: manager_tenure&.position&.display_name
+        }
+      end
+      
+      # Get all direct reports (all levels down)
+      @direct_reports = []
+      visited_reports = Set.new
+      
+      # Find all people managed by current person
+      managed_tenures = EmploymentTenure.joins(:teammate)
+                                       .where(manager: @current_person)
+                                       .where(teammates: { organization: @route_organization })
+                                       .active
+                                       .includes(:teammate, :company)
+      
+      managed_tenures.each do |tenure|
+        employee = tenure.teammate.person
+        next unless employee && !visited_reports.include?(employee.id)
+        
+        visited_reports.add(employee.id)
+        @direct_reports << {
+          person_id: employee.id,
+          name: employee.display_name,
+          email: employee.email,
+          organization_id: @route_organization.id,
+          organization_name: @route_organization.name,
+          position: tenure.position&.display_name
+        }
+      end
+    else
+      @managers = []
+      @direct_reports = []
+    end
+    
+    # Policy Checks
+    @policy_checks = {}
+    
+    if @current_person && @pundit_user_struct
+      # Test view_check_ins? for current person
+      begin
+        policy = PersonPolicy.new(@pundit_user_struct, @current_person)
+        @policy_checks[:current_person] = {
+          result: policy.view_check_ins?,
+          error: nil
+        }
+      rescue => e
+        @policy_checks[:current_person] = {
+          result: false,
+          error: e.message
+        }
+      end
+      
+      # Test for each manager
+      @managers.each do |manager_info|
+        manager_person = Person.find_by(id: manager_info[:person_id])
+        next unless manager_person
+        
+        begin
+          policy = PersonPolicy.new(@pundit_user_struct, manager_person)
+          result = policy.view_check_ins?
+          @policy_checks["manager_#{manager_info[:person_id]}"] = {
+            person_id: manager_info[:person_id],
+            person_name: manager_info[:name],
+            result: result,
+            error: nil
+          }
+        rescue => e
+          @policy_checks["manager_#{manager_info[:person_id]}"] = {
+            person_id: manager_info[:person_id],
+            person_name: manager_info[:name],
+            result: false,
+            error: e.message
+          }
+        end
+      end
+      
+      # Test for each direct report
+      @direct_reports.each do |report_info|
+        report_person = Person.find_by(id: report_info[:person_id])
+        next unless report_person
+        
+        begin
+          policy = PersonPolicy.new(@pundit_user_struct, report_person)
+          result = policy.view_check_ins?
+          @policy_checks["report_#{report_info[:person_id]}"] = {
+            person_id: report_info[:person_id],
+            person_name: report_info[:name],
+            result: result,
+            error: nil
+          }
+        rescue => e
+          @policy_checks["report_#{report_info[:person_id]}"] = {
+            person_id: report_info[:person_id],
+            person_name: report_info[:name],
+            result: false,
+            error: e.message
+          }
+        end
+      end
+    end
+    
+    # Caching Information
+    @teammate_cached = defined?(@current_company_teammate)
+    @cache_config = {
+      store: Rails.cache.class.name,
+      namespace: Rails.cache.respond_to?(:namespace) ? Rails.cache.namespace : 'N/A'
+    }
+    
+    # Session Data
+    @session_data = {
+      current_company_teammate_id: session[:current_company_teammate_id],
+      impersonating_teammate_id: session[:impersonating_teammate_id],
+      all_keys: session.keys.grep(/teammate|person|organization/)
+    }
+  end
   
     private
 
   # Skip organization setup for actions that don't need it
   def skip_organization_setup?
-    !%w[show edit update destroy switch huddles_review dashboard celebrate_milestones].include?(action_name)
+    !%w[show edit update destroy switch huddles_review dashboard celebrate_milestones pundit_healthcheck].include?(action_name)
   end
   
   def organization_params

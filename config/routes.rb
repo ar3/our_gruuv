@@ -69,6 +69,7 @@ get '/login', to: 'auth#login', as: :login
       post :trigger_weekly_notification
       get :dashboard
       get :celebrate_milestones
+      get :pundit_healthcheck
     end
     
     resources :employees, only: [:index, :new, :create], controller: 'organizations/employees' do

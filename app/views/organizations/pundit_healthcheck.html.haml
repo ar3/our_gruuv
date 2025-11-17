@@ -1,0 +1,326 @@
+- content_for :header do
+  %h1.mb-0 Pundit Healthcheck
+
+.container-fluid.mt-4
+  .row
+    .col-12
+      .alert.alert-info
+        %strong Debugging Information:
+        This page shows all Pundit authorization context for debugging purposes.
+        Copy the results and paste them for analysis.
+
+  -# Organization Context Sources
+  .row.mt-4
+    .col-12
+      .card.mb-4
+        .card-header
+          %h3 Organization Context Sources
+        .card-body
+          %table.table.table-bordered
+            %tr
+              %th From Route Params
+              %td= @org_from_params || 'N/A'
+            %tr
+              %th From @organization Instance Variable
+              %td
+                - if @org_from_instance
+                  = "#{@org_from_instance.id} - #{@org_from_instance.name}"
+                - else
+                  Not set
+            %tr
+              %th From current_company_teammate.organization
+              %td
+                - if @org_from_teammate
+                  = "#{@org_from_teammate.id} - #{@org_from_teammate.name}"
+                - else
+                  N/A (no teammate)
+            %tr
+              %th From organization Helper Method
+              %td
+                - if @org_from_helper
+                  = "#{@org_from_helper.id} - #{@org_from_helper.name}"
+                - else
+                  N/A
+            %tr
+              %th Simulated actual_organization (from policy)
+              %td
+                - if @simulated_actual_org
+                  = "#{@simulated_actual_org.id} - #{@simulated_actual_org.name}"
+                - else
+                  N/A
+            %tr
+              %th Route Organization (from params)
+              %td
+                - if @route_organization
+                  = "#{@route_organization.id} - #{@route_organization.name} (#{@route_organization.type})"
+                - else
+                  Not found or not provided
+
+  -# Impersonation Status
+  .row.mt-4
+    .col-12
+      .card.mb-4
+        .card-header
+          %h3 Impersonation Status
+        .card-body
+          %table.table.table-bordered
+            %tr
+              %th Is Impersonating?
+              %td
+                - if @is_impersonating
+                  %span.badge.bg-warning Yes
+                - else
+                  %span.badge.bg-secondary No
+            %tr
+              %th Impersonating Teammate ID (session)
+              %td= @impersonating_teammate_id || 'N/A'
+            %tr
+              %th Real Teammate
+              %td
+                - if @real_teammate
+                  = "ID: #{@real_teammate.id}, Person: #{@real_teammate.person.display_name}, Org: #{@real_teammate.organization.name}"
+                - else
+                  N/A
+            %tr
+              %th Current Teammate (impersonated or real)
+              %td
+                - if @current_teammate
+                  = "ID: #{@current_teammate.id}, Person: #{@current_teammate.person.display_name}, Org: #{@current_teammate.organization.name}"
+                - else
+                  N/A (not logged in)
+
+  -# Teammate Details
+  .row.mt-4
+    .col-12
+      .card.mb-4
+        .card-header
+          %h3 Teammate Details
+        .card-body
+          - if @current_teammate
+            %h4 Current Teammate
+            %table.table.table-bordered
+              %tr
+                %th ID
+                %td= @current_teammate_id
+              %tr
+                %th Type
+                %td= @current_teammate_type
+              %tr
+                %th Organization
+                %td
+                  - if @current_teammate_org
+                    = "#{@current_teammate_org.id} - #{@current_teammate_org.name}"
+                  - else
+                    N/A
+              %tr
+                %th Permissions
+                %td
+                  %ul
+                    %li can_manage_employment: #{@current_teammate_permissions[:can_manage_employment] ? '✓' : '✗'}
+                    %li can_create_employment: #{@current_teammate_permissions[:can_create_employment] ? '✓' : '✗'}
+                    %li can_manage_maap: #{@current_teammate_permissions[:can_manage_maap] ? '✓' : '✗'}
+            
+            - if @current_person
+              %h4.mt-4 Current Person
+              %table.table.table-bordered
+                %tr
+                  %th ID
+                  %td= @current_person.id
+                %tr
+                  %th Name
+                  %td= @current_person.display_name
+                %tr
+                  %th Email
+                  %td= @current_person.email
+                %tr
+                  %th og_admin?
+                  %td= @current_person.og_admin? ? 'Yes' : 'No'
+            
+            - if @all_teammates.any?
+              %h4.mt-4 All Teammates for Current Person
+              %table.table.table-bordered
+                %thead
+                  %tr
+                    %th ID
+                    %th Type
+                    %th Organization ID
+                    %th Organization Name
+                    %th can_manage_employment
+                    %th can_create_employment
+                    %th can_manage_maap
+                %tbody
+                  - @all_teammates.each do |t|
+                    %tr
+                      %td= t[:id]
+                      %td= t[:type]
+                      %td= t[:organization_id]
+                      %td= t[:organization_name]
+                      %td= t[:can_manage_employment] ? '✓' : '✗'
+                      %td= t[:can_create_employment] ? '✓' : '✗'
+                      %td= t[:can_manage_maap] ? '✓' : '✗'
+          - else
+            %p.text-muted No teammate found (not logged in)
+
+          %h4.mt-4 Session Teammate ID
+          %p= @session_teammate_id || 'N/A'
+
+  -# Pundit User Structure
+  .row.mt-4
+    .col-12
+      .card.mb-4
+        .card-header
+          %h3 Pundit User Structure
+        .card-body
+          - if @pundit_user_struct
+            %table.table.table-bordered
+              %tr
+                %th pundit_user (OpenStruct)
+                %td
+                  %pre= @pundit_user_struct.inspect
+              %tr
+                %th pundit_user.user
+                %td
+                  - if @pundit_user_user
+                    = "ID: #{@pundit_user_user.id}, Type: #{@pundit_user_user.class.name}, Person: #{@pundit_user_user.person.display_name}"
+                  - else
+                    nil
+              %tr
+                %th pundit_user.real_user
+                %td
+                  - if @pundit_user_real_user
+                    = "ID: #{@pundit_user_real_user.id}, Type: #{@pundit_user_real_user.class.name}, Person: #{@pundit_user_real_user.person.display_name}"
+                  - else
+                    nil
+          - else
+            %p.text-muted pundit_user not available
+
+  -# Managerial Hierarchy
+  .row.mt-4
+    .col-12
+      .card.mb-4
+        .card-header
+          %h3 Managerial Hierarchy
+        .card-body
+          - if @current_person && @route_organization
+            - if @managers.any?
+              %h4 Managers (Up the Chain)
+              %table.table.table-bordered
+                %thead
+                  %tr
+                    %th Person ID
+                    %th Name
+                    %th Email
+                    %th Organization
+                    %th Position
+                %tbody
+                  - @managers.each do |manager|
+                    %tr
+                      %td= manager[:person_id]
+                      %td= manager[:name]
+                      %td= manager[:email]
+                      %td= "#{manager[:organization_name]} (#{manager[:organization_id]})"
+                      %td= manager[:tenure] || 'N/A'
+            - else
+              %p.text-muted No managers found
+            
+            - if @direct_reports.any?
+              %h4.mt-4 Direct Reports (Down the Chain)
+              %table.table.table-bordered
+                %thead
+                  %tr
+                    %th Person ID
+                    %th Name
+                    %th Email
+                    %th Organization
+                    %th Position
+                %tbody
+                  - @direct_reports.each do |report|
+                    %tr
+                      %td= report[:person_id]
+                      %td= report[:name]
+                      %td= report[:email]
+                      %td= "#{report[:organization_name]} (#{report[:organization_id]})"
+                      %td= report[:position] || 'N/A'
+            - else
+              %p.text-muted No direct reports found
+          - else
+            %p.text-muted Cannot determine hierarchy (missing current_person or route_organization)
+
+  -# Policy Checks
+  .row.mt-4
+    .col-12
+      .card.mb-4
+        .card-header
+          %h3 Policy Checks (view_check_ins?)
+        .card-body
+          - if @policy_checks.any?
+            %table.table.table-bordered
+              %thead
+                %tr
+                  %th Person
+                  %th Name
+                  %th Result
+                  %th Error
+              %tbody
+                - @policy_checks.each do |key, check|
+                  %tr{class: check[:result] ? 'table-success' : 'table-danger'}
+                    %td= key.to_s
+                    %td= check[:person_name] || 'Current Person'
+                    %td
+                      - if check[:result]
+                        %span.badge.bg-success PASS
+                      - else
+                        %span.badge.bg-danger FAIL
+                    %td= check[:error] || '-'
+          - else
+            %p.text-muted No policy checks performed (missing current_person or pundit_user_struct)
+
+  -# Caching Information
+  .row.mt-4
+    .col-12
+      .card.mb-4
+        .card-header
+          %h3 Caching Information
+        .card-body
+          %table.table.table-bordered
+            %tr
+              %th @current_company_teammate cached?
+              %td= @teammate_cached ? 'Yes' : 'No'
+            %tr
+              %th Cache Store
+              %td= @cache_config[:store]
+            %tr
+              %th Cache Namespace
+              %td= @cache_config[:namespace]
+
+  -# Session Data
+  .row.mt-4
+    .col-12
+      .card.mb-4
+        .card-header
+          %h3 Session Data
+        .card-body
+          %table.table.table-bordered
+            %tr
+              %th current_company_teammate_id
+              %td= @session_data[:current_company_teammate_id] || 'N/A'
+            %tr
+              %th impersonating_teammate_id
+              %td= @session_data[:impersonating_teammate_id] || 'N/A'
+            %tr
+              %th All Session Keys (teammate/person/org related)
+              %td
+                - if @session_data[:all_keys].any?
+                  %ul
+                    - @session_data[:all_keys].each do |key|
+                      %li= "#{key}: #{session[key]}"
+                - else
+                  None
+
+  .row.mt-4.mb-4
+    .col-12
+      .alert.alert-warning
+        %strong Note:
+        This page is accessible without authentication for debugging purposes.
+        Remember to copy the results for analysis.
+
