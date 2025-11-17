@@ -258,11 +258,35 @@ class Person < ApplicationRecord
     other_teammate = other_person.teammates.find_by(organization: organization)
     return false unless other_teammate
     
-    # Check if this person is the manager of the other person's active employment tenure
-    other_teammate.employment_tenures.active
-                  .where(company: organization)
-                  .where(manager: self)
-                  .exists?
+    # Recursively check if this person is anywhere in the managerial hierarchy
+    # Use a Set to prevent infinite loops from circular references
+    visited = Set.new
+    
+    check_hierarchy = lambda do |person, org, visited_set|
+      return false if visited_set.include?(person.id)
+      visited_set.add(person.id)
+      
+      # Get active employment tenures for this person in this organization
+      tenures = EmploymentTenure.joins(:teammate)
+                               .where(teammates: { person: person, organization: org })
+                               .active
+                               .includes(:manager)
+      
+      tenures.each do |tenure|
+        manager = tenure.manager
+        next unless manager
+        
+        # Found self in the hierarchy
+        return true if manager == self
+        
+        # Recursively check managers of this manager
+        return true if check_hierarchy.call(manager, org, visited_set)
+      end
+      
+      false
+    end
+    
+    check_hierarchy.call(other_person, organization, visited)
   end
 
   def has_direct_reports?(organization)

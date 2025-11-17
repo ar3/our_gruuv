@@ -11,7 +11,7 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     
     @direction = 'outgoing'
     @goal_type = params[:goal_type] || 'stepping_stone_activity'
-    available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization))
+    available_goals = Goal.active.for_teammate(current_person.teammates.find_by(organization: @organization))
                           .where.not(id: @goal.id)
                           .where(goal_type: @goal_type)
     
@@ -36,7 +36,7 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     authorize @goal, :update?
     
     @direction = 'incoming'
-    available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization))
+    available_goals = Goal.active.for_teammate(current_person.teammates.find_by(organization: @organization))
                           .where.not(id: @goal.id)
     
     @available_goals_with_status = available_goals.map do |candidate_goal|
@@ -188,9 +188,8 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
   private
   
   def set_goal
-    # Use unscoped to bypass default scope (which excludes deleted and completed goals)
-    # Policy will handle authorization checks
-    @goal = Goal.unscoped.find(params[:goal_id])
+    # Load goal without scoping - policy will handle authorization checks
+    @goal = Goal.find(params[:goal_id])
     @organization = Organization.find(params[:organization_id])
     authorize @goal
   end

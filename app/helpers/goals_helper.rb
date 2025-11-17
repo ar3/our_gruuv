@@ -309,7 +309,7 @@ module GoalsHelper
   end
   
   def render_hierarchical_indented_goal(goal, depth, parent_child_map, organization)
-    children = parent_child_map[goal.id] || []
+    children = (parent_child_map[goal.id] || []).compact
     indent_px = depth * 30
     warning_class = goal_warning_class(goal)
     border_style = depth > 0 ? 'border-left: 2px solid #dee2e6; padding-left: 15px;' : ''

@@ -22,7 +22,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         params[:owner_type] = 'Teammate'
         params[:owner_id] = current_teammate.id.to_s
       else
-        @goals = policy_scope(Goal.none)
+        @goals = policy_scope(Goal.active.none)
         @view_style = params[:view] || 'hierarchical-indented'
         @view_style = 'hierarchical-indented' unless %w[table cards list network tree nested timeline check-in hierarchical-indented].include?(@view_style)
         @goal_count = 0
@@ -45,7 +45,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     end
     
     # Start with goals visible to the teammate (filtered by company_id via policy scope)
-    @goals = policy_scope(Goal)
+    @goals = policy_scope(Goal.active)
     
     # Apply show_deleted filter if requested
     if params[:show_deleted] == '1'
@@ -68,7 +68,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Calculate spotlight stats for goals_overview (before other filters)
     if spotlight_param == 'goals_overview'
-      all_goals_for_owner = policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
+      all_goals_for_owner = policy_scope(Goal.active).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
       # Include completed/deleted if requested for stats
       all_goals_for_owner = all_goals_for_owner.with_completed if params[:show_completed] == '1'
       all_goals_for_owner = all_goals_for_owner.with_deleted if params[:show_deleted] == '1'
@@ -157,17 +157,17 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     end
     
     # Preload check-ins for linked goals (for displaying check-in info and status icons)
-    # Eager load check-ins on linked goals to avoid N+1 queries
-    # Use with_completed to show all linked goals regardless of completion status
-    @goal.outgoing_links.includes(child: :goal_check_ins).load
-    @goal.incoming_links.includes(parent: :goal_check_ins).load
-    
-    # Load linked goals with completed scope to show all linked goals
-    # This ensures completed goals are visible when linked to the current goal
+    # Load linked goals explicitly to include completed/deleted goals
     linked_goal_ids = (@goal.outgoing_links.pluck(:child_id) + @goal.incoming_links.pluck(:parent_id)).uniq
     if linked_goal_ids.any?
-      @linked_goals = Goal.with_completed.where(id: linked_goal_ids).index_by(&:id)
-      # Reload associations to use the with_completed goals
+      # Load all linked goals including completed and deleted
+      @linked_goals = Goal.where(id: linked_goal_ids).index_by(&:id)
+      
+      # Preload check-ins for linked goals
+      @goal.outgoing_links.includes(child: :goal_check_ins).load
+      @goal.incoming_links.includes(parent: :goal_check_ins).load
+      
+      # Reload associations to use the explicitly loaded goals
       @goal.outgoing_links.each do |link|
         link.association(:child).target = @linked_goals[link.child_id] if @linked_goals[link.child_id]
       end
@@ -569,9 +569,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   private
   
   def set_goal
-    # Use unscoped to bypass default scope (which excludes deleted and completed goals)
-    # Policy will handle authorization checks
-    @goal = Goal.unscoped.find(params[:id])
+    # Load goal without scoping - policy will handle authorization checks
+    @goal = Goal.find(params[:id])
   end
   
   def apply_timeframe_filter(goals, timeframe)
