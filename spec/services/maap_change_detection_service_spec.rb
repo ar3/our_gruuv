@@ -25,7 +25,7 @@ RSpec.describe MaapChangeDetectionService do
               {
                 'assignment_id' => assignment.id,
                 'anticipated_energy_percentage' => 40,  # Different from proposed 50
-                'official_rating' => 'meeting'
+                'rated_assignment' => {}
               }
             ],
             'position' => {
@@ -52,7 +52,7 @@ RSpec.describe MaapChangeDetectionService do
               {
                 'assignment_id' => assignment.id,
                 'anticipated_energy_percentage' => 50,  # Changed from 40
-                'official_rating' => 'meeting'
+                'rated_assignment' => {}
               }
             ],
             'position' => {

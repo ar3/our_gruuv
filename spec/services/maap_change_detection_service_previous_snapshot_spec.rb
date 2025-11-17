@@ -21,7 +21,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'assignment_id' => assignment1.id,
               'anticipated_energy_percentage' => 50,
-              'official_rating' => 'meeting'
+              'rated_assignment' => {}
             }
           ],
           'position' => {
@@ -29,7 +29,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             'manager_id' => manager.id,
             'seat_id' => nil,
             'employment_type' => 'full_time',
-            'official_position_rating' => nil
+            'rated_position' => {}
           },
           'abilities' => [
             {
@@ -45,6 +45,21 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
     end
 
     it 'treats first snapshot as all new changes' do
+      # Update snapshot to have rated_position data to trigger employment change detection
+      snapshot.update!(maap_data: snapshot.maap_data.deep_merge({
+        'position' => {
+          'rated_position' => {
+            'position_id' => 1,
+            'manager_id' => manager.id,
+            'seat_id' => nil,
+            'employment_type' => 'full_time',
+            'official_position_rating' => 2,
+            'started_at' => 10.days.ago.to_time.iso8601,
+            'ended_at' => 1.day.ago.to_time.iso8601
+          }
+        }
+      }))
+      
       service = described_class.new(
         person: person,
         maap_snapshot: snapshot,
@@ -58,6 +73,21 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
     end
 
     it 'shows employment as new in details' do
+      # Update snapshot to have rated_position data to test "new rating" case
+      snapshot.update!(maap_data: snapshot.maap_data.deep_merge({
+        'position' => {
+          'rated_position' => {
+            'position_id' => 1,
+            'manager_id' => manager.id,
+            'seat_id' => nil,
+            'employment_type' => 'full_time',
+            'official_position_rating' => 2,
+            'started_at' => 10.days.ago.to_time.iso8601,
+            'ended_at' => 1.day.ago.to_time.iso8601
+          }
+        }
+      }))
+      
       service = described_class.new(
         person: person,
         maap_snapshot: snapshot,
@@ -67,9 +97,9 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
 
       details = service.detailed_changes[:employment]
       expect(details[:has_changes]).to be true
-      expect(details[:details].first[:field]).to eq('position')
+      expect(details[:details].first[:field]).to eq('new_rated_position')
       expect(details[:details].first[:current]).to eq('none')
-      expect(details[:details].first[:proposed]).to eq('new position')
+      expect(details[:details].first[:proposed]).to eq('new rating')
     end
 
     it 'shows assignment tenure as new in details' do
@@ -100,7 +130,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'assignment_id' => assignment1.id,
               'anticipated_energy_percentage' => 20,
-              'official_rating' => nil
+              'rated_assignment' => {}
             }
           ],
           'position' => {
@@ -108,7 +138,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             'manager_id' => manager.id,
             'seat_id' => nil,
             'employment_type' => 'full_time',
-            'official_position_rating' => nil
+            'rated_position' => {}
           },
           'abilities' => [],
           'aspirations' => []
@@ -128,7 +158,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'assignment_id' => assignment1.id,
               'anticipated_energy_percentage' => 50,  # Changed from 20
-              'official_rating' => nil
+              'rated_assignment' => {}
             }
           ],
           'position' => {
@@ -136,7 +166,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             'manager_id' => manager.id,
             'seat_id' => nil,
             'employment_type' => 'full_time',
-            'official_position_rating' => nil
+            'rated_position' => {}
           },
           'abilities' => [],
           'aspirations' => []
@@ -156,7 +186,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'assignment_id' => assignment1.id,
               'anticipated_energy_percentage' => 50,  # Same as snapshot2
-              'official_rating' => nil
+              'rated_assignment' => {}
             }
           ],
           'position' => {
@@ -164,7 +194,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             'manager_id' => manager.id,
             'seat_id' => nil,
             'employment_type' => 'full_time',
-            'official_position_rating' => nil
+            'rated_position' => {}
           },
           'abilities' => [],
           'aspirations' => []
@@ -214,7 +244,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'assignment_id' => assignment1.id,
               'anticipated_energy_percentage' => 30,
-              'official_rating' => nil
+              'rated_assignment' => {}
             }
           ],
           'position' => nil,
@@ -236,12 +266,12 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'assignment_id' => assignment1.id,
               'anticipated_energy_percentage' => 30,  # Same
-              'official_rating' => nil
+              'rated_assignment' => {}
             },
             {
               'assignment_id' => assignment2.id,  # New assignment
               'anticipated_energy_percentage' => 50,
-              'official_rating' => nil
+              'rated_assignment' => {}
             }
           ],
           'position' => nil,
@@ -417,7 +447,13 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'assignment_id' => assignment1.id,
               'anticipated_energy_percentage' => 50,
-              'official_rating' => 'meeting'
+              'rated_assignment' => {
+                'assignment_id' => assignment1.id,
+                'anticipated_energy_percentage' => 50,
+                'official_rating' => 'meeting',
+                'started_at' => 20.days.ago.to_time.iso8601,
+                'ended_at' => 2.days.ago.to_time.iso8601
+              }
             }
           ],
           'position' => nil,
@@ -439,7 +475,13 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'assignment_id' => assignment1.id,
               'anticipated_energy_percentage' => 50,  # Same
-              'official_rating' => 'exceeding'  # Changed
+              'rated_assignment' => {
+                'assignment_id' => assignment1.id,
+                'anticipated_energy_percentage' => 50,
+                'official_rating' => 'exceeding',
+                'started_at' => 10.days.ago.to_time.iso8601,
+                'ended_at' => 1.day.ago.to_time.iso8601
+              }
             }
           ],
           'position' => nil,

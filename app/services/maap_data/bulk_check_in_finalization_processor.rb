@@ -28,15 +28,36 @@ module MaapData
       # For bulk check-in finalization, we typically don't change employment
       # Return current active employment tenure data
       teammate = @employee.teammates.joins(:employment_tenures).where(employment_tenures: { ended_at: nil }).first
-      current_employment = teammate&.employment_tenures&.active&.first
-      return nil unless current_employment
+      active_employment = teammate&.employment_tenures&.active&.first
+      return nil unless active_employment
+
+      # Find most recent closed employment tenure
+      previous_closed_tenure = teammate.employment_tenures
+        .for_company(@company)
+        .inactive
+        .order(ended_at: :desc)
+        .first
+      
+      rated_position = if previous_closed_tenure
+        {
+          seat_id: previous_closed_tenure.seat_id,
+          manager_id: previous_closed_tenure.manager_id,
+          position_id: previous_closed_tenure.position_id,
+          employment_type: previous_closed_tenure.employment_type,
+          official_position_rating: previous_closed_tenure.official_position_rating,
+          started_at: previous_closed_tenure.started_at.to_time.iso8601,
+          ended_at: previous_closed_tenure.ended_at.to_time.iso8601
+        }
+      else
+        {}
+      end
 
       {
-        position_id: current_employment.position_id,
-        manager_id: current_employment.manager_id,
-        seat_id: current_employment.seat_id,
-        employment_type: current_employment.employment_type,
-        official_position_rating: current_employment.official_position_rating
+        position_id: active_employment.position_id,
+        manager_id: active_employment.manager_id,
+        seat_id: active_employment.seat_id,
+        employment_type: active_employment.employment_type,
+        rated_position: rated_position
       }
     end
 
@@ -45,11 +66,30 @@ module MaapData
       teammate = @employee.teammates.find_by(organization: @company)
       return [] unless teammate
       
-      teammate.assignment_tenures.active.includes(:assignment).joins(:assignment).where(assignments: { company: @company }).map do |tenure|
+      teammate.assignment_tenures.active.includes(:assignment).joins(:assignment).where(assignments: { company: @company }).map do |active_tenure|
+        # Find most recent closed assignment tenure for this assignment
+        previous_closed_tenure = teammate.assignment_tenures
+          .where(assignment: active_tenure.assignment)
+          .where.not(ended_at: nil)
+          .order(ended_at: :desc)
+          .first
+        
+        rated_assignment = if previous_closed_tenure
+          {
+            assignment_id: previous_closed_tenure.assignment_id,
+            anticipated_energy_percentage: previous_closed_tenure.anticipated_energy_percentage,
+            official_rating: previous_closed_tenure.official_rating,
+            started_at: previous_closed_tenure.started_at.to_time.iso8601,
+            ended_at: previous_closed_tenure.ended_at.to_time.iso8601
+          }
+        else
+          {}
+        end
+        
         {
-          assignment_id: tenure.assignment_id,
-          anticipated_energy_percentage: tenure.anticipated_energy_percentage,
-          official_rating: tenure.official_rating
+          assignment_id: active_tenure.assignment_id,
+          anticipated_energy_percentage: active_tenure.anticipated_energy_percentage,
+          rated_assignment: rated_assignment
         }
       end
     end

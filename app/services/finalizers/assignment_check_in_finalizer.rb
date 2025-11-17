@@ -23,7 +23,7 @@ module Finalizers
       
       # Close current tenure with official rating
       active_tenure.update!(
-        ended_at: Date.current,
+        ended_at: Time.current,
         official_rating: @official_rating
       )
       
@@ -34,7 +34,7 @@ module Finalizers
       new_tenure = AssignmentTenure.create!(
         teammate: @teammate,
         assignment: @check_in.assignment,
-        started_at: Date.current,
+        started_at: Time.current,
         anticipated_energy_percentage: energy_percentage,
         ended_at: nil,
         official_rating: nil
@@ -55,7 +55,7 @@ module Finalizers
         rating_data: {
           assignment_id: @check_in.assignment.id,
           official_rating: @official_rating,
-          rated_at: Date.current.to_s
+          rated_at: Time.current.to_s
         }
       )
     end

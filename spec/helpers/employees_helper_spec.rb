@@ -31,7 +31,7 @@ RSpec.describe EmployeesHelper, type: :helper do
               'manager_id' => manager.id,
               'seat_id' => nil,
               'employment_type' => 'full_time',
-              'official_position_rating' => nil
+              'rated_position' => {}
             },
             'assignments' => [],
             'abilities' => [],
@@ -52,7 +52,15 @@ RSpec.describe EmployeesHelper, type: :helper do
               'manager_id' => manager.id,
               'seat_id' => nil,
               'employment_type' => 'full_time',
-              'official_position_rating' => nil
+              'rated_position' => {
+                'position_id' => position2.id,
+                'manager_id' => manager.id,
+                'seat_id' => nil,
+                'employment_type' => 'full_time',
+                'official_position_rating' => 2,
+                'started_at' => 2.days.ago.iso8601,
+                'ended_at' => 1.day.ago.iso8601
+              }
             },
             'assignments' => [],
             'abilities' => [],
@@ -72,12 +80,13 @@ RSpec.describe EmployeesHelper, type: :helper do
         expect(changes[:employment]).to be_present
         expect(changes[:employment].length).to be > 0
         
-        position_change = changes[:employment].find { |c| c[:label] == 'Position' }
-        expect(position_change).to be_present
-        expect(position_change[:current]).to be_present
-        expect(position_change[:proposed]).to be_present
+        # Should detect changes in rated_position
+        rated_position_change = changes[:employment].find { |c| c[:label] == 'Rated Position' }
+        expect(rated_position_change).to be_present
+        expect(rated_position_change[:current]).to be_present
+        expect(rated_position_change[:proposed]).to be_present
         # Verify the change shows different positions
-        expect(position_change[:current]).not_to eq(position_change[:proposed])
+        expect(rated_position_change[:current]).not_to eq(rated_position_change[:proposed])
       end
     end
     
@@ -96,7 +105,7 @@ RSpec.describe EmployeesHelper, type: :helper do
               {
                 'assignment_id' => assignment.id,
                 'anticipated_energy_percentage' => 20,
-                'official_rating' => nil
+                'rated_assignment' => {}
               }
             ],
             'abilities' => [],
@@ -117,7 +126,7 @@ RSpec.describe EmployeesHelper, type: :helper do
               {
                 'assignment_id' => assignment.id,
                 'anticipated_energy_percentage' => 50,
-                'official_rating' => nil
+                'rated_assignment' => {}
               }
             ],
             'abilities' => [],
@@ -302,7 +311,7 @@ RSpec.describe EmployeesHelper, type: :helper do
               {
                 'assignment_id' => assignment.id,
                 'anticipated_energy_percentage' => 20,
-                'official_rating' => nil
+                'rated_assignment' => {}
               }
             ],
             'position' => nil,
@@ -323,7 +332,7 @@ RSpec.describe EmployeesHelper, type: :helper do
               {
                 'assignment_id' => assignment.id,
                 'anticipated_energy_percentage' => 50,
-                'official_rating' => nil
+                'rated_assignment' => {}
               }
             ],
             'position' => nil,
@@ -365,7 +374,7 @@ RSpec.describe EmployeesHelper, type: :helper do
               {
                 'assignment_id' => assignment.id,
                 'anticipated_energy_percentage' => 30,
-                'official_rating' => nil
+                'rated_assignment' => {}
               }
             ],
             'position' => nil,
@@ -408,7 +417,7 @@ RSpec.describe EmployeesHelper, type: :helper do
               {
                 'assignment_id' => assignment_record.id,
                 'anticipated_energy_percentage' => 10,
-                'official_rating' => nil
+                'rated_assignment' => {}
               }
             ],
             'position' => nil,
@@ -453,7 +462,7 @@ RSpec.describe EmployeesHelper, type: :helper do
             'aspirations' => [
               {
                 'aspiration_id' => aspiration.id,
-                'official_rating' => nil
+                'rated_assignment' => {}
               }
             ]
           }
@@ -520,7 +529,7 @@ RSpec.describe EmployeesHelper, type: :helper do
               'manager_id' => manager.id,
               'seat_id' => nil,
               'employment_type' => 'full_time',
-              'official_position_rating' => nil
+              'rated_position' => {}
             },
             'assignments' => [],
             'abilities' => [],
@@ -530,16 +539,30 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
       
       it 'handles position changes when current is "none"' do
+        # Update snapshot to have rated_position data to test "new rating" case
+        snapshot.update!(maap_data: snapshot.maap_data.deep_merge({
+          'position' => {
+            'rated_position' => {
+              'position_id' => position1.id,
+              'manager_id' => manager.id,
+              'seat_id' => nil,
+              'employment_type' => 'full_time',
+              'official_position_rating' => 2,
+              'started_at' => 10.days.ago.iso8601,
+              'ended_at' => 1.day.ago.iso8601
+            }
+          }
+        }))
+        
         changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: nil)
         
+        # When there's no previous snapshot and current has rated_position data, should show as new rating
         expect(changes).to be_present
         expect(changes[:employment]).to be_present
-        expect(changes[:employment].length).to be > 0
-        
-        position_change = changes[:employment].find { |c| c[:label] == 'Position' }
-        expect(position_change).to be_present
-        expect(position_change[:current]).to eq('None')
-        expect(position_change[:proposed]).to eq('New Position')
+        new_rating_change = changes[:employment].find { |c| c[:label] == 'Rated Position' }
+        expect(new_rating_change).to be_present
+        expect(new_rating_change[:current]).to eq('None')
+        expect(new_rating_change[:proposed]).to eq('New rating')
       end
     end
     
@@ -560,8 +583,16 @@ RSpec.describe EmployeesHelper, type: :helper do
               'position_id' => position1.id,
               'manager_id' => manager.id,
               'seat_id' => nil,
-              'employment_type' => 'part_time',
-              'official_position_rating' => 2
+              'employment_type' => 'full_time',
+              'rated_position' => {
+                'position_id' => position1.id,
+                'manager_id' => manager.id,
+                'seat_id' => nil,
+                'employment_type' => 'part_time',
+                'official_position_rating' => 2,
+                'started_at' => 30.days.ago.iso8601,
+                'ended_at' => 2.days.ago.iso8601
+              }
             },
             'assignments' => [],
             'abilities' => [],
@@ -582,7 +613,15 @@ RSpec.describe EmployeesHelper, type: :helper do
               'manager_id' => manager.id,
               'seat_id' => nil,
               'employment_type' => 'full_time',
-              'official_position_rating' => 3
+              'rated_position' => {
+                'position_id' => position1.id,
+                'manager_id' => manager.id,
+                'seat_id' => nil,
+                'employment_type' => 'full_time',
+                'official_position_rating' => 3,
+                'started_at' => 2.days.ago.iso8601,
+                'ended_at' => 1.day.ago.iso8601
+              }
             },
             'assignments' => [],
             'abilities' => [],
@@ -601,7 +640,7 @@ RSpec.describe EmployeesHelper, type: :helper do
         expect(changes).to be_present
         expect(changes[:employment]).to be_present
         
-        employment_type_change = changes[:employment].find { |c| c[:label] == 'Employment Type' }
+        employment_type_change = changes[:employment].find { |c| c[:label] == 'Rated Employment Type' }
         expect(employment_type_change).to be_present
         expect(employment_type_change[:current]).to eq('Part time')
         expect(employment_type_change[:proposed]).to eq('Full time')
@@ -635,7 +674,13 @@ RSpec.describe EmployeesHelper, type: :helper do
               {
                 'assignment_id' => assignment.id,
                 'anticipated_energy_percentage' => 50,
-                'official_rating' => 'meeting'
+                'rated_assignment' => {
+                  'assignment_id' => assignment.id,
+                  'anticipated_energy_percentage' => 50,
+                  'official_rating' => 'meeting',
+                  'started_at' => 20.days.ago.to_time.iso8601,
+                  'ended_at' => 2.days.ago.to_time.iso8601
+                }
               }
             ],
             'abilities' => [],
@@ -656,7 +701,13 @@ RSpec.describe EmployeesHelper, type: :helper do
               {
                 'assignment_id' => assignment.id,
                 'anticipated_energy_percentage' => 50,
-                'official_rating' => 'exceeding'
+                'rated_assignment' => {
+                  'assignment_id' => assignment.id,
+                  'anticipated_energy_percentage' => 50,
+                  'official_rating' => 'exceeding',
+                  'started_at' => 10.days.ago.to_time.iso8601,
+                  'ended_at' => 1.day.ago.to_time.iso8601
+                }
               }
             ],
             'abilities' => [],

@@ -17,7 +17,7 @@ module Finalizers
       # Close current tenure with official rating
       current_tenure = @check_in.employment_tenure
       current_tenure.update!(
-        ended_at: Date.current,
+        ended_at: Time.current,
         official_position_rating: @official_rating
       )
       
@@ -29,7 +29,7 @@ module Finalizers
         manager: current_tenure.manager,
         seat: current_tenure.seat,
         employment_type: current_tenure.employment_type,
-        started_at: Date.current,
+        started_at: Time.current,
         official_position_rating: nil
       )
       
@@ -49,7 +49,7 @@ module Finalizers
           position_id: current_tenure.position_id,
           manager_id: current_tenure.manager_id,
           official_rating: @official_rating,
-          rated_at: Date.current.to_s
+          rated_at: Time.current.to_s
         }
       )
     end

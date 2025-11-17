@@ -74,32 +74,40 @@ class MaapChangeDetectionService
   def employment_changes_detail
     return { has_changes: false, details: [] } unless maap_snapshot&.maap_data&.dig('position')
     
-    previous = previous_snapshot&.maap_data&.dig('position')
-    proposed = maap_snapshot.maap_data['position']
-    
-    return { has_changes: false, details: [] } unless proposed
+    previous_rated = previous_snapshot&.maap_data&.dig('position', 'rated_position') || {}
+    proposed_rated = maap_snapshot.maap_data.dig('position', 'rated_position') || {}
     
     changes = []
     
-    if previous
-      if previous['position_id'].to_s != proposed['position_id'].to_s
-        changes << { field: 'position', current: previous['position_id'], proposed: proposed['position_id'] }
+    # If previous is empty and proposed has data, show as new rating
+    if previous_rated.empty? && !proposed_rated.empty?
+      changes << { field: 'new_rated_position', current: 'none', proposed: 'new rating' }
+    # If previous has data and proposed is empty, show as rating removed (unlikely)
+    elsif !previous_rated.empty? && proposed_rated.empty?
+      changes << { field: 'rated_position_removed', current: 'had rating', proposed: 'none' }
+    # Compare all fields within rated_position
+    elsif !previous_rated.empty? && !proposed_rated.empty?
+      if previous_rated['seat_id'].to_s != proposed_rated['seat_id'].to_s
+        changes << { field: 'rated_seat', current: previous_rated['seat_id'], proposed: proposed_rated['seat_id'] }
       end
-      if previous['manager_id'].to_s != proposed['manager_id'].to_s
-        changes << { field: 'manager', current: previous['manager_id'], proposed: proposed['manager_id'] }
+      if previous_rated['manager_id'].to_s != proposed_rated['manager_id'].to_s
+        changes << { field: 'rated_manager', current: previous_rated['manager_id'], proposed: proposed_rated['manager_id'] }
       end
-      if previous['seat_id'].to_s != proposed['seat_id'].to_s
-        changes << { field: 'seat', current: previous['seat_id'], proposed: proposed['seat_id'] }
+      if previous_rated['position_id'].to_s != proposed_rated['position_id'].to_s
+        changes << { field: 'rated_position', current: previous_rated['position_id'], proposed: proposed_rated['position_id'] }
       end
-      if previous['employment_type'] != proposed['employment_type']
-        changes << { field: 'employment_type', current: previous['employment_type'], proposed: proposed['employment_type'] }
+      if previous_rated['employment_type'] != proposed_rated['employment_type']
+        changes << { field: 'rated_employment_type', current: previous_rated['employment_type'], proposed: proposed_rated['employment_type'] }
       end
-      if previous['official_position_rating'] != proposed['official_position_rating']
-        changes << { field: 'official_position_rating', current: previous['official_position_rating'], proposed: proposed['official_position_rating'] }
+      if previous_rated['official_position_rating'] != proposed_rated['official_position_rating']
+        changes << { field: 'official_position_rating', current: previous_rated['official_position_rating'], proposed: proposed_rated['official_position_rating'] }
       end
-    else
-      # No previous snapshot - this is the first one, so everything is new
-      changes << { field: 'position', current: 'none', proposed: 'new position' }
+      if previous_rated['started_at'] != proposed_rated['started_at']
+        changes << { field: 'rated_started_at', current: previous_rated['started_at'], proposed: proposed_rated['started_at'] }
+      end
+      if previous_rated['ended_at'] != proposed_rated['ended_at']
+        changes << { field: 'rated_ended_at', current: previous_rated['ended_at'], proposed: proposed_rated['ended_at'] }
+      end
     end
     
     { has_changes: changes.any?, details: changes }
@@ -125,6 +133,7 @@ class MaapChangeDetectionService
       previous_data = previous_assignments.find { |a| a['assignment_id'] == assignment_id }
       assignment_changes = []
       
+      # Compare top-level anticipated_energy_percentage (from active tenure)
       if previous_data
         if previous_data['anticipated_energy_percentage'] != proposed_data['anticipated_energy_percentage']
           assignment_changes << {
@@ -133,20 +142,72 @@ class MaapChangeDetectionService
             proposed: proposed_data['anticipated_energy_percentage']
           }
         end
-        if previous_data['official_rating'] != proposed_data['official_rating']
+        
+        # Compare rated_assignment objects
+        previous_rated = previous_data['rated_assignment'] || {}
+        proposed_rated = proposed_data['rated_assignment'] || {}
+        
+        # If previous is empty and proposed has data, show as new rating
+        if previous_rated.empty? && !proposed_rated.empty?
           assignment_changes << {
-            field: 'official_rating',
-            current: previous_data['official_rating'],
-            proposed: proposed_data['official_rating']
+            field: 'new_rated_assignment',
+            current: 'none',
+            proposed: 'new rating'
           }
+        # If previous has data and proposed is empty, show as rating removed (unlikely)
+        elsif !previous_rated.empty? && proposed_rated.empty?
+          assignment_changes << {
+            field: 'rated_assignment_removed',
+            current: 'had rating',
+            proposed: 'none'
+          }
+        # Compare all fields within rated_assignment
+        elsif !previous_rated.empty? && !proposed_rated.empty?
+          if previous_rated['official_rating'] != proposed_rated['official_rating']
+            assignment_changes << {
+              field: 'official_rating',
+              current: previous_rated['official_rating'],
+              proposed: proposed_rated['official_rating']
+            }
+          end
+          if previous_rated['anticipated_energy_percentage'] != proposed_rated['anticipated_energy_percentage']
+            assignment_changes << {
+              field: 'rated_anticipated_energy_percentage',
+              current: previous_rated['anticipated_energy_percentage'],
+              proposed: proposed_rated['anticipated_energy_percentage']
+            }
+          end
+          if previous_rated['started_at'] != proposed_rated['started_at']
+            assignment_changes << {
+              field: 'rated_started_at',
+              current: previous_rated['started_at'],
+              proposed: proposed_rated['started_at']
+            }
+          end
+          if previous_rated['ended_at'] != proposed_rated['ended_at']
+            assignment_changes << {
+              field: 'rated_ended_at',
+              current: previous_rated['ended_at'],
+              proposed: proposed_rated['ended_at']
+            }
+          end
         end
       else
         # No previous assignment - check if we're creating a new one
-        if proposed_data['anticipated_energy_percentage'].to_i > 0 || proposed_data['official_rating'].present?
+        if proposed_data['anticipated_energy_percentage'].to_i > 0
           assignment_changes << {
             field: 'new_assignment',
             current: 'none',
-            proposed: "#{proposed_data['anticipated_energy_percentage']}% energy#{proposed_data['official_rating'].present? ? ", #{proposed_data['official_rating']}" : ''}"
+            proposed: "#{proposed_data['anticipated_energy_percentage']}% energy"
+          }
+        end
+        # Also check if there's a rated_assignment (new rating)
+        proposed_rated = proposed_data['rated_assignment'] || {}
+        if !proposed_rated.empty? && proposed_rated['official_rating'].present?
+          assignment_changes << {
+            field: 'new_rated_assignment',
+            current: 'none',
+            proposed: 'new rating'
           }
         end
       end
@@ -372,17 +433,24 @@ class MaapChangeDetectionService
   def employment_has_changes?
     return false unless maap_snapshot&.maap_data&.dig('position')
     
-    previous = previous_snapshot&.maap_data&.dig('position')
-    proposed = maap_snapshot.maap_data['position']
+    previous_rated = previous_snapshot&.maap_data&.dig('position', 'rated_position') || {}
+    proposed_rated = maap_snapshot.maap_data.dig('position', 'rated_position') || {}
     
-    return true unless previous
-    return false unless proposed
+    # If previous is empty and proposed has data, that's a change
+    return true if previous_rated.empty? && !proposed_rated.empty?
+    # If previous has data and proposed is empty, that's a change (unlikely but handle)
+    return true if !previous_rated.empty? && proposed_rated.empty?
+    # If both are empty, no changes
+    return false if previous_rated.empty? && proposed_rated.empty?
     
-    previous['position_id'].to_s != proposed['position_id'].to_s ||
-    previous['manager_id'].to_s != proposed['manager_id'].to_s ||
-    previous['seat_id'].to_s != proposed['seat_id'].to_s ||
-    previous['employment_type'] != proposed['employment_type'] ||
-    previous['official_position_rating'] != proposed['official_position_rating']
+    # Compare all fields within rated_position
+    previous_rated['seat_id'].to_s != proposed_rated['seat_id'].to_s ||
+    previous_rated['manager_id'].to_s != proposed_rated['manager_id'].to_s ||
+    previous_rated['position_id'].to_s != proposed_rated['position_id'].to_s ||
+    previous_rated['employment_type'] != proposed_rated['employment_type'] ||
+    previous_rated['official_position_rating'] != proposed_rated['official_position_rating'] ||
+    previous_rated['started_at'] != proposed_rated['started_at'] ||
+    previous_rated['ended_at'] != proposed_rated['ended_at']
   end
 
 

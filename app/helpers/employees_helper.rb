@@ -127,6 +127,64 @@ module EmployeesHelper
           current: change[:current].present? ? change[:current].to_s : 'None',
           proposed: change[:proposed].present? ? change[:proposed].to_s : 'None'
         }
+      when 'new_rated_position'
+        formatted_changes << {
+          label: 'Rated Position',
+          current: 'None',
+          proposed: 'New rating'
+        }
+      when 'rated_position_removed'
+        formatted_changes << {
+          label: 'Rated Position',
+          current: 'Had rating',
+          proposed: 'None'
+        }
+      when 'rated_seat'
+        current_name = change[:current].present? ? Seat.find_by(id: change[:current])&.display_name : 'None'
+        proposed_name = change[:proposed].present? ? Seat.find_by(id: change[:proposed])&.display_name : 'None'
+        formatted_changes << {
+          label: 'Rated Seat',
+          current: current_name || 'None',
+          proposed: proposed_name || 'None'
+        }
+      when 'rated_manager'
+        current_name = change[:current].present? ? Person.find_by(id: change[:current])&.display_name : 'None'
+        proposed_name = change[:proposed].present? ? Person.find_by(id: change[:proposed])&.display_name : 'None'
+        formatted_changes << {
+          label: 'Rated Manager',
+          current: current_name || 'None',
+          proposed: proposed_name || 'None'
+        }
+      when 'rated_position'
+        current_name = change[:current].present? ? Position.find_by(id: change[:current])&.display_name : 'None'
+        proposed_name = change[:proposed].present? ? Position.find_by(id: change[:proposed])&.display_name : 'None'
+        formatted_changes << {
+          label: 'Rated Position',
+          current: current_name || 'None',
+          proposed: proposed_name || 'None'
+        }
+      when 'rated_employment_type'
+        formatted_changes << {
+          label: 'Rated Employment Type',
+          current: change[:current].present? ? change[:current].humanize : 'None',
+          proposed: change[:proposed].present? ? change[:proposed].humanize : 'None'
+        }
+      when 'rated_started_at'
+        current_date = parse_date(change[:current])
+        proposed_date = parse_date(change[:proposed])
+        formatted_changes << {
+          label: 'Rated Start Date',
+          current: current_date ? current_date.strftime('%Y-%m-%d') : 'None',
+          proposed: proposed_date ? proposed_date.strftime('%Y-%m-%d') : 'None'
+        }
+      when 'rated_ended_at'
+        current_date = parse_date(change[:current])
+        proposed_date = parse_date(change[:proposed])
+        formatted_changes << {
+          label: 'Rated End Date',
+          current: current_date ? current_date.strftime('%Y-%m-%d') : 'None',
+          proposed: proposed_date ? proposed_date.strftime('%Y-%m-%d') : 'None'
+        }
       end
     end
     
@@ -240,6 +298,40 @@ module EmployeesHelper
             label: 'Official Rating',
             current: change[:current].present? ? change[:current].humanize : 'Not set',
             proposed: change[:proposed].present? ? change[:proposed].humanize : 'Not set'
+          }
+        when 'new_rated_assignment'
+          assignment_formatted[:changes] << {
+            label: 'Rated Assignment',
+            current: 'None',
+            proposed: 'New rating'
+          }
+        when 'rated_assignment_removed'
+          assignment_formatted[:changes] << {
+            label: 'Rated Assignment',
+            current: 'Had rating',
+            proposed: 'None'
+          }
+        when 'rated_anticipated_energy_percentage'
+          assignment_formatted[:changes] << {
+            label: 'Rated Anticipated Energy',
+            current: "#{change[:current]}%",
+            proposed: "#{change[:proposed]}%"
+          }
+        when 'rated_started_at'
+          current_date = parse_date(change[:current])
+          proposed_date = parse_date(change[:proposed])
+          assignment_formatted[:changes] << {
+            label: 'Rated Start Date',
+            current: current_date ? current_date.strftime('%Y-%m-%d') : 'None',
+            proposed: proposed_date ? proposed_date.strftime('%Y-%m-%d') : 'None'
+          }
+        when 'rated_ended_at'
+          current_date = parse_date(change[:current])
+          proposed_date = parse_date(change[:proposed])
+          assignment_formatted[:changes] << {
+            label: 'Rated End Date',
+            current: current_date ? current_date.strftime('%Y-%m-%d') : 'None',
+            proposed: proposed_date ? proposed_date.strftime('%Y-%m-%d') : 'None'
           }
         when 'shared_notes'
           assignment_formatted[:changes] << {
