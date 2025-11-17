@@ -1,5 +1,3 @@
-require 'set'
-
 class OrganizationsController < Organizations::OrganizationNamespaceBaseController
   layout 'authenticated-v2-0'
   before_action :require_authentication, except: [:pundit_healthcheck]
@@ -260,10 +258,14 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     end
     
     # Impersonation Status
-    @is_impersonating = impersonating? if respond_to?(:impersonating?)
+    @is_impersonating = session[:impersonating_teammate_id].present?
     @impersonating_teammate_id = session[:impersonating_teammate_id]
     @real_teammate = real_current_teammate if respond_to?(:real_current_teammate)
     @current_teammate = current_company_teammate
+    
+    # Load teammate records from session
+    @impersonating_teammate_record = Teammate.find_by(id: @impersonating_teammate_id) if @impersonating_teammate_id
+    @session_teammate_record = Teammate.find_by(id: session[:current_company_teammate_id]) if session[:current_company_teammate_id]
     
     # Teammate Details
     if @current_teammate
@@ -303,61 +305,8 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     
     # Managerial Hierarchy
     if @current_person && @route_organization
-      # Get all managers up the chain
-      @managers = []
-      visited_managers = Set.new
-      
-      # Start with current person's active employment tenures
-      current_tenures = EmploymentTenure.joins(:teammate)
-                                       .where(teammates: { person: @current_person, organization: @route_organization })
-                                       .active
-                                       .includes(:manager, :company)
-      
-      current_tenures.each do |tenure|
-        manager = tenure.manager
-        next unless manager && !visited_managers.include?(manager.id)
-        
-        visited_managers.add(manager.id)
-        manager_tenure = EmploymentTenure.joins(:teammate)
-                                        .where(teammates: { person: manager, organization: @route_organization })
-                                        .active
-                                        .first
-        
-        @managers << {
-          person_id: manager.id,
-          name: manager.display_name,
-          email: manager.email,
-          organization_id: @route_organization.id,
-          organization_name: @route_organization.name,
-          tenure: manager_tenure&.position&.display_name
-        }
-      end
-      
-      # Get all direct reports (all levels down)
-      @direct_reports = []
-      visited_reports = Set.new
-      
-      # Find all people managed by current person
-      managed_tenures = EmploymentTenure.joins(:teammate)
-                                       .where(manager: @current_person)
-                                       .where(teammates: { organization: @route_organization })
-                                       .active
-                                       .includes(:teammate, :company)
-      
-      managed_tenures.each do |tenure|
-        employee = tenure.teammate.person
-        next unless employee && !visited_reports.include?(employee.id)
-        
-        visited_reports.add(employee.id)
-        @direct_reports << {
-          person_id: employee.id,
-          name: employee.display_name,
-          email: employee.email,
-          organization_id: @route_organization.id,
-          organization_name: @route_organization.name,
-          position: tenure.position&.display_name
-        }
-      end
+      @managers = ManagerialHierarchyQuery.new(person: @current_person, organization: @route_organization).call
+      @direct_reports = EmployeeHierarchyQuery.new(person: @current_person, organization: @route_organization).call
     else
       @managers = []
       @direct_reports = []
@@ -436,6 +385,8 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       store: Rails.cache.class.name,
       namespace: Rails.cache.respond_to?(:namespace) ? Rails.cache.namespace : 'N/A'
     }
+    # Note: Cached values (@current_company_teammate) are loaded from session but memoized in instance variable
+    # The session stores the ID, and the instance variable caches the loaded record
     
     # Session Data
     @session_data = {

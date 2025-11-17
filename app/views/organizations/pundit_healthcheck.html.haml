@@ -203,10 +203,11 @@
         .card-body
           - if @current_person && @route_organization
             - if @managers.any?
-              %h4 Managers (Up the Chain)
+              %h4 Managers (Up the Chain - Full Hierarchy)
               %table.table.table-bordered
                 %thead
                   %tr
+                    %th Level
                     %th Person ID
                     %th Name
                     %th Email
@@ -215,6 +216,7 @@
                 %tbody
                   - @managers.each do |manager|
                     %tr
+                      %td= manager[:level]
                       %td= manager[:person_id]
                       %td= manager[:name]
                       %td= manager[:email]
@@ -224,10 +226,11 @@
               %p.text-muted No managers found
             
             - if @direct_reports.any?
-              %h4.mt-4 Direct Reports (Down the Chain)
+              %h4.mt-4 Direct Reports (Down the Chain - Full Hierarchy)
               %table.table.table-bordered
                 %thead
                   %tr
+                    %th Level
                     %th Person ID
                     %th Name
                     %th Email
@@ -236,6 +239,7 @@
                 %tbody
                   - @direct_reports.each do |report|
                     %tr
+                      %td= report[:level]
                       %td= report[:person_id]
                       %td= report[:name]
                       %td= report[:email]
@@ -292,6 +296,13 @@
             %tr
               %th Cache Namespace
               %td= @cache_config[:namespace]
+            %tr
+              %th Note
+              %td
+                %p.text-muted.mb-0
+                  Cached values (@current_company_teammate) are loaded from session but memoized in instance variable.
+                  The session stores the ID, and the instance variable caches the loaded record.
+                  So yes, cached values come from session IDs, but the actual record is loaded and cached.
 
   -# Session Data
   .row.mt-4
@@ -302,11 +313,73 @@
         .card-body
           %table.table.table-bordered
             %tr
-              %th current_company_teammate_id
-              %td= @session_data[:current_company_teammate_id] || 'N/A'
+              %th real_company_teammate_id (session)
+              %td
+                = @session_data[:current_company_teammate_id] || 'N/A'
+                %small.text-muted.d-block.mt-1
+                  Note: This is the actual logged-in user's teammate ID. When impersonating, this represents the admin/real user, not the effective current teammate.
             %tr
-              %th impersonating_teammate_id
-              %td= @session_data[:impersonating_teammate_id] || 'N/A'
+              %th impersonating_teammate_id (session)
+              %td
+                = @session_data[:impersonating_teammate_id] || 'N/A'
+                %small.text-muted.d-block.mt-1
+                  Note: When set, this is the teammate ID being impersonated. The effective current_company_teammate will return this teammate, not the real one.
+            %tr
+              %th Real Teammate Record (from real_company_teammate_id)
+              %td
+                - if @session_teammate_record
+                  %table.table.table-sm.mb-0
+                    %tr
+                      %th ID
+                      %td= @session_teammate_record.id
+                    %tr
+                      %th Type
+                      %td= @session_teammate_record.type
+                    %tr
+                      %th Person
+                      %td= "#{@session_teammate_record.person.display_name} (#{@session_teammate_record.person.id})"
+                    %tr
+                      %th Organization
+                      %td= "#{@session_teammate_record.organization.name} (#{@session_teammate_record.organization.id})"
+                    %tr
+                      %th can_manage_employment
+                      %td= @session_teammate_record.can_manage_employment? ? '✓' : '✗'
+                    %tr
+                      %th can_create_employment
+                      %td= @session_teammate_record.can_create_employment? ? '✓' : '✗'
+                    %tr
+                      %th can_manage_maap
+                      %td= @session_teammate_record.can_manage_maap? ? '✓' : '✗'
+                - else
+                  N/A (not found or not set)
+            %tr
+              %th Impersonating Teammate Record (from impersonating_teammate_id)
+              %td
+                - if @impersonating_teammate_record
+                  %table.table.table-sm.mb-0
+                    %tr
+                      %th ID
+                      %td= @impersonating_teammate_record.id
+                    %tr
+                      %th Type
+                      %td= @impersonating_teammate_record.type
+                    %tr
+                      %th Person
+                      %td= "#{@impersonating_teammate_record.person.display_name} (#{@impersonating_teammate_record.person.id})"
+                    %tr
+                      %th Organization
+                      %td= "#{@impersonating_teammate_record.organization.name} (#{@impersonating_teammate_record.organization.id})"
+                    %tr
+                      %th can_manage_employment
+                      %td= @impersonating_teammate_record.can_manage_employment? ? '✓' : '✗'
+                    %tr
+                      %th can_create_employment
+                      %td= @impersonating_teammate_record.can_create_employment? ? '✓' : '✗'
+                    %tr
+                      %th can_manage_maap
+                      %td= @impersonating_teammate_record.can_manage_maap? ? '✓' : '✗'
+                - else
+                  N/A (not impersonating or not found)
             %tr
               %th All Session Keys (teammate/person/org related)
               %td

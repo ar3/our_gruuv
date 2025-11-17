@@ -120,11 +120,13 @@ class ApplicationPolicy
     end
 
     # Helper method for admin bypass in scope classes
+    # When impersonating, use the impersonated user's permissions (not the admin's)
+    # This ensures scopes show what the impersonated user can see
     def admin_bypass?
-      real_teammate = pundit_user.respond_to?(:real_user) ? pundit_user.real_user : teammate
-      return false unless real_teammate
+      current_teammate = teammate
+      return false unless current_teammate
       
-      real_teammate.person&.og_admin?
+      current_teammate.person&.og_admin?
     end
   end
 end
