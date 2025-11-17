@@ -42,7 +42,9 @@
                     %th Details
                 %tbody
                   - @pending_snapshots.each do |snapshot|
-                    = render partial: 'organizations/employees/audit/snapshot_row', locals: { snapshot: snapshot, show_checkbox: true, person: @person, organization: @organization }
+                    - snapshot_index = @maap_snapshots.index(snapshot)
+                    - previous_snapshot = snapshot_index ? @maap_snapshots[snapshot_index + 1] : nil
+                    = render partial: 'organizations/employees/audit/snapshot_row', locals: { snapshot: snapshot, show_checkbox: true, person: @person, organization: @organization, previous_snapshot: previous_snapshot }
             
             .mt-3
               = f.submit 'Acknowledge Selected Check-ins', 
@@ -75,8 +77,9 @@
                     %th Acknowledgement
                   %th Details
               %tbody
-                - @maap_snapshots.each do |snapshot|
-                  = render partial: 'organizations/employees/audit/snapshot_row', locals: { snapshot: snapshot, show_checkbox: false, person: @person, organization: @organization }
+                - @maap_snapshots.each_with_index do |snapshot, index|
+                  - previous_snapshot = @maap_snapshots[index + 1]
+                  = render partial: 'organizations/employees/audit/snapshot_row', locals: { snapshot: snapshot, show_checkbox: false, person: @person, organization: @organization, previous_snapshot: previous_snapshot }
         - else
           .text-center.py-5
             %i.bi.bi-clock-history.text-muted{style: "font-size: 3rem;"}

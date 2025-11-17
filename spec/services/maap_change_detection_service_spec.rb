@@ -9,10 +9,38 @@ RSpec.describe MaapChangeDetectionService do
   
   describe '#assignment_changes_count' do
     context 'with MaapSnapshot 122 scenario' do
-      let(:snapshot) { create(:maap_snapshot, id: 122) }
+      let(:previous_snapshot) { create(:maap_snapshot, created_at: 2.days.ago) }
+      let(:snapshot) { create(:maap_snapshot, id: 122, created_at: 1.day.ago) }
       
       before do
-        # Set up the exact scenario from MaapSnapshot 122
+        # Create previous snapshot with the baseline state (standard format)
+        previous_snapshot.update!(
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'assignment_management',
+          reason: 'Previous state',
+          maap_data: {
+            'assignments' => [
+              {
+                'assignment_id' => assignment.id,
+                'anticipated_energy_percentage' => 40,  # Different from proposed 50
+                'official_rating' => 'meeting'
+              }
+            ],
+            'position' => {
+              'seat_id' => nil,
+              'manager_id' => manager.id,
+              'position_id' => 8,
+              'employment_type' => 'full_time',
+              'official_position_rating' => nil
+            },
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+        
+        # Set up the exact scenario from MaapSnapshot 122 (proposed state)
         snapshot.update!(
           employee: person,
           created_by: manager,
@@ -22,81 +50,34 @@ RSpec.describe MaapChangeDetectionService do
           maap_data: {
             'assignments' => [
               {
-                'id' => assignment.id,
-                'tenure' => {
-                  'started_at' => '2025-09-20',
-                  'anticipated_energy_percentage' => 50
-                },
-                'manager_check_in' => {
-                  'manager_rating' => 'working_to_meet',
-                  'manager_completed_at' => nil,
-                  'manager_private_notes' => '40-50\nworking\ncomplete',
-                  'manager_completed_by_id' => nil
-                },
-                'employee_check_in' => {
-                  'employee_rating' => 'working_to_meet',
-                  'employee_completed_at' => '2025-09-29T00:15:44.283Z',
-                  'employee_private_notes' => 'dsfdsafds',
-                  'actual_energy_percentage' => 15,
-                  'employee_personal_alignment' => 'love'
-                },
-                'official_check_in' => {
-                  'shared_notes' => nil,
-                  'finalized_by_id' => nil,
-                  'official_rating' => nil,
-                  'official_check_in_completed_at' => nil
-                }
+                'assignment_id' => assignment.id,
+                'anticipated_energy_percentage' => 50,  # Changed from 40
+                'official_rating' => 'meeting'
               }
             ],
-            'employment_tenure' => {
+            'position' => {
               'seat_id' => nil,
               'manager_id' => manager.id,
-              'started_at' => '2025-03-08T00:00:00.000Z',
-              'position_id' => 8
+              'position_id' => 8,
+              'employment_type' => 'full_time',
+              'official_position_rating' => nil
             },
-            'milestones' => [],
+            'abilities' => [],
             'aspirations' => []
           }
         )
-        
-        # Create current state that differs from proposed state
-        create(:assignment_tenure, 
-               teammate: person_teammate, 
-               assignment: assignment, 
-               anticipated_energy_percentage: 40, # Different from proposed 50
-               started_at: Date.parse('2025-09-20'))
-        
-        # Create current check-in that differs from proposed state
-        create(:assignment_check_in,
-               teammate: person_teammate,
-               assignment: assignment,
-               manager_rating: 'working_to_meet',
-               manager_private_notes: '40-50\nworking\ncomplete',
-               manager_completed_at: Time.current, # Different from proposed nil
-               manager_completed_by: manager,
-               # Set employee fields to match proposed values to avoid extra changes
-               actual_energy_percentage: 15,
-               employee_rating: 'working_to_meet',
-               employee_personal_alignment: 'love',
-               employee_private_notes: 'dsfdsafds',
-               employee_completed_at: Time.parse('2025-09-29T00:15:44.283Z'),
-               # Set official fields to match proposed values
-               shared_notes: nil,
-               official_rating: nil,
-               official_check_in_completed_at: nil,
-               finalized_by_id: nil)
       end
       
       it 'correctly counts assignment changes' do
         service = described_class.new(
           person: person, 
           maap_snapshot: snapshot, 
-          current_user: manager
+          current_user: manager,
+          previous_snapshot: previous_snapshot
         )
         
         # This should detect changes in:
         # 1. anticipated_energy_percentage: 40 → 50
-        # 2. manager_completion: true → false
         expect(service.change_counts[:assignments]).to eq(1)
       end
       
@@ -104,7 +85,8 @@ RSpec.describe MaapChangeDetectionService do
         service = described_class.new(
           person: person, 
           maap_snapshot: snapshot, 
-          current_user: manager
+          current_user: manager,
+          previous_snapshot: previous_snapshot
         )
         
         expect(service.assignment_has_changes?(assignment)).to be true
@@ -114,7 +96,8 @@ RSpec.describe MaapChangeDetectionService do
         service = described_class.new(
           person: person, 
           maap_snapshot: snapshot, 
-          current_user: manager
+          current_user: manager,
+          previous_snapshot: previous_snapshot
         )
         
         details = service.detailed_changes[:assignments]
@@ -123,13 +106,92 @@ RSpec.describe MaapChangeDetectionService do
         
         assignment_changes = details[:details].first
         expect(assignment_changes[:assignment_id]).to eq(assignment.id)
-        expect(assignment_changes[:changes].length).to eq(2)
+        expect(assignment_changes[:changes].length).to eq(1)
+        expect(assignment_changes[:changes].first[:field]).to eq('anticipated_energy_percentage')
         
         # Check for specific changes
         change_fields = assignment_changes[:changes].map { |c| c[:field] }
         expect(change_fields).to include('anticipated_energy_percentage')
-        expect(change_fields).to include('manager_completion')
       end
+    end
+  end
+  
+  describe '#aspiration_changes_count' do
+    let(:aspiration) { create(:aspiration, organization: organization, name: 'Be Kind') }
+    let(:previous_snapshot) { create(:maap_snapshot, created_at: 2.days.ago) }
+    let(:snapshot) { create(:maap_snapshot, created_at: 1.day.ago) }
+    
+    before do
+      previous_snapshot.update!(
+        employee: person,
+        created_by: manager,
+        company: organization,
+        change_type: 'aspiration_management',
+        reason: 'Previous state',
+        maap_data: {
+          'position' => nil,
+          'assignments' => [],
+          'abilities' => [],
+          'aspirations' => [
+            {
+              'aspiration_id' => aspiration.id,
+              'official_rating' => nil
+            }
+          ]
+        }
+      )
+      
+      snapshot.update!(
+        employee: person,
+        created_by: manager,
+        company: organization,
+        change_type: 'aspiration_management',
+        reason: 'Aspiration updates',
+        maap_data: {
+          'position' => nil,
+          'assignments' => [],
+          'abilities' => [],
+          'aspirations' => [
+            {
+              'aspiration_id' => aspiration.id,
+              'official_rating' => 'meeting'
+            }
+          ]
+        }
+      )
+    end
+    
+    it 'correctly counts aspiration changes' do
+      service = described_class.new(
+        person: person,
+        maap_snapshot: snapshot,
+        current_user: manager,
+        previous_snapshot: previous_snapshot
+      )
+      
+      expect(service.change_counts[:aspirations]).to eq(1)
+    end
+    
+    it 'provides detailed aspiration change information' do
+      service = described_class.new(
+        person: person,
+        maap_snapshot: snapshot,
+        current_user: manager,
+        previous_snapshot: previous_snapshot
+      )
+      
+      details = service.detailed_changes[:aspirations]
+      expect(details[:has_changes]).to be true
+      expect(details[:details].length).to eq(1)
+      
+      aspiration_changes = details[:details].first
+      expect(aspiration_changes[:aspiration_id]).to eq(aspiration.id)
+      expect(aspiration_changes[:changes].length).to be > 0
+      
+      rating_change = aspiration_changes[:changes].find { |c| c[:field] == 'official_rating' }
+      expect(rating_change).to be_present
+      expect(rating_change[:current]).to be_nil
+      expect(rating_change[:proposed]).to eq('meeting')
     end
   end
 end

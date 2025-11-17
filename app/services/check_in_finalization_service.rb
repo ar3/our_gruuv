@@ -138,38 +138,59 @@ class CheckInFinalizationService
   
   def build_ratings_data(results)
     {
-      position: results.dig(:position, :rating_data),
+      position: build_position_data,
       assignments: build_assignment_ratings,
-      milestones: build_milestone_attainments,
+      abilities: build_abilities_data,
       aspirations: build_aspiration_ratings
     }
   end
   
+  def build_position_data
+    employment = @teammate.employment_tenures.active.first
+    return nil unless employment
+    
+    {
+      position_id: employment.position_id,
+      manager_id: employment.manager_id,
+      seat_id: employment.seat_id,
+      employment_type: employment.employment_type,
+      official_position_rating: employment.official_position_rating
+    }
+  end
+  
   def build_assignment_ratings
-    @teammate.assignment_tenures.active.map do |tenure|
+    @teammate.assignment_tenures.active.includes(:assignment).joins(:assignment).where(assignments: { company: @teammate.organization }).map do |tenure|
       {
         assignment_id: tenure.assignment_id,
-        anticipated_energy: tenure.anticipated_energy_percentage,
-        official_rating: tenure.official_rating,
-        rated_at: tenure.updated_at.to_date.to_s
+        anticipated_energy_percentage: tenure.anticipated_energy_percentage,
+        official_rating: tenure.official_rating
       }
     end
   end
   
-  def build_milestone_attainments
-    @teammate.teammate_milestones.map do |milestone|
+  def build_abilities_data
+    @teammate.teammate_milestones.joins(:ability).where(abilities: { organization: @teammate.organization }).map do |milestone|
       {
         ability_id: milestone.ability_id,
         milestone_level: milestone.milestone_level,
-        attained_at: milestone.attained_at.to_s,
-        certified_by_id: milestone.certified_by_id
+        certified_by_id: milestone.certified_by_id,
+        attained_at: milestone.attained_at
       }
     end
   end
   
   def build_aspiration_ratings
-    # Implemented in Phase 3
-    []
+    aspirations = @teammate.organization.aspirations
+    
+    aspirations.map do |aspiration|
+      # Get the last finalized aspiration_check_in for this teammate and aspiration
+      finalized_check_in = AspirationCheckIn.latest_finalized_for(@teammate, aspiration)
+      
+      {
+        aspiration_id: aspiration.id,
+        official_rating: finalized_check_in&.official_rating
+      }
+    end
   end
   
   def link_snapshot_to_check_ins(results, snapshot)

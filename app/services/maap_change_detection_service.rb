@@ -1,8 +1,9 @@
 class MaapChangeDetectionService
-  def initialize(person:, maap_snapshot:, current_user: nil)
+  def initialize(person:, maap_snapshot:, current_user: nil, previous_snapshot: nil)
     @person = person
     @maap_snapshot = maap_snapshot
     @current_user = current_user
+    @previous_snapshot = previous_snapshot
   end
 
   # Returns a hash with counts of changes by category
@@ -11,7 +12,7 @@ class MaapChangeDetectionService
       employment: employment_changes_count,
       assignments: assignment_changes_count,
       milestones: milestone_changes_count,
-      aspirations: 0 # Coming soon
+      aspirations: aspiration_changes_count
     }
   end
 
@@ -20,46 +21,33 @@ class MaapChangeDetectionService
     {
       employment: employment_changes_detail,
       assignments: assignment_changes_detail,
-      milestones: milestone_changes_detail
+      milestones: milestone_changes_detail,
+      aspirations: aspiration_changes_detail
     }
   end
 
   def assignment_has_changes?(assignment)
     return false unless maap_snapshot&.maap_data&.dig('assignments')
     
-    proposed_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment.id }
+    proposed_data = maap_snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == assignment.id }
     return false unless proposed_data
     
-    teammate = person.teammates.find_by(organization: assignment.company)
-    current_tenure = teammate&.assignment_tenures&.where(assignment: assignment)&.active&.first
-    proposed_tenure = proposed_data['tenure']
+    previous_assignments = previous_snapshot&.maap_data&.dig('assignments') || []
+    previous_data = previous_assignments.find { |a| a['assignment_id'] == assignment.id }
     
-    # Check tenure changes
-    tenure_changed = if current_tenure
-      # Active tenure exists - check if energy or start date changed
-      current_tenure.anticipated_energy_percentage != proposed_tenure['anticipated_energy_percentage'] ||
-      current_tenure.started_at.to_date != Date.parse(proposed_tenure['started_at'])
+    # Check assignment changes
+    if previous_data
+      previous_data['anticipated_energy_percentage'] != proposed_data['anticipated_energy_percentage'] ||
+      previous_data['official_rating'] != proposed_data['official_rating']
     else
-      # No active tenure - check if we're creating a new one
-      if proposed_tenure['anticipated_energy_percentage'] > 0
-        # Creating new tenure - this is a change
-        true
-      else
-        # Proposing 0% energy with no active tenure - this is NOT a change
-        # The tenure was already ended, so proposing 0% just confirms the current state
-        false
-      end
+      # No previous assignment - check if we're creating a new one
+      proposed_data['anticipated_energy_percentage'].to_i > 0 || proposed_data['official_rating'].present?
     end
-    
-    # Check check-in changes
-    check_in_changed = check_in_has_changes?(assignment, proposed_data)
-    
-    tenure_changed || check_in_changed
   end
 
   private
 
-  attr_reader :person, :maap_snapshot
+  attr_reader :person, :maap_snapshot, :previous_snapshot
 
   def employment_changes_count
     employment_has_changes? ? 1 : 0
@@ -68,41 +56,50 @@ class MaapChangeDetectionService
   def assignment_changes_count
     return 0 unless maap_snapshot&.maap_data&.dig('assignments')
     
-    assignment_data = load_assignment_data
-    assignment_data.count { |data| assignment_has_changes?(data[:assignment]) }
+    assignment_changes_detail[:has_changes] ? assignment_changes_detail[:details].count : 0
   end
 
   def milestone_changes_count
-    return 0 unless maap_snapshot&.maap_data&.dig('milestones')
+    return 0 unless maap_snapshot&.maap_data&.dig('abilities')
     
-    teammate = person.teammates.find_by(organization: maap_snapshot.company)
-    teammate&.teammate_milestones&.count { |milestone| milestone_has_changes?(milestone) } || 0
+    milestone_changes_detail[:has_changes] ? milestone_changes_detail[:details].count : 0
+  end
+
+  def aspiration_changes_count
+    return 0 unless maap_snapshot&.maap_data&.dig('aspirations')
+    
+    aspiration_changes_detail[:has_changes] ? aspiration_changes_detail[:details].count : 0
   end
 
   def employment_changes_detail
-    return { has_changes: false, details: [] } unless maap_snapshot&.maap_data&.dig('employment_tenure')
+    return { has_changes: false, details: [] } unless maap_snapshot&.maap_data&.dig('position')
     
-    teammate = person.teammates.find_by(organization: maap_snapshot.company)
-    current = teammate&.employment_tenures&.active&.first
-    proposed = maap_snapshot.maap_data['employment_tenure']
+    previous = previous_snapshot&.maap_data&.dig('position')
+    proposed = maap_snapshot.maap_data['position']
+    
+    return { has_changes: false, details: [] } unless proposed
     
     changes = []
     
-    if current
-      if current.position_id.to_s != proposed['position_id'].to_s
-        changes << { field: 'position', current: current.position_id, proposed: proposed['position_id'] }
+    if previous
+      if previous['position_id'].to_s != proposed['position_id'].to_s
+        changes << { field: 'position', current: previous['position_id'], proposed: proposed['position_id'] }
       end
-      if current.manager_id.to_s != proposed['manager_id'].to_s
-        changes << { field: 'manager', current: current.manager_id, proposed: proposed['manager_id'] }
+      if previous['manager_id'].to_s != proposed['manager_id'].to_s
+        changes << { field: 'manager', current: previous['manager_id'], proposed: proposed['manager_id'] }
       end
-      if current.started_at.to_date != Date.parse(proposed['started_at'])
-        changes << { field: 'started_at', current: current.started_at.to_date, proposed: Date.parse(proposed['started_at']) }
+      if previous['seat_id'].to_s != proposed['seat_id'].to_s
+        changes << { field: 'seat', current: previous['seat_id'], proposed: proposed['seat_id'] }
       end
-      if current.seat_id.to_s != proposed['seat_id'].to_s
-        changes << { field: 'seat', current: current.seat_id, proposed: proposed['seat_id'] }
+      if previous['employment_type'] != proposed['employment_type']
+        changes << { field: 'employment_type', current: previous['employment_type'], proposed: proposed['employment_type'] }
+      end
+      if previous['official_position_rating'] != proposed['official_position_rating']
+        changes << { field: 'official_position_rating', current: previous['official_position_rating'], proposed: proposed['official_position_rating'] }
       end
     else
-      changes << { field: 'employment', current: 'none', proposed: 'new employment' }
+      # No previous snapshot - this is the first one, so everything is new
+      changes << { field: 'position', current: 'none', proposed: 'new position' }
     end
     
     { has_changes: changes.any?, details: changes }
@@ -111,53 +108,48 @@ class MaapChangeDetectionService
   def assignment_changes_detail
     return { has_changes: false, details: [] } unless maap_snapshot&.maap_data&.dig('assignments')
     
-    assignment_data = load_assignment_data
+    previous_assignments = previous_snapshot&.maap_data&.dig('assignments') || []
+    proposed_assignments = maap_snapshot.maap_data['assignments'] || []
+    
+    # Get all assignment IDs from both snapshots
+    all_assignment_ids = (previous_assignments.map { |a| a['assignment_id'] } + proposed_assignments.map { |a| a['assignment_id'] }).uniq.compact
+    assignments = Assignment.where(id: all_assignment_ids).index_by(&:id)
+    
     changes = []
     
-    assignment_data.each do |data|
-      assignment = data[:assignment]
-      proposed_data = maap_snapshot.maap_data['assignments'].find { |a| a['id'] == assignment.id }
-      next unless proposed_data
+    proposed_assignments.each do |proposed_data|
+      assignment_id = proposed_data['assignment_id']
+      assignment = assignments[assignment_id]
+      next unless assignment
       
+      previous_data = previous_assignments.find { |a| a['assignment_id'] == assignment_id }
       assignment_changes = []
       
-      # Check tenure changes
-      teammate = person.teammates.find_by(organization: assignment.company)
-    current_tenure = teammate&.assignment_tenures&.where(assignment: assignment)&.active&.first
-      proposed_tenure = proposed_data['tenure']
-      
-      if current_tenure
-        if current_tenure.anticipated_energy_percentage != proposed_tenure['anticipated_energy_percentage']
+      if previous_data
+        if previous_data['anticipated_energy_percentage'] != proposed_data['anticipated_energy_percentage']
           assignment_changes << {
             field: 'anticipated_energy_percentage',
-            current: current_tenure.anticipated_energy_percentage,
-            proposed: proposed_tenure['anticipated_energy_percentage']
+            current: previous_data['anticipated_energy_percentage'],
+            proposed: proposed_data['anticipated_energy_percentage']
           }
         end
-        if current_tenure.started_at.to_date != Date.parse(proposed_tenure['started_at'])
+        if previous_data['official_rating'] != proposed_data['official_rating']
           assignment_changes << {
-            field: 'started_at',
-            current: current_tenure.started_at.to_date,
-            proposed: Date.parse(proposed_tenure['started_at'])
+            field: 'official_rating',
+            current: previous_data['official_rating'],
+            proposed: proposed_data['official_rating']
           }
         end
       else
-        if proposed_tenure['anticipated_energy_percentage'] > 0
+        # No previous assignment - check if we're creating a new one
+        if proposed_data['anticipated_energy_percentage'].to_i > 0 || proposed_data['official_rating'].present?
           assignment_changes << {
-            field: 'new_tenure',
+            field: 'new_assignment',
             current: 'none',
-            proposed: proposed_tenure['anticipated_energy_percentage']
+            proposed: "#{proposed_data['anticipated_energy_percentage']}% energy#{proposed_data['official_rating'].present? ? ", #{proposed_data['official_rating']}" : ''}"
           }
-        else
-          # Proposing 0% energy with no active tenure - this is NOT a change
-          # The tenure was already ended, so proposing 0% just confirms the current state
-          # No changes to add
         end
       end
-      
-      # Check check-in changes
-      check_in_changes = check_in_changes_detail(assignment, proposed_data)
-      assignment_changes.concat(check_in_changes)
       
       if assignment_changes.any?
         changes << {
@@ -171,30 +163,32 @@ class MaapChangeDetectionService
     { has_changes: changes.any?, details: changes }
   end
 
-  def check_in_changes_detail(assignment, proposed_data)
-    teammate = person.teammates.find_by(organization: assignment.company)
-    current_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
+  def check_in_changes_detail(assignment, proposed_data, previous_data = nil)
+    previous_employee_check_in = previous_data&.dig('employee_check_in')
+    previous_manager_check_in = previous_data&.dig('manager_check_in')
+    previous_official_check_in = previous_data&.dig('official_check_in')
+    
     changes = []
     
     # Employee check-in changes
     if proposed_data['employee_check_in']
       employee_data = proposed_data['employee_check_in']
       
-      if current_check_in
-        if current_check_in.actual_energy_percentage != employee_data['actual_energy_percentage']
-          changes << { field: 'employee_actual_energy', current: current_check_in.actual_energy_percentage, proposed: employee_data['actual_energy_percentage'] }
+      if previous_employee_check_in
+        if (previous_employee_check_in['actual_energy_percentage'] || 0) != (employee_data['actual_energy_percentage'] || 0)
+          changes << { field: 'employee_actual_energy', current: previous_employee_check_in['actual_energy_percentage'], proposed: employee_data['actual_energy_percentage'] }
         end
-        if current_check_in.employee_rating != employee_data['employee_rating']
-          changes << { field: 'employee_rating', current: current_check_in.employee_rating, proposed: employee_data['employee_rating'] }
+        if previous_employee_check_in['employee_rating'] != employee_data['employee_rating']
+          changes << { field: 'employee_rating', current: previous_employee_check_in['employee_rating'], proposed: employee_data['employee_rating'] }
         end
-        if current_check_in.employee_personal_alignment != employee_data['employee_personal_alignment']
-          changes << { field: 'employee_personal_alignment', current: current_check_in.employee_personal_alignment, proposed: employee_data['employee_personal_alignment'] }
+        if previous_employee_check_in['employee_personal_alignment'] != employee_data['employee_personal_alignment']
+          changes << { field: 'employee_personal_alignment', current: previous_employee_check_in['employee_personal_alignment'], proposed: employee_data['employee_personal_alignment'] }
         end
-        if current_check_in.employee_private_notes != employee_data['employee_private_notes']
-          changes << { field: 'employee_private_notes', current: current_check_in.employee_private_notes, proposed: employee_data['employee_private_notes'] }
+        if previous_employee_check_in['employee_private_notes'] != employee_data['employee_private_notes']
+          changes << { field: 'employee_private_notes', current: previous_employee_check_in['employee_private_notes'], proposed: employee_data['employee_private_notes'] }
         end
-        if (current_check_in.employee_completed? || false) != employee_data['employee_completed_at'].present?
-          changes << { field: 'employee_completion', current: current_check_in.employee_completed?, proposed: employee_data['employee_completed_at'].present? }
+        if previous_employee_check_in['employee_completed_at'].present? != employee_data['employee_completed_at'].present?
+          changes << { field: 'employee_completion', current: previous_employee_check_in['employee_completed_at'].present?, proposed: employee_data['employee_completed_at'].present? }
         end
       else
         # New check-in
@@ -208,15 +202,15 @@ class MaapChangeDetectionService
     if proposed_data['manager_check_in']
       manager_data = proposed_data['manager_check_in']
       
-      if current_check_in
-        if current_check_in.manager_rating != manager_data['manager_rating']
-          changes << { field: 'manager_rating', current: current_check_in.manager_rating, proposed: manager_data['manager_rating'] }
+      if previous_manager_check_in
+        if previous_manager_check_in['manager_rating'] != manager_data['manager_rating']
+          changes << { field: 'manager_rating', current: previous_manager_check_in['manager_rating'], proposed: manager_data['manager_rating'] }
         end
-        if current_check_in.manager_private_notes != manager_data['manager_private_notes']
-          changes << { field: 'manager_private_notes', current: current_check_in.manager_private_notes, proposed: manager_data['manager_private_notes'] }
+        if previous_manager_check_in['manager_private_notes'] != manager_data['manager_private_notes']
+          changes << { field: 'manager_private_notes', current: previous_manager_check_in['manager_private_notes'], proposed: manager_data['manager_private_notes'] }
         end
-        if (current_check_in.manager_completed? || false) != manager_data['manager_completed_at'].present?
-          changes << { field: 'manager_completion', current: current_check_in.manager_completed?, proposed: manager_data['manager_completed_at'].present? }
+        if previous_manager_check_in['manager_completed_at'].present? != manager_data['manager_completed_at'].present?
+          changes << { field: 'manager_completion', current: previous_manager_check_in['manager_completed_at'].present?, proposed: manager_data['manager_completed_at'].present? }
         end
       else
         # New check-in
@@ -230,18 +224,18 @@ class MaapChangeDetectionService
     if proposed_data['official_check_in']
       official_data = proposed_data['official_check_in']
       
-      if current_check_in
-        if current_check_in.official_rating != official_data['official_rating']
-          changes << { field: 'official_rating', current: current_check_in.official_rating, proposed: official_data['official_rating'] }
+      if previous_official_check_in
+        if previous_official_check_in['official_rating'] != official_data['official_rating']
+          changes << { field: 'official_rating', current: previous_official_check_in['official_rating'], proposed: official_data['official_rating'] }
         end
-        if current_check_in.shared_notes != official_data['shared_notes']
-          changes << { field: 'shared_notes', current: current_check_in.shared_notes, proposed: official_data['shared_notes'] }
+        if previous_official_check_in['shared_notes'] != official_data['shared_notes']
+          changes << { field: 'shared_notes', current: previous_official_check_in['shared_notes'], proposed: official_data['shared_notes'] }
         end
-        if (current_check_in.officially_completed? || false) != official_data['official_check_in_completed_at'].present?
-          changes << { field: 'official_completion', current: current_check_in.officially_completed?, proposed: official_data['official_check_in_completed_at'].present? }
+        if previous_official_check_in['official_check_in_completed_at'].present? != official_data['official_check_in_completed_at'].present?
+          changes << { field: 'official_completion', current: previous_official_check_in['official_check_in_completed_at'].present?, proposed: official_data['official_check_in_completed_at'].present? }
         end
-        if current_check_in.finalized_by_id.to_s != official_data['finalized_by_id'].to_s
-          changes << { field: 'finalized_by', current: current_check_in.finalized_by_id, proposed: official_data['finalized_by_id'] }
+        if previous_official_check_in['finalized_by_id'].to_s != official_data['finalized_by_id'].to_s
+          changes << { field: 'finalized_by', current: previous_official_check_in['finalized_by_id'], proposed: official_data['finalized_by_id'] }
         end
       else
         # New check-in
@@ -255,32 +249,102 @@ class MaapChangeDetectionService
   end
 
   def milestone_changes_detail
-    return { has_changes: false, details: [] } unless maap_snapshot&.maap_data&.dig('milestones')
+    return { has_changes: false, details: [] } unless maap_snapshot&.maap_data&.dig('abilities')
+    
+    previous_abilities = previous_snapshot&.maap_data&.dig('abilities') || []
+    proposed_abilities = maap_snapshot.maap_data['abilities'] || []
+    
+    # Get all ability IDs from both snapshots
+    all_ability_ids = (previous_abilities.map { |m| m['ability_id'] } + proposed_abilities.map { |m| m['ability_id'] }).uniq.compact
+    abilities = Ability.where(id: all_ability_ids).index_by(&:id)
     
     changes = []
     
-    teammate = person.teammates.find_by(organization: maap_snapshot.company)
-    teammate&.teammate_milestones&.each do |milestone|
-      proposed_data = maap_snapshot.maap_data['milestones'].find { |m| m['ability_id'] == milestone.ability_id }
-      next unless proposed_data
+    proposed_abilities.each do |proposed_data|
+      ability_id = proposed_data['ability_id']
+      ability = abilities[ability_id]
+      next unless ability
       
+      previous_data = previous_abilities.find { |m| m['ability_id'] == ability_id }
       milestone_changes = []
       
-      if milestone.milestone_level != proposed_data['milestone_level']
-        milestone_changes << { field: 'milestone_level', current: milestone.milestone_level, proposed: proposed_data['milestone_level'] }
-      end
-      if milestone.certified_by_id.to_s != proposed_data['certified_by_id'].to_s
-        milestone_changes << { field: 'certified_by', current: milestone.certified_by_id, proposed: proposed_data['certified_by_id'] }
-      end
-      if milestone.attained_at.to_s != proposed_data['attained_at'].to_s
-        milestone_changes << { field: 'attained_at', current: milestone.attained_at, proposed: proposed_data['attained_at'] }
+      if previous_data
+        if previous_data['milestone_level'] != proposed_data['milestone_level']
+          milestone_changes << { field: 'milestone_level', current: previous_data['milestone_level'], proposed: proposed_data['milestone_level'] }
+        end
+        if previous_data['certified_by_id'].to_s != proposed_data['certified_by_id'].to_s
+          milestone_changes << { field: 'certified_by', current: previous_data['certified_by_id'], proposed: proposed_data['certified_by_id'] }
+        end
+        if previous_data['attained_at'].to_s != proposed_data['attained_at'].to_s
+          milestone_changes << { field: 'attained_at', current: previous_data['attained_at'], proposed: proposed_data['attained_at'] }
+        end
+      else
+        # New milestone - all fields are new
+        milestone_changes << { field: 'milestone_level', current: 'none', proposed: proposed_data['milestone_level'] }
+        if proposed_data['certified_by_id'].present?
+          milestone_changes << { field: 'certified_by', current: 'none', proposed: proposed_data['certified_by_id'] }
+        end
+        if proposed_data['attained_at'].present?
+          milestone_changes << { field: 'attained_at', current: 'none', proposed: proposed_data['attained_at'] }
+        end
       end
       
       if milestone_changes.any?
         changes << {
-          ability: milestone.ability.name,
-          ability_id: milestone.ability_id,
+          ability: ability.name,
+          ability_id: ability_id,
           changes: milestone_changes
+        }
+      end
+    end
+    
+    { has_changes: changes.any?, details: changes }
+  end
+
+  def aspiration_changes_detail
+    return { has_changes: false, details: [] } unless maap_snapshot&.maap_data&.dig('aspirations')
+    
+    previous_aspirations = previous_snapshot&.maap_data&.dig('aspirations') || []
+    proposed_aspirations = maap_snapshot.maap_data['aspirations'] || []
+    
+    # Get all aspiration IDs from both snapshots
+    all_aspiration_ids = (previous_aspirations.map { |a| a['aspiration_id'] } + proposed_aspirations.map { |a| a['aspiration_id'] }).uniq.compact
+    aspirations = Aspiration.where(id: all_aspiration_ids).index_by(&:id)
+    
+    changes = []
+    
+    proposed_aspirations.each do |proposed_data|
+      aspiration_id = proposed_data['aspiration_id']
+      aspiration = aspirations[aspiration_id]
+      next unless aspiration
+      
+      previous_data = previous_aspirations.find { |a| a['aspiration_id'] == aspiration_id }
+      aspiration_changes = []
+      
+      if previous_data
+        if previous_data['official_rating'] != proposed_data['official_rating']
+          aspiration_changes << {
+            field: 'official_rating',
+            current: previous_data['official_rating'],
+            proposed: proposed_data['official_rating']
+          }
+        end
+      else
+        # New aspiration rating
+        if proposed_data['official_rating'].present?
+          aspiration_changes << {
+            field: 'new_aspiration_rating',
+            current: 'none',
+            proposed: proposed_data['official_rating']
+          }
+        end
+      end
+      
+      if aspiration_changes.any?
+        changes << {
+          aspiration: aspiration.name || "Aspiration #{aspiration_id}",
+          aspiration_id: aspiration_id,
+          changes: aspiration_changes
         }
       end
     end
@@ -292,7 +356,7 @@ class MaapChangeDetectionService
     # Get all assignments that have tenures OR are in the snapshot
     teammate = person.teammates.find_by(organization: maap_snapshot.company)
     assignment_ids_from_tenures = teammate&.assignment_tenures&.distinct&.pluck(:assignment_id) || []
-    assignment_ids_from_snapshot = maap_snapshot.maap_data['assignments'].map { |a| a['id'] }
+    assignment_ids_from_snapshot = maap_snapshot.maap_data['assignments']&.map { |a| a['assignment_id'] } || []
     all_assignment_ids = (assignment_ids_from_tenures + assignment_ids_from_snapshot).uniq
     
     assignments = Assignment.where(id: all_assignment_ids).includes(:assignment_tenures)
@@ -300,71 +364,73 @@ class MaapChangeDetectionService
     assignments.map do |assignment|
       {
         assignment: assignment,
-        active_tenure: teammate&.assignment_tenures&.where(assignment: assignment)&.active&.first,
-        open_check_in: AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
+        active_tenure: teammate&.assignment_tenures&.where(assignment: assignment)&.active&.first
       }
     end
   end
 
   def employment_has_changes?
-    return false unless maap_snapshot&.maap_data&.dig('employment_tenure')
+    return false unless maap_snapshot&.maap_data&.dig('position')
     
-    teammate = person.teammates.find_by(organization: maap_snapshot.company)
-    current = teammate&.employment_tenures&.active&.first
-    proposed = maap_snapshot.maap_data['employment_tenure']
+    previous = previous_snapshot&.maap_data&.dig('position')
+    proposed = maap_snapshot.maap_data['position']
     
-    return true unless current
+    return true unless previous
+    return false unless proposed
     
-    current.position_id.to_s != proposed['position_id'].to_s ||
-    current.manager_id.to_s != proposed['manager_id'].to_s ||
-    current.started_at.to_date != Date.parse(proposed['started_at']) ||
-    current.seat_id.to_s != proposed['seat_id'].to_s
+    previous['position_id'].to_s != proposed['position_id'].to_s ||
+    previous['manager_id'].to_s != proposed['manager_id'].to_s ||
+    previous['seat_id'].to_s != proposed['seat_id'].to_s ||
+    previous['employment_type'] != proposed['employment_type'] ||
+    previous['official_position_rating'] != proposed['official_position_rating']
   end
 
 
-  def check_in_has_changes?(assignment, proposed_data)
-    teammate = person.teammates.find_by(organization: assignment.company)
-    current_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
+  def check_in_has_changes?(assignment, proposed_data, previous_data = nil)
+    previous_employee_check_in = previous_data&.dig('employee_check_in')
+    previous_manager_check_in = previous_data&.dig('manager_check_in')
+    previous_official_check_in = previous_data&.dig('official_check_in')
     
-    # Only check for changes in fields the current user is authorized to modify
-    
-    # Check employee check-in changes (only if current user can update employee fields)
-    if proposed_data['employee_check_in'] && can_update_employee_check_in_fields?(current_check_in)
-      employee_changed = if current_check_in
-        current_check_in.actual_energy_percentage != proposed_data['employee_check_in']['actual_energy_percentage'] ||
-        current_check_in.employee_rating != proposed_data['employee_check_in']['employee_rating'] ||
-        current_check_in.employee_personal_alignment != proposed_data['employee_check_in']['employee_personal_alignment'] ||
-        current_check_in.employee_private_notes != proposed_data['employee_check_in']['employee_private_notes'] ||
-        (current_check_in.employee_completed? || false) != proposed_data['employee_check_in']['employee_completed_at'].present?
-      else
-        proposed_data['employee_check_in'].values.any? { |v| v.present? }
+    # Check employee check-in changes
+    if proposed_data['employee_check_in']
+      employee_data = proposed_data['employee_check_in']
+      if previous_employee_check_in
+        employee_changed = (previous_employee_check_in['actual_energy_percentage'] || 0) != (employee_data['actual_energy_percentage'] || 0) ||
+          previous_employee_check_in['employee_rating'] != employee_data['employee_rating'] ||
+          previous_employee_check_in['employee_personal_alignment'] != employee_data['employee_personal_alignment'] ||
+          previous_employee_check_in['employee_private_notes'] != employee_data['employee_private_notes'] ||
+          previous_employee_check_in['employee_completed_at'].present? != employee_data['employee_completed_at'].present?
+        return true if employee_changed
+      elsif employee_data.values.any? { |v| v.present? }
+        return true
       end
-      return true if employee_changed
     end
     
-    # Check manager check-in changes (only if current user can update manager fields)
-    if proposed_data['manager_check_in'] && can_update_manager_check_in_fields?(current_check_in)
-      manager_changed = if current_check_in
-        current_check_in.manager_rating != proposed_data['manager_check_in']['manager_rating'] ||
-        current_check_in.manager_private_notes != proposed_data['manager_check_in']['manager_private_notes'] ||
-        (current_check_in.manager_completed? || false) != proposed_data['manager_check_in']['manager_completed_at'].present?
-      else
-        proposed_data['manager_check_in'].values.any? { |v| v.present? }
+    # Check manager check-in changes
+    if proposed_data['manager_check_in']
+      manager_data = proposed_data['manager_check_in']
+      if previous_manager_check_in
+        manager_changed = previous_manager_check_in['manager_rating'] != manager_data['manager_rating'] ||
+          previous_manager_check_in['manager_private_notes'] != manager_data['manager_private_notes'] ||
+          previous_manager_check_in['manager_completed_at'].present? != manager_data['manager_completed_at'].present?
+        return true if manager_changed
+      elsif manager_data.values.any? { |v| v.present? }
+        return true
       end
-      return true if manager_changed
     end
     
-    # Check official check-in changes (only if current user can finalize)
-    if proposed_data['official_check_in'] && can_finalize_check_in?(current_check_in)
-      official_changed = if current_check_in
-        current_check_in.official_rating != proposed_data['official_check_in']['official_rating'] ||
-        current_check_in.shared_notes != proposed_data['official_check_in']['shared_notes'] ||
-        (current_check_in.officially_completed? || false) != proposed_data['official_check_in']['official_check_in_completed_at'].present? ||
-        current_check_in.finalized_by_id.to_s != proposed_data['official_check_in']['finalized_by_id'].to_s
-      else
-        proposed_data['official_check_in'].values.any? { |v| v.present? }
+    # Check official check-in changes
+    if proposed_data['official_check_in']
+      official_data = proposed_data['official_check_in']
+      if previous_official_check_in
+        official_changed = previous_official_check_in['official_rating'] != official_data['official_rating'] ||
+          previous_official_check_in['shared_notes'] != official_data['shared_notes'] ||
+          previous_official_check_in['official_check_in_completed_at'].present? != official_data['official_check_in_completed_at'].present? ||
+          previous_official_check_in['finalized_by_id'].to_s != official_data['finalized_by_id'].to_s
+        return true if official_changed
+      elsif official_data.values.any? { |v| v.present? }
+        return true
       end
-      return true if official_changed
     end
     
     false
@@ -372,7 +438,7 @@ class MaapChangeDetectionService
 
   private
 
-  attr_reader :person, :maap_snapshot, :current_user
+  attr_reader :person, :maap_snapshot, :current_user, :previous_snapshot
 
   def can_update_employee_check_in_fields?(check_in)
     # Employee can update their own check-in fields
@@ -467,8 +533,13 @@ class MaapChangeDetectionService
     proposed_data = maap_snapshot.maap_data['milestones'].find { |m| m['ability_id'] == milestone.ability_id }
     return false unless proposed_data
     
-    milestone.milestone_level != proposed_data['milestone_level'] ||
-    milestone.certified_by_id.to_s != proposed_data['certified_by_id'].to_s ||
-    milestone.attained_at.to_s != proposed_data['attained_at'].to_s
+    previous_milestones = previous_snapshot&.maap_data&.dig('milestones') || []
+    previous_data = previous_milestones.find { |m| m['ability_id'] == milestone.ability_id }
+    
+    return true unless previous_data
+    
+    previous_data['milestone_level'] != proposed_data['milestone_level'] ||
+    previous_data['certified_by_id'].to_s != proposed_data['certified_by_id'].to_s ||
+    previous_data['attained_at'].to_s != proposed_data['attained_at'].to_s
   end
 end

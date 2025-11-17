@@ -71,7 +71,9 @@ class MaapSnapshot < ApplicationRecord
       reason: reason,
       manager_request_info: request_info,
       form_params: form_params,
-      maap_data: build_maap_data_for_employee_with_changes(employee, company, form_params)
+      # maap_data should always reflect DB state (post-execution log)
+      # Proposed changes are stored in form_params only
+      maap_data: build_maap_data_for_employee(employee, company)
     )
   end
 
@@ -122,23 +124,14 @@ class MaapSnapshot < ApplicationRecord
   
   def self.build_maap_data_for_employee(employee, company)
     {
-      employment_tenure: build_employment_tenure_data(employee, company),
+      position: build_position_data(employee, company),
       assignments: build_assignments_data(employee, company),
-      milestones: build_milestones_data(employee, company),
+      abilities: build_abilities_data(employee, company),
       aspirations: build_aspirations_data(employee, company)
     }
   end
   
-  def self.build_maap_data_for_employee_with_changes(employee, company, form_params)
-    {
-      employment_tenure: build_employment_tenure_data(employee, company),
-      assignments: build_assignments_data_with_changes(employee, company, form_params),
-      milestones: build_milestones_data(employee, company),
-      aspirations: build_aspirations_data(employee, company)
-    }
-  end
-  
-  def self.build_employment_tenure_data(employee, company)
+  def self.build_position_data(employee, company)
     teammate = employee.teammates.find_by(organization: company)
     return nil unless teammate
     employment = EmploymentTenure.where(teammate: teammate).active.where(company: company).first
@@ -147,8 +140,9 @@ class MaapSnapshot < ApplicationRecord
     {
       position_id: employment.position_id,
       manager_id: employment.manager_id,
-      started_at: employment.started_at,
-      seat_id: employment.seat_id
+      seat_id: employment.seat_id,
+      employment_type: employment.employment_type,
+      official_position_rating: employment.official_position_rating
     }
   end
   
@@ -157,77 +151,21 @@ class MaapSnapshot < ApplicationRecord
     return [] unless teammate
     
     teammate.assignment_tenures.active.includes(:assignment).joins(:assignment).where(assignments: { company: company }).map do |tenure|
-      check_in = AssignmentCheckIn.where(teammate: teammate, assignment: tenure.assignment).open.first
-      
       {
-        id: tenure.assignment_id,
-        tenure: {
-          anticipated_energy_percentage: tenure.anticipated_energy_percentage,
-          started_at: tenure.started_at
-        },
-        employee_check_in: check_in ? {
-          actual_energy_percentage: check_in.actual_energy_percentage,
-          employee_rating: check_in.employee_rating,
-          employee_completed_at: check_in.employee_completed_at,
-          employee_private_notes: check_in.employee_private_notes,
-          employee_personal_alignment: check_in.employee_personal_alignment
-        } : nil,
-        manager_check_in: check_in ? {
-          manager_rating: check_in.manager_rating,
-          manager_completed_at: check_in.manager_completed_at,
-          manager_private_notes: check_in.manager_private_notes,
-          manager_completed_by_id: check_in.manager_completed_by_id
-        } : nil,
-        official_check_in: check_in ? {
-          official_rating: check_in.official_rating,
-          shared_notes: check_in.shared_notes,
-          official_check_in_completed_at: check_in.official_check_in_completed_at,
-          finalized_by_id: check_in.finalized_by_id
-        } : nil
+        assignment_id: tenure.assignment_id,
+        anticipated_energy_percentage: tenure.anticipated_energy_percentage,
+        official_rating: tenure.official_rating
       }
     end
   end
   
-  def self.build_assignments_data_with_changes(employee, company, form_params)
-    # Get all assignments where the person has ever had a tenure, filtered by company
-    teammate = employee.teammates.find_by(organization: company)
-    return [] unless teammate
-    assignment_ids = AssignmentTenure.where(teammate: teammate).joins(:assignment).where(assignments: { company: company }).distinct.pluck(:assignment_id)
-    assignments = Assignment.where(id: assignment_ids, company: company).includes(:assignment_tenures)
-    
-    assignments.map do |assignment|
-      current_tenure = AssignmentTenure.where(teammate: teammate, assignment: assignment).active.first
-      current_check_in = AssignmentCheckIn.where(teammate: teammate, assignment: assignment).open.first
-      
-      # Extract form parameters for this assignment
-      assignment_id = assignment.id
-      
-      # Build tenure data with form changes
-      tenure_data = build_tenure_data_with_changes(current_tenure, form_params, assignment_id)
-      
-      # Build check-in data with form changes
-      employee_check_in_data = build_employee_check_in_data_with_changes(current_check_in, form_params, assignment_id)
-      manager_check_in_data = build_manager_check_in_data_with_changes(current_check_in, form_params, assignment_id)
-      official_check_in_data = build_official_check_in_data_with_changes(current_check_in, form_params, assignment_id)
-      
-      {
-        id: assignment_id,
-        tenure: tenure_data,
-        employee_check_in: employee_check_in_data,
-        manager_check_in: manager_check_in_data,
-        official_check_in: official_check_in_data
-      }
-    end
-  end
-  
-  def self.build_milestones_data(employee, company)
+  def self.build_abilities_data(employee, company)
     teammate = employee.teammates.find_by(organization: company)
     return [] unless teammate
     TeammateMilestone.where(teammate: teammate).joins(:ability).where(abilities: { organization: company }).includes(:ability).map do |milestone|
       {
         ability_id: milestone.ability_id,
         milestone_level: milestone.milestone_level,
-        teammate_id: milestone.teammate_id,
         certified_by_id: milestone.certified_by_id,
         attained_at: milestone.attained_at
       }
@@ -235,154 +173,20 @@ class MaapSnapshot < ApplicationRecord
   end
   
   def self.build_aspirations_data(employee, company)
-    # Aspirations belong to the organization, not the person
-    company.aspirations.map do |aspiration|
-      {
-        id: aspiration.id,
-        name: aspiration.name,
-        description: aspiration.description,
-        organization_id: aspiration.organization_id,
-        sort_order: aspiration.sort_order,
-        created_at: aspiration.created_at
-      }
-    end
-  end
-  
-  # Helper methods for processing form changes
-  def self.build_tenure_data_with_changes(current_tenure, form_params, assignment_id)
-    # Get form value for anticipated energy percentage
-    form_energy = form_params["tenure_#{assignment_id}_anticipated_energy"]
+    teammate = employee.teammates.find_by(organization: company)
+    return [] unless teammate
     
-    if form_energy.present?
-      # Use form value
-      {
-        anticipated_energy_percentage: form_energy.to_i,
-        started_at: current_tenure&.started_at || Date.current
-      }
-    elsif current_tenure
-      # Use current value
-      {
-        anticipated_energy_percentage: current_tenure.anticipated_energy_percentage,
-        started_at: current_tenure.started_at
-      }
-    else
-      # No current tenure and no form value
-      {
-        anticipated_energy_percentage: 0,
-        started_at: Date.current
-      }
-    end
-  end
-  
-  def self.build_employee_check_in_data_with_changes(current_check_in, form_params, assignment_id)
-    # Check if there are any employee check-in form parameters
-    actual_energy = form_params["check_in_#{assignment_id}_actual_energy"]
-    employee_rating = form_params["check_in_#{assignment_id}_employee_rating"]
-    employee_private_notes = form_params["check_in_#{assignment_id}_employee_private_notes"]
-    employee_personal_alignment = form_params["check_in_#{assignment_id}_personal_alignment"]
-    employee_complete = form_params["check_in_#{assignment_id}_employee_complete"] == "1"
+    # Get all aspirations for the company
+    aspirations = company.aspirations
     
-    # Only include if there are form changes or current data
-    if actual_energy.present? || employee_rating.present? || employee_private_notes.present? || 
-       employee_personal_alignment.present? || employee_complete || current_check_in
+    aspirations.map do |aspiration|
+      # Get the last finalized aspiration_check_in for this teammate and aspiration
+      finalized_check_in = AspirationCheckIn.latest_finalized_for(teammate, aspiration)
       
       {
-        actual_energy_percentage: actual_energy.present? ? actual_energy.to_i : current_check_in&.actual_energy_percentage,
-        employee_rating: employee_rating.present? ? employee_rating : current_check_in&.employee_rating,
-        employee_completed_at: employee_complete ? Time.current : current_check_in&.employee_completed_at,
-        employee_private_notes: employee_private_notes.present? ? employee_private_notes : current_check_in&.employee_private_notes,
-        employee_personal_alignment: employee_personal_alignment.present? ? employee_personal_alignment : current_check_in&.employee_personal_alignment
+        aspiration_id: aspiration.id,
+        official_rating: finalized_check_in&.official_rating
       }
-    else
-      nil
-    end
-  end
-  
-  def self.build_manager_check_in_data_with_changes(current_check_in, form_params, assignment_id)
-    # Check if there are any manager check-in form parameters
-    manager_rating = form_params["check_in_#{assignment_id}_manager_rating"]
-    manager_private_notes = form_params["check_in_#{assignment_id}_manager_private_notes"]
-    manager_complete_param = form_params["check_in_#{assignment_id}_manager_complete"]
-    
-    # Handle manager_complete parameter - convert string values to boolean
-    manager_complete = case manager_complete_param
-    when "true", "1", true, 1
-      true
-    when "false", "0", false, 0
-      false
-    else
-      nil
-    end
-    
-    # Check if there are explicit manager_complete changes
-    has_explicit_manager_complete = manager_complete_param.present?
-    
-    # Only include if there are form changes or current data
-    if manager_rating.present? || manager_private_notes.present? || has_explicit_manager_complete || current_check_in
-      
-      {
-        manager_rating: manager_rating.present? ? manager_rating : current_check_in&.manager_rating,
-        manager_completed_at: manager_complete ? Time.current : (manager_complete == false ? nil : current_check_in&.manager_completed_at),
-        manager_private_notes: manager_private_notes.present? ? manager_private_notes : current_check_in&.manager_private_notes,
-        manager_completed_by_id: manager_complete ? form_params[:created_by_id] : (manager_complete == false ? nil : current_check_in&.manager_completed_by_id)
-      }
-    else
-      nil
-    end
-  end
-  
-  def self.build_official_check_in_data_with_changes(current_check_in, form_params, assignment_id)
-    # Check if there are any official check-in form parameters
-    # Handle both bulk finalization format (check_in_#{check_in_id}_*) and regular format (check_in_#{assignment_id}_*)
-    check_in_id = current_check_in&.id
-    
-    # Check individual form params first (these should take precedence)
-    individual_official_rating = form_params["check_in_#{assignment_id}_final_rating"] || form_params["check_in_#{assignment_id}_official_rating"]
-    individual_shared_notes = form_params["check_in_#{assignment_id}_shared_notes"]
-    individual_official_complete = form_params["check_in_#{assignment_id}_close_rating"] == "true" || form_params["check_in_#{assignment_id}_official_complete"] == "1"
-    
-    # If individual form params are present, use them
-    if individual_official_rating.present? || individual_shared_notes.present? || individual_official_complete
-      official_rating = individual_official_rating
-      shared_notes = individual_shared_notes
-      official_complete = individual_official_complete
-    elsif form_params["check_in_data"].present?
-      # Fall back to check_in_data format if no individual params
-      check_in_data = form_params["check_in_data"][assignment_id.to_s]
-      if check_in_data.present?
-        official_rating = check_in_data["final_rating"]
-        shared_notes = check_in_data["shared_notes"]
-        official_complete = check_in_data["close_rating"] == true || check_in_data["close_rating"] == "true"
-      else
-        # No form data for this assignment - use current check_in data
-        official_rating = nil
-        shared_notes = nil
-        official_complete = false
-      end
-    elsif check_in_id.present? && form_params["check_in_#{check_in_id}_final_rating"].present?
-      # Use check_in_id format only if this specific check_in_id has form params
-      # This prevents using another assignment's check_in_id data
-      official_rating = form_params["check_in_#{check_in_id}_final_rating"] || form_params["check_in_#{check_in_id}_official_rating"]
-      shared_notes = form_params["check_in_#{check_in_id}_shared_notes"]
-      official_complete = form_params["check_in_#{check_in_id}_close_rating"] == "true" || form_params["check_in_#{check_in_id}_official_complete"] == "1"
-    else
-      # No form params for this assignment - use current check_in data
-      official_rating = nil
-      shared_notes = nil
-      official_complete = false
-    end
-    
-    # Only include if there are form changes or current data
-    if official_rating.present? || shared_notes.present? || official_complete || current_check_in
-      
-      {
-        official_rating: official_rating.present? ? official_rating : current_check_in&.official_rating,
-        shared_notes: shared_notes.present? ? shared_notes : current_check_in&.shared_notes,
-        official_check_in_completed_at: official_complete ? Time.current : current_check_in&.official_check_in_completed_at,
-        finalized_by_id: official_complete ? form_params[:created_by_id] : current_check_in&.finalized_by_id
-      }
-    else
-      nil
     end
   end
   
@@ -395,8 +199,8 @@ class MaapSnapshot < ApplicationRecord
     maap_data['assignments'] || []
   end
 
-  def milestone_attainments_data
-    maap_data['milestones'] || []
+  def abilities_data
+    maap_data['abilities'] || []
   end
 
   def aspiration_ratings_data
@@ -404,8 +208,8 @@ class MaapSnapshot < ApplicationRecord
   end
 
   # Convenience method for counts
-  def milestone_count
-    milestone_attainments_data.count
+  def ability_count
+    abilities_data.count
   end
 
 end

@@ -3,8 +3,9 @@
   -# - show_checkbox: boolean, whether to show checkbox column (for pending acknowledgements)
   -# - person: Person instance
   -# - organization: Organization instance
-- changes = format_snapshot_changes(snapshot, person, organization)
-- has_changes = changes.present? && (changes[:employment].present? || changes[:assignments].present? || changes[:milestones].present?)
+  -# - previous_snapshot: MaapSnapshot instance (the chronologically previous snapshot, or nil if first)
+- changes = format_snapshot_changes(snapshot, person, organization, previous_snapshot: previous_snapshot)
+- has_changes = changes.present? && (changes[:employment].present? || changes[:assignments].present? || changes[:milestones].present? || changes[:aspirations].present?)
 - show_acknowledgement = current_person == person
 - # Calculate total columns: checkbox (if shown) + date + type + created_by + reason + status (if not checkbox) + acknowledgement (if shown) + details
 - total_cols = (show_checkbox ? 1 : 0) + 4 + (show_checkbox ? 0 : 1) + (show_acknowledgement ? 1 : 0) + 1
@@ -120,6 +121,27 @@
                           %th Proposed
                       %tbody
                         - milestone[:changes].each do |change|
+                          %tr
+                            %td= change[:label]
+                            %td= change[:current]
+                            %td= change[:proposed]
+            
+            - if changes[:aspirations].present?
+              .mb-3
+                %h6.text-muted.mb-2
+                  %i.bi.bi-star.me-2
+                  Aspiration Changes
+                - changes[:aspirations].each do |aspiration|
+                  .mb-3
+                    %strong= aspiration[:aspiration_name]
+                    %table.table.table-sm.table-bordered.mt-2
+                      %thead
+                        %tr
+                          %th Field
+                          %th Current
+                          %th Proposed
+                      %tbody
+                        - aspiration[:changes].each do |change|
                           %tr
                             %td= change[:label]
                             %td= change[:current]

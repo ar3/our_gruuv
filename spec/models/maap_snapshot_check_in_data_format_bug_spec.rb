@@ -45,9 +45,9 @@ RSpec.describe 'MaapSnapshot CheckInData Format Bug', type: :model do
            official_rating: 'exceeding')
   end
 
-  describe 'CheckInData format processing bug' do
+  describe 'maap_data reflects DB state, form_params stored separately' do
     context 'when form_params contains check_in_data hash format' do
-      it 'should fail by not processing the check_in_data format correctly' do
+      it 'stores form_params separately and maap_data reflects DB state' do
         # Form params that use the check_in_data hash format (like snapshot 110)
         form_params = {
           "check_in_data" => {
@@ -66,52 +66,40 @@ RSpec.describe 'MaapSnapshot CheckInData Format Bug', type: :model do
           }
         }
 
-        # Create a snapshot using the OLD method
+        # Create a snapshot
         snapshot = MaapSnapshot.build_for_employee_with_changes(
           employee: employee,
           created_by: employee,
           change_type: 'bulk_check_in_finalization',
-          reason: 'Testing check_in_data format processing bug',
+          reason: 'Testing check_in_data format',
           form_params: form_params
         )
 
-        # Find assignments in the processed snapshot
-        emp_growth_data = snapshot.maap_data['assignments'].find { |a| a['id'] == emp_growth_assignment.id }
-        quarterly_data = snapshot.maap_data['assignments'].find { |a| a['id'] == quarterly_assignment.id }
-        lifeline_data = snapshot.maap_data['assignments'].find { |a| a['id'] == lifeline_assignment.id }
+        # Verify form_params are stored separately
+        expect(snapshot.form_params).to eq(form_params)
 
-        # Debug output to see what's happening
-        puts "\n=== CHECK_IN_DATA FORMAT PROCESSING BUG ==="
-        puts "Employee Growth Plan Champion (ID: 80):"
-        puts "  shared_notes: '#{emp_growth_data['official_check_in']['shared_notes']}'"
-        puts "  final_rating: '#{emp_growth_data['official_check_in']['official_rating']}'"
-        
-        puts "Quarterly Conversation Coordinator (ID: 81):"
-        puts "  shared_notes: '#{quarterly_data['official_check_in']['shared_notes']}'"
-        puts "  final_rating: '#{quarterly_data['official_check_in']['official_rating']}'"
-        
-        puts "Lifeline Interview Facilitator (ID: 84):"
-        puts "  shared_notes: '#{lifeline_data['official_check_in']['shared_notes']}'"
-        puts "  final_rating: '#{lifeline_data['official_check_in']['official_rating']}'"
-        puts "==========================================\n"
+        # Find assignments in the snapshot - maap_data should reflect DB state
+        emp_growth_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == emp_growth_assignment.id }
+        quarterly_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == quarterly_assignment.id }
+        lifeline_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == lifeline_assignment.id }
 
-        # Expected behavior: The check_in_data format should be processed correctly
-        # Assignment 80 should get its check_in_data
-        expect(emp_growth_data['official_check_in']['shared_notes']).to eq('Lifeline - work - incomplete')
-        expect(emp_growth_data['official_check_in']['official_rating']).to eq('working_to_meet')
+        # maap_data should contain assignment_tenure data only (from DB)
+        expect(emp_growth_data).to be_present
+        expect(emp_growth_data['anticipated_energy_percentage']).to eq(50) # From DB
+        expect(emp_growth_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
         
-        # Assignment 81 should get its check_in_data
-        expect(quarterly_data['official_check_in']['shared_notes']).to eq('Emp grow - meet - incomplete')
-        expect(quarterly_data['official_check_in']['official_rating']).to eq('meeting')
+        expect(quarterly_data).to be_present
+        expect(quarterly_data['anticipated_energy_percentage']).to eq(30) # From DB
+        expect(quarterly_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
         
-        # Assignment 84 should NOT get check_in_data since it wasn't provided
-        # It should keep its existing check-in data
-        expect(lifeline_data['official_check_in']['shared_notes']).to eq('Existing lifeline notes')
-        expect(lifeline_data['official_check_in']['official_rating']).to eq('exceeding')
+        expect(lifeline_data).to be_present
+        expect(lifeline_data['anticipated_energy_percentage']).to eq(20) # From DB
+        expect(lifeline_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
         
-        # This spec should FAIL because the check_in_data format is not being processed
-        # The bug: The method doesn't know how to handle the check_in_data hash format
-        # It's looking for check_in_#{assignment_id}_* format instead
+        # maap_data should NOT contain check-in data (that's in form_params)
+        expect(emp_growth_data).not_to have_key('official_check_in')
+        expect(quarterly_data).not_to have_key('official_check_in')
+        expect(lifeline_data).not_to have_key('official_check_in')
       end
     end
   end

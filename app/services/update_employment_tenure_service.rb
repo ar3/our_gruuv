@@ -174,17 +174,10 @@ class UpdateEmploymentTenureService
       Date.current
     end
     
-    maap_data = {
-      employment_tenure: {
-        position_id: tenure.position_id,
-        manager_id: tenure.manager_id,
-        started_at: tenure.started_at,
-        seat_id: tenure.seat_id
-      },
-      assignments: [],
-      milestones: [],
-      aspirations: []
-    }
+    maap_data = MaapSnapshot.build_maap_data_for_employee(
+      employee: teammate.person,
+      company: current_tenure.company
+    )
     
     MaapSnapshot.create!(
       employee: teammate.person,

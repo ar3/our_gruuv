@@ -23,9 +23,9 @@ RSpec.describe MaapSnapshot, type: :model do
     create(:assignment_check_in, teammate: employee_teammate, assignment: assignment3)
   end
 
-  describe 'build_official_check_in_data_with_changes' do
+  describe 'maap_data reflects DB state, form_params stored separately' do
     context 'when multiple assignments have different form params' do
-      it 'should not duplicate shared_notes and ratings across assignments' do
+      it 'stores form_params separately and maap_data reflects DB state' do
         # Form params with different values for each assignment
         form_params = {
           "check_in_#{assignment1.id}_shared_notes" => 'emp grow - not set',
@@ -45,48 +45,31 @@ RSpec.describe MaapSnapshot, type: :model do
           form_params: form_params
         )
 
-        # Find assignments in the snapshot
-        assignment1_data = snapshot.maap_data['assignments'].find { |a| a['id'] == assignment1.id }
-        assignment2_data = snapshot.maap_data['assignments'].find { |a| a['id'] == assignment2.id }
-        assignment3_data = snapshot.maap_data['assignments'].find { |a| a['id'] == assignment3.id }
+        # Verify form_params are stored separately
+        expect(snapshot.form_params).to eq(form_params)
 
-        # Debug output to see what's happening
-        puts "Assignment 1 (#{assignment1.title}):"
-        puts "  shared_notes: '#{assignment1_data['official_check_in']['shared_notes']}'"
-        puts "  final_rating: '#{assignment1_data['official_check_in']['official_rating']}'"
-        
-        puts "Assignment 2 (#{assignment2.title}):"
-        puts "  shared_notes: '#{assignment2_data['official_check_in']['shared_notes']}'"
-        puts "  final_rating: '#{assignment2_data['official_check_in']['official_rating']}'"
-        
-        puts "Assignment 3 (#{assignment3.title}):"
-        puts "  shared_notes: '#{assignment3_data['official_check_in']['shared_notes']}'"
-        puts "  final_rating: '#{assignment3_data['official_check_in']['official_rating']}'"
+        # Find assignments in the snapshot - maap_data should reflect DB state
+        assignment1_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == assignment1.id }
+        assignment2_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == assignment2.id }
+        assignment3_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == assignment3.id }
 
-        # These should fail - each assignment should have its own unique values
-        expect(assignment1_data['official_check_in']['shared_notes']).to eq('emp grow - not set')
-        expect(assignment1_data['official_check_in']['official_rating']).to eq('exceeding')
+        # maap_data should contain assignment_tenure data only (from DB)
+        expect(assignment1_data).to be_present
+        expect(assignment1_data['anticipated_energy_percentage']).to eq(50) # From DB
+        expect(assignment1_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
         
-        expect(assignment2_data['official_check_in']['shared_notes']).to eq('quarterly - working')
-        expect(assignment2_data['official_check_in']['official_rating']).to eq('meeting')
+        expect(assignment2_data).to be_present
+        expect(assignment2_data['anticipated_energy_percentage']).to eq(30) # From DB
+        expect(assignment2_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
         
-        expect(assignment3_data['official_check_in']['shared_notes']).to eq('lifeline - needs improvement')
-        expect(assignment3_data['official_check_in']['official_rating']).to eq('below_expectations')
+        expect(assignment3_data).to be_present
+        expect(assignment3_data['anticipated_energy_percentage']).to eq(20) # From DB
+        expect(assignment3_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
         
-        # Verify no duplication - all values should be unique
-        shared_notes_values = [
-          assignment1_data['official_check_in']['shared_notes'],
-          assignment2_data['official_check_in']['shared_notes'],
-          assignment3_data['official_check_in']['shared_notes']
-        ]
-        expect(shared_notes_values.uniq.length).to eq(3), "Shared notes are being duplicated: #{shared_notes_values}"
-        
-        rating_values = [
-          assignment1_data['official_check_in']['official_rating'],
-          assignment2_data['official_check_in']['official_rating'],
-          assignment3_data['official_check_in']['official_rating']
-        ]
-        expect(rating_values.uniq.length).to eq(3), "Ratings are being duplicated: #{rating_values}"
+        # maap_data should NOT contain check-in data (that's in form_params)
+        expect(assignment1_data).not_to have_key('official_check_in')
+        expect(assignment2_data).not_to have_key('official_check_in')
+        expect(assignment3_data).not_to have_key('official_check_in')
       end
     end
   end

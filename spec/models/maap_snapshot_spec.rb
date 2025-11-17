@@ -140,9 +140,9 @@ RSpec.describe MaapSnapshot, type: :model do
     
     describe '.build_for_employee_with_changes' do
       let(:assignment) { create(:assignment, company: company) }
-      let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 20) }
+      let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 20, official_rating: 'meeting') }
       
-      it 'creates a snapshot with form changes' do
+      it 'stores form_params separately and maap_data reflects DB state' do
         form_params = {
           "tenure_#{assignment.id}_anticipated_energy" => '5',
           "check_in_#{assignment.id}_actual_energy" => '10',
@@ -164,50 +164,40 @@ RSpec.describe MaapSnapshot, type: :model do
         expect(snapshot.change_type).to eq('assignment_management')
         expect(snapshot.reason).to eq('Test snapshot with changes')
         
-        # Check that form changes are captured
-        assignment_data = snapshot.maap_data['assignments'].find { |a| a['id'] == assignment.id }
-        expect(assignment_data['tenure']['anticipated_energy_percentage']).to eq(5)
-        expect(assignment_data['employee_check_in']['actual_energy_percentage']).to eq(10)
-        expect(assignment_data['employee_check_in']['employee_rating']).to eq('exceeding')
+        # Verify form_params are stored separately
+        expect(snapshot.form_params).to eq(form_params)
+        
+        # Verify maap_data reflects DB state (not form_params)
+        assignment_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == assignment.id }
+        expect(assignment_data).to be_present
+        expect(assignment_data['anticipated_energy_percentage']).to eq(20) # From DB, not form_params
+        expect(assignment_data['official_rating']).to eq('meeting') # From DB
+        # maap_data should not contain check-in data (only assignment_tenure data)
+        expect(assignment_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
       end
       
-      it 'handles tenure changes from 0% to non-zero' do
-        assignment_tenure.update!(ended_at: Date.current + 1.day)
+      it 'maap_data always reflects current DB state, not proposed changes' do
+        # Create assignment with 20% energy in DB
+        assignment_tenure.update!(anticipated_energy_percentage: 20)
         
         form_params = {
-          "tenure_#{assignment.id}_anticipated_energy" => '15'
+          "tenure_#{assignment.id}_anticipated_energy" => '50' # Proposed change
         }
         
         snapshot = MaapSnapshot.build_for_employee_with_changes(
           employee: employee,
           created_by: created_by,
           change_type: 'assignment_management',
-          reason: 'Starting new tenure',
+          reason: 'Proposed change',
           form_params: form_params
         )
         
-        assignment_data = snapshot.maap_data['assignments'].find { |a| a['id'] == assignment.id }
-        expect(assignment_data['tenure']['anticipated_energy_percentage']).to eq(15)
-        expect(assignment_data['tenure']['started_at']).to eq(Date.current.to_s)
-      end
-      
-      it 'handles check-in completion toggles' do
-        form_params = {
-          "check_in_#{assignment.id}_employee_complete" => '1',
-          "check_in_#{assignment.id}_manager_complete" => '1'
-        }
+        # maap_data should reflect DB state (20%), not form_params (50%)
+        assignment_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == assignment.id }
+        expect(assignment_data['anticipated_energy_percentage']).to eq(20) # DB state
         
-        snapshot = MaapSnapshot.build_for_employee_with_changes(
-          employee: employee,
-          created_by: created_by,
-          change_type: 'assignment_management',
-          reason: 'Completing check-ins',
-          form_params: form_params
-        )
-        
-        assignment_data = snapshot.maap_data['assignments'].find { |a| a['id'] == assignment.id }
-        expect(assignment_data['employee_check_in']['employee_completed_at']).to be_present
-        expect(assignment_data['manager_check_in']['manager_completed_at']).to be_present
+        # form_params should contain proposed change
+        expect(snapshot.form_params["tenure_#{assignment.id}_anticipated_energy"]).to eq('50')
       end
     end
     
@@ -227,7 +217,7 @@ RSpec.describe MaapSnapshot, type: :model do
         expect(snapshot.change_type).to eq('position_tenure')
         expect(snapshot.reason).to eq('Position change')
         expect(snapshot.manager_request_info['ip_address']).to eq('127.0.0.1')
-        expect(snapshot.maap_data['employment_tenure']).to be_present
+        expect(snapshot.maap_data['position']).to be_present
       end
     end
   end

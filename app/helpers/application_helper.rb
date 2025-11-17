@@ -91,6 +91,7 @@ module ApplicationHelper
 
   def format_time_in_user_timezone(time, user = nil)
     user ||= current_person if respond_to?(:current_person)
+    user.person ||= current_person if user.is_a?(Teammate)
     return time.in_time_zone('Eastern Time (US & Canada)').strftime('%B %d, %Y at %I:%M %p %Z') unless user&.timezone.present?
     
     time.in_time_zone(user.timezone).strftime('%B %d, %Y at %I:%M %p %Z')

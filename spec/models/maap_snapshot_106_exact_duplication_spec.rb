@@ -20,10 +20,10 @@ RSpec.describe MaapSnapshot, type: :model do
     create(:assignment_check_in, teammate: employee_teammate, assignment: assignment2)
   end
 
-  describe 'build_official_check_in_data_with_changes' do
-    context 'when form params match snapshot 106 exactly' do
-      it 'should not duplicate shared_notes and ratings across assignments' do
-        # Form params that match snapshot 106 scenario exactly
+  describe 'maap_data reflects DB state, form_params stored separately' do
+    context 'when form params contain proposed changes' do
+      it 'stores form_params separately and maap_data reflects DB state' do
+        # Form params with proposed changes
         form_params = {
           "check_in_80_shared_notes" => 'Lifeline - working',
           "check_in_80_final_rating" => 'working_to_meet',
@@ -40,30 +40,25 @@ RSpec.describe MaapSnapshot, type: :model do
           form_params: form_params
         )
 
-        # Find assignments in the snapshot
-        assignment1_data = snapshot.maap_data['assignments'].find { |a| a['id'] == assignment1.id }
-        assignment2_data = snapshot.maap_data['assignments'].find { |a| a['id'] == assignment2.id }
+        # Verify form_params are stored separately
+        expect(snapshot.form_params).to eq(form_params)
 
-        # Debug output to see what's happening
-        puts "Assignment 1 (ID: #{assignment1.id}, Title: #{assignment1.title}):"
-        puts "  shared_notes: '#{assignment1_data['official_check_in']['shared_notes']}'"
-        puts "  final_rating: '#{assignment1_data['official_check_in']['official_rating']}'"
-        
-        puts "Assignment 2 (ID: #{assignment2.id}, Title: #{assignment2.title}):"
-        puts "  shared_notes: '#{assignment2_data['official_check_in']['shared_notes']}'"
-        puts "  final_rating: '#{assignment2_data['official_check_in']['official_rating']}'"
+        # Find assignments in the snapshot - maap_data should reflect DB state
+        assignment1_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == assignment1.id }
+        assignment2_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == assignment2.id }
 
-        # These should fail - reproducing the exact duplication from snapshot 106
-        # Assignment 1 should have 'Lifeline - working' but gets 'emp grow - not set'
-        # Assignment 2 should have 'emp grow - not set' but gets 'emp grow - not set' (duplicated)
-        expect(assignment1_data['official_check_in']['shared_notes']).to eq('Lifeline - working')
-        expect(assignment1_data['official_check_in']['official_rating']).to eq('working_to_meet')
+        # maap_data should contain assignment_tenure data only (from DB)
+        expect(assignment1_data).to be_present
+        expect(assignment1_data['anticipated_energy_percentage']).to eq(50) # From DB
+        expect(assignment1_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
         
-        expect(assignment2_data['official_check_in']['shared_notes']).to eq('emp grow - not set')
-        expect(assignment2_data['official_check_in']['official_rating']).to eq('working_to_meet')
+        expect(assignment2_data).to be_present
+        expect(assignment2_data['anticipated_energy_percentage']).to eq(30) # From DB
+        expect(assignment2_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
         
-        # Verify no duplication - values should be different
-        expect(assignment1_data['official_check_in']['shared_notes']).not_to eq(assignment2_data['official_check_in']['shared_notes'])
+        # maap_data should NOT contain check-in data (that's in form_params)
+        expect(assignment1_data).not_to have_key('official_check_in')
+        expect(assignment2_data).not_to have_key('official_check_in')
       end
     end
   end

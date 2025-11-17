@@ -18,32 +18,55 @@ RSpec.describe EmployeesHelper, type: :helper do
       let(:position_level2) { create(:position_level, position_major_level: position_major_level, level: '1.2') }
       let(:position1) { create(:position, position_type: position_type1, position_level: position_level1) }
       let(:position2) { create(:position, position_type: position_type2, position_level: position_level2) }
-      let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, position: position1, started_at: 1.year.ago) }
+      let(:previous_snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'position_tenure',
+          created_at: 2.days.ago,
+          maap_data: {
+            'position' => {
+              'position_id' => position1.id,
+              'manager_id' => manager.id,
+              'seat_id' => nil,
+              'employment_type' => 'full_time',
+              'official_position_rating' => nil
+            },
+            'assignments' => [],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+      end
       let(:snapshot) do
         create(:maap_snapshot,
           employee: person,
           created_by: manager,
           company: organization,
           change_type: 'position_tenure',
+          created_at: 1.day.ago,
           maap_data: {
-            'employment_tenure' => {
+            'position' => {
               'position_id' => position2.id,
               'manager_id' => manager.id,
-              'started_at' => 6.months.ago.to_s,
-              'seat_id' => nil
+              'seat_id' => nil,
+              'employment_type' => 'full_time',
+              'official_position_rating' => nil
             },
             'assignments' => [],
-            'milestones' => []
+            'abilities' => [],
+            'aspirations' => []
           }
         )
       end
       
       before do
-        employment_tenure
+        previous_snapshot
       end
       
       it 'formats employment changes correctly' do
-        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate)
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: previous_snapshot)
         
         expect(changes).to be_present
         expect(changes[:employment]).to be_present
@@ -60,44 +83,55 @@ RSpec.describe EmployeesHelper, type: :helper do
     
     context 'with assignment changes' do
       let(:assignment) { create(:assignment, company: organization) }
-      let(:assignment_tenure) { create(:assignment_tenure, teammate: teammate, assignment: assignment, anticipated_energy_percentage: 20, started_at: 1.year.ago) }
+      let(:previous_snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'assignment_management',
+          created_at: 2.days.ago,
+          maap_data: {
+            'position' => nil,
+            'assignments' => [
+              {
+                'assignment_id' => assignment.id,
+                'anticipated_energy_percentage' => 20,
+                'official_rating' => nil
+              }
+            ],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+      end
       let(:snapshot) do
         create(:maap_snapshot,
           employee: person,
           created_by: manager,
           company: organization,
           change_type: 'assignment_management',
+          created_at: 1.day.ago,
           maap_data: {
-            'employment_tenure' => nil,
+            'position' => nil,
             'assignments' => [
               {
-                'id' => assignment.id,
-                'tenure' => {
-                  'anticipated_energy_percentage' => 50,
-                  'started_at' => 6.months.ago.to_s
-                },
-                'employee_check_in' => {
-                  'actual_energy_percentage' => 30,
-                  'employee_rating' => 'meeting',
-                  'employee_completed_at' => Time.current,
-                  'employee_private_notes' => 'Test notes',
-                  'employee_personal_alignment' => 'love'
-                },
-                'manager_check_in' => nil,
-                'official_check_in' => nil
+                'assignment_id' => assignment.id,
+                'anticipated_energy_percentage' => 50,
+                'official_rating' => nil
               }
             ],
-            'milestones' => []
+            'abilities' => [],
+            'aspirations' => []
           }
         )
       end
       
       before do
-        assignment_tenure
+        previous_snapshot
       end
       
       it 'formats assignment changes correctly' do
-        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate)
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: previous_snapshot)
         
         expect(changes).to be_present
         expect(changes[:assignments]).to be_present
@@ -116,35 +150,57 @@ RSpec.describe EmployeesHelper, type: :helper do
     
     context 'with milestone changes' do
       let(:ability) { create(:ability, organization: organization) }
-      let(:milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, attained_at: 1.year.ago) }
+      let(:previous_snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'milestone_management',
+          created_at: 2.days.ago,
+          maap_data: {
+            'employment_tenure' => nil,
+            'assignments' => [],
+            'abilities' => [
+              {
+                'ability_id' => ability.id,
+                'milestone_level' => 1,
+                'certified_by_id' => nil,
+                'attained_at' => 1.year.ago.to_s
+              }
+            ],
+            'aspirations' => []
+          }
+        )
+      end
       let(:snapshot) do
         create(:maap_snapshot,
           employee: person,
           created_by: manager,
           company: organization,
           change_type: 'milestone_management',
+          created_at: 1.day.ago,
           maap_data: {
-            'employment_tenure' => nil,
+            'position' => nil,
             'assignments' => [],
-            'milestones' => [
+            'abilities' => [
               {
                 'ability_id' => ability.id,
                 'milestone_level' => 2,
                 'certified_by_id' => manager.id,
-                'attained_at' => 6.months.ago.to_s,
-                'teammate_id' => teammate.id
+                'attained_at' => 6.months.ago.to_s
               }
-            ]
+            ],
+            'aspirations' => []
           }
         )
       end
       
       before do
-        milestone
+        previous_snapshot
       end
       
       it 'formats milestone changes correctly' do
-        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate)
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: previous_snapshot)
         
         expect(changes).to be_present
         expect(changes[:milestones]).to be_present
@@ -162,22 +218,43 @@ RSpec.describe EmployeesHelper, type: :helper do
     end
     
     context 'with no changes' do
+      let(:previous_snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'exploration',
+          created_at: 2.days.ago,
+          maap_data: {
+            'position' => nil,
+            'assignments' => [],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+      end
       let(:snapshot) do
         create(:maap_snapshot,
           employee: person,
           created_by: manager,
           company: organization,
           change_type: 'exploration',
+          created_at: 1.day.ago,
           maap_data: {
-            'employment_tenure' => nil,
+            'position' => nil,
             'assignments' => [],
-            'milestones' => []
+            'abilities' => [],
+            'aspirations' => []
           }
         )
       end
       
+      before do
+        previous_snapshot
+      end
+      
       it 'returns empty hash when there are no changes' do
-        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate)
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: previous_snapshot)
         
         expect(changes).to be_a(Hash)
         expect(changes[:employment]).to be_nil
@@ -203,11 +280,409 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
       
       it 'returns empty hash when maap_data is empty' do
-        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate)
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: nil)
         expect(changes).to be_a(Hash)
         expect(changes[:employment]).to be_nil
         expect(changes[:assignments]).to be_nil
         expect(changes[:milestones]).to be_nil
+      end
+    end
+
+    context 'auto-finding previous snapshot' do
+      let(:assignment) { create(:assignment, company: organization) }
+      let(:previous_snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'assignment_management',
+          created_at: 2.days.ago,
+          maap_data: {
+            'assignments' => [
+              {
+                'assignment_id' => assignment.id,
+                'anticipated_energy_percentage' => 20,
+                'official_rating' => nil
+              }
+            ],
+            'position' => nil,
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+      end
+      let(:snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'assignment_management',
+          created_at: 1.day.ago,
+          maap_data: {
+            'assignments' => [
+              {
+                'assignment_id' => assignment.id,
+                'anticipated_energy_percentage' => 50,
+                'official_rating' => nil
+              }
+            ],
+            'position' => nil,
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+      end
+
+      before do
+        previous_snapshot
+      end
+
+      it 'automatically finds previous snapshot when not provided' do
+        # Don't pass previous_snapshot - should auto-find it
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate)
+        
+        expect(changes).to be_present
+        expect(changes[:assignments]).to be_present
+        expect(changes[:assignments].length).to eq(1)
+        
+        assignment_change = changes[:assignments].first
+        energy_change = assignment_change[:changes].find { |c| c[:label] == 'Anticipated Energy' }
+        expect(energy_change).to be_present
+        expect(energy_change[:current]).to eq('20%')
+        expect(energy_change[:proposed]).to eq('50%')
+      end
+
+      it 'uses explicitly provided previous_snapshot when given' do
+        # Create a different snapshot that would be found if we didn't pass one
+        other_snapshot = create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'assignment_management',
+          created_at: 1.5.days.ago,  # Between previous_snapshot and snapshot
+          maap_data: {
+            'assignments' => [
+              {
+                'assignment_id' => assignment.id,
+                'anticipated_energy_percentage' => 30,
+                'official_rating' => nil
+              }
+            ],
+            'position' => nil,
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+        
+        # Explicitly pass previous_snapshot - should use it, not other_snapshot
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: previous_snapshot)
+        
+        assignment_change = changes[:assignments].first
+        energy_change = assignment_change[:changes].find { |c| c[:label] == 'Anticipated Energy' }
+        # Should compare against previous_snapshot (20%), not other_snapshot (30%)
+        expect(energy_change[:current]).to eq('20%')
+        expect(energy_change[:proposed]).to eq('50%')
+      end
+
+      it 'shows new changes for first snapshot when no previous exists' do
+        # Ensure assignment exists (force lazy loading)
+        assignment_record = assignment
+        expect(assignment_record).to be_persisted
+        expect(Assignment.exists?(assignment_record.id)).to be true
+        
+        # Delete previous_snapshot first so first_snapshot has no previous
+        previous_snapshot.destroy
+        
+        # Verify assignment still exists after destroying previous_snapshot
+        expect(Assignment.exists?(assignment_record.id)).to be true
+        
+        # Create a snapshot with no previous snapshots
+        first_snapshot = create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'assignment_management',
+          created_at: 5.days.ago,  # Before previous_snapshot
+          maap_data: {
+            'assignments' => [
+              {
+                'assignment_id' => assignment_record.id,
+                'anticipated_energy_percentage' => 10,
+                'official_rating' => nil
+              }
+            ],
+            'position' => nil,
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+        
+        # Verify the assignment ID is in the snapshot's maap_data
+        expect(first_snapshot.maap_data['assignments'].first['assignment_id']).to eq(assignment_record.id)
+        
+        changes = helper.format_snapshot_changes(first_snapshot, person, organization, current_user: current_teammate)
+        
+        # First snapshot should show all changes as "new"
+        expect(changes).to be_present
+        expect(changes[:assignments]).to be_present
+        expect(changes[:assignments]).not_to be_empty
+        assignment_change = changes[:assignments].first
+        # Should have a change showing new assignment
+        expect(assignment_change[:changes].length).to be > 0
+        # Check for new_assignment in the formatted changes (uses label, not field)
+        new_assignment_change = assignment_change[:changes].find { |c| c[:label] == 'New Assignment' }
+        expect(new_assignment_change).to be_present
+        expect(new_assignment_change[:current]).to eq('None')
+        expect(new_assignment_change[:proposed]).to eq('10% energy')
+      end
+    end
+    
+    context 'with aspiration changes' do
+      let(:aspiration) { create(:aspiration, organization: organization, name: 'Be Kind') }
+      let(:previous_snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'aspiration_management',
+          created_at: 2.days.ago,
+          maap_data: {
+            'position' => nil,
+            'assignments' => [],
+            'abilities' => [],
+            'aspirations' => [
+              {
+                'aspiration_id' => aspiration.id,
+                'official_rating' => nil
+              }
+            ]
+          }
+        )
+      end
+      let(:snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'aspiration_management',
+          created_at: 1.day.ago,
+          maap_data: {
+            'position' => nil,
+            'assignments' => [],
+            'abilities' => [],
+            'aspirations' => [
+              {
+                'aspiration_id' => aspiration.id,
+                'official_rating' => 'meeting'
+              }
+            ]
+          }
+        )
+      end
+      
+      before do
+        previous_snapshot
+      end
+      
+      it 'formats aspiration changes correctly' do
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: previous_snapshot)
+        
+        expect(changes).to be_present
+        expect(changes[:aspirations]).to be_present
+        expect(changes[:aspirations].length).to eq(1)
+        
+        aspiration_change = changes[:aspirations].first
+        expect(aspiration_change[:aspiration_name]).to eq(aspiration.name)
+        expect(aspiration_change[:changes].length).to be > 0
+        
+        rating_change = aspiration_change[:changes].find { |c| c[:label] == 'Official Rating' }
+        expect(rating_change).to be_present
+        expect(rating_change[:current]).to eq('Not set')
+        expect(rating_change[:proposed]).to eq('Meeting')
+      end
+    end
+    
+    context 'with position changes when current is "none"' do
+      let(:position_major_level) { create(:position_major_level) }
+      let(:position_type1) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
+      let(:position_level1) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
+      let(:position1) { create(:position, position_type: position_type1, position_level: position_level1) }
+      let(:snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'position_tenure',
+          created_at: 1.day.ago,
+          maap_data: {
+            'position' => {
+              'position_id' => position1.id,
+              'manager_id' => manager.id,
+              'seat_id' => nil,
+              'employment_type' => 'full_time',
+              'official_position_rating' => nil
+            },
+            'assignments' => [],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+      end
+      
+      it 'handles position changes when current is "none"' do
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: nil)
+        
+        expect(changes).to be_present
+        expect(changes[:employment]).to be_present
+        expect(changes[:employment].length).to be > 0
+        
+        position_change = changes[:employment].find { |c| c[:label] == 'Position' }
+        expect(position_change).to be_present
+        expect(position_change[:current]).to eq('None')
+        expect(position_change[:proposed]).to eq('New Position')
+      end
+    end
+    
+    context 'with employment_type and official_position_rating changes' do
+      let(:position_major_level) { create(:position_major_level) }
+      let(:position_type1) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'Engineer 1') }
+      let(:position_level1) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
+      let(:position1) { create(:position, position_type: position_type1, position_level: position_level1) }
+      let(:previous_snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'position_tenure',
+          created_at: 2.days.ago,
+          maap_data: {
+            'position' => {
+              'position_id' => position1.id,
+              'manager_id' => manager.id,
+              'seat_id' => nil,
+              'employment_type' => 'part_time',
+              'official_position_rating' => 2
+            },
+            'assignments' => [],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+      end
+      let(:snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'position_tenure',
+          created_at: 1.day.ago,
+          maap_data: {
+            'position' => {
+              'position_id' => position1.id,
+              'manager_id' => manager.id,
+              'seat_id' => nil,
+              'employment_type' => 'full_time',
+              'official_position_rating' => 3
+            },
+            'assignments' => [],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+      end
+      
+      before do
+        previous_snapshot
+      end
+      
+      it 'formats employment_type changes correctly' do
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: previous_snapshot)
+        
+        expect(changes).to be_present
+        expect(changes[:employment]).to be_present
+        
+        employment_type_change = changes[:employment].find { |c| c[:label] == 'Employment Type' }
+        expect(employment_type_change).to be_present
+        expect(employment_type_change[:current]).to eq('Part time')
+        expect(employment_type_change[:proposed]).to eq('Full time')
+      end
+      
+      it 'formats official_position_rating changes correctly' do
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: previous_snapshot)
+        
+        expect(changes).to be_present
+        expect(changes[:employment]).to be_present
+        
+        rating_change = changes[:employment].find { |c| c[:label] == 'Official Position Rating' }
+        expect(rating_change).to be_present
+        expect(rating_change[:current]).to eq('2')
+        expect(rating_change[:proposed]).to eq('3')
+      end
+    end
+    
+    context 'with assignment rating changes' do
+      let(:assignment) { create(:assignment, company: organization) }
+      let(:previous_snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'assignment_management',
+          created_at: 2.days.ago,
+          maap_data: {
+            'position' => nil,
+            'assignments' => [
+              {
+                'assignment_id' => assignment.id,
+                'anticipated_energy_percentage' => 50,
+                'official_rating' => 'meeting'
+              }
+            ],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+      end
+      let(:snapshot) do
+        create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'assignment_management',
+          created_at: 1.day.ago,
+          maap_data: {
+            'position' => nil,
+            'assignments' => [
+              {
+                'assignment_id' => assignment.id,
+                'anticipated_energy_percentage' => 50,
+                'official_rating' => 'exceeding'
+              }
+            ],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+      end
+      
+      before do
+        previous_snapshot
+      end
+      
+      it 'formats assignment rating changes correctly' do
+        changes = helper.format_snapshot_changes(snapshot, person, organization, current_user: current_teammate, previous_snapshot: previous_snapshot)
+        
+        expect(changes).to be_present
+        expect(changes[:assignments]).to be_present
+        expect(changes[:assignments].length).to eq(1)
+        
+        assignment_change = changes[:assignments].first
+        expect(assignment_change[:assignment_name]).to eq(assignment.title)
+        
+        rating_change = assignment_change[:changes].find { |c| c[:label] == 'Official Rating' }
+        expect(rating_change).to be_present
+        expect(rating_change[:current]).to eq('Meeting')
+        expect(rating_change[:proposed]).to eq('Exceeding')
       end
     end
   end
