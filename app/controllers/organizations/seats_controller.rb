@@ -20,6 +20,16 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     end
     
     @spotlight_stats = calculate_spotlight_stats
+    
+    # Create debug data if debug parameter is present
+    if params[:debug] == 'true'
+      debug_service = Debug::SeatsDebugService.new(
+        pundit_user: pundit_user,
+        organization: organization
+      )
+      @debug_data = debug_service.call
+    end
+    
     render layout: 'authenticated-v2-0'
   end
 

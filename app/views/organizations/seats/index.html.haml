@@ -15,6 +15,125 @@
     %i.bi.bi-funnel.me-2
     Filter & Sort
 
+-# Authorization Debug Section
+- if params[:debug] == 'true' && @debug_data
+  .alert.alert-secondary.mt-3
+    %h5.mb-3
+      %i.bi.bi-bug.me-2
+      Authorization Debug
+    .row
+      .col-md-6
+        %strong Logged-in Teammate:
+        %br
+        - if current_company_teammate
+          - teammate = current_company_teammate
+          ID: #{teammate.id}
+          %br
+          Person: #{teammate.person.display_name} (ID: #{teammate.person.id})
+          %br
+          Organization: #{teammate.organization.name} (ID: #{teammate.organization.id})
+          %br
+          - if teammate.person.og_admin?
+            %span.badge.bg-danger Admin
+        - else
+          %span.text-muted Not logged in
+      .col-md-6
+        %strong Policy Information:
+        %br
+        Policy Class: #{@debug_data[:policy_class]}
+        %br
+        Policy Record: #{@debug_data[:policy_record].class.name} (new instance)
+        %br
+        Policy Action: #{@debug_data[:policy_action]}
+    %hr
+    %strong Policy Conditions Breakdown (create? method):
+    %br
+    %small.text-muted Each condition is checked in order. The first true condition grants access.
+    .mt-2
+      - conditions = @debug_data[:conditions]
+      -# Condition 1: admin_bypass?
+      - admin_bypass = conditions[:admin_bypass]
+      .mb-2
+        - if admin_bypass[:result]
+          %span.text-success
+            %i.bi.bi-check-circle-fill.me-1
+        - else
+          %span.text-muted
+            %i.bi.bi-circle.me-1
+        %code= admin_bypass[:description]
+        - if admin_bypass[:result]
+          %span.text-success (PASS - Admin bypass granted)
+        - else
+          %span.text-muted (FAIL - #{admin_bypass[:details]})
+      -# Condition 2: viewing_teammate present
+      - viewing_teammate_present = conditions[:viewing_teammate_present]
+      .mb-2
+        - if viewing_teammate_present[:result]
+          %span.text-success
+            %i.bi.bi-check-circle-fill.me-1
+        - else
+          %span.text-danger
+            %i.bi.bi-x-circle-fill.me-1
+        %code= viewing_teammate_present[:description]
+        - if viewing_teammate_present[:result]
+          %span.text-success (PASS - #{viewing_teammate_present[:details]})
+        - else
+          %span.text-danger (FAIL - #{viewing_teammate_present[:details]})
+      -# Condition 3: actual_organization present
+      - actual_org_present = conditions[:actual_organization_present]
+      .mb-2
+        - if actual_org_present[:result]
+          %span.text-success
+            %i.bi.bi-check-circle-fill.me-1
+        - else
+          %span.text-danger
+            %i.bi.bi-x-circle-fill.me-1
+        %code= actual_org_present[:description]
+        - if actual_org_present[:result]
+          %span.text-success (PASS - #{actual_org_present[:details]})
+        - else
+          %span.text-danger (FAIL - #{actual_org_present[:details]})
+      -# Condition 4: organization matches route
+      - org_matches = conditions[:organization_matches]
+      .mb-2
+        - if org_matches[:result]
+          %span.text-success
+            %i.bi.bi-check-circle-fill.me-1
+        - else
+          %span.text-warning
+            %i.bi.bi-exclamation-triangle-fill.me-1
+        %code= org_matches[:description]
+        - if org_matches[:result]
+          %span.text-success (PASS - #{org_matches[:details]})
+        - else
+          %span.text-warning (WARNING - #{org_matches[:details]})
+      -# Condition 5: can_manage_maap
+      - can_manage_maap = conditions[:can_manage_maap]
+      - if can_manage_maap[:result] != nil
+        .mb-2
+          - if can_manage_maap[:result]
+            %span.text-success
+              %i.bi.bi-check-circle-fill.me-1
+          - else
+            %span.text-muted
+              %i.bi.bi-circle.me-1
+          %code= can_manage_maap[:description]
+          - if can_manage_maap[:result]
+            %span.text-success (PASS - #{can_manage_maap[:details]})
+          - else
+            %span.text-muted (FAIL - #{can_manage_maap[:details]})
+    %hr
+    %strong Final Result:
+    - final_result = @debug_data[:final_result]
+    - if final_result
+      %span.badge.bg-success.fs-6
+        %i.bi.bi-check-circle-fill.me-1
+        #{@debug_data[:policy_action]} = TRUE (Access Granted)
+    - else
+      %span.badge.bg-danger.fs-6
+        %i.bi.bi-x-circle-fill.me-1
+        #{@debug_data[:policy_action]} = FALSE (Access Denied)
+
 / Spotlight Section - Employee Seats
 .row.justify-content-center.mb-4
   .col-lg-12
