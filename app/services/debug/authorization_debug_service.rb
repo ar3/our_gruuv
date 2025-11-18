@@ -352,7 +352,51 @@ module Debug
     end
 
     def explain_change_employment_policy(explanations)
-      explain_can_view_manage_mode_policy(explanations) # Same logic
+      # From PersonPolicy#change_employment? - users cannot change their own employment unless they have manage employment permission
+      explanations << "\nChecking change_employment? policy:"
+      
+      # Check if viewing own profile
+      if current_user == subject_person
+        explanations << "Step 1: User is viewing their own profile"
+        explanations << "  ⚠ Viewing own profile is NOT sufficient - need manage employment permission to change own employment"
+      else
+        explanations << "Step 1: User is NOT viewing their own profile"
+      end
+      
+      # Check managerial hierarchy first (applies to others)
+      user_employment_orgs = current_user.employment_tenures.includes(:company).map(&:company)
+      explanations << "\nStep 2: Check managerial hierarchy (allows changing others' employment):"
+      in_hierarchy = false
+      user_employment_orgs.each do |org|
+        is_in_hierarchy = current_user.in_managerial_hierarchy_of?(subject_person, org)
+        if is_in_hierarchy
+          explanations << "  ✓ #{org.name}: User is in managerial hierarchy (ALLOWED)"
+          in_hierarchy = true
+        else
+          explanations << "  ✗ #{org.name}: User is NOT in managerial hierarchy"
+        end
+      end
+      
+      return if in_hierarchy
+      
+      # Check employment management (applies to both own and others)
+      explanations << "\nStep 3: Check employment management permissions (allows changing own or others' employment):"
+      has_employment_anywhere = false
+      user_employment_orgs.each do |org|
+        has_employment = current_user.can_manage_employment?(org)
+        if has_employment
+          explanations << "  ✓ #{org.name}: can_manage_employment=true (ALLOWED)"
+          has_employment_anywhere = true
+        else
+          explanations << "  ✗ #{org.name}: can_manage_employment=false"
+        end
+      end
+      
+      if !has_employment_anywhere && current_user == subject_person
+        explanations << "\n✗ Result: User cannot change their own employment without manage employment permission (DENIED)"
+      elsif !has_employment_anywhere
+        explanations << "\n✗ Result: User does not have manage employment permission and is not in managerial hierarchy (DENIED)"
+      end
     end
 
     def explain_audit_policy(explanations)

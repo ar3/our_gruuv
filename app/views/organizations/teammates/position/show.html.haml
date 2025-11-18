@@ -177,7 +177,7 @@
               %small.text-muted Manager: #{@current_employment.manager.display_name}
           
           / Inline Edit Form
-          - can_manage = current_person&.can_manage_employment?(@organization)
+          - can_manage = policy(@teammate.person).change_employment?
           = form_with model: @form, url: organization_teammate_position_path(@organization, @teammate), local: true, method: :patch do |form|
             - if @form.errors.any?
               .alert.alert-danger.mt-3

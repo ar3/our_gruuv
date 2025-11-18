@@ -416,6 +416,87 @@ RSpec.describe PersonPolicy, type: :policy do
     end
   end
 
+  permissions :change_employment? do
+    before do
+      # Create active employment tenure for person
+      create(:employment_tenure, teammate: person_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+    end
+
+    it "denies regular users from changing their own employment" do
+      expect(subject).not_to permit(pundit_user, person)
+    end
+
+    context "when user has manage employment permission" do
+      let(:manager) { create(:person) }
+      let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization, can_manage_employment: true) }
+      let(:manager_pundit_user) { OpenStruct.new(user: manager_teammate, impersonating_teammate: nil) }
+      
+      before do
+        # Create active employment tenure for manager
+        create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      end
+
+      it "allows users with manage employment permission to change their own employment" do
+        expect(subject).to permit(manager_pundit_user, manager)
+      end
+
+      it "allows users with manage employment permission to change others' employment" do
+        expect(subject).to permit(manager_pundit_user, other_person)
+      end
+    end
+
+    context "when user is in managerial hierarchy" do
+      let(:direct_manager) { create(:person) }
+      let(:direct_manager_teammate) { CompanyTeammate.create!(person: direct_manager, organization: organization) }
+      let(:direct_manager_pundit_user) { OpenStruct.new(user: direct_manager_teammate, impersonating_teammate: nil) }
+      let(:grand_manager) { create(:person) }
+      let(:grand_manager_teammate) { CompanyTeammate.create!(person: grand_manager, organization: organization) }
+      let(:grand_manager_pundit_user) { OpenStruct.new(user: grand_manager_teammate, impersonating_teammate: nil) }
+      
+      before do
+        # Create employment tenures with manager relationships
+        create(:employment_tenure, teammate: direct_manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil, manager: grand_manager)
+        create(:employment_tenure, teammate: grand_manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+        create(:employment_tenure, teammate: other_person_teammate, company: organization, started_at: 1.year.ago, ended_at: nil, manager: direct_manager)
+      end
+
+      it "allows direct managers in hierarchy to change their employees' employment" do
+        expect(subject).to permit(direct_manager_pundit_user, other_person)
+      end
+
+      it "allows indirect managers (grand managers) in hierarchy to change their employees' employment" do
+        expect(subject).to permit(grand_manager_pundit_user, other_person)
+      end
+    end
+
+    it "denies regular users from changing others' employment" do
+      expect(subject).not_to permit(pundit_user, other_person)
+    end
+
+    it "allows admin bypass" do
+      admin_person = create(:person, :admin)
+      admin_teammate = CompanyTeammate.create!(person: admin_person, organization: organization)
+      admin_pundit_user = OpenStruct.new(user: admin_teammate, impersonating_teammate: nil)
+      expect(subject).to permit(admin_pundit_user, person)
+      expect(subject).to permit(admin_pundit_user, other_person)
+    end
+
+    context "when user is terminated" do
+      let(:terminated_person) { create(:person) }
+      let(:terminated_teammate) { CompanyTeammate.create!(person: terminated_person, organization: organization, first_employed_at: 1.year.ago, last_terminated_at: 1.day.ago) }
+      let(:terminated_pundit_user) { OpenStruct.new(user: terminated_teammate, impersonating_teammate: nil) }
+
+      before do
+        create(:employment_tenure, teammate: terminated_teammate, company: organization, started_at: 1.year.ago, ended_at: 1.day.ago)
+      end
+
+      it "denies terminated users from changing employment" do
+        expect(subject).not_to permit(terminated_pundit_user, person)
+        expect(subject).not_to permit(terminated_pundit_user, other_person)
+      end
+    end
+  end
+
   describe "scope" do
     let!(:person1) { create(:person) }
     let!(:person2) { create(:person) }

@@ -194,7 +194,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       end
     end
 
-    context 'when user does not have can_manage_employment permission' do
+    context 'when user is in managerial hierarchy but does not have can_manage_employment flag' do
       # Set flag before parent before block runs
       let!(:override_permission) do
         @can_manage_employment_override = false
@@ -202,30 +202,48 @@ RSpec.describe 'Position Update', type: :system, js: true do
       end
       
       before do
-        # The manager needs to be able to view the page (via managerial hierarchy)
         # manager_employment_tenure_for_permission sets up manager_person as manager of employee_person
-        # This allows view_check_ins? to pass even without can_manage_employment
+        # This puts manager_person in the managerial hierarchy, which grants change_employment? access
         # Reload page to pick up the permission change
         visit current_path
       end
 
-      it 'shows form but with disabled fields' do
+      it 'shows enabled form fields via managerial hierarchy' do
         expect(page).to have_content('Current Position')
-        expect(page).to have_select('employment_tenure_update[manager_id]', disabled: true)
-        expect(page).to have_select('employment_tenure_update[position_id]', disabled: true)
-        expect(page).to have_select('employment_tenure_update[employment_type]', disabled: true)
-        expect(page).to have_select('employment_tenure_update[seat_id]', disabled: true)
-        expect(page).to have_field('employment_tenure_update[termination_date]', disabled: true)
-        expect(page).to have_field('employment_tenure_update[reason]', disabled: true)
+        expect(page).to have_select('employment_tenure_update[manager_id]', disabled: false)
+        expect(page).to have_select('employment_tenure_update[position_id]', disabled: false)
+        expect(page).to have_select('employment_tenure_update[employment_type]', disabled: false)
+        expect(page).to have_select('employment_tenure_update[seat_id]', disabled: false)
+        expect(page).to have_field('employment_tenure_update[termination_date]', disabled: false)
+        expect(page).to have_field('employment_tenure_update[reason]', disabled: false)
+        expect(page).to have_button('Update Position', disabled: false)
+      end
+    end
+
+    context 'when user does not have can_manage_employment permission and is not in managerial hierarchy' do
+      # Create a different manager who is NOT in the hierarchy
+      let(:non_hierarchy_manager_person) { create(:person, first_name: 'NonHierarchy', last_name: 'Manager') }
+      let!(:non_hierarchy_manager_teammate) { CompanyTeammate.create!(person: non_hierarchy_manager_person, organization: company, can_manage_employment: false) }
+      let!(:non_hierarchy_manager_tenure) do
+        EmploymentTenure.create!(
+          teammate: non_hierarchy_manager_teammate,
+          company: company,
+          position: position,
+          employment_type: 'full_time',
+          started_at: 1.year.ago
+        )
+      end
+      
+      before do
+        # Sign in as the non-hierarchy manager
+        sign_in_and_visit(non_hierarchy_manager_person, company, organization_teammate_position_path(company, employee_teammate))
       end
 
-      it 'shows disabled button with warning icon and tooltip' do
-        disabled_button = find('input[type="submit"][disabled]')
-        expect(disabled_button).to be_present
-        
-        warning_icon = find('i.bi-exclamation-triangle.text-warning')
-        expect(warning_icon).to be_present
-        expect(warning_icon['data-bs-title']).to include('employment management permission')
+      it 'redirects to public profile because view_check_ins? policy denies access' do
+        # Since view_check_ins? requires audit? which needs can_manage_employment OR hierarchy,
+        # users without either cannot view the position page at all
+        expect(page).to have_content("You don't have permission to view that profile")
+        expect(page).not_to have_content('Current Position')
       end
     end
   end

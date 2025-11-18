@@ -175,8 +175,8 @@ class UpdateEmploymentTenureService
     end
     
     maap_data = MaapSnapshot.build_maap_data_for_employee(
-      employee: teammate.person,
-      company: current_tenure.company
+      teammate.person,
+      current_tenure.company
     )
     
     MaapSnapshot.create!(

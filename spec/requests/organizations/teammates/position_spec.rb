@@ -60,8 +60,6 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     # Stub current_company_teammate for both ApplicationController and OrganizationNamespaceBaseController
     allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(teammate_instance)
     allow_any_instance_of(Organizations::OrganizationNamespaceBaseController).to receive(:current_company_teammate).and_return(teammate_instance)
-    allow_any_instance_of(ApplicationController).to receive(:real_current_teammate).and_return(teammate_instance)
-    allow_any_instance_of(Organizations::OrganizationNamespaceBaseController).to receive(:real_current_teammate).and_return(teammate_instance)
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(teammate_instance.person)
     allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(teammate_instance.organization)
   end

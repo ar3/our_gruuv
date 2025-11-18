@@ -2,7 +2,7 @@
 
 module Debug
   # Service to gather authorization debug information for position page
-  # Evaluates PersonPolicy#change_employment? which delegates to audit?
+  # Evaluates PersonPolicy#change_employment?
   class PositionDebugService
     attr_reader :pundit_user, :person
 
@@ -50,22 +50,17 @@ module Debug
         own_profile: {
           result: own_profile_result,
           description: 'viewing_teammate.person == record',
-          details: own_profile_result ? 'Viewing own profile' : 'Not own profile'
-        },
-        has_active_employment_tenure: {
-          result: viewing_teammate && !own_profile_result ? viewing_teammate.has_active_employment_tenure? : nil,
-          description: 'viewing_teammate.has_active_employment_tenure?',
-          details: viewing_teammate && !own_profile_result ? (viewing_teammate.has_active_employment_tenure? ? 'Has active tenure' : 'No active employment tenure') : 'N/A (own profile or no viewing_teammate)'
+          details: own_profile_result ? 'Viewing own profile (not sufficient alone - need manage employment permission)' : 'Not own profile'
         },
         can_manage_employment: {
-          result: viewing_teammate && !own_profile_result ? viewing_teammate.can_manage_employment? : nil,
+          result: viewing_teammate ? viewing_teammate.can_manage_employment? : nil,
           description: 'viewing_teammate.can_manage_employment?',
-          details: viewing_teammate && !own_profile_result ? (viewing_teammate.can_manage_employment? ? 'Can manage employment' : 'Cannot manage employment') : 'N/A (own profile or no viewing_teammate)'
+          details: viewing_teammate ? (viewing_teammate.can_manage_employment? ? 'Can manage employment (allows changing own or others)' : 'Cannot manage employment') : 'No viewing_teammate'
         },
         in_managerial_hierarchy: {
-          result: viewing_teammate && !own_profile_result ? viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization) : nil,
+          result: viewing_teammate && record ? viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization) : nil,
           description: 'viewing_teammate.person.in_managerial_hierarchy_of?(record, organization)',
-          details: viewing_teammate && !own_profile_result ? (viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization) ? 'In managerial hierarchy' : 'Not in managerial hierarchy') : 'N/A (own profile or no viewing_teammate)'
+          details: viewing_teammate && record ? (viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization) ? 'In managerial hierarchy (allows changing others)' : 'Not in managerial hierarchy') : 'N/A (no viewing_teammate or record)'
         }
       }
     end
