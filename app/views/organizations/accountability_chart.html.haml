@@ -1,0 +1,163 @@
+- content_for :header do
+  %h1.mb-0 Accountability Chart
+  
+- content_for :go_back_link do
+  = link_to organization_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Organization
+
+.container-fluid.py-4
+  .row
+    .col-12
+      - if @chart_data[:nodes].empty?
+        .alert.alert-info
+          %h5.mb-3
+            %i.bi.bi-info-circle.me-2
+            No Employees Found
+          %p No active employees found in this organization to display in the accountability chart.
+      - else
+        .card
+          .card-body
+            #accountability-chart-container{style: "min-height: 600px;"}
+
+:javascript
+  // Wait for Highcharts and organization module to load, then initialize the chart
+  (function() {
+    console.log('[Accountability Chart] Starting initialization...');
+    var chartData = #{@chart_data.to_json.html_safe};
+    
+    if (chartData.nodes.length === 0) {
+      console.log('[Accountability Chart] No chart data, exiting');
+      return;
+    }
+    
+    console.log('[Accountability Chart] Chart data loaded:', chartData.nodes.length, 'nodes,', chartData.links.length, 'links');
+    
+    function waitForOrganizationModule(callback) {
+      console.log('[Accountability Chart] Waiting for organization module...');
+      
+      var attempts = 0;
+      function checkModule() {
+        attempts++;
+        var hc = window.Highcharts || (typeof Highcharts !== 'undefined' ? Highcharts : null);
+        
+        if (attempts % 10 === 0) {
+          console.log('[Accountability Chart] Waiting for organization module (attempt', attempts + ')...');
+          console.log('[Accountability Chart] Module state:', {
+            hasHighcharts: !!hc,
+            hasSeriesTypes: hc && !!hc.seriesTypes,
+            hasOrganization: hc && hc.seriesTypes && !!hc.seriesTypes.organization
+          });
+        }
+        
+        if (hc && hc.seriesTypes && hc.seriesTypes.organization) {
+          console.log('[Accountability Chart] Organization module ready!');
+          callback();
+        } else if (attempts < 100) {
+          setTimeout(checkModule, 100);
+        } else {
+          console.error('[Accountability Chart] Organization module failed to load after 10 seconds');
+          console.log('[Accountability Chart] Final state:', {
+            hasHighcharts: !!hc,
+            hasSeriesTypes: hc && !!hc.seriesTypes,
+            hasOrganization: hc && hc.seriesTypes && !!hc.seriesTypes.organization
+          });
+        }
+      }
+      
+      checkModule();
+    }
+    
+    function createChart() {
+      console.log('[Accountability Chart] createChart called');
+      var hc = window.Highcharts || (typeof Highcharts !== 'undefined' ? Highcharts : null);
+      console.log('[Accountability Chart] createChart - Highcharts state:', {
+        exists: !!hc,
+        hasSeriesTypes: hc && !!hc.seriesTypes,
+        hasOrganization: hc && hc.seriesTypes && !!hc.seriesTypes.organization
+      });
+      
+      if (!hc || !hc.seriesTypes || !hc.seriesTypes.organization) {
+        console.error('[Accountability Chart] Organization chart type not available');
+        return;
+      }
+      
+      console.log('[Accountability Chart] Creating chart with', chartData.nodes.length, 'nodes');
+      hc.chart('accountability-chart-container', {
+        chart: {
+          type: 'organization',
+          height: Math.max(800, chartData.nodes.length * 20),
+          width: null  // Auto width
+        },
+        title: {
+          text: 'Accountability Chart'
+        },
+        series: [{
+          type: 'organization',
+          name: 'Organization',
+          keys: ['from', 'to'],
+          data: chartData.links.map(function(link) {
+            return [link.from, link.to];
+          }),
+          nodes: chartData.nodes,
+          reversed: true,
+          colorByPoint: false,
+          color: '#007ad0',
+          dataLabels: {
+            color: 'white',
+            useHTML: true,
+            style: {
+              fontSize: '12px',
+              textOverflow: 'clip',
+              cursor: 'pointer'
+            },
+            nodeFormat: '<div style="text-align: center; padding: 1px; line-height: 1;"><strong>{point.name}</strong><br/><span style="opacity: 0.85; font-size: 12px;">{point.title}</span></div>'
+          },
+          borderColor: 'white',
+          nodeWidth: 180,
+          nodeHeight: 140,
+          nodePadding: 8,
+          cursor: 'pointer',
+          point: {
+            events: {
+              click: function() {
+                // Extract person_id from the node id (format: "person_123")
+                if (this.id && this.id.startsWith('person_')) {
+                  var personId = this.id.replace('person_', '');
+                  // Navigate to the person's teammate page
+                  window.location.href = '/organizations/#{@organization.id}/people/' + personId;
+                }
+              }
+            }
+          }
+        }],
+        tooltip: {
+          outside: true,
+          formatter: function() {
+            // Check if this is a node or a link
+            if (this.point.node) {
+              var node = this.point.node;
+              return '<b>' + node.name + '</b><br/>' + 
+                     '<span style="color: #999;">' + node.title + '</span>';
+            } else if (this.point.from && this.point.to) {
+              // This is a link
+              return '<b>Reports to</b><br/>' +
+                     'From: ' + this.point.fromNode.name + '<br/>' +
+                     'To: ' + this.point.toNode.name;
+            }
+            return false;
+          }
+        },
+        exporting: {
+          allowHTML: true,
+          sourceWidth: 1200,
+          sourceHeight: 800
+        }
+      });
+    }
+    
+    // Start waiting for organization module (scripts load synchronously without defer)
+    console.log('[Accountability Chart] Waiting for Highcharts and organization module to load...');
+    waitForOrganizationModule(createChart);
+  })();
+

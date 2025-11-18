@@ -229,6 +229,13 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     @unique_people = @milestones_by_person.keys.count
   end
 
+  def accountability_chart
+    authorize @organization, :show?
+    
+    query = OrganizationHierarchyQuery.new(organization: @organization)
+    @chart_data = query.call
+  end
+
   def pundit_healthcheck
     # Skip authentication and organization setup for this debugging route
     # Try to get organization from params if available
@@ -400,7 +407,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
 
   # Skip organization setup for actions that don't need it
   def skip_organization_setup?
-    !%w[show edit update destroy switch huddles_review dashboard celebrate_milestones pundit_healthcheck].include?(action_name)
+    !%w[show edit update destroy switch huddles_review dashboard celebrate_milestones pundit_healthcheck accountability_chart].include?(action_name)
   end
   
   def organization_params

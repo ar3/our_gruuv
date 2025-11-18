@@ -70,6 +70,7 @@ get '/login', to: 'auth#login', as: :login
       get :dashboard
       get :celebrate_milestones
       get :pundit_healthcheck
+      get :accountability_chart
     end
     
     resources :employees, only: [:index, :new, :create], controller: 'organizations/employees' do
