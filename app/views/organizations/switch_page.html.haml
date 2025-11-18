@@ -6,6 +6,131 @@
     %i.bi.bi-funnel.me-2
     Filter & Sort
 
+/ Debug Info Panel
+.row.mb-3
+  .col-12
+    .card.border-warning
+      .card-header.bg-warning.bg-opacity-10
+        %h6.mb-0
+          %a.text-decoration-none.text-dark{"data-bs-toggle": "collapse", href: "#sessionDebugPanel", role: "button", "aria-expanded": "false", "aria-controls": "sessionDebugPanel"}
+            %i.bi.bi-bug-fill.me-2.text-warning
+            Session & Authentication Debug Info
+            %i.bi.bi-chevron-down.float-end
+      #sessionDebugPanel.collapse
+        .card-body
+          .row
+            .col-md-6
+              %h6.text-muted.small.mb-3
+                %i.bi.bi-person-badge.me-2
+                Current Session
+              %table.table.table-sm.table-borderless
+                %tbody
+                  %tr
+                    %td.text-muted Session Teammate ID:
+                    %td
+                      - if @debug_info[:session_teammate_id]
+                        %code= @debug_info[:session_teammate_id]
+                      - else
+                        %span.text-danger No session ID
+                  %tr
+                    %td.text-muted Current Teammate ID:
+                    %td
+                      - if @debug_info[:current_teammate_id]
+                        %code= @debug_info[:current_teammate_id]
+                      - else
+                        %span.text-danger Not loaded
+                  %tr
+                    %td.text-muted Teammate Type:
+                    %td
+                      - if @debug_info[:current_teammate_type]
+                        %span.badge.bg-secondary= @debug_info[:current_teammate_type]
+                      - else
+                        %span.text-muted N/A
+                  %tr
+                    %td.text-muted Person ID:
+                    %td
+                      - if @debug_info[:current_person_id]
+                        %code= @debug_info[:current_person_id]
+                      - else
+                        %span.text-danger Not found
+                  %tr
+                    %td.text-muted Current Organization:
+                    %td
+                      - if @debug_info[:current_organization_name]
+                        = @debug_info[:current_organization_name]
+                        %code.small (ID: #{@debug_info[:current_organization_id]})
+                      - else
+                        %span.text-danger No organization
+                  %tr
+                    %td.text-muted Session Keys:
+                    %td
+                      - if @debug_info[:session_keys].any?
+                        - @debug_info[:session_keys].each do |key|
+                          %code.small.me-1= key
+                      - else
+                        %span.text-muted None found
+            .col-md-6
+              %h6.text-muted.small.mb-3
+                %i.bi.bi-shield-check.me-2
+                Security & Environment
+              %table.table.table-sm.table-borderless
+                %tbody
+                  %tr
+                    %td.text-muted Impersonating:
+                    %td
+                      - if @debug_info[:impersonating]
+                        %span.badge.bg-warning.text-dark
+                          %i.bi.bi-person-fill-exclamation.me-1
+                          Yes (ID: #{@debug_info[:impersonating_teammate_id]})
+                      - else
+                        %span.badge.bg-success No
+                  %tr
+                    %td.text-muted Secure Connection (SSL):
+                    %td
+                      - if @debug_info[:secure_cookies]
+                        %span.badge.bg-success
+                          %i.bi.bi-lock-fill.me-1
+                          Yes
+                      - else
+                        %span.badge.bg-warning.text-dark
+                          %i.bi.bi-unlock-fill.me-1
+                          No
+                  %tr
+                    %td.text-muted Session ID Available:
+                    %td
+                      - if @debug_info[:session_id_available]
+                        %span.badge.bg-success Yes
+                      - else
+                        %span.badge.bg-danger No
+                  %tr
+                    %td.text-muted Rails Environment:
+                    %td
+                      %span.badge.bg-info= @debug_info[:rails_env]
+                  %tr
+                    %td.text-muted User Agent:
+                    %td
+                      %small.text-muted= truncate(@debug_info[:user_agent], length: 60)
+          .row.mt-3
+            .col-12
+              .alert.alert-info.mb-0
+                %h6.mb-2
+                  %i.bi.bi-info-circle.me-2
+                  How to Use This Information
+                %ul.mb-0.small
+                  %li
+                    %strong Click any organization row
+                    to expand detailed debug information
+                  %li
+                    %strong "Switch Readiness"
+                    shows whether the switch will likely succeed
+                  %li
+                    %strong Red badges
+                    indicate potential issues (e.g., terminated teammates)
+                  %li
+                    %strong Yellow badges
+                    indicate the system will create new records
+                  %li If switching fails, check if your teammate record is terminated or if session cookies are being blocked
+
 .row.justify-content-center
   .col-lg-12
     - if @organizations.any?
@@ -15,11 +140,15 @@
             %tr
               %th Organization
               %th Connection Reason
+              %th Teammate Info
+              %th Switch Readiness
               %th Status
               %th Actions
           %tbody
             - @organizations.each do |organization|
-              %tr{class: organization == @current_organization ? "table-primary" : ""}
+              - debug_info = @teammate_debug_info[organization.id]
+              - readiness = get_switch_readiness(current_person, organization)
+              %tr{class: organization == @current_organization ? "table-primary" : "", "data-bs-toggle": "collapse", "data-bs-target": "#debug-#{organization.id}", style: "cursor: pointer;"}
                 %td
                   .d-flex.align-items-center
                     %i.bi.bi-building.me-2.text-primary
@@ -34,6 +163,23 @@
                       %span.badge.bg-info.me-1.mb-1= reason
                   - else
                     %span.badge.bg-secondary No connections
+                %td
+                  - if debug_info[:teammate_exists]
+                    %div
+                      %small.text-muted ID:
+                      %code.small= debug_info[:teammate_id]
+                    %div
+                      %small.text-muted Type:
+                      %span.badge.bg-secondary.small= debug_info[:teammate_type]
+                    = teammate_status_badge(debug_info)
+                  - else
+                    %span.badge.bg-secondary
+                      %i.bi.bi-dash-circle.me-1
+                      No Teammate
+                %td
+                  = switch_readiness_badge(readiness)
+                  %br
+                  %small.text-muted= readiness[:reason]
                 %td
                   - if organization == @current_organization
                     %span.badge.bg-primary
@@ -51,6 +197,104 @@
                       = button_to switch_organization_path(organization), method: :patch, class: "btn btn-primary", form: { style: "display: inline;" } do
                         %i.bi.bi-arrow-right-circle.me-1
                         Switch To
+              %tr.collapse{id: "debug-#{organization.id}"}
+                %td{colspan: "6"}
+                  .card.card-body.bg-light
+                    %h6.mb-3
+                      %i.bi.bi-bug.me-2
+                      Debug Information for #{organization.display_name}
+                    .row
+                      .col-md-6
+                        %h6.text-muted.small.mb-2 Teammate Details
+                        %table.table.table-sm.table-borderless
+                          %tbody
+                            %tr
+                              %td.text-muted Teammate ID:
+                              %td
+                                - if debug_info[:teammate_id]
+                                  %code= debug_info[:teammate_id]
+                                - else
+                                  %span.text-muted None (will create)
+                            %tr
+                              %td.text-muted Teammate Type:
+                              %td
+                                - if debug_info[:teammate_type]
+                                  %span.badge.bg-secondary= debug_info[:teammate_type]
+                                - else
+                                  %span.text-muted N/A
+                            %tr
+                              %td.text-muted Is CompanyTeammate:
+                              %td
+                                - if debug_info[:is_company_teammate]
+                                  %span.badge.bg-success Yes
+                                - else
+                                  %span.badge.bg-warning.text-dark No
+                            %tr
+                              %td.text-muted First Employed:
+                              %td
+                                - if debug_info[:first_employed_at]
+                                  = debug_info[:first_employed_at].strftime('%Y-%m-%d')
+                                - else
+                                  %span.text-muted Never
+                            %tr
+                              %td.text-muted Last Terminated:
+                              %td
+                                - if debug_info[:last_terminated_at]
+                                  %span.text-danger= debug_info[:last_terminated_at].strftime('%Y-%m-%d')
+                                - else
+                                  %span.text-success Not terminated
+                            %tr
+                              %td.text-muted Created At:
+                              %td
+                                - if debug_info[:created_at]
+                                  = debug_info[:created_at].strftime('%Y-%m-%d %H:%M')
+                                - else
+                                  %span.text-muted N/A
+                      .col-md-6
+                        %h6.text-muted.small.mb-2 Organization Details
+                        %table.table.table-sm.table-borderless
+                          %tbody
+                            %tr
+                              %td.text-muted Root Company:
+                              %td
+                                = debug_info[:root_company_name]
+                                %code.small (ID: #{debug_info[:root_company_id]})
+                            %tr
+                              %td.text-muted Will Create New:
+                              %td
+                                - if debug_info[:will_create_new]
+                                  %span.badge.bg-warning.text-dark Yes
+                                - else
+                                  %span.badge.bg-info No
+                            %tr
+                              %td.text-muted Is Active:
+                              %td
+                                - if debug_info[:is_active]
+                                  %span.badge.bg-success Yes
+                                - else
+                                  %span.badge.bg-danger No
+                            %tr
+                              %td.text-muted Is Terminated:
+                              %td
+                                - if debug_info[:is_terminated]
+                                  %span.badge.bg-danger Yes
+                                - else
+                                  %span.badge.bg-success No
+                            %tr
+                              %td.text-muted Switch Will Succeed:
+                              %td
+                                - if readiness[:will_succeed]
+                                  %span.badge.bg-success
+                                    %i.bi.bi-check-circle.me-1
+                                    Likely
+                                - else
+                                  %span.badge.bg-danger
+                                    %i.bi.bi-x-circle.me-1
+                                    Unlikely
+                            %tr
+                              %td.text-muted Reason:
+                              %td
+                                %small= readiness[:reason]
     - else
       .alert.alert-info
         %h6.mb-2

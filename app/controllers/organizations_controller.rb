@@ -12,6 +12,45 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     # Only show company organizations that the user has access to
     @organizations = current_company_teammate.person.available_organizations.companies.order(:type, :name)
     @current_organization = current_company_teammate.organization
+    
+    # Debugging data collection
+    @debug_info = {
+      session_teammate_id: session[:current_company_teammate_id],
+      current_teammate_id: current_company_teammate&.id,
+      current_teammate_type: current_company_teammate&.type,
+      current_person_id: current_person&.id,
+      current_organization_id: current_organization&.id,
+      current_organization_name: current_organization&.name,
+      session_keys: session.keys.grep(/teammate|person|organization/),
+      impersonating: impersonating?,
+      impersonating_teammate_id: session[:impersonating_teammate_id],
+      user_agent: request.user_agent,
+      secure_cookies: request.ssl?,
+      session_id_available: session.id.present?,
+      rails_env: Rails.env
+    }
+    
+    # Collect teammate debug info for each organization
+    @teammate_debug_info = {}
+    @organizations.each do |org|
+      root_company = org.root_company || org
+      teammate = current_person.teammates.find_by(organization: root_company)
+      
+      @teammate_debug_info[org.id] = {
+        teammate_id: teammate&.id,
+        teammate_type: teammate&.type,
+        teammate_exists: teammate.present?,
+        root_company_id: root_company.id,
+        root_company_name: root_company.name,
+        first_employed_at: teammate&.first_employed_at,
+        last_terminated_at: teammate&.last_terminated_at,
+        is_terminated: teammate&.last_terminated_at.present?,
+        is_active: teammate&.last_terminated_at.nil?,
+        will_create_new: teammate.nil?,
+        created_at: teammate&.created_at,
+        is_company_teammate: teammate.is_a?(CompanyTeammate)
+      }
+    end
   end
   
   def dashboard
