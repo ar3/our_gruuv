@@ -49,8 +49,8 @@ gem "thruster", require: false
 # gem "image_processing", "~> 1.2"
 
 # Error tracking with Sentry
-gem "sentry-ruby", "~> 5.0"
-gem "sentry-rails", "~> 5.0"
+gem "sentry-ruby", "~> 6.1"
+gem "sentry-rails", "~> 6.1"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
