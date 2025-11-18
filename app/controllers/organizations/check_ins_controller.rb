@@ -4,13 +4,13 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   before_action :set_teammate
   before_action :determine_view_mode
 
-  # Allow authorization checks even when user doesn't have access to organization
-  # This allows proper redirects to public view instead of organizations_path
-  def allow_authorization_for_different_org?
-    true
-  end
-
   def show
+    # Initialize assigns before authorization to prevent nil errors on redirect
+    @relevant_abilities = []
+    @now_goals = []
+    @next_goals = []
+    @later_goals = []
+    
     authorize @person, :view_check_ins?, policy_class: PersonPolicy
     
     # Determine view mode (card or table)
@@ -21,7 +21,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     @position_check_in = load_or_build_position_check_in
     @assignment_check_ins = load_or_build_assignment_check_ins
     @aspiration_check_ins = load_or_build_aspiration_check_ins
-    @relevant_abilities = load_relevant_abilities
+    @relevant_abilities = load_relevant_abilities || []
     load_goals
   end
   
@@ -113,10 +113,16 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
 
   def load_goals
     # Load active goals for the teammate, filtered by timeframe
-    base_goals = Goal.for_teammate(@teammate).active
-    @now_goals = base_goals.timeframe_now
-    @next_goals = base_goals.timeframe_next
-    @later_goals = base_goals.timeframe_later
+    if @teammate
+      base_goals = Goal.for_teammate(@teammate).active
+      @now_goals = base_goals.timeframe_now
+      @next_goals = base_goals.timeframe_next
+      @later_goals = base_goals.timeframe_later
+    else
+      @now_goals = []
+      @next_goals = []
+      @later_goals = []
+    end
   end
 
   def update_assignment_check_ins(check_ins_params = params)

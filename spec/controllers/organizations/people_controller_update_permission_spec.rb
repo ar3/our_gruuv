@@ -119,7 +119,9 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     end
 
     it 'generates the correct route helper' do
-      expect(update_permission_organization_person_path(organization, person)).to eq("/organizations/#{organization.id}/people/#{person.id}/update_permission")
+      # Organization routes include slug format: id-name-parameterized
+      expected_path = "/organizations/#{organization.to_param}/people/#{person.id}/update_permission"
+      expect(update_permission_organization_person_path(organization, person)).to eq(expected_path)
     end
   end
 end

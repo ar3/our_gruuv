@@ -5,6 +5,9 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   after_action :verify_authorized
   
   def index
+    # Initialize spotlight_stats to ensure it's always set
+    @spotlight_stats = {}
+    
     # Basic authorization - user should be able to view the organization
     authorize @organization, :show?
     
@@ -167,6 +170,9 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   end
 
   def audit
+    # Initialize maap_snapshots to ensure it's always set
+    @maap_snapshots = MaapSnapshot.none
+    
     # Find the person/employee
     @person = @organization.employees.find(params[:id])
     

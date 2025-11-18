@@ -16,11 +16,11 @@ class PersonPolicy < ApplicationPolicy
   end
   
   def teammate?
-    return true if admin_bypass?
-    return false unless viewing_teammate && record
-    return true if viewing_teammate.person == record
-    return true if viewing_teammate.employed? && 
-    record.teammates.where(organization: viewing_teammate.organization).first.present?
+    return true if admin_bypass? #admins can view any teammate
+    return false unless viewing_teammate && record #if the viewer or the record are nil, this is invalid
+    return true if viewing_teammate.person == record # viewer can view themself
+    return true if viewing_teammate.employed? && # viewer is employed and they are in the same org
+      record.teammates.where(organization: viewing_teammate.organization).first.present?
     false
   end
   
@@ -28,8 +28,9 @@ class PersonPolicy < ApplicationPolicy
     return true if admin_bypass?
     return false unless viewing_teammate && record
     return false if viewing_teammate.terminated?
-    return false if !viewing_teammate.has_active_employment_tenure?
+    # Allow users to view their own profile even without active employment tenure
     return true if viewing_teammate.person == record
+    return false if !viewing_teammate.has_active_employment_tenure?
     return true if viewing_teammate.can_manage_employment?
     return true if viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization)
     false
@@ -111,7 +112,9 @@ class PersonPolicy < ApplicationPolicy
   end
 
   def can_impersonate?
-    # Only og_admin users can impersonate others, and they cannot impersonate other og_admin users
+    # Only og_admin users can impersonate others
+    # TODO: In the future, prevent admins from impersonating other og_admin users by checking:
+    #   return false if record.og_admin? && viewing_teammate.person.og_admin?
     admin_bypass?
   end
 

@@ -49,6 +49,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   end
 
   def filtered_observations
+    # Initialize observations before authorization to prevent nil errors on redirect
+    @observations = Observation.none
+    
     authorize Observation, :index?
     
     # Extract filter parameters
@@ -77,10 +80,51 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       nil
     end
     
+    # Start with visible observations using ObservationVisibilityQuery
+    visibility_query = ObservationVisibilityQuery.new(current_person, organization)
+    observations = visibility_query.visible_observations
+    
+    # Filter by observee_ids if provided
+    if @observee_ids.any?
+      observations = observations.joins(:observees)
+                                 .where(observees: { teammate_id: @observee_ids })
+                                 .distinct
+    end
+    
+    # Filter by rateable_type and rateable_id if provided
+    if @rateable_type.present? && @rateable_id.present?
+      begin
+        rateable = @rateable_type.constantize.find(@rateable_id)
+        observations = observations.joins(:observation_ratings)
+                                   .where(observation_ratings: { rateable_type: @rateable_type, rateable_id: @rateable_id })
+                                   .distinct
+      rescue ActiveRecord::RecordNotFound
+        # Handle non-existent rateable_id gracefully
+        observations = Observation.none
+      end
+    end
+    
+    # Filter by start_date if provided
+    if @start_date.present?
+      observations = observations.where('observed_at >= ?', @start_date)
+    end
+    
+    # Filter by end_date if provided
+    if @end_date.present?
+      observations = observations.where('observed_at <= ?', @end_date)
+    end
+    
+    # Assign observations for the view
+    @observations = observations.includes(:observer, { observed_teammates: :person }, :observation_ratings)
+    
     # Build modal title based on filters
     if @rateable_type.present? && @rateable_id.present?
-      rateable = @rateable_type.constantize.find(@rateable_id)
-      @modal_title = "Observations for #{rateable.name || rateable.title}"
+      begin
+        rateable = @rateable_type.constantize.find(@rateable_id)
+        @modal_title = "Observations for #{rateable.name || rateable.title}"
+      rescue ActiveRecord::RecordNotFound
+        @modal_title = "Observations"
+      end
     elsif @observee_ids.any?
       teammate = Teammate.find(@observee_ids.first)
       @modal_title = "Observations for #{teammate.person.display_name}"
