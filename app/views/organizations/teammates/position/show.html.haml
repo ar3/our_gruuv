@@ -105,22 +105,7 @@
             %span.text-success (PASS - #{own_profile[:details]})
           - else
             %span.text-muted (FAIL - #{own_profile[:details]})
-      -# Condition 5: viewing_teammate.has_active_employment_tenure?
-      - has_active_tenure = conditions[:has_active_employment_tenure]
-      - if has_active_tenure[:result] != nil
-        .mb-2
-          - if has_active_tenure[:result]
-            %span.text-success
-              %i.bi.bi-check-circle-fill.me-1
-          - else
-            %span.text-danger
-              %i.bi.bi-x-circle-fill.me-1
-          %code= has_active_tenure[:description]
-          - if has_active_tenure[:result]
-            %span.text-success (PASS - #{has_active_tenure[:details]})
-          - else
-            %span.text-danger (FAIL - #{has_active_tenure[:details]})
-      -# Condition 6: viewing_teammate.can_manage_employment?
+      -# Condition 5: viewing_teammate.can_manage_employment?
       - can_manage = conditions[:can_manage_employment]
       - if can_manage[:result] != nil
         .mb-2
@@ -135,7 +120,7 @@
             %span.text-success (PASS - #{can_manage[:details]})
           - else
             %span.text-muted (FAIL - #{can_manage[:details]})
-      -# Condition 7: viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization)
+      -# Condition 6: viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization)
       - in_hierarchy = conditions[:in_managerial_hierarchy]
       - if in_hierarchy[:result] != nil
         .mb-2
