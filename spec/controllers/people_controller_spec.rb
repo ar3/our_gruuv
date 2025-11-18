@@ -302,10 +302,19 @@ RSpec.describe PeopleController, type: :controller do
           expect(target_person.first_name).to eq('Updated')
         end
 
-        it 'redirects to profile path with notice' do
+        it 'redirects to target person path with notice' do
           patch :update, params: { id: target_person.id, person: { first_name: 'Updated' } }
-          expect(response).to redirect_to(profile_path)
+          expect(response).to redirect_to(person_path(target_person))
           expect(flash[:notice]).to eq('Profile updated successfully!')
+        end
+
+        it 'updates the correct person when using person_path' do
+          original_manager_name = manager.first_name
+          patch :update, params: { id: target_person.id, person: { first_name: 'Updated Target' } }
+          target_person.reload
+          manager.reload
+          expect(target_person.first_name).to eq('Updated Target')
+          expect(manager.first_name).to eq(original_manager_name)
         end
       end
 
@@ -326,6 +335,34 @@ RSpec.describe PeopleController, type: :controller do
           patch :update, params: { id: target_person.id, person: { first_name: 'Updated' } }
           target_person.reload
           expect(target_person.first_name).to eq('Updated')
+        end
+
+        it 'redirects to target person path with notice' do
+          patch :update, params: { id: target_person.id, person: { first_name: 'Updated' } }
+          expect(response).to redirect_to(person_path(target_person))
+          expect(flash[:notice]).to eq('Profile updated successfully!')
+        end
+      end
+
+      context 'when updating own profile via profile_path' do
+        let(:manager) { create(:person, first_name: 'Manager', last_name: 'User') }
+        let(:manager_teammate) { create(:teammate, person: manager, organization: organization, can_manage_employment: true) }
+        
+        before do
+          create(:employment_tenure, teammate: manager_teammate, company: organization, ended_at: nil)
+          sign_in_as_teammate(manager, organization)
+        end
+
+        it 'updates current_person when submitting to profile_path without ID' do
+          patch :update, params: { person: { first_name: 'Updated Manager' } }
+          manager.reload
+          expect(manager.first_name).to eq('Updated Manager')
+        end
+
+        it 'redirects to profile_path when updating own profile' do
+          patch :update, params: { person: { first_name: 'Updated Manager' } }
+          expect(response).to redirect_to(profile_path)
+          expect(flash[:notice]).to eq('Profile updated successfully!')
         end
       end
 

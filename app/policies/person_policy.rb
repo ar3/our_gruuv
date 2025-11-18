@@ -58,7 +58,14 @@ class PersonPolicy < ApplicationPolicy
   end
 
   def change_employment?
-    audit?
+    # Users can view their own profile, admins can view any, or if they have employment management or MAAP permissions
+    return true if admin_bypass?
+    return false unless viewing_teammate && record
+    return false if viewing_teammate.terminated?
+    # return true if viewing_teammate.person == record #You can't change your own employment, unless you have permission.
+    return true if viewing_teammate.can_manage_employment?
+    return true if viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization)
+    false
   end
 
   def change?

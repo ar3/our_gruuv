@@ -67,7 +67,8 @@ class PeopleController < ApplicationController
   def update
     authorize person, policy_class: PersonPolicy
     if person.update(person_params)
-      redirect_to profile_path, notice: 'Profile updated successfully!'
+      redirect_path = (person == current_person) ? profile_path : person_path(person)
+      redirect_to redirect_path, notice: 'Profile updated successfully!'
     else
       capture_error_in_sentry(ActiveRecord::RecordInvalid.new(person), {
         method: 'update_profile',
