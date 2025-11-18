@@ -1,0 +1,88 @@
+/ Manager Distribution Spotlight
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            / Main statistics/metrics area
+            .row.text-center
+              .col-4
+                .h3.text-primary= @spotlight_stats[:total_teammates]
+                %small.text-muted Total Teammates
+              .col-4
+                .h3.text-success= @spotlight_stats[:active_managers]
+                %small.text-muted Active Managers
+              .col-4
+                .h3.text-info= @spotlight_stats[:non_managers]
+                %small.text-muted Non-Managers
+            
+            / Management Levels Breakdown
+            - if @spotlight_stats[:management_levels].present? && @spotlight_stats[:management_levels].any?
+              .row.mt-4
+                .col-12
+                  .card.bg-light.border-0
+                    .card-body.py-2
+                      .d-flex.justify-content-between.align-items-center.mb-2
+                        %small.fw-bold Management Levels
+                        %small.text-muted #{@spotlight_stats[:max_level]} level#{'s' if @spotlight_stats[:max_level] != 1}
+                      
+                      / Display each level
+                      - @spotlight_stats[:management_levels].sort.each do |level, count|
+                        .d-flex.justify-content-between.align-items-center.py-1.border-bottom
+                          %small
+                            %strong Level #{level}:
+                            - if level == 1
+                              %span.text-muted (Top of Hierarchy)
+                            - else
+                              %span.text-muted (Reports to Level #{level - 1})
+                          %span.badge.bg-primary= count
+          
+          .col-md-4
+            / Action alerts or status messages
+            - if @spotlight_stats[:active_managers] == 0
+              .alert.alert-info.small
+                %i.bi.bi-info-circle.me-2
+                %strong No active managers found in this view
+            
+            - if @spotlight_stats[:non_managers] > 0
+              .alert.alert-secondary.small
+                %i.bi.bi-people.me-2
+                %strong #{@spotlight_stats[:non_managers]} teammate#{'s' if @spotlight_stats[:non_managers] != 1} without direct reports
+            
+            - if @spotlight_stats[:active_managers] > 0
+              .alert.alert-success.small
+                %i.bi.bi-diagram-3.me-2
+                %strong #{@spotlight_stats[:active_managers]} teammate#{'s' if @spotlight_stats[:active_managers] != 1} managing others
+            
+            - if @spotlight_stats[:max_level] > 5
+              .alert.alert-warning.small
+                %i.bi.bi-exclamation-triangle.me-2
+                %strong Deep hierarchy detected (#{@spotlight_stats[:max_level]} levels)
+      
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-building.me-1
+              Organization: #{@organization.display_name}
+              - if @has_active_filters
+                %br
+                %i.bi.bi-funnel.me-1
+                Filters: 
+                - filter_parts = []
+                - @current_filters.each do |filter_name, filter_value|
+                  - Array(filter_value).each do |value|
+                    - filter_parts << filter_display_name(filter_name, value)
+                = filter_parts.join(', ')
+          .col-md-6.text-end
+            %small.text-muted
+              %i.bi.bi-sort-down.me-1
+              Sort: #{@current_sort.humanize}
+              %br
+              %i.bi.bi-table.me-1
+              View: #{@current_view.humanize}
+              %br
+              %i.bi.bi-eye.me-1
+              Spotlight: Manager Distribution
+

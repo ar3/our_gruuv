@@ -327,6 +327,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         calculate_location_stats(teammates)
       when 'manager_overview'
         calculate_manager_overview_stats(teammates, teammates_for_joins)
+      when 'manager_distribution'
+        calculate_manager_distribution_stats(teammates, teammates_for_joins)
       else # 'teammates_overview' or default
         calculate_teammates_overview_stats(teammates, teammates_for_joins)
       end
@@ -489,6 +491,90 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         ready_percentage: ready_percentage,
         incomplete_percentage: incomplete_percentage,
         team_health_score: team_health_score
+      }
+    end
+
+    def calculate_manager_distribution_stats(teammates, teammates_for_joins = nil)
+      teammates_for_joins ||= teammates
+      
+      # Ensure we have an array to work with
+      teammates_array = teammates.is_a?(Array) ? teammates : teammates.to_a
+      
+      # Get organization hierarchy for checking employment tenures
+      org_hierarchy = if @organization.company?
+        @organization.self_and_descendants
+      else
+        [@organization, @organization.parent].compact
+      end
+      
+      # Build a set of person IDs who are managers (have active direct reports)
+      manager_person_ids = EmploymentTenure.active
+                                          .where(company: org_hierarchy)
+                                          .where.not(manager_id: nil)
+                                          .distinct
+                                          .pluck(:manager_id)
+                                          .to_set
+      
+      # Count active managers vs non-managers in the filtered teammates
+      active_managers = teammates_array.count { |t| manager_person_ids.include?(t.person_id) }
+      non_managers = teammates_array.count - active_managers
+      
+      # Calculate management levels
+      # Build a map of person_id -> their manager's person_id for active employment tenures
+      person_to_manager = {}
+      EmploymentTenure.active
+                      .where(company: org_hierarchy)
+                      .joins(:teammate)
+                      .pluck('teammates.person_id', :manager_id)
+                      .each do |person_id, manager_id|
+        person_to_manager[person_id] = manager_id
+      end
+      
+      # Build management levels
+      management_levels = {}
+      person_to_level = {}
+      
+      # Find all people in the filtered teammates
+      teammate_person_ids = teammates_array.map(&:person_id).to_set
+      
+      # Level 1: People with no manager (top of hierarchy) who are in our filtered set
+      level_1_people = teammate_person_ids.select { |pid| person_to_manager[pid].nil? }
+      level_1_people.each { |pid| person_to_level[pid] = 1 }
+      management_levels[1] = level_1_people.count
+      
+      # Continue building levels until no more people can be assigned
+      current_level = 1
+      max_iterations = 20 # Safety limit to prevent infinite loops
+      
+      while current_level < max_iterations
+        # Find people at current level
+        current_level_people = person_to_level.select { |_, level| level == current_level }.keys
+        break if current_level_people.empty?
+        
+        # Find their direct reports who are in our filtered set
+        next_level_people = teammate_person_ids.select do |pid|
+          person_to_level[pid].nil? && current_level_people.include?(person_to_manager[pid])
+        end
+        
+        break if next_level_people.empty?
+        
+        # Assign them to the next level
+        next_level = current_level + 1
+        next_level_people.each { |pid| person_to_level[pid] = next_level }
+        management_levels[next_level] = next_level_people.count
+        
+        current_level = next_level
+      end
+      
+      # Find max level
+      max_level = management_levels.keys.max || 0
+      
+      {
+        active_managers: active_managers,
+        non_managers: non_managers,
+        management_levels: management_levels,
+        max_level: max_level,
+        total_teammates: teammates_array.count
       }
     end
 

@@ -133,6 +133,9 @@
           .form-check
             = radio_button_tag 'spotlight', 'employee_locations', @current_spotlight == 'employee_locations', class: 'form-check-input', id: 'spotlight_locations'
             = label_tag 'spotlight_locations', 'Employee Locations', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'manager_distribution', @current_spotlight == 'manager_distribution', class: 'form-check-input', id: 'spotlight_manager_distribution'
+            = label_tag 'spotlight_manager_distribution', 'Manager Distribution', class: 'form-check-label'
           - if current_person&.can_manage_employment?(@organization)
             .form-check
               = radio_button_tag 'spotlight', 'check_ins_health', @current_spotlight == 'check_ins_health', class: 'form-check-input', id: 'spotlight_check_ins_health'
