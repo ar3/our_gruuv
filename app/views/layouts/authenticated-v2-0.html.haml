@@ -155,7 +155,7 @@
                       %hr.dropdown-divider
                   - if current_organization
                     %li= link_to "View Teammates", organization_employees_path(current_organization), class: "dropdown-item"
-                    - if current_person&.can_manage_employment?(current_organization)
+                    - if current_organization && policy(current_organization).manage_employment?
                       %li= link_to "Check-ins Health", organization_check_ins_health_path(current_organization), class: "dropdown-item"
                     - if current_person&.has_direct_reports?(current_organization)
                       %li= link_to "My Employees", organization_employees_path(current_organization, manager_filter: 'direct_reports', display: 'check_in_status'), class: "dropdown-item"

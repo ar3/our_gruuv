@@ -97,7 +97,7 @@
     %hr.mt-1.mb-1/
     Use the check-ins health dashboard to monitor completion rates and identify areas needing attention. Bulk upload allows you to efficiently import employee and check-in data. The organization page provides comprehensive settings and configuration options.
   
-  - bulk_upload_enabled = current_person&.can_manage_maap?(organization) || false
+  - bulk_upload_enabled = policy(organization).manage_maap? || false
   
   = render 'organizations/dashboard/dashboard_card',
     header_html: health_header_html,

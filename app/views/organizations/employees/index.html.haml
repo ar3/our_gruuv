@@ -4,7 +4,7 @@
       %i.bi.bi-people.me-2
       Teammates
     .d-flex.align-items-center
-      - if current_person.can_manage_employment?(@organization)
+      - if policy(@organization).manage_employment?
         = link_to new_employee_organization_employees_path(@organization), class: "btn btn-primary ml-2" do
           %i.bi.bi-plus
       - else

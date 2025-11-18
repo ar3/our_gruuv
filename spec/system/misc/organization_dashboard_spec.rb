@@ -148,7 +148,6 @@ RSpec.describe 'Organization Dashboard', type: :system do
 
     it 'shows appropriate content for non-managers' do
       allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(employee_person)
-      allow(employee_person).to receive(:can_manage_employment?).and_return(false)
 
       visit dashboard_organization_path(organization)
 

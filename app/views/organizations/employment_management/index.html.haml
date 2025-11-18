@@ -32,7 +32,7 @@
                       %td
                         %span.badge.bg-info= potential_employee_reason(person)
                       %td
-                        - if current_person&.can_create_employment?(@organization)
+                        - if policy(@organization).create_employment?
                           = link_to "Create Employment", "#", class: "btn btn-success btn-sm", data: { action: "click->employment-wizard#selectExistingPerson", person_id: person.id, person_name: person.display_name }
                         - else
                           .d-flex.align-items-center

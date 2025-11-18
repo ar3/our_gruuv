@@ -32,6 +32,6 @@
             .btn-group.btn-group-sm
               = link_to teammate_organization_person_path(@organization, teammate.person), class: "btn btn-outline-primary" do
                 %i.bi.bi-eye
-              - if current_person.can_manage_employment?(@organization)
+              - if policy(@organization).manage_employment?
                 = link_to organization_person_check_ins_path(@organization, teammate.person), class: "btn btn-outline-secondary" do
                   %i.bi.bi-list-task

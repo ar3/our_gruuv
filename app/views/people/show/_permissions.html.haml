@@ -5,7 +5,7 @@
       Organization Permissions for #{current_organization.name}
   .card-body
     - current_access = @person.teammates.find_by(organization: current_organization)
-    - can_modify = current_person.can_manage_employment?(current_organization)
+    - can_modify = policy(current_organization).manage_employment?
     .row
       .col-md-8
         

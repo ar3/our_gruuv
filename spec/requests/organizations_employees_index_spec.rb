@@ -7,11 +7,11 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
   let(:direct_report) { create(:person) }
   
   before do
+    # Create teammate with manage employment permission
+    create(:teammate, person: person, organization: organization, can_manage_employment: true)
     # Mock authentication
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
     allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(organization)
-    # Allow the method to be called with any organization type
-    allow(person).to receive(:can_manage_employment?).and_return(true)
   end
 
   it 'renders without NoMethodError for unassigned employee uploads path' do
