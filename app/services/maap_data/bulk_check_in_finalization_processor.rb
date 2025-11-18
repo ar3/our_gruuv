@@ -86,12 +86,92 @@ module MaapData
           {}
         end
         
-        {
+        assignment_data = {
           assignment_id: active_tenure.assignment_id,
           anticipated_energy_percentage: active_tenure.anticipated_energy_percentage,
           rated_assignment: rated_assignment
         }
+        
+        # Process check-in data from form_params if present
+        check_in_data = extract_check_in_data_for_assignment(active_tenure.assignment_id)
+        if check_in_data
+          # Build official_check_in if there's any official check-in related data
+          if check_in_data['close_rating'] || check_in_data['final_rating'] || check_in_data['official_rating'] || check_in_data['shared_notes']
+            assignment_data['official_check_in'] = build_official_check_in_data(check_in_data)
+          end
+          
+          # Build manager_check_in if there's any manager check-in related data
+          if check_in_data['manager_complete'] || check_in_data['manager_rating'] || check_in_data['shared_notes']
+            assignment_data['manager_check_in'] = build_manager_check_in_data(check_in_data)
+          end
+        end
+        
+        assignment_data
       end
+    end
+    
+    def extract_check_in_data_for_assignment(assignment_id)
+      return nil unless @form_params.present?
+      
+      # Try check_in_data hash format first
+      if @form_params['check_in_data'] && @form_params['check_in_data'][assignment_id.to_s]
+        return @form_params['check_in_data'][assignment_id.to_s]
+      end
+      
+      # Try individual key format
+      check_in_data = {}
+      prefix = "check_in_#{assignment_id}_"
+      
+      @form_params.each do |key, value|
+        next unless key.to_s.start_with?(prefix)
+        field_name = key.to_s.sub(prefix, '')
+        check_in_data[field_name] = value
+      end
+      
+      return nil if check_in_data.empty?
+      check_in_data
+    end
+    
+    def build_official_check_in_data(check_in_data)
+      # Determine if check-in should be marked as completed
+      close_rating = check_in_data['close_rating']
+      should_complete = close_rating == true || close_rating == 'true' || close_rating == '1'
+      
+      official_check_in = {
+        official_rating: check_in_data['final_rating'] || check_in_data['official_rating'],
+        shared_notes: check_in_data['shared_notes']
+      }
+      
+      if should_complete
+        official_check_in['official_check_in_completed_at'] = Time.current.iso8601
+        official_check_in['finalized_by_id'] = @maap_snapshot.created_by_id
+      else
+        official_check_in['official_check_in_completed_at'] = nil
+        official_check_in['finalized_by_id'] = nil
+      end
+      
+      official_check_in
+    end
+    
+    def build_manager_check_in_data(check_in_data)
+      # Determine if manager check-in should be marked as completed
+      manager_complete = check_in_data['manager_complete']
+      should_complete = manager_complete == true || manager_complete == 'true' || manager_complete == '1'
+      
+      manager_check_in = {
+        manager_rating: check_in_data['manager_rating'],
+        shared_notes: check_in_data['shared_notes']
+      }
+      
+      if should_complete
+        manager_check_in['manager_completed_at'] = Time.current.iso8601
+        manager_check_in['manager_completed_by_id'] = @maap_snapshot.created_by_id
+      else
+        manager_check_in['manager_completed_at'] = nil
+        manager_check_in['manager_completed_by_id'] = nil
+      end
+      
+      manager_check_in
     end
 
     def build_abilities_data

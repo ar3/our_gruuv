@@ -56,15 +56,15 @@ RSpec.describe MaapSnapshot, type: :model do
         # maap_data should contain assignment_tenure data only (from DB)
         expect(assignment1_data).to be_present
         expect(assignment1_data['anticipated_energy_percentage']).to eq(50) # From DB
-        expect(assignment1_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
+        expect(assignment1_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage rated_assignment])
         
         expect(assignment2_data).to be_present
         expect(assignment2_data['anticipated_energy_percentage']).to eq(30) # From DB
-        expect(assignment2_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
+        expect(assignment2_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage rated_assignment])
         
         expect(assignment3_data).to be_present
         expect(assignment3_data['anticipated_energy_percentage']).to eq(20) # From DB
-        expect(assignment3_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
+        expect(assignment3_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage rated_assignment])
         
         # maap_data should NOT contain check-in data (that's in form_params)
         expect(assignment1_data).not_to have_key('official_check_in')

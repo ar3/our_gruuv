@@ -62,7 +62,7 @@ RSpec.describe 'Check-In Uncomplete Change Detection', type: :model do
         snapshot.process_with_processor!
 
         # Find the assignment data in the processed snapshot
-        assignment_data = snapshot.maap_data['assignments'].find { |a| a['id'] == assignment.id }
+        assignment_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == assignment.id }
         official_check_in = assignment_data['official_check_in']
 
         # Expected behavior: The change from complete to incomplete should be detected

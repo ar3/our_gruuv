@@ -20,6 +20,13 @@ class ApplicationController < ActionController::Base
     redirect_to root_path, notice: 'You have been logged out successfully!'
   end
   
+  helper_method :current_company_teammate
+  helper_method :current_person
+  helper_method :current_organization
+  helper_method :impersonating?
+  helper_method :impersonating_teammate
+  helper_method :recent_page_visits
+  
   private
   
   def handle_unexpected_error(exception)
@@ -38,12 +45,6 @@ class ApplicationController < ActionController::Base
     end
   end
   
-  helper_method :current_company_teammate
-  helper_method :current_person
-  helper_method :current_organization
-  helper_method :impersonating?
-  helper_method :impersonator_teammate
-  helper_method :recent_page_visits
   
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
   
@@ -172,23 +173,12 @@ class ApplicationController < ActionController::Base
   end
   
   def current_company_teammate
-    return @current_company_teammate if defined?(@current_company_teammate)
+    Rails.logger.info "🔍🔍🔍🔍🔍 START_current_company_teammate: Does it exist already? #{@current_company_teammate.present?}: #{@current_company_teammate&.id} (#{@current_company_teammate&.person&.display_name})"
+    return @current_company_teammate if @current_company_teammate.present?
     
     # In test environment, allow RSpec mocks to override
     if Rails.env.test? && respond_to?(:current_company_teammate_mock)
       return current_company_teammate_mock if current_company_teammate_mock
-    end
-    
-    # Check if we're impersonating someone
-    if session[:impersonating_teammate_id]
-      begin
-        @current_company_teammate = CompanyTeammate.find(session[:impersonating_teammate_id])
-        return @current_company_teammate
-      rescue ActiveRecord::RecordNotFound
-        # Clear the invalid impersonation session
-        session.delete(:impersonating_teammate_id)
-        # Fall through to normal session handling
-      end
     end
     
     if session[:current_company_teammate_id]
@@ -272,30 +262,37 @@ class ApplicationController < ActionController::Base
     session[:impersonating_teammate_id].present?
   end
 
-  def impersonator_teammate
+  def impersonating_teammate
     begin
-      return @impersonator_teammate = nil unless session[:impersonating_teammate_id].present?
-      @impersonator_teammate ||= CompanyTeammate.find(session[:impersonating_teammate_id])
+      return @impersonating_teammate = nil unless session[:impersonating_teammate_id].present?
+      @impersonating_teammate ||= CompanyTeammate.find(session[:impersonating_teammate_id])
     rescue ActiveRecord::RecordNotFound
       nil
     end
   end
 
   def start_impersonation(teammate)
-    @impersonator_teammate = nil
+    Rails.logger.info "🔍🔍🔍🔍🔍 START_IMPERSONATION: About to start impersonation for teammate: #{teammate&.id} (#{teammate&.person&.display_name})"
+    Rails.logger.info "🔍🔍🔍🔍🔍 START_IMPERSONATION: pundit: #{pundit_user}"
+    
+    @impersonating_teammate = nil
     @current_company_teammate = nil
 
     # Use Pundit policy for authorization (check if real user can impersonate the teammate's person)
     return false unless policy(teammate.person).can_impersonate?
-    
+    Rails.logger.info "🔍🔍🔍🔍🔍 START_IMPERSONATION: session[:current_company_teammate_id]: #{session[:current_company_teammate_id]}"
+    Rails.logger.info "🔍🔍🔍🔍🔍 START_IMPERSONATION: session[:impersonating_teammate_id]: #{session[:impersonating_teammate_id]}"
     session[:impersonating_teammate_id] = session[:current_company_teammate_id]
     session[:current_company_teammate_id] = teammate.id
+    raise "Impersonation failed because current_company_teammate.id (#{current_company_teammate&.id}) != teammate.id (#{teammate.id})" if current_company_teammate&.id != teammate.id
+    Rails.logger.info "🔍🔍🔍🔍🔍 IMPERSONATION_COMPLETE: session[:current_company_teammate_id]: #{session[:current_company_teammate_id]}"
+    Rails.logger.info "🔍🔍🔍🔍🔍 IMPERSONATION_COMPLETE: session[:impersonating_teammate_id]: #{session[:impersonating_teammate_id]}"
     true
   end
 
   def stop_impersonation
     return false unless impersonating?
-    @impersonator_teammate = nil
+    @impersonating_teammate = nil
     @current_company_teammate = nil
 
     session[:current_company_teammate_id] = session[:impersonating_teammate_id]

@@ -140,7 +140,7 @@ RSpec.describe MaapSnapshot, type: :model do
     
     describe '.build_for_employee_with_changes' do
       let(:assignment) { create(:assignment, company: company) }
-      let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 20, official_rating: 'meeting') }
+      let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 20) }
       
       it 'stores form_params separately and maap_data reflects DB state' do
         form_params = {
@@ -171,9 +171,8 @@ RSpec.describe MaapSnapshot, type: :model do
         assignment_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == assignment.id }
         expect(assignment_data).to be_present
         expect(assignment_data['anticipated_energy_percentage']).to eq(20) # From DB, not form_params
-        expect(assignment_data['official_rating']).to eq('meeting') # From DB
         # maap_data should not contain check-in data (only assignment_tenure data)
-        expect(assignment_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
+        expect(assignment_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage rated_assignment])
       end
       
       it 'maap_data always reflects current DB state, not proposed changes' do

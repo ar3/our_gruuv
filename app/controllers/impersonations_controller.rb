@@ -36,7 +36,7 @@ class ImpersonationsController < ApplicationController
   def destroy
     Rails.logger.info "IMPERSONATION_DESTROY: 1 - Impersonation destroy called"
     Rails.logger.info "IMPERSONATION_DESTROY: 2 - Current teammate: #{current_company_teammate&.id} (#{current_person&.full_name})"
-    Rails.logger.info "IMPERSONATION_DESTROY: 3 - Impersonating teammate: #{impersonator_teammate&.id} (#{impersonator_teammate&.person&.full_name})"
+    Rails.logger.info "IMPERSONATION_DESTROY: 3 - Impersonating teammate: #{impersonating_teammate&.id} (#{impersonating_teammate&.person&.full_name})"
     Rails.logger.info "IMPERSONATION_DESTROY: 4 - Referer: #{request.referer}"
     Rails.logger.info "IMPERSONATION_DESTROY: 5 - User agent: #{request.user_agent}"
     Rails.logger.info "IMPERSONATION_DESTROY: 6 - Request method: #{request.method}"

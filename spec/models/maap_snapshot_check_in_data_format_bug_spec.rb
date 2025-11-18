@@ -86,15 +86,15 @@ RSpec.describe 'MaapSnapshot CheckInData Format Bug', type: :model do
         # maap_data should contain assignment_tenure data only (from DB)
         expect(emp_growth_data).to be_present
         expect(emp_growth_data['anticipated_energy_percentage']).to eq(50) # From DB
-        expect(emp_growth_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
+        expect(emp_growth_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage rated_assignment])
         
         expect(quarterly_data).to be_present
         expect(quarterly_data['anticipated_energy_percentage']).to eq(30) # From DB
-        expect(quarterly_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
+        expect(quarterly_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage rated_assignment])
         
         expect(lifeline_data).to be_present
         expect(lifeline_data['anticipated_energy_percentage']).to eq(20) # From DB
-        expect(lifeline_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage official_rating])
+        expect(lifeline_data.keys).to match_array(%w[assignment_id anticipated_energy_percentage rated_assignment])
         
         # maap_data should NOT contain check-in data (that's in form_params)
         expect(emp_growth_data).not_to have_key('official_check_in')

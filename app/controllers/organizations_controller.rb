@@ -277,169 +277,57 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
 
   def pundit_healthcheck
     # Skip authentication and organization setup for this debugging route
-    # Try to get organization from params if available
-    route_org_id = params[:organization_id] || params[:id]
-    @route_organization = Organization.find_by(id: route_org_id) if route_org_id
+    health_data = PunditHealthCheckService.call(self)
     
     # Organization Context Sources
-    @org_from_params = route_org_id
-    @org_from_instance = @organization if defined?(@organization)
-    @org_from_teammate = current_company_teammate&.organization
-    # Try to get organization from helper method (works even if skip_organization_setup)
-    begin
-      @org_from_helper = organization if respond_to?(:organization)
-    rescue => e
-      @org_from_helper = "Error: #{e.message}"
-    end
-    
-    # Simulate actual_organization from policy (for Person records)
-    @simulated_actual_org = if @route_organization&.is_a?(Organization)
-      @route_organization
-    elsif @current_person && @pundit_user_struct
-      # Simulate what actual_organization would return in PersonPolicy
-      policy = PersonPolicy.new(@pundit_user_struct, @current_person)
-      policy.send(:actual_organization) rescue current_company_teammate&.organization
-    else
-      current_company_teammate&.organization
-    end
+    org_context = health_data[:organization_context]
+    @route_organization = org_context[:route_organization]
+    @org_from_params = org_context[:org_from_params]
+    @org_from_instance = org_context[:org_from_instance]
+    @org_from_teammate = org_context[:org_from_teammate]
+    @org_from_helper = org_context[:org_from_helper]
+    @simulated_actual_org = org_context[:simulated_actual_org]
     
     # Impersonation Status
-    @is_impersonating = session[:impersonating_teammate_id].present?
-    @impersonating_teammate_id = session[:impersonating_teammate_id]
-    @impersonating_teammate = impersonating_teammate if respond_to?(:impersonating_teammate)
-    @current_teammate = current_company_teammate
-    
-    # Load teammate records from session
-    @impersonating_teammate_record = Teammate.find_by(id: @impersonating_teammate_id) if @impersonating_teammate_id
-    @session_teammate_record = Teammate.find_by(id: session[:current_company_teammate_id]) if session[:current_company_teammate_id]
+    impersonation = health_data[:impersonation_status]
+    @is_impersonating = impersonation[:is_impersonating]
+    @impersonating_teammate_id = impersonation[:impersonating_teammate_id]
+    @impersonating_teammate = impersonation[:impersonating_teammate]
+    @current_teammate = impersonation[:current_teammate]
+    @impersonating_teammate_record = impersonation[:impersonating_teammate_record]
+    @session_teammate_record = impersonation[:session_teammate_record]
     
     # Teammate Details
-    if @current_teammate
-      @current_teammate_id = @current_teammate.id
-      @current_teammate_type = @current_teammate.type
-      @current_teammate_org = @current_teammate.organization
-      @current_teammate_permissions = {
-        can_manage_employment: @current_teammate.can_manage_employment?,
-        can_create_employment: @current_teammate.can_create_employment?,
-        can_manage_maap: @current_teammate.can_manage_maap?
-      }
-      
-      @current_person = @current_teammate.person
-      @all_teammates = @current_person.teammates.includes(:organization).map do |t|
-        {
-          id: t.id,
-          type: t.type,
-          organization_id: t.organization_id,
-          organization_name: t.organization.name,
-          can_manage_employment: t.can_manage_employment?,
-          can_create_employment: t.can_create_employment?,
-          can_manage_maap: t.can_manage_maap?
-        }
-      end
-    else
-      @current_teammate_id = nil
-      @current_person = nil
-      @all_teammates = []
-    end
-    
-    @session_teammate_id = session[:current_company_teammate_id]
+    teammate_details = health_data[:teammate_details]
+    @current_teammate_id = teammate_details[:current_teammate_id]
+    @current_teammate_type = teammate_details[:current_teammate_type]
+    @current_teammate_org = teammate_details[:current_teammate_org]
+    @current_teammate_permissions = teammate_details[:current_teammate_permissions]
+    @current_person = teammate_details[:current_person]
+    @all_teammates = teammate_details[:all_teammates]
+    @session_teammate_id = teammate_details[:session_teammate_id]
     
     # Pundit User Structure
-    @pundit_user_struct = pundit_user if respond_to?(:pundit_user)
-    @pundit_user_user = @pundit_user_struct&.user if @pundit_user_struct
-    @pundit_user_real_user = @pundit_user_struct&.real_user if @pundit_user_struct
+    pundit_user = health_data[:pundit_user_structure]
+    @pundit_user_struct = pundit_user[:pundit_user_struct]
+    @pundit_user_user = pundit_user[:pundit_user_user]
+    @pundit_user_real_user = pundit_user[:pundit_user_real_user]
     
     # Managerial Hierarchy
-    if @current_person && @route_organization
-      @managers = ManagerialHierarchyQuery.new(person: @current_person, organization: @route_organization).call
-      @direct_reports = EmployeeHierarchyQuery.new(person: @current_person, organization: @route_organization).call
-    else
-      @managers = []
-      @direct_reports = []
-    end
+    hierarchy = health_data[:managerial_hierarchy]
+    @managers = hierarchy[:managers]
+    @direct_reports = hierarchy[:direct_reports]
     
     # Policy Checks
-    @policy_checks = {}
-    
-    if @current_person && @pundit_user_struct
-      # Test view_check_ins? for current person
-      begin
-        policy = PersonPolicy.new(@pundit_user_struct, @current_person)
-        @policy_checks[:current_person] = {
-          result: policy.view_check_ins?,
-          error: nil
-        }
-      rescue => e
-        @policy_checks[:current_person] = {
-          result: false,
-          error: e.message
-        }
-      end
-      
-      # Test for each manager
-      @managers.each do |manager_info|
-        manager_person = Person.find_by(id: manager_info[:person_id])
-        next unless manager_person
-        
-        begin
-          policy = PersonPolicy.new(@pundit_user_struct, manager_person)
-          result = policy.view_check_ins?
-          @policy_checks["manager_#{manager_info[:person_id]}"] = {
-            person_id: manager_info[:person_id],
-            person_name: manager_info[:name],
-            result: result,
-            error: nil
-          }
-        rescue => e
-          @policy_checks["manager_#{manager_info[:person_id]}"] = {
-            person_id: manager_info[:person_id],
-            person_name: manager_info[:name],
-            result: false,
-            error: e.message
-          }
-        end
-      end
-      
-      # Test for each direct report
-      @direct_reports.each do |report_info|
-        report_person = Person.find_by(id: report_info[:person_id])
-        next unless report_person
-        
-        begin
-          policy = PersonPolicy.new(@pundit_user_struct, report_person)
-          result = policy.view_check_ins?
-          @policy_checks["report_#{report_info[:person_id]}"] = {
-            person_id: report_info[:person_id],
-            person_name: report_info[:name],
-            result: result,
-            error: nil
-          }
-        rescue => e
-          @policy_checks["report_#{report_info[:person_id]}"] = {
-            person_id: report_info[:person_id],
-            person_name: report_info[:name],
-            result: false,
-            error: e.message
-          }
-        end
-      end
-    end
+    @policy_checks = health_data[:policy_checks]
     
     # Caching Information
-    @teammate_cached = defined?(@current_company_teammate)
-    @cache_config = {
-      store: Rails.cache.class.name,
-      namespace: Rails.cache.respond_to?(:namespace) ? Rails.cache.namespace : 'N/A'
-    }
-    # Note: Cached values (@current_company_teammate) are loaded from session but memoized in instance variable
-    # The session stores the ID, and the instance variable caches the loaded record
+    caching = health_data[:caching_information]
+    @teammate_cached = caching[:teammate_cached]
+    @cache_config = caching[:cache_config]
     
     # Session Data
-    @session_data = {
-      current_company_teammate_id: session[:current_company_teammate_id],
-      impersonating_teammate_id: session[:impersonating_teammate_id],
-      all_keys: session.keys.grep(/teammate|person|organization/)
-    }
+    @session_data = health_data[:session_data]
   end
   
     private

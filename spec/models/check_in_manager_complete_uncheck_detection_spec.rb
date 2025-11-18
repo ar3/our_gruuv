@@ -61,7 +61,7 @@ RSpec.describe 'Check-In Manager Complete Uncheck Detection', type: :model do
         snapshot.process_with_processor!
 
         # Find the assignment data in the processed snapshot
-        assignment_data = snapshot.maap_data['assignments'].find { |a| a['id'] == assignment.id }
+        assignment_data = snapshot.maap_data['assignments'].find { |a| a['assignment_id'] == assignment.id }
         manager_check_in = assignment_data['manager_check_in']
 
         # Expected behavior: The change from manager complete to incomplete should be detected
