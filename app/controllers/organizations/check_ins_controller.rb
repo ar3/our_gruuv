@@ -13,6 +13,15 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     
     authorize @person, :view_check_ins?, policy_class: PersonPolicy
     
+    # Create debug data if debug parameter is present
+    if params[:debug] == 'true'
+      debug_service = Debug::CheckInsDebugService.new(
+        pundit_user: pundit_user,
+        person: @person
+      )
+      @debug_data = debug_service.call
+    end
+    
     # Determine view mode (card or table)
     @view_mode_param = params[:view] || 'table'  # Default to table view
     @view_mode_param = 'table' unless %w[card table].include?(@view_mode_param)

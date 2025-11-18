@@ -11,6 +11,157 @@
 - content_for :header_action do
   = render 'people/view_switcher'
 
+-# Authorization Debug Section
+- if params[:debug] == 'true' && @debug_data
+  .alert.alert-secondary.mt-3
+    %h5.mb-3
+      %i.bi.bi-bug.me-2
+      Authorization Debug
+    .row
+      .col-md-6
+        %strong Logged-in Teammate:
+        %br
+        - if current_company_teammate
+          - teammate = current_company_teammate
+          ID: #{teammate.id}
+          %br
+          Person: #{teammate.person.display_name} (ID: #{teammate.person.id})
+          %br
+          Organization: #{teammate.organization.name} (ID: #{teammate.organization.id})
+          %br
+          - if teammate.person.og_admin?
+            %span.badge.bg-danger Admin
+        - else
+          %span.text-muted Not logged in
+      .col-md-6
+        %strong Policy Information:
+        %br
+        Policy Class: #{@debug_data[:policy_class]}
+        %br
+        Policy Record: #{@debug_data[:policy_record].display_name} (ID: #{@debug_data[:policy_record].id})
+        %br
+        Policy Action: #{@debug_data[:policy_action]}
+    %hr
+    %strong Policy Conditions Breakdown (audit? method):
+    %br
+    %small.text-muted Each condition is checked in order. The first true condition grants access.
+    .mt-2
+      - conditions = @debug_data[:conditions]
+      -# Condition 1: admin_bypass?
+      - admin_bypass = conditions[:admin_bypass]
+      .mb-2
+        - if admin_bypass[:result]
+          %span.text-success
+            %i.bi.bi-check-circle-fill.me-1
+        - else
+          %span.text-muted
+            %i.bi.bi-circle.me-1
+        %code= admin_bypass[:description]
+        - if admin_bypass[:result]
+          %span.text-success (PASS - Admin bypass granted)
+        - else
+          %span.text-muted (FAIL - #{admin_bypass[:details]})
+      -# Condition 2: viewing_teammate && record
+      - both_exist = conditions[:viewing_teammate_and_record]
+      .mb-2
+        - if both_exist[:result]
+          %span.text-success
+            %i.bi.bi-check-circle-fill.me-1
+        - else
+          %span.text-danger
+            %i.bi.bi-x-circle-fill.me-1
+        %code= both_exist[:description]
+        - if both_exist[:result]
+          %span.text-success (PASS)
+        - else
+          %span.text-danger (FAIL - #{both_exist[:details]})
+      -# Condition 3: viewing_teammate.terminated?
+      - not_terminated = conditions[:not_terminated]
+      - if not_terminated[:result] != nil
+        .mb-2
+          - if not_terminated[:result]
+            %span.text-success
+              %i.bi.bi-check-circle-fill.me-1
+          - else
+            %span.text-danger
+              %i.bi.bi-x-circle-fill.me-1
+          %code= not_terminated[:description]
+          - if not_terminated[:result]
+            %span.text-success (PASS - #{not_terminated[:details]})
+          - else
+            %span.text-danger (FAIL - #{not_terminated[:details]})
+      -# Condition 4: viewing_teammate.person == record
+      - own_profile = conditions[:own_profile]
+      - if own_profile[:result] != nil
+        .mb-2
+          - if own_profile[:result]
+            %span.text-success
+              %i.bi.bi-check-circle-fill.me-1
+          - else
+            %span.text-muted
+              %i.bi.bi-circle.me-1
+          %code= own_profile[:description]
+          - if own_profile[:result]
+            %span.text-success (PASS - #{own_profile[:details]})
+          - else
+            %span.text-muted (FAIL - #{own_profile[:details]})
+      -# Condition 5: viewing_teammate.has_active_employment_tenure?
+      - has_active_tenure = conditions[:has_active_employment_tenure]
+      - if has_active_tenure[:result] != nil
+        .mb-2
+          - if has_active_tenure[:result]
+            %span.text-success
+              %i.bi.bi-check-circle-fill.me-1
+          - else
+            %span.text-danger
+              %i.bi.bi-x-circle-fill.me-1
+          %code= has_active_tenure[:description]
+          - if has_active_tenure[:result]
+            %span.text-success (PASS - #{has_active_tenure[:details]})
+          - else
+            %span.text-danger (FAIL - #{has_active_tenure[:details]})
+      -# Condition 6: viewing_teammate.can_manage_employment?
+      - can_manage = conditions[:can_manage_employment]
+      - if can_manage[:result] != nil
+        .mb-2
+          - if can_manage[:result]
+            %span.text-success
+              %i.bi.bi-check-circle-fill.me-1
+          - else
+            %span.text-muted
+              %i.bi.bi-circle.me-1
+          %code= can_manage[:description]
+          - if can_manage[:result]
+            %span.text-success (PASS - #{can_manage[:details]})
+          - else
+            %span.text-muted (FAIL - #{can_manage[:details]})
+      -# Condition 7: viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization)
+      - in_hierarchy = conditions[:in_managerial_hierarchy]
+      - if in_hierarchy[:result] != nil
+        .mb-2
+          - if in_hierarchy[:result]
+            %span.text-success
+              %i.bi.bi-check-circle-fill.me-1
+          - else
+            %span.text-muted
+              %i.bi.bi-circle.me-1
+          %code= in_hierarchy[:description]
+          - if in_hierarchy[:result]
+            %span.text-success (PASS - #{in_hierarchy[:details]})
+          - else
+            %span.text-muted (FAIL - #{in_hierarchy[:details]})
+    %hr
+    %strong Final Result:
+    - final_result = @debug_data[:final_result]
+    - if final_result
+      %span.badge.bg-success.fs-6
+        %i.bi.bi-check-circle-fill.me-1
+        #{@debug_data[:policy_action]} = TRUE (Access Granted)
+    - else
+      %span.badge.bg-danger.fs-6
+        %i.bi.bi-x-circle-fill.me-1
+        #{@debug_data[:policy_action]} = FALSE (Access Denied)
+
 .row.justify-content-center
   .col-lg-12
     / Position Details Section

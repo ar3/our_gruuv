@@ -18,6 +18,15 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     @current_employment = @teammate.employment_tenures.active.first
     @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
     
+    # Create debug data if debug parameter is present
+    if params[:debug] == 'true'
+      debug_service = Debug::PositionDebugService.new(
+        pundit_user: pundit_user,
+        person: @teammate.person
+      )
+      @debug_data = debug_service.call
+    end
+    
     # Load form data
     load_form_data
   end

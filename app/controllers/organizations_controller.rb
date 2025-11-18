@@ -277,7 +277,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
 
   def pundit_healthcheck
     # Skip authentication and organization setup for this debugging route
-    health_data = PunditHealthCheckService.call(self)
+    health_data = Debug::PunditHealthCheckService.call(self)
     
     # Organization Context Sources
     org_context = health_data[:organization_context]

@@ -356,7 +356,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   def gather_debug_data
     @debug_mode = true
     
-    debug_service = AuthorizationDebugService.new(
+    debug_service = Debug::AuthorizationDebugService.new(
       current_user: current_person,
       subject_person: @person,
       organization: organization,
