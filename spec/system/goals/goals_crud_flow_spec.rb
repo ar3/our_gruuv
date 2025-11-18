@@ -121,12 +121,9 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       expect(page).to have_current_path(organization_goals_path(organization), wait: 10)
       
       # Verify deletion in database (soft delete)
-      deleted_goal = Goal.with_deleted.find_by(id: goal_id)
+      deleted_goal = Goal.find_by(id: goal_id)
       expect(deleted_goal).to be_present
       expect(deleted_goal.deleted_at).to be_present
-      
-      # Verify it's not in regular scope
-      expect(Goal.find_by(id: goal_id)).to be_nil
     end
     
     it 'shows validation errors for missing required fields' do

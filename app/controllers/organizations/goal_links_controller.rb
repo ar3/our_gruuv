@@ -11,7 +11,9 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     
     @direction = 'outgoing'
     @goal_type = params[:goal_type] || 'stepping_stone_activity'
-    available_goals = Goal.active.for_teammate(current_person.teammates.find_by(organization: @organization))
+    # Don't filter by started_at for goal linking - allow linking to draft goals
+    available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization))
+                          .where(deleted_at: nil, completed_at: nil)
                           .where.not(id: @goal.id)
                           .where(goal_type: @goal_type)
     
@@ -36,7 +38,9 @@ class Organizations::GoalLinksController < Organizations::OrganizationNamespaceB
     authorize @goal, :update?
     
     @direction = 'incoming'
-    available_goals = Goal.active.for_teammate(current_person.teammates.find_by(organization: @organization))
+    # Don't filter by started_at for goal linking - allow linking to draft goals
+    available_goals = Goal.for_teammate(current_person.teammates.find_by(organization: @organization))
+                          .where(deleted_at: nil, completed_at: nil)
                           .where.not(id: @goal.id)
     
     @available_goals_with_status = available_goals.map do |candidate_goal|

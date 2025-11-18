@@ -22,7 +22,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         params[:owner_type] = 'Teammate'
         params[:owner_id] = current_teammate.id.to_s
       else
-        @goals = policy_scope(Goal.active.none)
+        @goals = policy_scope(Goal.none)
         @view_style = params[:view] || 'hierarchical-indented'
         @view_style = 'hierarchical-indented' unless %w[table cards list network tree nested timeline check-in hierarchical-indented].include?(@view_style)
         @goal_count = 0
@@ -45,17 +45,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     end
     
     # Start with goals visible to the teammate (filtered by company_id via policy scope)
-    @goals = policy_scope(Goal.active)
-    
-    # Apply show_deleted filter if requested
-    if params[:show_deleted] == '1'
-      @goals = @goals.with_deleted
-    end
-    
-    # Apply show_completed filter if requested
-    if params[:show_completed] == '1'
-      @goals = @goals.with_completed
-    end
+    @goals = policy_scope(Goal)
+    @goals = Goals::FilterQuery.new(@goals).call(
+      show_deleted: params[:show_deleted] == '1',
+      show_completed: params[:show_completed] == '1'
+    )
     
     # Filter by owner
     @goals = @goals.where(owner_type: params[:owner_type], owner_id: params[:owner_id])
@@ -68,10 +62,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Calculate spotlight stats for goals_overview (before other filters)
     if spotlight_param == 'goals_overview'
-      all_goals_for_owner = policy_scope(Goal.active).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
-      # Include completed/deleted if requested for stats
-      all_goals_for_owner = all_goals_for_owner.with_completed if params[:show_completed] == '1'
-      all_goals_for_owner = all_goals_for_owner.with_deleted if params[:show_deleted] == '1'
+      all_goals_for_owner = policy_scope(Goal).where(owner_type: params[:owner_type], owner_id: params[:owner_id])
+      all_goals_for_owner = Goals::FilterQuery.new(all_goals_for_owner).call(
+        show_deleted: params[:show_deleted] == '1',
+        show_completed: params[:show_completed] == '1'
+      )
       @spotlight_stats = helpers.calculate_goals_overview_stats(all_goals_for_owner)
     end
     

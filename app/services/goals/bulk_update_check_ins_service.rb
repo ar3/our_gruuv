@@ -29,7 +29,8 @@ module Goals
     attr_reader :organization, :current_person, :goal_check_ins_params, :week_start
 
     def process_check_in(goal_id, check_in_data)
-      goal = Goal.active.find_by(id: goal_id, company: organization)
+      # Find goal without filtering by started_at - allow check-ins for any goal
+      goal = Goal.where(company: organization, deleted_at: nil, completed_at: nil).find_by(id: goal_id)
       return add_error(goal_id, "Goal not found") unless goal
 
       # Skip completed goals - they should not have check-ins updated

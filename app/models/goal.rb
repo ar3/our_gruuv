@@ -71,6 +71,7 @@ class Goal < ApplicationRecord
   scope :active, -> {
     where(deleted_at: nil)
       .where(completed_at: nil)
+      .where.not(started_at: nil)
   }
   
   scope :completed, -> { where.not(completed_at: nil) }
@@ -79,11 +80,6 @@ class Goal < ApplicationRecord
     where.not(goal_type: 'inspirational_objective')
          .where.not(most_likely_target_date: nil)
   }
-  
-  # Soft delete scopes - these add deleted/completed goals to existing queries
-  # They use or to combine the existing relation with deleted/completed goals
-  scope :with_deleted, -> { or(where.not(deleted_at: nil)) }
-  scope :with_completed, -> { or(where.not(completed_at: nil)) }
   
   # Instance methods
   def timeframe

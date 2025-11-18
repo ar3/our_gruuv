@@ -380,10 +380,13 @@ RSpec.describe Organizations::GoalsController, type: :controller do
   describe 'DELETE #destroy' do
     let!(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
     
-    it 'destroys the goal' do
+    it 'soft deletes the goal' do
       expect {
         delete :destroy, params: { organization_id: company.id, id: goal.id }
-      }.to change(Goal, :count).by(-1)
+      }.not_to change(Goal, :count)
+      
+      goal.reload
+      expect(goal.deleted_at).to be_present
     end
     
     it 'redirects to goals index' do

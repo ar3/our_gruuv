@@ -280,7 +280,7 @@ RSpec.describe Goal, type: :model do
       let!(:completed_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, completed_at: 1.day.ago) }
       
       it 'returns goals with completed_at' do
-        result = described_class.with_completed.completed
+        result = described_class.completed
         expect(result).to include(completed_goal)
         expect(result).not_to include(active_goal)
       end
@@ -295,26 +295,6 @@ RSpec.describe Goal, type: :model do
         result = described_class.active
         expect(result).to include(active_goal)
         expect(result).not_to include(completed_goal, deleted_goal)
-      end
-    end
-    
-    describe '.with_completed' do
-      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago) }
-      let!(:completed_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, completed_at: 1.day.ago) }
-      
-      it 'includes completed goals when chained with active' do
-        result = described_class.active.with_completed
-        expect(result).to include(active_goal, completed_goal)
-      end
-    end
-    
-    describe '.with_deleted' do
-      let!(:active_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago) }
-      let!(:deleted_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, deleted_at: 1.day.ago) }
-      
-      it 'includes deleted goals when chained with active' do
-        result = described_class.active.with_deleted
-        expect(result).to include(active_goal, deleted_goal)
       end
     end
   end

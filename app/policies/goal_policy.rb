@@ -29,14 +29,15 @@ class GoalPolicy < ApplicationPolicy
       return scope.none unless teammate
       person = teammate.person
       if person.og_admin?
-        scope.active
+        scope.all
       else
         # Use organization from teammate
         company = actual_organization&.root_company || actual_organization
         return scope.none unless company
         
-        # Filter by company_id and only active goals (not deleted or completed)
-        scope.active.where(company_id: company.id)
+        # Filter by company_id - don't filter by deleted/completed here,
+        # let the controller handle that based on user preferences
+        scope.where(company_id: company.id)
       end
     end
   end
