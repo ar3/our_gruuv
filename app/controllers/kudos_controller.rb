@@ -7,7 +7,7 @@ class KudosController < ApplicationController
   def pundit_user
     OpenStruct.new(
       user: current_company_teammate,
-      real_user: real_current_teammate
+      impersonating_teammate: impersonator_teammate
     )
   end
 

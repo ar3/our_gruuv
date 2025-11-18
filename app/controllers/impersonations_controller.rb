@@ -22,7 +22,7 @@ class ImpersonationsController < ApplicationController
     end
     
     # Find or create a teammate for the person (prefer active teammates)
-    teammate = person.active_teammates.where(type: 'CompanyTeammate').first || ensure_teammate_for_person(person)
+    teammate = ensure_teammate_for_person(person)
     
     if start_impersonation(teammate)
       flash[:notice] = "Now impersonating #{person.display_name}"
@@ -36,7 +36,7 @@ class ImpersonationsController < ApplicationController
   def destroy
     Rails.logger.info "IMPERSONATION_DESTROY: 1 - Impersonation destroy called"
     Rails.logger.info "IMPERSONATION_DESTROY: 2 - Current teammate: #{current_company_teammate&.id} (#{current_person&.full_name})"
-    Rails.logger.info "IMPERSONATION_DESTROY: 3 - Real teammate: #{real_current_teammate&.id} (#{real_current_teammate&.person&.full_name})"
+    Rails.logger.info "IMPERSONATION_DESTROY: 3 - Impersonating teammate: #{impersonator_teammate&.id} (#{impersonator_teammate&.person&.full_name})"
     Rails.logger.info "IMPERSONATION_DESTROY: 4 - Referer: #{request.referer}"
     Rails.logger.info "IMPERSONATION_DESTROY: 5 - User agent: #{request.user_agent}"
     Rails.logger.info "IMPERSONATION_DESTROY: 6 - Request method: #{request.method}"
@@ -57,14 +57,14 @@ class ImpersonationsController < ApplicationController
   end
 
   def ensure_admin!
-    unless real_current_teammate
+    unless current_company_teammate
       flash[:error] = "You must be logged in to impersonate someone"
       redirect_to root_path
       return
     end
     
     # Use Pundit policy for authorization
-    unless policy(real_current_teammate.person).can_impersonate_anyone?
+    unless policy(current_company_teammate.person).can_impersonate_anyone?
       flash[:error] = "Only administrators can impersonate users"
       redirect_to root_path
     end

@@ -10,26 +10,16 @@ class ApplicationPolicy
   end
 
   # Admin bypass - og_admin users get all permissions
-  # When impersonating, use the impersonated user's permissions (not the admin's)
   def admin_bypass?
-    # Check if the current user (impersonated if impersonating, otherwise real user) is an admin
-    # pundit_user should always be an OpenStruct from pundit_user when called through Pundit's policy helper
-    # Use 'user' (the impersonated person) instead of 'real_user' (the admin) to ensure
-    # impersonated users only have their own permissions
-    current_teammate = teammate
-    return false unless current_teammate
-    
-    current_teammate.person&.og_admin?
+    viewing_teammate.person&.og_admin? || false
   end
 
   # Helper method to get the teammate from pundit_user
   # Returns a CompanyTeammate (or nil if not logged in)
-  def teammate
-    teammate_obj = pundit_user.respond_to?(:user) ? pundit_user.user : pundit_user
-    return nil unless teammate_obj
-    return nil unless teammate_obj.is_a?(CompanyTeammate)
-    
-    teammate_obj
+  def viewing_teammate
+    @viewing_teammate ||= pundit_user.respond_to?(:user) ? pundit_user.user : pundit_user
+    return nil unless @viewing_teammate.is_a?(CompanyTeammate)
+    @viewing_teammate
   end
 
   # Helper method to get an Organization from the teammate and record context
@@ -45,7 +35,7 @@ class ApplicationPolicy
     end
     
     # Fall back to teammate's organization
-    teammate&.organization
+    viewing_teammate&.organization
   end
 
   # Public policy methods - Pundit requires these to be public
@@ -60,10 +50,9 @@ class ApplicationPolicy
   private
 
   def validate_teammate!
-    teammate_obj = pundit_user.respond_to?(:user) ? pundit_user.user : pundit_user
-    return if teammate_obj.nil? # Allow nil for unauthenticated checks
+    return if viewing_teammate.nil? # Allow nil for unauthenticated checks
     
-    unless teammate_obj.is_a?(CompanyTeammate)
+    unless viewing_teammate.is_a?(CompanyTeammate)
       raise ArgumentError, "Policies must receive a CompanyTeammate, got #{teammate_obj.class.name}. Use teammate.person if you need the person."
     end
   end
@@ -104,29 +93,25 @@ class ApplicationPolicy
 
     # Helper method to get the teammate from pundit_user
     # Returns a CompanyTeammate (or nil if not logged in)
-    def teammate
-      teammate_obj = pundit_user.respond_to?(:user) ? pundit_user.user : pundit_user
-      return nil unless teammate_obj
-      return nil unless teammate_obj.is_a?(CompanyTeammate)
-      
-      teammate_obj
+    def viewing_teammate
+      @viewing_teammate ||= pundit_user.respond_to?(:user) ? pundit_user.user : pundit_user
+      return nil unless @viewing_teammate.is_a?(CompanyTeammate)
+      @viewing_teammate
     end
 
     # Helper method to get an Organization from the teammate and scope context
     def actual_organization
       # For organization-scoped scopes, try to infer from scope
       # Otherwise, use teammate's organization
-      teammate&.organization
+      viewing_teammate&.organization
     end
 
     # Helper method for admin bypass in scope classes
     # When impersonating, use the impersonated user's permissions (not the admin's)
     # This ensures scopes show what the impersonated user can see
     def admin_bypass?
-      current_teammate = teammate
-      return false unless current_teammate
-      
-      current_teammate.person&.og_admin?
+      return false unless viewing_teammate
+      viewing_teammate.person&.og_admin?
     end
   end
 end

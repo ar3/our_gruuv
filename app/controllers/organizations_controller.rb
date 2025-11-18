@@ -306,7 +306,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     # Impersonation Status
     @is_impersonating = session[:impersonating_teammate_id].present?
     @impersonating_teammate_id = session[:impersonating_teammate_id]
-    @real_teammate = real_current_teammate if respond_to?(:real_current_teammate)
+    @impersonating_teammate = impersonating_teammate if respond_to?(:impersonating_teammate)
     @current_teammate = current_company_teammate
     
     # Load teammate records from session
