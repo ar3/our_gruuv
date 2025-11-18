@@ -4,12 +4,6 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   before_action :set_person
   after_action :verify_authorized
 
-  # Allow authorization checks even when user doesn't have access to organization
-  # This allows proper redirects to public view instead of organizations_path
-  def allow_authorization_for_different_org?
-    true
-  end
-
   def show
     authorize @person, :view_check_ins?, policy_class: PersonPolicy
     # Organization-scoped person view - filtered by the organization from the route

@@ -14,12 +14,17 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
   let(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment) }
   let(:manager_teammate) { create(:teammate, person: manager, organization: organization, can_manage_employment: true) }
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
+  let(:manager_employment) do
+    manager_teammate.update!(first_employed_at: 1.year.ago)
+    create(:employment_tenure, teammate: manager_teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
+  end
 
   before do
     manager_teammate
     employee_teammate
     employment_tenure
     assignment_tenure
+    manager_employment
     sign_in_as_teammate(manager, organization)
   end
 

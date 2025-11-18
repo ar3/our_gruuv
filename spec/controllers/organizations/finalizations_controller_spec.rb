@@ -30,6 +30,7 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
 
   before do
     # Set up employment relationship for authorization
+    manager_teammate.update!(first_employed_at: 1.year.ago)
     create(:employment_tenure,
            teammate: employee_teammate,
            company: organization,

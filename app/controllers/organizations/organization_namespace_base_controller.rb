@@ -17,42 +17,28 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
     return unless current_company_teammate
     
     route_org = Organization.find(params[:organization_id] || params[:id])
-    route_root_company = route_org.root_company || route_org
     
-    current_root_company = current_company_teammate.organization.root_company || current_company_teammate.organization
+    # Since only CompanyTeammates log in and companies are top-level,
+    # check for exact company match
+    return if current_company_teammate.organization == route_org
     
-    # If teammate's organization matches route's root company, no action needed
-    return if current_root_company == route_root_company
-    
-    # Find active teammate for route's root company
-    active_teammate = current_company_teammate.person.active_teammates
-                                                 .joins(:organization)
-                                                 .where(organizations: { id: route_root_company.self_and_descendants })
+    # Find CompanyTeammate for the route company
+    # Since only CompanyTeammates log in, filter for CompanyTeammate type
+    company_teammate = current_company_teammate.person.active_teammates
+                                                 .where(type: 'CompanyTeammate')
+                                                 .where(organization_id: route_org.id)
                                                  .first
     
-    if active_teammate
-      # Ensure it's a CompanyTeammate for root company
-      company_teammate = ensure_company_teammate(active_teammate) || active_teammate
-      # Switch to the teammate for this organization
+    if company_teammate
+      # Switch to the teammate for this company
       session[:current_company_teammate_id] = company_teammate.id
       # Clear cached teammate so it reloads
       @current_company_teammate = nil
-    elsif allow_authorization_for_different_org?
-      # For people views, allow authorization check to determine access
-      # The organization context is still set via set_organization
-      return
     else
-      # User doesn't have access to this organization
+      # User doesn't have access to this company
       flash[:alert] = "You don't have access to that organization."
       redirect_to organizations_path
     end
-  end
-
-  # Override this method in child controllers to allow authorization checks
-  # even when user doesn't have access to the organization
-  # (e.g., for people views that should redirect to public view on failure)
-  def allow_authorization_for_different_org?
-    false
   end
 
   def set_organization

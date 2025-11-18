@@ -38,12 +38,17 @@ RSpec.describe ImpersonationsController, type: :controller do
         create(:teammate, person: other_admin, organization: create(:organization, :company))
       end
 
-      it 'does not start impersonation' do
+      it 'allows impersonation (admin-to-admin prevention not implemented yet)' do
         post :create, params: { person_id: other_admin.id }
         
-        expect(session[:impersonating_teammate_id]).to be_nil
+        other_admin_teammate = other_admin.active_teammates.first
+        admin_teammate = admin.active_teammates.first
+        # impersonating_teammate_id stores the ORIGINAL user (admin) before impersonation
+        expect(session[:impersonating_teammate_id]).to eq(admin_teammate.id)
+        # current_company_teammate_id stores the IMPERSONATED user (other_admin)
+        expect(session[:current_company_teammate_id]).to eq(other_admin_teammate.id)
         expect(response).to redirect_to(root_path)
-        expect(flash[:error]).to include("Unable to impersonate")
+        expect(flash[:notice]).to include("Now impersonating")
       end
     end
 

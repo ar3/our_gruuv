@@ -8,6 +8,8 @@ RSpec.describe Organizations::PeopleController, type: :controller do
   before do
     manager_access
     # Ensure the manager has an active employment tenure in the organization
+    # This is required for the teammate? policy to pass (checks viewing_teammate.employed?)
+    manager_access.update!(first_employed_at: 1.year.ago)
     create(:employment_tenure, teammate: manager_access, company: organization, started_at: 1.year.ago, ended_at: nil)
     # Use existing teammate to avoid duplicate
     session[:current_company_teammate_id] = manager_access.id

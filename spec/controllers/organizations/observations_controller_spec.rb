@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe Organizations::ObservationsController, type: :controller do
+  render_views
+  
   let(:company) { create(:organization, :company) }
   let(:observer) { create(:person) }
   let(:observer_teammate) { create(:teammate, person: observer, organization: company) }

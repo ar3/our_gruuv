@@ -30,6 +30,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
     
     # Create teammate for person and sign in
     person_teammate = create(:teammate, person: person, organization: company)
+    person_teammate.update!(first_employed_at: 1.year.ago)
     session[:current_company_teammate_id] = person_teammate.id
     @current_company_teammate = nil if defined?(@current_company_teammate)
   end
