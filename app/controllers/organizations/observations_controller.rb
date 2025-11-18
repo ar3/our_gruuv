@@ -232,6 +232,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
                       notice: 'Observation was successfully created.'
         else
           # Re-populate the form with submitted values for re-rendering
+          @assignments = organization.assignments.ordered
+          @aspirations = organization.aspirations
+          @abilities = organization.abilities.order(:name)
           render :new, status: :unprocessable_entity
         end
       end
@@ -244,6 +247,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       @form.privacy_level = params[:observation][:privacy_level] if params[:observation][:privacy_level].present?
       @form.observed_at = params[:observation][:observed_at] if params[:observation][:observed_at].present?
       
+      @assignments = organization.assignments.ordered
+      @aspirations = organization.aspirations
+      @abilities = organization.abilities.order(:name)
       render :new, status: :unprocessable_entity
     end
   end
@@ -270,6 +276,16 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     visibility_query = ObservationVisibilityQuery.new(current_person, organization)
     @observations = visibility_query.visible_observations.journal.includes(:observer, :observed_teammates, :observation_ratings)
     @observations = @observations.recent
+    
+    # Calculate spotlight stats for the view
+    @spotlight_stats = calculate_spotlight_stats(@observations)
+    
+    # Set default filter/sort/view/spotlight state
+    @current_filters = {}
+    @current_sort = 'recent'
+    @current_view = 'list'
+    @current_spotlight = nil
+    
     render :index
   end
 
