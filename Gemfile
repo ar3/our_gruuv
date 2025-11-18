@@ -110,7 +110,7 @@ gem "dry-validation", "~> 1.11"
 gem "dry-schema", "~> 1.11"
 
 # Slack API integration
-gem "slack-ruby-client", "~> 2.0"
+gem "slack-ruby-client", "~> 3.1"
 
 # HTTP client for API requests
 gem "http", "~> 5.0"
