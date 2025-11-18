@@ -9,7 +9,7 @@
         .h3.text-success= @goals.active.count
         %small.text-muted Active Goals
       .col-3
-        .h3.text-info= @goals.now.count
+        .h3.text-info= @goals.timeframe_now.count
         %small.text-muted Now Timeframe
       .col-3
         .h3.text-warning= @goals.select { |g| g.became_top_priority.present? }.count

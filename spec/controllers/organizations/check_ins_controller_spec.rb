@@ -514,5 +514,101 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         expect(assigns(:relevant_abilities)).to be_empty
       end
     end
+
+    context 'load_goals' do
+      before do
+        sign_in_as_teammate(manager, organization)
+        employment_tenure
+      end
+
+      it 'loads active goals filtered by timeframe' do
+        # Create goals with different timeframes
+        now_goal = create(:goal, 
+          creator: employee_teammate, 
+          owner: employee_teammate, 
+          most_likely_target_date: Date.today + 1.month,
+          started_at: 1.day.ago
+        )
+        next_goal = create(:goal, 
+          creator: employee_teammate, 
+          owner: employee_teammate, 
+          most_likely_target_date: Date.today + 6.months,
+          started_at: 1.day.ago
+        )
+        later_goal = create(:goal, 
+          creator: employee_teammate, 
+          owner: employee_teammate, 
+          most_likely_target_date: Date.today + 12.months,
+          started_at: 1.day.ago
+        )
+        
+        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        
+        expect(assigns(:now_goals)).to include(now_goal)
+        expect(assigns(:next_goals)).to include(next_goal)
+        expect(assigns(:later_goals)).to include(later_goal)
+      end
+
+      it 'only loads active goals (not draft or completed)' do
+        active_goal = create(:goal, 
+          creator: employee_teammate, 
+          owner: employee_teammate, 
+          most_likely_target_date: Date.today + 1.month,
+          started_at: 1.day.ago,
+          completed_at: nil
+        )
+        draft_goal = create(:goal, 
+          creator: employee_teammate, 
+          owner: employee_teammate, 
+          most_likely_target_date: Date.today + 1.month,
+          started_at: nil
+        )
+        completed_goal = create(:goal, 
+          creator: employee_teammate, 
+          owner: employee_teammate, 
+          most_likely_target_date: Date.today + 1.month,
+          started_at: 2.days.ago,
+          completed_at: 1.day.ago
+        )
+        
+        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        
+        expect(assigns(:now_goals)).to include(active_goal)
+        expect(assigns(:now_goals)).not_to include(draft_goal)
+        # Completed goals are excluded by default scope
+        expect(Goal.unscoped.find_by(id: completed_goal.id)).to be_present
+      end
+
+      it 'handles empty state when employee has no goals' do
+        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        
+        expect(assigns(:now_goals)).to be_empty
+        expect(assigns(:next_goals)).to be_empty
+        expect(assigns(:later_goals)).to be_empty
+      end
+
+      it 'only loads goals for the specific teammate' do
+        other_person = create(:person, full_name: 'Other Person')
+        other_teammate = create(:teammate, person: other_person, organization: organization)
+        
+        employee_goal = create(:goal, 
+          creator: employee_teammate, 
+          owner: employee_teammate, 
+          most_likely_target_date: Date.today + 1.month,
+          started_at: 1.day.ago
+        )
+        other_goal = create(:goal, 
+          creator: other_teammate, 
+          owner: other_teammate, 
+          most_likely_target_date: Date.today + 1.month,
+          started_at: 1.day.ago
+        )
+        
+        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        
+        expect(assigns(:now_goals)).to include(employee_goal)
+        expect(assigns(:now_goals)).not_to include(other_goal)
+      end
+    end
   end
 end

@@ -52,17 +52,17 @@ class Goal < ApplicationRecord
     )
   }
   
-  scope :now, -> {
+  scope :timeframe_now, -> {
     where('most_likely_target_date >= ? AND most_likely_target_date < ?', 
           Date.today, Date.today + 3.months)
   }
   
-  scope :next_timeframe, -> {
+  scope :timeframe_next, -> {
     where('most_likely_target_date >= ? AND most_likely_target_date < ?',
           Date.today + 3.months, Date.today + 9.months)
   }
   
-  scope :later, -> {
+  scope :timeframe_later, -> {
     where('most_likely_target_date >= ?', Date.today + 9.months)
   }
   

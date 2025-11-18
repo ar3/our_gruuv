@@ -139,30 +139,57 @@
     .col-4 
       .card
         .card-header
-          %h5.mb-0 Current Goals (Now => up to 3 months from now)
+          %h5.mb-0 Current Goals (Now - up to 3 months)
         .card-body
-          %ul
-            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
-            %li If I can accomplish ____ (by XX/XXX), ______ will become easier or unnecessary
-            %li If I can accomplish ____ (by XX/XXX), ______ will become easier or unnecessary
+          - if @now_goals.any?
+            %ul
+              - @now_goals.each do |goal|
+                %li
+                  = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
+          - else
+            .text-center.py-3
+              %p.text-muted.mb-3 No current goals yet
+              = link_to new_organization_goal_path(@organization), class: "btn btn-primary btn-sm" do
+                %i.bi.bi-plus-circle.me-1
+                Create Your First Goal
     .col-4 
       .card
         .card-header
-          %h5.mb-0 Short-Term Goals (3 months to 3 years from now)
+          %h5.mb-0 Next Goals (3-9 months)
         .card-body
-          %ul
-            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
-            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
-            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
+          - if @next_goals.any?
+            %ul
+              - @next_goals.each do |goal|
+                %li
+                  = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
+          - else
+            .text-center.py-3
+              %p.text-muted.mb-3 No next goals yet
+              = link_to new_organization_goal_path(@organization), class: "btn btn-primary btn-sm" do
+                %i.bi.bi-plus-circle.me-1
+                Create Your First Goal
     .col-4 
       .card
         .card-header
-          %h5.mb-0 Long-Term Goals (More than3 years from now)
+          %h5.mb-0 Later Goals (9+ months)
         .card-body
-          %ul
-            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
-            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
-            %li If I can accomplish ____ (by XX/XXX), I will be able to ______
+          - if @later_goals.any?
+            %ul
+              - @later_goals.each do |goal|
+                %li
+                  = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
+          - else
+            .text-center.py-3
+              %p.text-muted.mb-3 No later goals yet
+              = link_to new_organization_goal_path(@organization), class: "btn btn-primary btn-sm" do
+                %i.bi.bi-plus-circle.me-1
+                Create Your First Goal
+
+  .row.mt-3
+    .col-12.text-center
+      %p.text-muted
+        For more details, 
+        = link_to "visit the goals check-in page", organization_goals_path(@organization, owner_id: "Teammate_#{@teammate.id}", view: 'check-in'), class: "text-decoration-none"
 
   = render 'shared/section_header', 
            title: '1:1 Todos', 

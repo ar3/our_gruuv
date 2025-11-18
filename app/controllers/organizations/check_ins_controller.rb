@@ -22,6 +22,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     @assignment_check_ins = load_or_build_assignment_check_ins
     @aspiration_check_ins = load_or_build_aspiration_check_ins
     @relevant_abilities = load_relevant_abilities
+    load_goals
   end
   
   def update
@@ -108,6 +109,14 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
 
   def load_relevant_abilities
     RelevantAbilitiesQuery.new(teammate: @teammate, organization: @organization).call
+  end
+
+  def load_goals
+    # Load active goals for the teammate, filtered by timeframe
+    base_goals = Goal.for_teammate(@teammate).active
+    @now_goals = base_goals.timeframe_now
+    @next_goals = base_goals.timeframe_next
+    @later_goals = base_goals.timeframe_later
   end
 
   def update_assignment_check_ins(check_ins_params = params)

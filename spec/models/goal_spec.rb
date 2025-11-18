@@ -227,25 +227,25 @@ RSpec.describe Goal, type: :model do
       end
     end
     
-    describe '.now' do
+    describe '.timeframe_now' do
       it 'returns goals with most_likely_target_date within 3 months' do
-        result = described_class.now
+        result = described_class.timeframe_now
         expect(result).to include(personal_goal)
         expect(result).not_to include(team_goal, other_goal)
       end
     end
     
-    describe '.next_timeframe' do
+    describe '.timeframe_next' do
       it 'returns goals with most_likely_target_date 3-9 months away' do
-        result = described_class.next_timeframe
+        result = described_class.timeframe_next
         expect(result).to include(team_goal)
         expect(result).not_to include(personal_goal, other_goal)
       end
     end
     
-    describe '.later' do
+    describe '.timeframe_later' do
       it 'returns goals with most_likely_target_date 9+ months away' do
-        result = described_class.later
+        result = described_class.timeframe_later
         expect(result).to include(other_goal)
         expect(result).not_to include(personal_goal, team_goal)
       end

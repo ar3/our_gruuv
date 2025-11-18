@@ -257,7 +257,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       expect(displayed_goal_ids).not_to include(next_goal.id, later_goal.id)
       
       # Approach 6: Verify using Goal model's now scope
-      expect(Goal.now.where(owner: teammate, owner_type: 'Teammate').pluck(:id)).to include(now_goal.id)
+      expect(Goal.timeframe_now.where(owner: teammate, owner_type: 'Teammate').pluck(:id)).to include(now_goal.id)
     end
     
     xit 'filters goals by goal type' do # SKIPPED: Goal index must have owner not yet implemented

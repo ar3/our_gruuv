@@ -574,11 +574,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     case timeframe
     when 'now'
-      goals.now
+      goals.timeframe_now
     when 'next'
-      goals.next_timeframe
+      goals.timeframe_next
     when 'later'
-      goals.later
+      goals.timeframe_later
     else
       goals
     end
