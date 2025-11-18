@@ -45,7 +45,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_check_ins_path(organization, employee))
+        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
         expect(flash[:notice]).to eq('Check-ins saved successfully.')
         
         position_check_in.reload
@@ -70,7 +70,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_check_ins_path(organization, employee))
+        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
         
         assignment_check_in.reload
         expect(assignment_check_in.manager_rating).to eq('meeting')
@@ -94,7 +94,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_check_ins_path(organization, employee))
+        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
         
         aspiration_check_in.reload
         expect(aspiration_check_in.manager_rating).to eq('exceeding')
@@ -127,7 +127,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_check_ins_path(organization, employee))
+        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
         
         assignment_check_in.reload
         aspiration_check_in.reload
@@ -153,7 +153,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_check_ins_path(organization, employee))
+        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
         
         position_check_in.reload
         expect(position_check_in.employee_rating).to eq(1)
@@ -179,7 +179,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_check_ins_path(organization, employee))
+        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
         
         assignment_check_in.reload
         expect(assignment_check_in.employee_rating).to eq('exceeding')
@@ -247,7 +247,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_check_ins_path(organization, employee))
+        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
         
         aspiration_check_in.reload
         expect(aspiration_check_in.employee_rating).to eq('meeting')

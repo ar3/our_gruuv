@@ -50,7 +50,7 @@ class Organizations::FinalizationsController < Organizations::OrganizationNamesp
     
     if result.ok?
       # TODO: Send notification to employee
-      redirect_to organization_person_check_ins_path(@organization, @person),
+      redirect_to audit_organization_employee_path(@organization, @person),
                   notice: 'Check-ins finalized successfully. Employee will be notified.'
     else
       redirect_to organization_person_finalization_path(@organization, @person),

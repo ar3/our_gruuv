@@ -10,6 +10,15 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
   let!(:position_type) { create(:position_type, organization: company, external_title: 'Engineer', position_major_level: position_major_level) }
   let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let!(:manager_employment_tenure) do
+    manager_teammate.update!(first_employed_at: 1.year.ago)
+    create(:employment_tenure,
+           teammate: manager_teammate,
+           company: company,
+           position: position,
+           started_at: 1.year.ago,
+           ended_at: nil)
+  end
   let!(:employment_tenure) do
     create(:employment_tenure,
       teammate: employee_teammate,

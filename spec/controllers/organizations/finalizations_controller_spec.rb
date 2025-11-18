@@ -31,15 +31,20 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
   before do
     # Set up employment relationship for authorization
     manager_teammate.update!(first_employed_at: 1.year.ago)
+    # Create active employment tenure for manager (required for authorization)
+    create(:employment_tenure,
+           teammate: manager_teammate,
+           company: organization,
+           started_at: 1.year.ago,
+           ended_at: nil)
     create(:employment_tenure,
            teammate: employee_teammate,
            company: organization,
            manager: manager,
            started_at: 1.month.ago)
     
-    # Set up authentication - use existing teammate to avoid duplicate
-    session[:current_company_teammate_id] = manager_teammate.id
-    @current_company_teammate = nil if defined?(@current_company_teammate)
+    # Set up authentication using helper
+    sign_in_as_teammate(manager, organization)
   end
 
   describe 'GET #show' do
@@ -102,7 +107,7 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
         
         post :create, params: finalization_params
         
-        expect(response).to redirect_to(organization_person_check_ins_path(organization, employee))
+        expect(response).to redirect_to(audit_organization_employee_path(organization, employee))
         expect(flash[:notice]).to include('finalized successfully')
       end
     end

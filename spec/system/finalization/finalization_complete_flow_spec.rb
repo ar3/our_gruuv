@@ -11,6 +11,29 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
   let!(:aspiration1) { create(:aspiration, organization: company, name: 'Aspiration 1') }
   let!(:aspiration2) { create(:aspiration, organization: company, name: 'Aspiration 2') }
   
+  # Create employment tenures (required for authorization)
+  let!(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
+  let!(:position_type) { create(:position_type, organization: company, external_title: 'Engineer', position_major_level: position_major_level) }
+  let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
+  let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let!(:manager_employment_tenure) do
+    manager_teammate.update!(first_employed_at: 1.year.ago)
+    create(:employment_tenure,
+           teammate: manager_teammate,
+           company: company,
+           position: position,
+           started_at: 1.year.ago,
+           ended_at: nil)
+  end
+  let!(:employee_employment_tenure) do
+    create(:employment_tenure,
+           teammate: employee_teammate,
+           company: company,
+           position: position,
+           manager: manager_person,
+           started_at: 1.month.ago)
+  end
+  
   # Create assignment tenures (required for check-ins)
   let!(:assignment_tenure1) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment1, started_at: 6.months.ago) }
   let!(:assignment_tenure2) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment2, started_at: 3.months.ago) }
@@ -198,8 +221,8 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
         # Or verify check-in was still finalized (maybe redirect is delayed)
         expect(check_in_both1.reload.official_check_in_completed_at).to be_present
       else
-        # Success - redirected to check-ins page
-        expect(page).to have_current_path(organization_person_check_ins_path(company, employee_person))
+        # Success - redirected to audit page
+        expect(page).to have_current_path(audit_organization_employee_path(company, employee_person))
       end
       
       # Visit finalization page again - should not see finalized item
