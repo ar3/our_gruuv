@@ -10,8 +10,8 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
   let!(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
   let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
   
-  let!(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, position: position, started_at: 2.years.ago, ended_at: nil) }
-  let!(:employment_tenure) { create(:employment_tenure, teammate: teammate, position: position, manager: manager, started_at: 1.year.ago, ended_at: nil) }
+  let!(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, position: position, company: organization, started_at: 2.years.ago, ended_at: nil) }
+  let!(:employment_tenure) { create(:employment_tenure, teammate: teammate, position: position, company: organization, manager: manager, started_at: 1.year.ago, ended_at: nil) }
   
   let!(:required_assignment) { create(:assignment, company: organization, title: 'Required Assignment') }
   let!(:optional_assignment1) { create(:assignment, company: organization, title: 'Optional Assignment 1') }
@@ -20,11 +20,11 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
   let!(:position_assignment) { create(:position_assignment, position: position, assignment: required_assignment) }
 
   before do
-    # Setup authentication
+    # Setup authentication and real hierarchy
     sign_in_as_teammate_for_request(manager, organization)
-    allow(manager).to receive(:can_manage_employment?).with(organization).and_return(true)
-    allow(manager).to receive(:can_manage_employment?).and_return(true)
-    allow(manager).to receive(:in_managerial_hierarchy_of?).and_return(true)
+    # manage_assignments? requires both can_manage_employment AND can_manage_maap
+    manager_teammate.update!(can_manage_employment: true, can_manage_maap: true)
+    # Note: employment_tenure already has manager set up in let! block above
   end
 
   describe 'GET #assignment_selection' do
@@ -77,9 +77,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
         # Sign in as unauthorized user
         other_teammate # Ensure teammate is created
         sign_in_as_teammate_for_request(other_person, organization)
-        allow(other_person).to receive(:can_manage_employment?).with(organization).and_return(false)
-        allow(other_person).to receive(:can_manage_employment?).and_return(false)
-        allow(other_person).to receive(:in_managerial_hierarchy_of?).and_return(false)
+        create(:employment_tenure, teammate: other_teammate, company: organization)
       end
 
       it 'redirects with authorization error' do
@@ -180,9 +178,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
         # Sign in as unauthorized user
         other_teammate # Ensure teammate is created
         sign_in_as_teammate_for_request(other_person, organization)
-        allow(other_person).to receive(:can_manage_employment?).with(organization).and_return(false)
-        allow(other_person).to receive(:can_manage_employment?).and_return(false)
-        allow(other_person).to receive(:in_managerial_hierarchy_of?).and_return(false)
+        create(:employment_tenure, teammate: other_teammate, company: organization)
       end
 
       it 'redirects with authorization error' do

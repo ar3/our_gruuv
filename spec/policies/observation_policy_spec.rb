@@ -28,9 +28,14 @@ RSpec.describe ObservationPolicy, type: :policy do
   end
 
   before do
-    allow(manager_person).to receive(:in_managerial_hierarchy_of?).and_return(false)
-    allow(manager_person).to receive(:in_managerial_hierarchy_of?).with(observee_person, company).and_return(true)
-    allow(admin_person).to receive(:can_manage_employment?).and_return(true)
+    # Set up real employment tenures to create managerial hierarchy
+    # Manager is direct manager of observee
+    create(:employment_tenure, teammate: manager_teammate, company: company)
+    create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+    
+    # Admin has employment management permissions
+    admin_teammate.update!(can_manage_employment: true)
+    create(:employment_tenure, teammate: admin_teammate, company: company)
   end
 
   describe '#index?' do
@@ -186,12 +191,27 @@ RSpec.describe ObservationPolicy, type: :policy do
           end
         end
 
-        it 'allows observer and manager' do
+        it 'allows observer and direct manager' do
           observer_policy = ObservationPolicy.new(pundit_user_observer, managers_only_obs)
           manager_policy = ObservationPolicy.new(pundit_user_manager, managers_only_obs)
 
           expect(observer_policy.view_permalink?).to be true
           expect(manager_policy.view_permalink?).to be true
+        end
+
+        it 'allows indirect manager (grand manager)' do
+          grand_manager = create(:person)
+          grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
+          grand_manager_pundit_user = OpenStruct.new(user: grand_manager_teammate, real_user: grand_manager_teammate)
+          
+          # Set up hierarchy: observee -> manager -> grand_manager
+          create(:employment_tenure, teammate: grand_manager_teammate, company: company)
+          # Update existing manager tenure to have grand_manager as manager
+          manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
+          manager_tenure.update!(manager: grand_manager)
+          
+          grand_manager_policy = ObservationPolicy.new(grand_manager_pundit_user, managers_only_obs)
+          expect(grand_manager_policy.view_permalink?).to be true
         end
 
         it 'denies observee' do
@@ -209,7 +229,7 @@ RSpec.describe ObservationPolicy, type: :policy do
           end
         end
 
-        it 'allows observer, observee, and manager' do
+        it 'allows observer, observee, and direct manager' do
           observer_policy = ObservationPolicy.new(pundit_user_observer, observed_and_managers_obs)
           observee_policy = ObservationPolicy.new(pundit_user_observee, observed_and_managers_obs)
           manager_policy = ObservationPolicy.new(pundit_user_manager, observed_and_managers_obs)
@@ -217,6 +237,21 @@ RSpec.describe ObservationPolicy, type: :policy do
           expect(observer_policy.view_permalink?).to be true
           expect(observee_policy.view_permalink?).to be true
           expect(manager_policy.view_permalink?).to be true
+        end
+
+        it 'allows indirect manager (grand manager)' do
+          grand_manager = create(:person)
+          grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
+          grand_manager_pundit_user = OpenStruct.new(user: grand_manager_teammate, real_user: grand_manager_teammate)
+          
+          # Set up hierarchy: observee -> manager -> grand_manager
+          create(:employment_tenure, teammate: grand_manager_teammate, company: company)
+          # Update existing manager tenure to have grand_manager as manager
+          manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
+          manager_tenure.update!(manager: grand_manager)
+          
+          grand_manager_policy = ObservationPolicy.new(grand_manager_pundit_user, observed_and_managers_obs)
+          expect(grand_manager_policy.view_permalink?).to be true
         end
       end
 

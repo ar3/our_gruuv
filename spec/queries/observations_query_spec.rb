@@ -41,8 +41,9 @@ RSpec.describe ObservationsQuery, type: :query do
   end
 
   before do
-    allow(manager_person).to receive(:in_managerial_hierarchy_of?).and_return(false)
-    allow(manager_person).to receive(:in_managerial_hierarchy_of?).with(observee_person, company).and_return(true)
+    # Set up real management hierarchy
+    create(:employment_tenure, teammate: manager_teammate, company: company)
+    create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
   end
 
   describe '#call' do

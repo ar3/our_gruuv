@@ -4,8 +4,8 @@ RSpec.describe 'People::Assignments', type: :request do
   let(:organization) { create(:organization, :company) }
   let(:manager_person) { create(:person) }
   let(:employee_person) { create(:person) }
-  let(:manager_teammate) { create(:teammate, person: manager_person, organization: organization) }
-  let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
+  let!(:manager_teammate) { create(:teammate, person: manager_person, organization: organization) }
+  let!(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
   let(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
   let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 1.month.ago, ended_at: nil) }
   let!(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
@@ -16,9 +16,14 @@ RSpec.describe 'People::Assignments', type: :request do
 
   before do
     sign_in_as_teammate_for_request(manager_person, organization)
-    allow(manager_person).to receive(:can_manage_employment?).with(organization).and_return(true)
-    allow(manager_person).to receive(:can_manage_employment?).and_return(true)
-    allow(manager_person).to receive(:in_managerial_hierarchy_of?).and_return(true)
+    # Set up manager with employment management permissions
+    manager_teammate.update!(can_manage_employment: true)
+    # Create employment tenure if it doesn't exist
+    EmploymentTenure.find_or_create_by!(teammate: manager_teammate, company: organization) do |et|
+      et.position = position
+      et.started_at = 1.year.ago
+      et.ended_at = nil
+    end
   end
 
   describe 'GET #show' do
@@ -57,9 +62,6 @@ RSpec.describe 'People::Assignments', type: :request do
     context 'when employee accesses their own page' do
       before do
         sign_in_as_teammate_for_request(employee_person, organization)
-        allow(employee_person).to receive(:can_manage_employment?).with(organization).and_return(false)
-        allow(employee_person).to receive(:can_manage_employment?).and_return(false)
-        allow(employee_person).to receive(:in_managerial_hierarchy_of?).and_return(false)
       end
 
       it 'returns success' do
@@ -70,13 +72,11 @@ RSpec.describe 'People::Assignments', type: :request do
 
     context 'when unauthorized user tries to access' do
       let(:other_person) { create(:person) }
-      let(:other_teammate) { create(:teammate, person: other_person, organization: organization) }
+      let!(:other_teammate) { create(:teammate, person: other_person, organization: organization) }
 
       before do
         sign_in_as_teammate_for_request(other_person, organization)
-        allow(other_person).to receive(:can_manage_employment?).with(organization).and_return(false)
-        allow(other_person).to receive(:can_manage_employment?).and_return(false)
-        allow(other_person).to receive(:in_managerial_hierarchy_of?).and_return(false)
+        create(:employment_tenure, teammate: other_teammate, company: organization, position: position)
       end
 
       it 'redirects with authorization error' do
@@ -92,9 +92,6 @@ RSpec.describe 'People::Assignments', type: :request do
     context 'when employee submits check-in data' do
       before do
         sign_in_as_teammate_for_request(employee_person, organization)
-        allow(employee_person).to receive(:can_manage_employment?).with(organization).and_return(false)
-        allow(employee_person).to receive(:can_manage_employment?).and_return(false)
-        allow(employee_person).to receive(:in_managerial_hierarchy_of?).and_return(false)
       end
 
       it 'saves employee check-in data with nested format' do

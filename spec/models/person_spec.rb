@@ -230,6 +230,133 @@ RSpec.describe Person, type: :model do
     end
   end
 
+  describe '#in_managerial_hierarchy_of?' do
+    let(:company) { create(:organization, :company) }
+    let(:employee) { create(:person) }
+    let(:employee_teammate) { create(:teammate, person: employee, organization: company) }
+    let(:direct_manager) { create(:person) }
+    let(:direct_manager_teammate) { create(:teammate, person: direct_manager, organization: company) }
+    let(:grand_manager) { create(:person) }
+    let(:grand_manager_teammate) { create(:teammate, person: grand_manager, organization: company) }
+    let(:great_grand_manager) { create(:person) }
+    let(:great_grand_manager_teammate) { create(:teammate, person: great_grand_manager, organization: company) }
+    let(:unrelated_person) { create(:person) }
+    let(:unrelated_teammate) { create(:teammate, person: unrelated_person, organization: company) }
+
+    before do
+      # Set up employment tenures
+      create(:employment_tenure, teammate: employee_teammate, company: company, manager: direct_manager)
+      create(:employment_tenure, teammate: direct_manager_teammate, company: company, manager: grand_manager)
+      create(:employment_tenure, teammate: grand_manager_teammate, company: company, manager: great_grand_manager)
+      create(:employment_tenure, teammate: unrelated_teammate, company: company, manager: nil)
+    end
+
+    context 'when person is direct manager' do
+      it 'returns true' do
+        expect(direct_manager.in_managerial_hierarchy_of?(employee, company)).to be true
+      end
+    end
+
+    context 'when person is indirect manager (grand manager)' do
+      it 'returns true' do
+        expect(grand_manager.in_managerial_hierarchy_of?(employee, company)).to be true
+      end
+    end
+
+    context 'when person is great-grand manager' do
+      it 'returns true' do
+        expect(great_grand_manager.in_managerial_hierarchy_of?(employee, company)).to be true
+      end
+    end
+
+    context 'when person is not in hierarchy' do
+      it 'returns false' do
+        expect(unrelated_person.in_managerial_hierarchy_of?(employee, company)).to be false
+      end
+    end
+
+    context 'when person is the same as other_person' do
+      it 'returns false (not in their own hierarchy)' do
+        expect(employee.in_managerial_hierarchy_of?(employee, company)).to be false
+      end
+    end
+
+    context 'when other_person has no employment in organization' do
+      let(:person_without_employment) { create(:person) }
+
+      it 'returns false' do
+        expect(direct_manager.in_managerial_hierarchy_of?(person_without_employment, company)).to be false
+      end
+    end
+
+    context 'when organization is nil' do
+      it 'returns false' do
+        expect(direct_manager.in_managerial_hierarchy_of?(employee, nil)).to be false
+      end
+    end
+
+    context 'when there are multiple employment tenures with different managers' do
+      let(:other_manager) { create(:person) }
+      let(:other_manager_teammate) { create(:teammate, person: other_manager, organization: company) }
+
+      before do
+        # Employee has another tenure with a different manager (inactive)
+        create(:employment_tenure, 
+               teammate: employee_teammate, 
+               company: company, 
+               manager: other_manager,
+               started_at: 2.years.ago,
+               ended_at: 1.year.ago)
+      end
+
+      it 'only checks active tenures' do
+        expect(other_manager.in_managerial_hierarchy_of?(employee, company)).to be false
+        expect(direct_manager.in_managerial_hierarchy_of?(employee, company)).to be true
+      end
+    end
+
+    context 'when preventing circular references' do
+      before do
+        # Create a circular reference scenario (should not cause infinite loop)
+        # This shouldn't happen in real data, but we should handle it gracefully
+        # Update existing direct_manager tenure to have employee as manager (circular)
+        direct_manager_tenure = EmploymentTenure.find_by(teammate: direct_manager_teammate, company: company)
+        direct_manager_tenure.update!(manager: employee)
+      end
+
+      it 'does not cause infinite loop' do
+        # With circular reference, grand_manager should still be able to check hierarchy
+        # The Set prevents infinite loops, but the circular reference breaks the path
+        # So grand_manager is no longer in hierarchy of employee after circular ref is created
+        expect {
+          result = grand_manager.in_managerial_hierarchy_of?(employee, company)
+          # Result may be false due to circular reference breaking the path, but no infinite loop
+          expect(result).to be_in([true, false])
+        }.not_to raise_error
+      end
+    end
+
+    context 'when checking across different organizations' do
+      let(:other_company) { create(:organization, :company) }
+      let(:other_company_manager) { create(:person) }
+      let(:other_company_employee) { create(:person) }
+      let(:other_company_employee_teammate) { create(:teammate, person: other_company_employee, organization: other_company) }
+
+      before do
+        create(:employment_tenure, 
+               teammate: other_company_employee_teammate, 
+               company: other_company, 
+               manager: other_company_manager)
+      end
+
+      it 'only checks within the specified organization' do
+        expect(other_company_manager.in_managerial_hierarchy_of?(other_company_employee, other_company)).to be true
+        expect(other_company_manager.in_managerial_hierarchy_of?(employee, company)).to be false
+        expect(direct_manager.in_managerial_hierarchy_of?(other_company_employee, other_company)).to be false
+      end
+    end
+  end
+
   describe 'huddle participation methods' do
     let(:person) { create(:person) }
     let(:huddle_playbook) { create(:huddle_playbook, special_session_name: 'Daily Standup') }

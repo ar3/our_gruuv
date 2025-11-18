@@ -50,7 +50,6 @@ module Goals
       # This ensures we only consider relationships within the collection
       GoalLink.where(parent_id: goal_ids)
               .where(child_id: goal_ids)
-              .includes(:parent, :child)
     end
 
     def build_parent_child_map(links)
@@ -60,12 +59,18 @@ module Goals
         parent_child_map[goal.id] = []
       end
 
+      # Load all goals referenced in links (including completed/deleted)
+      referenced_goal_ids = (links.map(&:parent_id) + links.map(&:child_id)).uniq
+      referenced_goals = Goal.where(id: referenced_goal_ids).index_by(&:id)
+
       links.each do |link|
         # parent_id is the parent, child_id is the child
         # Only include links where both parent and child are in our goal set
         if link.parent_id.in?(goal_ids) && link.child_id.in?(goal_ids)
           parent_child_map[link.parent_id] ||= []
-          parent_child_map[link.parent_id] << link.child
+          child_goal = referenced_goals[link.child_id]
+          # Only add if child goal exists (filter out nil from associations)
+          parent_child_map[link.parent_id] << child_goal if child_goal
         end
       end
 

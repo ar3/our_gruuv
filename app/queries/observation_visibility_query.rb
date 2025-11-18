@@ -154,24 +154,13 @@ class ObservationVisibilityQuery
   def managed_teammate_ids_for_person
     return [] unless @person.is_a?(Person)
     
-    # Find all teammates that this person manages through employment tenures
-    managed_people_ids = EmploymentTenure.where(manager: @person)
-                                       .joins(:teammate)
-                                       .where(teammates: { organization: @company })
-                                       .pluck('teammates.id')
+    # Use EmployeeHierarchyQuery to find all reports (direct and indirect) in the hierarchy
+    reports = EmployeeHierarchyQuery.new(person: @person, organization: @company).call
     
-    # Also check if the person manages anyone through the mocked method
-    # This is for testing purposes when EmploymentTenure records don't exist
-    if managed_people_ids.empty?
-      # Find all teammates in the company and check if this person manages them
-      all_teammates = Teammate.where(organization: @company).includes(:person)
-      managed_teammate_ids = all_teammates.select do |teammate|
-        @person.in_managerial_hierarchy_of?(teammate.person, @company)
-      end.map(&:id)
-      
-      return managed_teammate_ids
-    end
+    # Extract person IDs from the returned hashes
+    managed_person_ids = reports.map { |r| r[:person_id] }
     
-    managed_people_ids
+    # Find teammates for those person IDs in the organization
+    Teammate.where(organization: @company, person_id: managed_person_ids).pluck(:id)
   end
 end

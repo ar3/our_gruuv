@@ -1,3 +1,5 @@
+require 'set'
+
 class Person < ApplicationRecord
   include PgSearch::Model
   

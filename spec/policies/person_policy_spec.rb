@@ -49,19 +49,28 @@ RSpec.describe PersonPolicy, type: :policy do
     end
 
     context "when user is in managerial hierarchy" do
-      let(:manager) { create(:person) }
-      let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
-      let(:manager_pundit_user) { OpenStruct.new(user: manager_teammate, real_user: manager_teammate) }
-      let(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, company: organization) }
-      let(:employee_employment) { create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: manager) }
+      let(:direct_manager) { create(:person) }
+      let(:direct_manager_teammate) { CompanyTeammate.create!(person: direct_manager, organization: organization) }
+      let(:direct_manager_pundit_user) { OpenStruct.new(user: direct_manager_teammate, real_user: direct_manager_teammate) }
+      let(:grand_manager) { create(:person) }
+      let(:grand_manager_teammate) { CompanyTeammate.create!(person: grand_manager, organization: organization) }
+      let(:grand_manager_pundit_user) { OpenStruct.new(user: grand_manager_teammate, real_user: grand_manager_teammate) }
+      let(:direct_manager_employment) { create(:employment_tenure, teammate: direct_manager_teammate, company: organization, manager: grand_manager) }
+      let(:grand_manager_employment) { create(:employment_tenure, teammate: grand_manager_teammate, company: organization) }
+      let(:employee_employment) { create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: direct_manager) }
       
       before do
-        manager_employment
+        direct_manager_employment
+        grand_manager_employment
         employee_employment
       end
 
-      it "allows managers in hierarchy to edit their employees' profiles" do
-        expect(subject).to permit(manager_pundit_user, other_person)
+      it "allows direct managers in hierarchy to edit their employees' profiles" do
+        expect(subject).to permit(direct_manager_pundit_user, other_person)
+      end
+
+      it "allows indirect managers (grand managers) in hierarchy to edit their employees' profiles" do
+        expect(subject).to permit(grand_manager_pundit_user, other_person)
       end
     end
   end
@@ -93,19 +102,28 @@ RSpec.describe PersonPolicy, type: :policy do
     end
 
     context "when user is in managerial hierarchy" do
-      let(:manager) { create(:person) }
-      let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
-      let(:manager_pundit_user) { OpenStruct.new(user: manager_teammate, real_user: manager_teammate) }
-      let(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, company: organization) }
-      let(:employee_employment) { create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: manager) }
+      let(:direct_manager) { create(:person) }
+      let(:direct_manager_teammate) { CompanyTeammate.create!(person: direct_manager, organization: organization) }
+      let(:direct_manager_pundit_user) { OpenStruct.new(user: direct_manager_teammate, real_user: direct_manager_teammate) }
+      let(:grand_manager) { create(:person) }
+      let(:grand_manager_teammate) { CompanyTeammate.create!(person: grand_manager, organization: organization) }
+      let(:grand_manager_pundit_user) { OpenStruct.new(user: grand_manager_teammate, real_user: grand_manager_teammate) }
+      let(:direct_manager_employment) { create(:employment_tenure, teammate: direct_manager_teammate, company: organization, manager: grand_manager) }
+      let(:grand_manager_employment) { create(:employment_tenure, teammate: grand_manager_teammate, company: organization) }
+      let(:employee_employment) { create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: direct_manager) }
       
       before do
-        manager_employment
+        direct_manager_employment
+        grand_manager_employment
         employee_employment
       end
 
-      it "allows managers in hierarchy to update their employees' profiles" do
-        expect(subject).to permit(manager_pundit_user, other_person)
+      it "allows direct managers in hierarchy to update their employees' profiles" do
+        expect(subject).to permit(direct_manager_pundit_user, other_person)
+      end
+
+      it "allows indirect managers (grand managers) in hierarchy to update their employees' profiles" do
+        expect(subject).to permit(grand_manager_pundit_user, other_person)
       end
     end
   end
@@ -269,8 +287,24 @@ RSpec.describe PersonPolicy, type: :policy do
       expect(policy.view_check_ins?).to be true
     end
 
-    it "allows manager of person to view check-ins" do
+    it "allows direct manager of person to view check-ins" do
       policy = PersonPolicy.new(manager_pundit_user, other_person)
+      allow(policy).to receive(:actual_organization).and_return(organization)
+      expect(policy.view_check_ins?).to be true
+    end
+
+    it "allows indirect manager (grand manager) of person to view check-ins" do
+      grand_manager = create(:person)
+      grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: organization)
+      grand_manager_pundit_user = OpenStruct.new(user: grand_manager_teammate, real_user: grand_manager_teammate)
+      
+      # Create employment for grand manager
+      create(:employment_tenure, teammate: grand_manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      # Update existing manager's employment to have grand manager as manager
+      manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: organization)
+      manager_tenure.update!(manager: grand_manager)
+      
+      policy = PersonPolicy.new(grand_manager_pundit_user, other_person)
       allow(policy).to receive(:actual_organization).and_return(organization)
       expect(policy.view_check_ins?).to be true
     end
