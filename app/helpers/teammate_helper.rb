@@ -479,4 +479,55 @@ module TeammateHelper
       states_single: states_single
     }
   end
+
+  # Debug helper methods
+  def debug_boolean_badge(value)
+    if value == true
+      content_tag(:span, '✓ TRUE', class: 'badge bg-success')
+    elsif value == false
+      content_tag(:span, '✗ FALSE', class: 'badge bg-danger')
+    else
+      content_tag(:span, value.to_s, class: 'badge bg-secondary')
+    end
+  end
+
+  def debug_warning_badge(warning)
+    case warning[:type]
+    when 'error'
+      badge_class = 'bg-danger'
+      icon = 'bi-x-circle'
+    when 'warning'
+      badge_class = 'bg-warning'
+      icon = 'bi-exclamation-triangle'
+    when 'info'
+      badge_class = 'bg-info'
+      icon = 'bi-info-circle'
+    else
+      badge_class = 'bg-secondary'
+      icon = 'bi-question-circle'
+    end
+    
+    content_tag(:div, class: "alert alert-#{warning[:type] == 'error' ? 'danger' : warning[:type]} mb-2") do
+      content_tag(:i, '', class: "#{icon} me-2") +
+      content_tag(:strong, warning[:message]) +
+      content_tag(:div, warning[:details], class: 'small mt-1')
+    end
+  end
+
+  def debug_format_value(value)
+    case value
+    when true, false
+      debug_boolean_badge(value)
+    when nil
+      content_tag(:span, 'nil', class: 'text-muted fst-italic')
+    when String
+      content_tag(:code, value)
+    when Integer, Float
+      content_tag(:code, value.to_s)
+    when Time, DateTime, Date
+      content_tag(:code, value.to_s)
+    else
+      content_tag(:code, value.inspect)
+    end
+  end
 end

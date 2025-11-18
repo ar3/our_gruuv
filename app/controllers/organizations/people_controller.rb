@@ -71,6 +71,11 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
                                  &.order(started_at: :desc)
                                  &.decorate || []
     @teammates = @person.teammates.includes(:organization)
+    
+    # Debug mode - gather comprehensive authorization data
+    if params[:debug] == 'true'
+      gather_debug_data
+    end
   end
 
   def update_permission
@@ -352,6 +357,19 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
 
   def person
     @person
+  end
+
+  def gather_debug_data
+    @debug_mode = true
+    
+    debug_service = AuthorizationDebugService.new(
+      current_user: current_person,
+      subject_person: @person,
+      organization: organization,
+      session: session
+    )
+    
+    @debug_data = debug_service.gather_all_data
   end
 
 end
