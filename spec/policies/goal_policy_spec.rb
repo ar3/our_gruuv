@@ -20,10 +20,10 @@ RSpec.describe GoalPolicy, type: :policy do
   let(:shared_goal) { create(:goal, creator: creator_teammate, owner: owner_teammate, privacy_level: 'only_creator_and_owner') }
   let(:team_goal) { create(:goal, creator: creator_teammate, owner: company, privacy_level: 'everyone_in_company') }
   
-  let(:pundit_user_creator) { OpenStruct.new(user: creator_teammate, real_user: creator_teammate) }
-  let(:pundit_user_owner) { OpenStruct.new(user: owner_teammate, real_user: owner_teammate) }
-  let(:pundit_user_other) { OpenStruct.new(user: other_teammate, real_user: other_teammate) }
-  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, real_user: admin_teammate) }
+  let(:pundit_user_creator) { OpenStruct.new(user: creator_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_owner) { OpenStruct.new(user: owner_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_other) { OpenStruct.new(user: other_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
   
   describe 'index?' do
     it 'allows access to any teammate in the organization' do
@@ -113,7 +113,7 @@ RSpec.describe GoalPolicy, type: :policy do
       end
       
       it 'allows manager to view' do
-        pundit_user_manager = OpenStruct.new(user: manager_teammate, real_user: manager_teammate)
+        pundit_user_manager = OpenStruct.new(user: manager_teammate, impersonating_teammate: nil)
         policy = GoalPolicy.new(pundit_user_manager, goal)
         expect(policy.show?).to be true
       end
@@ -151,7 +151,7 @@ RSpec.describe GoalPolicy, type: :policy do
       it 'denies non-teammates to view' do
         outsider_person = create(:person)
         outsider_teammate = CompanyTeammate.create!(person: outsider_person, organization: other_company)
-        pundit_user_outsider = OpenStruct.new(user: outsider_teammate, real_user: outsider_teammate)
+        pundit_user_outsider = OpenStruct.new(user: outsider_teammate, impersonating_teammate: nil)
         policy = GoalPolicy.new(pundit_user_outsider, goal)
         expect(policy.show?).to be false
       end
@@ -191,7 +191,7 @@ RSpec.describe GoalPolicy, type: :policy do
       let(:org_goal) { create(:goal, creator: creator_teammate, owner: company, privacy_level: 'everyone_in_company') }
       let(:org_member) { create(:person) }
       let(:org_member_teammate) { CompanyTeammate.create!(person: org_member, organization: company) }
-      let(:pundit_user_org_member) { OpenStruct.new(user: org_member_teammate, real_user: org_member_teammate) }
+      let(:pundit_user_org_member) { OpenStruct.new(user: org_member_teammate, impersonating_teammate: nil) }
       
       before { org_member_teammate }
       
@@ -211,7 +211,7 @@ RSpec.describe GoalPolicy, type: :policy do
         # Since other_teammate is in company (the owner), they should not be able to update
         # unless they are specifically set up as an org_member. Let's use a teammate from a different company
         other_company_teammate = CompanyTeammate.create!(person: other_person, organization: other_company)
-        pundit_user_other_company = OpenStruct.new(user: other_company_teammate, real_user: other_company_teammate)
+        pundit_user_other_company = OpenStruct.new(user: other_company_teammate, impersonating_teammate: nil)
         policy = GoalPolicy.new(pundit_user_other_company, org_goal)
         expect(policy.update?).to be false
       end

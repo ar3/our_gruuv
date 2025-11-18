@@ -11,6 +11,7 @@ class ApplicationPolicy
 
   # Admin bypass - og_admin users get all permissions
   def admin_bypass?
+    return false unless viewing_teammate
     viewing_teammate.person&.og_admin? || false
   end
 

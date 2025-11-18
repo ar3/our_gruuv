@@ -19,10 +19,14 @@ RSpec.describe ImpersonationsController, type: :controller do
       end
 
       it 'starts impersonation' do
+        admin_teammate = admin.active_teammates.first
         post :create, params: { person_id: regular_person.id }
         
         regular_teammate = regular_person.active_teammates.first
-        expect(session[:impersonating_teammate_id]).to eq(regular_teammate.id)
+        # impersonating_teammate_id stores the ORIGINAL user (admin) before impersonation
+        expect(session[:impersonating_teammate_id]).to eq(admin_teammate.id)
+        # current_company_teammate_id stores the IMPERSONATED user (regular_person)
+        expect(session[:current_company_teammate_id]).to eq(regular_teammate.id)
         expect(response).to redirect_to(root_path)
         expect(flash[:notice]).to include("Now impersonating")
       end
@@ -62,14 +66,22 @@ RSpec.describe ImpersonationsController, type: :controller do
     context 'when admin is impersonating' do
       before do
         # Create teammate for regular_person and set up impersonation
+        admin_teammate = admin.active_teammates.first
         regular_teammate = create(:teammate, person: regular_person, organization: create(:organization, :company))
-        session[:impersonating_teammate_id] = regular_teammate.id
+        # Set up impersonation: impersonating_teammate_id stores original user (admin)
+        session[:impersonating_teammate_id] = admin_teammate.id
+        # current_company_teammate_id stores impersonated user (regular_person)
+        session[:current_company_teammate_id] = regular_teammate.id
       end
 
       it 'stops impersonation' do
+        admin_teammate = admin.active_teammates.first
         delete :destroy, params: { id: 1 }
         
+        # After stopping, impersonating_teammate_id should be nil
         expect(session[:impersonating_teammate_id]).to be_nil
+        # After stopping, current_company_teammate_id should be restored to original user (admin)
+        expect(session[:current_company_teammate_id]).to eq(admin_teammate.id)
         expect(response).to redirect_to(root_path)
         expect(flash[:notice]).to include("Stopped impersonation")
       end
@@ -78,18 +90,22 @@ RSpec.describe ImpersonationsController, type: :controller do
     context 'when non-admin is impersonating (e.g., admin impersonated them)' do
       let(:regular_person_org) { create(:organization, :company) }
       let(:regular_person_teammate) { create(:teammate, person: regular_person, organization: regular_person_org) }
+      let(:admin_teammate) { admin.active_teammates.first }
 
       before do
-        # Set up impersonation session
-        session[:impersonating_teammate_id] = regular_person_teammate.id
-        # Sign in as the regular person (who is being impersonated)
-        sign_in_as_teammate(regular_person, regular_person_org)
+        # Set up impersonation session: impersonating_teammate_id stores original user (admin)
+        session[:impersonating_teammate_id] = admin_teammate.id
+        # current_company_teammate_id stores impersonated user (regular_person)
+        session[:current_company_teammate_id] = regular_person_teammate.id
       end
 
       it 'allows anyone to stop impersonation' do
         delete :destroy, params: { id: 1 }
         
+        # After stopping, impersonating_teammate_id should be nil
         expect(session[:impersonating_teammate_id]).to be_nil
+        # After stopping, current_company_teammate_id should be restored to original user (admin)
+        expect(session[:current_company_teammate_id]).to eq(admin_teammate.id)
         expect(response).to redirect_to(root_path)
         expect(flash[:notice]).to include("Stopped impersonation")
       end

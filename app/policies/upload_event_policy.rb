@@ -25,8 +25,8 @@ class UploadEventPolicy < ApplicationPolicy
 
   class Scope < ApplicationPolicy::Scope
     def resolve
-      return scope.none unless teammate
-      person = teammate.person
+      return scope.none unless viewing_teammate
+      person = viewing_teammate.person
       if person&.admin?
         scope.all
       elsif can_manage_employment?
@@ -40,11 +40,11 @@ class UploadEventPolicy < ApplicationPolicy
     private
 
     def can_manage_employment?
-      return false unless teammate
+      return false unless viewing_teammate
       organization = actual_organization
       return false unless organization
       
-      person = teammate.person
+      person = viewing_teammate.person
       person&.can_manage_employment?(organization)
     end
   end
@@ -52,11 +52,11 @@ class UploadEventPolicy < ApplicationPolicy
   private
 
   def can_manage_employment?
-    return false unless teammate
+    return false unless viewing_teammate
     organization = actual_organization
     return false unless organization
     
-    person = teammate.person
+    person = viewing_teammate.person
     person&.can_manage_employment?(organization)
   end
 end

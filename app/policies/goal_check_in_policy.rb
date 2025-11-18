@@ -1,21 +1,21 @@
 class GoalCheckInPolicy < ApplicationPolicy
   def show?
-    return false unless teammate
+    return false unless viewing_teammate
     admin_bypass? || goal_policy.show?
   end
 
   def create?
-    return false unless teammate
+    return false unless viewing_teammate
     admin_bypass? || goal_policy.show?
   end
 
   def update?
-    return false unless teammate
+    return false unless viewing_teammate
     admin_bypass? || goal_policy.show?
   end
 
   def destroy?
-    return false unless teammate
+    return false unless viewing_teammate
     admin_bypass? || goal_policy.show?
   end
 

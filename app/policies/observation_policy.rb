@@ -1,11 +1,11 @@
 class ObservationPolicy < ApplicationPolicy
   def index?
-    teammate.present?
+    viewing_teammate.present?
   end
 
   def show?
     # Show page is only for the observer
-    teammate.person == record.observer
+    viewing_teammate.person == record.observer
   end
 
   def new?
@@ -13,7 +13,7 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def create?
-    teammate.present?
+    viewing_teammate.present?
   end
 
   def edit?
@@ -21,18 +21,18 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def update?
-    teammate.person == record.observer
+    viewing_teammate.person == record.observer
   end
 
   def destroy?
     return true if admin_bypass?
-    return true if teammate.person == record.observer && record.created_at > 24.hours.ago
+    return true if viewing_teammate.person == record.observer && record.created_at > 24.hours.ago
     false
   end
 
   def view_permalink?
-    return false unless teammate
-    person = teammate.person
+    return false unless viewing_teammate
+    person = viewing_teammate.person
     # Draft observations are only visible to their creator
     return false if record.draft? && person != record.observer
     
@@ -54,7 +54,7 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def view_negative_ratings?
-    person = teammate.person
+    person = viewing_teammate.person
     # Negative ratings have additional restrictions beyond privacy level
     return false unless view_permalink?
     
@@ -76,7 +76,7 @@ class ObservationPolicy < ApplicationPolicy
 
   def post_to_slack?
     # Only observer can post to Slack
-    teammate.person == record.observer
+    viewing_teammate.person == record.observer
   end
 
   def journal?
@@ -107,7 +107,7 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def view_change_history?
-    person = teammate.person
+    person = viewing_teammate.person
     # Observer, observed, and those with can_manage_employment can see change history
     person == record.observer || 
     user_in_observees? || 
@@ -116,13 +116,13 @@ class ObservationPolicy < ApplicationPolicy
 
   def publish?
     # Only the observer can publish, and only if the observation is a draft
-    teammate.present? && teammate.person == record.observer && record.draft?
+    viewing_teammate.present? && viewing_teammate.person == record.observer && record.draft?
   end
 
   class Scope < ApplicationPolicy::Scope
     def resolve
-      return scope.none unless teammate
-      person = teammate.person
+      return scope.none unless viewing_teammate
+      person = viewing_teammate.person
       if person.og_admin?
         scope.all
       else
@@ -136,21 +136,21 @@ class ObservationPolicy < ApplicationPolicy
   private
 
   def user_in_observees?
-    person = teammate.person
+    person = viewing_teammate.person
     record.observed_teammates.any? { |observed_teammate| observed_teammate.person == person }
   end
 
   def user_in_management_hierarchy?
-    person = teammate.person
+    person = viewing_teammate.person
     
-    # Use organization from teammate, fallback to record.company
+    # Use organization from viewing_teammate, fallback to record.company
     organization = actual_organization || record.company
     
     record.observed_teammates.any? { |observed_teammate| person.in_managerial_hierarchy_of?(observed_teammate.person, organization) }
   end
 
   def user_can_manage_employment?
-    person = teammate.person
+    person = viewing_teammate.person
     person.can_manage_employment?(record.company)
   end
 end

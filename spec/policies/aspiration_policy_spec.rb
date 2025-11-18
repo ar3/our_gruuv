@@ -13,9 +13,9 @@ RSpec.describe AspirationPolicy, type: :policy do
   let(:person_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_manage_maap: false) }
   let(:admin_teammate) { CompanyTeammate.create!(person: admin, organization: organization) }
 
-  let(:pundit_user_maap) { OpenStruct.new(user: maap_teammate, real_user: maap_teammate) }
-  let(:pundit_user_person) { OpenStruct.new(user: person_teammate, real_user: person_teammate) }
-  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, real_user: admin_teammate) }
+  let(:pundit_user_maap) { OpenStruct.new(user: maap_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_person) { OpenStruct.new(user: person_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
 
   describe 'index?' do
     context 'when user is a regular teammate' do
@@ -110,7 +110,7 @@ RSpec.describe AspirationPolicy, type: :policy do
 
     context 'when user has MAAP permissions for different organization' do
       let(:other_org_teammate) { CompanyTeammate.create!(person: person, organization: other_organization, can_manage_maap: true) }
-      let(:pundit_user_other_org) { OpenStruct.new(user: other_org_teammate, real_user: other_org_teammate) }
+      let(:pundit_user_other_org) { OpenStruct.new(user: other_org_teammate, impersonating_teammate: nil) }
 
       it 'denies access' do
         policy = AspirationPolicy.new(pundit_user_other_org, aspiration)

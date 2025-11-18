@@ -23,16 +23,16 @@ class AspirationPolicy < ApplicationPolicy
 
   class Scope < ApplicationPolicy::Scope
     def resolve
-      return scope.none unless teammate
-      person = teammate.person
+      return scope.none unless viewing_teammate
+      person = viewing_teammate.person
       if person.og_admin?
         scope.all
       else
-        teammate_org = teammate.organization
-        return scope.none unless teammate_org
-        # Allow all teammates to see aspirations for their organization and descendants
+        viewing_teammate_org = viewing_teammate.organization
+        return scope.none unless viewing_teammate_org
+        # Allow all viewing_teammates to see aspirations for their organization and descendants
         # This allows viewing department aspirations when signed in to company
-        org_ids = teammate_org.self_and_descendants.map(&:id)
+        org_ids = viewing_teammate_org.self_and_descendants.map(&:id)
         scope.where(organization_id: org_ids)
       end
     end
@@ -41,22 +41,22 @@ class AspirationPolicy < ApplicationPolicy
   private
 
   def user_has_maap_permission?
-    return false unless teammate
+    return false unless viewing_teammate
     return false unless actual_organization
     
-    teammate.can_manage_maap?
+    viewing_teammate.can_manage_maap?
   end
 
   def user_has_maap_permission_for_record?
-    return false unless teammate
+    return false unless viewing_teammate
     return false unless record&.organization
-    teammate_org = teammate.organization
-    return false unless teammate_org
+    viewing_teammate_org = viewing_teammate.organization
+    return false unless viewing_teammate_org
     
-    # Check if record's organization is in teammate's organization hierarchy
-    orgs = teammate_org.self_and_descendants
+    # Check if record's organization is in viewing_teammate's organization hierarchy
+    orgs = viewing_teammate_org.self_and_descendants
     return false unless orgs.include?(record.organization)
     
-    teammate.can_manage_maap?
+    viewing_teammate.can_manage_maap?
   end
 end

@@ -12,9 +12,9 @@ RSpec.describe HuddlePolicy, type: :policy do
   let(:facilitator_teammate) { CompanyTeammate.create!(person: facilitator, organization: organization) }
   let(:participant_teammate) { CompanyTeammate.create!(person: participant, organization: organization) }
   
-  let(:pundit_user) { OpenStruct.new(user: person_teammate, real_user: person_teammate) }
-  let(:pundit_user_facilitator) { OpenStruct.new(user: facilitator_teammate, real_user: facilitator_teammate) }
-  let(:pundit_user_participant) { OpenStruct.new(user: participant_teammate, real_user: participant_teammate) }
+  let(:pundit_user) { OpenStruct.new(user: person_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_facilitator) { OpenStruct.new(user: facilitator_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_participant) { OpenStruct.new(user: participant_teammate, impersonating_teammate: nil) }
 
   before do
     create(:huddle_participant, huddle: huddle, teammate: facilitator_teammate, role: 'facilitator')
@@ -109,7 +109,7 @@ RSpec.describe HuddlePolicy, type: :policy do
     let!(:huddle2) { create(:huddle, huddle_playbook: create(:huddle_playbook, organization: organization2)) }
     let!(:person_teammate) { CompanyTeammate.create!(person: person, organization: organization) }
     let!(:participant1) { create(:huddle_participant, huddle: huddle1, teammate: person_teammate, role: 'active') }
-    let(:pundit_user_person) { OpenStruct.new(user: person_teammate, real_user: person_teammate) }
+    let(:pundit_user_person) { OpenStruct.new(user: person_teammate, impersonating_teammate: nil) }
 
     context "when user is logged in" do
       it "shows only huddles the user participated in" do

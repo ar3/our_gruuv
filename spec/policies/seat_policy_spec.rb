@@ -28,9 +28,9 @@ RSpec.describe SeatPolicy, type: :policy do
     allow(external_user_person).to receive(:active_employment_tenure_in?).with(organization).and_return(false)
   end
 
-  let(:pundit_user_maap_manager) { OpenStruct.new(user: maap_manager_teammate, real_user: maap_manager_teammate) }
-  let(:pundit_user_active_employee) { OpenStruct.new(user: active_employee_teammate, real_user: active_employee_teammate) }
-  let(:pundit_user_external_user) { OpenStruct.new(user: external_user_teammate, real_user: external_user_teammate) }
+  let(:pundit_user_maap_manager) { OpenStruct.new(user: maap_manager_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_active_employee) { OpenStruct.new(user: active_employee_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_external_user) { OpenStruct.new(user: external_user_teammate, impersonating_teammate: nil) }
 
   permissions :index? do
     it "allows active employees to view seats" do

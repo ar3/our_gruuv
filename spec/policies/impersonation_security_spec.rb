@@ -11,6 +11,8 @@ RSpec.describe 'Impersonation Security', type: :policy do
   let(:target_teammate) { CompanyTeammate.create!(person: target_person, organization: organization) }
 
   before do
+    # Set first_employed_at for regular_user_teammate (required for employed? check)
+    regular_user_teammate.update!(first_employed_at: 1.year.ago)
     # Create active employment for all users
     create(:employment_tenure, teammate: admin_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
     create(:employment_tenure, teammate: regular_user_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
@@ -22,7 +24,7 @@ RSpec.describe 'Impersonation Security', type: :policy do
       let(:pundit_user) do
         OpenStruct.new(
           user: regular_user_teammate,  # The impersonated user
-          real_user: admin_teammate      # The admin doing the impersonating
+          impersonating_teammate: admin_teammate      # The admin doing the impersonating
         )
       end
 
@@ -36,7 +38,7 @@ RSpec.describe 'Impersonation Security', type: :policy do
       let(:pundit_user) do
         OpenStruct.new(
           user: admin_teammate,
-          real_user: admin_teammate
+          impersonating_teammate: nil
         )
       end
 
@@ -50,7 +52,7 @@ RSpec.describe 'Impersonation Security', type: :policy do
       let(:pundit_user) do
         OpenStruct.new(
           user: regular_user_teammate,
-          real_user: regular_user_teammate
+          impersonating_teammate: nil
         )
       end
 
@@ -66,7 +68,7 @@ RSpec.describe 'Impersonation Security', type: :policy do
       let(:pundit_user) do
         OpenStruct.new(
           user: regular_user_teammate,  # The impersonated user
-          real_user: admin_teammate      # The admin doing the impersonating
+          impersonating_teammate: admin_teammate      # The admin doing the impersonating
         )
       end
 
@@ -81,7 +83,7 @@ RSpec.describe 'Impersonation Security', type: :policy do
       let(:pundit_user) do
         OpenStruct.new(
           user: regular_user_teammate,  # The impersonated user (same as target)
-          real_user: admin_teammate      # The admin doing the impersonating
+          impersonating_teammate: admin_teammate      # The admin doing the impersonating
         )
       end
 
@@ -104,7 +106,7 @@ RSpec.describe 'Impersonation Security', type: :policy do
       let(:pundit_user) do
         OpenStruct.new(
           user: manager_teammate,  # The impersonated user (manager)
-          real_user: admin_teammate # The admin doing the impersonating
+          impersonating_teammate: admin_teammate # The admin doing the impersonating
         )
       end
 
@@ -121,7 +123,7 @@ RSpec.describe 'Impersonation Security', type: :policy do
       let(:pundit_user) do
         OpenStruct.new(
           user: regular_user_teammate,  # The impersonated user
-          real_user: admin_teammate      # The admin doing the impersonating
+          impersonating_teammate: admin_teammate      # The admin doing the impersonating
         )
       end
 
@@ -143,7 +145,7 @@ RSpec.describe 'Impersonation Security', type: :policy do
       let(:pundit_user) do
         OpenStruct.new(
           user: inactive_teammate,  # The impersonated user (inactive)
-          real_user: admin_teammate  # The admin doing the impersonating
+          impersonating_teammate: admin_teammate  # The admin doing the impersonating
         )
       end
 

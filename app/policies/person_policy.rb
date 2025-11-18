@@ -3,51 +3,61 @@ class PersonPolicy < ApplicationPolicy
     # Users can view their own profile, admins can view any, or if they have employment management or MAAP permissions
     return true if admin_bypass?
     return false unless viewing_teammate && record
+    return false if viewing_teammate.terminated?
+    return true if viewing_teammate.person == record
+    return true if viewing_teammate.can_manage_employment?
+    return true if viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization)
+    false
+  end
+  
+  def public?
+    # Public profiles are accessible to anyone (no authentication required)
+    true
+  end
+  
+  def teammate?
+    return true if admin_bypass?
+    return false unless viewing_teammate && record
+    return true if viewing_teammate.person == record
+    return true if viewing_teammate.employed? && 
+    record.teammates.where(organization: viewing_teammate.organization).first.present?
+    false
+  end
+  
+  def audit?
+    return true if admin_bypass?
+    return false unless viewing_teammate && record
+    return false if viewing_teammate.terminated?
+    return false if !viewing_teammate.has_active_employment_tenure?
     return true if viewing_teammate.person == record
     return true if viewing_teammate.can_manage_employment?
     return true if viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization)
     false
   end
 
-  def public?
-    # Public profiles are accessible to anyone (no authentication required)
-    true
-  end
-
-  def teammate?
-    return true if admin_bypass?
-    return false unless viewing_teammate && record
-    return true if viewing_teammate.person == record
-    return true if viewing_teammate.employed? && 
-      record.teammates.where(organization: viewing_teammate.organization).first.present?
-  end
-
   def can_view_manage_mode?
-    show?
+    audit?
   end
 
   def manager?
-    show?
+    audit?
   end
 
   def employment_summary?
-    show?
+    audit?
   end
 
   def view_employment_history?
-    show?
+    audit?
   end
 
-  def audit?
-    show?
-  end
 
   def manage_assignments?
-    show?
+    audit?
   end
 
   def change_employment?
-    show?
+    audit?
   end
 
   def change?
@@ -55,11 +65,11 @@ class PersonPolicy < ApplicationPolicy
   end
 
   def choose_assignments?
-    show?
+    audit?
   end
 
   def update_assignments?
-    show?
+    audit?
   end
 
   def view_other_companies?
@@ -68,7 +78,7 @@ class PersonPolicy < ApplicationPolicy
   end
 
   def view_check_ins?
-    show?
+    audit?
   end
 
   def edit?

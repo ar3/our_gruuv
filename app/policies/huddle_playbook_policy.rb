@@ -4,27 +4,27 @@ class HuddlePlaybookPolicy < ApplicationPolicy
   end
 
   def create?
-    return false unless teammate
-    person = teammate.person
+    return false unless viewing_teammate
+    person = viewing_teammate.person
     admin_bypass? || person.can_manage_employment?(record.organization)
   end
 
   def update?
-    return false unless teammate
-    person = teammate.person
+    return false unless viewing_teammate
+    person = viewing_teammate.person
     admin_bypass? || person.can_manage_employment?(record.organization)
   end
 
   def destroy?
-    return false unless teammate
-    person = teammate.person
+    return false unless viewing_teammate
+    person = viewing_teammate.person
     admin_bypass? || person.can_manage_employment?(record.organization)
   end
 
   class Scope < ApplicationPolicy::Scope
     def resolve
-      return scope.none unless teammate
-      person = teammate.person
+      return scope.none unless viewing_teammate
+      person = viewing_teammate.person
       if person&.admin?
         scope.all
       else

@@ -17,9 +17,9 @@ RSpec.describe UploadEventPolicy, type: :policy do
   let(:other_upload_event) { create(:upload_event, creator: other_person, organization: organization) }
 
   # Create pundit user objects that match the controller's pundit_user structure
-  let(:pundit_user_creator) { OpenStruct.new(user: creator_teammate, real_user: creator_teammate) }
-  let(:pundit_user_other) { OpenStruct.new(user: other_teammate, real_user: other_teammate) }
-  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, real_user: admin_teammate) }
+  let(:pundit_user_creator) { OpenStruct.new(user: creator_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_other) { OpenStruct.new(user: other_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
 
   permissions :index? do
     it "allows users with employment management permission" do

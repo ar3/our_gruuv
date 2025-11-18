@@ -1,10 +1,10 @@
 class SearchPolicy < ApplicationPolicy
   def show?
-    teammate.present?
+    viewing_teammate.present?
   end
 
   def index?
-    teammate.present?
+    viewing_teammate.present?
   end
 
   class Scope < ApplicationPolicy::Scope

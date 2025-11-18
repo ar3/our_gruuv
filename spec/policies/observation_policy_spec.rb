@@ -13,11 +13,11 @@ RSpec.describe ObservationPolicy, type: :policy do
   let(:random_person) { create(:person) }
   let(:random_teammate) { CompanyTeammate.create!(person: random_person, organization: company) }
 
-  let(:pundit_user_observer) { OpenStruct.new(user: observer_teammate, real_user: observer_teammate) }
-  let(:pundit_user_observee) { OpenStruct.new(user: observee_teammate, real_user: observee_teammate) }
-  let(:pundit_user_manager) { OpenStruct.new(user: manager_teammate, real_user: manager_teammate) }
-  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, real_user: admin_teammate) }
-  let(:pundit_user_random) { OpenStruct.new(user: random_teammate, real_user: random_teammate) }
+  let(:pundit_user_observer) { OpenStruct.new(user: observer_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_observee) { OpenStruct.new(user: observee_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_manager) { OpenStruct.new(user: manager_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_random) { OpenStruct.new(user: random_teammate, impersonating_teammate: nil) }
 
   let(:observation) do
     build(:observation, observer: observer, company: company, privacy_level: :observed_only).tap do |obs|
@@ -202,7 +202,7 @@ RSpec.describe ObservationPolicy, type: :policy do
         it 'allows indirect manager (grand manager)' do
           grand_manager = create(:person)
           grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
-          grand_manager_pundit_user = OpenStruct.new(user: grand_manager_teammate, real_user: grand_manager_teammate)
+          grand_manager_pundit_user = OpenStruct.new(user: grand_manager_teammate, impersonating_teammate: nil)
           
           # Set up hierarchy: observee -> manager -> grand_manager
           create(:employment_tenure, teammate: grand_manager_teammate, company: company)
@@ -242,7 +242,7 @@ RSpec.describe ObservationPolicy, type: :policy do
         it 'allows indirect manager (grand manager)' do
           grand_manager = create(:person)
           grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
-          grand_manager_pundit_user = OpenStruct.new(user: grand_manager_teammate, real_user: grand_manager_teammate)
+          grand_manager_pundit_user = OpenStruct.new(user: grand_manager_teammate, impersonating_teammate: nil)
           
           # Set up hierarchy: observee -> manager -> grand_manager
           create(:employment_tenure, teammate: grand_manager_teammate, company: company)

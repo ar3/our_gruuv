@@ -17,10 +17,10 @@ RSpec.describe GoalLinkPolicy, type: :policy do
   let(:goal2) { create(:goal, creator: creator_teammate, owner: owner_teammate) }
   let(:goal_link) { build(:goal_link, parent: goal1, child: goal2) }
   
-  let(:pundit_user_creator) { OpenStruct.new(user: creator_teammate, real_user: creator_teammate) }
-  let(:pundit_user_owner) { OpenStruct.new(user: owner_teammate, real_user: owner_teammate) }
-  let(:pundit_user_other) { OpenStruct.new(user: other_teammate, real_user: other_teammate) }
-  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, real_user: admin_teammate) }
+  let(:pundit_user_creator) { OpenStruct.new(user: creator_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_owner) { OpenStruct.new(user: owner_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_other) { OpenStruct.new(user: other_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
   
   describe 'create?' do
     it 'allows creator of parent to create link' do

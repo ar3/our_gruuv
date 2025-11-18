@@ -11,7 +11,7 @@ class GoalLinkPolicy < ApplicationPolicy
 
   def can_edit_this_goal?
     return false unless record&.parent
-    return false unless teammate
+    return false unless viewing_teammate
     
     GoalPolicy.new(pundit_user, record.parent).update?
   end
