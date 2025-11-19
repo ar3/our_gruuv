@@ -93,13 +93,13 @@ module Debug
           details: actual_org == organization ? "Matches route organization (#{organization.name})" : "Mismatch: actual_org=#{actual_org&.name}, route_org=#{organization.name}"
         },
         can_manage_maap: {
-          result: person && actual_org ? person.can_manage_maap?(actual_org) : nil,
-          description: 'person.can_manage_maap?(organization)',
-          details: if person && actual_org
-            can_manage = person.can_manage_maap?(actual_org)
+          result: viewing_teammate && actual_org && actual_org == organization ? viewing_teammate.can_manage_maap? : nil,
+          description: 'viewing_teammate.can_manage_maap? (when org matches)',
+          details: if viewing_teammate && actual_org && actual_org == organization
+            can_manage = viewing_teammate.can_manage_maap?
             can_manage ? "Can manage MAAP for #{actual_org.name}" : "Cannot manage MAAP for #{actual_org.name}"
           else
-            'N/A (no person or organization)'
+            'N/A (no viewing_teammate, organization, or org mismatch)'
           end
         }
       }

@@ -4,20 +4,20 @@ class CompanyPolicy < OrganizationPolicy
   
   def manage_assignments?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || (person && person.can_manage_maap?(record))
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_manage_maap?
   end
 
   def manage_employment?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || (person && person.can_manage_employment?(record))
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_manage_employment?
   end
 
   def create_employment?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || (person && person.can_create_employment?(record))
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_create_employment?
   end
 
   class Scope < ApplicationPolicy::Scope

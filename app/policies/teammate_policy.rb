@@ -21,23 +21,29 @@ class TeammatePolicy < ApplicationPolicy
     return true if admin_bypass?
     return false unless viewing_teammate
     person = viewing_teammate.person
+    return false unless person == record.person
+    return false unless record.organization
     # Users can only edit their own permissions within organizations they have access to
-    person == record.person && person.can_manage_employment?(record.organization)
+    policy(record.organization).manage_employment?
   end
 
   def update?
     return true if admin_bypass?
     return false unless viewing_teammate
     person = viewing_teammate.person
+    return false unless person == record.person
+    return false unless record.organization
     # Users can only update their own permissions within organizations they have access to
-    person == record.person && person.can_manage_employment?(record.organization)
+    policy(record.organization).manage_employment?
   end
 
   def destroy?
     return true if admin_bypass?
     return false unless viewing_teammate
     person = viewing_teammate.person
+    return false unless person == record.person
+    return false unless record.organization
     # Users can only destroy their own permissions within organizations they have access to
-    person == record.person && person.can_manage_employment?(record.organization)
+    policy(record.organization).manage_employment?
   end
 end

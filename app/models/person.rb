@@ -160,16 +160,6 @@ class Person < ApplicationRecord
   end
 
 
-  
-  # Permission helper methods
-  def can_manage_employment?(organization)
-    Teammate.can_manage_employment_in_hierarchy?(self, organization)
-  end
-  
-  def can_create_employment?(organization)
-    Teammate.can_create_employment?(self, organization)
-  end
-  
   # Organization context methods
   def available_organizations
     # Return organizations where person has active teammates (not terminated)
@@ -222,15 +212,6 @@ class Person < ApplicationRecord
     last_huddle&.organization&.team? ? last_huddle.organization : nil
   end
   
-  # Permission checking methods
-  def can_manage_employment?(organization)
-    Teammate.can_manage_employment_in_hierarchy?(self, organization)
-  end
-  
-  def can_manage_maap?(organization)
-    Teammate.can_manage_maap_in_hierarchy?(self, organization)
-  end
-
   # Employment tenure checking methods
   def active_employment_tenure_in?(organization)
     teammate = teammates.find_by(organization: organization)

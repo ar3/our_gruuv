@@ -12,20 +12,13 @@ RSpec.describe SeatPolicy, type: :policy do
   let(:active_employee_person) { create(:person) }
   let(:external_user_person) { create(:person) }
   
-  let(:maap_manager_teammate) { CompanyTeammate.create!(person: maap_manager_person, organization: organization) }
-  let(:active_employee_teammate) { CompanyTeammate.create!(person: active_employee_person, organization: organization) }
-  let(:external_user_teammate) { CompanyTeammate.create!(person: external_user_person, organization: organization) }
+  let(:maap_manager_teammate) { CompanyTeammate.create!(person: maap_manager_person, organization: organization, can_manage_maap: true) }
+  let(:active_employee_teammate) { CompanyTeammate.create!(person: active_employee_person, organization: organization, can_manage_maap: false) }
+  let(:external_user_teammate) { CompanyTeammate.create!(person: external_user_person, organization: organization, can_manage_maap: false) }
 
   before do
-    # Set up permissions
-    allow(maap_manager_person).to receive(:can_manage_maap?).with(organization).and_return(true)
-    allow(maap_manager_person).to receive(:active_employment_tenure_in?).with(organization).and_return(false)
-    
-    allow(active_employee_person).to receive(:can_manage_maap?).with(organization).and_return(false)
-    allow(active_employee_person).to receive(:active_employment_tenure_in?).with(organization).and_return(true)
-    
-    allow(external_user_person).to receive(:can_manage_maap?).with(organization).and_return(false)
-    allow(external_user_person).to receive(:active_employment_tenure_in?).with(organization).and_return(false)
+    # Create active employment tenure for active_employee_person
+    create(:employment_tenure, teammate: active_employee_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
   end
 
   let(:pundit_user_maap_manager) { OpenStruct.new(user: maap_manager_teammate, impersonating_teammate: nil) }
@@ -145,6 +138,22 @@ RSpec.describe SeatPolicy, type: :policy do
       it "shows no seats" do
         expect(scope).to be_empty
       end
+    end
+  end
+
+  describe "consistency with policy(organization).manage_maap?" do
+    it "create? returns same result as policy(organization).manage_maap? when org matches" do
+      seat_policy = SeatPolicy.new(pundit_user_maap_manager, Seat.new)
+      org_policy = OrganizationPolicy.new(pundit_user_maap_manager, organization)
+      
+      # Both should check viewing_teammate.can_manage_maap? when org matches
+      expect(seat_policy.create?).to eq(org_policy.manage_maap?)
+      expect(seat_policy.create?).to be true
+    end
+
+    it "create? returns false when viewing_teammate cannot manage MAAP" do
+      seat_policy = SeatPolicy.new(pundit_user_active_employee, Seat.new)
+      expect(seat_policy.create?).to be false
     end
   end
 end

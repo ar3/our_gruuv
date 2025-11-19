@@ -150,7 +150,7 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def user_can_manage_employment?
-    person = viewing_teammate.person
-    person.can_manage_employment?(record.company)
+    return false unless record.company
+    policy(record.company).manage_employment?
   end
 end

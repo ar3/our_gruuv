@@ -5,44 +5,44 @@ class OrganizationPolicy < ApplicationPolicy
 
   def manage_employment?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || (person && person.can_manage_employment?(record))
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_manage_employment?
   end
   
   def create_employment?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || (person && person.can_create_employment?(record))
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_create_employment?
   end
 
   def manage_maap?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || (person && person.can_manage_maap?(record))
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_manage_maap?
   end
 
   def create?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || (person && person.can_manage_employment?(record))
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_manage_employment?
   end
 
   def update?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || (person && person.can_manage_employment?(record))
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_manage_employment?
   end
 
   def destroy?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || (person && person.can_manage_employment?(record))
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_manage_employment?
   end
 
   def check_ins_health?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || (person && person.can_manage_employment?(record))
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_manage_employment?
   end
 
   class Scope < ApplicationPolicy::Scope

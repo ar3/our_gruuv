@@ -5,20 +5,20 @@ class HuddlePlaybookPolicy < ApplicationPolicy
 
   def create?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || person.can_manage_employment?(record.organization)
+    return false unless record.organization
+    admin_bypass? || policy(record.organization).manage_employment?
   end
 
   def update?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || person.can_manage_employment?(record.organization)
+    return false unless record.organization
+    admin_bypass? || policy(record.organization).manage_employment?
   end
 
   def destroy?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    admin_bypass? || person.can_manage_employment?(record.organization)
+    return false unless record.organization
+    admin_bypass? || policy(record.organization).manage_employment?
   end
 
   class Scope < ApplicationPolicy::Scope

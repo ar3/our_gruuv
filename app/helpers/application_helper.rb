@@ -143,9 +143,20 @@ module ApplicationHelper
 
   # Make policy available in views
   def policy(record)
-    user = current_person if respond_to?(:current_person)
-    user ||= @current_person if defined?(@current_person)
-    Pundit.policy(user, record)
+    # Try to get pundit_user from controller context
+    pundit_user_struct = if respond_to?(:pundit_user)
+      pundit_user
+    elsif defined?(@controller) && @controller.respond_to?(:pundit_user)
+      @controller.pundit_user
+    elsif respond_to?(:current_company_teammate) && current_company_teammate
+      # Fallback: create pundit_user structure from current_company_teammate
+      OpenStruct.new(user: current_company_teammate, impersonating_teammate: nil)
+    else
+      Raven.capture_message("ApplicationHelper: pundit_user_struct is nil, so returning current_person which will likely cause failures", level: :warning)
+      # Last resort: try current_person (may not work correctly)
+      current_person if respond_to?(:current_person)
+    end
+    Pundit.policy(pundit_user_struct, record)
   end
 
   # Markdown rendering helper

@@ -4,14 +4,17 @@ class SeatPolicy < ApplicationPolicy
     # For index, check against organization from viewing_teammate
     organization = actual_organization
     return false unless organization
+    return false unless organization == viewing_teammate.organization
     person = viewing_teammate.person
-    person.active_employment_tenure_in?(organization) || person.can_manage_maap?(organization)
+    person.active_employment_tenure_in?(organization) || viewing_teammate.can_manage_maap?
   end
 
   def show?
     return false unless viewing_teammate
+    org = record&.position_type&.organization
+    return false unless org
     person = viewing_teammate.person
-    person.active_employment_tenure_in?(record&.position_type&.organization) || person.can_manage_maap?(record&.position_type&.organization)
+    person.active_employment_tenure_in?(org) || policy(org).manage_maap?
   end
 
   def create?
@@ -19,26 +22,29 @@ class SeatPolicy < ApplicationPolicy
     # For create, check against organization from viewing_teammate
     organization = actual_organization
     return false unless organization
-    person = viewing_teammate.person
-    person.can_manage_maap?(organization)
+    return false unless organization == viewing_teammate.organization
+    viewing_teammate.can_manage_maap?
   end
 
   def update?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    person.can_manage_maap?(record&.position_type&.organization)
+    org = record&.position_type&.organization
+    return false unless org
+    policy(org).manage_maap?
   end
 
   def destroy?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    person.can_manage_maap?(record&.position_type&.organization)
+    org = record&.position_type&.organization
+    return false unless org
+    policy(org).manage_maap?
   end
 
   def reconcile?
     return false unless viewing_teammate
-    person = viewing_teammate.person
-    person.can_manage_maap?(record&.position_type&.organization)
+    org = record&.position_type&.organization
+    return false unless org
+    policy(org).manage_maap?
   end
 
   class Scope < ApplicationPolicy::Scope
@@ -47,12 +53,13 @@ class SeatPolicy < ApplicationPolicy
       # Get organization from viewing_teammate
       organization = actual_organization
       return scope.none unless organization
+      return scope.none unless organization == viewing_teammate.organization
       
       person = viewing_teammate.person
       # The scope is already filtered by organization via Seat.for_organization
       seats_in_org = scope
       
-      if person.can_manage_maap?(organization)
+      if viewing_teammate.can_manage_maap?
         seats_in_org
       elsif person.active_employment_tenure_in?(organization)
         seats_in_org.where(state: [:open, :filled])

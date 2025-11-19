@@ -78,7 +78,8 @@ class ObservationVisibilityQuery
 
     # Add can_manage_employment access to all privacy levels EXCEPT observed_only
     # For observed_only, we want to respect the "observer + observees only" restriction
-    if @person.respond_to?(:can_manage_employment?) && @person.can_manage_employment?(@company)
+    teammate = @person.teammates.find_by(organization: @company)
+    if teammate&.can_manage_employment?
       conditions << "(company_id = ? AND privacy_level != ?)"
       params << @company.id
       params << 'observed_only'
@@ -148,7 +149,8 @@ class ObservationVisibilityQuery
   end
 
   def user_can_manage_employment?
-    @person.respond_to?(:can_manage_employment?) && @person.can_manage_employment?(@company)
+    teammate = @person.teammates.find_by(organization: @company)
+    teammate&.can_manage_employment? || false
   end
 
   def managed_teammate_ids_for_person

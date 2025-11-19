@@ -150,24 +150,9 @@ class Teammate < ApplicationRecord
   
   private
   
-  # Class methods for permission checking
-  def self.can_manage_employment?(person, organization)
-    return true if person.og_admin?
-    access = find_by(person: person, organization: organization)
-    access&.can_manage_employment? || false
-  end
-  
-  def self.can_create_employment?(person, organization)
-    return true if person.og_admin?
-    access = find_by(person: person, organization: organization)
-    access&.can_create_employment? || false
-  end
-  
-  def self.can_manage_maap?(person, organization)
-    return true if person.og_admin?
-    access = find_by(person: person, organization: organization)
-    access&.can_manage_maap? || false
-  end
+  # Class methods for permission checking (hierarchy-aware)
+  # Note: Simple class methods (can_manage_employment?, can_create_employment?, can_manage_maap?) 
+  # have been removed. Use viewing_teammate.can_*? instance methods or policy(org).manage_*? instead.
   
   def self.can_manage_employment_in_hierarchy?(person, organization)
     # og_admin users have access to all organizations

@@ -175,7 +175,9 @@ class Organization < ApplicationRecord
   end
   
   def can_create_employment?(person)
-    Teammate.can_create_employment?(person, self)
+    return true if person.og_admin?
+    teammate = person.teammates.find_by(organization: self)
+    teammate&.can_create_employment? || false
   end
   
   # pg_search configuration

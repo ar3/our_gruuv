@@ -59,7 +59,7 @@
                 Create a completely new person and employment record for your organization.
               
               .d-grid.gap-2.d-md-flex.justify-content-md-end
-                - if current_person&.can_create_employment?(@organization)
+                - if policy(@organization).create_employment?
                   = link_to new_organization_employment_management_path(@organization), 
                     class: "btn btn-primary btn-lg" do
                     %i.bi.bi-plus-circle.me-2

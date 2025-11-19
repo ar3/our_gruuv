@@ -43,9 +43,9 @@ class UploadEventPolicy < ApplicationPolicy
       return false unless viewing_teammate
       organization = actual_organization
       return false unless organization
+      return false unless organization == viewing_teammate.organization
       
-      person = viewing_teammate.person
-      person&.can_manage_employment?(organization)
+      viewing_teammate.can_manage_employment?
     end
   end
 
@@ -55,8 +55,8 @@ class UploadEventPolicy < ApplicationPolicy
     return false unless viewing_teammate
     organization = actual_organization
     return false unless organization
+    return false unless organization == viewing_teammate.organization
     
-    person = viewing_teammate.person
-    person&.can_manage_employment?(organization)
+    viewing_teammate.can_manage_employment?
   end
 end

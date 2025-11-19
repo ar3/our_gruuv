@@ -412,7 +412,15 @@ module TeammateHelper
     end
     
     # My Direct Reports - Check-in Status Style 2
-    if current_person&.has_direct_reports?(organization) && current_person&.can_manage_employment?(organization)
+    can_manage = if respond_to?(:policy) && current_company_teammate&.organization == organization
+      policy(organization).manage_employment?
+    elsif current_person
+      teammate = current_person.teammates.find_by(organization: organization)
+      teammate&.can_manage_employment? || false
+    else
+      false
+    end
+    if current_person&.has_direct_reports?(organization) && can_manage
       presets << ['My Direct Reports - Check-in Status Style 2', 'my_direct_reports_check_in_status_2']
     end
     
@@ -420,7 +428,7 @@ module TeammateHelper
     presets << ['All Employees - Check-in Status Style 1', 'all_employees_check_in_status_1']
     
     # All Employees - Check-in Status Style 2
-    if current_person&.can_manage_employment?(organization)
+    if can_manage
       presets << ['All Employees - Check-in Status Style 2', 'all_employees_check_in_status_2']
     end
     

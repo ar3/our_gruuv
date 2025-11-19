@@ -162,8 +162,9 @@ module Debug
       
       explanations << "\nChecking employment management in organizations where user has employment tenures:"
       user_employment_orgs.each do |org|
-        has_employment = current_user.can_manage_employment?(org)
-        has_maap = current_user.can_manage_maap?(org)
+        teammate = current_user.teammates.find_by(organization: org)
+        has_employment = teammate&.can_manage_employment? || false
+        has_maap = teammate&.can_manage_maap? || false
         if has_employment || has_maap
           explanations << "  ✓ #{org.name}: employment=#{has_employment}, maap=#{has_maap}"
         else
@@ -212,7 +213,8 @@ module Debug
       
       has_employment_anywhere = false
       user_orgs.each do |org|
-        has_employment = current_user.can_manage_employment?(org)
+        teammate = current_user.teammates.find_by(organization: org)
+        has_employment = teammate&.can_manage_employment? || false
         if has_employment
           explanations << "  ✓ #{org.name}: can_manage_employment=true"
           has_employment_anywhere = true
@@ -262,7 +264,8 @@ module Debug
         end
         
         # Check employment management
-        has_employment = current_user.can_manage_employment?(organization)
+        teammate = current_user.teammates.find_by(organization: organization)
+        has_employment = teammate&.can_manage_employment? || false
         if has_employment
           explanations << "  ✓ User has employment management in #{organization.name}"
         else
@@ -277,7 +280,8 @@ module Debug
         explanations << "Shared organizations: #{shared_orgs.map(&:name).join(', ')}"
         shared_orgs.each do |org|
           in_hierarchy = current_user.in_managerial_hierarchy_of?(subject_person, org)
-          has_employment = current_user.can_manage_employment?(org)
+          teammate = current_user.teammates.find_by(organization: org)
+          has_employment = teammate&.can_manage_employment? || false
           explanations << "  #{org.name}: hierarchy=#{in_hierarchy}, employment=#{has_employment}"
         end
       end
@@ -306,8 +310,9 @@ module Debug
       # Check for both permissions
       explanations << "\nStep 2: Check for BOTH employment AND maap permissions:"
       user_employment_orgs.each do |org|
-        has_employment = current_user.can_manage_employment?(org)
-        has_maap = current_user.can_manage_maap?(org)
+        teammate = current_user.teammates.find_by(organization: org)
+        has_employment = teammate&.can_manage_employment? || false
+        has_maap = teammate&.can_manage_maap? || false
         has_both = has_employment && has_maap
         
         if has_both
@@ -338,7 +343,8 @@ module Debug
       # Check employment management
       explanations << "\nStep 2: Check employment management permissions:"
       user_employment_orgs.each do |org|
-        has_employment = current_user.can_manage_employment?(org)
+        teammate = current_user.teammates.find_by(organization: org)
+        has_employment = teammate&.can_manage_employment? || false
         if has_employment
           explanations << "  ✓ #{org.name}: can_manage_employment=true"
         else
@@ -383,7 +389,8 @@ module Debug
       explanations << "\nStep 3: Check employment management permissions (allows changing own or others' employment):"
       has_employment_anywhere = false
       user_employment_orgs.each do |org|
-        has_employment = current_user.can_manage_employment?(org)
+        teammate = current_user.teammates.find_by(organization: org)
+        has_employment = teammate&.can_manage_employment? || false
         if has_employment
           explanations << "  ✓ #{org.name}: can_manage_employment=true (ALLOWED)"
           has_employment_anywhere = true
@@ -420,7 +427,8 @@ module Debug
       end
       
       # Check MAAP management
-      has_maap = current_user.can_manage_maap?(organization)
+      teammate = current_user.teammates.find_by(organization: organization)
+      has_maap = teammate&.can_manage_maap? || false
       if has_maap
         explanations << "  ✓ User has MAAP management in #{organization.name} (ALLOWED)"
       else
@@ -447,9 +455,9 @@ module Debug
           organization_id: org.id,
           organization_type: org.type,
           teammate_id: teammate_record&.id,
-          can_manage_employment: current_user.can_manage_employment?(org),
-          can_create_employment: current_user.can_create_employment?(org),
-          can_manage_maap: current_user.can_manage_maap?(org),
+          can_manage_employment: teammate_record&.can_manage_employment? || false,
+          can_create_employment: teammate_record&.can_create_employment? || false,
+          can_manage_maap: teammate_record&.can_manage_maap? || false,
           can_manage_employment_hierarchy: Teammate.can_manage_employment_in_hierarchy?(current_user, org),
           can_manage_maap_hierarchy: Teammate.can_manage_maap_in_hierarchy?(current_user, org),
           teammate_flags: {
@@ -470,9 +478,9 @@ module Debug
           organization_id: org.id,
           organization_type: org.type,
           teammate_id: teammate_record&.id,
-          can_manage_employment: subject_person.can_manage_employment?(org),
-          can_create_employment: subject_person.can_create_employment?(org),
-          can_manage_maap: subject_person.can_manage_maap?(org),
+          can_manage_employment: teammate_record&.can_manage_employment? || false,
+          can_create_employment: teammate_record&.can_create_employment? || false,
+          can_manage_maap: teammate_record&.can_manage_maap? || false,
           teammate_flags: {
             can_manage_employment: teammate_record&.can_manage_employment?,
             can_create_employment: teammate_record&.can_create_employment?,
