@@ -83,6 +83,32 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
       expect(response.body).to include(maap_snapshot1.reason)
       expect(response.body).to include(maap_snapshot2.reason)
     end
+    
+    it 'displays reason field in snapshot rows' do
+      get audit_organization_employee_path(organization, employee)
+      
+      # Verify reason column header exists
+      expect(response.body).to include('Reason')
+      
+      # Verify reasons are displayed in the table
+      expect(response.body).to include(maap_snapshot1.reason)
+      expect(response.body).to include(maap_snapshot2.reason)
+    end
+    
+    it 'displays custom reasons correctly' do
+      custom_snapshot = create(:maap_snapshot,
+                               employee: employee,
+                               created_by: maap_manager,
+                               company: organization,
+                               change_type: 'bulk_check_in_finalization',
+                               reason: 'Q4 2024 Performance Review',
+                               effective_date: Date.current)
+      
+      get audit_organization_employee_path(organization, employee)
+      
+      expect(response.body).to include('Q4 2024 Performance Review')
+      expect(response.body).to include(custom_snapshot.reason)
+    end
   end
   
   describe 'when user does not have MAAP management permissions' do

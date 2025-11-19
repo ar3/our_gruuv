@@ -116,6 +116,13 @@ class Person < ApplicationRecord
     parse_full_name
   end
   
+  def casual_name
+    parts = [
+      preferred_name.present? ? preferred_name : first_name, 
+      last_name.present? ? "#{last_name[0]}." : nil, 
+      suffix].compact
+    parts.join(' ')
+  end
   # Instance methods
   
   

@@ -313,7 +313,17 @@ function initializeAuditToggle() {
     }
   })
   
-  // Apply filter for all checked toggles on page load
+  // Apply filter when collapse sections are shown (Bootstrap collapse event)
+  document.addEventListener('shown.bs.collapse', function(e) {
+    // Find all checked toggles within the collapsed section that was just shown
+    const collapseElement = e.target
+    const checkedToggles = collapseElement.querySelectorAll('.audit-show-changes-toggle:checked')
+    checkedToggles.forEach(toggle => {
+      applyAuditToggleFilter(toggle)
+    })
+  })
+  
+  // Apply filter for all checked toggles on page load (for visible sections)
   const checkedToggles = document.querySelectorAll('.audit-show-changes-toggle:checked')
   checkedToggles.forEach(toggle => {
     applyAuditToggleFilter(toggle)

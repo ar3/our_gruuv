@@ -45,10 +45,16 @@
           .alert.alert-warning
             %strong ⚠️ This will:
             %ul
-              %li Create MAAP snapshot with complete ratings
-              %li Close selected tenures and open new ones
-              %li Make all notes visible to #{@person.first_name}
-              %li Send notification to #{@person.first_name}
+              %li Create an Audit record for #{@person.casual_name} to acknowledge
+              %li Close selected check-ins and open new ones
+              %li Send notification to #{@person.casual_name} (coming soon)
+          
+          .mb-3
+            = f.label :maap_snapshot_reason, "Reason (optional)", class: "form-label"
+            = f.text_field :maap_snapshot_reason, 
+                           class: "form-control", 
+                           placeholder: "e.g., Q4 2024 Performance Review, Annual Check-in, etc.",
+                           value: "Check-in finalization for #{@person.display_name}"
           
           = f.submit 'Finalize Selected Check-Ins', class: 'btn btn-success btn-lg',
                      data: { confirm: 'Are you sure you want to finalize these check-ins?' }

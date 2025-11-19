@@ -1,10 +1,11 @@
 class CheckInFinalizationService
   
-  def initialize(teammate:, finalization_params:, finalized_by:, request_info: {})
+  def initialize(teammate:, finalization_params:, finalized_by:, request_info: {}, maap_snapshot_reason: nil)
     @teammate = teammate
     @params = finalization_params
     @finalized_by = finalized_by
     @request_info = request_info
+    @maap_snapshot_reason = maap_snapshot_reason
   end
   
   def call
@@ -112,12 +113,14 @@ class CheckInFinalizationService
   end
   
   def create_snapshot(results)
+    reason = @maap_snapshot_reason.presence || "Check-in finalization for #{@teammate.person.display_name}"
+    
     MaapSnapshot.create!(
       employee: @teammate.person,
       created_by: @finalized_by,
       company: @teammate.organization,
       change_type: determine_change_type(results),
-      reason: "Check-in finalization for #{@teammate.person.display_name}",
+      reason: reason,
       effective_date: Time.current,
       manager_request_info: @request_info.merge(
         finalized_by_id: @finalized_by.id,

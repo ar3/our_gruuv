@@ -45,7 +45,8 @@ class Organizations::FinalizationsController < Organizations::OrganizationNamesp
       teammate: @teammate,
       finalization_params: finalization_params,
       finalized_by: current_person,
-      request_info: build_request_info
+      request_info: build_request_info,
+      maap_snapshot_reason: finalization_params[:maap_snapshot_reason]
     ).call
     
     if result.ok?
@@ -85,6 +86,7 @@ class Organizations::FinalizationsController < Organizations::OrganizationNamesp
   
   def finalization_params
     permitted = params.permit(
+      :maap_snapshot_reason,
       position_check_in: [:finalize, :official_rating, :shared_notes],
       assignment_check_ins: {},
       aspiration_check_ins: {}
