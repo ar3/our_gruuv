@@ -160,6 +160,83 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       end
     end
 
+    context 'with public privacy level and negative ratings' do
+      let(:ability) { create(:ability, organization: company) }
+      let(:public_params_with_negative_rating) do
+        {
+          organization_id: company.id,
+          observation: {
+            story: 'Some feedback',
+            privacy_level: 'public_observation',
+            primary_feeling: 'happy',
+            observed_at: Date.current,
+            observees_attributes: {
+              '0' => { teammate_id: observee_teammate.id }
+            },
+            observation_ratings_attributes: {
+              '0' => {
+                rateable_type: 'Ability',
+                rateable_id: ability.id,
+                rating: 'disagree'
+              }
+            }
+          }
+        }
+      end
+
+      it 'changes privacy level to observed_and_managers' do
+        post :create, params: public_params_with_negative_rating
+        observation = Observation.last
+        expect(observation.privacy_level).to eq('observed_and_managers')
+      end
+
+      it 'sets flash alert with privacy change message' do
+        post :create, params: public_params_with_negative_rating
+        expect(flash[:alert]).to include("Privacy level was changed from Public to 'For them and their managers'")
+      end
+
+      it 'still sets success notice' do
+        post :create, params: public_params_with_negative_rating
+        expect(flash[:notice]).to eq('Observation was successfully created.')
+      end
+    end
+
+    context 'with public privacy level but only positive ratings' do
+      let(:ability) { create(:ability, organization: company) }
+      let(:public_params_with_positive_rating) do
+        {
+          organization_id: company.id,
+          observation: {
+            story: 'Great feedback',
+            privacy_level: 'public_observation',
+            primary_feeling: 'happy',
+            observed_at: Date.current,
+            observees_attributes: {
+              '0' => { teammate_id: observee_teammate.id }
+            },
+            observation_ratings_attributes: {
+              '0' => {
+                rateable_type: 'Ability',
+                rateable_id: ability.id,
+                rating: 'strongly_agree'
+              }
+            }
+          }
+        }
+      end
+
+      it 'does not change privacy level' do
+        post :create, params: public_params_with_positive_rating
+        observation = Observation.last
+        expect(observation.privacy_level).to eq('public_observation')
+      end
+
+      it 'does not set flash alert' do
+        post :create, params: public_params_with_positive_rating
+        expect(flash[:alert]).to be_nil
+      end
+    end
+
     context 'with invalid parameters' do
       let(:invalid_params) do
         {
@@ -368,6 +445,33 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       }
       expect(response).to redirect_to(new_organization_observation_path(company, draft_id: draft.id))
     end
+
+    context 'when adding rateable to public observation with existing negative rating' do
+      let(:ability) { create(:ability, organization: company) }
+      let(:assignment) { create(:assignment, company: company) }
+      let(:public_draft) do
+        obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_observation)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        # Create existing negative rating
+        create(:observation_rating, observation: obs, rateable: ability, rating: :disagree)
+        obs
+      end
+
+      it 'maintains observed_and_managers privacy level after adding another rateable' do
+        # Privacy should already be changed due to existing negative rating
+        expect(public_draft.privacy_level).to eq('public_observation')
+        
+        post :add_rateables, params: {
+          organization_id: company.id,
+          id: public_draft.id,
+          rateable_type: 'Assignment',
+          rateable_ids: [assignment.id]
+        }
+        # Service should detect negative rating and change privacy
+        expect(public_draft.reload.privacy_level).to eq('observed_and_managers')
+      end
+    end
   end
 
   describe 'PATCH #update_draft' do
@@ -490,6 +594,66 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(response).to redirect_to(organization_observation_path(company, invalid_draft))
       expect(flash[:alert]).to be_present
     end
+
+    context 'with public privacy level and negative ratings' do
+      let(:ability) { create(:ability, organization: company) }
+      let(:draft_with_negative_rating) do
+        obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_observation)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        create(:observation_rating, observation: obs, rateable: ability, rating: :disagree)
+        obs
+      end
+
+      it 'changes privacy level to observed_and_managers' do
+        post :publish, params: {
+          organization_id: company.id,
+          id: draft_with_negative_rating.id
+        }
+        expect(draft_with_negative_rating.reload.privacy_level).to eq('observed_and_managers')
+      end
+
+      it 'sets flash alert with privacy change message' do
+        post :publish, params: {
+          organization_id: company.id,
+          id: draft_with_negative_rating.id
+        }
+        expect(flash[:alert]).to include("Privacy level was changed from Public to 'For them and their managers'")
+      end
+
+      it 'still sets success notice' do
+        post :publish, params: {
+          organization_id: company.id,
+          id: draft_with_negative_rating.id
+        }
+        expect(flash[:notice]).to eq('Observation was successfully published.')
+      end
+    end
+
+    context 'with public privacy level but no ratings' do
+      let(:draft_without_ratings) do
+        obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_observation)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'does not change privacy level' do
+        post :publish, params: {
+          organization_id: company.id,
+          id: draft_without_ratings.id
+        }
+        expect(draft_without_ratings.reload.privacy_level).to eq('public_observation')
+      end
+
+      it 'does not set flash alert' do
+        post :publish, params: {
+          organization_id: company.id,
+          id: draft_without_ratings.id
+        }
+        expect(flash[:alert]).to be_nil
+      end
+    end
   end
 
   describe 'GET #manage_observees' do
@@ -499,7 +663,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       obs.save!
       obs
     end
-    let(:other_teammate) { create(:teammate, organization: company) }
+    let!(:other_teammate) { create(:teammate, organization: company) }
 
     it 'renders the manage_observees template' do
       get :manage_observees, params: { organization_id: company.id, id: draft.id }
@@ -510,8 +674,9 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
     it 'assigns all teammates (not just unselected)' do
       get :manage_observees, params: { organization_id: company.id, id: draft.id }
-      expect(assigns(:teammates)).to include(observee_teammate)
-      expect(assigns(:teammates)).to include(other_teammate)
+      teammate_ids = assigns(:teammates).pluck(:id)
+      expect(teammate_ids).to include(observee_teammate.id)
+      expect(teammate_ids).to include(other_teammate.id)
     end
 
     it 'requires authorization' do
@@ -1010,8 +1175,9 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         sign_in_as_teammate(other_person, other_company)
         
         get :filtered_observations, params: { organization_id: company.id }
-        # Should still work - authorization is at the Observation level, not organization level
-        expect(response).to have_http_status(:success)
+        # Authorization prevents access when user doesn't have a teammate in the target organization
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(organizations_path)
       end
     end
     

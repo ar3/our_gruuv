@@ -116,7 +116,7 @@
               %br
               %i.bi.bi-eye.me-1
               Spotlight:
-              = @current_spotlight.humanize
+              = @current_spotlight&.humanize || 'None'
 
 / Pagination Info
 .row.justify-content-center.mb-2

@@ -228,6 +228,12 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         if @form.save
           # Handle observees after form saves successfully
           handle_observees(@observation)
+          
+          # Enforce privacy level if public observation has negative ratings
+          if Observations::PrivacyLevelEnforcementService.call(@observation)
+            flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+          end
+          
           redirect_to organization_observation_path(organization, @observation), 
                       notice: 'Observation was successfully created.'
         else
@@ -400,6 +406,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       # Handle ratings
       handle_ratings(@observation, wizard_data)
       
+      # Enforce privacy level if public observation has negative ratings
+      if Observations::PrivacyLevelEnforcementService.call(@observation)
+        flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+      end
+      
       # Send notifications if requested
       if params[:observation][:send_notifications] == '1'
         notify_teammate_ids = params[:observation][:notify_teammate_ids] || []
@@ -454,6 +465,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     # Save current form data as draft
     if @observation.update(draft_params)
+      # Enforce privacy level if public observation has negative ratings
+      if Observations::PrivacyLevelEnforcementService.call(@observation)
+        flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+      end
+      
       redirect_to add_assignments_organization_observation_path(
         organization, 
         @observation,
@@ -551,6 +567,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
     
     @observation.reload
+    
+    # Enforce privacy level if public observation has negative ratings
+    if Observations::PrivacyLevelEnforcementService.call(@observation)
+      flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+    end
     
     # Preserve return_url and return_text when redirecting back
     redirect_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
@@ -655,6 +676,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         @observation.observed_at ||= Time.current
         @observation.save! if @observation.changed? || @observation.new_record?
         authorize @observation, :update?
+        
+        # Enforce privacy level if public observation has negative ratings
+        if Observations::PrivacyLevelEnforcementService.call(@observation)
+          flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+        end
       else
         flash[:alert] = "Failed to save: #{@form.errors.full_messages.join(', ')}"
         @return_url = params[:return_url] || organization_observations_path(organization)
@@ -682,6 +708,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     saved = @form.validate(permitted_params) && @form.save
     
     if saved
+      # Enforce privacy level if public observation has negative ratings
+      if Observations::PrivacyLevelEnforcementService.call(@observation)
+        flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+      end
+      
       # Check if we should save and navigate to an add-* picker
       if params[:save_and_add_assignments].present?
         redirect_to add_assignments_organization_observation_path(
@@ -762,6 +793,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         @observation.assign_attributes(draft_params)
         @observation.observed_at ||= Time.current
         @observation.save!
+        
+        # Enforce privacy level if public observation has negative ratings
+        if Observations::PrivacyLevelEnforcementService.call(@observation)
+          flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+        end
       end
     else
       # Existing observation - update with any form data if story has content
@@ -773,6 +809,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       if story.present? && story.strip.present?
         # Update observation with form data
         @observation.update(draft_params)
+        
+        # Enforce privacy level if public observation has negative ratings
+        if Observations::PrivacyLevelEnforcementService.call(@observation)
+          flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+        end
       end
     end
     
@@ -854,6 +895,12 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     # Publish will validate story is present (required for published observations)
     begin
       @observation.publish!
+      
+      # Enforce privacy level if public observation has negative ratings
+      if Observations::PrivacyLevelEnforcementService.call(@observation)
+        flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+      end
+      
       # If return_url is provided, use it (from form/new page)
       # Otherwise, redirect to show page (publish from show page)
       redirect_url = params[:return_url] || organization_observation_path(organization, @observation)
