@@ -7,7 +7,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
   let(:maap_manager) { create(:person) }
   let!(:employee_teammate) { create(:teammate, person: employee, organization: organization, first_employed_at: 1.year.ago) }
   let!(:manager_teammate) { create(:teammate, person: manager, organization: organization, first_employed_at: 1.year.ago) }
-  let!(:maap_manager_teammate) { create(:teammate, person: maap_manager, organization: organization, can_manage_maap: true, first_employed_at: 1.year.ago) }
+  let!(:maap_manager_teammate) { create(:teammate, person: maap_manager, organization: organization, can_manage_maap: true, can_manage_employment: true, first_employed_at: 1.year.ago) }
   let!(:employee_employment) { create(:employment_tenure, teammate: employee_teammate, company: organization, started_at: 1.year.ago) }
   let!(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago) }
   let!(:maap_manager_employment) { create(:employment_tenure, teammate: maap_manager_teammate, company: organization, started_at: 1.year.ago) }

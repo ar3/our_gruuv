@@ -49,9 +49,6 @@ module RequestAuthenticationHelpers
     # Stub current_company_teammate for request specs
     allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(teammate)
     
-    # Stub real_current_teammate for admin bypass checks
-    allow_any_instance_of(ApplicationController).to receive(:real_current_teammate).and_return(teammate)
-    
     # Also stub current_person and current_organization for backward compatibility
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(teammate.person)
     allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(teammate.organization)
