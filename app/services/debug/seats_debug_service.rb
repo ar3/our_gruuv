@@ -21,12 +21,41 @@ module Debug
         policy_class: 'SeatPolicy',
         policy_record: seat_record,
         policy_action: 'create?',
+        viewing_teammate: viewing_teammate_info(policy.send(:viewing_teammate)),
         conditions: evaluate_conditions(policy),
         final_result: policy.create?
       }
     end
 
     private
+
+    def viewing_teammate_info(viewing_teammate)
+      return nil unless viewing_teammate
+      
+      {
+        id: viewing_teammate.id,
+        person_id: viewing_teammate.person_id,
+        person_name: viewing_teammate.person.display_name,
+        organization_id: viewing_teammate.organization_id,
+        organization_name: viewing_teammate.organization.name,
+        type: viewing_teammate.class.name,
+        authorization_fields: {
+          can_manage_employment: {
+            raw_value: viewing_teammate[:can_manage_employment],
+            method_result: viewing_teammate.can_manage_employment?
+          },
+          can_manage_maap: {
+            raw_value: viewing_teammate[:can_manage_maap],
+            method_result: viewing_teammate.can_manage_maap?
+          },
+          can_create_employment: {
+            raw_value: viewing_teammate[:can_create_employment],
+            method_result: viewing_teammate.can_create_employment?
+          }
+        },
+        og_admin: viewing_teammate.person&.og_admin?
+      }
+    end
 
     def evaluate_conditions(policy)
       viewing_teammate = policy.send(:viewing_teammate)

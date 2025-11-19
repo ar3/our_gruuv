@@ -25,15 +25,17 @@
       .col-md-6
         %strong Logged-in Teammate:
         %br
-        - if current_company_teammate
-          - teammate = current_company_teammate
-          ID: #{teammate.id}
+        - if @debug_data[:viewing_teammate]
+          - teammate_info = @debug_data[:viewing_teammate]
+          ID: #{teammate_info[:id]}
           %br
-          Person: #{teammate.person.display_name} (ID: #{teammate.person.id})
+          Type: #{teammate_info[:type]}
           %br
-          Organization: #{teammate.organization.name} (ID: #{teammate.organization.id})
+          Person: #{teammate_info[:person_name]} (ID: #{teammate_info[:person_id]})
           %br
-          - if teammate.person.og_admin?
+          Organization: #{teammate_info[:organization_name]} (ID: #{teammate_info[:organization_id]})
+          %br
+          - if teammate_info[:og_admin]
             %span.badge.bg-danger Admin
         - else
           %span.text-muted Not logged in
@@ -45,6 +47,77 @@
         Policy Record: #{@debug_data[:policy_record].class.name} (new instance)
         %br
         Policy Action: #{@debug_data[:policy_action]}
+    - if @debug_data[:viewing_teammate]
+      %hr
+      %strong Authorization Fields (from viewing_teammate):
+      %br
+      %small.text-muted
+        Viewing Teammate ID: 
+        %strong= @debug_data[:viewing_teammate][:id]
+        |  - These values control whether the user can create seats. Seat creation requires can_manage_maap to be true.
+      .row.mt-2
+        - teammate_info = @debug_data[:viewing_teammate]
+        - auth_fields = teammate_info[:authorization_fields]
+        .col-md-4
+          .card.border{class: auth_fields[:can_manage_maap][:method_result] ? 'border-success' : 'border-secondary'}
+            .card-body.p-2
+              %strong.text-primary can_manage_maap
+              %br
+              %small
+                Raw DB Value: 
+                - if auth_fields[:can_manage_maap][:raw_value].nil?
+                  %span.text-muted nil
+                - elsif auth_fields[:can_manage_maap][:raw_value]
+                  %span.text-success true
+                - else
+                  %span.text-danger false
+              %br
+              %small
+                Method Result: 
+                - if auth_fields[:can_manage_maap][:method_result]
+                  %span.text-success.badge.bg-success true (REQUIRED for seat creation)
+                - else
+                  %span.text-danger.badge.bg-danger false (BLOCKS seat creation)
+        .col-md-4
+          .card.border.border-secondary
+            .card-body.p-2
+              %strong can_manage_employment
+              %br
+              %small
+                Raw DB Value: 
+                - if auth_fields[:can_manage_employment][:raw_value].nil?
+                  %span.text-muted nil
+                - elsif auth_fields[:can_manage_employment][:raw_value]
+                  %span.text-success true
+                - else
+                  %span.text-danger false
+              %br
+              %small
+                Method Result: 
+                - if auth_fields[:can_manage_employment][:method_result]
+                  %span.text-success.badge.bg-success true
+                - else
+                  %span.text-muted.badge.bg-secondary false
+        .col-md-4
+          .card.border.border-secondary
+            .card-body.p-2
+              %strong can_create_employment
+              %br
+              %small
+                Raw DB Value: 
+                - if auth_fields[:can_create_employment][:raw_value].nil?
+                  %span.text-muted nil
+                - elsif auth_fields[:can_create_employment][:raw_value]
+                  %span.text-success true
+                - else
+                  %span.text-danger false
+              %br
+              %small
+                Method Result: 
+                - if auth_fields[:can_create_employment][:method_result]
+                  %span.text-success.badge.bg-success true
+                - else
+                  %span.text-muted.badge.bg-secondary false
     %hr
     %strong Policy Conditions Breakdown (create? method):
     %br
