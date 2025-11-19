@@ -7,8 +7,8 @@
 - all_fields = format_snapshot_all_fields(snapshot, person, organization, previous_snapshot: previous_snapshot)
 - has_data = all_fields.present? && (all_fields[:employment].present? || all_fields[:assignments].present? || all_fields[:abilities].present? || all_fields[:aspirations].present?)
 - show_acknowledgement = current_person == person
-- # Calculate total columns: checkbox (if shown) + date + type + created_by + reason + status (if not checkbox) + acknowledgement (if shown) + details
-- total_cols = (show_checkbox ? 1 : 0) + 4 + (show_checkbox ? 0 : 1) + (show_acknowledgement ? 1 : 0) + 1
+- # Calculate total columns: checkbox (if shown) + date + created_by + reason + status (if not checkbox) + acknowledgement (if shown) + details
+- total_cols = (show_checkbox ? 1 : 0) + 3 + (show_checkbox ? 0 : 1) + (show_acknowledgement ? 1 : 0) + 1
 %tr
   - if show_checkbox
     %td
@@ -17,8 +17,6 @@
                       id: "snapshot_#{snapshot.id}"
   %td
     = snapshot.created_at.strftime("%Y-%m-%d %I:%M %p")
-  %td
-    %span.badge.bg-primary= snapshot.change_type.humanize
   %td
     = snapshot.created_by&.display_name || "System"
   %td

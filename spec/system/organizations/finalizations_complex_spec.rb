@@ -183,8 +183,9 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
       expect(page).to have_content('Q4 2024 Performance Review')
       expect(page).to have_content('Annual Check-in')
       
-      # Verify both snapshots appear
-      expect(page).to have_content(snapshot1.change_type.humanize, count: 2)
+      # Verify both snapshots appear by checking for both reasons
+      expect(page).to have_content('Q4 2024 Performance Review', count: 1)
+      expect(page).to have_content('Annual Check-in', count: 1)
     end
   end
 end

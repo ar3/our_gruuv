@@ -78,8 +78,6 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     it 'includes snapshot details in the response' do
       get audit_organization_employee_path(organization, employee)
       
-      expect(response.body).to include(maap_snapshot1.change_type.humanize)
-      expect(response.body).to include(maap_snapshot2.change_type.humanize)
       expect(response.body).to include(maap_snapshot1.reason)
       expect(response.body).to include(maap_snapshot2.reason)
     end
@@ -159,16 +157,16 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
       get audit_organization_employee_path(organization, employee)
       
       # Check that the snapshot data is present in the response
-      expect(response.body).to include(maap_snapshot1.change_type.humanize)
       expect(response.body).to include(maap_snapshot1.created_by.display_name)
+      expect(response.body).to include(maap_snapshot1.reason)
     end
     
     it 'renders snapshot_row partial for audit trail' do
       get audit_organization_employee_path(organization, employee)
       
       # Check that both snapshots appear in the audit trail
-      expect(response.body).to include(maap_snapshot1.change_type.humanize)
-      expect(response.body).to include(maap_snapshot2.change_type.humanize)
+      expect(response.body).to include(maap_snapshot1.reason)
+      expect(response.body).to include(maap_snapshot2.reason)
     end
   end
   
