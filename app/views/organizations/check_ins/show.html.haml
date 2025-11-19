@@ -31,6 +31,8 @@
       %i.bi.bi-arrow-left.me-2
       Back to Profile
 
+= render 'shared/check_in_wizard_header', organization: @organization, person: @person, current_step: 1
+
 -# Show pending acknowledgement banner if applicable
 - if @view_mode == :employee && @person.maap_snapshots.executed.where(employee_acknowledged_at: nil).any?
   .alert.alert-warning

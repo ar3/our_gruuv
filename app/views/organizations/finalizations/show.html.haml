@@ -9,6 +9,8 @@
     %i.bi.bi-arrow-left.me-2
     Back to Check-Ins
 
+= render 'shared/check_in_wizard_header', organization: @organization, person: @person, current_step: 2
+
 = form_with url: organization_person_finalization_path(@organization, @person), method: :post, local: true do |f|
   
   -# Position Section

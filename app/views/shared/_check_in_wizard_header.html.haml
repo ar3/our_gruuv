@@ -1,0 +1,32 @@
+- current_step ||= 1
+- step1_path = organization_person_check_ins_path(organization, person)
+- step2_path = organization_person_finalization_path(organization, person)
+- step3_path = audit_organization_employee_path(organization, person)
+
+.card.mb-4
+  .card-body
+    .progress.mb-3{style: "height: 4px;"}
+      - progress_width = current_step == 1 ? 33 : (current_step == 2 ? 66 : 100)
+      .progress-bar{role: "progressbar", 'aria-valuenow': progress_width.to_s, 'aria-valuemin': "0", 'aria-valuemax': "100", style: "width: #{progress_width}%;"}
+    .d-flex.justify-content-between
+      - if current_step == 1
+        = link_to step1_path, class: "text-primary fw-bold text-decoration-none" do
+          Step 1: Individual Check-in
+      - else
+        = link_to step1_path, class: "text-muted text-decoration-none" do
+          Step 1: Individual Check-in
+      
+      - if current_step == 2
+        = link_to step2_path, class: "text-primary fw-bold text-decoration-none" do
+          Step 2: Manager Confirmation
+      - else
+        = link_to step2_path, class: "text-muted text-decoration-none" do
+          Step 2: Manager Confirmation
+      
+      - if current_step == 3
+        = link_to step3_path, class: "text-primary fw-bold text-decoration-none" do
+          Step 3: Employee Acknowledgement
+      - else
+        = link_to step3_path, class: "text-muted text-decoration-none" do
+          Step 3: Employee Acknowledgement
+
