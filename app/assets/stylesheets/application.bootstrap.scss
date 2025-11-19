@@ -493,3 +493,45 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   white-space: pre-wrap;
 }
 
+// ===== AUDIT TRAIL DETAILS STYLES =====
+.audit-details-table {
+  th {
+    width: 40%;
+    
+    &:nth-child(2) {
+      width: 30%;
+    }
+    
+    &:nth-child(3) {
+      width: 30%;
+    }
+  }
+  
+  td {
+    &:first-child {
+      width: 40%;
+    }
+    
+    &:nth-child(2) {
+      width: 30%;
+    }
+    
+    &:nth-child(3) {
+      width: 30%;
+    }
+  }
+}
+
+.audit_value_row {
+  &.audit_value_row_diff {
+    font-weight: 900;
+    td{
+      background-color: rgba(211, 135, 44, 0.423);
+    }
+  }
+  
+  &.audit_value_row_no_diff {
+    opacity: 0.4;
+  }
+}
+

@@ -68,81 +68,101 @@
           .card-body
             - if all_fields[:employment].present?
               .mb-3
-                %h6.text-muted.mb-2
-                  %i.bi.bi-briefcase.me-2
-                  Position
-                %table.table.table-sm.table-bordered
+                .d-flex.justify-content-between.align-items-center.mb-2
+                  %h6.text-muted.mb-0
+                    %i.bi.bi-briefcase.me-2
+                    Position
+                  .form-check
+                    = check_box_tag "show_changes_#{snapshot.id}_employment", "1", true, class: "form-check-input audit-show-changes-toggle", id: "show_changes_#{snapshot.id}_employment", data: { section: "employment", snapshot_id: snapshot.id }
+                    = label_tag "show_changes_#{snapshot.id}_employment", "Only show changes", class: "form-check-label small text-muted"
+                %table.table.table-sm.table-bordered.audit-details-table
                   %thead
                     %tr
-                      %th Field
-                      %th Old
-                      %th New
-                  %tbody
+                      %th{style: "width: 40%;"} Field
+                      %th{style: "width: 30%;"} Old
+                      %th{style: "width: 30%;"} New
+                  %tbody{id: "audit_#{snapshot.id}_employment"}
                     - all_fields[:employment].each do |field|
-                      %tr
+                      - row_class = field[:old] == field[:new] ? "audit_value_row audit_value_row_no_diff" : "audit_value_row audit_value_row_diff"
+                      %tr{class: row_class}
                         %td= field[:label]
                         %td= field[:old]
                         %td= field[:new]
             
             - if all_fields[:assignments].present?
               .mb-3
-                %h6.text-muted.mb-2
-                  %i.bi.bi-clipboard-check.me-2
-                  Assignments
+                .d-flex.justify-content-between.align-items-center.mb-2
+                  %h6.text-muted.mb-0
+                    %i.bi.bi-clipboard-check.me-2
+                    Assignments
+                  .form-check
+                    = check_box_tag "show_changes_#{snapshot.id}_assignments", "1", true, class: "form-check-input audit-show-changes-toggle", id: "show_changes_#{snapshot.id}_assignments", data: { section: "assignments", snapshot_id: snapshot.id }
+                    = label_tag "show_changes_#{snapshot.id}_assignments", "Only show changes", class: "form-check-label small text-muted"
                 - all_fields[:assignments].each do |assignment|
                   .mb-3
                     %strong= assignment[:assignment_name]
-                    %table.table.table-sm.table-bordered.mt-2
+                    %table.table.table-sm.table-bordered.mt-2.audit-details-table
                       %thead
                         %tr
-                          %th Field
-                          %th Old
-                          %th New
-                      %tbody
+                          %th{style: "width: 40%;"} Field
+                          %th{style: "width: 30%;"} Old
+                          %th{style: "width: 30%;"} New
+                      %tbody{id: "audit_#{snapshot.id}_assignments_#{assignment[:assignment_id]}"}
                         - assignment[:fields].each do |field|
-                          %tr
+                          - row_class = field[:old] == field[:new] ? "audit_value_row audit_value_row_no_diff" : "audit_value_row audit_value_row_diff"
+                          %tr{class: row_class}
                             %td= field[:label]
                             %td= field[:old]
                             %td= field[:new]
             
             - if all_fields[:abilities].present?
               .mb-3
-                %h6.text-muted.mb-2
-                  %i.bi.bi-trophy.me-2
-                  Abilities
+                .d-flex.justify-content-between.align-items-center.mb-2
+                  %h6.text-muted.mb-0
+                    %i.bi.bi-trophy.me-2
+                    Abilities
+                  .form-check
+                    = check_box_tag "show_changes_#{snapshot.id}_abilities", "1", true, class: "form-check-input audit-show-changes-toggle", id: "show_changes_#{snapshot.id}_abilities", data: { section: "abilities", snapshot_id: snapshot.id }
+                    = label_tag "show_changes_#{snapshot.id}_abilities", "Only show changes", class: "form-check-label small text-muted"
                 - all_fields[:abilities].each do |ability|
                   .mb-3
                     %strong= ability[:ability_name]
-                    %table.table.table-sm.table-bordered.mt-2
+                    %table.table.table-sm.table-bordered.mt-2.audit-details-table
                       %thead
                         %tr
-                          %th Field
-                          %th Old
-                          %th New
-                      %tbody
+                          %th{style: "width: 40%;"} Field
+                          %th{style: "width: 30%;"} Old
+                          %th{style: "width: 30%;"} New
+                      %tbody{id: "audit_#{snapshot.id}_abilities_#{ability[:ability_id]}"}
                         - ability[:fields].each do |field|
-                          %tr
+                          - row_class = field[:old] == field[:new] ? "audit_value_row audit_value_row_no_diff" : "audit_value_row audit_value_row_diff"
+                          %tr{class: row_class}
                             %td= field[:label]
                             %td= field[:old]
                             %td= field[:new]
             
             - if all_fields[:aspirations].present?
               .mb-3
-                %h6.text-muted.mb-2
-                  %i.bi.bi-star.me-2
-                  Aspirations
+                .d-flex.justify-content-between.align-items-center.mb-2
+                  %h6.text-muted.mb-0
+                    %i.bi.bi-star.me-2
+                    Aspirations
+                  .form-check
+                    = check_box_tag "show_changes_#{snapshot.id}_aspirations", "1", true, class: "form-check-input audit-show-changes-toggle", id: "show_changes_#{snapshot.id}_aspirations", data: { section: "aspirations", snapshot_id: snapshot.id }
+                    = label_tag "show_changes_#{snapshot.id}_aspirations", "Only show changes", class: "form-check-label small text-muted"
                 - all_fields[:aspirations].each do |aspiration|
                   .mb-3
                     %strong= aspiration[:aspiration_name]
-                    %table.table.table-sm.table-bordered.mt-2
+                    %table.table.table-sm.table-bordered.mt-2.audit-details-table
                       %thead
                         %tr
-                          %th Field
-                          %th Old
-                          %th New
-                      %tbody
+                          %th{style: "width: 40%;"} Field
+                          %th{style: "width: 30%;"} Old
+                          %th{style: "width: 30%;"} New
+                      %tbody{id: "audit_#{snapshot.id}_aspirations_#{aspiration[:aspiration_id]}"}
                         - aspiration[:fields].each do |field|
-                          %tr
+                          - row_class = field[:old] == field[:new] ? "audit_value_row audit_value_row_no_diff" : "audit_value_row audit_value_row_diff"
+                          %tr{class: row_class}
                             %td= field[:label]
                             %td= field[:old]
                             %td= field[:new]

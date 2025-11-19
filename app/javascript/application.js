@@ -256,6 +256,70 @@ function initializeEnergyUpdateListening() {
   });
 }
 
+// Apply filter for a specific toggle
+function applyAuditToggleFilter(toggle) {
+  const section = toggle.dataset.section
+  const snapshotId = toggle.dataset.snapshotId
+  const showOnlyChanges = toggle.checked
+  
+  // Find all tbody elements for this section
+  const tbodySelectors = []
+  
+  if (section === 'employment') {
+    tbodySelectors.push(`#audit_${snapshotId}_employment`)
+  } else {
+    // For assignments, abilities, and aspirations, find all tbody elements
+    // that start with the section prefix
+    const allTbodies = document.querySelectorAll(`tbody[id^="audit_${snapshotId}_${section}_"]`)
+    allTbodies.forEach(tbody => {
+      tbodySelectors.push(`#${tbody.id}`)
+    })
+  }
+  
+  // Toggle visibility of rows
+  tbodySelectors.forEach(selector => {
+    const tbody = document.querySelector(selector)
+    if (tbody) {
+      const rows = tbody.querySelectorAll('tr.audit_value_row')
+      rows.forEach(row => {
+        if (showOnlyChanges) {
+          // Hide rows with no difference
+          if (row.classList.contains('audit_value_row_no_diff')) {
+            row.style.display = 'none'
+          } else {
+            row.style.display = ''
+          }
+        } else {
+          // Show all rows
+          row.style.display = ''
+        }
+      })
+    }
+  })
+}
+
+// Initialize audit trail toggle functionality (using event delegation)
+// This only needs to be set up once since it uses event delegation
+let auditToggleInitialized = false
+
+function initializeAuditToggle() {
+  if (auditToggleInitialized) return
+  auditToggleInitialized = true
+  
+  // Use event delegation to handle dynamically added toggles
+  document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('audit-show-changes-toggle')) {
+      applyAuditToggleFilter(e.target)
+    }
+  })
+  
+  // Apply filter for all checked toggles on page load
+  const checkedToggles = document.querySelectorAll('.audit-show-changes-toggle:checked')
+  checkedToggles.forEach(toggle => {
+    applyAuditToggleFilter(toggle)
+  })
+}
+
 // Try multiple events to ensure tooltips and toasts are initialized
 document.addEventListener('turbo:load', () => {
   initializeTooltips()
@@ -264,6 +328,7 @@ document.addEventListener('turbo:load', () => {
   initializeShareHuddle()
   updateEnergyTotal()
   initializeEnergyUpdateListening()
+  initializeAuditToggle()
 })
 document.addEventListener('DOMContentLoaded', () => {
   initializeTooltips()
@@ -272,4 +337,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeShareHuddle()
   updateEnergyTotal()
   initializeEnergyUpdateListening()
+  initializeAuditToggle()
 })
