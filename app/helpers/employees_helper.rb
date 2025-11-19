@@ -15,6 +15,23 @@ module EmployeesHelper
     detailed_changes = service.detailed_changes
     format_changes_for_display(detailed_changes, organization)
   end
+
+  def format_snapshot_all_fields(snapshot, person, organization, previous_snapshot: nil)
+    return nil unless snapshot&.maap_data
+    
+    # Auto-find previous snapshot if not provided
+    resolved_previous_snapshot = previous_snapshot || find_previous_snapshot(snapshot, person, organization)
+    
+    old_data = resolved_previous_snapshot&.maap_data || {}
+    new_data = snapshot.maap_data
+    
+    {
+      employment: format_employment_all_fields(old_data, new_data, organization),
+      assignments: format_assignments_all_fields(old_data, new_data, organization),
+      abilities: format_abilities_all_fields(old_data, new_data, organization),
+      aspirations: format_aspirations_all_fields(old_data, new_data, organization)
+    }
+  end
   
   private
   
@@ -450,6 +467,258 @@ module EmployeesHelper
     end
     
     formatted_aspirations
+  end
+
+  def format_employment_all_fields(old_data, new_data, organization)
+    old_position = old_data['position'] || {}
+    new_position = new_data['position'] || {}
+    
+    old_rated = old_position['rated_position'] || {}
+    new_rated = new_position['rated_position'] || {}
+    
+    fields = []
+    
+    # Current position fields
+    fields << {
+      label: 'Position',
+      old: format_position_value(old_position['position_id']),
+      new: format_position_value(new_position['position_id'])
+    }
+    
+    fields << {
+      label: 'Manager',
+      old: format_person_value(old_position['manager_id']),
+      new: format_person_value(new_position['manager_id'])
+    }
+    
+    fields << {
+      label: 'Seat',
+      old: format_seat_value(old_position['seat_id']),
+      new: format_seat_value(new_position['seat_id'])
+    }
+    
+    fields << {
+      label: 'Employment Type',
+      old: format_employment_type_value(old_position['employment_type']),
+      new: format_employment_type_value(new_position['employment_type'])
+    }
+    
+    # Rated position fields
+    fields << {
+      label: 'Rated Position',
+      old: format_position_value(old_rated['position_id']),
+      new: format_position_value(new_rated['position_id'])
+    }
+    
+    fields << {
+      label: 'Rated Manager',
+      old: format_person_value(old_rated['manager_id']),
+      new: format_person_value(new_rated['manager_id'])
+    }
+    
+    fields << {
+      label: 'Rated Seat',
+      old: format_seat_value(old_rated['seat_id']),
+      new: format_seat_value(new_rated['seat_id'])
+    }
+    
+    fields << {
+      label: 'Rated Employment Type',
+      old: format_employment_type_value(old_rated['employment_type']),
+      new: format_employment_type_value(new_rated['employment_type'])
+    }
+    
+    fields << {
+      label: 'Official Position Rating',
+      old: old_rated['official_position_rating'].present? ? old_rated['official_position_rating'].to_s : 'None',
+      new: new_rated['official_position_rating'].present? ? new_rated['official_position_rating'].to_s : 'None'
+    }
+    
+    fields << {
+      label: 'Rated Start Date',
+      old: format_date_value(old_rated['started_at']),
+      new: format_date_value(new_rated['started_at'])
+    }
+    
+    fields << {
+      label: 'Rated End Date',
+      old: format_date_value(old_rated['ended_at']),
+      new: format_date_value(new_rated['ended_at'])
+    }
+    
+    fields
+  end
+
+  def format_assignments_all_fields(old_data, new_data, organization)
+    old_assignments = old_data['assignments'] || []
+    new_assignments = new_data['assignments'] || []
+    
+    # Get all assignment IDs from both snapshots
+    all_assignment_ids = (old_assignments.map { |a| a['assignment_id'] } + new_assignments.map { |a| a['assignment_id'] }).uniq.compact
+    assignments = Assignment.where(id: all_assignment_ids).index_by(&:id)
+    
+    formatted_assignments = []
+    
+    all_assignment_ids.each do |assignment_id|
+      assignment = assignments[assignment_id]
+      next unless assignment
+      
+      old_assignment = old_assignments.find { |a| a['assignment_id'] == assignment_id } || {}
+      new_assignment = new_assignments.find { |a| a['assignment_id'] == assignment_id } || {}
+      
+      old_rated = old_assignment['rated_assignment'] || {}
+      new_rated = new_assignment['rated_assignment'] || {}
+      
+      assignment_fields = []
+      
+      # Current assignment fields
+      assignment_fields << {
+        label: 'Anticipated Energy',
+        old: old_assignment['anticipated_energy_percentage'].present? ? "#{old_assignment['anticipated_energy_percentage']}%" : 'None',
+        new: new_assignment['anticipated_energy_percentage'].present? ? "#{new_assignment['anticipated_energy_percentage']}%" : 'None'
+      }
+      
+      # Rated assignment fields
+      assignment_fields << {
+        label: 'Rated Anticipated Energy',
+        old: old_rated['anticipated_energy_percentage'].present? ? "#{old_rated['anticipated_energy_percentage']}%" : 'None',
+        new: new_rated['anticipated_energy_percentage'].present? ? "#{new_rated['anticipated_energy_percentage']}%" : 'None'
+      }
+      
+      assignment_fields << {
+        label: 'Official Rating',
+        old: old_rated['official_rating'].present? ? old_rated['official_rating'].humanize : 'None',
+        new: new_rated['official_rating'].present? ? new_rated['official_rating'].humanize : 'None'
+      }
+      
+      assignment_fields << {
+        label: 'Rated Start Date',
+        old: format_date_value(old_rated['started_at']),
+        new: format_date_value(new_rated['started_at'])
+      }
+      
+      assignment_fields << {
+        label: 'Rated End Date',
+        old: format_date_value(old_rated['ended_at']),
+        new: format_date_value(new_rated['ended_at'])
+      }
+      
+      formatted_assignments << {
+        assignment_name: assignment.title,
+        assignment_id: assignment_id,
+        fields: assignment_fields
+      }
+    end
+    
+    formatted_assignments
+  end
+
+  def format_abilities_all_fields(old_data, new_data, organization)
+    old_abilities = old_data['abilities'] || []
+    new_abilities = new_data['abilities'] || []
+    
+    # Get all ability IDs from both snapshots
+    all_ability_ids = (old_abilities.map { |a| a['ability_id'] } + new_abilities.map { |a| a['ability_id'] }).uniq.compact
+    abilities = Ability.where(id: all_ability_ids).index_by(&:id)
+    
+    formatted_abilities = []
+    
+    all_ability_ids.each do |ability_id|
+      ability = abilities[ability_id]
+      next unless ability
+      
+      old_ability = old_abilities.find { |a| a['ability_id'] == ability_id } || {}
+      new_ability = new_abilities.find { |a| a['ability_id'] == ability_id } || {}
+      
+      ability_fields = []
+      
+      ability_fields << {
+        label: 'Milestone Level',
+        old: old_ability['milestone_level'].present? ? "Level #{old_ability['milestone_level']}" : 'None',
+        new: new_ability['milestone_level'].present? ? "Level #{new_ability['milestone_level']}" : 'None'
+      }
+      
+      ability_fields << {
+        label: 'Certified By',
+        old: format_person_value(old_ability['certified_by_id']),
+        new: format_person_value(new_ability['certified_by_id'])
+      }
+      
+      ability_fields << {
+        label: 'Attained At',
+        old: format_date_value(old_ability['attained_at']),
+        new: format_date_value(new_ability['attained_at'])
+      }
+      
+      formatted_abilities << {
+        ability_name: ability.name,
+        ability_id: ability_id,
+        fields: ability_fields
+      }
+    end
+    
+    formatted_abilities
+  end
+
+  def format_aspirations_all_fields(old_data, new_data, organization)
+    old_aspirations = old_data['aspirations'] || []
+    new_aspirations = new_data['aspirations'] || []
+    
+    # Get all aspiration IDs from both snapshots
+    all_aspiration_ids = (old_aspirations.map { |a| a['aspiration_id'] } + new_aspirations.map { |a| a['aspiration_id'] }).uniq.compact
+    aspirations = Aspiration.where(id: all_aspiration_ids).index_by(&:id)
+    
+    formatted_aspirations = []
+    
+    all_aspiration_ids.each do |aspiration_id|
+      aspiration = aspirations[aspiration_id]
+      next unless aspiration
+      
+      old_aspiration = old_aspirations.find { |a| a['aspiration_id'] == aspiration_id } || {}
+      new_aspiration = new_aspirations.find { |a| a['aspiration_id'] == aspiration_id } || {}
+      
+      aspiration_fields = []
+      
+      aspiration_fields << {
+        label: 'Official Rating',
+        old: old_aspiration['official_rating'].present? ? old_aspiration['official_rating'].humanize : 'None',
+        new: new_aspiration['official_rating'].present? ? new_aspiration['official_rating'].humanize : 'None'
+      }
+      
+      formatted_aspirations << {
+        aspiration_name: aspiration.name || "Aspiration #{aspiration_id}",
+        aspiration_id: aspiration_id,
+        fields: aspiration_fields
+      }
+    end
+    
+    formatted_aspirations
+  end
+
+  def format_position_value(position_id)
+    return 'None' unless position_id.present?
+    Position.find_by(id: position_id)&.display_name || 'None'
+  end
+
+  def format_person_value(person_id)
+    return 'None' unless person_id.present?
+    Person.find_by(id: person_id)&.display_name || 'None'
+  end
+
+  def format_seat_value(seat_id)
+    return 'None' unless seat_id.present?
+    Seat.find_by(id: seat_id)&.display_name || 'None'
+  end
+
+  def format_employment_type_value(employment_type)
+    return 'None' unless employment_type.present?
+    employment_type.humanize
+  end
+
+  def format_date_value(date_value)
+    return 'None' unless date_value.present?
+    date = parse_date(date_value)
+    date ? date.strftime('%Y-%m-%d') : 'None'
   end
 end
 

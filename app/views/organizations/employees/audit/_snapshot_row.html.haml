@@ -4,8 +4,8 @@
   -# - person: Person instance
   -# - organization: Organization instance
   -# - previous_snapshot: MaapSnapshot instance (the chronologically previous snapshot, or nil if first)
-- changes = format_snapshot_changes(snapshot, person, organization, previous_snapshot: previous_snapshot)
-- has_changes = changes.present? && (changes[:employment].present? || changes[:assignments].present? || changes[:milestones].present? || changes[:aspirations].present?)
+- all_fields = format_snapshot_all_fields(snapshot, person, organization, previous_snapshot: previous_snapshot)
+- has_data = all_fields.present? && (all_fields[:employment].present? || all_fields[:assignments].present? || all_fields[:abilities].present? || all_fields[:aspirations].present?)
 - show_acknowledgement = current_person == person
 - # Calculate total columns: checkbox (if shown) + date + type + created_by + reason + status (if not checkbox) + acknowledgement (if shown) + details
 - total_cols = (show_checkbox ? 1 : 0) + 4 + (show_checkbox ? 0 : 1) + (show_acknowledgement ? 1 : 0) + 1
@@ -49,7 +49,7 @@
           %i.bi.bi-clock.me-1
           Not Executed
   %td
-    - if has_changes
+    - if has_data
       %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#snapshot_#{snapshot.id}_details", "aria-expanded" => "false", "aria-controls" => "snapshot_#{snapshot.id}_details", style: "cursor: pointer;"}
         %span.not-collapsed
           %i.bi.bi-chevron-up.me-1
@@ -58,92 +58,92 @@
           %i.bi.bi-chevron-down.me-1
           %small.text-muted Show details
     - else
-      %small.text-muted No changes to display
+      %small.text-muted No data to display
 
-- if has_changes
+- if has_data
   %tr
     %td{colspan: total_cols, style: "padding: 0;"}
       .collapse{id: "snapshot_#{snapshot.id}_details"}
         .card.border-light.m-2
           .card-body
-            - if changes[:employment].present?
+            - if all_fields[:employment].present?
               .mb-3
                 %h6.text-muted.mb-2
                   %i.bi.bi-briefcase.me-2
-                  Employment Changes
+                  Position
                 %table.table.table-sm.table-bordered
                   %thead
                     %tr
                       %th Field
-                      %th Current
-                      %th Proposed
+                      %th Old
+                      %th New
                   %tbody
-                    - changes[:employment].each do |change|
+                    - all_fields[:employment].each do |field|
                       %tr
-                        %td= change[:label]
-                        %td= change[:current]
-                        %td= change[:proposed]
+                        %td= field[:label]
+                        %td= field[:old]
+                        %td= field[:new]
             
-            - if changes[:assignments].present?
+            - if all_fields[:assignments].present?
               .mb-3
                 %h6.text-muted.mb-2
                   %i.bi.bi-clipboard-check.me-2
-                  Assignment Changes
-                - changes[:assignments].each do |assignment|
+                  Assignments
+                - all_fields[:assignments].each do |assignment|
                   .mb-3
                     %strong= assignment[:assignment_name]
                     %table.table.table-sm.table-bordered.mt-2
                       %thead
                         %tr
                           %th Field
-                          %th Current
-                          %th Proposed
+                          %th Old
+                          %th New
                       %tbody
-                        - assignment[:changes].each do |change|
+                        - assignment[:fields].each do |field|
                           %tr
-                            %td= change[:label]
-                            %td= change[:current]
-                            %td= change[:proposed]
+                            %td= field[:label]
+                            %td= field[:old]
+                            %td= field[:new]
             
-            - if changes[:milestones].present?
+            - if all_fields[:abilities].present?
               .mb-3
                 %h6.text-muted.mb-2
                   %i.bi.bi-trophy.me-2
-                  Milestone Changes
-                - changes[:milestones].each do |milestone|
+                  Abilities
+                - all_fields[:abilities].each do |ability|
                   .mb-3
-                    %strong= milestone[:ability_name]
+                    %strong= ability[:ability_name]
                     %table.table.table-sm.table-bordered.mt-2
                       %thead
                         %tr
                           %th Field
-                          %th Current
-                          %th Proposed
+                          %th Old
+                          %th New
                       %tbody
-                        - milestone[:changes].each do |change|
+                        - ability[:fields].each do |field|
                           %tr
-                            %td= change[:label]
-                            %td= change[:current]
-                            %td= change[:proposed]
+                            %td= field[:label]
+                            %td= field[:old]
+                            %td= field[:new]
             
-            - if changes[:aspirations].present?
+            - if all_fields[:aspirations].present?
               .mb-3
                 %h6.text-muted.mb-2
                   %i.bi.bi-star.me-2
-                  Aspiration Changes
-                - changes[:aspirations].each do |aspiration|
+                  Aspirations
+                - all_fields[:aspirations].each do |aspiration|
                   .mb-3
                     %strong= aspiration[:aspiration_name]
                     %table.table.table-sm.table-bordered.mt-2
                       %thead
                         %tr
                           %th Field
-                          %th Current
-                          %th Proposed
+                          %th Old
+                          %th New
                       %tbody
-                        - aspiration[:changes].each do |change|
+                        - aspiration[:fields].each do |field|
                           %tr
-                            %td= change[:label]
-                            %td= change[:current]
-                            %td= change[:proposed]
+                            %td= field[:label]
+                            %td= field[:old]
+                            %td= field[:new]
 
