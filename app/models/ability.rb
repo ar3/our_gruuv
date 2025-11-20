@@ -85,6 +85,11 @@ class Ability < ApplicationRecord
     "#{major}.#{minor}.#{patch + 1}"
   end
 
+  # Extract major version number from semantic_version
+  def major_version
+    semantic_version.split('.').first.to_i
+  end
+
   # Version status methods
   def current_version?
     # The current version is the latest one (no newer versions exist)

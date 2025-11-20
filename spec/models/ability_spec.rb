@@ -152,6 +152,23 @@ RSpec.describe Ability, type: :model do
   describe 'semantic versioning' do
     let(:ability) { create(:ability, organization: organization, created_by: person, updated_by: person) }
 
+    describe '#major_version' do
+      it 'extracts major version number from semantic_version' do
+        ability.update!(semantic_version: '1.2.3')
+        expect(ability.major_version).to eq(1)
+      end
+
+      it 'handles version 0 correctly' do
+        ability.update!(semantic_version: '0.1.0')
+        expect(ability.major_version).to eq(0)
+      end
+
+      it 'handles multi-digit major versions' do
+        ability.update!(semantic_version: '10.5.2')
+        expect(ability.major_version).to eq(10)
+      end
+    end
+
     describe '#bump_major_version' do
       it 'increments major version' do
         ability.bump_major_version('Complete rewrite of ability definition')

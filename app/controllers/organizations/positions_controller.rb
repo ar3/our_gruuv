@@ -4,8 +4,46 @@ class Organizations::PositionsController < ApplicationController
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
   def index
-    @positions = @organization.positions.includes(:position_type, :position_level).ordered
+    @positions = @organization.positions.includes(:position_type, :position_level)
+    
+    # Apply filters
+    @positions = @positions.where(position_type_id: params[:position_type]) if params[:position_type].present?
+    @positions = @positions.where(position_level_id: params[:position_level]) if params[:position_level].present?
+    
+    # Filter by major version (using SQL LIKE for efficiency)
+    if params[:major_version].present?
+      major_version = params[:major_version].to_i
+      @positions = @positions.where("semantic_version LIKE ?", "#{major_version}.%")
+    end
+    
+    # Apply sorting
+    case params[:sort]
+    when 'name'
+      @positions = @positions.joins(:position_type).order('position_types.external_title')
+    when 'level'
+      @positions = @positions.joins(:position_level).order('position_levels.level')
+    when 'assignments'
+      @positions = @positions.left_joins(:position_assignments).group('positions.id').order('COUNT(position_assignments.id) DESC')
+    when 'created_at'
+      @positions = @positions.order(created_at: :desc)
+    when 'created_at_asc'
+      @positions = @positions.order(created_at: :asc)
+    else
+      @positions = @positions.ordered
+    end
+    
+    # Apply direction if specified
+    if params[:direction] == 'desc'
+      case params[:sort]
+      when 'name'
+        @positions = @positions.joins(:position_type).order('position_types.external_title DESC')
+      when 'level'
+        @positions = @positions.joins(:position_level).order('position_levels.level DESC')
+      end
+    end
+    
     @position_types = @organization.position_types.includes(:positions, :position_major_level).order(:external_title)
+    
     render layout: 'authenticated-v2-0'
   end
 
@@ -86,6 +124,41 @@ class Organizations::PositionsController < ApplicationController
     else
       render json: []
     end
+  end
+
+  def customize_view
+    authorize @organization, :show?
+    set_related_data
+    
+    # Load current state from params
+    @current_filters = {
+      position_type: params[:position_type],
+      position_level: params[:position_level],
+      major_version: params[:major_version],
+      sort: params[:sort] || 'name',
+      direction: params[:direction] || 'asc',
+      view: params[:view] || 'table',
+      spotlight: params[:spotlight] || 'none'
+    }
+    
+    @current_sort = @current_filters[:sort]
+    @current_view = @current_filters[:view]
+    @current_spotlight = @current_filters[:spotlight]
+    
+    # Preserve current params for return URL
+    return_params = params.except(:controller, :action, :page).permit!.to_h
+    @return_url = organization_positions_path(@organization, return_params)
+    @return_text = "Back to Positions"
+    
+    render layout: 'overlay'
+  end
+
+  def update_view
+    authorize @organization, :show?
+    
+    # Build redirect URL with all view customization params
+    redirect_params = params.except(:controller, :action, :utf8, :_method, :commit).permit!.to_h
+    redirect_to organization_positions_path(@organization, redirect_params)
   end
 
   private

@@ -187,4 +187,52 @@ RSpec.describe 'Organizations::Abilities', type: :request do
       end
     end
   end
+
+  describe 'GET /organizations/:organization_id/abilities' do
+    let!(:ability_v1) { create(:ability, organization: organization, semantic_version: '1.0.0', name: 'Ability v1') }
+    let!(:ability_v1_2) { create(:ability, organization: organization, semantic_version: '1.2.3', name: 'Ability v1.2') }
+    let!(:ability_v2) { create(:ability, organization: organization, semantic_version: '2.0.0', name: 'Ability v2') }
+    let!(:ability_v0) { create(:ability, organization: organization, semantic_version: '0.1.0', name: 'Ability v0') }
+
+    before do
+      teammate
+      sign_in_as_teammate_for_request(person, organization)
+    end
+
+    it 'filters by major version 1' do
+      get organization_abilities_path(organization, major_version: 1)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Ability v1')
+      expect(response.body).to include('Ability v1.2')
+      expect(response.body).not_to include('Ability v2')
+      expect(response.body).not_to include('Ability v0')
+    end
+
+    it 'filters by major version 2' do
+      get organization_abilities_path(organization, major_version: 2)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Ability v2')
+      expect(response.body).not_to include('Ability v1')
+      expect(response.body).not_to include('Ability v1.2')
+      expect(response.body).not_to include('Ability v0')
+    end
+
+    it 'filters by major version 0' do
+      get organization_abilities_path(organization, major_version: 0)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Ability v0')
+      expect(response.body).not_to include('Ability v1')
+      expect(response.body).not_to include('Ability v1.2')
+      expect(response.body).not_to include('Ability v2')
+    end
+
+    it 'shows all abilities when major_version is empty' do
+      get organization_abilities_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Ability v1')
+      expect(response.body).to include('Ability v1.2')
+      expect(response.body).to include('Ability v2')
+      expect(response.body).to include('Ability v0')
+    end
+  end
 end

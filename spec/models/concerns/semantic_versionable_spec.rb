@@ -23,6 +23,22 @@ RSpec.describe SemanticVersionable, type: :model do
     end
   end
 
+  describe '#major_version' do
+    it 'extracts major version number from semantic_version' do
+      expect(aspiration.major_version).to eq(1)
+    end
+
+    it 'handles version 0 correctly' do
+      aspiration.update!(semantic_version: '0.1.0')
+      expect(aspiration.major_version).to eq(0)
+    end
+
+    it 'handles multi-digit major versions' do
+      aspiration.update!(semantic_version: '10.5.2')
+      expect(aspiration.major_version).to eq(10)
+    end
+  end
+
   describe 'validations' do
     it 'validates semantic_version format' do
       aspiration.semantic_version = 'invalid'

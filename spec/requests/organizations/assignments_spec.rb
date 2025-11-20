@@ -321,5 +321,53 @@ RSpec.describe 'Organizations::Assignments', type: :request do
       end
     end
   end
+
+  describe 'GET /organizations/:organization_id/assignments with major_version filter' do
+    let!(:assignment_v1) { create(:assignment, company: organization, semantic_version: '1.0.0', title: 'Assignment v1') }
+    let!(:assignment_v1_2) { create(:assignment, company: organization, semantic_version: '1.2.3', title: 'Assignment v1.2') }
+    let!(:assignment_v2) { create(:assignment, company: organization, semantic_version: '2.0.0', title: 'Assignment v2') }
+    let!(:assignment_v0) { create(:assignment, company: organization, semantic_version: '0.1.0', title: 'Assignment v0') }
+
+    before do
+      person_teammate
+      sign_in_as_teammate_for_request(person, organization)
+    end
+
+    it 'filters by major version 1' do
+      get organization_assignments_path(organization, major_version: 1)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Assignment v1')
+      expect(response.body).to include('Assignment v1.2')
+      expect(response.body).not_to include('Assignment v2')
+      expect(response.body).not_to include('Assignment v0')
+    end
+
+    it 'filters by major version 2' do
+      get organization_assignments_path(organization, major_version: 2)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Assignment v2')
+      expect(response.body).not_to include('Assignment v1')
+      expect(response.body).not_to include('Assignment v1.2')
+      expect(response.body).not_to include('Assignment v0')
+    end
+
+    it 'filters by major version 0' do
+      get organization_assignments_path(organization, major_version: 0)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Assignment v0')
+      expect(response.body).not_to include('Assignment v1')
+      expect(response.body).not_to include('Assignment v1.2')
+      expect(response.body).not_to include('Assignment v2')
+    end
+
+    it 'shows all assignments when major_version is empty' do
+      get organization_assignments_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Assignment v1')
+      expect(response.body).to include('Assignment v1.2')
+      expect(response.body).to include('Assignment v2')
+      expect(response.body).to include('Assignment v0')
+    end
+  end
 end
 

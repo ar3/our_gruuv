@@ -7,7 +7,58 @@ class Organizations::AssignmentsController < ApplicationController
   after_action :verify_policy_scoped, only: :index
 
   def index
-    @assignments = policy_scope(Assignment).where(company: @organization.root_company.self_and_descendants).includes(:assignment_outcomes, :published_external_reference, :draft_external_reference, :abilities).ordered
+    @assignments = policy_scope(Assignment).where(company: @organization.root_company.self_and_descendants).includes(:assignment_outcomes, :published_external_reference, :draft_external_reference, :abilities)
+    
+    # Apply filters
+    if params[:company].present?
+      company = Organization.find(params[:company])
+      @assignments = @assignments.where(company: company.self_and_descendants)
+    end
+    
+    if params[:has_outcomes] == '1'
+      @assignments = @assignments.joins(:assignment_outcomes).distinct
+    end
+    
+    if params[:has_abilities] == '1'
+      @assignments = @assignments.joins(:abilities).distinct
+    end
+    
+    if params[:has_references] == '1'
+      @assignments = @assignments.left_joins(:published_external_reference, :draft_external_reference)
+                                 .where.not(published_external_references: { id: nil })
+                                 .or(@assignments.left_joins(:published_external_reference, :draft_external_reference)
+                                     .where.not(draft_external_references: { id: nil }))
+                                 .distinct
+    end
+    
+    # Filter by major version (using SQL LIKE for efficiency)
+    if params[:major_version].present?
+      major_version = params[:major_version].to_i
+      @assignments = @assignments.where("semantic_version LIKE ?", "#{major_version}.%")
+    end
+    
+    # Apply sorting
+    case params[:sort]
+    when 'title'
+      @assignments = @assignments.order(:title)
+    when 'title_desc'
+      @assignments = @assignments.order(title: :desc)
+    when 'company'
+      @assignments = @assignments.joins(:company).order('organizations.display_name')
+    when 'company_desc'
+      @assignments = @assignments.joins(:company).order('organizations.display_name DESC')
+    when 'outcomes'
+      @assignments = @assignments.left_joins(:assignment_outcomes).group('assignments.id').order('COUNT(assignment_outcomes.id) DESC')
+    when 'outcomes_desc'
+      @assignments = @assignments.left_joins(:assignment_outcomes).group('assignments.id').order('COUNT(assignment_outcomes.id) ASC')
+    when 'abilities'
+      @assignments = @assignments.left_joins(:abilities).group('assignments.id').order('COUNT(assignment_abilities.id) DESC')
+    when 'abilities_desc'
+      @assignments = @assignments.left_joins(:abilities).group('assignments.id').order('COUNT(assignment_abilities.id) ASC')
+    else
+      @assignments = @assignments.ordered
+    end
+    
     render layout: 'authenticated-v2-0'
   end
 
@@ -95,6 +146,42 @@ class Organizations::AssignmentsController < ApplicationController
     authorize @assignment
     @assignment.destroy
     redirect_to organization_assignments_path(@organization), notice: 'Assignment was successfully deleted.'
+  end
+
+  def customize_view
+    authorize @organization, :show?
+    
+    # Load current state from params
+    @current_filters = {
+      company: params[:company],
+      has_outcomes: params[:has_outcomes],
+      has_abilities: params[:has_abilities],
+      has_references: params[:has_references],
+      major_version: params[:major_version],
+      sort: params[:sort] || 'title',
+      direction: params[:direction] || 'asc',
+      view: params[:view] || 'table',
+      spotlight: params[:spotlight] || 'none'
+    }
+    
+    @current_sort = @current_filters[:sort]
+    @current_view = @current_filters[:view]
+    @current_spotlight = @current_filters[:spotlight]
+    
+    # Preserve current params for return URL
+    return_params = params.except(:controller, :action, :page).permit!.to_h
+    @return_url = organization_assignments_path(@organization, return_params)
+    @return_text = "Back to Assignments"
+    
+    render layout: 'overlay'
+  end
+
+  def update_view
+    authorize @organization, :show?
+    
+    # Build redirect URL with all view customization params
+    redirect_params = params.except(:controller, :action, :utf8, :_method, :commit).permit!.to_h
+    redirect_to organization_assignments_path(@organization, redirect_params)
   end
 
   private

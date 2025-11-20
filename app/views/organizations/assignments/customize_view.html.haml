@@ -1,0 +1,123 @@
+- content_for :header do
+  Customize Assignments View
+- content_for :return_url do
+  = @return_url || organization_assignments_path(@organization)
+- content_for :return_text do
+  = @return_text || 'Back to Assignments'
+
+= form_with url: update_view_organization_assignments_path(@organization), method: :patch, local: true do |form|
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Assignments You See
+    
+    .col-md-8
+      / Filters Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Assignments You See
+          
+          .mb-3
+            %label.form-label Company
+            - companies = @organization.root_company.self_and_descendants
+            - company_options = [['All Companies', '']] + companies.map { |c| [c.display_name, c.id] }
+            = select_tag 'company', options_for_select(company_options, @current_filters[:company]), class: 'form-select'
+          
+          .mb-3
+            %label.form-label Has Outcomes
+            .form-check
+              = check_box_tag 'has_outcomes', '1', @current_filters[:has_outcomes] == '1', class: 'form-check-input', id: 'has_outcomes'
+              = label_tag 'has_outcomes', 'Only assignments with outcomes', class: 'form-check-label'
+          
+          .mb-3
+            %label.form-label Has Abilities
+            .form-check
+              = check_box_tag 'has_abilities', '1', @current_filters[:has_abilities] == '1', class: 'form-check-input', id: 'has_abilities'
+              = label_tag 'has_abilities', 'Only assignments with ability requirements', class: 'form-check-label'
+          
+          .mb-3
+            %label.form-label External References
+            .form-check
+              = check_box_tag 'has_references', '1', @current_filters[:has_references] == '1', class: 'form-check-input', id: 'has_references'
+              = label_tag 'has_references', 'Only assignments with external references', class: 'form-check-label'
+          
+          .mb-3
+            %label.form-label Major Version
+            - major_version_options = [['All Versions', '']] + (0..10).map { |v| ["v#{v}.x.x", v] }
+            = select_tag 'major_version', options_for_select(major_version_options, @current_filters[:major_version]), class: 'form-select'
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Order You See Them In
+    
+    .col-md-8
+      / Sort Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Order You See Them In
+          .mb-3
+            %label.form-label Sort By
+            - sort_options = [['Title (A-Z)', 'title'], ['Title (Z-A)', 'title_desc'], ['Company (A-Z)', 'company'], ['Company (Z-A)', 'company_desc'], ['Most Outcomes', 'outcomes'], ['Fewest Outcomes', 'outcomes_desc'], ['Most Abilities', 'abilities'], ['Fewest Abilities', 'abilities_desc']]
+            = select_tag 'sort', options_for_select(sort_options, @current_sort), class: 'form-select', id: 'sort_select'
+          .mb-3
+            %label.form-label Direction
+            - direction_options = [['Ascending', 'asc'], ['Descending', 'desc']]
+            = select_tag 'direction', options_for_select(direction_options, @current_filters[:direction] || 'asc'), class: 'form-select', id: 'direction_select'
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select How They Appear
+    
+    .col-md-8
+      / View Style Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select How They Appear
+          .form-check
+            = radio_button_tag 'view', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
+            = label_tag 'view_table', class: 'form-check-label' do
+              %i.bi.bi-table.me-2
+              Table View
+          .form-check
+            = radio_button_tag 'view', 'cards', @current_view == 'cards', class: 'form-check-input', id: 'view_cards'
+            = label_tag 'view_cards', class: 'form-check-label' do
+              %i.bi.bi-grid.me-2
+              Card View
+          .form-check
+            = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
+            = label_tag 'view_list', class: 'form-check-label' do
+              %i.bi.bi-list.me-2
+              List View
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select the Spotlight for Them
+    
+    .col-md-8
+      / Spotlight Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select the Spotlight for Them
+          .form-check
+            = radio_button_tag 'spotlight', 'most_popular', @current_spotlight == 'most_popular', class: 'form-check-input', id: 'spotlight_most_popular'
+            = label_tag 'spotlight_most_popular', 'Most Popular Assignments', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'recently_created', @current_spotlight == 'recently_created', class: 'form-check-input', id: 'spotlight_recently_created'
+            = label_tag 'spotlight_recently_created', 'Recently Created', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'high_impact', @current_spotlight == 'high_impact', class: 'form-check-input', id: 'spotlight_high_impact'
+            = label_tag 'spotlight_high_impact', 'High-Impact Assignments', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'none', (@current_spotlight.blank? || @current_spotlight == 'none'), class: 'form-check-input', id: 'spotlight_none'
+            = label_tag 'spotlight_none', 'No Spotlight', class: 'form-check-label'
+
+  .row
+    .col-12
+      / Form Actions
+      .d-flex.gap-2.mt-4.mb-4
+        = form.submit 'Apply View', class: 'btn btn-primary'
+        = link_to 'Cancel', @return_url || organization_assignments_path(@organization), class: 'btn btn-outline-secondary'
+

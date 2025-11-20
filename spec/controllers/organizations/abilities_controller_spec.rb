@@ -399,4 +399,56 @@ RSpec.describe Organizations::AbilitiesController, type: :controller do
       expect { assigns(:ability_decorator).edit_version_options }.not_to raise_error
     end
   end
+
+  describe 'GET #index' do
+    let!(:ability_v1) { create(:ability, organization: organization, semantic_version: '1.0.0', name: 'Ability v1') }
+    let!(:ability_v1_2) { create(:ability, organization: organization, semantic_version: '1.2.3', name: 'Ability v1.2') }
+    let!(:ability_v2) { create(:ability, organization: organization, semantic_version: '2.0.0', name: 'Ability v2') }
+    let!(:ability_v0) { create(:ability, organization: organization, semantic_version: '0.1.0', name: 'Ability v0') }
+
+    it 'returns all abilities when no filters applied' do
+      get :index, params: { organization_id: organization.id }
+      expect(assigns(:abilities)).to include(ability_v1, ability_v1_2, ability_v2, ability_v0)
+    end
+
+    it 'filters by major version 1' do
+      get :index, params: { organization_id: organization.id, major_version: 1 }
+      abilities = assigns(:abilities)
+      expect(abilities).to include(ability_v1, ability_v1_2)
+      expect(abilities).not_to include(ability_v2, ability_v0)
+    end
+
+    it 'filters by major version 2' do
+      get :index, params: { organization_id: organization.id, major_version: 2 }
+      abilities = assigns(:abilities)
+      expect(abilities).to include(ability_v2)
+      expect(abilities).not_to include(ability_v1, ability_v1_2, ability_v0)
+    end
+
+    it 'filters by major version 0' do
+      get :index, params: { organization_id: organization.id, major_version: 0 }
+      abilities = assigns(:abilities)
+      expect(abilities).to include(ability_v0)
+      expect(abilities).not_to include(ability_v1, ability_v1_2, ability_v2)
+    end
+
+    it 'returns empty result when filtering for non-existent major version' do
+      get :index, params: { organization_id: organization.id, major_version: 99 }
+      expect(assigns(:abilities)).to be_empty
+    end
+
+    it 'combines major_version filter with name filter' do
+      get :index, params: { organization_id: organization.id, major_version: 1, name: 'v1.2' }
+      abilities = assigns(:abilities)
+      expect(abilities).to include(ability_v1_2)
+      expect(abilities).not_to include(ability_v1, ability_v2, ability_v0)
+    end
+
+    it 'combines major_version filter with sorting' do
+      get :index, params: { organization_id: organization.id, major_version: 1, sort: 'name' }
+      abilities = assigns(:abilities)
+      expect(abilities.first).to eq(ability_v1)
+      expect(abilities.last).to eq(ability_v1_2)
+    end
+  end
 end

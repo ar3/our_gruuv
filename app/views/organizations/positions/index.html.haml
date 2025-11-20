@@ -12,9 +12,10 @@
         %i.bi.bi-plus
 
 - content_for :header_action do
-  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#positionsFilterModal", type: "button"}
-    %i.bi.bi-funnel.me-2
-    Filter & Sort
+  - customize_params = params.except(:controller, :action, :page).permit!.to_h
+  = link_to customize_view_organization_positions_path(@organization, customize_params), class: "btn btn-outline-secondary" do
+    %i.bi.bi-sliders.me-2
+    Customize View
 .row.justify-content-center
   .col-lg-12
     - if @position_types.any?
@@ -41,6 +42,7 @@
                       %tr
                         %th Position
                         %th Level
+                        %th Version
                         %th Assignments
                         %th Actions
                     %tbody
@@ -54,6 +56,7 @@
                               %small.text-muted= truncate(position.position_summary, length: 100)
                           %td
                             %span.badge.bg-info= position.position_level.level
+                          %td= position.semantic_version
                           %td
                             - if position.required_assignments_count > 0 || position.suggested_assignments_count > 0
                               %span.badge.bg-primary.me-1
@@ -90,54 +93,4 @@
         %p.mb-2 
           Create your first position type to define roles and responsibilities for your team.
         = link_to "Create First Position", new_organization_position_path(@organization), class: "btn btn-primary btn-sm"
-
-/ Modal for Filter & Sort
-#positionsFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "positionsFilterModalLabel", tabindex: "-1"}
-  .modal-dialog.modal-lg
-    .modal-content
-      .modal-header
-        %h5.modal-title#positionsFilterModalLabel
-          %i.bi.bi-funnel.me-2
-          Filter & Sort Positions (coming soon)
-        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-      .modal-body
-        .row
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-funnel.me-2
-              Filters
-            %p.text-muted Position type and level filters will be available soon.
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-sort-down.me-2
-              Sort Options
-            %p.text-muted Sorting by name, level, and assignment count will be available soon.
-            .mb-3
-              %label.form-label View Style
-              .form-check
-                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
-                %label.form-check-label
-                  %i.bi.bi-table.me-2
-                  Table View
-              .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
-                %label.form-check-label
-                  %i.bi.bi-grid.me-2
-                  Card View
-              .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
-                %label.form-check-label
-                  %i.bi.bi-list.me-2
-                  List View
-            .mb-3
-              %label.form-label Spotlight
-              %select.form-select
-                %option No Spotlight
-                %option High Assignment Count
-                %option Recently Created
-      .modal-footer
-        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
-        %button.btn.btn-primary.disabled{type: "button"}
-          %i.bi.bi-check.me-2
-          Apply Filters
 

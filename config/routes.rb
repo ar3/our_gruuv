@@ -110,11 +110,19 @@ get '/login', to: 'auth#login', as: :login
     
     # Abilities management
     resources :abilities, module: :organizations do
+      collection do
+        get :customize_view
+        patch :update_view
+      end
       resource :assignment_milestones, only: [:show, :update], module: :abilities
     end
     
     # Assignments management
     resources :assignments, module: :organizations do
+      collection do
+        get :customize_view
+        patch :update_view
+      end
       resource :ability_milestones, only: [:show, :update], module: :assignments
     end
     
@@ -146,6 +154,10 @@ get '/login', to: 'auth#login', as: :login
     
     # Positions management
     resources :positions, module: :organizations do
+      collection do
+        get :customize_view
+        patch :update_view
+      end
       member do
         get :job_description
       end

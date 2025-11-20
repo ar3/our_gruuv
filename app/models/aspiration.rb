@@ -1,6 +1,5 @@
 class Aspiration < ApplicationRecord
   include SemanticVersionable
-  has_paper_trail
 
   belongs_to :organization
   has_many :observation_ratings, as: :rateable, dependent: :destroy

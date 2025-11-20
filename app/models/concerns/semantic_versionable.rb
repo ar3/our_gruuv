@@ -27,6 +27,11 @@ module SemanticVersionable
     name_field = respond_to?(:name) ? name : respond_to?(:title) ? title : respond_to?(:display_name) ? display_name : "Item"
     "#{name_field} v#{semantic_version}"
   end
+
+  # Extract major version number from semantic_version
+  def major_version
+    semantic_version.split('.').first.to_i
+  end
 end
 
 

@@ -18,9 +18,10 @@
         %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need ability management permissions for this organization to create abilities"}
 
 - content_for :header_action do
-  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#abilitiesFilterModal", type: "button"}
-    %i.bi.bi-funnel.me-2
-    Filter & Sort
+  - customize_params = params.except(:controller, :action, :page).permit!.to_h
+  = link_to customize_view_organization_abilities_path(@organization, customize_params), class: "btn btn-outline-secondary" do
+    %i.bi.bi-sliders.me-2
+    Customize View
 
 / Spotlight Section
 .row.justify-content-center.mb-4
@@ -97,8 +98,7 @@
                   = link_to organization_ability_path(@organization, ability), class: "text-decoration-none" do
                     %strong= ability.name
                 %td= truncate(ability.description, length: 100)
-                %td
-                  %span.badge.bg-secondary= ability.semantic_version
+                %td= ability.semantic_version
                 %td
                   %span.badge.bg-primary= ability.teammate_milestones.count
                 %td
@@ -123,93 +123,3 @@
             .btn.btn-primary.btn-sm.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
               Create First Ability
             %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need ability management permissions for this organization to create abilities"}
-
-/ Modal for Filter & Sort
-#abilitiesFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "abilitiesFilterModalLabel", tabindex: "-1"}
-  .modal-dialog.modal-lg
-    .modal-content
-      .modal-header
-        %h5.modal-title#abilitiesFilterModalLabel
-          %i.bi.bi-funnel.me-2
-          Filter & Sort Abilities (coming soon)
-        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-      .modal-body
-        .row
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-funnel.me-2
-              Filters
-            .mb-3
-              %label.form-label Name
-              %input.form-control{placeholder: "Search by name", type: "text"}
-            .mb-3
-              %label.form-label Category
-              %select.form-select
-                %option All Categories
-                %option Technical Skills
-                %option Leadership Skills
-                %option Communication Skills
-                %option Domain Knowledge
-            .mb-3
-              %label.form-label Milestone Status
-              %select.form-select
-                %option All Abilities
-                %option With Milestones
-                %option Without Milestones
-                %option High Activity
-            .mb-3
-              %label.form-label Version
-              %select.form-select
-                %option All Versions
-                %option Latest (1.x.x)
-                %option Beta (0.x.x)
-                %option Deprecated
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-sort-down.me-2
-              Sort Options
-            .mb-3
-              %label.form-label Sort By
-              %select.form-select
-                %option Name (A-Z)
-                %option Name (Z-A)
-                %option Most Milestones
-                %option Fewest Milestones
-                %option Created Date (Newest)
-                %option Created Date (Oldest)
-                %option Version
-            .mb-3
-              %label.form-label Order
-              %select.form-select
-                %option Ascending
-                %option Descending
-            .mb-3
-              %label.form-label View Style
-              .form-check
-                %input.form-check-input{checked: "checked", type: "radio", name: "viewStyle", value: "table"}
-                %label.form-check-label
-                  %i.bi.bi-table.me-2
-                  Table View
-              .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "cards"}
-                %label.form-check-label
-                  %i.bi.bi-grid.me-2
-                  Card View
-              .form-check
-                %input.form-check-input{type: "radio", name: "viewStyle", value: "list"}
-                %label.form-check-label
-                  %i.bi.bi-list.me-2
-                  List View
-            .mb-3
-              %label.form-label Spotlight
-              %select.form-select
-                %option No Spotlight
-                %option Ability Overview
-                %option Most Popular Abilities
-                %option Recently Created
-                %option High Milestone Activity
-      .modal-footer
-        %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
-        %button.btn.btn-primary.disabled{type: "button"}
-          %i.bi.bi-check.me-2
-          Apply Filters

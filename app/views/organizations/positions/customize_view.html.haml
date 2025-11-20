@@ -1,0 +1,108 @@
+- content_for :header do
+  Customize Positions View
+- content_for :return_url do
+  = @return_url || organization_positions_path(@organization)
+- content_for :return_text do
+  = @return_text || 'Back to Positions'
+
+= form_with url: update_view_organization_positions_path(@organization), method: :patch, local: true do |form|
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Positions You See
+    
+    .col-md-8
+      / Filters Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Positions You See
+          
+          .mb-3
+            %label.form-label Position Type
+            - position_types = @organization.position_types.includes(:position_major_level).order(:external_title)
+            - position_type_options = [['All Position Types', '']] + position_types.map { |pt| [pt.external_title, pt.id] }
+            = select_tag 'position_type', options_for_select(position_type_options, @current_filters[:position_type]), class: 'form-select'
+          
+          .mb-3
+            %label.form-label Position Level
+            - position_levels = PositionLevel.joins(:position_major_level).order(:level)
+            - position_level_options = [['All Position Levels', '']] + position_levels.map { |pl| [pl.level, pl.id] }
+            = select_tag 'position_level', options_for_select(position_level_options, @current_filters[:position_level]), class: 'form-select'
+          
+          .mb-3
+            %label.form-label Major Version
+            - major_version_options = [['All Versions', '']] + (0..10).map { |v| ["v#{v}.x.x", v] }
+            = select_tag 'major_version', options_for_select(major_version_options, @current_filters[:major_version]), class: 'form-select'
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Order You See Them In
+    
+    .col-md-8
+      / Sort Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Order You See Them In
+          .mb-3
+            %label.form-label Sort By
+            - sort_options = [['Name (A-Z)', 'name'], ['Level', 'level'], ['Assignment Count', 'assignments'], ['Created Date (Newest)', 'created_at'], ['Created Date (Oldest)', 'created_at_asc']]
+            = select_tag 'sort', options_for_select(sort_options, @current_sort), class: 'form-select', id: 'sort_select'
+          .mb-3
+            %label.form-label Direction
+            - direction_options = [['Ascending', 'asc'], ['Descending', 'desc']]
+            = select_tag 'direction', options_for_select(direction_options, @current_filters[:direction] || 'asc'), class: 'form-select', id: 'direction_select'
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select How They Appear
+    
+    .col-md-8
+      / View Style Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select How They Appear
+          .form-check
+            = radio_button_tag 'view', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
+            = label_tag 'view_table', class: 'form-check-label' do
+              %i.bi.bi-table.me-2
+              Table View
+          .form-check
+            = radio_button_tag 'view', 'cards', @current_view == 'cards', class: 'form-check-input', id: 'view_cards'
+            = label_tag 'view_cards', class: 'form-check-label' do
+              %i.bi.bi-grid.me-2
+              Card View
+          .form-check
+            = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
+            = label_tag 'view_list', class: 'form-check-label' do
+              %i.bi.bi-list.me-2
+              List View
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select the Spotlight for Them
+    
+    .col-md-8
+      / Spotlight Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select the Spotlight for Them
+          .form-check
+            = radio_button_tag 'spotlight', 'high_assignment_count', @current_spotlight == 'high_assignment_count', class: 'form-check-input', id: 'spotlight_high_assignment'
+            = label_tag 'spotlight_high_assignment', 'High Assignment Count', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'recently_created', @current_spotlight == 'recently_created', class: 'form-check-input', id: 'spotlight_recently_created'
+            = label_tag 'spotlight_recently_created', 'Recently Created', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'none', (@current_spotlight.blank? || @current_spotlight == 'none'), class: 'form-check-input', id: 'spotlight_none'
+            = label_tag 'spotlight_none', 'No Spotlight', class: 'form-check-label'
+
+  .row
+    .col-12
+      / Form Actions
+      .d-flex.gap-2.mt-4.mb-4
+        = form.submit 'Apply View', class: 'btn btn-primary'
+        = link_to 'Cancel', @return_url || organization_positions_path(@organization), class: 'btn btn-outline-secondary'
+
