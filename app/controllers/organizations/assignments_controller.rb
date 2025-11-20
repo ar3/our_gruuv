@@ -13,13 +13,24 @@ class Organizations::AssignmentsController < ApplicationController
 
   def new
     @assignment = @organization.assignments.build
+    @assignment_decorator = AssignmentDecorator.new(@assignment)
+    @form = AssignmentForm.new(@assignment)
+    @form.current_person = current_person
+    @form.instance_variable_set(:@form_data_empty, true)
     render layout: 'authenticated-v2-0'
   end
 
   def create
-    @assignment = @organization.assignments.build(assignment_params)
+    @assignment = @organization.assignments.build
+    @assignment_decorator = AssignmentDecorator.new(@assignment)
+    @form = AssignmentForm.new(@assignment)
+    @form.current_person = current_person
+    
+    # Set flag for empty form data validation
+    assignment_params_hash = assignment_params || {}
+    @form.instance_variable_set(:@form_data_empty, assignment_params_hash.empty?)
 
-    if @assignment.save
+    if @form.validate(assignment_params) && @form.save
       # Create external references if URLs provided
       create_external_references(@assignment, params[:assignment])
       
@@ -31,18 +42,28 @@ class Organizations::AssignmentsController < ApplicationController
       redirect_to organization_assignment_path(@organization, @assignment), notice: 'Assignment was successfully created.'
     else
       # Preserve outcomes_textarea for re-render
-      @assignment.outcomes_textarea = params[:assignment][:outcomes_textarea] if params[:assignment][:outcomes_textarea].present?
+      @form.outcomes_textarea = params[:assignment][:outcomes_textarea] if params[:assignment][:outcomes_textarea].present?
       render :new, status: :unprocessable_entity
     end
   end
 
   def edit
+    @assignment_decorator = AssignmentDecorator.new(@assignment)
+    @form = AssignmentForm.new(@assignment)
+    @form.current_person = current_person
     render layout: 'authenticated-v2-0'
   end
 
   def update
-    if @assignment.update(assignment_params)
-      # Update external references
+    @assignment_decorator = AssignmentDecorator.new(@assignment)
+    @form = AssignmentForm.new(@assignment)
+    @form.current_person = current_person
+    
+    # Set flag for empty form data validation
+    assignment_params_hash = assignment_params || {}
+    @form.instance_variable_set(:@form_data_empty, assignment_params_hash.empty?)
+
+    if @form.validate(assignment_params) && @form.save
       update_external_references(@assignment, params[:assignment])
       
       # Handle existing outcomes updates and deletions
@@ -75,7 +96,7 @@ class Organizations::AssignmentsController < ApplicationController
   end
 
   def assignment_params
-    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook, :department_id)
+    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook, :department_id, :version_type)
   end
 
   def create_external_references(assignment, params)

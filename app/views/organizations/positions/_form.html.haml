@@ -1,8 +1,8 @@
-- if @position.errors.any?
+- if @form && @form.errors.any?
   .alert.alert-danger
-    %h5= "#{pluralize(@position.errors.count, "error")} prohibited this position from being saved:"
+    %h5= "#{pluralize(@form.errors.count, "error")} prohibited this position from being saved:"
     %ul.mb-0
-      - @position.errors.full_messages.each do |message|
+      - @form.errors.full_messages.each do |message|
         %li= message
 
 .row

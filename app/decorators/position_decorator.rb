@@ -1,13 +1,15 @@
-class PositionDecorator < Draper::Decorator
-  delegate_all
+class PositionDecorator < SimpleDelegator
+  include SemanticVersionable
 
-  # Define presentation-specific methods here. Helpers are accessed through
-  # `helpers` (aka `h`). You can override attributes, for example:
-  #
-  #   def created_at
-  #     helpers.content_tag :span, class: 'time' do
-  #       object.created_at.strftime("%a %m/%d/%y")
-  #     end
-  #   end
+  def initialize(position)
+    super(position)
+  end
 
+  def version_section_title_for_context
+    super("Position")
+  end
+
+  def version_section_description_for_context
+    super("Position")
+  end
 end

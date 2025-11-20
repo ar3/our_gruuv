@@ -71,8 +71,8 @@ RSpec.describe Assignment, type: :model do
   end
 
   describe 'instance methods' do
-    it 'returns display name' do
-      expect(assignment.display_name).to eq(assignment.title)
+    it 'returns display name with version' do
+      expect(assignment.display_name).to eq("#{assignment.title} v#{assignment.semantic_version}")
     end
 
     it 'returns company name' do

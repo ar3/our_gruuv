@@ -12,8 +12,20 @@
           Create New Position
       
       .card-body
-        = form_with model: [@organization, @position], url: organization_positions_path(@organization), local: true do |form|
+        = form_with model: [@organization, @form], url: organization_positions_path(@organization), local: true do |form|
+          - if @form.errors.any?
+            .alert.alert-danger
+              %h5= "#{pluralize(@form.errors.count, "error")} prohibited this position from being saved:"
+              %ul.mb-0
+                - @form.errors.full_messages.each do |message|
+                  %li= message
           = render 'form', form: form
+          
+          = render 'shared/semantic_version_section', 
+            form: form, 
+            version_section_title: @position_decorator.version_section_title_for_context, 
+            version_section_description: @position_decorator.version_section_description_for_context, 
+            version_options: @position_decorator.new_version_options
           
           .d-flex.justify-content-between
             = link_to "Cancel", organization_positions_path(@organization), class: "btn btn-secondary"

@@ -1,0 +1,21 @@
+.card.mt-4
+  .card-header
+    %h6.mb-0
+      %i.bi.bi-flag.me-2
+      = version_section_title
+  .card-body
+    %p.text-muted.small.mb-3= version_section_description
+    
+    .row
+      - version_options.each do |option|
+        .col-md-4
+          .form-check
+            = form.radio_button :version_type, option[:value], class: "form-check-input", id: "version_type_#{option[:value]}", checked: option[:checked]
+            = form.label "version_type_#{option[:value]}", class: "form-check-label" do
+              %strong= option[:label]
+              %br
+              %small{class: option[:text_class]}= option[:version_text]
+              %br
+              %small.text-muted= option[:description]
+
+

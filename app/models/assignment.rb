@@ -1,5 +1,7 @@
 class Assignment < ApplicationRecord
   include PgSearch::Model
+  include SemanticVersionable
+  has_paper_trail
   
   # Associations
   belongs_to :company, class_name: 'Organization'
@@ -41,7 +43,7 @@ class Assignment < ApplicationRecord
   
   # Instance methods
   def display_name
-    title
+    "#{title} v#{semantic_version}"
   end
   
   def name

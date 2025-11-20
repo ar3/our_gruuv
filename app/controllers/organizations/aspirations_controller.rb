@@ -17,8 +17,10 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
 
   def new
     @aspiration = @organization.aspirations.build
+    @aspiration_decorator = AspirationDecorator.new(@aspiration)
     @form = AspirationForm.new(@aspiration)
     @form.current_person = current_person
+    @form.instance_variable_set(:@form_data_empty, true)
     authorize @aspiration
     render layout: 'authenticated-v2-0'
   end
@@ -29,8 +31,14 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
     selected_org = Organization.find(selected_org_id)
     
     @aspiration = selected_org.aspirations.build
+    @aspiration_decorator = AspirationDecorator.new(@aspiration)
     @form = AspirationForm.new(@aspiration)
     @form.current_person = current_person
+    
+    # Set flag for empty form data validation
+    aspiration_params_hash = aspiration_params || {}
+    @form.instance_variable_set(:@form_data_empty, aspiration_params_hash.empty?)
+    
     authorize @aspiration
 
     if @form.validate(aspiration_params) && @form.save
@@ -41,6 +49,7 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
   end
 
   def edit
+    @aspiration_decorator = AspirationDecorator.new(@aspiration)
     @form = AspirationForm.new(@aspiration)
     @form.current_person = current_person
     authorize @aspiration
@@ -48,6 +57,7 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
   end
 
   def update
+    @aspiration_decorator = AspirationDecorator.new(@aspiration)
     @form = AspirationForm.new(@aspiration)
     @form.current_person = current_person
     authorize @aspiration
@@ -60,6 +70,10 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
     if selected_org_id != @aspiration.organization_id
       @aspiration.organization = selected_org
     end
+
+    # Set flag for empty form data validation
+    aspiration_params_hash = aspiration_params || {}
+    @form.instance_variable_set(:@form_data_empty, aspiration_params_hash.empty?)
 
     if @form.validate(aspiration_params) && @form.save
       redirect_to organization_aspirations_path(@organization), notice: 'Aspiration was successfully updated.'
@@ -85,6 +99,6 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
   end
 
   def aspiration_params
-    params.require(:aspiration).permit(:name, :description, :sort_order, :organization_id)
+    params.require(:aspiration).permit(:name, :description, :sort_order, :organization_id, :version_type)
   end
 end

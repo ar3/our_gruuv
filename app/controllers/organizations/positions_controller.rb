@@ -25,27 +25,48 @@ class Organizations::PositionsController < ApplicationController
       position_type = PositionType.find(params[:position_type_id])
       @position_levels = position_type.position_major_level.position_levels
     end
+    @position_decorator = PositionDecorator.new(@position)
+    @form = PositionForm.new(@position)
+    @form.current_person = current_person
+    @form.instance_variable_set(:@form_data_empty, true)
     render layout: 'authenticated-v2-0'
   end
 
   def create
-    @position = Position.new(position_params)
-    @position.position_type = PositionType.find(position_params[:position_type_id]) if position_params[:position_type_id].present?
-    @position.position_level = PositionLevel.find(position_params[:position_level_id]) if position_params[:position_level_id].present?
+    @position = Position.new
+    @position_decorator = PositionDecorator.new(@position)
+    @form = PositionForm.new(@position)
+    @form.current_person = current_person
+    
+    # Set flag for empty form data validation
+    position_params_hash = position_params || {}
+    @form.instance_variable_set(:@form_data_empty, position_params_hash.empty?)
 
-    if @position.save
+    if @form.validate(position_params) && @form.save
       redirect_to organization_position_path(@organization, @position), notice: 'Position was successfully created.'
     else
+      set_related_data
       render :new, status: :unprocessable_entity
     end
   end
 
   def edit
+    @position_decorator = PositionDecorator.new(@position)
+    @form = PositionForm.new(@position)
+    @form.current_person = current_person
     render layout: 'authenticated-v2-0'
   end
 
   def update
-    if @position.update(position_params)
+    @position_decorator = PositionDecorator.new(@position)
+    @form = PositionForm.new(@position)
+    @form.current_person = current_person
+    
+    # Set flag for empty form data validation
+    position_params_hash = position_params || {}
+    @form.instance_variable_set(:@form_data_empty, position_params_hash.empty?)
+
+    if @form.validate(position_params) && @form.save
       redirect_to organization_position_path(@organization, @position), notice: 'Position was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
@@ -91,6 +112,6 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def position_params
-    params.require(:position).permit(:position_type_id, :position_level_id, :external_title, :position_summary, :eligibility_requirements_summary)
+    params.require(:position).permit(:position_type_id, :position_level_id, :external_title, :position_summary, :eligibility_requirements_summary, :version_type)
   end
 end

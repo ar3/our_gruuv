@@ -33,6 +33,12 @@
               = form.label :sort_order, class: 'form-label'
               = form.number_field :sort_order, class: 'form-control', value: @form.sort_order || 999
             
+            = render 'shared/semantic_version_section', 
+              form: form, 
+              version_section_title: @aspiration_decorator.version_section_title_for_context, 
+              version_section_description: @aspiration_decorator.version_section_description_for_context, 
+              version_options: @aspiration_decorator.new_version_options
+            
             %div
               = form.submit 'Create Aspiration', class: 'btn btn-primary'
               = link_to 'Cancel', organization_aspirations_path(@organization), class: 'btn btn-outline-secondary ms-2'

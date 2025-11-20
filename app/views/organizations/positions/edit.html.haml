@@ -4,7 +4,7 @@
     Back to Position
 
 .row.justify-content-center
-  .col-lg-8
+  .col-12
     .card
       .card-header
         %h4.mb-0
@@ -12,8 +12,20 @@
           Edit Position: #{@position.display_name}
       
       .card-body
-        = form_with model: [@organization, @position], url: organization_position_path(@organization, @position), local: true do |form|
+        = form_with model: [@organization, @form], url: organization_position_path(@organization, @position), local: true do |form|
+          - if @form.errors.any?
+            .alert.alert-danger
+              %h5= "#{pluralize(@form.errors.count, "error")} prohibited this position from being saved:"
+              %ul.mb-0
+                - @form.errors.full_messages.each do |message|
+                  %li= message
           = render 'form', form: form
+          
+          = render 'shared/semantic_version_section', 
+            form: form, 
+            version_section_title: @position_decorator.version_section_title_for_context, 
+            version_section_description: @position_decorator.version_section_description_for_context, 
+            version_options: @position_decorator.edit_version_options
           
           .d-flex.justify-content-between
             = link_to "Cancel", organization_position_path(@organization, @position), class: "btn btn-secondary"

@@ -1,8 +1,8 @@
-- if @assignment.errors.any?
+- if @form && @form.errors.any?
   .alert.alert-danger
-    %h5= "#{pluralize(@assignment.errors.count, "error")} prohibited this assignment from being saved:"
+    %h5= "#{pluralize(@form.errors.count, "error")} prohibited this assignment from being saved:"
     %ul.mb-0
-      - @assignment.errors.full_messages.each do |message|
+      - @form.errors.full_messages.each do |message|
         %li= message
 
 .row
@@ -64,10 +64,10 @@
       
 .row
   .col-md-12
-    .mb-3
+      .mb-3
       = form.label :outcomes_textarea, "Add NewOutcomes", class: "form-label"
       = form.text_area :outcomes_textarea, class: "form-control", rows: 6,
-        value: @assignment.outcomes_textarea,
+        value: @form&.outcomes_textarea || @assignment.outcomes_textarea,
         placeholder: "Squad-mates agree \"We are deliberately learning so much... meaning, 3+ opinion-shifting and/or assumption-(in)validating learnings per quarter\".\n\nSquadmates agree:  \"I am informed... meaning I know what is most important and what we are doing about it\"\n\n\"I am connected... meaning I know what the next steps are, who is accountable for each TODO, and how the TODOs and next steps are aligned with the progress we are trying to make\""
       %small.form-text.text-muted Each line will become a separate outcome. Outcomes containing 'agree:' or 'agrees:' will be marked as sentiment type.
 
@@ -104,7 +104,7 @@
     .mb-3
       = form.label :published_source_url, "Published Source URL", class: "form-label"
       = form.url_field :published_source_url, class: "form-control", 
-        value: @assignment.published_url,
+        value: @assignment.published_url || @form&.published_source_url,
         placeholder: "https://docs.google.com/document/d/..."
       %small.form-text.text-muted URL to the published version of this assignment
   
@@ -112,6 +112,6 @@
     .mb-3
       = form.label :draft_source_url, "Draft Source URL", class: "form-label"
       = form.url_field :draft_source_url, class: "form-control", 
-        value: @assignment.draft_url,
+        value: @assignment.draft_url || @form&.draft_source_url,
         placeholder: "https://docs.google.com/document/d/..."
       %small.form-text.text-muted URL to the draft version of this assignment 

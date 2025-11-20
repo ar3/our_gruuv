@@ -152,6 +152,18 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
       {
         aspiration: {
           name: 'Test Aspiration',
+          description: 'Test Description',
+          sort_order: 1,
+          organization_id: organization.id,
+          version_type: 'ready'
+        }
+      }
+    end
+
+    let(:valid_params_without_version) do
+      {
+        aspiration: {
+          name: 'Test Aspiration',
           description: 'Test description',
           sort_order: 10
         }
@@ -250,7 +262,8 @@ RSpec.describe 'Organizations::Aspirations', type: :request do
       {
         aspiration: {
           name: 'Updated Aspiration',
-          description: 'Updated description'
+          description: 'Updated description',
+          version_type: 'clarifying'
         }
       }
     end

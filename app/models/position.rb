@@ -1,5 +1,7 @@
 class Position < ApplicationRecord
   include PgSearch::Model
+  include SemanticVersionable
+  has_paper_trail
   
   # Associations
   belongs_to :position_type
@@ -36,7 +38,8 @@ class Position < ApplicationRecord
   
   # Instance methods
   def display_name
-    "#{position_type.external_title} - #{position_level.level}"
+    base_name = "#{position_type.external_title} - #{position_level.level}"
+    "#{base_name} v#{semantic_version}"
   end
 
   def to_param

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_16_013505) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_19_183537) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -83,6 +83,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_16_013505) do
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "semantic_version", default: "0.0.1", null: false
     t.index ["deleted_at"], name: "index_aspirations_on_deleted_at"
     t.index ["organization_id", "name"], name: "index_aspirations_on_organization_id_and_name", unique: true
     t.index ["organization_id"], name: "index_aspirations_on_organization_id"
@@ -165,6 +166,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_16_013505) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "department_id"
+    t.string "semantic_version", default: "0.0.1", null: false
     t.index ["company_id"], name: "index_assignments_on_company_id"
     t.index ["department_id"], name: "index_assignments_on_department_id"
   end
@@ -603,6 +605,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_16_013505) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "eligibility_requirements_summary"
+    t.string "semantic_version", default: "0.0.1", null: false
     t.index ["position_level_id"], name: "index_positions_on_position_level_id"
     t.index ["position_type_id", "position_level_id"], name: "index_positions_on_type_and_level_unique", unique: true
     t.index ["position_type_id"], name: "index_positions_on_position_type_id"

@@ -110,8 +110,8 @@ RSpec.describe Position, type: :model do
   end
 
   describe 'instance methods' do
-    it 'returns display name' do
-      expect(position.display_name).to eq("#{position_type.external_title} - #{position_level.level_name}")
+    it 'returns display name with version' do
+      expect(position.display_name).to eq("#{position_type.external_title} - #{position_level.level_name} v#{position.semantic_version}")
     end
 
     it 'returns company' do
