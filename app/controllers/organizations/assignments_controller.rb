@@ -1,13 +1,18 @@
 class Organizations::AssignmentsController < ApplicationController
+  before_action :authenticate_person!
   before_action :set_organization
   before_action :set_assignment, only: [:show, :edit, :update, :destroy]
 
+  after_action :verify_authorized, except: :index
+  after_action :verify_policy_scoped, only: :index
+
   def index
-    @assignments = @organization.assignments.includes(:assignment_outcomes, :published_external_reference, :draft_external_reference, :abilities).ordered
+    @assignments = policy_scope(Assignment).where(company: @organization.root_company.self_and_descendants).includes(:assignment_outcomes, :published_external_reference, :draft_external_reference, :abilities).ordered
     render layout: 'authenticated-v2-0'
   end
 
   def show
+    authorize @assignment
     render layout: 'authenticated-v2-0'
   end
 
@@ -17,6 +22,7 @@ class Organizations::AssignmentsController < ApplicationController
     @form = AssignmentForm.new(@assignment)
     @form.current_person = current_person
     @form.instance_variable_set(:@form_data_empty, true)
+    authorize @assignment
     render layout: 'authenticated-v2-0'
   end
 
@@ -25,6 +31,8 @@ class Organizations::AssignmentsController < ApplicationController
     @assignment_decorator = AssignmentDecorator.new(@assignment)
     @form = AssignmentForm.new(@assignment)
     @form.current_person = current_person
+    
+    authorize @assignment
     
     # Set flag for empty form data validation
     assignment_params_hash = assignment_params || {}
@@ -51,6 +59,7 @@ class Organizations::AssignmentsController < ApplicationController
     @assignment_decorator = AssignmentDecorator.new(@assignment)
     @form = AssignmentForm.new(@assignment)
     @form.current_person = current_person
+    authorize @assignment
     render layout: 'authenticated-v2-0'
   end
 
@@ -58,6 +67,8 @@ class Organizations::AssignmentsController < ApplicationController
     @assignment_decorator = AssignmentDecorator.new(@assignment)
     @form = AssignmentForm.new(@assignment)
     @form.current_person = current_person
+    
+    authorize @assignment
     
     # Set flag for empty form data validation
     assignment_params_hash = assignment_params || {}
@@ -81,6 +92,7 @@ class Organizations::AssignmentsController < ApplicationController
   end
 
   def destroy
+    authorize @assignment
     @assignment.destroy
     redirect_to organization_assignments_path(@organization), notice: 'Assignment was successfully deleted.'
   end

@@ -64,8 +64,8 @@
       
 .row
   .col-md-12
-      .mb-3
-      = form.label :outcomes_textarea, "Add NewOutcomes", class: "form-label"
+    .mb-3
+      = form.label :outcomes_textarea, "Add New Outcomes", class: "form-label"
       = form.text_area :outcomes_textarea, class: "form-control", rows: 6,
         value: @form&.outcomes_textarea || @assignment.outcomes_textarea,
         placeholder: "Squad-mates agree \"We are deliberately learning so much... meaning, 3+ opinion-shifting and/or assumption-(in)validating learnings per quarter\".\n\nSquadmates agree:  \"I am informed... meaning I know what is most important and what we are doing about it\"\n\n\"I am connected... meaning I know what the next steps are, who is accountable for each TODO, and how the TODOs and next steps are aligned with the progress we are trying to make\""
