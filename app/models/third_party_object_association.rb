@@ -9,4 +9,5 @@ class ThirdPartyObjectAssociation < ApplicationRecord
 
   # Scopes
   scope :huddle_review_notification_channels, -> { where(association_type: 'huddle_review_notification_channel') }
+  scope :slack_groups, -> { where(association_type: 'slack_group') }
 end 

@@ -171,4 +171,88 @@ RSpec.describe Organization, type: :model do
       }.to raise_error(ActiveRecord::RecordNotFound)
     end
   end
+
+  describe 'Slack group associations' do
+    let(:slack_group) { create(:third_party_object, :slack_group, organization: company, third_party_id: 'S123456') }
+
+    describe '#slack_group_association' do
+      it 'returns nil when no association exists' do
+        expect(company.slack_group_association).to be_nil
+      end
+
+      it 'returns the association when it exists' do
+        association = create(:third_party_object_association,
+                            third_party_object: slack_group,
+                            associatable: company,
+                            association_type: 'slack_group')
+        expect(company.slack_group_association).to eq(association)
+      end
+    end
+
+    describe '#slack_group' do
+      it 'returns nil when no association exists' do
+        expect(company.slack_group).to be_nil
+      end
+
+      it 'returns the group when association exists' do
+        create(:third_party_object_association,
+               third_party_object: slack_group,
+               associatable: company,
+               association_type: 'slack_group')
+        expect(company.slack_group).to eq(slack_group)
+      end
+    end
+
+    describe '#slack_group_id' do
+      it 'returns nil when no association exists' do
+        expect(company.slack_group_id).to be_nil
+      end
+
+      it 'returns the group id when association exists' do
+        create(:third_party_object_association,
+               third_party_object: slack_group,
+               associatable: company,
+               association_type: 'slack_group')
+        expect(company.slack_group_id).to eq('S123456')
+      end
+    end
+
+    describe '#slack_group_id=' do
+      it 'creates association when group_id is provided' do
+        # Ensure the group exists before setting
+        slack_group
+        company.slack_group_id = 'S123456'
+        company.save!
+        
+        expect(company.reload.slack_group_id).to eq('S123456')
+        expect(company.slack_group).to eq(slack_group)
+      end
+
+      it 'removes association when group_id is empty' do
+        create(:third_party_object_association,
+               third_party_object: slack_group,
+               associatable: company,
+               association_type: 'slack_group')
+        
+        company.slack_group_id = ''
+        company.save!
+        
+        expect(company.slack_group_id).to be_nil
+      end
+
+      it 'updates association when group_id changes' do
+        new_group = create(:third_party_object, :slack_group, organization: company, third_party_id: 'S789012')
+        create(:third_party_object_association,
+               third_party_object: slack_group,
+               associatable: company,
+               association_type: 'slack_group')
+        
+        company.slack_group_id = 'S789012'
+        company.save!
+        
+        expect(company.slack_group_id).to eq('S789012')
+        expect(company.slack_group).to eq(new_group)
+      end
+    end
+  end
 end 

@@ -142,8 +142,21 @@ RSpec.describe Person, type: :model do
   end
 
   describe '#display_name' do
+    context 'with preferred name' do
+      before do
+        person.preferred_name = 'Johnny'
+        person.first_name = 'John'
+        person.last_name = 'Doe'
+      end
+
+      it 'returns preferred name' do
+        expect(person.display_name).to eq('Johnny')
+      end
+    end
+
     context 'with full name' do
       before do
+        person.preferred_name = nil
         person.first_name = 'John'
         person.last_name = 'Doe'
       end
@@ -155,6 +168,7 @@ RSpec.describe Person, type: :model do
 
     context 'with only email' do
       before do
+        person.preferred_name = nil
         person.first_name = nil
         person.last_name = nil
         person.email = 'john@example.com'
@@ -162,6 +176,31 @@ RSpec.describe Person, type: :model do
 
       it 'returns email' do
         expect(person.display_name).to eq('john@example.com')
+      end
+    end
+  end
+
+  describe '#google_profile_image_url' do
+    context 'when person has Google identity' do
+      let!(:google_identity) { create(:person_identity, :google, person: person, profile_image_url: 'https://google.com/avatar.jpg') }
+
+      it 'returns Google profile image URL' do
+        expect(person.google_profile_image_url).to eq('https://google.com/avatar.jpg')
+      end
+    end
+
+    context 'when person has no Google identity' do
+      it 'returns nil' do
+        expect(person.google_profile_image_url).to be_nil
+      end
+    end
+
+    context 'when person has multiple Google identities' do
+      let!(:google_identity1) { create(:person_identity, :google, person: person, profile_image_url: 'https://google.com/avatar1.jpg') }
+      let!(:google_identity2) { create(:person_identity, :google, person: person, profile_image_url: 'https://google.com/avatar2.jpg') }
+
+      it 'returns first Google identity profile image URL' do
+        expect(person.google_profile_image_url).to eq('https://google.com/avatar1.jpg')
       end
     end
   end

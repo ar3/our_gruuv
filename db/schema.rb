@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_19_183537) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_20_115122) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -647,7 +647,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_19_183537) do
     t.string "bot_user_id"
     t.string "workspace_url"
     t.string "workspace_subdomain"
+    t.bigint "created_by_id"
     t.index ["bot_token"], name: "index_slack_configurations_on_bot_token", unique: true
+    t.index ["created_by_id"], name: "index_slack_configurations_on_created_by_id"
     t.index ["organization_id"], name: "index_slack_configurations_on_organization_id"
     t.index ["workspace_id"], name: "index_slack_configurations_on_workspace_id", unique: true
   end
@@ -828,6 +830,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_19_183537) do
   add_foreign_key "positions", "position_types"
   add_foreign_key "seats", "position_types"
   add_foreign_key "slack_configurations", "organizations"
+  add_foreign_key "slack_configurations", "people", column: "created_by_id"
   add_foreign_key "teammate_identities", "teammates"
   add_foreign_key "teammate_milestones", "abilities"
   add_foreign_key "teammate_milestones", "teammates"

@@ -1,8 +1,45 @@
 class Organizations::SlackController < Organizations::OrganizationNamespaceBaseController
   before_action :require_authentication
+  before_action :ensure_company_only
+  before_action :authorize_slack_access
   
   def show
-    # The show action displays the Slack integration page for the specific organization
+    # Load summary data for the page
+    @slack_config = @organization.calculated_slack_config
+    
+    # Teammate association stats
+    if @slack_config&.configured?
+      begin
+        slack_service = SlackService.new(@organization)
+        @slack_users = slack_service.list_users
+        @total_slack_users = @slack_users.length
+      rescue => e
+        Rails.logger.error "Slack: Error loading users: #{e.message}"
+        @slack_users = []
+        @total_slack_users = 0
+      end
+    else
+      @slack_users = []
+      @total_slack_users = 0
+    end
+    
+    @total_teammates = @organization.teammates.where(last_terminated_at: nil).count
+    @linked_teammates = @organization.teammates
+                                     .where(last_terminated_at: nil)
+                                     .joins(:teammate_identities)
+                                     .where(teammate_identities: { provider: 'slack' })
+                                     .distinct
+                                     .count
+    
+    # Channel/Group association stats
+    @total_channels = @organization.third_party_objects.slack_channels.count
+    @total_groups = @organization.third_party_objects
+                                 .where(third_party_source: 'slack', third_party_object_type: 'group')
+                                 .count
+    
+    # Organization hierarchy summary
+    @total_departments = @organization.children.departments.count
+    @total_teams = @organization.children.teams.count
   end
   
   def test_connection
@@ -109,6 +146,19 @@ class Organizations::SlackController < Organizations::OrganizationNamespaceBaseC
   def require_authentication
     unless current_person
       redirect_to root_path, alert: 'Please log in to access Slack integration.'
+    end
+  end
+  
+  def ensure_company_only
+    unless @organization.company?
+      redirect_to organization_path(@organization), alert: 'Slack configuration is only available for companies.'
+    end
+  end
+  
+  def authorize_slack_access
+    # Allow if user can manage employment OR is an active company teammate
+    unless policy(@organization).manage_employment? || current_company_teammate&.organization == @organization
+      redirect_to organization_path(@organization), alert: 'You do not have permission to access Slack configuration.'
     end
   end
   

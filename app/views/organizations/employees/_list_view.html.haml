@@ -3,8 +3,8 @@
     .list-group-item.d-flex.justify-content-between.align-items-start
       .flex-grow-1
         .d-flex.align-items-center.mb-2
-          .bg-primary.rounded-circle.d-flex.align-items-center.justify-content-center.me-3{style: "width: 32px; height: 32px;"}
-            %span.text-white.small.fw-bold= teammate.person.first_name&.first&.upcase || teammate.person.email.first.upcase
+          .me-3
+            = teammate_profile_image(teammate, size: 32)
           .flex-grow-1
             %h6.mb-0
               = link_to teammate.person.display_name, teammate_organization_person_path(@organization, teammate.person), class: "text-decoration-none fw-bold"

@@ -5,8 +5,7 @@
         .card-body.d-flex.flex-column
           .d-flex.align-items-start.mb-3
             .flex-shrink-0.me-3
-              .bg-primary.rounded-circle.d-flex.align-items-center.justify-content-center{style: "width: 48px; height: 48px;"}
-                %span.text-white.fw-bold= teammate.person.first_name&.first&.upcase || teammate.person.email.first.upcase
+              = teammate_profile_image(teammate, size: 48)
             .flex-grow-1
               %h6.card-title.mb-1
                 = link_to teammate.person.display_name, teammate_organization_person_path(@organization, teammate.person), class: "text-decoration-none fw-bold"

@@ -69,6 +69,7 @@ get '/login', to: 'auth#login', as: :login
       post :trigger_weekly_notification
       get :dashboard
       get :celebrate_milestones
+      post :refresh_slack_profiles
       get :pundit_healthcheck
       get :accountability_chart
     end
@@ -257,6 +258,16 @@ get '/login', to: 'auth#login', as: :login
         get :list_all_channel_types
         get :debug_responses
         get :test_pagination
+        
+        # Bulk management pages
+        get :teammates, to: 'slack/teammates#index'
+        patch :update_teammate_association, to: 'slack/teammates#update'
+        
+        get :channels, to: 'slack/channels#index'
+        post :refresh_channels, to: 'slack/channels#refresh_channels'
+        post :refresh_groups, to: 'slack/channels#refresh_groups'
+        patch :update_channel_association, to: 'slack/channels#update_channel'
+        patch :update_group_association, to: 'slack/channels#update_group'
       end
     end
   end

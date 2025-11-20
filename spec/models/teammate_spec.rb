@@ -251,6 +251,39 @@ RSpec.describe Teammate, type: :model do
           expect(teammate.identity_for(:slack)).to eq(slack_identity)
         end
       end
+
+      describe '#profile_image_url' do
+        context 'when teammate has Slack identity with profile image' do
+          let!(:slack_identity) { create(:teammate_identity, :slack, teammate: teammate, profile_image_url: 'https://slack.com/avatar.jpg') }
+
+          it 'returns Slack profile image URL' do
+            expect(teammate.profile_image_url).to eq('https://slack.com/avatar.jpg')
+          end
+        end
+
+        context 'when teammate has no Slack identity but person has Google identity' do
+          let!(:google_identity) { create(:person_identity, :google, person: person, profile_image_url: 'https://google.com/avatar.jpg') }
+
+          it 'returns Google profile image URL' do
+            expect(teammate.profile_image_url).to eq('https://google.com/avatar.jpg')
+          end
+        end
+
+        context 'when teammate has Slack identity without profile image but person has Google identity' do
+          let!(:slack_identity) { create(:teammate_identity, :slack, teammate: teammate, profile_image_url: nil) }
+          let!(:google_identity) { create(:person_identity, :google, person: person, profile_image_url: 'https://google.com/avatar.jpg') }
+
+          it 'returns Google profile image URL' do
+            expect(teammate.profile_image_url).to eq('https://google.com/avatar.jpg')
+          end
+        end
+
+        context 'when teammate has no identities' do
+          it 'returns nil' do
+            expect(teammate.profile_image_url).to be_nil
+          end
+        end
+      end
       
       describe 'cascade deletion' do
         it 'destroys teammate identities when teammate is destroyed' do

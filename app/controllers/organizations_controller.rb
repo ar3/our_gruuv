@@ -129,6 +129,25 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     
   end
   
+  def refresh_slack_profiles
+    authorize @organization, :manage_employment?, policy_class: OrganizationPolicy
+    
+    result = SlackProfileMatcherService.new.call(@organization)
+    
+    if result[:success]
+      matched_count = result[:matched_count]
+      total_teammates = result[:total_teammates]
+      errors = result[:errors]
+      
+      notice_message = "Successfully matched #{matched_count} out of #{total_teammates} teammates with Slack profiles."
+      notice_message += " #{errors.length} errors occurred." if errors.any?
+      
+      redirect_to organization_slack_path(@organization), notice: notice_message
+    else
+      redirect_to organization_slack_path(@organization), alert: "Failed to refresh Slack profiles: #{result[:error]}"
+    end
+  end
+  
   def new
     @organization = Organization.new
     @organization.parent_id = params[:parent_id] if params[:parent_id].present?
@@ -334,7 +353,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
 
   # Skip organization setup for actions that don't need it
   def skip_organization_setup?
-    !%w[show edit update destroy switch huddles_review dashboard celebrate_milestones pundit_healthcheck accountability_chart].include?(action_name)
+    !%w[show edit update destroy switch huddles_review dashboard celebrate_milestones pundit_healthcheck accountability_chart refresh_slack_profiles].include?(action_name)
   end
   
   def organization_params

@@ -44,7 +44,8 @@ class Organizations::Slack::OauthController < ApplicationController
           workspace_subdomain: nil, # We'll get this from team.info API call
           workspace_url: nil, # We'll set this after getting the subdomain
           bot_user_id: data['bot_user_id'],
-          installed_at: Time.current
+          installed_at: Time.current,
+          created_by_id: current_person&.id
         )
         
         # Store the full OAuth response for debugging (after config is saved)

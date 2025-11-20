@@ -50,3 +50,21 @@
             = link_to "#", class: "btn btn-outline-info" do
               %i.bi.bi-shield.me-2
               Security Settings
+        
+        .mt-4
+          %h6.text-muted.border-bottom.pb-2 Slack Integration
+          - slack_identity = @person.teammates.find_by(organization: current_organization)&.slack_identity
+          - if slack_identity
+            .d-flex.align-items-center.mb-2
+              %i.bi.bi-check-circle.text-success.me-2
+              %span Connected to #{current_organization.name} Slack workspace
+            - if slack_identity.profile_image_url.present?
+              .mb-2
+                = image_tag slack_identity.profile_image_url, class: "rounded-circle", style: "width: 48px; height: 48px; object-fit: cover;", alt: slack_identity.name || "Slack profile"
+            - if slack_identity.name.present?
+              %small.text-muted Slack name: #{slack_identity.name}
+          - else
+            .text-muted
+              %small Not connected to #{current_organization.name} Slack workspace
+              %br
+              %small An administrator can refresh Slack profiles to connect your account.

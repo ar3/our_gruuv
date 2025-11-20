@@ -1,0 +1,63 @@
+- content_for :header do
+  %h1.mb-0{id: "teammates-title"}
+    %i.bi.bi-people.me-2
+    Manage Teammate Associations
+
+- content_for :go_back_link do
+  = link_to organization_slack_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Slack Configuration
+
+.row.justify-content-center
+  .col-lg-12
+    .card.mb-4
+      .card-header.d-flex.justify-content-between.align-items-center
+        %h5.mb-0
+          %i.bi.bi-people.me-2
+          Teammate to Slack User Associations
+        = button_to refresh_slack_profiles_organization_path(@organization), method: :post, class: "btn btn-sm btn-outline-primary", data: { confirm: "This will match Slack profiles to teammates by email. Existing associations will not be changed. Continue?" } do
+          %i.bi.bi-arrow-clockwise.me-1
+          Refresh All Associations
+      .card-body
+        - if @slack_users.empty?
+          .alert.alert-warning
+            %i.bi.bi-exclamation-triangle.me-2
+            Slack is not configured or no Slack users found.
+        - else
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Teammate Name
+                  %th Email
+                  %th Slack User
+                  %th Status
+                  %th Actions
+              %tbody
+                - @teammates.each do |teammate|
+                  - slack_identity = teammate.slack_identity
+                  - is_linked = slack_identity.present?
+                  %tr{class: is_linked ? 'table-success' : ''}
+                    %td
+                      = teammate.person.display_name
+                    %td= teammate.person.email
+                    %td
+                      = form_with url: update_teammate_association_organization_slack_path(@organization), method: :patch, local: true, class: "d-inline" do |form|
+                        = form.hidden_field :teammate_id, value: teammate.id
+                        = form.select :slack_user_id, options_from_collection_for_select(@slack_users, 'id', ->(u) { "#{u.dig('profile', 'real_name') || u['name']} (#{u.dig('profile', 'email')})" }, slack_identity&.uid), { prompt: 'Select Slack user', include_blank: 'None' }, { class: 'form-select form-select-sm', onchange: 'this.form.submit()' }
+                    %td
+                      - if is_linked
+                        %span.badge.bg-success
+                          %i.bi.bi-check-circle.me-1
+                          Linked
+                      - else
+                        %span.badge.bg-secondary
+                          %i.bi.bi-x-circle.me-1
+                          Not Linked
+                    %td
+                      - if is_linked
+                        = form_with url: update_teammate_association_organization_slack_path(@organization), method: :patch, local: true, class: "d-inline" do |form|
+                          = form.hidden_field :teammate_id, value: teammate.id
+                          = form.hidden_field :slack_user_id, value: ''
+                          = form.submit "Remove", class: "btn btn-sm btn-outline-danger", data: { confirm: "Are you sure you want to remove this association?" }
+

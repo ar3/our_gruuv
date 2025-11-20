@@ -241,4 +241,182 @@ RSpec.describe SlackService do
       end
     end
   end
+
+  describe '#list_users' do
+    let(:mock_client) { instance_double(Slack::Web::Client) }
+
+    before do
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
+    end
+
+    context 'when Slack is configured' do
+      let(:users_response) do
+        {
+          'ok' => true,
+          'members' => [
+            {
+              'id' => 'U123456',
+              'name' => 'testuser',
+              'profile' => {
+                'email' => 'test@example.com',
+                'real_name' => 'Test User',
+                'image_512' => 'https://slack.com/avatar512.jpg'
+              }
+            },
+            {
+              'id' => 'U789012',
+              'name' => 'anotheruser',
+              'profile' => {
+                'email' => 'another@example.com',
+                'real_name' => 'Another User',
+                'image_192' => 'https://slack.com/avatar192.jpg'
+              }
+            }
+          ],
+          'response_metadata' => { 'next_cursor' => nil }
+        }
+      end
+
+      before do
+        allow(mock_client).to receive(:users_list).and_return(users_response)
+      end
+
+      it 'returns list of users' do
+        result = slack_service.list_users
+        expect(result).to be_an(Array)
+        expect(result.length).to eq(2)
+        expect(result.first['id']).to eq('U123456')
+      end
+
+      it 'handles pagination' do
+        first_page = users_response.dup
+        second_page = {
+          'ok' => true,
+          'members' => [
+            {
+              'id' => 'U345678',
+              'name' => 'thirduser',
+              'profile' => { 'email' => 'third@example.com', 'real_name' => 'Third User' }
+            }
+          ],
+          'response_metadata' => { 'next_cursor' => nil }
+        }
+
+        allow(mock_client).to receive(:users_list).with({ limit: 1000 }).and_return(first_page)
+        allow(mock_client).to receive(:users_list).with({ limit: 1000, cursor: 'cursor123' }).and_return(second_page)
+
+        first_page['response_metadata']['next_cursor'] = 'cursor123'
+
+        result = slack_service.list_users
+        expect(result.length).to eq(3)
+      end
+    end
+
+    context 'when Slack API fails' do
+      before do
+        allow(mock_client).to receive(:users_list).and_raise(Slack::Web::Api::Errors::SlackError.new('API Error'))
+      end
+
+      it 'returns empty array' do
+        result = slack_service.list_users
+        expect(result).to eq([])
+      end
+    end
+
+    context 'when Slack is not configured' do
+      before do
+        allow(slack_service).to receive(:slack_configured?).and_return(false)
+      end
+
+      it 'returns empty array' do
+        result = slack_service.list_users
+        expect(result).to eq([])
+      end
+    end
+  end
+  
+  describe '#list_groups' do
+    let(:mock_client) { instance_double(Slack::Web::Client) }
+
+    before do
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
+    end
+
+    context 'when Slack is configured' do
+      let(:groups_response) do
+        {
+          'ok' => true,
+          'usergroups' => [
+            {
+              'id' => 'S123456',
+              'name' => 'Engineering',
+              'handle' => 'engineering'
+            },
+            {
+              'id' => 'S789012',
+              'name' => 'Product',
+              'handle' => 'product'
+            }
+          ],
+          'response_metadata' => { 'next_cursor' => nil }
+        }
+      end
+
+      before do
+        allow(mock_client).to receive(:usergroups_list).and_return(groups_response)
+      end
+
+      it 'returns list of groups' do
+        result = slack_service.list_groups
+        expect(result).to be_an(Array)
+        expect(result.length).to eq(2)
+        expect(result.first['id']).to eq('S123456')
+      end
+
+      it 'handles pagination' do
+        first_page = groups_response.dup
+        second_page = {
+          'ok' => true,
+          'usergroups' => [
+            {
+              'id' => 'S345678',
+              'name' => 'Design',
+              'handle' => 'design'
+            }
+          ],
+          'response_metadata' => { 'next_cursor' => nil }
+        }
+
+        allow(mock_client).to receive(:usergroups_list).with({ include_users: false }).and_return(first_page)
+        allow(mock_client).to receive(:usergroups_list).with({ include_users: false, cursor: 'cursor123' }).and_return(second_page)
+
+        first_page['response_metadata']['next_cursor'] = 'cursor123'
+
+        result = slack_service.list_groups
+        expect(result.length).to eq(3)
+      end
+    end
+
+    context 'when Slack API fails' do
+      before do
+        allow(mock_client).to receive(:usergroups_list).and_raise(Slack::Web::Api::Errors::SlackError.new('API Error'))
+      end
+
+      it 'returns empty array' do
+        result = slack_service.list_groups
+        expect(result).to eq([])
+      end
+    end
+
+    context 'when Slack is not configured' do
+      before do
+        allow(slack_service).to receive(:slack_configured?).and_return(false)
+      end
+
+      it 'returns empty array' do
+        result = slack_service.list_groups
+        expect(result).to eq([])
+      end
+    end
+  end
 end 

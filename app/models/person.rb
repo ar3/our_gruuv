@@ -127,7 +127,17 @@ class Person < ApplicationRecord
   
   
   def display_name
-    full_name.present? ? full_name : email
+    if preferred_name.present?
+      preferred_name
+    elsif full_name.present?
+      full_name
+    else
+      email
+    end
+  end
+  
+  def google_profile_image_url
+    google_identity&.profile_image_url
   end
   
   def timezone_or_default

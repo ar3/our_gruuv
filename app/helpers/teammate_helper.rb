@@ -187,6 +187,25 @@ module TeammateHelper
       "Not employed"
     end
   end
+  
+  def teammate_profile_image(teammate, size: 48)
+    profile_url = teammate.profile_image_url
+    
+    if profile_url.present?
+      image_tag profile_url,
+                class: "rounded-circle",
+                style: "width: #{size}px; height: #{size}px; object-fit: cover;",
+                alt: teammate.person.display_name
+    else
+      # Fallback to initials in colored circle
+      initials = teammate.person.first_name&.first&.upcase || teammate.person.email.first.upcase
+      content_tag :div,
+                  class: "bg-primary rounded-circle d-flex align-items-center justify-content-center text-white",
+                  style: "width: #{size}px; height: #{size}px;" do
+        content_tag :span, initials, class: "fw-bold", style: "font-size: #{size * 0.4}px;"
+      end
+    end
+  end
 
   # Check-in status helper methods for manager view
   def overall_employee_status(person, organization)

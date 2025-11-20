@@ -679,4 +679,51 @@ RSpec.describe TeammateHelper, type: :helper do
       end
     end
   end
+
+  describe '#teammate_profile_image' do
+    context 'when teammate has Slack profile image' do
+      let!(:slack_identity) { create(:teammate_identity, :slack, teammate: teammate, profile_image_url: 'https://slack.com/avatar.jpg') }
+
+      it 'returns image tag with Slack profile image' do
+        result = helper.teammate_profile_image(teammate, size: 48)
+        expect(result).to include('img')
+        expect(result).to include('https://slack.com/avatar.jpg')
+        expect(result).to include('rounded-circle')
+        expect(result).to include('width: 48px')
+        expect(result).to include('height: 48px')
+      end
+    end
+
+    context 'when teammate has Google profile image but no Slack' do
+      let!(:google_identity) { create(:person_identity, :google, person: person, profile_image_url: 'https://google.com/avatar.jpg') }
+
+      it 'returns image tag with Google profile image' do
+        result = helper.teammate_profile_image(teammate, size: 32)
+        expect(result).to include('img')
+        expect(result).to include('https://google.com/avatar.jpg')
+        expect(result).to include('width: 32px')
+        expect(result).to include('height: 32px')
+      end
+    end
+
+    context 'when teammate has no profile images' do
+      it 'returns initials in colored circle' do
+        person.update!(first_name: 'John', last_name: 'Doe')
+        result = helper.teammate_profile_image(teammate, size: 48)
+        
+        expect(result).to include('bg-primary')
+        expect(result).to include('rounded-circle')
+        expect(result).to include('J')
+        expect(result).to include('width: 48px')
+        expect(result).to include('height: 48px')
+      end
+
+      it 'falls back to email first letter when no first name' do
+        person.update!(first_name: nil, email: 'test@example.com')
+        result = helper.teammate_profile_image(teammate, size: 32)
+        
+        expect(result).to include('T')
+      end
+    end
+  end
 end

@@ -86,6 +86,37 @@ class Organization < ApplicationRecord
     slack_configuration || root_company&.slack_configuration
   end
   
+  # Slack group association methods
+  def slack_group_association
+    third_party_object_associations.where(association_type: 'slack_group').first
+  end
+  
+  def slack_group
+    slack_group_association&.third_party_object
+  end
+  
+  def slack_group_id
+    slack_group&.third_party_id
+  end
+  
+  def slack_group_id=(group_id)
+    if group_id.present?
+      group = third_party_objects.where(third_party_source: 'slack', third_party_object_type: 'group').find_by(third_party_id: group_id)
+      if group
+        # Remove existing association
+        slack_group_association&.destroy
+        
+        # Create new association
+        third_party_object_associations.create!(
+          third_party_object: group,
+          association_type: 'slack_group'
+        )
+      end
+    else
+      slack_group_association&.destroy
+    end
+  end
+  
   def self_and_descendants
     [self] + descendants
   end

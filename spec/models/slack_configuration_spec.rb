@@ -5,6 +5,7 @@ RSpec.describe SlackConfiguration, type: :model do
   
   describe 'associations' do
     it { should belong_to(:organization) }
+    it { should belong_to(:created_by).optional }
   end
   
   describe 'validations' do
@@ -54,6 +55,23 @@ RSpec.describe SlackConfiguration, type: :model do
     describe '#display_name' do
       it 'returns workspace name and ID' do
         expect(slack_config.display_name).to eq("#{slack_config.workspace_name} (#{slack_config.workspace_id})")
+      end
+    end
+    
+    describe '#configured_by_name' do
+      context 'when created_by is present' do
+        let(:creator) { create(:person, first_name: 'John', last_name: 'Doe') }
+        let(:slack_config_with_creator) { create(:slack_configuration, organization: organization, created_by: creator) }
+        
+        it 'returns the creator\'s display name' do
+          expect(slack_config_with_creator.configured_by_name).to eq('John Doe')
+        end
+      end
+      
+      context 'when created_by is nil' do
+        it 'returns "Unknown"' do
+          expect(slack_config.configured_by_name).to eq('Unknown')
+        end
       end
     end
   end

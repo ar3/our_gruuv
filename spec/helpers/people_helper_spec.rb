@@ -78,4 +78,31 @@ RSpec.describe PeopleHelper, type: :helper do
       expect(helper.people_current_view_name).to eq('Manage Profile Mode')
     end
   end
+
+  describe '#slack_connection_status' do
+    let(:person) { create(:person) }
+    let(:organization) { create(:organization, :company) }
+    let(:teammate) { create(:teammate, person: person, organization: organization) }
+
+    context 'when person has Slack identity for organization' do
+      let!(:slack_identity) { create(:teammate_identity, :slack, teammate: teammate) }
+
+      it 'returns connected status with organization name' do
+        result = helper.slack_connection_status(person, organization)
+        expect(result).to include('Connected to')
+        expect(result).to include(organization.name)
+        expect(result).to include('check-circle')
+        expect(result).to include('text-success')
+      end
+    end
+
+    context 'when person has no Slack identity for organization' do
+      it 'returns not connected status' do
+        result = helper.slack_connection_status(person, organization)
+        expect(result).to include('Not connected to')
+        expect(result).to include(organization.name)
+        expect(result).to include('text-muted')
+      end
+    end
+  end
 end

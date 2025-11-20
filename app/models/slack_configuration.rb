@@ -1,5 +1,6 @@
 class SlackConfiguration < ApplicationRecord
   belongs_to :organization
+  belongs_to :created_by, class_name: 'Person', optional: true
   
   # Validations
   validates :workspace_id, presence: true, uniqueness: true
@@ -39,6 +40,10 @@ class SlackConfiguration < ApplicationRecord
   
   def bot_emoji_or_default
     bot_emoji.presence || ':sparkles:'
+  end
+  
+  def configured_by_name
+    created_by&.display_name || 'Unknown'
   end
   
   # TODO: Add encryption for bot_token when Active Record encryption is configured

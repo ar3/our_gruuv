@@ -174,12 +174,12 @@ class SlackService
           
           # Check if there are more pages
           cursor = response['response_metadata']&.dig('next_cursor')
-          if cursor
+          if cursor.present?
             Rails.logger.info "Slack: Page #{page_count} - Has next cursor: #{cursor}"
           else
             Rails.logger.info "Slack: Page #{page_count} - No more pages"
           end
-          break unless cursor
+          break unless cursor.present?
         else
           Rails.logger.error "Slack: Page #{page_count} - conversations_list failed: #{response.inspect}"
           break
@@ -334,7 +334,7 @@ class SlackService
           
           # Check if there are more pages
           cursor = response['response_metadata']&.dig('next_cursor')
-          break unless cursor
+          break unless cursor.present?
         else
           Rails.logger.error "Slack: conversations_list failed: #{response.inspect}"
           break
@@ -379,6 +379,98 @@ class SlackService
       store_slack_response('users_info', { user: user_id }, { error: e.message, backtrace: e.backtrace.first(5) })
       
       false
+    end
+  end
+  
+  # List all users in the workspace
+  def list_users
+    return [] unless slack_configured?
+    
+    all_users = []
+    cursor = nil
+    
+    begin
+      loop do
+        params = { limit: 1000 }
+        params[:cursor] = cursor if cursor
+        
+        Rails.logger.info "Slack: Fetching users with cursor: #{cursor || 'initial'}"
+        
+        response = @client.users_list(params)
+        
+        # Store the response in debug_responses
+        store_slack_response('users_list', params, response)
+        
+        if response['ok'] && response['members']
+          users = response['members']
+          all_users.concat(users)
+          Rails.logger.info "Slack: Fetched #{users.length} users (total: #{all_users.length})"
+          
+          # Check if there are more pages
+          cursor = response['response_metadata']&.dig('next_cursor')
+          break unless cursor.present?
+        else
+          Rails.logger.error "Slack: users_list failed: #{response.inspect}"
+          break
+        end
+      end
+      
+      Rails.logger.info "Slack: Total users found: #{all_users.length}"
+      all_users
+      
+    rescue Slack::Web::Api::Errors::SlackError => e
+      Rails.logger.error "Slack: Error listing users - #{e.message}"
+      
+      # Store the error in debug_responses
+      store_slack_response('users_list', { limit: 1000 }, { error: e.message, backtrace: e.backtrace.first(5) })
+      
+      []
+    end
+  end
+  
+  # List all user groups in the workspace
+  def list_groups
+    return [] unless slack_configured?
+    
+    all_groups = []
+    cursor = nil
+    
+    begin
+      loop do
+        params = { include_users: false }
+        params[:cursor] = cursor if cursor
+        
+        Rails.logger.info "Slack: Fetching groups with cursor: #{cursor || 'initial'}"
+        
+        response = @client.usergroups_list(params)
+        
+        # Store the response in debug_responses
+        store_slack_response('usergroups_list', params, response)
+        
+        if response['ok'] && response['usergroups']
+          groups = response['usergroups']
+          all_groups.concat(groups)
+          Rails.logger.info "Slack: Fetched #{groups.length} groups (total: #{all_groups.length})"
+          
+          # Check if there are more pages
+          cursor = response['response_metadata']&.dig('next_cursor')
+          break unless cursor.present?
+        else
+          Rails.logger.error "Slack: usergroups_list failed: #{response.inspect}"
+          break
+        end
+      end
+      
+      Rails.logger.info "Slack: Total groups found: #{all_groups.length}"
+      all_groups
+      
+    rescue Slack::Web::Api::Errors::SlackError => e
+      Rails.logger.error "Slack: Error listing groups - #{e.message}"
+      
+      # Store the error in debug_responses
+      store_slack_response('usergroups_list', { include_users: false }, { error: e.message, backtrace: e.backtrace.first(5) })
+      
+      []
     end
   end
   

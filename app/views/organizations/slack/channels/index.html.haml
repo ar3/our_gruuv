@@ -1,0 +1,75 @@
+- content_for :header do
+  %h1.mb-0{id: "channels-title"}
+    %i.bi.bi-hash.me-2
+    Manage Channel & Group Associations
+
+- content_for :go_back_link do
+  = link_to organization_slack_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Slack Configuration
+
+.row.justify-content-center
+  .col-lg-12
+    .card.mb-4
+      .card-header.d-flex.justify-content-between.align-items-center
+        %h5.mb-0
+          %i.bi.bi-hash.me-2
+          Organization Channel & Group Associations
+        .btn-group
+          = button_to refresh_channels_organization_slack_path(@organization), method: :post, class: "btn btn-sm btn-outline-primary" do
+            %i.bi.bi-arrow-clockwise.me-1
+            Refresh Channels
+          = button_to refresh_groups_organization_slack_path(@organization), method: :post, class: "btn btn-sm btn-outline-secondary" do
+            %i.bi.bi-arrow-clockwise.me-1
+            Refresh Groups
+      .card-body
+        - if @slack_channels.empty? && @slack_groups.empty?
+          .alert.alert-warning
+            %i.bi.bi-exclamation-triangle.me-2
+            Slack is not configured or no channels/groups found. Please refresh channels and groups.
+        - else
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th{style: "width: 30%;"} Organization
+                  %th{style: "width: 25%;"} Huddle Review Channel
+                  %th{style: "width: 25%;"} Slack Group
+                  %th{style: "width: 20%;"} Actions
+              %tbody
+                - @organizations.each do |org|
+                  - indent_level = org.ancestry_depth
+                  - indent_px = indent_level * 20
+                  %tr
+                    %td{style: "padding-left: #{indent_px}px;"}
+                      - if indent_level > 0
+                        %i.bi.bi-arrow-return-right.me-2.text-muted
+                        = org.name
+                      - else
+                        %strong= org.name
+                      %br
+                      %small.text-muted= org.type.underscore.humanize
+                    %td
+                      - if org.company?
+                        - company = org.becomes(Company)
+                        = form_with url: update_channel_association_organization_slack_path(@organization), method: :patch, local: true, class: "d-inline" do |form|
+                          = form.hidden_field :organization_id, value: org.id
+                          = form.select :channel_id, options_from_collection_for_select(@slack_channels, :third_party_id, :display_name, company.huddle_review_notification_channel_id), { prompt: 'Select channel', include_blank: 'None' }, { class: 'form-select form-select-sm', onchange: 'this.form.submit()' }
+                      - else
+                        %span.text-muted N/A
+                    %td
+                      = form_with url: update_group_association_organization_slack_path(@organization), method: :patch, local: true, class: "d-inline" do |form|
+                        = form.hidden_field :organization_id, value: org.id
+                        = form.select :group_id, options_from_collection_for_select(@slack_groups, :third_party_id, :display_name, org.slack_group_id), { prompt: 'Select group', include_blank: 'None' }, { class: 'form-select form-select-sm', onchange: 'this.form.submit()' }
+                    %td
+                      - if org.company?
+                        - company = org.becomes(Company)
+                        - if company.huddle_review_notification_channel_id.present?
+                          %span.badge.bg-success.me-1
+                            %i.bi.bi-check-circle.me-1
+                            Channel
+                      - if org.slack_group_id.present?
+                        %span.badge.bg-info
+                          %i.bi.bi-check-circle.me-1
+                          Group
+

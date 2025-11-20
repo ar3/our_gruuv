@@ -1,138 +1,92 @@
-.container
-  .row
-    .col-12
-      .d-flex.justify-content-between.align-items-center.mb-4
-        %h1.mb-0 Slack Integration
-        .d-flex.align-items-center
-          %span.badge.bg-primary.fs-6.me-3
-            %i.bi.bi-building.me-1
-            = @organization.display_name
-          = link_to organization_path(@organization), class: "btn btn-outline-secondary" do
-            %i.bi.bi-arrow-left.me-2
-            Back to Organization
-      
-      .row
-        .col-md-8
-          .card.mb-4
-            .card-header
-              %h5.mb-0
-                %i.bi.bi-slack.me-2
-                Slack Configuration for #{@organization.display_name}
-            .card-body
-              - if @organization.slack_configured?
-                .alert.alert-success
-                  %strong
-                    %i.bi.bi-check-circle.me-2
-                    Slack Connected
-                  %br
-                  %small.text-muted
-                    Workspace: #{@organization.slack_configuration.workspace_name}
-                    - if @organization.slack_configuration.workspace_url
-                      %br
-                      = link_to "View in Slack", @organization.slack_configuration.workspace_url, target: "_blank", class: "text-decoration-none"
-                
-                .row.mb-3
-                  .col-12
-                    .card
-                      .card-header.d-flex.justify-content-between.align-items-center
-                        %h6.mb-0 Bot Configuration
-                        %button.btn.btn-outline-primary.btn-sm{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#botConfigForm"}
-                          %i.bi.bi-pencil.me-1
-                          Edit
-                      .card-body
-                        .row
-                          .col-md-4
-                            %label.form-label.small.text-muted Default Channel
-                            %p.mb-0
-                              %code= @organization.slack_configuration.default_channel_or_general
-                          .col-md-4
-                            %label.form-label.small.text-muted Bot Username
-                            %p.mb-0
-                              %code= @organization.slack_configuration.bot_username_or_default
-                          .col-md-4
-                            %label.form-label.small.text-muted Bot Emoji
-                            %p.mb-0
-                              %code= @organization.slack_configuration.bot_emoji_or_default
-                        
-                        .collapse#botConfigForm
-                          %hr.mt-3
-                          = form_with model: @organization.slack_configuration, url: update_configuration_organization_slack_path(@organization), method: :patch, local: true, class: "mt-3" do |form|
-                            .row
-                              .col-md-4
-                                = form.label :default_channel, "Default Channel", class: "form-label"
-                                = form.text_field :default_channel, class: "form-control", placeholder: "#bot-test"
-                              .col-md-4
-                                = form.label :bot_username, "Bot Username", class: "form-label"
-                                = form.text_field :bot_username, class: "form-control", placeholder: "OG"
-                              .col-md-4
-                                = form.label :bot_emoji, "Bot Emoji", class: "form-label"
-                                = form.text_field :bot_emoji, class: "form-control", placeholder: ":sparkles:"
-                            .row.mt-3
-                              .col-12
-                                = form.submit "Update Configuration", class: "btn btn-primary btn-sm"
-                                %button.btn.btn-secondary.btn-sm.ms-2{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#botConfigForm"}
-                                  Cancel
-                
-                .row{"data-controller" => "slack-test", "data-slack-test-organization-id-value" => @organization.id}
-                  .col-md-6
-                    %h6 Test Connection
-                    %button.btn.btn-outline-primary.btn-sm{data: {action: "click->slack-test#testConnection"}}
-                      %i.bi.bi-wifi.me-1
-                      Test Connection
-                    #connectionResult.mt-2
-                  
-                  .col-md-6
-                    %h6 List Channels
-                    %button.btn.btn-outline-secondary.btn-sm{data: {action: "click->slack-test#listChannels"}}
-                      %i.bi.bi-list.me-1
-                      List Channels
-                    #channelsResult.mt-2
-                
-                .row.mt-3{"data-controller" => "slack-test", "data-slack-test-organization-id-value" => @organization.id}
-                  .col-12
-                    %h6 Send Test Message
-                    .input-group
-                      %input.form-control#testMessage{type: "text", placeholder: "Enter test message...", value: "🧪 Test message from OurGruuv!", data: {slack_test_target: "messageInput"}}
-                      %button.btn.btn-outline-success{data: {action: "click->slack-test#sendTestMessage"}}
-                        %i.bi.bi-send.me-1
-                        Send
-                    #messageResult.mt-2
-                
+- content_for :header do
+  %h1.mb-0{id: "slack-title"}
+    %i.bi.bi-slack.me-2
+    Slack Configuration
+
+- content_for :go_back_link do
+  = link_to organization_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Organization
+
+.row.justify-content-center
+  .col-lg-10
+    / Section 1: Slack Setup/Configuration
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-slack.me-2
+          Slack Setup & Configuration
+      .card-body
+        = slack_configuration_status(@organization)
+        
+        - if @slack_config&.configured?
+          / Bot Configuration Form (always visible, no edit button)
+          .row.mt-3
+            .col-12
+              %h6.mb-3 Bot Configuration
+              = form_with model: @slack_config, url: update_configuration_organization_slack_path(@organization), method: :patch, local: true do |form|
+                .row
+                  .col-md-4
+                    = form.label :default_channel, "Default Channel", class: "form-label"
+                    = form.text_field :default_channel, class: "form-control", placeholder: "#bot-test", value: @slack_config.default_channel_or_general
+                  .col-md-4
+                    = form.label :bot_username, "Bot Username", class: "form-label"
+                    = form.text_field :bot_username, class: "form-control", placeholder: "OG", value: @slack_config.bot_username_or_default
+                  .col-md-4
+                    = form.label :bot_emoji, "Bot Emoji", class: "form-label"
+                    = form.text_field :bot_emoji, class: "form-control", placeholder: ":sparkles:", value: @slack_config.bot_emoji_or_default
                 .row.mt-3
                   .col-12
-                    = button_to oauth_uninstall_organization_slack_path(@organization), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to uninstall Slack from #{@organization.display_name}?" } do
-                      %i.bi.bi-trash.me-2
-                      Uninstall Slack
-              - else
-                .alert.alert-warning
-                  %strong
-                    %i.bi.bi-exclamation-triangle.me-2
-                    Slack Not Connected
-                  %p.mb-0.mt-2
-                    This organization doesn't have Slack configured yet.
-                
-                = link_to oauth_authorize_organization_slack_path(@organization), class: "btn btn-primary" do
-                  %i.bi.bi-slack.me-2
-                  Install Slack for #{@organization.display_name}
-        
-        .col-md-4
-          .card
-            .card-header
-              %h5.mb-0 Organization Info
-            .card-body
-              %h6= @organization.name
-              - if @organization.team?
-                %p.text-muted
-                  Team of #{@organization.parent&.name}
-              %p
-                %strong Type:
-                = @organization.type.underscore.humanize
-              %p
-                %strong Created:
-                = @organization.created_at.strftime("%B %d, %Y")
-              
-              %hr
-              
-              = link_to edit_organization_path(@organization), class: "btn btn-outline-primary btn-sm" do
-                %i.bi.bi-pencil.me-1
-                Edit Organization 
+                    = form.submit "Update Configuration", class: "btn btn-primary btn-sm"
+          
+          / Test Buttons
+          .row.mt-4{"data-controller" => "slack-test", "data-slack-test-organization-id-value" => @organization.id}
+            .col-md-6
+              %h6 Test Connection
+              %button.btn.btn-outline-primary.btn-sm{data: {action: "click->slack-test#testConnection"}}
+                %i.bi.bi-wifi.me-1
+                Test Connection
+              #connectionResult.mt-2
+            
+            .col-md-6
+              %h6 List Channels
+              %button.btn.btn-outline-secondary.btn-sm{data: {action: "click->slack-test#listChannels"}}
+                %i.bi.bi-list.me-1
+                List Channels
+              #channelsResult.mt-2
+          
+          .row.mt-3{"data-controller" => "slack-test", "data-slack-test-organization-id-value" => @organization.id}
+            .col-12
+              %h6 Send Test Message
+              .input-group
+                %input.form-control#testMessage{type: "text", placeholder: "Enter test message...", value: "🧪 Test message from OurGruuv!", data: {slack_test_target: "messageInput"}}
+                %button.btn.btn-outline-success{data: {action: "click->slack-test#sendTestMessage"}}
+                  %i.bi.bi-send.me-1
+                  Send
+              #messageResult.mt-2
+          
+          / Uninstall Button
+          .row.mt-4
+            .col-12
+              = button_to oauth_uninstall_organization_slack_path(@organization), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to uninstall Slack from #{@organization.display_name}?" } do
+                %i.bi.bi-trash.me-2
+                Uninstall Slack
+        - else
+          = link_to oauth_authorize_organization_slack_path(@organization), class: "btn btn-primary mt-3" do
+            %i.bi.bi-slack.me-2
+            Install Slack for #{@organization.display_name}
+    
+    / Section 2: Teammate Associations Summary
+    - if @slack_config&.configured?
+      = teammate_association_stats(@organization, @total_slack_users, @total_teammates, @linked_teammates)
+      
+      / Refresh Slack Profiles Button
+      .card.mb-4
+        .card-body
+          = button_to refresh_slack_profiles_organization_path(@organization), method: :post, class: "btn btn-outline-primary", data: { confirm: "This will match Slack profiles to teammates by email. Existing associations will not be changed. Continue?" } do
+            %i.bi.bi-arrow-clockwise.me-2
+            Refresh Slack Profiles
+    
+    / Section 3: Channel & Group Associations Summary
+    - if @slack_config&.configured?
+      = channel_association_stats(@organization, @total_channels, @total_groups, @total_departments, @total_teams)

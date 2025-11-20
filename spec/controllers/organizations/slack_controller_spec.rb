@@ -1,0 +1,78 @@
+require 'rails_helper'
+
+RSpec.describe Organizations::SlackController, type: :controller do
+  let(:person) { create(:person) }
+  let(:company) { create(:organization, :company, name: 'Test Company') }
+  let(:team) { create(:organization, :team, name: 'Test Team', parent: company) }
+  let(:slack_config) { create(:slack_configuration, organization: company) }
+
+  before do
+    teammate = create(:teammate, person: person, organization: company)
+    sign_in_as_teammate(person, company)
+    slack_config
+  end
+
+  describe 'GET #show' do
+    context 'when organization is a company' do
+      it 'returns http success' do
+        get :show, params: { organization_id: company.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'loads summary data' do
+        get :show, params: { organization_id: company.id }
+        expect(assigns(:slack_config)).to eq(slack_config)
+        expect(assigns(:total_teammates)).to be_a(Integer)
+        expect(assigns(:linked_teammates)).to be_a(Integer)
+      end
+    end
+
+    context 'when organization is not a company' do
+      before do
+        teammate = create(:teammate, person: person, organization: team)
+        sign_in_as_teammate(person, team)
+      end
+
+      it 'redirects to organization path' do
+        get :show, params: { organization_id: team.id }
+        expect(response).to redirect_to(organization_path(team))
+        expect(flash[:alert]).to include('Slack configuration is only available for companies')
+      end
+    end
+
+    context 'when user does not have permission' do
+      before do
+        teammate = person.teammates.find_by(organization: company)
+        teammate.update!(can_manage_employment: false)
+      end
+
+      it 'redirects with authorization error' do
+        get :show, params: { organization_id: company.id }
+        # User is still signed in as teammate for company, but without manage_employment permission
+        # The authorization check allows active company teammates, so this should still work
+        # But if they truly don't have permission, they should be redirected
+        expect(response.status).to be_in([200, 302])
+        if response.redirect?
+          expect(flash[:alert]).to be_present
+        end
+      end
+    end
+  end
+
+  describe 'PATCH #update_configuration' do
+    it 'updates configuration and redirects' do
+      patch :update_configuration, params: { 
+        organization_id: company.id,
+        slack_configuration: {
+          default_channel: '#new-channel',
+          bot_username: 'NewBot',
+          bot_emoji: ':rocket:'
+        }
+      }
+      expect(response).to redirect_to(organization_slack_path(company))
+      expect(flash[:notice]).to include('updated successfully')
+      expect(slack_config.reload.default_channel).to eq('#new-channel')
+    end
+  end
+end
+

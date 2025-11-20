@@ -378,4 +378,86 @@ RSpec.describe OrganizationsController, type: :controller do
       expect(assigns(:unique_people)).to eq(1)
     end
   end
+
+  describe 'POST #refresh_slack_profiles' do
+    let(:slack_config) { create(:slack_configuration, organization: organization) }
+    let(:mock_slack_service) { instance_double(SlackService) }
+    let(:mock_matcher_service) { instance_double(SlackProfileMatcherService) }
+
+    before do
+      slack_config
+      allow(SlackService).to receive(:new).with(kind_of(Organization)).and_return(mock_slack_service)
+      allow(SlackProfileMatcherService).to receive(:new).and_return(mock_matcher_service)
+    end
+
+    context 'when user has employment management permissions' do
+      before do
+        teammate = person.teammates.find_by(organization: organization)
+        teammate.update!(can_manage_employment: true)
+      end
+
+      context 'when matching is successful' do
+        before do
+          allow(mock_matcher_service).to receive(:call).with(kind_of(Organization)).and_return({
+            success: true,
+            matched_count: 5,
+            total_teammates: 10,
+            errors: []
+          })
+        end
+
+        it 'redirects with success notice' do
+          post :refresh_slack_profiles, params: { id: organization.id }
+          expect(response).to redirect_to(organization_slack_path(organization))
+          expect(flash[:notice]).to include('Successfully matched 5 out of 10 teammates')
+        end
+      end
+
+      context 'when matching has errors' do
+        before do
+          allow(mock_matcher_service).to receive(:call).with(kind_of(Organization)).and_return({
+            success: true,
+            matched_count: 3,
+            total_teammates: 10,
+            errors: ['Error 1', 'Error 2']
+          })
+        end
+
+        it 'redirects with notice including error count' do
+          post :refresh_slack_profiles, params: { id: organization.id }
+          expect(response).to redirect_to(organization_slack_path(organization))
+          expect(flash[:notice]).to include('2 errors occurred')
+        end
+      end
+
+      context 'when matching fails' do
+        before do
+          allow(mock_matcher_service).to receive(:call).with(kind_of(Organization)).and_return({
+            success: false,
+            error: 'Slack not configured'
+          })
+        end
+
+        it 'redirects with error alert' do
+          post :refresh_slack_profiles, params: { id: organization.id }
+          expect(response).to redirect_to(organization_slack_path(organization))
+          expect(flash[:alert]).to include('Failed to refresh Slack profiles')
+          expect(flash[:alert]).to include('Slack not configured')
+        end
+      end
+    end
+
+    context 'when user does not have employment management permissions' do
+      before do
+        teammate = person.teammates.find_by(organization: organization)
+        teammate.update!(can_manage_employment: false)
+      end
+
+      it 'redirects with authorization error' do
+        post :refresh_slack_profiles, params: { id: organization.id }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
+      end
+    end
+  end
 end

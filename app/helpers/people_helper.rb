@@ -79,6 +79,22 @@ module PeopleHelper
       content_tag(:pre, JSON.pretty_generate(identity.raw_data), class: "mt-2 p-2 bg-light rounded small")
     end
   end
+  
+  def slack_connection_status(person, organization)
+    teammate = person.teammates.find_by(organization: organization)
+    slack_identity = teammate&.slack_identity
+    
+    if slack_identity
+      content_tag :div, class: "d-flex align-items-center" do
+        content_tag(:i, '', class: "bi bi-check-circle text-success me-2") +
+        content_tag(:span, "Connected to #{organization.name} Slack workspace")
+      end
+    else
+      content_tag :div, class: "text-muted" do
+        content_tag(:small, "Not connected to #{organization.name} Slack workspace")
+      end
+    end
+  end
 
   def people_current_view_name
     return 'Manage Profile Mode' unless action_name
