@@ -35,17 +35,45 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     # Manually preload polymorphic rateable associations to avoid N+1 queries
     preload_rateables
     
+    # Store current filter/sort/view/spotlight state for view (needed before calculate_spotlight_stats)
+    @current_filters = query.current_filters
+    @current_sort = query.current_sort
+    @current_view = query.current_view
+    @current_spotlight = query.current_spotlight
+    
     # Calculate spotlight statistics from all observations (not filtered, not paginated)
     # Need to re-run query without sorting joins to avoid group issues
     all_observations_query = ObservationsQuery.new(organization, params.except(:sort), current_person: current_person)
     all_observations = all_observations_query.call
     @spotlight_stats = calculate_spotlight_stats(all_observations)
+  end
+
+  def customize_view
+    authorize Observation, :index?
     
-    # Store current filter/sort/view/spotlight state for view
+    # Load current state from params
+    query = ObservationsQuery.new(organization, params, current_person: current_person)
+    
     @current_filters = query.current_filters
     @current_sort = query.current_sort
     @current_view = query.current_view
     @current_spotlight = query.current_spotlight
+    
+    # Preserve current params for return URL
+    return_params = params.except(:controller, :action, :page).permit!.to_h
+    @return_url = organization_observations_path(@organization, return_params)
+    @return_text = "Back to Culture of Feedback and Recognition"
+    
+    render layout: 'overlay'
+  end
+
+  def update_view
+    authorize Observation, :index?
+    
+    # Build redirect URL with all view customization params
+    redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h
+    
+    redirect_to organization_observations_path(@organization, redirect_params)
   end
 
   def filtered_observations
@@ -975,6 +1003,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         public_observations: observations.where(privacy_level: :public_observation, observed_at: 1.week.ago..).count,
         with_ratings: observations_relation.where(observed_at: 1.week.ago..).joins(:observation_ratings).distinct.count
       }
+    when 'feedback_health'
+      calculate_feedback_health_stats
     else # 'overview' or default
       {
         total_observations: observations.count,
@@ -984,6 +1014,159 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         with_ratings: observations_relation.joins(:observation_ratings).distinct.count
       }
     end
+  end
+
+  def calculate_feedback_health_stats
+    # Query ALL observations for the organization (ignoring visibility filters for company-wide health)
+    all_observations = Observation.for_company(organization).where(deleted_at: nil)
+    
+    # Timeframes
+    three_weeks_ago = 3.weeks.ago
+    three_months_ago = 3.months.ago
+    
+    # Privacy levels
+    privacy_levels = ['observer_only', 'observed_only', 'managers_only', 'observed_and_managers', 'public_observation']
+    
+    # Build matrix data
+    matrix = {}
+    
+    privacy_levels.each do |privacy_level|
+      matrix[privacy_level] = {}
+      
+      # For each privacy level, calculate counts for each timeframe
+      ['three_weeks', 'three_months', 'all_time'].each do |timeframe|
+        scope = all_observations.where(privacy_level: privacy_level)
+        
+        case timeframe
+        when 'three_weeks'
+          scope = scope.where('observed_at >= ?', three_weeks_ago)
+        when 'three_months'
+          scope = scope.where('observed_at >= ?', three_months_ago)
+        when 'all_time'
+          # No time filter
+        end
+        
+        # Calculate notified/published/created
+        created_count = scope.count
+        published_count = scope.where.not(published_at: nil).count
+        notified_count = scope.joins(:notifications)
+                              .where(notifications: { status: 'sent_successfully' })
+                              .distinct
+                              .count
+        
+        matrix[privacy_level][timeframe] = {
+          created: created_count,
+          published: published_count,
+          notified: notified_count
+        }
+      end
+    end
+    
+    # Calculate teammate participation stats (only published observations)
+    published_observations = all_observations.where.not(published_at: nil)
+    
+    # Given feedback stats
+    given_stats = calculate_given_feedback_stats(published_observations, three_weeks_ago, three_months_ago)
+    
+    # Received feedback stats
+    received_stats = calculate_received_feedback_stats(published_observations, three_weeks_ago, three_months_ago)
+    
+    {
+      matrix: matrix,
+      given_stats: given_stats,
+      received_stats: received_stats
+    }
+  end
+
+  def calculate_given_feedback_stats(published_observations, three_weeks_ago, three_months_ago)
+    stats = {}
+    
+    ['three_weeks', 'three_months', 'all_time'].each do |timeframe|
+      scope = published_observations
+      
+      case timeframe
+      when 'three_weeks'
+        scope = scope.where('observed_at >= ?', three_weeks_ago)
+      when 'three_months'
+        scope = scope.where('observed_at >= ?', three_months_ago)
+      when 'all_time'
+        # No time filter
+      end
+      
+      # Count unique observers
+      all_observers = scope.distinct.pluck(:observer_id)
+      
+      # Count observers who gave positive feedback (only positive ratings, no negative)
+      positive_observers = scope.joins(:observation_ratings)
+                                .where.not(observation_ratings: { rating: [:disagree, :strongly_disagree] })
+                                .group('observations.id')
+                                .having('COUNT(CASE WHEN observation_ratings.rating IN (?, ?) THEN 1 END) > 0', 'strongly_agree', 'agree')
+                                .having('COUNT(CASE WHEN observation_ratings.rating IN (?, ?) THEN 1 END) = 0', 'disagree', 'strongly_disagree')
+                                .distinct
+                                .pluck(:observer_id)
+      
+      # Count observers who gave constructive feedback (has any negative ratings)
+      constructive_observers = scope.joins(:observation_ratings)
+                                   .where(observation_ratings: { rating: [:disagree, :strongly_disagree] })
+                                   .distinct
+                                   .pluck(:observer_id)
+      
+      stats[timeframe] = {
+        given_any: all_observers.count,
+        given_positive: positive_observers.uniq.count,
+        given_constructive: constructive_observers.uniq.count
+      }
+    end
+    
+    stats
+  end
+
+  def calculate_received_feedback_stats(published_observations, three_weeks_ago, three_months_ago)
+    stats = {}
+    
+    ['three_weeks', 'three_months', 'all_time'].each do |timeframe|
+      scope = published_observations
+      
+      case timeframe
+      when 'three_weeks'
+        scope = scope.where('observed_at >= ?', three_weeks_ago)
+      when 'three_months'
+        scope = scope.where('observed_at >= ?', three_months_ago)
+      when 'all_time'
+        # No time filter
+      end
+      
+      # Get all observed teammates
+      all_observed_teammate_ids = scope.joins(:observees).distinct.pluck('observees.teammate_id').uniq
+      
+      # Get observations with ratings
+      observations_with_ratings = scope.joins(:observees, :observation_ratings).includes(:observees, :observation_ratings).distinct
+      
+      # Count teammates who received positive/constructive feedback
+      positive_teammate_ids = []
+      constructive_teammate_ids = []
+      
+      observations_with_ratings.find_each do |observation|
+        has_positive = observation.observation_ratings.positive.any?
+        has_negative = observation.observation_ratings.negative.any?
+        
+        observation.observees.each do |observee|
+          if has_positive && !has_negative
+            positive_teammate_ids << observee.teammate_id
+          elsif has_negative
+            constructive_teammate_ids << observee.teammate_id
+          end
+        end
+      end
+      
+      stats[timeframe] = {
+        received_any: all_observed_teammate_ids.count,
+        received_positive: positive_teammate_ids.uniq.count,
+        received_constructive: constructive_teammate_ids.uniq.count
+      }
+    end
+    
+    stats
   end
 
   def preload_rateables

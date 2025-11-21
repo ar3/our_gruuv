@@ -1,0 +1,60 @@
+- stats = @spotlight_stats || {}
+- matrix = stats[:matrix] || {}
+- given_stats = stats[:given_stats] || {}
+- received_stats = stats[:received_stats] || {}
+- privacy_labels = { 'observer_only' => '🔒 Journal Entries', 'observed_only' => '👤 1-on-1 Feedback', 'managers_only' => '👔 Managers Only', 'observed_and_managers' => '👥 Full Transparency', 'public_observation' => '🌍 Public Recognition' }
+
+.alert.alert-info.mb-3
+  %i.bi.bi-info-circle.me-2
+  %strong Note:
+  This spotlight looks at all observations throughout the entire company, not just the observations listed below.
+
+.table-responsive
+  %table.table.table-bordered.table-sm
+    %thead
+      %tr
+        %th Privacy Type
+        %th.text-center Last 3 Weeks
+        %th.text-center Last 3 Months
+        %th.text-center All Time
+    %tbody
+      - ['observer_only', 'observed_only', 'managers_only', 'observed_and_managers', 'public_observation'].each do |privacy_level|
+        %tr
+          %td= privacy_labels[privacy_level]
+          - ['three_weeks', 'three_months', 'all_time'].each do |timeframe|
+            %td.text-center
+              - if matrix[privacy_level] && matrix[privacy_level][timeframe]
+                - data = matrix[privacy_level][timeframe]
+                = "#{data[:notified]}/#{data[:published]}/#{data[:created]}"
+                %br
+                %small.text-muted
+                  notified/published/created
+              - else
+                %span.text-muted 0/0/0
+      %tr.bg-light
+        %td
+          %strong Company-teammates who have given feedback
+        - ['three_weeks', 'three_months', 'all_time'].each do |timeframe|
+          %td.text-center
+            - if given_stats[timeframe]
+              - data = given_stats[timeframe]
+              = "#{data[:given_positive]}/#{data[:given_constructive]}/#{data[:given_any]}"
+              %br
+              %small.text-muted
+                given-positive/given-constructive/given-any
+            - else
+              %span.text-muted 0/0/0
+      %tr.bg-light
+        %td
+          %strong Company-teammates who have received feedback
+        - ['three_weeks', 'three_months', 'all_time'].each do |timeframe|
+          %td.text-center
+            - if received_stats[timeframe]
+              - data = received_stats[timeframe]
+              = "#{data[:received_positive]}/#{data[:received_constructive]}/#{data[:received_any]}"
+              %br
+              %small.text-muted
+                received-positive/received-constructive/received-any
+            - else
+              %span.text-muted 0/0/0
+

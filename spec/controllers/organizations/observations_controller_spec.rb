@@ -30,6 +30,21 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       get :index, params: { organization_id: company.id }
       expect(assigns(:observations)).to include(observation)
     end
+
+    it 'calculates spotlight stats with feedback_health spotlight' do
+      get :index, params: { organization_id: company.id, spotlight: 'feedback_health' }
+      expect(response).to have_http_status(:success)
+      expect(assigns(:spotlight_stats)).to be_a(Hash)
+      expect(assigns(:spotlight_stats)).to have_key(:matrix)
+      expect(assigns(:spotlight_stats)).to have_key(:given_stats)
+      expect(assigns(:spotlight_stats)).to have_key(:received_stats)
+    end
+
+    it 'renders feedback_health spotlight partial when spotlight is feedback_health' do
+      get :index, params: { organization_id: company.id, spotlight: 'feedback_health' }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('This spotlight looks at all observations throughout the entire company')
+    end
   end
 
   describe 'GET #show' do
@@ -1209,6 +1224,197 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
           }
         }.to raise_error(NameError) # constantize will fail
       end
+    end
+  end
+
+  describe 'GET #customize_view' do
+    it 'renders the customize_view template with overlay layout' do
+      get :customize_view, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template(:customize_view)
+      expect(response).to render_template(layout: 'overlay')
+    end
+
+    it 'assigns current filters, sort, view, and spotlight from params' do
+      get :customize_view, params: {
+        organization_id: company.id,
+        privacy: ['observer_only', 'public_observation'],
+        timeframe: 'this_week',
+        sort: 'ratings_count_desc',
+        view: 'cards',
+        spotlight: 'team_wins'
+      }
+      expect(assigns(:current_filters)[:privacy]).to include('observer_only', 'public_observation')
+      expect(assigns(:current_filters)[:timeframe]).to eq('this_week')
+      expect(assigns(:current_sort)).to eq('ratings_count_desc')
+      expect(assigns(:current_view)).to eq('cards')
+      expect(assigns(:current_spotlight)).to eq('team_wins')
+    end
+
+    it 'sets default values when params are not provided' do
+      get :customize_view, params: { organization_id: company.id }
+      expect(assigns(:current_sort)).to eq('observed_at_desc')
+      expect(assigns(:current_view)).to eq('table')
+      expect(assigns(:current_spotlight)).to eq('overview')
+    end
+
+    it 'sets return_url and return_text' do
+      get :customize_view, params: { organization_id: company.id }
+      expect(assigns(:return_url)).to include(organization_observations_path(company))
+      expect(assigns(:return_text)).to eq('Back to Culture of Feedback and Recognition')
+    end
+
+    it 'preserves current params in return_url' do
+      get :customize_view, params: {
+        organization_id: company.id,
+        privacy: ['observer_only'],
+        timeframe: 'this_month'
+      }
+      return_url = assigns(:return_url)
+      expect(return_url).to include('privacy')
+      expect(return_url).to include('observer_only')
+      expect(return_url).to include('timeframe=this_month')
+    end
+
+    it 'requires authorization' do
+      other_person = create(:person)
+      other_company = create(:organization, :company)
+      sign_in_as_teammate(other_person, other_company)
+      
+      get :customize_view, params: { organization_id: company.id }
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe 'PATCH #update_view' do
+    it 'redirects to index with view customization params' do
+      patch :update_view, params: {
+        organization_id: company.id,
+        privacy: ['observer_only'],
+        timeframe: 'this_week',
+        sort: 'ratings_count_desc',
+        view: 'cards',
+        spotlight: 'team_wins'
+      }
+      expect(response).to have_http_status(:redirect)
+      redirect_url = response.redirect_url
+      expect(redirect_url).to include(organization_observations_path(company))
+      expect(redirect_url).to include('privacy')
+      expect(redirect_url).to include('observer_only')
+      expect(redirect_url).to include('timeframe=this_week')
+      expect(redirect_url).to include('sort=ratings_count_desc')
+      expect(redirect_url).to include('view=cards')
+      expect(redirect_url).to include('spotlight=team_wins')
+    end
+
+    it 'excludes Rails internal params from redirect' do
+      patch :update_view, params: {
+        organization_id: company.id,
+        authenticity_token: 'token',
+        _method: 'patch',
+        commit: 'Apply View',
+        view: 'list'
+      }
+      redirect_url = response.redirect_url
+      expect(redirect_url).not_to include('authenticity_token')
+      expect(redirect_url).not_to include('_method')
+      expect(redirect_url).not_to include('commit')
+      expect(redirect_url).to include('view=list')
+    end
+
+    it 'requires authorization' do
+      other_person = create(:person)
+      other_company = create(:organization, :company)
+      sign_in_as_teammate(other_person, other_company)
+      
+      patch :update_view, params: { organization_id: company.id, view: 'cards' }
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe '#calculate_spotlight_stats with feedback_health' do
+    let!(:published_observation) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation, observed_at: 1.week.ago)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    let!(:journal_observation) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :observer_only, observed_at: 2.weeks.ago)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    let!(:old_observation) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation, observed_at: 4.months.ago)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    before do
+      controller.instance_variable_set(:@current_spotlight, 'feedback_health')
+      controller.instance_variable_set(:@organization, company)
+      allow(controller).to receive(:organization).and_return(company)
+      allow(controller).to receive(:current_person).and_return(observer)
+    end
+
+    it 'calculates matrix stats for all privacy levels and timeframes' do
+      stats = controller.send(:calculate_feedback_health_stats)
+      
+      expect(stats).to have_key(:matrix)
+      expect(stats[:matrix]).to have_key('observer_only')
+      expect(stats[:matrix]).to have_key('public_observation')
+      
+      # Check that each privacy level has timeframe data
+      stats[:matrix].each do |privacy_level, timeframes|
+        expect(timeframes).to have_key('three_weeks')
+        expect(timeframes).to have_key('three_months')
+        expect(timeframes).to have_key('all_time')
+        
+        timeframes.each do |timeframe, counts|
+          expect(counts).to have_key(:created)
+          expect(counts).to have_key(:published)
+          expect(counts).to have_key(:notified)
+        end
+      end
+    end
+
+    it 'includes given_stats and received_stats' do
+      stats = controller.send(:calculate_feedback_health_stats)
+      
+      expect(stats).to have_key(:given_stats)
+      expect(stats).to have_key(:received_stats)
+      
+      ['three_weeks', 'three_months', 'all_time'].each do |timeframe|
+        expect(stats[:given_stats][timeframe]).to have_key(:given_any)
+        expect(stats[:given_stats][timeframe]).to have_key(:given_positive)
+        expect(stats[:given_stats][timeframe]).to have_key(:given_constructive)
+        
+        expect(stats[:received_stats][timeframe]).to have_key(:received_any)
+        expect(stats[:received_stats][timeframe]).to have_key(:received_positive)
+        expect(stats[:received_stats][timeframe]).to have_key(:received_constructive)
+      end
+    end
+
+    it 'queries all observations for the organization regardless of visibility' do
+      # Create an observation that might not be visible to the current user
+      other_person = create(:person)
+      other_teammate = create(:teammate, person: other_person, organization: company)
+      hidden_obs = build(:observation, observer: other_person, company: company, privacy_level: :observer_only, observed_at: 1.week.ago)
+      hidden_obs.observees.build(teammate: observee_teammate)
+      hidden_obs.save!
+      hidden_obs.publish!
+      
+      stats = controller.send(:calculate_feedback_health_stats)
+      
+      # Should include the hidden observation in counts
+      expect(stats[:matrix]['observer_only']['three_weeks'][:created]).to be >= 2
     end
   end
 

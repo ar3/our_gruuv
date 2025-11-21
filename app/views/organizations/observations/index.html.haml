@@ -2,10 +2,10 @@
   .d-flex.align-items-center
     %h1.mb-0.me-2
       %i.bi.bi-eye.me-2
-      Observations
+      Culture of Feedback and Recognition – 360•365
     .d-flex.align-items-center
       - if policy(Observation).create?
-        = link_to new_organization_observation_path(@organization, return_url: organization_observations_path(@organization), return_text: 'Back to Observations'), class: "btn btn-primary ml-2" do
+        = link_to new_organization_observation_path(@organization, return_url: organization_observations_path(@organization), return_text: 'Back to Culture of Feedback and Recognition'), class: "btn btn-primary ml-2" do
           %i.bi.bi-plus
       - else
         .btn.btn-primary.disabled.disabled-button
@@ -18,82 +18,85 @@
     Back to Dashboard
 
 - content_for :header_action do
-  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#observations-filter-modal", type: "button"}
-    %i.bi.bi-funnel.me-2
-    Filter & Sort
+  = link_to customize_view_organization_observations_path(@organization, params.except(:controller, :action, :page).permit!.to_h), class: "btn btn-outline-secondary" do
+    %i.bi.bi-gear.me-2
+    Customize
 
 / Spotlight Section
 .row.justify-content-center.mb-4
   .col-lg-12
     .card.border-0.shadow-sm
       .card-body
-        .row
-          .col-md-8
-            / Main statistics/metrics area - varies by spotlight
-            .row.text-center
-              - case @current_spotlight
-              - when 'my_journal'
-                .col-3
-                  .h3.text-primary= @spotlight_stats[:total_observations] || 0
-                  %small.text-muted Total Journal
-                .col-3
-                  .h3.text-info= @spotlight_stats[:this_week] || 0
-                  %small.text-muted This Week
-                .col-3
-                  .h3.text-success= @spotlight_stats[:this_month] || 0
-                  %small.text-muted This Month
-                .col-3
-                  .h3.text-warning= @spotlight_stats[:with_ratings] || 0
-                  %small.text-muted With Ratings
-              - when 'team_wins'
-                .col-3
-                  .h3.text-primary= @spotlight_stats[:total_public] || 0
-                  %small.text-muted Total Public
-                .col-3
-                  .h3.text-info= @spotlight_stats[:this_week] || 0
-                  %small.text-muted This Week
-                .col-3
-                  .h3.text-success= @spotlight_stats[:positive_ratings] || 0
-                  %small.text-muted Positive Ratings
-                .col-3
-                  .h3.text-warning= @spotlight_stats[:with_ratings] || 0
-                  %small.text-muted With Ratings
-              - when 'this_week'
-                .col-3
-                  .h3.text-primary= @spotlight_stats[:total_this_week] || 0
-                  %small.text-muted Total This Week
-                .col-3
-                  .h3.text-info= @spotlight_stats[:journal_entries] || 0
-                  %small.text-muted Journal Entries
-                .col-3
-                  .h3.text-success= @spotlight_stats[:public_observations] || 0
-                  %small.text-muted Public
-                .col-3
-                  .h3.text-warning= @spotlight_stats[:with_ratings] || 0
-                  %small.text-muted With Ratings
-              - else
-                .col-3
-                  .h3.text-primary= @spotlight_stats[:this_week] || 0
-                  %small.text-muted This Week
-                .col-3
-                  .h3.text-info= @spotlight_stats[:journal_entries] || 0
-                  %small.text-muted Journal Entries
-                .col-3
-                  .h3.text-success= @spotlight_stats[:public_observations] || 0
-                  %small.text-muted Public Recognition
-                .col-3
-                  .h3.text-warning= @spotlight_stats[:with_ratings] || 0
-                  %small.text-muted With Ratings
-          .col-md-4
-            / Action alerts or status messages
-            - if @observations.empty?
-              .alert.alert-info.small
-                %i.bi.bi-info-circle.me-2
-                %strong Start giving feedback to your teammates
-            - elsif @current_spotlight == 'overview' && @spotlight_stats[:journal_entries] > @spotlight_stats[:public_observations]
-              .alert.alert-warning.small
-                %i.bi.bi-lightbulb.me-2
-                %strong Consider sharing more observations publicly
+        - if @current_spotlight == 'feedback_health'
+          = render partial: 'organizations/observations/spotlights/feedback_health'
+        - else
+          .row
+            .col-md-8
+              / Main statistics/metrics area - varies by spotlight
+              .row.text-center
+                - case @current_spotlight
+                - when 'my_journal'
+                  .col-3
+                    .h3.text-primary= @spotlight_stats[:total_observations] || 0
+                    %small.text-muted Total Journal
+                  .col-3
+                    .h3.text-info= @spotlight_stats[:this_week] || 0
+                    %small.text-muted This Week
+                  .col-3
+                    .h3.text-success= @spotlight_stats[:this_month] || 0
+                    %small.text-muted This Month
+                  .col-3
+                    .h3.text-warning= @spotlight_stats[:with_ratings] || 0
+                    %small.text-muted With Ratings
+                - when 'team_wins'
+                  .col-3
+                    .h3.text-primary= @spotlight_stats[:total_public] || 0
+                    %small.text-muted Total Public
+                  .col-3
+                    .h3.text-info= @spotlight_stats[:this_week] || 0
+                    %small.text-muted This Week
+                  .col-3
+                    .h3.text-success= @spotlight_stats[:positive_ratings] || 0
+                    %small.text-muted Positive Ratings
+                  .col-3
+                    .h3.text-warning= @spotlight_stats[:with_ratings] || 0
+                    %small.text-muted With Ratings
+                - when 'this_week'
+                  .col-3
+                    .h3.text-primary= @spotlight_stats[:total_this_week] || 0
+                    %small.text-muted Total This Week
+                  .col-3
+                    .h3.text-info= @spotlight_stats[:journal_entries] || 0
+                    %small.text-muted Journal Entries
+                  .col-3
+                    .h3.text-success= @spotlight_stats[:public_observations] || 0
+                    %small.text-muted Public
+                  .col-3
+                    .h3.text-warning= @spotlight_stats[:with_ratings] || 0
+                    %small.text-muted With Ratings
+                - else
+                  .col-3
+                    .h3.text-primary= @spotlight_stats[:this_week] || 0
+                    %small.text-muted This Week
+                  .col-3
+                    .h3.text-info= @spotlight_stats[:journal_entries] || 0
+                    %small.text-muted Journal Entries
+                  .col-3
+                    .h3.text-success= @spotlight_stats[:public_observations] || 0
+                    %small.text-muted Public Recognition
+                  .col-3
+                    .h3.text-warning= @spotlight_stats[:with_ratings] || 0
+                    %small.text-muted With Ratings
+            .col-md-4
+              / Action alerts or status messages
+              - if @observations.empty?
+                .alert.alert-info.small
+                  %i.bi.bi-info-circle.me-2
+                  %strong Start giving feedback to your teammates
+              - elsif @current_spotlight == 'overview' && @spotlight_stats[:journal_entries] > @spotlight_stats[:public_observations]
+                .alert.alert-warning.small
+                  %i.bi.bi-lightbulb.me-2
+                  %strong Consider sharing more observations publicly
       .card-footer.bg-light
         .row.align-items-center
           .col-md-6
@@ -149,78 +152,5 @@
           No Observations Created
         %p.mb-2 
           Start by creating your first observation to give feedback to your teammates.
-          = link_to "Create First Observation", new_organization_observation_path(@organization, return_url: organization_observations_path(@organization), return_text: 'Back to Observations'), class: "btn btn-primary btn-sm"
+          = link_to "Create First Observation", new_organization_observation_path(@organization, return_url: organization_observations_path(@organization), return_text: 'Back to Culture of Feedback and Recognition'), class: "btn btn-primary btn-sm"
 
-/ Modal for Filter & Sort
-.modal.fade#observations-filter-modal{"aria-hidden" => "true", "aria-labelledby" => "observations-filter-modal-label", tabindex: "-1"}
-  .modal-dialog.modal-lg
-    .modal-content
-      .modal-header
-        %h5.modal-title#observations-filter-modal-label
-          %i.bi.bi-funnel.me-2
-          Filter & Sort Observations
-        %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
-      = form_tag organization_observations_path(@organization), method: :get, local: true do
-        .modal-body
-        .row
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-funnel.me-2
-              Filters
-            %h6 Privacy Level
-            .form-check
-              = check_box_tag 'privacy[]', 'observer_only', @current_filters[:privacy]&.include?('observer_only'), class: 'form-check-input', id: 'privacy_observer_only'
-              = label_tag 'privacy_observer_only', '🔒 Journal Entries', class: 'form-check-label'
-            .form-check
-              = check_box_tag 'privacy[]', 'observed_only', @current_filters[:privacy]&.include?('observed_only'), class: 'form-check-input', id: 'privacy_observed_only'
-              = label_tag 'privacy_observed_only', '👤 1-on-1 Feedback', class: 'form-check-label'
-            .form-check
-              = check_box_tag 'privacy[]', 'managers_only', @current_filters[:privacy]&.include?('managers_only'), class: 'form-check-input', id: 'privacy_managers_only'
-              = label_tag 'privacy_managers_only', '👔 Managers Only', class: 'form-check-label'
-            .form-check
-              = check_box_tag 'privacy[]', 'observed_and_managers', @current_filters[:privacy]&.include?('observed_and_managers'), class: 'form-check-input', id: 'privacy_observed_and_managers'
-              = label_tag 'privacy_observed_and_managers', '👥 Full Transparency', class: 'form-check-label'
-            .form-check
-              = check_box_tag 'privacy[]', 'public_observation', @current_filters[:privacy]&.include?('public_observation'), class: 'form-check-input', id: 'privacy_public'
-              = label_tag 'privacy_public', '🌍 Public Recognition', class: 'form-check-label'
-            .mb-3
-              %h6 Timeframe
-              .form-check
-                = radio_button_tag 'timeframe', 'this_week', @current_filters[:timeframe] == 'this_week', class: 'form-check-input', id: 'timeframe_this_week'
-                = label_tag 'timeframe_this_week', 'This Week', class: 'form-check-label'
-              .form-check
-                = radio_button_tag 'timeframe', 'this_month', @current_filters[:timeframe] == 'this_month', class: 'form-check-input', id: 'timeframe_this_month'
-                = label_tag 'timeframe_this_month', 'This Month', class: 'form-check-label'
-              .form-check
-                = radio_button_tag 'timeframe', 'all', @current_filters[:timeframe].blank? || @current_filters[:timeframe] == 'all', class: 'form-check-input', id: 'timeframe_all'
-                = label_tag 'timeframe_all', 'All Time', class: 'form-check-label'
-          .col-md-6
-            %h6.mb-3
-              %i.bi.bi-sort-down.me-2
-              Sort Options
-            = select_tag 'sort', options_for_select(observation_sort_options, @current_sort), { class: 'form-select' }
-            .mb-3
-              %label.form-label View Style
-              .form-check
-                = radio_button_tag 'viewStyle', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
-                = label_tag 'view_table', 'Table View', class: 'form-check-label' do
-                  %i.bi.bi-table.me-2
-                  Table View
-              .form-check
-                = radio_button_tag 'viewStyle', 'cards', @current_view == 'cards', class: 'form-check-input', id: 'view_cards'
-                = label_tag 'view_cards', 'Card View', class: 'form-check-label' do
-                  %i.bi.bi-grid.me-2
-                  Card View
-              .form-check
-                = radio_button_tag 'viewStyle', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
-                = label_tag 'view_list', 'List View', class: 'form-check-label' do
-                  %i.bi.bi-list.me-2
-                  List View
-            .mb-3
-              %label.form-label Spotlight
-              = select_tag 'spotlight', options_for_select([['Overview', 'overview'], ['My Journal', 'my_journal'], ['Team Wins', 'team_wins'], ['This Week', 'this_week']], @current_spotlight), { class: 'form-select' }
-        .modal-footer
-          = link_to organization_observations_path(@organization), class: "btn btn-link text-decoration-none" do
-            Clear All
-          %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
-          = submit_tag "Apply Filters", class: "btn btn-primary"

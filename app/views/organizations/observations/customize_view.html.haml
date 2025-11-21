@@ -1,0 +1,125 @@
+- content_for :header do
+  Customize Culture of Feedback and Recognition View
+- content_for :return_url do
+  = @return_url || organization_observations_path(@organization)
+- content_for :return_text do
+  = @return_text || 'Back to Culture of Feedback and Recognition'
+
+= form_with url: update_view_organization_observations_path(@organization), method: :patch, local: true do |form|
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Observations You See
+    
+    .col-md-8
+      / Filters Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Observations You See
+          
+          .mb-3
+            %label.form-label Privacy Level
+            .form-check
+              = check_box_tag 'privacy[]', 'observer_only', @current_filters[:privacy]&.include?('observer_only'), class: 'form-check-input', id: 'privacy_observer_only'
+              = label_tag 'privacy_observer_only', '🔒 Journal Entries', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'privacy[]', 'observed_only', @current_filters[:privacy]&.include?('observed_only'), class: 'form-check-input', id: 'privacy_observed_only'
+              = label_tag 'privacy_observed_only', '👤 1-on-1 Feedback', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'privacy[]', 'managers_only', @current_filters[:privacy]&.include?('managers_only'), class: 'form-check-input', id: 'privacy_managers_only'
+              = label_tag 'privacy_managers_only', '👔 Managers Only', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'privacy[]', 'observed_and_managers', @current_filters[:privacy]&.include?('observed_and_managers'), class: 'form-check-input', id: 'privacy_observed_and_managers'
+              = label_tag 'privacy_observed_and_managers', '👥 Full Transparency', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'privacy[]', 'public_observation', @current_filters[:privacy]&.include?('public_observation'), class: 'form-check-input', id: 'privacy_public'
+              = label_tag 'privacy_public', '🌍 Public Recognition', class: 'form-check-label'
+          
+          .mb-3
+            %label.form-label Timeframe
+            .form-check
+              = radio_button_tag 'timeframe', 'this_week', @current_filters[:timeframe] == 'this_week', class: 'form-check-input', id: 'timeframe_this_week'
+              = label_tag 'timeframe_this_week', 'This Week', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'timeframe', 'this_month', @current_filters[:timeframe] == 'this_month', class: 'form-check-input', id: 'timeframe_this_month'
+              = label_tag 'timeframe_this_month', 'This Month', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'timeframe', 'all', @current_filters[:timeframe].blank? || @current_filters[:timeframe] == 'all', class: 'form-check-input', id: 'timeframe_all'
+              = label_tag 'timeframe_all', 'All Time', class: 'form-check-label'
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Order You See Them In
+    
+    .col-md-8
+      / Sort Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Order You See Them In
+          .mb-3
+            %label.form-label Sort By
+            = select_tag 'sort', options_for_select(observation_sort_options, @current_sort), class: 'form-select', id: 'sort_select'
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select How They Appear
+    
+    .col-md-8
+      / View Style Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select How They Appear
+          .form-check
+            = radio_button_tag 'view', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
+            = label_tag 'view_table', class: 'form-check-label' do
+              %i.bi.bi-table.me-2
+              Table View
+          .form-check
+            = radio_button_tag 'view', 'cards', @current_view == 'cards', class: 'form-check-input', id: 'view_cards'
+            = label_tag 'view_cards', class: 'form-check-label' do
+              %i.bi.bi-grid.me-2
+              Card View
+          .form-check
+            = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
+            = label_tag 'view_list', class: 'form-check-label' do
+              %i.bi.bi-list.me-2
+              List View
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select the Spotlight for Them
+    
+    .col-md-8
+      / Spotlight Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select the Spotlight for Them
+          .form-check
+            = radio_button_tag 'spotlight', 'overview', (@current_spotlight.blank? || @current_spotlight == 'overview'), class: 'form-check-input', id: 'spotlight_overview'
+            = label_tag 'spotlight_overview', 'Overview', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'my_journal', @current_spotlight == 'my_journal', class: 'form-check-input', id: 'spotlight_my_journal'
+            = label_tag 'spotlight_my_journal', 'My Journal', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'team_wins', @current_spotlight == 'team_wins', class: 'form-check-input', id: 'spotlight_team_wins'
+            = label_tag 'spotlight_team_wins', 'Team Wins', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'this_week', @current_spotlight == 'this_week', class: 'form-check-input', id: 'spotlight_this_week'
+            = label_tag 'spotlight_this_week', 'This Week', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'feedback_health', @current_spotlight == 'feedback_health', class: 'form-check-input', id: 'spotlight_feedback_health'
+            = label_tag 'spotlight_feedback_health', 'Feedback Health', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'none', @current_spotlight == 'none', class: 'form-check-input', id: 'spotlight_none'
+            = label_tag 'spotlight_none', 'No Spotlight', class: 'form-check-label'
+
+  .row
+    .col-12
+      / Form Actions
+      .d-flex.gap-2.mt-4.mb-4
+        = form.submit 'Apply View', class: 'btn btn-primary'
+        = link_to 'Cancel', @return_url || organization_observations_path(@organization), class: 'btn btn-outline-secondary'
+
