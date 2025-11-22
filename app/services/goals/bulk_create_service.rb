@@ -1,9 +1,9 @@
 module Goals
   class BulkCreateService
     attr_reader :organization, :current_person, :current_teammate, :linking_goal, 
-                :link_direction, :goal_titles, :goal_type, :created_goals, :errors
+                :link_direction, :goal_titles, :goal_type, :created_goals, :errors, :metadata
 
-    def initialize(organization, current_person, current_teammate, linking_goal, link_direction, goal_titles, goal_type = nil)
+    def initialize(organization, current_person, current_teammate, linking_goal, link_direction, goal_titles, goal_type = nil, metadata = nil)
       @organization = organization
       @current_person = current_person
       @current_teammate = current_teammate
@@ -11,6 +11,7 @@ module Goals
       @link_direction = link_direction.to_sym
       @goal_titles = goal_titles.reject(&:blank?)
       @goal_type = goal_type
+      @metadata = metadata
       @created_goals = []
       @errors = []
     end
@@ -94,6 +95,11 @@ module Goals
           parent: linking_goal,
           child: goal
         )
+      end
+      
+      # Set metadata if provided
+      if metadata.present?
+        link.metadata = metadata
       end
       
       # Explicitly skip circular dependency check for bulk creation

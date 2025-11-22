@@ -140,11 +140,11 @@
                         = link_to organization_goal_path(@organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
                           %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
                           %strong= linked_goal.title
+                        - if link.metadata.present? && link.metadata['notes'].present?
+                          %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
                         - if most_recent_check_in.present?
                           %small.text-muted.d-block.mt-1
                             As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
-                        - if link.metadata.present? && link.metadata['notes'].present?
-                          %small.text-muted.d-block.mt-1= link.metadata['notes']
                       .d-flex.gap-1
                         - action_button = child_goal_action_button(linked_goal)
                         - if action_button.present? && policy(linked_goal).update?
@@ -160,22 +160,16 @@
                         - if policy(link).destroy?
                           = button_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this link?" } do
                             %i.bi.bi-trash
-        
+        In order to achieve #{@goal.title}, we need to see
         - if policy(@goal).update?
-          .mt-4.pt-3.border-top
-            .d-grid.gap-2
-              = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-primary" do
-                %i.bi.bi-plus.me-1
-                Add stepping stones/activities that need to happen in order to achieve #{@goal.title}
-              = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'quantitative_key_result', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-primary" do
-                %i.bi.bi-plus.me-1
-                Add measurable outcomes that need to happen in order to achieve #{@goal.title}
-              = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'qualitative_key_result', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-primary" do
-                %i.bi.bi-plus.me-1
-                Add sentiment outcomes that need to happen in order to achieve #{@goal.title}
-              = link_to new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'inspirational_objective', return_url: request.url, return_text: 'Goal'), class: "btn btn-outline-primary" do
-                %i.bi.bi-plus.me-1
-                Add objectives that need to happen in order to achieve #{@goal.title}
+          .dropdown.d-inline.ms-1
+            %button.btn.btn-link.p-0.text-decoration-underline.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button", style: "border: none; box-shadow: none; font-weight: inherit; color: inherit; vertical-align: baseline;"}
+              select
+            %ul.dropdown-menu
+              %li= link_to "... this stepping stone / activity / output", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+              %li= link_to "... this measurable outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'quantitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+              %li= link_to "... this sentiment outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'qualitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+              %li= link_to "... this objective", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'inspirational_objective', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
 
     / Incoming Links Card
     .card.mb-4{ role: "region", "aria-labelledby": "incoming-links" }
@@ -202,11 +196,11 @@
                     = link_to organization_goal_path(@organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
                       %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
                       %strong= linked_goal.title
+                    - if link.metadata.present? && link.metadata['notes'].present?
+                      %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
                     - if most_recent_check_in.present?
                       %small.text-muted.d-block.mt-1
                         As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
-                    - if link.metadata.present? && link.metadata['notes'].present?
-                      %small.text-muted.d-block.mt-1= link.metadata['notes']
                   .d-flex.gap-1
                     - action_button = child_goal_action_button(linked_goal)
                     - if action_button.present? && policy(linked_goal).update?

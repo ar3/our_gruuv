@@ -97,6 +97,37 @@ RSpec.describe Goals::BulkCreateService, type: :service do
         end
       end
       
+      it 'sets metadata on links when provided' do
+        metadata = { 'notes' => 'Important bulk creation notes' }
+        service = described_class.new(
+          organization, person, teammate, linking_goal, :outgoing, goal_titles, nil, metadata
+        )
+        
+        expect { service.call }.to change { GoalLink.count }.by(3)
+        
+        created_goals = Goal.last(3)
+        created_goals.each do |goal|
+          link = GoalLink.find_by(parent: linking_goal, child: goal)
+          expect(link).to be_present
+          expect(link.metadata).to eq(metadata)
+        end
+      end
+      
+      it 'does not set metadata on links when not provided' do
+        service = described_class.new(
+          organization, person, teammate, linking_goal, :outgoing, goal_titles
+        )
+        
+        expect { service.call }.to change { GoalLink.count }.by(3)
+        
+        created_goals = Goal.last(3)
+        created_goals.each do |goal|
+          link = GoalLink.find_by(parent: linking_goal, child: goal)
+          expect(link).to be_present
+          expect(link.metadata).to be_nil
+        end
+      end
+      
       it 'sets title and description to the same value' do
         service = described_class.new(
           organization, person, teammate, linking_goal, :outgoing, goal_titles
@@ -187,6 +218,22 @@ RSpec.describe Goals::BulkCreateService, type: :service do
         created_goals.each do |goal|
           link = GoalLink.find_by(parent: goal, child: linking_goal)
           expect(link).to be_present
+        end
+      end
+      
+      it 'sets metadata on incoming links when provided' do
+        metadata = { 'notes' => 'Incoming link notes' }
+        service = described_class.new(
+          organization, person, teammate, linking_goal, :incoming, goal_titles, nil, metadata
+        )
+        
+        expect { service.call }.to change { GoalLink.count }.by(3)
+        
+        created_goals = Goal.last(3)
+        created_goals.each do |goal|
+          link = GoalLink.find_by(parent: goal, child: linking_goal)
+          expect(link).to be_present
+          expect(link.metadata).to eq(metadata)
         end
       end
     end

@@ -37,7 +37,7 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
       expect(link.child).to eq(goal2)
     end
     
-    it 'handles metadata' do
+    it 'handles metadata for existing goals' do
       post :create, params: { 
         organization_id: company.id, 
         goal_id: goal1.id,
@@ -48,6 +48,26 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
       
       link = GoalLink.last
       expect(link.metadata).to eq({ 'notes' => 'Important link' })
+    end
+    
+    it 'handles metadata for bulk created goals' do
+      post :create, params: { 
+        organization_id: company.id, 
+        goal_id: goal1.id,
+        bulk_goal_titles: "New Goal 1\nNew Goal 2",
+        link_direction: 'outgoing',
+        goal_type: 'stepping_stone_activity',
+        metadata_notes: 'Bulk creation notes'
+      }
+      
+      # Should create 2 goals and 2 links
+      expect(Goal.count).to eq(3) # goal1 + 2 new goals
+      expect(GoalLink.count).to eq(2)
+      
+      # All links should have the metadata
+      GoalLink.last(2).each do |link|
+        expect(link.metadata).to eq({ 'notes' => 'Bulk creation notes' })
+      end
     end
     
     it 'redirects to goal show page on success' do

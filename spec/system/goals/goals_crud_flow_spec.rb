@@ -420,10 +420,11 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       visit organization_goal_path(organization, goal1)
       
       # Should see outgoing links section
-      expect(page).to have_content(/In pursuit of|Goal/i)
+      expect(page).to have_content(/In order to achieve|Goal/i)
       
-      # Click one of the type-specific Add buttons - use stepping stones/activities button
-      find('a[href*="new_outgoing_link"][href*="goal_type=stepping_stone_activity"]').click
+      # Click the dropdown and select stepping stones/activities option
+      find('button.dropdown-toggle', text: 'select').click
+      find('a.dropdown-item', text: '... this stepping stone / activity / output').click
       
       # Should be on the new outgoing link page (overlay)
       expect(page).to have_content('Create Links to Other Goals')
@@ -442,8 +443,9 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
     it 'prevents self-linking' do
       visit organization_goal_path(organization, goal1)
       
-      # Click one of the type-specific Add buttons - use stepping stones/activities button
-      find('a[href*="new_outgoing_link"][href*="goal_type=stepping_stone_activity"]').click
+      # Click the dropdown and select stepping stones/activities option
+      find('button.dropdown-toggle', text: 'select').click
+      find('a.dropdown-item', text: '... this stepping stone / activity / output').click
       
       # Should be on the new outgoing link page
       expect(page).to have_content('Create Links to Other Goals')
@@ -463,7 +465,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       visit organization_goal_path(organization, goal1)
       
       # Verify link is displayed on page in the outgoing links section
-      expect(page).to have_content('In pursuit of')
+      expect(page).to have_content('In order to achieve')
       expect(page).to have_content(goal2.title)
       
       # Find delete button - button_to creates a form with a button inside
@@ -561,6 +563,58 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       within('li', text: objective_goal.title) do
         expect(page).not_to have_link('Fix Goal')
         expect(page).not_to have_button('Start')
+      end
+    end
+    
+    it 'displays note icon with tooltip for links with notes' do
+      note_text = 'This is an important note about the link'
+      link_with_notes = create(:goal_link, parent: goal1, child: goal2, metadata: { 'notes' => note_text })
+      
+      visit organization_goal_path(organization, goal1)
+      
+      # Should see the goal title
+      expect(page).to have_content(goal2.title)
+      
+      # Should see the note icon
+      within('li', text: goal2.title) do
+        note_icon = find('i.bi-file-text')
+        expect(note_icon).to be_present
+        expect(note_icon['data-bs-toggle']).to eq('tooltip')
+        expect(note_icon['data-bs-title']).to eq(note_text)
+      end
+    end
+    
+    it 'does not display note icon for links without notes' do
+      link_without_notes = create(:goal_link, parent: goal1, child: goal2, metadata: nil)
+      
+      visit organization_goal_path(organization, goal1)
+      
+      # Should see the goal title
+      expect(page).to have_content(goal2.title)
+      
+      # Should not see the note icon
+      within('li', text: goal2.title) do
+        expect(page).not_to have_css('i.bi-file-text')
+      end
+    end
+    
+    it 'displays note icon with tooltip for incoming links with notes' do
+      note_text = 'This is a note about the incoming link'
+      parent_goal = create(:goal, creator: teammate, owner: teammate, title: 'Parent Goal')
+      link_with_notes = create(:goal_link, parent: parent_goal, child: goal1, metadata: { 'notes' => note_text })
+      
+      visit organization_goal_path(organization, goal1)
+      
+      # Should see the parent goal title in incoming links section
+      expect(page).to have_content('Pursuing')
+      expect(page).to have_content(parent_goal.title)
+      
+      # Should see the note icon in incoming links section
+      within('li', text: parent_goal.title) do
+        note_icon = find('i.bi-file-text')
+        expect(note_icon).to be_present
+        expect(note_icon['data-bs-toggle']).to eq('tooltip')
+        expect(note_icon['data-bs-title']).to eq(note_text)
       end
     end
     

@@ -62,6 +62,12 @@ class GoalLinkForm < Reform::Form
     titles = bulk_goal_titles.to_s.split("\n").map(&:strip).reject(&:blank?)
     return false if titles.empty?
     
+    # Prepare metadata if notes are provided
+    metadata_hash = nil
+    if metadata_notes.present?
+      metadata_hash = { 'notes' => metadata_notes }
+    end
+    
     @bulk_create_service = Goals::BulkCreateService.new(
       organization,
       current_person,
@@ -69,7 +75,8 @@ class GoalLinkForm < Reform::Form
       linking_goal,
       link_direction.to_sym,
       titles,
-      goal_type
+      goal_type,
+      metadata_hash
     )
     
     if @bulk_create_service.call

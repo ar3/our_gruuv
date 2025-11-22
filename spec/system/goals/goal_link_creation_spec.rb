@@ -54,7 +54,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
     it 'navigates to new_outgoing_link page from show page' do
       visit organization_goal_path(organization, goal1)
       
-      expect(page).to have_content('In pursuit of')
+      expect(page).to have_content('In order to achieve')
       
       # Visit the URL directly to verify the route works
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
@@ -266,6 +266,34 @@ RSpec.describe 'Goal Link Creation', type: :system do
       expect(created_goal.most_likely_target_date).to be_nil
       expect(created_goal.latest_target_date).to be_nil
     end
+    
+    it 'saves metadata notes for bulk created goals' do
+      unique_title = "Bulk Goal With Notes #{SecureRandom.hex(4)}"
+      note_text = "This is a test note for bulk creation"
+      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      
+      fill_in 'bulk_goal_titles', with: unique_title
+      fill_in 'metadata_notes', with: note_text
+      click_button 'Create Links', id: 'create-bulk-links-btn'
+      
+      # Wait for redirect and success message before checking database
+      expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 5)
+      expect(page).to have_css('.toast', text: 'Goal link was successfully created', visible: :hidden, wait: 5)
+      
+      created_goal = Goal.find_by(title: unique_title)
+      expect(created_goal).to be_present
+      
+      # Check that the link has metadata
+      link = GoalLink.find_by(parent: goal1, child: created_goal)
+      expect(link).to be_present
+      expect(link.metadata).to eq({ 'notes' => note_text })
+      
+      # Verify note icon appears on the page
+      expect(page).to have_css('i.bi-file-text[data-bs-toggle="tooltip"]')
+      note_icon = find('i.bi-file-text[data-bs-toggle="tooltip"]')
+      expect(note_icon['data-bs-title']).to eq(note_text)
+    end
+    
     
     it 'automatically links new goals to current goal' do
       unique_title = "Bulk Goal Linked #{SecureRandom.hex(4)}"
