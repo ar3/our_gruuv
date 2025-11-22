@@ -31,7 +31,7 @@ class AuthController < ApplicationController
       if current_company_teammate
         person = current_company_teammate.person
         create_or_update_google_identity(person, auth)
-        redirect_to profile_path, notice: 'Google account connected successfully!'
+        redirect_to organization_person_path(current_company_teammate.organization, person), notice: 'Google account connected successfully!'
       else
         # Normal sign-in flow
         person = find_or_create_person_from_google_auth(auth)

@@ -57,7 +57,7 @@ class EmploymentTenuresController < ApplicationController
     if active_tenure
       # This is a job change - check if anything actually changed
       if job_change_has_no_changes?(active_tenure, @employment_tenure)
-        redirect_to person_path(@person), notice: 'No changes were made to your employment.'
+        redirect_to organization_person_path(@employment_tenure.company, @person), notice: 'No changes were made to your employment.'
         return
       end
       
@@ -75,12 +75,12 @@ class EmploymentTenuresController < ApplicationController
         # Save the new tenure
         @employment_tenure.save!
         
-        redirect_to person_path(@person), notice: 'Employment tenure was successfully created.'
+        redirect_to organization_person_path(@employment_tenure.company, @person), notice: 'Employment tenure was successfully created.'
       end
     else
       # Simple new employment creation
       if @employment_tenure.save
-        redirect_to person_path(@person), notice: 'Employment tenure was successfully created.'
+        redirect_to organization_person_path(@employment_tenure.company, @person), notice: 'Employment tenure was successfully created.'
       else
         @company = @employment_tenure.company
         @managers = @company ? @company.employees : []
@@ -115,7 +115,7 @@ class EmploymentTenuresController < ApplicationController
   def update
     authorize @employment_tenure
     if @employment_tenure.update(employment_tenure_params)
-      redirect_to person_path(@person), notice: 'Employment tenure was successfully updated.'
+      redirect_to organization_person_path(@employment_tenure.company, @person), notice: 'Employment tenure was successfully updated.'
     else
       @company = @employment_tenure.company
       @managers = @company.employees
@@ -127,8 +127,9 @@ class EmploymentTenuresController < ApplicationController
 
   def destroy
     authorize @employment_tenure
+    company = @employment_tenure.company
     @employment_tenure.destroy
-    redirect_to person_path(@person), notice: 'Employment tenure was successfully deleted.'
+    redirect_to organization_person_path(company, @person), notice: 'Employment tenure was successfully deleted.'
   end
 
   def add_history

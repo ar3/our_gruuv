@@ -9,9 +9,9 @@ RSpec.describe 'Identity Management', type: :request do
     sign_in_as_teammate_for_request(person, company)
   end
 
-  describe 'GET /profile' do
+  describe 'GET /organizations/:organization_id/people/:id' do
     it 'shows connected accounts section' do
-      get profile_path
+      get organization_person_path(company, person)
       expect(response).to have_http_status(:success)
       expect(response.body).to include('Identities')
     end

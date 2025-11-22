@@ -97,7 +97,8 @@ module Debug
         current_teammate_permissions = {
           can_manage_employment: current_teammate.can_manage_employment?,
           can_create_employment: current_teammate.can_create_employment?,
-          can_manage_maap: current_teammate.can_manage_maap?
+          can_manage_maap: current_teammate.can_manage_maap?,
+          can_manage_prompts: current_teammate.can_manage_prompts?
         }
 
         current_person = current_teammate.person
@@ -109,7 +110,8 @@ module Debug
             organization_name: t.organization.name,
             can_manage_employment: t.can_manage_employment?,
             can_create_employment: t.can_create_employment?,
-            can_manage_maap: t.can_manage_maap?
+            can_manage_maap: t.can_manage_maap?,
+            can_manage_prompts: t.can_manage_prompts?
           }
         end
       else

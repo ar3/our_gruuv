@@ -25,14 +25,14 @@ RSpec.describe 'PeopleController Security', type: :request do
     person_teammate.employment_tenures.first.update!(manager: manager)
   end
 
-  describe 'GET /people/:id' do
+  describe 'GET /organizations/:organization_id/people/:id' do
     context 'when user is the person themselves' do
       before do
         sign_in_as_teammate_for_request(person, organization)
       end
 
       it 'allows access' do
-        get person_path(person)
+        get organization_person_path(organization, person)
         expect(response).to have_http_status(:success)
       end
     end
@@ -43,7 +43,7 @@ RSpec.describe 'PeopleController Security', type: :request do
       end
 
       it 'allows access' do
-        get person_path(person)
+        get organization_person_path(organization, person)
         expect(response).to have_http_status(:success)
       end
     end
@@ -54,14 +54,14 @@ RSpec.describe 'PeopleController Security', type: :request do
       end
 
       it 'allows access' do
-        get person_path(person)
+        get organization_person_path(organization, person)
         expect(response).to have_http_status(:success)
       end
     end
 
     context 'when user is unauthenticated' do
       it 'redirects to login' do
-        get person_path(person)
+        get organization_person_path(organization, person)
         expect(response).to have_http_status(:redirect)
         expect(response).to redirect_to(root_path)
       end
@@ -73,7 +73,7 @@ RSpec.describe 'PeopleController Security', type: :request do
       end
 
       it 'denies access' do
-        get person_path(person)
+        get organization_person_path(organization, person)
         expect(response).to have_http_status(:redirect)
         expect(response).to redirect_to(public_person_path(person))
       end
@@ -88,10 +88,11 @@ RSpec.describe 'PeopleController Security', type: :request do
         sign_in_as_teammate_for_request(other_org_person, other_organization)
       end
 
-      it 'denies access' do
-        get person_path(person)
+      it 'denies access and redirects to organizations index' do
+        get organization_person_path(organization, person)
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(public_person_path(person))
+        # When user doesn't have access to the organization, they get redirected to organizations index
+        expect(response).to redirect_to(organizations_path)
       end
     end
 
@@ -106,7 +107,7 @@ RSpec.describe 'PeopleController Security', type: :request do
       end
 
       it 'denies access' do
-        get person_path(person)
+        get organization_person_path(organization, person)
         expect(response).to have_http_status(:redirect)
         expect(response).to redirect_to(public_person_path(person))
       end

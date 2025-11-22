@@ -73,6 +73,48 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         expect(access.can_manage_maap).to be_nil
       end
 
+      it 'updates prompts management permission' do
+        post :update_permission, params: {
+          organization_id: organization.id,
+          id: person.id,
+          permission_type: 'can_manage_prompts',
+          permission_value: 'true'
+        }
+
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(organization_person_path(organization, person))
+
+        # Verify the permission was updated
+        person.reload
+        access = person.teammates.find_by(organization: organization)
+        expect(access.can_manage_prompts).to be true
+      end
+
+      it 'creates teammate record if it does not exist when updating permission' do
+        # Ensure no teammate exists for this person/organization
+        person.teammates.where(organization: organization).destroy_all
+
+        expect {
+          post :update_permission, params: {
+            organization_id: organization.id,
+            id: person.id,
+            permission_type: 'can_manage_prompts',
+            permission_value: 'true'
+          }
+        }.to change { person.teammates.where(organization: organization).count }.from(0).to(1)
+
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(organization_person_path(organization, person))
+
+        # Verify the permission was updated
+        person.reload
+        access = person.teammates.find_by(organization: organization)
+        expect(access).to be_present
+        expect(access.can_manage_prompts).to be true
+        # Verify the type is set correctly based on organization type
+        expect(access.type).to eq('CompanyTeammate') if organization.type == 'Company'
+      end
+
       it 'handles invalid permission type' do
         post :update_permission, params: { 
           organization_id: organization.id,
@@ -105,6 +147,18 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         expect(response).to have_http_status(:redirect)
         # The exact redirect path may vary based on authorization failure handling
       end
+    end
+  end
+
+  describe 'GET #show' do
+    it 'sets @organization (via base controller)' do
+      get :show, params: {
+        organization_id: organization.id,
+        id: person.id
+      }
+
+      expect(assigns(:organization)).to be_present
+      expect(assigns(:organization).id).to eq(organization.id)
     end
   end
 

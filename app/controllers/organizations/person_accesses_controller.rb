@@ -17,7 +17,7 @@ class Organizations::PersonAccessesController < Organizations::OrganizationNames
     authorize @teammate
 
     if @teammate.save
-      redirect_to profile_path, notice: 'Organization permission was successfully created.'
+      redirect_to organization_person_path(@organization, current_person), notice: 'Organization permission was successfully created.'
     else
       render :new, status: :unprocessable_entity
     end
@@ -31,7 +31,7 @@ class Organizations::PersonAccessesController < Organizations::OrganizationNames
     authorize @teammate
     
     if @teammate.update(teammate_params)
-      redirect_to profile_path, notice: 'Organization permission was successfully updated.'
+      redirect_to organization_person_path(@organization, current_person), notice: 'Organization permission was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
     end
@@ -40,7 +40,7 @@ class Organizations::PersonAccessesController < Organizations::OrganizationNames
   def destroy
     authorize @teammate
     @teammate.destroy
-    redirect_to profile_path, notice: 'Organization permission was successfully removed.'
+    redirect_to organization_person_path(@organization, current_person), notice: 'Organization permission was successfully removed.'
   end
 
   private
@@ -56,6 +56,6 @@ class Organizations::PersonAccessesController < Organizations::OrganizationNames
   end
 
   def teammate_params
-    params.require(:teammate).permit(:can_manage_employment, :can_manage_maap)
+    params.require(:teammate).permit(:can_manage_employment, :can_manage_maap, :can_manage_prompts)
   end
 end

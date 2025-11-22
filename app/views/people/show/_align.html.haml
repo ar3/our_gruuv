@@ -40,12 +40,12 @@
                     %i.bi.bi-pencil.me-2
                     Edit Position
                 .col-md-6
-                  = link_to new_person_employment_tenure_path(@person), class: "btn btn-outline-success" do
+                  = link_to change_person_employment_tenures_path(@person, company_id: current_company.id), class: "btn btn-outline-success" do
                     %i.bi.bi-plus.me-2
                     Change Position
           - else
             %p.text-muted No current position assigned.
-            = link_to new_person_employment_tenure_path(@person), class: "btn btn-outline-success" do
+            = link_to change_person_employment_tenures_path(@person, company_id: current_company.id), class: "btn btn-outline-success" do
               %i.bi.bi-plus.me-2
               Assign Position
 

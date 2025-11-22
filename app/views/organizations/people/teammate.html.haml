@@ -106,6 +106,9 @@
                               %th Can Manage MAAP
                               %td= debug_boolean_badge(tm[:can_manage_maap])
                             %tr
+                              %th Can Manage Prompts
+                              %td= debug_boolean_badge(tm[:can_manage_prompts])
+                            %tr
                               %th Employed?
                               %td= debug_boolean_badge(tm[:employed])
                             %tr
@@ -183,11 +186,17 @@
                               %th Can Manage MAAP
                               %td= debug_boolean_badge(perms[:can_manage_maap])
                             %tr
+                              %th Can Manage Prompts
+                              %td= debug_boolean_badge(perms[:can_manage_prompts])
+                            %tr
                               %th Can Manage Employment (Hierarchy)
                               %td= debug_boolean_badge(perms[:can_manage_employment_hierarchy])
                             %tr
                               %th Can Manage MAAP (Hierarchy)
                               %td= debug_boolean_badge(perms[:can_manage_maap_hierarchy])
+                            %tr
+                              %th Can Manage Prompts (Hierarchy)
+                              %td= debug_boolean_badge(perms[:can_manage_prompts_hierarchy])
                             %tr
                               %th.bg-light{colspan: 2} Teammate Flags (Direct)
                             %tr
@@ -199,6 +208,9 @@
                             %tr
                               %th.ps-4 can_manage_maap
                               %td= debug_boolean_badge(perms[:teammate_flags][:can_manage_maap])
+                            %tr
+                              %th.ps-4 can_manage_prompts
+                              %td= debug_boolean_badge(perms[:teammate_flags][:can_manage_prompts])
                   
                   %h6.mt-3 Subject Permissions
                   - @debug_data[:permissions][:subject_permissions].each do |org_name, perms|
@@ -220,6 +232,9 @@
                             %tr
                               %th Can Manage MAAP
                               %td= debug_boolean_badge(perms[:can_manage_maap])
+                            %tr
+                              %th Can Manage Prompts
+                              %td= debug_boolean_badge(perms[:can_manage_prompts])
                   
                   %h6.mt-3 Hierarchy Checks
                   - @debug_data[:permissions][:hierarchy_checks].each do |org_name, checks|

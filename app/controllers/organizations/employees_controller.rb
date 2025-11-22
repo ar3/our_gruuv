@@ -161,7 +161,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       @employment_tenure.teammate = teammate
       @employment_tenure.save!
       
-      redirect_to person_path(@person), notice: 'Employee was successfully created.'
+      redirect_to organization_person_path(@organization, @person), notice: 'Employee was successfully created.'
     end
   rescue ActiveRecord::RecordInvalid
     @positions = @organization.positions.includes(:position_type, :position_level)

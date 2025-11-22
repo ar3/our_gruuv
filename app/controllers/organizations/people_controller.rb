@@ -17,7 +17,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
                                  &.where(assignments: { company: organization })
                                  &.order(started_at: :desc) || []
     @teammates = @person.teammates.includes(:organization)
-    
+
     # Preload huddle associations to avoid N+1 queries
     teammate = @person.teammates.find_by(organization: organization)
     HuddleParticipant.joins(:teammate)
@@ -41,7 +41,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
                                  &.decorate || []
     @current_employment = @employment_tenures.find { |t| t.ended_at.nil? }
     @current_organization = organization
-    
+
     # Filter assignments to only show those for this organization
     @assignment_tenures = teammate&.assignment_tenures&.active
                                 &.joins(:assignment)
@@ -65,7 +65,7 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
                                  &.order(started_at: :desc)
                                  &.decorate || []
     @teammates = @person.teammates.includes(:organization)
-    
+
     # Debug mode - gather comprehensive authorization data
     if params[:debug] == 'true'
       gather_debug_data
@@ -82,6 +82,20 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
     # Find or create the teammate record
     access = @person.teammates.find_or_initialize_by(organization: org)
     
+    # Set the correct type if this is a new record
+    if access.new_record?
+      access.type = case org.type
+      when 'Company'
+        'CompanyTeammate'
+      when 'Department'
+        'DepartmentTeammate'
+      when 'Team'
+        'TeamTeammate'
+      else
+        'CompanyTeammate' # Default fallback
+      end
+    end
+
     # Update the specific permission
     case permission_type
     when 'can_manage_employment'
@@ -90,16 +104,27 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
       access.can_create_employment = permission_value == 'true' ? true : (permission_value == 'false' ? false : nil)
     when 'can_manage_maap'
       access.can_manage_maap = permission_value == 'true' ? true : (permission_value == 'false' ? false : nil)
+    when 'can_manage_prompts'
+      access.can_manage_prompts = permission_value == 'true' ? true : (permission_value == 'false' ? false : nil)
     else
       redirect_to organization_person_path(org, @person), alert: 'Invalid permission type.'
       return
     end
+
+    # Debug logging
+    Rails.logger.info("Updating permission: person_id=#{@person.id}, org_id=#{org.id}, permission_type=#{permission_type}, permission_value=#{permission_value}, new_record=#{access.new_record?}, type=#{access.type}")
+    Rails.logger.info("Teammate attributes before save: #{access.attributes.inspect}")
     
     # Save the access record
     if access.save
+      Rails.logger.info("Successfully saved teammate permission: #{access.id}")
       redirect_to organization_person_path(org, @person), notice: 'Permission updated successfully.'
     else
-      redirect_to organization_person_path(org, @person), alert: 'Failed to update permission.'
+      error_message = "Failed to update permission: #{access.errors.full_messages.join(', ')}"
+      Rails.logger.error("Failed to save teammate permission: #{error_message}")
+      Rails.logger.error("Teammate errors: #{access.errors.inspect}")
+      Rails.logger.error("Teammate attributes: #{access.attributes.inspect}")
+      redirect_to organization_person_path(org, @person), alert: error_message
     end
   end
 
@@ -160,6 +185,49 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
     end
     
     redirect_to organization_person_check_ins_path(organization, @person), notice: 'Assignments updated successfully.'
+  end
+
+  def update
+    authorize @person, policy_class: PersonPolicy
+    if @person.update(person_params)
+      redirect_to organization_person_path(organization, @person), notice: 'Profile updated successfully!'
+    else
+      capture_error_in_sentry(ActiveRecord::RecordInvalid.new(@person), {
+        method: 'update_profile',
+        person_id: @person.id,
+        validation_errors: @person.errors.full_messages
+      })
+      setup_show_instance_variables
+      render :show, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordNotUnique => e
+    # Handle unique constraint violations (like duplicate phone numbers)
+    capture_error_in_sentry(e, {
+      method: 'update_profile',
+      person_id: @person&.id,
+      error_type: 'unique_constraint_violation'
+    })
+    @person.errors.add(:unique_textable_phone_number, 'is already taken by another user')
+    setup_show_instance_variables
+    render :show, status: :unprocessable_entity
+  rescue ActiveRecord::StatementInvalid => e
+    # Handle other database constraint violations
+    capture_error_in_sentry(e, {
+      method: 'update_profile',
+      person_id: @person&.id,
+      error_type: 'database_constraint_violation'
+    })
+    @person.errors.add(:base, 'Unable to update profile due to a database constraint. Please try again.')
+    setup_show_instance_variables
+    render :show, status: :unprocessable_entity
+  rescue => e
+    capture_error_in_sentry(e, {
+      method: 'update_profile',
+      person_id: @person&.id
+    })
+    @person.errors.add(:base, 'An unexpected error occurred while updating your profile. Please try again.')
+    setup_show_instance_variables
+    render :show, status: :unprocessable_entity
   end
 
   private
@@ -364,6 +432,37 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
     )
     
     @debug_data = debug_service.gather_all_data
+  end
+
+  def setup_show_instance_variables
+    # Get all employment tenures for this organization
+    teammate = @person.teammates.find_by(organization: organization)
+    @employment_tenures = teammate&.employment_tenures&.includes(:company, :position, :manager)
+                                 &.where(company: organization)
+                                 &.order(started_at: :desc)
+                                 &.decorate || []
+    # Get all assignment tenures for this organization
+    @assignment_tenures = teammate&.assignment_tenures&.includes(:assignment)
+                                 &.joins(:assignment)
+                                 &.where(assignments: { company: organization })
+                                 &.order(started_at: :desc) || []
+    @teammates = @person.teammates.includes(:organization)
+    
+    # Preload huddle associations to avoid N+1 queries
+    HuddleParticipant.joins(:teammate)
+                    .where(teammates: { person: @person, organization: organization })
+                    .includes(:huddle, huddle: :huddle_playbook)
+                    .load
+    HuddleFeedback.joins(:teammate)
+                  .where(teammates: { person: @person, organization: organization })
+                  .includes(:huddle)
+                  .load
+  end
+
+  def person_params
+    params.require(:person).permit(:first_name, :last_name, :middle_name, :suffix, 
+                                  :unique_textable_phone_number, :timezone,
+                                  :preferred_name, :gender_identity, :pronouns)
   end
 
 end

@@ -22,7 +22,7 @@
                   .col-md-3
                     .d-flex.flex-column
                       %h5.mb-2
-                        = link_to teammate.person.display_name, person_path(teammate.person), class: "text-decoration-none"
+                        = link_to teammate.person.display_name, organization_person_path(@organization, teammate.person), class: "text-decoration-none"
                       = overall_status_badge(overall_employee_status(teammate.person, @organization))
                       %small.text-muted.mt-1
                         = teammate_current_position(teammate)

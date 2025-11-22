@@ -6,7 +6,7 @@
   .card-body
     - can_edit = policy(@person).edit?
     - if can_edit
-      - form_url = (@person == current_person) ? profile_path : person_path(@person)
+      - form_url = organization_person_path(@organization || current_organization, @person)
       .row.mt-3
         .col-12.col-md-8
           = form_with model: @person, url: form_url, method: :patch, local: true do |form|

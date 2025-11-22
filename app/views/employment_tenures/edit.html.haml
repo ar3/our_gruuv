@@ -1,6 +1,6 @@
 .container
   .d-flex.justify-content-between.align-items-center.mb-4
     %h1 Edit Employment Tenure
-    = link_to 'Back to Profile', person_path(@person), class: 'btn btn-outline-secondary'
+    = link_to 'Back to Profile', organization_person_path(@employment_tenure.company, @person), class: 'btn btn-outline-secondary'
 
   = render 'form', employment_tenure: @employment_tenure

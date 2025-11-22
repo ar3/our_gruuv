@@ -58,6 +58,7 @@ module Debug
             can_manage_employment: tm.can_manage_employment?,
             can_create_employment: tm.can_create_employment?,
             can_manage_maap: tm.can_manage_maap?,
+            can_manage_prompts: tm.can_manage_prompts?,
             first_employed_at: tm.first_employed_at,
             last_terminated_at: tm.last_terminated_at,
             employed: tm.employed?,
@@ -458,12 +459,15 @@ module Debug
           can_manage_employment: teammate_record&.can_manage_employment? || false,
           can_create_employment: teammate_record&.can_create_employment? || false,
           can_manage_maap: teammate_record&.can_manage_maap? || false,
+          can_manage_prompts: teammate_record&.can_manage_prompts? || false,
           can_manage_employment_hierarchy: Teammate.can_manage_employment_in_hierarchy?(current_user, org),
           can_manage_maap_hierarchy: Teammate.can_manage_maap_in_hierarchy?(current_user, org),
+          can_manage_prompts_hierarchy: Teammate.can_manage_prompts_in_hierarchy?(current_user, org),
           teammate_flags: {
             can_manage_employment: teammate_record&.can_manage_employment?,
             can_create_employment: teammate_record&.can_create_employment?,
-            can_manage_maap: teammate_record&.can_manage_maap?
+            can_manage_maap: teammate_record&.can_manage_maap?,
+            can_manage_prompts: teammate_record&.can_manage_prompts?
           }
         }
       end
@@ -481,10 +485,12 @@ module Debug
           can_manage_employment: teammate_record&.can_manage_employment? || false,
           can_create_employment: teammate_record&.can_create_employment? || false,
           can_manage_maap: teammate_record&.can_manage_maap? || false,
+          can_manage_prompts: teammate_record&.can_manage_prompts? || false,
           teammate_flags: {
             can_manage_employment: teammate_record&.can_manage_employment?,
             can_create_employment: teammate_record&.can_create_employment?,
-            can_manage_maap: teammate_record&.can_manage_maap?
+            can_manage_maap: teammate_record&.can_manage_maap?,
+            can_manage_prompts: teammate_record&.can_manage_prompts?
           }
         }
       end

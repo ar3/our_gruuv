@@ -2,10 +2,10 @@
   .card-header
     %h5.mb-0{ id: "permissions-section" }
       %i.bi.bi-key.me-2
-      Organization Permissions for #{current_organization.name}
+      Organization Permissions for #{@organization.name}
   .card-body
-    - current_access = @person.teammates.find_by(organization: current_organization)
-    - can_modify = policy(current_organization).manage_employment?
+    - current_access = @person.teammates.find_by(organization: @organization)
+    - can_modify = policy(@organization).manage_employment?
     .row
       .col-md-8
         
@@ -28,6 +28,12 @@
                 .permission-label
                   %strong MAAP Management
                   %small.text-muted.d-block Can manage MAAP (Mission, Aspirations, Assignments, Positions)
+
+            .mb-3
+              .d-flex.justify-content-between.align-items-center
+                .permission-label
+                  %strong Prompts Management
+                  %small.text-muted.d-block Can manage prompt templates
         - else
           .permission-display
             .mb-3
@@ -36,19 +42,23 @@
                   %strong Employment Management
                   %small.text-muted.d-block Can manage employment records and assignments
 
-            
             .mb-3
               .d-flex.justify-content-between.align-items-center
                 .permission-label
                   %strong Employment Creation
                   %small.text-muted.d-block Can create new employment records
 
-            
             .mb-3
               .d-flex.justify-content-between.align-items-center
                 .permission-label
                   %strong MAAP Management
                   %small.text-muted.d-block Can manage MAAP (Mission, Aspirations, Assignments, Positions)
+
+            .mb-3
+              .d-flex.justify-content-between.align-items-center
+                .permission-label
+                  %strong Prompts Management
+                  %small.text-muted.d-block Can manage prompt templates
 
       
       .col-md-4.border-start.border-secondary
@@ -58,29 +68,38 @@
               .mb-3
                 .d-flex.justify-content-between.align-items-center
                   .permission-dropdown
-                    = form_with url: update_permission_organization_person_path(current_organization, @person), method: :post, local: true, class: "d-inline" do |f|
+                    = form_with url: update_permission_organization_person_path(@organization, @person), method: :post, local: true, class: "d-inline" do |f|
                       = f.hidden_field :permission_type, value: "can_manage_employment"
                       - employment_options = [['Yes', 'true'], ['No', 'false'], ['Not Set', 'nil']]
                       - employment_selected = current_access&.can_manage_employment == true ? 'true' : (current_access&.can_manage_employment == false ? 'false' : 'nil')
-                      = f.select :permission_value, employment_options, { selected: employment_selected }, { class: "form-select form-select-sm", style: "width: 120px;", onchange: "this.form.submit();", disabled: !can_modify }
-              
+                      = f.select :permission_value, employment_options, { selected: employment_selected },                       { class: "form-select form-select-sm", style: "width: 120px;", onchange: "this.form.submit();", disabled: !can_modify }
+
               .mb-3
                 .d-flex.justify-content-between.align-items-center
                   .permission-dropdown
-                    = form_with url: update_permission_organization_person_path(current_organization, @person), method: :post, local: true, class: "d-inline" do |f|
+                    = form_with url: update_permission_organization_person_path(@organization, @person), method: :post, local: true, class: "d-inline" do |f|
                       = f.hidden_field :permission_type, value: "can_create_employment"
                       - creation_options = [['Yes', 'true'], ['No', 'false'], ['Not Set', 'nil']]
                       - creation_selected = current_access&.can_create_employment == true ? 'true' : (current_access&.can_create_employment == false ? 'false' : 'nil')
                       = f.select :permission_value, creation_options, { selected: creation_selected }, { class: "form-select form-select-sm", style: "width: 120px;", onchange: "this.form.submit();", disabled: !can_modify }
-              
+
               .mb-3
                 .d-flex.justify-content-between.align-items-center
                   .permission-dropdown
-                    = form_with url: update_permission_organization_person_path(current_organization, @person), method: :post, local: true, class: "d-inline" do |f|
+                    = form_with url: update_permission_organization_person_path(@organization, @person), method: :post, local: true, class: "d-inline" do |f|
                       = f.hidden_field :permission_type, value: "can_manage_maap"
                       - maap_options = [['Yes', 'true'], ['No', 'false'], ['Not Set', 'nil']]
                       - maap_selected = current_access&.can_manage_maap == true ? 'true' : (current_access&.can_manage_maap == false ? 'false' : 'nil')
                       = f.select :permission_value, maap_options, { selected: maap_selected }, { class: "form-select form-select-sm", style: "width: 120px;", onchange: "this.form.submit();", disabled: !can_modify }
+
+              .mb-3
+                .d-flex.justify-content-between.align-items-center
+                  .permission-dropdown
+                    = form_with url: update_permission_organization_person_path(@organization, @person), method: :post, local: true, class: "d-inline" do |f|
+                      = f.hidden_field :permission_type, value: "can_manage_prompts"
+                      - prompts_options = [['Yes', 'true'], ['No', 'false'], ['Not Set', 'nil']]
+                      - prompts_selected = current_access&.can_manage_prompts == true ? 'true' : (current_access&.can_manage_prompts == false ? 'false' : 'nil')
+                      = f.select :permission_value, prompts_options, { selected: prompts_selected }, { class: "form-select form-select-sm", style: "width: 120px;", onchange: "this.form.submit();", disabled: !can_modify }
           - else
             .permission-display
               .mb-3
@@ -92,7 +111,7 @@
                       %span.badge.bg-danger No
                     - else
                       %span.badge.bg-secondary Not Set
-              
+
               .mb-3
                 .d-flex.justify-content-between.align-items-center
                   .permission-status
@@ -102,13 +121,23 @@
                       %span.badge.bg-danger No
                     - else
                       %span.badge.bg-secondary Not Set
-              
+
               .mb-3
                 .d-flex.justify-content-between.align-items-center
                   .permission-status
                     - if current_access&.can_manage_maap == true
                       %span.badge.bg-success Yes
                     - elsif current_access&.can_manage_maap == false
+                      %span.badge.bg-danger No
+                    - else
+                      %span.badge.bg-secondary Not Set
+
+              .mb-3
+                .d-flex.justify-content-between.align-items-center
+                  .permission-status
+                    - if current_access&.can_manage_prompts == true
+                      %span.badge.bg-success Yes
+                    - elsif current_access&.can_manage_prompts == false
                       %span.badge.bg-danger No
                     - else
                       %span.badge.bg-secondary Not Set

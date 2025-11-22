@@ -92,7 +92,7 @@ RSpec.describe "EmploymentTenures", type: :request do
           }
         }
         
-        expect(response).to redirect_to(person_path(person))
+        expect(response).to redirect_to(organization_person_path(company, person))
         expect(flash[:notice]).to eq('No changes were made to your employment.')
       end
     end

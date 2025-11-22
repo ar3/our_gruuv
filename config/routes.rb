@@ -128,7 +128,7 @@ get '/login', to: 'auth#login', as: :login
     end
     
     # People management
-    resources :people, module: :organizations, only: [:show] do
+    resources :people, module: :organizations, only: [:show, :update] do
       member do
         get :complete_picture
         get :teammate
@@ -297,17 +297,15 @@ get '/login', to: 'auth#login', as: :login
   # Past huddles for participants
   get '/my-huddles', to: 'huddles#my_huddles', as: :my_huddles
   
-  # People routes
-  resources :people, only: [:show, :edit, :update] do
+  # People routes - only public view and employment tenures remain
+  resources :people, only: [] do
     member do
       get :public
     end
-              resources :assignments, only: [:show], controller: 'people/assignments'
     resources :employment_tenures, only: [:new, :create, :edit, :update, :destroy, :show] do
       collection do
         get :change
         get :add_history
-
       end
       member do
         get :employment_summary
@@ -316,10 +314,6 @@ get '/login', to: 'auth#login', as: :login
   end
 
   # Organization access permissions - moved to organization namespace
-
-# Profile management
-get '/profile', to: 'people#show', as: :profile
-patch '/profile', to: 'people#update', as: :update_profile
 
 # Impersonation routes
 resources :impersonations, only: [:create, :destroy]

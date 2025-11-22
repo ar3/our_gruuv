@@ -119,6 +119,7 @@
                     %li can_manage_employment: #{@current_teammate_permissions[:can_manage_employment] ? '✓' : '✗'}
                     %li can_create_employment: #{@current_teammate_permissions[:can_create_employment] ? '✓' : '✗'}
                     %li can_manage_maap: #{@current_teammate_permissions[:can_manage_maap] ? '✓' : '✗'}
+                    %li can_manage_prompts: #{@current_teammate_permissions[:can_manage_prompts] ? '✓' : '✗'}
             
             - if @current_person
               %h4.mt-4 Current Person
@@ -148,6 +149,7 @@
                     %th can_manage_employment
                     %th can_create_employment
                     %th can_manage_maap
+                    %th can_manage_prompts
                 %tbody
                   - @all_teammates.each do |t|
                     %tr
@@ -158,6 +160,7 @@
                       %td= t[:can_manage_employment] ? '✓' : '✗'
                       %td= t[:can_create_employment] ? '✓' : '✗'
                       %td= t[:can_manage_maap] ? '✓' : '✗'
+                      %td= t[:can_manage_prompts] ? '✓' : '✗'
           - else
             %p.text-muted No teammate found (not logged in)
 
@@ -350,6 +353,9 @@
                     %tr
                       %th can_manage_maap
                       %td= @session_teammate_record.can_manage_maap? ? '✓' : '✗'
+                    %tr
+                      %th can_manage_prompts
+                      %td= @session_teammate_record.can_manage_prompts? ? '✓' : '✗'
                 - else
                   N/A (not found or not set)
             %tr
@@ -378,6 +384,9 @@
                     %tr
                       %th can_manage_maap
                       %td= @impersonating_teammate_record.can_manage_maap? ? '✓' : '✗'
+                    %tr
+                      %th can_manage_prompts
+                      %td= @impersonating_teammate_record.can_manage_prompts? ? '✓' : '✗'
                 - else
                   N/A (not impersonating or not found)
             %tr

@@ -85,7 +85,7 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
     @employment_tenure.company = @organization
     
     if @employment_tenure.save
-      redirect_to person_path(@person), notice: 'Employment was successfully created.'
+      redirect_to organization_person_path(@organization, @person), notice: 'Employment was successfully created.'
     else
       @potential_employees = load_potential_employees
       render :new, status: :unprocessable_entity
@@ -108,7 +108,7 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
       @employment_tenure.save!
       
       if params[:save_and_continue] == 'true'
-        redirect_to person_path(@person), notice: 'Employee was successfully created.'
+        redirect_to organization_person_path(@organization, @person), notice: 'Employee was successfully created.'
       else
         redirect_to new_organization_employment_management_path(@organization), notice: 'Employee was successfully created. Creating another...'
       end

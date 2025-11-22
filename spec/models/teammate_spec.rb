@@ -60,6 +60,17 @@ RSpec.describe Teammate, type: :model do
         expect(result).not_to include(access1, access2)
       end
     end
+
+    describe '.with_prompts_management' do
+      let(:person5) { create(:person) }
+      let!(:prompts_access) { create(:teammate, person: person5, organization: company, can_manage_prompts: true) }
+
+      it 'returns only access records with prompts management' do
+        result = described_class.with_prompts_management
+        expect(result).to include(prompts_access)
+        expect(result).not_to include(access1, access2)
+      end
+    end
   end
   
   describe 'instance methods' do
@@ -99,6 +110,23 @@ RSpec.describe Teammate, type: :model do
       end
     end
     
+    describe '#can_manage_prompts?' do
+      it 'returns true when can_manage_prompts is true' do
+        access.update!(can_manage_prompts: true)
+        expect(access.can_manage_prompts?).to be true
+      end
+
+      it 'returns false when can_manage_prompts is false' do
+        access.update!(can_manage_prompts: false)
+        expect(access.can_manage_prompts?).to be false
+      end
+
+      it 'returns false when can_manage_prompts is nil' do
+        access.update!(can_manage_prompts: nil)
+        expect(access.can_manage_prompts?).to be false
+      end
+    end
+
     describe 'TeammateIdentity helper methods' do
       let(:teammate) { create(:teammate, person: person, organization: company) }
       
@@ -372,6 +400,26 @@ RSpec.describe Teammate, type: :model do
         access.update!(can_manage_maap: false)
         team_access.update!(can_manage_maap: false)
         expect(described_class.can_manage_maap_in_hierarchy?(person, team)).to be false
+      end
+    end
+
+    describe '.can_manage_prompts_in_hierarchy?' do
+      let!(:team_access) { create(:teammate, person: person, organization: team) }
+
+      it 'returns true when person has prompts management access at organization level' do
+        team_access.update!(can_manage_prompts: true)
+        expect(described_class.can_manage_prompts_in_hierarchy?(person, team)).to be true
+      end
+
+      it 'returns true when person has prompts management access at ancestor level' do
+        access.update!(can_manage_prompts: true)
+        expect(described_class.can_manage_prompts_in_hierarchy?(person, team)).to be true
+      end
+
+      it 'returns false when person has no prompts management access in hierarchy' do
+        access.update!(can_manage_prompts: false)
+        team_access.update!(can_manage_prompts: false)
+        expect(described_class.can_manage_prompts_in_hierarchy?(person, team)).to be false
       end
     end
   end

@@ -35,6 +35,7 @@ class Teammate < ApplicationRecord
   scope :with_employment_management, -> { where(can_manage_employment: true) }
   scope :with_employment_creation, -> { where(can_create_employment: true) }
   scope :with_maap_management, -> { where(can_manage_maap: true) }
+  scope :with_prompts_management, -> { where(can_manage_prompts: true) }
   
   # Employment state scopes
   scope :followers, -> { where(first_employed_at: nil, last_terminated_at: nil) }
@@ -54,6 +55,10 @@ class Teammate < ApplicationRecord
   
   def can_manage_maap?
     self[:can_manage_maap] == true
+  end
+
+  def can_manage_prompts?
+    self[:can_manage_prompts] == true
   end
   
   # Employment state methods
@@ -172,7 +177,7 @@ class Teammate < ApplicationRecord
     access = find_by(person: person, organization: organization)
     access&.can_manage_maap? || false
   end
-  
+
   # Class methods for permission checking (hierarchy-aware)
   def self.can_manage_employment_in_hierarchy?(person, organization)
     # og_admin users have access to all organizations
@@ -232,6 +237,36 @@ class Teammate < ApplicationRecord
     end
     
     access&.can_manage_maap? || false
+  end
+
+  def self.can_manage_prompts_in_hierarchy?(person, organization)
+    # og_admin users have access to all organizations
+    return true if person.og_admin?
+
+    organizations_to_check = if organization.company?
+      organization.self_and_descendants
+    else
+      [organization, organization.parent].compact
+    end
+
+    # Find the most specific access record (current org first, then parent)
+    access = nil
+    if organization.company?
+      access = where(organization: organizations_to_check).find_by(person: person)
+    else
+      # Check current organization first, then parent
+      # Return true if either has the permission
+      current_access = find_by(person: person, organization: organization)
+      parent_access = find_by(person: person, organization: organization.parent) if organization.parent
+
+      if current_access&.can_manage_prompts? || parent_access&.can_manage_prompts?
+        return true
+      else
+        access = current_access || parent_access
+      end
+    end
+
+    access&.can_manage_prompts? || false
   end
 
   def self.can_create_employment_in_hierarchy?(person, organization)

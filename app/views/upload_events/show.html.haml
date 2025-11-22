@@ -150,7 +150,7 @@
                               %span.badge.bg-warning Update
                           %td
                             - if person['existing_id']
-                              = link_to person['existing_name'], person_path(person['existing_id']), class: 'text-decoration-none'
+                              = link_to person['existing_name'], organization_person_path(@organization || organization, person['existing_id']), class: 'text-decoration-none'
                             - else
                               %span.text-muted None
                           %td= person['row']
@@ -384,7 +384,7 @@
                               %span.badge.bg-warning Update
                           %td
                             - if manager['existing_id']
-                              = link_to manager['existing_name'], person_path(manager['existing_id']), class: 'text-decoration-none'
+                              = link_to manager['existing_name'], organization_person_path(@organization || organization, manager['existing_id']), class: 'text-decoration-none'
                             - else
                               %span.text-muted None
                           %td= manager['row']
@@ -489,7 +489,7 @@
                               %span.badge.bg-warning Update
                           %td
                             - if employee['existing_id']
-                              = link_to employee['existing_name'], person_path(employee['existing_id']), class: 'text-decoration-none'
+                              = link_to employee['existing_name'], organization_person_path(@organization || organization, employee['existing_id']), class: 'text-decoration-none'
                             - else
                               %span.text-muted None
                           %td= employee['row']

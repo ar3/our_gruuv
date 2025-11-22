@@ -7,6 +7,7 @@ FactoryBot.define do
     # Default to no permissions
     can_manage_employment { false }
     can_manage_maap { false }
+    can_manage_prompts { false }
     
     trait :employment_manager do
       can_manage_employment { true }
@@ -16,9 +17,14 @@ FactoryBot.define do
       can_manage_maap { true }
     end
     
+    trait :prompts_manager do
+      can_manage_prompts { true }
+    end
+
     trait :full_access do
       can_manage_employment { true }
       can_manage_maap { true }
+      can_manage_prompts { true }
     end
     
     trait :follower do

@@ -72,5 +72,6 @@
                            placeholder: "Add any notes about this employment change..."
 
             .d-flex.justify-content-between
-              = link_to "Back to Profile", person_path(@person), class: "btn btn-outline-secondary"
+              - company = @company || current_organization
+              = link_to "Back to Profile", organization_person_path(company, @person), class: "btn btn-outline-secondary"
               = f.submit "Save Employment", class: "btn btn-primary"

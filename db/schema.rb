@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_20_115122) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_21_130158) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -695,8 +695,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_20_115122) do
     t.datetime "first_employed_at"
     t.datetime "last_terminated_at"
     t.string "type"
+    t.boolean "can_manage_prompts"
     t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"
     t.index ["can_manage_maap"], name: "index_teammates_on_can_manage_maap"
+    t.index ["can_manage_prompts"], name: "index_teammates_on_can_manage_prompts"
     t.index ["first_employed_at", "last_terminated_at"], name: "index_teammates_on_first_employed_at_and_last_terminated_at"
     t.index ["first_employed_at"], name: "index_teammates_on_first_employed_at"
     t.index ["last_terminated_at"], name: "index_teammates_on_last_terminated_at"

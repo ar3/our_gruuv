@@ -124,7 +124,7 @@
           Manage Profile Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).can_view_manage_mode?
-        = link_to person_path(@person), class: 'dropdown-item' do
+        = link_to organization_person_path(current_organization, @person), class: 'dropdown-item' do
           %i.bi.bi-gear.me-2
           Manage Profile Mode
       - else

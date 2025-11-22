@@ -42,7 +42,9 @@
                     %span.badge.bg-warning.me-2 Employment Management
                   - if org_access.can_manage_maap?
                     %span.badge.bg-warning.me-2 MAAP Management
-                  - if !org_access.can_manage_employment? && !org_access.can_manage_maap?
+                  - if org_access.can_manage_prompts?
+                    %span.badge.bg-warning.me-2 Prompts Management
+                  - if !org_access.can_manage_employment? && !org_access.can_manage_maap? && !org_access.can_manage_prompts?
                     %span.badge.bg-secondary Standard Access
         
         / Huddle Stats (Placeholder)

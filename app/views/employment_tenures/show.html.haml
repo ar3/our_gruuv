@@ -3,7 +3,7 @@
     %h1= @employment_tenure.display_name
     .btn-group
       = link_to 'Edit', edit_person_employment_tenure_path(@person, @employment_tenure), class: 'btn btn-outline-secondary'
-      = link_to 'Back to Profile', person_path(@person), class: 'btn btn-outline-primary'
+      = link_to 'Back to Profile', organization_person_path(@employment_tenure.company, @person), class: 'btn btn-outline-primary'
 
   .card
     .card-body
