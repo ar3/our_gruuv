@@ -171,5 +171,133 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       expect(open_prompt.reload.closed?).to be true
     end
   end
+
+  describe 'GET /organizations/:organization_id/prompts/customize_view' do
+    let(:other_template) { create(:prompt_template, company: organization, available_at: Date.current) }
+    let(:other_person) { create(:person) }
+    let(:other_teammate) { CompanyTeammate.find_or_create_by!(person: other_person, organization: organization) }
+
+    before do
+      other_teammate # Create the other teammate
+    end
+
+    it 'renders the customize_view page' do
+      get customize_view_organization_prompts_path(organization)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Customize Prompts View')
+    end
+
+    it 'renders with template parameter' do
+      get customize_view_organization_prompts_path(organization, template: template.id)
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Customize Prompts View')
+    end
+
+    it 'renders with multiple filter parameters' do
+      get customize_view_organization_prompts_path(organization, 
+        template: template.id.to_s,
+        status: 'open',
+        teammate: teammate.id.to_s,
+        sort: 'updated_at_desc'
+      )
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Customize Prompts View')
+    end
+
+    it 'shows available templates in the form' do
+      get customize_view_organization_prompts_path(organization)
+      expect(response.body).to include(template.title)
+      expect(response.body).to include(other_template.title)
+    end
+
+    it 'shows available teammates in the form' do
+      get customize_view_organization_prompts_path(organization)
+      expect(response.body).to include(teammate.person.display_name)
+      expect(response.body).to include(other_teammate.person.display_name)
+    end
+
+    it 'preserves current params in return URL' do
+      get customize_view_organization_prompts_path(organization, 
+        template: template.id.to_s,
+        status: 'open'
+      )
+      expect(response.body).to include("template=#{template.id}")
+      expect(response.body).to include('status=open')
+    end
+
+    it 'requires authorization' do
+      other_company = create(:organization, :company)
+      other_company_person = create(:person)
+      sign_in_as_teammate_for_request(other_company_person, other_company)
+      
+      get customize_view_organization_prompts_path(organization)
+      expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe 'PATCH /organizations/:organization_id/prompts/update_view' do
+    it 'redirects to index with view customization params' do
+      patch update_view_organization_prompts_path(organization), params: {
+        template: template.id.to_s,
+        status: 'open',
+        teammate: teammate.id.to_s,
+        sort: 'updated_at_desc',
+        view: 'table',
+        spotlight: 'overview'
+      }
+      expect(response).to have_http_status(:redirect)
+      redirect_url = response.redirect_url
+      expect(redirect_url).to include(organization_prompts_path(organization))
+      expect(redirect_url).to include("template=#{template.id}")
+      expect(redirect_url).to include('status=open')
+      expect(redirect_url).to include("teammate=#{teammate.id}")
+      expect(redirect_url).to include('sort=updated_at_desc')
+      expect(redirect_url).to include('view=table')
+      expect(redirect_url).to include('spotlight=overview')
+    end
+
+    it 'excludes Rails internal params from redirect' do
+      patch update_view_organization_prompts_path(organization), params: {
+        controller: 'organizations/prompts',
+        action: 'update_view',
+        authenticity_token: 'token',
+        _method: 'patch',
+        commit: 'Apply View',
+        template: template.id.to_s,
+        status: 'open'
+      }
+      expect(response).to have_http_status(:redirect)
+      redirect_url = response.redirect_url
+      expect(redirect_url).to include("template=#{template.id}")
+      expect(redirect_url).to include('status=open')
+      expect(redirect_url).not_to include('controller=')
+      expect(redirect_url).not_to include('action=')
+      expect(redirect_url).not_to include('authenticity_token=')
+      expect(redirect_url).not_to include('_method=')
+      expect(redirect_url).not_to include('commit=')
+    end
+
+    it 'requires authorization' do
+      other_company = create(:organization, :company)
+      other_company_person = create(:person)
+      sign_in_as_teammate_for_request(other_company_person, other_company)
+      
+      patch update_view_organization_prompts_path(organization), params: {
+        template: template.id.to_s
+      }
+      expect(response).to have_http_status(:redirect)
+    end
+
+    it 'handles empty filter values correctly' do
+      patch update_view_organization_prompts_path(organization), params: {
+        template: '',
+        status: 'all',
+        teammate: '',
+        sort: 'created_at_desc'
+      }
+      redirect_url = response.redirect_url
+      expect(redirect_url).to include('sort=created_at_desc')
+    end
+  end
 end
 

@@ -49,14 +49,8 @@
           %label.form-label.fw-bold Select What Order You See Them In
           .mb-3
             %label.form-label Sort By
-            = select_tag 'sort', options_for_select([
-              ['Created Date (Newest First)', 'created_at_desc'],
-              ['Created Date (Oldest First)', 'created_at_asc'],
-              ['Updated Date (Newest First)', 'updated_at_desc'],
-              ['Updated Date (Oldest First)', 'updated_at_asc'],
-              ['Template Title (A-Z)', 'template_title'],
-              ['Template Title (Z-A)', 'template_title_desc']
-            ], @current_sort), class: 'form-select', id: 'sort_select'
+            - sort_options = [['Created Date (Newest First)', 'created_at_desc'], ['Created Date (Oldest First)', 'created_at_asc'], ['Updated Date (Newest First)', 'updated_at_desc'], ['Updated Date (Oldest First)', 'updated_at_asc'], ['Template Title (A-Z)', 'template_title'], ['Template Title (Z-A)', 'template_title_desc']]
+            = select_tag 'sort', options_for_select(sort_options, @current_sort), class: 'form-select', id: 'sort_select'
 
   .row
     .col-md-4

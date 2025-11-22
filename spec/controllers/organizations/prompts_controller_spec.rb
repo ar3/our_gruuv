@@ -30,11 +30,108 @@ RSpec.describe Organizations::PromptsController, type: :controller do
   end
 
   describe 'GET #customize_view' do
+    let(:other_template) { create(:prompt_template, company: organization, available_at: Date.current) }
+    let(:other_person) { create(:person) }
+    let(:other_teammate) { CompanyTeammate.find_or_create_by!(person: other_person, organization: organization) }
+
+    before do
+      other_teammate # Create the other teammate
+    end
+
     it 'renders the customize_view template with overlay layout' do
       get :customize_view, params: { organization_id: organization.id }
       expect(response).to have_http_status(:success)
       expect(response).to render_template(:customize_view)
       expect(response).to render_template(layout: 'overlay')
+    end
+
+    it 'assigns current filters, sort, view, and spotlight from params' do
+      get :customize_view, params: {
+        organization_id: organization.id,
+        template: template.id.to_s,
+        status: 'open',
+        teammate: teammate.id.to_s,
+        sort: 'updated_at_desc',
+        view: 'table',
+        spotlight: 'overview'
+      }
+      expect(assigns(:current_filters)[:template]).to eq(template.id.to_s)
+      expect(assigns(:current_filters)[:status]).to eq('open')
+      expect(assigns(:current_filters)[:teammate]).to eq(teammate.id.to_s)
+      expect(assigns(:current_sort)).to eq('updated_at_desc')
+      expect(assigns(:current_view)).to eq('table')
+      expect(assigns(:current_spotlight)).to eq('overview')
+    end
+
+    it 'sets default values when params are not provided' do
+      get :customize_view, params: { organization_id: organization.id }
+      expect(assigns(:current_sort)).to eq('created_at_desc')
+      expect(assigns(:current_view)).to eq('table')
+      expect(assigns(:current_spotlight)).to eq('overview')
+      expect(assigns(:current_filters)).to be_a(Hash)
+    end
+
+    it 'sets return_url and return_text' do
+      get :customize_view, params: { organization_id: organization.id }
+      expect(assigns(:return_url)).to include(organization_prompts_path(organization))
+      expect(assigns(:return_text)).to eq('Back to Prompts')
+    end
+
+    it 'preserves current params in return_url' do
+      get :customize_view, params: {
+        organization_id: organization.id,
+        template: template.id.to_s,
+        status: 'open'
+      }
+      return_url = assigns(:return_url)
+      expect(return_url).to include("template=#{template.id}")
+      expect(return_url).to include('status=open')
+    end
+
+    it 'assigns available templates' do
+      get :customize_view, params: { organization_id: organization.id }
+      expect(assigns(:available_templates)).to include(template)
+      expect(assigns(:available_templates)).to include(other_template)
+    end
+
+    it 'assigns available teammates' do
+      get :customize_view, params: { organization_id: organization.id }
+      expect(assigns(:available_teammates)).to include(teammate)
+      expect(assigns(:available_teammates)).to include(other_teammate)
+    end
+
+    it 'requires authorization' do
+      other_company = create(:organization, :company)
+      other_company_person = create(:person)
+      sign_in_as_teammate(other_company_person, other_company)
+      
+      get :customize_view, params: { organization_id: organization.id }
+      expect(response).to have_http_status(:redirect)
+    end
+
+    it 'handles status filter "all" correctly' do
+      get :customize_view, params: {
+        organization_id: organization.id,
+        status: 'all'
+      }
+      # When status is 'all', it should not be included in filters
+      expect(assigns(:current_filters)[:status]).to be_nil
+    end
+
+    it 'handles blank template filter correctly' do
+      get :customize_view, params: {
+        organization_id: organization.id,
+        template: ''
+      }
+      expect(assigns(:current_filters)[:template]).to be_nil
+    end
+
+    it 'handles blank teammate filter correctly' do
+      get :customize_view, params: {
+        organization_id: organization.id,
+        teammate: ''
+      }
+      expect(assigns(:current_filters)[:teammate]).to be_nil
     end
   end
 
@@ -309,39 +406,86 @@ RSpec.describe Organizations::PromptsController, type: :controller do
     end
   end
 
-  describe 'POST #update_view' do
-    it 'redirects to index with params' do
-      post :update_view, params: {
+  describe 'PATCH #update_view' do
+    it 'redirects to index with view customization params' do
+      patch :update_view, params: {
         organization_id: organization.id,
-        template: template.id,
+        template: template.id.to_s,
         status: 'open',
-        sort: 'created_at_desc'
+        teammate: teammate.id.to_s,
+        sort: 'updated_at_desc',
+        view: 'table',
+        spotlight: 'overview'
       }
-      # The redirect includes organization_id in the URL params, which is expected behavior
       expect(response).to have_http_status(:redirect)
-      expect(response.location).to include("template=#{template.id}")
-      expect(response.location).to include('status=open')
-      expect(response.location).to include('sort=created_at_desc')
+      redirect_url = response.redirect_url
+      expect(redirect_url).to include(organization_prompts_path(organization))
+      expect(redirect_url).to include("template=#{template.id}")
+      expect(redirect_url).to include('status=open')
+      expect(redirect_url).to include("teammate=#{teammate.id}")
+      expect(redirect_url).to include('sort=updated_at_desc')
+      expect(redirect_url).to include('view=table')
+      expect(redirect_url).to include('spotlight=overview')
     end
 
     it 'excludes controller, action, authenticity_token, _method, and commit params' do
-      post :update_view, params: {
+      patch :update_view, params: {
         organization_id: organization.id,
         controller: 'organizations/prompts',
         action: 'update_view',
         authenticity_token: 'token',
-        _method: 'post',
-        commit: 'Save',
-        template: template.id
+        _method: 'patch',
+        commit: 'Apply View',
+        template: template.id.to_s,
+        status: 'open'
       }
-      # The redirect includes organization_id in the URL params, which is expected behavior
       expect(response).to have_http_status(:redirect)
-      expect(response.location).to include("template=#{template.id}")
-      expect(response.location).not_to include('controller=')
-      expect(response.location).not_to include('action=')
-      expect(response.location).not_to include('authenticity_token=')
-      expect(response.location).not_to include('_method=')
-      expect(response.location).not_to include('commit=')
+      redirect_url = response.redirect_url
+      expect(redirect_url).to include("template=#{template.id}")
+      expect(redirect_url).to include('status=open')
+      expect(redirect_url).not_to include('controller=')
+      expect(redirect_url).not_to include('action=')
+      expect(redirect_url).not_to include('authenticity_token=')
+      expect(redirect_url).not_to include('_method=')
+      expect(redirect_url).not_to include('commit=')
+    end
+
+    it 'requires authorization' do
+      other_company = create(:organization, :company)
+      other_company_person = create(:person)
+      sign_in_as_teammate(other_company_person, other_company)
+      
+      patch :update_view, params: {
+        organization_id: organization.id,
+        template: template.id.to_s
+      }
+      expect(response).to have_http_status(:redirect)
+    end
+
+    it 'handles empty filter values correctly' do
+      patch :update_view, params: {
+        organization_id: organization.id,
+        template: '',
+        status: 'all',
+        teammate: '',
+        sort: 'created_at_desc'
+      }
+      redirect_url = response.redirect_url
+      # Empty values should not appear in the URL or should be handled appropriately
+      expect(redirect_url).to include('sort=created_at_desc')
+    end
+
+    it 'preserves all valid filter and sort params' do
+      patch :update_view, params: {
+        organization_id: organization.id,
+        template: template.id.to_s,
+        status: 'closed',
+        sort: 'template_title'
+      }
+      redirect_url = response.redirect_url
+      expect(redirect_url).to include("template=#{template.id}")
+      expect(redirect_url).to include('status=closed')
+      expect(redirect_url).to include('sort=template_title')
     end
   end
 

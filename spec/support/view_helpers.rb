@@ -18,6 +18,10 @@ module ViewHelpers
   def current_person
     @current_person
   end
+  
+  def current_company_teammate
+    @current_company_teammate
+  end
 end
 
 # Include the helper in all view specs

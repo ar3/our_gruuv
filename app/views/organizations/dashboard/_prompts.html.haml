@@ -1,0 +1,80 @@
+- company = @organization.root_company || @organization
+- active_templates = PromptTemplate.where(company: company).available
+- primary_template = active_templates.primary.first
+- secondary_template = active_templates.secondary.first
+- tertiary_template = active_templates.tertiary.first
+- current_teammate = current_person&.teammates&.find_by(organization: company)
+
+- if active_templates.any?
+  / Prompts Hero Card - Only show if company has active templates
+  - prompts_header_html = capture do
+    %i.bi.bi-file-text.me-3
+    Reflect
+  - prompts_description = [''].sample
+  
+  / Primary button: View primary template or "all prompts" if none
+  - if primary_template
+    - prompts_primary_html = capture do
+      %i.bi.bi-eye.me-2
+      View #{primary_template.title}
+    - prompts_primary_url = organization_prompts_path(@organization, template: primary_template.id)
+  - else
+    - prompts_primary_html = capture do
+      %i.bi.bi-list.me-2
+      View All Prompts
+    - prompts_primary_url = organization_prompts_path(@organization)
+  
+  / Secondary button: View secondary template or "all prompts" if none
+  - if secondary_template
+    - prompts_secondary_html = capture do
+      %i.bi.bi-eye.me-2
+      View #{secondary_template.title}
+    - prompts_secondary_url = organization_prompts_path(@organization, template: secondary_template.id)
+  - else
+    - prompts_secondary_html = capture do
+      %i.bi.bi-list.me-2
+      View All Prompts
+    - prompts_secondary_url = organization_prompts_path(@organization)
+  
+  / Tertiary button: "Manage Prompt Templates" if can_manage_prompts, else view tertiary template or "all prompts"
+  - if current_teammate&.can_manage_prompts?
+    - prompts_tertiary_html = capture do
+      %i.bi.bi-gear.me-2
+      Manage Prompt Templates
+    - prompts_tertiary_url = organization_prompt_templates_path(@organization)
+  - elsif tertiary_template
+    - prompts_tertiary_html = capture do
+      %i.bi.bi-eye.me-2
+      View #{tertiary_template.title}
+    - prompts_tertiary_url = organization_prompts_path(@organization, template: tertiary_template.id)
+  - else
+    - prompts_tertiary_html = capture do
+      %i.bi.bi-list.me-2
+      View All Prompts
+    - prompts_tertiary_url = organization_prompts_path(@organization)
+
+  = render 'organizations/dashboard/dashboard_hero_card',
+    header_html: prompts_header_html,
+    description: prompts_description,
+    primary_action_url: prompts_primary_url,
+    primary_action_html: prompts_primary_html,
+    secondary_action_url: prompts_secondary_url,
+    secondary_action_html: prompts_secondary_html,
+    tertiary_action_url: prompts_tertiary_url,
+    tertiary_action_html: prompts_tertiary_html
+- else
+  / Info card when no active templates
+  .row.mb-5.mt-5
+    .col-12
+      .card.border-0.shadow
+        .card-body.text-center.p-5
+          %h3.mb-3.text-info
+            %i.bi.bi-info-circle.me-2
+            Prompts Available
+          %p.text-muted.mb-4.fs-5
+            Prompts available... speak with your admin
+          - if current_teammate&.can_manage_prompts?
+            = link_to organization_prompt_templates_path(@organization), class: "btn btn-primary btn-lg" do
+              %i.bi.bi-gear.me-2
+              Manage Prompt Templates
+
