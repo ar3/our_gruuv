@@ -12,6 +12,8 @@ class Goal < ApplicationRecord
   
   has_many :goal_check_ins, dependent: :destroy
   has_many :recent_check_ins, -> { recent.limit(3) }, class_name: 'GoalCheckIn'
+  has_many :prompt_goals, dependent: :destroy
+  has_many :prompts, through: :prompt_goals
   
   # Callbacks
   before_validation :set_company_id

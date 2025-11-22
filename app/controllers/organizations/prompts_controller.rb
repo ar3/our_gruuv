@@ -1,6 +1,6 @@
 class Organizations::PromptsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_prompt, only: [:show, :edit, :update, :close]
+  before_action :set_prompt, only: [:show, :edit, :update, :close, :manage_goals]
 
   after_action :verify_authorized, except: :index
   after_action :verify_policy_scoped, only: :index
@@ -86,6 +86,7 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
       .joins(:prompt_question)
       .order('prompt_questions.position')
       .to_a
+    @prompt_goals = @prompt.prompt_goals.includes(:goal).to_a
   end
 
   def new
@@ -179,6 +180,7 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     # Determine view style (vertical or split)
     @view_style = params[:view] || 'split'
     @view_style = 'split' unless ['vertical', 'split'].include?(@view_style)
+    @prompt_goals = @prompt.prompt_goals.includes(:goal).to_a
   end
 
   def update
@@ -246,6 +248,31 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     @prompt.close!
     redirect_to organization_prompt_path(@organization, @prompt), 
                 notice: 'Prompt closed successfully.'
+  end
+
+  def manage_goals
+    authorize @prompt, :update?
+    
+    company = @organization.root_company || @organization
+    current_teammate = current_person.teammates.find_by(organization: company)
+    
+    # Get available goals for the current teammate
+    available_goals = Goal.for_teammate(current_teammate)
+                          .where(deleted_at: nil, completed_at: nil)
+                          .includes(:owner, :creator)
+    
+    # Mark which goals are already associated
+    @available_goals_with_status = available_goals.map do |goal|
+      {
+        goal: goal,
+        already_linked: @prompt.goals.include?(goal)
+      }
+    end
+    
+    @return_url = params[:return_url] || organization_prompt_path(@organization, @prompt)
+    @return_text = params[:return_text] || 'Back to Prompt'
+    
+    render layout: 'overlay'
   end
 
   private

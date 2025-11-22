@@ -3,9 +3,8 @@ class Prompt < ApplicationRecord
   belongs_to :company_teammate, class_name: 'CompanyTeammate'
   belongs_to :prompt_template
   has_many :prompt_answers, dependent: :destroy
-  # Note: prompt_goals association will be added in Phase 5
-  # has_many :prompt_goals, dependent: :destroy
-  # has_many :goals, through: :prompt_goals
+  has_many :prompt_goals, dependent: :destroy
+  has_many :goals, through: :prompt_goals
 
   # Validations
   validates :company_teammate, presence: true

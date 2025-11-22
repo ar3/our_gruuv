@@ -489,6 +489,42 @@ RSpec.describe Organizations::PromptsController, type: :controller do
     end
   end
 
+  describe 'GET #manage_goals' do
+    let(:open_prompt) { create(:prompt, :open, company_teammate: teammate, prompt_template: template) }
+    let!(:goal1) { create(:goal, owner: teammate, creator: teammate, company: organization) }
+    let!(:goal2) { create(:goal, owner: teammate, creator: teammate, company: organization) }
+
+    it 'renders the manage_goals template with overlay layout' do
+      get :manage_goals, params: { organization_id: organization.id, id: open_prompt.id }
+      expect(response).to have_http_status(:success)
+      expect(response).to render_template(:manage_goals)
+      expect(response).to render_template(layout: 'overlay')
+    end
+
+    it 'assigns available goals with status' do
+      get :manage_goals, params: { organization_id: organization.id, id: open_prompt.id }
+      expect(assigns(:available_goals_with_status)).to be_present
+      expect(assigns(:available_goals_with_status).length).to be >= 2
+    end
+
+    it 'marks already linked goals' do
+      PromptGoal.create!(prompt: open_prompt, goal: goal1)
+      get :manage_goals, params: { organization_id: organization.id, id: open_prompt.id }
+      goal_status = assigns(:available_goals_with_status).find { |gs| gs[:goal] == goal1 }
+      expect(goal_status[:already_linked]).to be true
+    end
+
+    context 'when prompt is closed' do
+      let(:closed_prompt) { create(:prompt, :closed, company_teammate: teammate, prompt_template: template) }
+
+      it 'denies access' do
+        get :manage_goals, params: { organization_id: organization.id, id: closed_prompt.id }
+        # Pundit redirects unauthorized users
+        expect(response).to have_http_status(:redirect)
+      end
+    end
+  end
+
   describe 'authorization' do
     let(:other_person) { create(:person) }
     let(:other_teammate) { CompanyTeammate.create!(person: other_person, organization: organization) }
@@ -519,6 +555,12 @@ RSpec.describe Organizations::PromptsController, type: :controller do
 
       it 'denies close access' do
         patch :close, params: { organization_id: organization.id, id: other_prompt.id }
+        # Pundit redirects unauthorized users, so we check for redirect
+        expect(response).to have_http_status(:redirect)
+      end
+
+      it 'denies manage_goals access' do
+        get :manage_goals, params: { organization_id: organization.id, id: other_prompt.id }
         # Pundit redirects unauthorized users, so we check for redirect
         expect(response).to have_http_status(:redirect)
       end

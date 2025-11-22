@@ -69,3 +69,41 @@
       .alert.alert-info
         %p.mb-0 No answers have been provided yet.
 
+.card.mb-4
+  .card-header.d-flex.justify-content-between.align-items-center
+    %h5.mb-0
+      %i.bi.bi-bullseye.me-2
+      Associated Goals
+    - if @prompt.open? && policy(@prompt).update?
+      = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: request.url, return_text: 'Prompt'), class: "btn btn-sm btn-primary" do
+        %i.bi.bi-plus.me-1
+        Manage Goals
+  .card-body
+    - if @prompt.goals.any?
+      %ul.list-unstyled
+        - @prompt.goals.each do |goal|
+          - status_icon = goal_status_icon(goal)
+          - is_struck_through = goal_should_be_struck_through?(goal)
+          %li.mb-2
+            .d-flex.justify-content-between.align-items-start
+              .flex-grow-1
+                = link_to organization_goal_path(@organization, goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
+                  %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
+                  %strong= goal.title
+                %br
+                %small.text-muted
+                  %span.badge{class: goal_category_badge_class(goal), style: "font-size: 0.75em;"}
+                    = goal_category_label(goal)
+                  | 
+                  %span{title: goal_privacy_tooltip_text(goal), "data-bs-toggle" => "tooltip"}
+                    = goal_privacy_rings_with_label(goal)
+              - if @prompt.open? && policy(@prompt).update?
+                - prompt_goal = @prompt.prompt_goals.find_by(goal: goal)
+                - if prompt_goal
+                  = button_to organization_prompt_prompt_goal_path(@organization, @prompt, prompt_goal), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this goal association?" } do
+                    %i.bi.bi-trash
+    - else
+      %em.text-muted No goals associated with this prompt.
+      - if @prompt.open? && policy(@prompt).update?
+        = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: request.url, return_text: 'Prompt'), class: "text-decoration-none" do
+          Associate goals

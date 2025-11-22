@@ -131,7 +131,9 @@ get '/login', to: 'auth#login', as: :login
       end
       member do
         patch :close
+        get :manage_goals
       end
+      resources :prompt_goals, module: :prompts, only: [:create, :destroy]
     end
     
     # Assignments management

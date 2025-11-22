@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_22_063811) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_22_075912) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -624,6 +624,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_22_063811) do
     t.index ["updated_by_company_teammate_id"], name: "index_prompt_answers_on_updated_by_company_teammate_id"
   end
 
+  create_table "prompt_goals", force: :cascade do |t|
+    t.bigint "prompt_id", null: false
+    t.bigint "goal_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["goal_id"], name: "index_prompt_goals_on_goal_id"
+    t.index ["prompt_id", "goal_id"], name: "index_prompt_goals_on_prompt_id_and_goal_id", unique: true
+    t.index ["prompt_id"], name: "index_prompt_goals_on_prompt_id"
+  end
+
   create_table "prompt_questions", force: :cascade do |t|
     t.bigint "prompt_template_id", null: false
     t.string "label", null: false
@@ -887,6 +897,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_22_063811) do
   add_foreign_key "prompt_answers", "prompt_questions"
   add_foreign_key "prompt_answers", "prompts"
   add_foreign_key "prompt_answers", "teammates", column: "updated_by_company_teammate_id"
+  add_foreign_key "prompt_goals", "goals"
+  add_foreign_key "prompt_goals", "prompts"
   add_foreign_key "prompt_questions", "prompt_templates"
   add_foreign_key "prompt_templates", "organizations", column: "company_id"
   add_foreign_key "prompts", "prompt_templates"
