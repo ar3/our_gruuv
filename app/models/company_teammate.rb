@@ -2,6 +2,9 @@ class CompanyTeammate < Teammate
   # Company-level teammates can have any combination of permissions
   # They have the highest level of access within the organization
   
+  # Associations
+  has_many :prompts, foreign_key: 'company_teammate_id', dependent: :destroy
+  
   # Company-specific validations
   validate :company_level_permissions
   

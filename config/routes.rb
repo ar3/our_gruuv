@@ -124,11 +124,10 @@ get '/login', to: 'auth#login', as: :login
     end
     
     # Prompts management
-    resources :prompts, module: :organizations do
+    resources :prompts, module: :organizations, constraints: { id: /[0-9]+/ } do
       collection do
         get :customize_view
         patch :update_view
-        post :start
       end
       member do
         patch :close

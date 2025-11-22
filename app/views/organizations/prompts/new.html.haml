@@ -1,0 +1,52 @@
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-file-text.me-2
+      Start New Prompt
+    .d-flex.align-items-center
+      = link_to organization_prompts_path(@organization), class: "btn btn-outline-secondary ml-2" do
+        %i.bi.bi-arrow-left.me-1
+        Back to Prompts
+
+- content_for :go_back_link do
+  = link_to organization_prompts_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Prompts
+
+.row.justify-content-center
+  .col-lg-8
+    .card.border-0.shadow-sm
+      .card-header.bg-white
+        %h5.mb-0
+          %i.bi.bi-list-ul.me-2
+          Available Prompt Templates
+      .card-body
+        - if @available_templates.any?
+          .list-group
+            - @available_templates.each do |template|
+              - existing_prompt = @existing_open_prompts[template.id]
+              .list-group-item
+                .d-flex.justify-content-between.align-items-center
+                  .flex-grow-1
+                    %h6.mb-1= template.title
+                    - if template.description.present?
+                      %p.text-muted.small.mb-0= template.description
+                    - if existing_prompt
+                      .mt-2
+                        %span.badge.bg-warning.text-dark
+                          %i.bi.bi-exclamation-triangle.me-1
+                          You have an open prompt for this template
+                  .ms-3
+                    - if existing_prompt
+                      = form_with url: organization_prompts_path(@organization), method: :post, local: true do |f|
+                        = f.hidden_field :template_id, value: template.id
+                        = f.submit "Close and Start New", class: "btn btn-warning btn-sm", data: { confirm: "This will close your current prompt for '#{template.title}' and start a new one. Continue?" }
+                    - else
+                      = form_with url: organization_prompts_path(@organization), method: :post, local: true do |f|
+                        = f.hidden_field :template_id, value: template.id
+                        = f.submit "Start New", class: "btn btn-primary btn-sm"
+        - else
+          .alert.alert-info.mb-0
+            %i.bi.bi-info-circle.me-2
+            No available prompt templates. Contact your administrator to create prompt templates.
+

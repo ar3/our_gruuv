@@ -1,0 +1,107 @@
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-file-text.me-2
+      Prompts
+    .d-flex.align-items-center
+      - if policy(Prompt).create?
+        = link_to new_organization_prompt_path(@organization), class: "btn btn-primary ml-2" do
+          %i.bi.bi-plus.me-1
+          Start Prompt
+      - else
+        .btn.btn-primary.disabled.ml-2
+          %i.bi.bi-plus
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be a teammate to start prompts"}
+
+- content_for :go_back_link do
+  = link_to dashboard_organization_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Dashboard
+
+- content_for :header_action do
+  = link_to customize_view_organization_prompts_path(@organization, params.except(:controller, :action, :page).permit!.to_h), class: "btn btn-outline-secondary" do
+    %i.bi.bi-gear.me-2
+    Customize
+
+/ Spotlight Section
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row
+          .col-md-8
+            .row.text-center
+              .col-3
+                .h3.text-primary= @prompts.count
+                %small.text-muted Total Prompts
+              .col-3
+                .h3.text-success= @prompts.select(&:open?).count
+                %small.text-muted Open
+              .col-3
+                .h3.text-info= @prompts.select(&:closed?).count
+                %small.text-muted Closed
+              .col-3
+                .h3.text-warning= @prompts.select { |p| p.created_at >= 7.days.ago }.count
+                %small.text-muted This Week
+          .col-md-4
+            - if @prompts.empty?
+              .alert.alert-info.small
+                %i.bi.bi-info-circle.me-2
+                %strong No prompts yet
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-funnel.me-1
+              Filters: #{@current_filters.any? ? @current_filters.keys.join(', ') : 'None'}
+              %br
+              %i.bi.bi-sort-down.me-1
+              Sort: #{@current_sort.humanize}
+
+.row.justify-content-center
+  .col-lg-12
+    - if @prompts.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Template
+              %th Employee
+              %th Status
+              %th Created
+              %th Updated
+              %th Actions
+          %tbody
+            - @prompts.each do |prompt|
+              %tr
+                %td
+                  = link_to organization_prompt_path(@organization, prompt), class: "text-decoration-none" do
+                    %strong= prompt.prompt_template.title
+                %td= prompt.company_teammate.person.display_name
+                %td
+                  - if prompt.open?
+                    %span.badge.bg-success Open
+                  - else
+                    %span.badge.bg-secondary Closed
+                %td= prompt.created_at.strftime("%B %d, %Y")
+                %td= prompt.updated_at.strftime("%B %d, %Y")
+                %td
+                  .btn-group.btn-group-sm
+                    = link_to organization_prompt_path(@organization, prompt), class: "btn btn-outline-primary", title: "View" do
+                      %i.bi.bi-eye
+                    - if prompt.open? && policy(prompt).update?
+                      = link_to edit_organization_prompt_path(@organization, prompt), class: "btn btn-outline-secondary", title: "Edit" do
+                        %i.bi.bi-pencil
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Prompts Found
+        %p.mb-2 
+          - if @current_filters.any?
+            No prompts match your current filters. Try adjusting your filters.
+          - else
+            No prompts have been created yet. Start a prompt to get started.
+        - if policy(Prompt).create?
+          = link_to "Start Your First Prompt", new_organization_prompt_path(@organization), class: "btn btn-primary btn-sm"
+

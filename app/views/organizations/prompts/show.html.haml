@@ -1,0 +1,71 @@
+- content_for :go_back_link do
+  = link_to organization_prompts_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Prompts
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-file-text.me-2
+      = @prompt.prompt_template.title
+    - if @prompt.open? && policy(@prompt).update?
+      = link_to edit_organization_prompt_path(@organization, @prompt), class: "btn btn-primary ml-2" do
+        %i.bi.bi-pencil.me-1
+        Edit
+    - elsif @prompt.open? && policy(@prompt).close?
+      = link_to close_organization_prompt_path(@organization, @prompt), method: :patch, class: "btn btn-secondary ml-2", data: { confirm: "Are you sure you want to close this prompt?" } do
+        %i.bi.bi-lock.me-1
+        Close Prompt
+
+.card.mb-4
+  .card-header
+    %h5.mb-0 Prompt Details
+  .card-body
+    .row
+      .col-md-6
+        %p
+          %strong Template:
+          = @prompt.prompt_template.title
+        %p
+          %strong Employee:
+          = @prompt.company_teammate.person.display_name
+        %p
+          %strong Status:
+          - if @prompt.open?
+            %span.badge.bg-success Open
+          - else
+            %span.badge.bg-secondary Closed
+      .col-md-6
+        %p
+          %strong Created:
+          = @prompt.created_at.strftime("%B %d, %Y at %I:%M %p")
+        - if @prompt.closed?
+          %p
+            %strong Closed:
+            = @prompt.closed_at.strftime("%B %d, %Y at %I:%M %p")
+        %p
+          %strong Last Updated:
+          = @prompt.updated_at.strftime("%B %d, %Y at %I:%M %p")
+
+.card
+  .card-header
+    %h5.mb-0 Answers
+  .card-body
+    - if @prompt_answers.any?
+      - @prompt_answers.each do |answer|
+        .mb-4
+          %h6= answer.prompt_question.label
+          - if answer.prompt_question.helper_text.present?
+            %small.text-muted.d-block.mb-2= answer.prompt_question.helper_text
+          - if answer.text.present?
+            .p-3.bg-light.rounded
+              = simple_format(answer.text)
+            - if answer.updated_by_company_teammate.present?
+              %small.text-muted
+                Last updated by #{answer.updated_by_company_teammate.person.display_name} on #{answer.updated_at.strftime("%B %d, %Y at %I:%M %p")}
+          - else
+            %p.text-muted No answer provided
+    - else
+      .alert.alert-info
+        %p.mb-0 No answers have been provided yet.
+

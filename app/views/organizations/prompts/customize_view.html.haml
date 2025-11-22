@@ -1,0 +1,83 @@
+- content_for :header do
+  Customize Prompts View
+- content_for :return_url do
+  = @return_url || organization_prompts_path(@organization)
+- content_for :return_text do
+  = @return_text || 'Back to Prompts'
+
+= form_with url: update_view_organization_prompts_path(@organization), method: :patch, local: true do |form|
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Prompts You See
+    
+    .col-md-8
+      / Filters Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Prompts You See
+          
+          .mb-3
+            %label.form-label Prompt Template
+            = select_tag 'template', options_from_collection_for_select(@available_templates, :id, :title, @current_filters[:template]), { include_blank: 'All Templates', class: 'form-select' }
+          
+          .mb-3
+            %label.form-label Status
+            .form-check
+              = radio_button_tag 'status', 'all', @current_filters[:status].blank? || @current_filters[:status] == 'all', class: 'form-check-input', id: 'status_all'
+              = label_tag 'status_all', 'All', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'status', 'open', @current_filters[:status] == 'open', class: 'form-check-input', id: 'status_open'
+              = label_tag 'status_open', 'Open', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'status', 'closed', @current_filters[:status] == 'closed', class: 'form-check-input', id: 'status_closed'
+              = label_tag 'status_closed', 'Closed', class: 'form-check-label'
+          
+          .mb-3
+            %label.form-label Teammate
+            = select_tag 'teammate', options_from_collection_for_select(@available_teammates, :id, ->(t) { t.person.display_name }, @current_filters[:teammate]), { include_blank: 'All Teammates', class: 'form-select' }
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Order You See Them In
+    
+    .col-md-8
+      / Sort Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Order You See Them In
+          .mb-3
+            %label.form-label Sort By
+            = select_tag 'sort', options_for_select([
+              ['Created Date (Newest First)', 'created_at_desc'],
+              ['Created Date (Oldest First)', 'created_at_asc'],
+              ['Updated Date (Newest First)', 'updated_at_desc'],
+              ['Updated Date (Oldest First)', 'updated_at_asc'],
+              ['Template Title (A-Z)', 'template_title'],
+              ['Template Title (Z-A)', 'template_title_desc']
+            ], @current_sort), class: 'form-select', id: 'sort_select'
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select How They Appear
+    
+    .col-md-8
+      / View Style Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select How They Appear
+          .form-check
+            = radio_button_tag 'view', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
+            = label_tag 'view_table', class: 'form-check-label' do
+              %i.bi.bi-table.me-2
+              Table View
+
+  .row
+    .col-12
+      / Form Actions
+      .d-flex.gap-2.mt-4.mb-4
+        = form.submit 'Apply View', class: 'btn btn-primary'
+        = link_to 'Cancel', @return_url || organization_prompts_path(@organization), class: 'btn btn-outline-secondary'
+
