@@ -12,6 +12,7 @@ class Organization < ApplicationRecord
   has_many :assignments, foreign_key: 'company_id', dependent: :destroy
   has_many :abilities, dependent: :destroy
   has_many :aspirations, dependent: :destroy
+  has_many :prompt_templates, foreign_key: 'company_id', dependent: :destroy
   has_many :position_types, dependent: :destroy
   has_many :seats, through: :position_types
   has_one :slack_configuration, dependent: :destroy

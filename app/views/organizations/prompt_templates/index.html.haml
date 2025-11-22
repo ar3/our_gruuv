@@ -1,0 +1,80 @@
+- content_for :go_back_link do
+  = link_to dashboard_organization_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Dashboard
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2.mr-2
+      %i.bi.bi-file-text.me-2
+      Prompt Templates
+    .d-flex.align-items-center
+      - if policy(PromptTemplate).create?
+        = link_to new_organization_prompt_template_path(@organization), class: "btn btn-primary ml-2" do
+          %i.bi.bi-plus
+      - else
+        .btn.btn-primary.disabled
+          %i.bi.bi-plus
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need prompts management permissions for this organization to create prompt templates"}
+
+.row.justify-content-center
+  .col-lg-12
+    - if @prompt_templates.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Title
+              %th Description
+              %th Available At
+              %th Type
+              %th Questions
+              %th Actions
+          %tbody
+            - @prompt_templates.each do |template|
+              %tr
+                %td
+                  = link_to edit_organization_prompt_template_path(@organization, template), class: "text-decoration-none" do
+                    %strong= template.title
+                %td= truncate(template.description, length: 100) if template.description.present?
+                %td
+                  - if template.available_at.present?
+                    = template.available_at.strftime("%B %d, %Y")
+                    - if template.available?
+                      %span.badge.bg-success.ms-2 Available
+                    - else
+                      %span.badge.bg-warning.ms-2 Future
+                  - else
+                    %span.badge.bg-secondary Not Available
+                %td
+                  - if template.is_primary?
+                    %span.badge.bg-primary Primary
+                  - elsif template.is_secondary?
+                    %span.badge.bg-info Secondary
+                  - elsif template.is_tertiary?
+                    %span.badge.bg-success Tertiary
+                  - else
+                    %span.text-muted None
+                %td
+                  %span.badge.bg-secondary= template.prompt_questions.count
+                %td
+                  .btn-group.btn-group-sm
+                    = link_to edit_organization_prompt_template_path(@organization, template), class: "btn btn-outline-secondary", title: "Edit" do
+                      %i.bi.bi-pencil
+                    = link_to organization_prompt_template_path(@organization, template), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure you want to delete this prompt template?" } do
+                      %i.bi.bi-trash
+    - else
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Prompt Templates Created
+        %p.mb-2 
+          Create your first prompt template to define sets of questions for employees to fill out.
+        - if policy(PromptTemplate).create?
+          = link_to "Create First Prompt Template", new_organization_prompt_template_path(@organization), class: "btn btn-primary btn-sm"
+        - else
+          .d-flex.align-items-center
+            .btn.btn-primary.btn-sm.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
+              Create First Prompt Template
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need prompts management permissions for this organization to create prompt templates"}
+

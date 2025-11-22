@@ -1,0 +1,95 @@
+- content_for :go_back_link do
+  = link_to organization_prompt_templates_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Prompt Templates
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-file-text.me-2
+      Edit Prompt Template
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-file-text.me-2
+      Template Details
+  .card-body
+    = form_with model: [@organization, @prompt_template], url: organization_prompt_template_path(@organization, @prompt_template), local: true do |form|
+      - if @prompt_template.errors.any?
+        .alert.alert-danger
+          %h4= "#{pluralize(@prompt_template.errors.count, "error")} prohibited this prompt template from being saved:"
+          %ul.mb-0
+            - @prompt_template.errors.full_messages.each do |message|
+              %li= message
+      
+      .mb-3
+        = form.label :title, class: 'form-label' do
+          Title
+          %span.text-danger *
+        = form.text_field :title, class: 'form-control', required: true
+      
+      .mb-3
+        = form.label :description, class: 'form-label'
+        = form.text_area :description, class: 'form-control', rows: 4
+      
+      .mb-3
+        = form.label :available_at, class: 'form-label'
+        %small.text-muted.d-block Leave blank to make template unavailable. Set a date to make it available starting on that date.
+        = form.date_field :available_at, class: 'form-control'
+      
+      .mb-3
+        %label.form-label Template Type
+        %small.text-muted.d-block Only one template of each type can be active per company.
+        .form-check
+          = form.check_box :is_primary, class: 'form-check-input'
+          = form.label :is_primary, 'Primary', class: 'form-check-label'
+        .form-check
+          = form.check_box :is_secondary, class: 'form-check-input'
+          = form.label :is_secondary, 'Secondary', class: 'form-check-label'
+        .form-check
+          = form.check_box :is_tertiary, class: 'form-check-input'
+          = form.label :is_tertiary, 'Tertiary', class: 'form-check-label'
+      
+      .d-flex.justify-content-between
+        = link_to 'Cancel', organization_prompt_templates_path(@organization), class: 'btn btn-secondary'
+        = form.submit 'Update Prompt Template', class: 'btn btn-primary'
+
+.card
+  .card-header.d-flex.justify-content-between.align-items-center
+    %h5.mb-0
+      %i.bi.bi-question-circle.me-2
+      Prompt Questions
+    - if policy(@prompt_template).update?
+      = link_to new_organization_prompt_template_prompt_question_path(@organization, @prompt_template, return_url: request.url, return_text: 'Edit Template'), class: "btn btn-sm btn-primary" do
+        %i.bi.bi-plus.me-1
+        Add Question
+  .card-body
+    - if @prompt_questions.any?
+      %table.table.table-hover
+        %thead
+          %tr
+            %th Position
+            %th Label
+            %th Placeholder
+            %th Helper Text
+            %th Actions
+        %tbody
+          - @prompt_questions.each do |question|
+            %tr
+              %td= question.position
+              %td= question.label
+              %td= truncate(question.placeholder_text, length: 50) if question.placeholder_text.present?
+              %td= truncate(question.helper_text, length: 50) if question.helper_text.present?
+              %td
+                .btn-group.btn-group-sm
+                  = link_to edit_organization_prompt_template_prompt_question_path(@organization, @prompt_template, question, return_url: request.url, return_text: 'Edit Template'), class: "btn btn-outline-secondary", title: "Edit" do
+                    %i.bi.bi-pencil
+                  = link_to organization_prompt_template_prompt_question_path(@organization, @prompt_template, question), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure you want to delete this question?" } do
+                    %i.bi.bi-trash
+    - else
+      .alert.alert-info
+        %p.mb-0
+          %i.bi.bi-info-circle.me-2
+          No questions yet. Add your first question to get started.
+

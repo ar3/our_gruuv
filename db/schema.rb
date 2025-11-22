@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_21_130158) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_22_063811) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -611,6 +611,60 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_21_130158) do
     t.index ["position_type_id"], name: "index_positions_on_position_type_id"
   end
 
+  create_table "prompt_answers", force: :cascade do |t|
+    t.bigint "prompt_id", null: false
+    t.bigint "prompt_question_id", null: false
+    t.text "text"
+    t.bigint "updated_by_company_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["prompt_id", "prompt_question_id"], name: "index_prompt_answers_on_prompt_id_and_prompt_question_id", unique: true
+    t.index ["prompt_id"], name: "index_prompt_answers_on_prompt_id"
+    t.index ["prompt_question_id"], name: "index_prompt_answers_on_prompt_question_id"
+    t.index ["updated_by_company_teammate_id"], name: "index_prompt_answers_on_updated_by_company_teammate_id"
+  end
+
+  create_table "prompt_questions", force: :cascade do |t|
+    t.bigint "prompt_template_id", null: false
+    t.string "label", null: false
+    t.text "placeholder_text"
+    t.text "helper_text"
+    t.integer "position", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["prompt_template_id", "position"], name: "index_prompt_questions_on_prompt_template_id_and_position", unique: true
+    t.index ["prompt_template_id"], name: "index_prompt_questions_on_prompt_template_id"
+  end
+
+  create_table "prompt_templates", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "title", null: false
+    t.text "description"
+    t.date "available_at"
+    t.boolean "is_primary", default: false, null: false
+    t.boolean "is_secondary", default: false, null: false
+    t.boolean "is_tertiary", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["available_at"], name: "index_prompt_templates_on_available_at"
+    t.index ["company_id", "is_primary"], name: "index_prompt_templates_on_company_id_and_is_primary", where: "(is_primary = true)"
+    t.index ["company_id", "is_secondary"], name: "index_prompt_templates_on_company_id_and_is_secondary", where: "(is_secondary = true)"
+    t.index ["company_id", "is_tertiary"], name: "index_prompt_templates_on_company_id_and_is_tertiary", where: "(is_tertiary = true)"
+    t.index ["company_id"], name: "index_prompt_templates_on_company_id"
+  end
+
+  create_table "prompts", force: :cascade do |t|
+    t.bigint "company_teammate_id", null: false
+    t.bigint "prompt_template_id", null: false
+    t.datetime "closed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_teammate_id", "prompt_template_id"], name: "index_prompts_on_company_teammate_id_and_prompt_template_id"
+    t.index ["company_teammate_id"], name: "index_prompts_on_company_teammate_id"
+    t.index ["company_teammate_id"], name: "index_prompts_on_company_teammate_id_when_open", unique: true, where: "(closed_at IS NULL)"
+    t.index ["prompt_template_id"], name: "index_prompts_on_prompt_template_id"
+  end
+
   create_table "seats", force: :cascade do |t|
     t.bigint "position_type_id", null: false
     t.date "seat_needed_by", null: false
@@ -830,6 +884,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_21_130158) do
   add_foreign_key "position_types", "position_major_levels"
   add_foreign_key "positions", "position_levels"
   add_foreign_key "positions", "position_types"
+  add_foreign_key "prompt_answers", "prompt_questions"
+  add_foreign_key "prompt_answers", "prompts"
+  add_foreign_key "prompt_answers", "teammates", column: "updated_by_company_teammate_id"
+  add_foreign_key "prompt_questions", "prompt_templates"
+  add_foreign_key "prompt_templates", "organizations", column: "company_id"
+  add_foreign_key "prompts", "prompt_templates"
+  add_foreign_key "prompts", "teammates", column: "company_teammate_id"
   add_foreign_key "seats", "position_types"
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "slack_configurations", "people", column: "created_by_id"

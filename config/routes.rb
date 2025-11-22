@@ -118,6 +118,23 @@ get '/login', to: 'auth#login', as: :login
       resource :assignment_milestones, only: [:show, :update], module: :abilities
     end
     
+    # Prompt Templates management
+    resources :prompt_templates, module: :organizations, except: [:show] do
+      resources :prompt_questions, module: :prompt_templates
+    end
+    
+    # Prompts management
+    resources :prompts, module: :organizations do
+      collection do
+        get :customize_view
+        patch :update_view
+        post :start
+      end
+      member do
+        patch :close
+      end
+    end
+    
     # Assignments management
     resources :assignments, module: :organizations do
       collection do

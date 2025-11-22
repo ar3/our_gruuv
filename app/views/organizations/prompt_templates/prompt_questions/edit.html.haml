@@ -1,0 +1,83 @@
+- content_for :header do
+  Manage Prompt Question
+
+- content_for :return_url do
+  = @return_url || edit_organization_prompt_template_path(@organization, @prompt_template)
+- content_for :return_text do
+  = @return_text || 'Back to Template'
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-question-circle.me-2
+      Edit Question
+  .card-body
+    = form_with model: [@organization, @prompt_template, @prompt_question], url: organization_prompt_template_prompt_question_path(@organization, @prompt_template, @prompt_question), local: true do |form|
+      - if @prompt_question.errors.any?
+        .alert.alert-danger
+          %h4= "#{pluralize(@prompt_question.errors.count, "error")} prohibited this question from being saved:"
+          %ul.mb-0
+            - @prompt_question.errors.full_messages.each do |message|
+              %li= message
+      
+      .mb-3
+        = form.label :label, class: 'form-label' do
+          Label
+          %span.text-danger *
+        = form.text_field :label, class: 'form-control', required: true
+      
+      .mb-3
+        = form.label :placeholder_text, class: 'form-label'
+        = form.text_area :placeholder_text, class: 'form-control', rows: 3
+      
+      .mb-3
+        = form.label :helper_text, class: 'form-label'
+        = form.text_area :helper_text, class: 'form-control', rows: 2
+      
+      .mb-3
+        = form.label :position, class: 'form-label'
+        %small.text-muted.d-block Order of this question (lower numbers appear first)
+        = form.number_field :position, class: 'form-control', min: 1
+      
+      .d-flex.justify-content-between
+        = link_to 'Cancel', @return_url, class: 'btn btn-secondary'
+        = form.submit 'Update Question', class: 'btn btn-primary'
+
+- if @versions.any?
+  .card
+    .card-header
+      %h5.mb-0
+        %i.bi.bi-clock-history.me-2
+        Version History
+    .card-body
+      .table-responsive
+        %table.table.table-sm
+          %thead
+            %tr
+              %th Version
+              %th Changed At
+              %th Changed By
+              %th Changes
+          %tbody
+            - @versions.each_with_index do |version, index|
+              %tr
+                %td= @versions.count - index
+                %td= version.created_at.strftime("%B %d, %Y at %I:%M %p")
+                %td
+                  - if version.whodunnit.present?
+                    - teammate = Teammate.find_by(id: version.whodunnit)
+                    - if teammate
+                      = teammate.person.display_name
+                    - else
+                      %span.text-muted Unknown
+                  - else
+                    %span.text-muted System
+                %td
+                  - if version.changeset.present?
+                    - version.changeset.each do |attr, change|
+                      %div
+                        %strong= attr.humanize
+                        = "#{change[0]} → #{change[1]}"
+                  - else
+                    %span.text-muted Initial version
+

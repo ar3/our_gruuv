@@ -1,0 +1,57 @@
+- content_for :go_back_link do
+  = link_to organization_prompt_templates_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Prompt Templates
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-file-text.me-2
+      New Prompt Template
+
+.card
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-file-text.me-2
+      Create New Prompt Template
+  .card-body
+    = form_with model: [@organization, @prompt_template], url: organization_prompt_templates_path(@organization), local: true do |form|
+      - if @prompt_template.errors.any?
+        .alert.alert-danger
+          %h4= "#{pluralize(@prompt_template.errors.count, "error")} prohibited this prompt template from being saved:"
+          %ul.mb-0
+            - @prompt_template.errors.full_messages.each do |message|
+              %li= message
+      
+      .mb-3
+        = form.label :title, class: 'form-label' do
+          Title
+          %span.text-danger *
+        = form.text_field :title, class: 'form-control', required: true
+      
+      .mb-3
+        = form.label :description, class: 'form-label'
+        = form.text_area :description, class: 'form-control', rows: 4
+      
+      .mb-3
+        = form.label :available_at, class: 'form-label'
+        %small.text-muted.d-block Leave blank to make template unavailable. Set a date to make it available starting on that date.
+        = form.date_field :available_at, class: 'form-control'
+      
+      .mb-3
+        %label.form-label Template Type
+        %small.text-muted.d-block Only one template of each type can be active per company.
+        .form-check
+          = form.check_box :is_primary, class: 'form-check-input'
+          = form.label :is_primary, 'Primary', class: 'form-check-label'
+        .form-check
+          = form.check_box :is_secondary, class: 'form-check-input'
+          = form.label :is_secondary, 'Secondary', class: 'form-check-label'
+        .form-check
+          = form.check_box :is_tertiary, class: 'form-check-input'
+          = form.label :is_tertiary, 'Tertiary', class: 'form-check-label'
+      
+      .d-flex.justify-content-between
+        = link_to 'Cancel', organization_prompt_templates_path(@organization), class: 'btn btn-secondary'
+        = form.submit 'Create Prompt Template', class: 'btn btn-primary'
+
