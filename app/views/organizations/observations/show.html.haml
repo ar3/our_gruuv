@@ -146,29 +146,67 @@
                 = notification.created_at.strftime('%m/%d/%y %l:%M %p')
 
     / Slack posting section
-    .card.mb-4{ role: "region", "aria-labelledby": "slack-posting" }
-      .card-header
-        %h5.mb-0{ id: "slack-posting" }
-          %i.bi.bi-slack.me-2
-          Send Notifications
-      .card-body
-        = form_with url: post_to_slack_organization_observation_path(@organization, @observation), method: :post, local: true do |form|
-          .mb-3
-            %h6.text-muted Send DMs to observees:
-            - @observation.observed_teammates.includes(:person).each do |teammate|
-              .form-check.mb-2
-                = check_box_tag 'notify_teammate_ids[]', teammate.id, false, class: 'form-check-input', id: "notify_#{teammate.id}"
-                = label_tag "notify_#{teammate.id}", teammate.person.preferred_name || teammate.person.first_name, class: 'form-check-label'
-                %small.text-muted.ms-2
-                  = teammate.person.email
-                  %i.bi.bi-exclamation-triangle.text-warning.ms-1{title: "Slack integration not yet implemented"}
+    - if policy(@observation).post_to_slack?
+      .card.mb-4{ role: "region", "aria-labelledby": "slack-posting" }
+        .card-header
+          %h5.mb-0{ id: "slack-posting" }
+            %i.bi.bi-slack.me-2
+            Send Notifications
+        .card-body
+          - if @observation.privacy_level == 'public_observation'
+            / Post to Kudos Channel section
+            .mb-4
+              %h6.mb-3
+                %i.bi.bi-hash.me-2
+                Post to Kudos Channel
+              - if @organization.slack_configured?
+                - if defined?(@kudos_channel_options) && @kudos_channel_options.any?
+                  = form_with url: post_to_slack_organization_observation_path(@organization, @observation), method: :post, local: true do |form|
+                    .mb-3
+                      = form.label :kudos_channel_organization_id, "Select Kudos Channel", class: "form-label"
+                      = form.select :kudos_channel_organization_id, options_for_select(@kudos_channel_options), { prompt: 'Select channel...' }, { class: 'form-select', id: 'kudos_channel_org_select', required: true }
+                    .d-grid
+                      = form.submit 'Send Notification', class: 'btn btn-primary'
+                - else
+                  .alert.alert-info
+                    %i.bi.bi-info-circle.me-2
+                    No kudos channels configured.
+                    = link_to "Configure kudos channels", channels_organization_slack_path(@organization), class: "alert-link"
+              - else
+                .alert.alert-warning
+                  %i.bi.bi-exclamation-triangle.me-2
+                  Slack is not configured.
+                  = link_to "Configure Slack", organization_slack_path(@organization), class: "alert-link"
           
-          .d-grid
-            = form.submit 'Send Slack Notifications coming soon', class: 'btn btn-primary disabled', disabled: :disabled
-          
-          %small.text-muted.mt-2
-            %i.bi.bi-info-circle.me-1
-            Only teammates with connected Slack accounts will receive notifications.
+          / DM Notifications section (Phase 5 - Mocked)
+          - if @observation.privacy_level != 'observer_only'
+            .mb-4
+              %h6.mb-3
+                %i.bi.bi-envelope.me-2
+                Send DM Notifications
+              %p.text-muted.mb-3
+                DM notifications will be available in a future release.
+              - if defined?(@dm_recipients) && @dm_recipients.any?
+                - @dm_recipients.each do |recipient|
+                  .form-check.mb-2
+                    = check_box_tag 'dm_recipients[]', recipient[:name], false, class: 'form-check-input', id: "dm_#{recipient[:name].parameterize}", disabled: true
+                    = label_tag "dm_#{recipient[:name].parameterize}", "#{recipient[:name]} - #{recipient[:role]}", class: 'form-check-label'
+                    %span.badge.bg-secondary.ms-2 Coming Soon
+              .d-grid.mt-3
+                %button.btn.btn-primary.disabled{disabled: true, "data-bs-toggle" => "tooltip", "data-bs-title" => "Coming soon"}
+                  Send DM Notifications
+    - else
+      .card.mb-4{ role: "region", "aria-labelledby": "slack-posting" }
+        .card-header
+          %h5.mb-0{ id: "slack-posting" }
+            %i.bi.bi-slack.me-2
+            Send Notifications
+        .card-body
+          .d-flex.align-items-center.gap-2
+            %button.btn.btn-primary.disabled{disabled: true, "data-bs-toggle" => "tooltip", "data-bs-title" => "Only the observer can send notifications"}
+              Send Notification
+            %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Only the observer can send notifications"}
+            %span.text-muted.ms-2 Only the observer can send notifications
 
   .col-md-4
     / Spotlight section with analytics and interesting tidbits

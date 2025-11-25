@@ -4,6 +4,7 @@ class Company < Organization
 
   # Third party object associations
   has_one :huddle_review_notification_channel_association, 
+          -> { where(association_type: 'huddle_review_notification_channel') },
           class_name: 'ThirdPartyObjectAssociation',
           as: :associatable
   has_one :huddle_review_notification_channel, 
@@ -34,10 +35,5 @@ class Company < Organization
     else
       huddle_review_notification_channel_association&.destroy
     end
-  end
-
-  # Override the association to filter by association_type
-  def huddle_review_notification_channel_association
-    third_party_object_associations.where(association_type: 'huddle_review_notification_channel').first
   end
 end 

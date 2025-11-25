@@ -286,8 +286,21 @@ get '/login', to: 'auth#login', as: :login
         get :channels, to: 'slack/channels#index'
         post :refresh_channels, to: 'slack/channels#refresh_channels'
         post :refresh_groups, to: 'slack/channels#refresh_groups'
-        patch :update_channel_association, to: 'slack/channels#update_channel'
-        patch :update_group_association, to: 'slack/channels#update_group'
+
+        # Per-organization channel settings (overlay UX)
+        get 'channels/:target_organization_id/edit',
+            to: 'slack/channels#edit',
+            as: :edit_channel
+        patch 'channels/:target_organization_id',
+              to: 'slack/channels#update',
+              as: :channel
+        # Company-only channel settings (huddle review)
+        get 'channels/:target_organization_id/edit-company',
+            to: 'slack/channels#edit_company',
+            as: :edit_company_channel
+        patch 'channels/:target_organization_id/update-company',
+              to: 'slack/channels#update_company',
+              as: :company_channel
       end
     end
   end

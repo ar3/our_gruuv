@@ -39,30 +39,18 @@ RSpec.describe 'Slack Integration', type: :system do
 
   describe 'Slack Dashboard' do
     it 'displays the Slack integration dashboard' do
-      # Approach 1: Use sign_in_as helper (proper authentication)
-      teammate = CompanyTeammate.find_or_create_by!(person: person, organization: team)
-      sign_in_as(person, team)
-      visit organization_slack_path(team)
+      # Use company instead of team since Slack configuration is only available for companies
+      teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      sign_in_as(person, company)
+      visit organization_slack_path(company)
       expect(page).to have_content('Slack Configuration')
-      
-      # Approach 2: Create teammate and set session manually
-      # teammate = CompanyTeammate.find_or_create_by!(person: person, organization: team)
-      # page.set_rack_session(current_company_teammate_id: teammate.id)
-      # visit organization_slack_path(team)
-      # expect(page).to have_content('Slack Configuration')
-      
-      # Approach 3: Use ensure_teammate_for_person helper
-      # ApplicationController.new.send(:ensure_teammate_for_person, person)
-      # sign_in_as(person, team)
-      # visit organization_slack_path(team)
-      # expect(page).to have_content('Slack Configuration')
     end
 
     it 'shows configuration status' do
-      # Approach 1: Use sign_in_as helper
-      teammate = CompanyTeammate.find_or_create_by!(person: person, organization: team)
-      sign_in_as(person, team)
-      visit organization_slack_path(team)
+      # Use company instead of team since Slack configuration is only available for companies
+      teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      sign_in_as(person, company)
+      visit organization_slack_path(company)
       expect(page).to have_content('Slack Not Connected')
       
       # Approach 2: Set session with teammate ID
@@ -310,6 +298,157 @@ RSpec.describe 'Slack Integration', type: :system do
       # sign_in_as(person, team)
       # visit organization_slack_path(team)
       # expect(page).to have_content('Slack Configuration')
+    end
+  end
+
+  describe 'Channel & Group Associations Page' do
+    let(:slack_config) { create(:slack_configuration, organization: company) }
+    let(:channel1) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C111111', display_name: 'general') }
+    let(:channel2) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C222222', display_name: 'random') }
+    let(:channel3) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C333333', display_name: 'announcements') }
+    let(:group1) { create(:third_party_object, :slack_group, organization: company, third_party_id: 'S111111', display_name: 'Engineering') }
+    let(:group2) { create(:third_party_object, :slack_group, organization: company, third_party_id: 'S222222', display_name: 'Product') }
+    let(:department1) { create(:organization, :department, parent: company, name: 'Engineering') }
+    let(:department2) { create(:organization, :department, parent: company, name: 'Product') }
+    let(:team1) { create(:organization, :team, parent: department1, name: 'Backend Team') }
+    let(:team2) { create(:organization, :team, parent: department2, name: 'Frontend Team') }
+
+    before do
+      slack_config
+      channel1
+      channel2
+      channel3
+      group1
+      group2
+      department1
+      department2
+      team1
+      team2
+      teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
+      sign_in_as(person, company)
+    end
+
+    it 'displays the channels page with edit links' do
+      visit channels_organization_slack_path(company)
+
+      expect(page).to have_content('Manage Channel & Group Associations')
+      expect(page).to have_content('Company Settings')
+      expect(page).to have_content('Organization-Wide Settings')
+      expect(page).to have_content(company.name)
+
+      # Edit button in company section
+      expect(page).to have_link('Edit', href: edit_company_channel_organization_slack_path(company, target_organization_id: company.id))
+
+      # Edit buttons for organizations
+      expect(page).to have_css("tr[data-organization-id='#{company.id}'] a", text: 'Edit')
+      expect(page).to have_css("tr[data-organization-id='#{department1.id}'] a", text: 'Edit')
+    end
+
+    it 'edits huddle review channel for the company via dedicated page' do
+      visit channels_organization_slack_path(company)
+
+      within('.card.mb-4.border-primary') do
+        click_link 'Edit'
+      end
+
+      expect(page).to have_current_path(edit_company_channel_organization_slack_path(company, target_organization_id: company.id))
+
+      select channel1.display_name, from: 'organization[huddle_review_channel_id]'
+      click_button 'Save Settings'
+
+      expect(page).to have_current_path(channels_organization_slack_path(company))
+
+      company_record = Company.find(company.id)
+      expect(company_record.huddle_review_notification_channel_id).to eq('C111111')
+    end
+
+    it 'edits kudos and group for the company via dedicated page' do
+      visit channels_organization_slack_path(company)
+
+      # Go to edit page for company
+      find("tr[data-organization-id='#{company.id}'] a", text: 'Edit').click
+
+      expect(page).to have_current_path(edit_channel_organization_slack_path(company, target_organization_id: company.id))
+
+      select channel2.display_name, from: 'organization[kudos_channel_id]'
+      select group1.display_name, from: 'organization[slack_group_id]'
+      click_button 'Save Settings'
+
+      expect(page).to have_current_path(channels_organization_slack_path(company))
+
+      company.reload
+      expect(company.kudos_channel_id).to eq('C222222')
+      expect(company.slack_group_id).to eq('S111111')
+    end
+
+    it 'edits kudos and group for a department via dedicated page' do
+      visit channels_organization_slack_path(company)
+
+      find("tr[data-organization-id='#{department1.id}'] a", text: 'Edit').click
+
+      expect(page).to have_current_path(edit_channel_organization_slack_path(company, target_organization_id: department1.id))
+
+      select channel3.display_name, from: 'organization[kudos_channel_id]'
+      select group2.display_name, from: 'organization[slack_group_id]'
+      click_button 'Save Settings'
+
+      expect(page).to have_current_path(channels_organization_slack_path(company))
+
+      expect(department1.reload.kudos_channel_id).to eq('C333333')
+      expect(department1.reload.slack_group_id).to eq('S222222')
+    end
+
+    it 'allows clearing kudos and group for a department' do
+      department1.kudos_channel_id = channel2.third_party_id
+      department1.slack_group_id = group2.third_party_id
+      department1.save!
+
+      visit channels_organization_slack_path(company)
+
+      find("tr[data-organization-id='#{department1.id}'] a", text: 'Edit').click
+
+      select 'None', from: 'organization[kudos_channel_id]'
+      select 'None', from: 'organization[slack_group_id]'
+      click_button 'Save Settings'
+
+      expect(page).to have_current_path(channels_organization_slack_path(company))
+
+      expect(department1.reload.kudos_channel_id).to be_nil
+      expect(department1.reload.slack_group_id).to be_nil
+    end
+
+    it 'pre-populates the edit form with existing values' do
+      company_record = Company.find(company.id)
+      company_record.huddle_review_notification_channel_id = channel1.third_party_id
+      company_record.save!
+      company.kudos_channel_id = channel2.third_party_id
+      company.slack_group_id = group1.third_party_id
+      company.save!
+
+      # Check huddle review on company-only page
+      visit edit_company_channel_organization_slack_path(company, target_organization_id: company.id)
+      expect(find_field('organization[huddle_review_channel_id]').value).to eq('C111111')
+
+      # Check kudos and group on regular edit page
+      visit edit_channel_organization_slack_path(company, target_organization_id: company.id)
+      expect(find_field('organization[kudos_channel_id]').value).to eq('C222222')
+      expect(find_field('organization[slack_group_id]').value).to eq('S111111')
+    end
+
+    it 'submits successfully when clearing huddle review channel via dedicated page' do
+      company_record = Company.find(company.id)
+      company_record.huddle_review_notification_channel_id = channel1.third_party_id
+      company_record.save!
+      
+      visit edit_company_channel_organization_slack_path(company, target_organization_id: company.id)
+      
+      select 'None', from: 'organization[huddle_review_channel_id]'
+      click_button 'Save Settings'
+      
+      expect(page).to have_current_path(channels_organization_slack_path(company))
+      
+      company_record.reload
+      expect(company_record.huddle_review_notification_channel_id).to be_nil
     end
   end
 end 

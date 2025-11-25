@@ -3,8 +3,10 @@ require 'rails_helper'
 RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company, name: 'Test Company') }
-  let(:department) { create(:organization, :department, name: 'Test Department', parent: company) }
-  let(:team) { create(:organization, :team, name: 'Test Team', parent: department) }
+  let(:department1) { create(:organization, :department, name: 'Department 1', parent: company) }
+  let(:department2) { create(:organization, :department, name: 'Department 2', parent: company) }
+  let(:team1) { create(:organization, :team, name: 'Team 1', parent: department1) }
+  let(:team2) { create(:organization, :team, name: 'Team 2', parent: department2) }
   let(:slack_config) { create(:slack_configuration, organization: company) }
   let(:mock_slack_service) { instance_double(SlackService) }
   let(:mock_channels_service) { instance_double(SlackChannelsService) }
@@ -26,17 +28,19 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
     end
 
     it 'loads organization hierarchy' do
-      department
-      team
+      department1
+      department2
+      team1
+      team2
       get :index, params: { organization_id: company.id }
       org_ids = assigns(:organizations).map(&:id)
-      expect(org_ids).to include(company.id, department.id, team.id)
+      expect(org_ids).to include(company.id, department1.id, department2.id, team1.id, team2.id)
     end
 
     it 'loads channels and groups' do
       channel = create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C123456')
       group = create(:third_party_object, :slack_group, organization: company, third_party_id: 'S123456')
-      
+
       get :index, params: { organization_id: company.id }
       expect(assigns(:slack_channels)).to include(channel)
       expect(assigns(:slack_groups)).to include(group)
@@ -67,31 +71,121 @@ RSpec.describe Organizations::Slack::ChannelsController, type: :controller do
     end
   end
 
-  describe 'PATCH #update_channel' do
-    let(:channel) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C123456') }
+  describe 'GET #edit and PATCH #update' do
+    let(:channel1) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C111111') }
+    let(:channel2) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C222222') }
+    let(:channel3) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C333333') }
+    let(:group1) { create(:third_party_object, :slack_group, organization: company, third_party_id: 'S111111') }
+    let(:group2) { create(:third_party_object, :slack_group, organization: company, third_party_id: 'S222222') }
 
-    it 'updates channel association for company' do
-      patch :update_channel, params: {
+    it 'renders edit for a valid organization' do
+      get :edit, params: { organization_id: company.id, target_organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(assigns(:target_organization).id).to eq(company.id)
+    end
+
+    it 'updates kudos and group for company' do
+      patch :update, params: {
         organization_id: company.id,
-        channel_id: channel.third_party_id
+        target_organization_id: company.id,
+        organization: {
+          kudos_channel_id: channel2.third_party_id,
+          slack_group_id: group1.third_party_id
+        }
       }
       expect(response).to redirect_to(channels_organization_slack_path(company))
-      company_record = Company.find(company.id)
-      expect(company_record.huddle_review_notification_channel_id).to eq(channel.third_party_id)
+      expect(flash[:notice]).to include('Channel settings updated successfully.')
+
+      expect(company.reload.kudos_channel_id).to eq(channel2.third_party_id)
+      expect(company.reload.slack_group_id).to eq(group1.third_party_id)
+    end
+
+    it 'updates kudos and group for a department' do
+      patch :update, params: {
+        organization_id: company.id,
+        target_organization_id: department1.id,
+        organization: {
+          kudos_channel_id: channel3.third_party_id,
+          slack_group_id: group2.third_party_id
+        }
+      }
+      expect(response).to redirect_to(channels_organization_slack_path(company))
+
+      expect(department1.reload.kudos_channel_id).to eq(channel3.third_party_id)
+      expect(department1.reload.slack_group_id).to eq(group2.third_party_id)
+    end
+
+    it 'clears kudos and group when values are blank' do
+      department1.kudos_channel_id = channel1.third_party_id
+      department1.slack_group_id = group1.third_party_id
+      department1.save!
+
+      patch :update, params: {
+        organization_id: company.id,
+        target_organization_id: department1.id,
+        organization: {
+          kudos_channel_id: '',
+          slack_group_id: ''
+        }
+      }
+      expect(response).to redirect_to(channels_organization_slack_path(company))
+
+      expect(department1.reload.kudos_channel_id).to be_nil
+      expect(department1.reload.slack_group_id).to be_nil
     end
   end
 
-  describe 'PATCH #update_group' do
-    let(:group) { create(:third_party_object, :slack_group, organization: company, third_party_id: 'S789012') }
+  describe 'GET #edit_company and PATCH #update_company' do
+    let(:channel1) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C111111') }
+    let(:channel2) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C222222') }
 
-    it 'updates group association' do
-      patch :update_group, params: {
+    it 'renders edit_company for a company' do
+      get :edit_company, params: { organization_id: company.id, target_organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(assigns(:target_organization).id).to eq(company.id)
+      expect(assigns(:target_organization)).to be_a(Company)
+    end
+
+    it 'redirects if target is not a company' do
+      department1
+      get :edit_company, params: { organization_id: company.id, target_organization_id: department1.id }
+      expect(response).to redirect_to(channels_organization_slack_path(company))
+      expect(flash[:alert]).to include('Company-only settings are only available for companies')
+    end
+
+    it 'updates huddle review channel for company' do
+      patch :update_company, params: {
         organization_id: company.id,
-        group_id: group.third_party_id
+        target_organization_id: company.id,
+        organization: {
+          huddle_review_channel_id: channel1.third_party_id
+        }
       }
       expect(response).to redirect_to(channels_organization_slack_path(company))
-      expect(company.reload.slack_group_id).to eq(group.third_party_id)
+      expect(flash[:notice]).to include('Company-only channels updated successfully.')
+
+      company_record = Company.find(company.id)
+      expect(company_record.huddle_review_notification_channel_id).to eq(channel1.third_party_id)
+    end
+
+    it 'clears huddle review channel when value is blank' do
+      company_record = Company.find(company.id)
+      company_record.huddle_review_notification_channel_id = channel1.third_party_id
+      company_record.save!
+
+      patch :update_company, params: {
+        organization_id: company.id,
+        target_organization_id: company.id,
+        organization: {
+          huddle_review_channel_id: ''
+        }
+      }
+      expect(response).to redirect_to(channels_organization_slack_path(company))
+
+      company_record.reload
+      expect(company_record.huddle_review_notification_channel_id).to be_nil
     end
   end
 end
+
 

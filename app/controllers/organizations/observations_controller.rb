@@ -176,6 +176,54 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       redirect_to kudos_path(date: date_part, id: @observation.id)
       return
     end
+
+    # Load organizations with kudos channels for channel selection
+    if @observation.privacy_level == 'public_observation' && policy(@observation).post_to_slack?
+      company = @observation.company
+      organizations_with_channels = ([company] + company.descendants.to_a).select { |org| org.kudos_channel_id.present? }
+      @kudos_channel_options = organizations_with_channels.map do |org|
+        channel = org.kudos_channel
+        display_text = channel ? "#{org.display_name} - #{channel.display_name}" : org.display_name
+        [display_text, org.id]
+      end
+    end
+
+    # Load managers for DM notifications (Phase 5)
+    if @observation.privacy_level != 'observer_only' && policy(@observation).post_to_slack?
+      @dm_recipients = []
+      
+      # Add observer
+      @dm_recipients << {
+        name: @observation.observer.preferred_name || @observation.observer.first_name,
+        role: "Observer",
+        type: "observer"
+      }
+      
+      # Add observees
+      @observation.observed_teammates.each do |teammate|
+        @dm_recipients << {
+          name: teammate.person.preferred_name || teammate.person.first_name,
+          role: "Observed",
+          type: "observee"
+        }
+      end
+      
+      # Add managers of observees
+      @observation.observed_teammates.each do |teammate|
+        person = teammate.person
+        managers = ManagerialHierarchyQuery.new(person: person, organization: @observation.company).call
+        managers.each do |manager_info|
+          # Avoid duplicates
+          unless @dm_recipients.any? { |r| r[:name] == manager_info[:name] && r[:type] == "manager" }
+            @dm_recipients << {
+              name: manager_info[:name],
+              role: "Manager of #{teammate.person.preferred_name || teammate.person.first_name}",
+              type: "manager"
+            }
+          end
+        end
+      end
+    end
   end
 
   def new
@@ -465,7 +513,13 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     authorize @observation, :post_to_slack?
     
     notify_teammate_ids = params[:notify_teammate_ids] || []
-    Observations::PostNotificationJob.perform_later(@observation.id, notify_teammate_ids)
+    kudos_channel_organization_id = params[:kudos_channel_organization_id]
+    
+    Observations::PostNotificationJob.perform_later(
+      @observation.id, 
+      notify_teammate_ids,
+      kudos_channel_organization_id
+    )
     
     redirect_to organization_observation_path(organization, @observation), 
                 notice: 'Notifications sent successfully'

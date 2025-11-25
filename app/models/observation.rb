@@ -47,6 +47,7 @@ class Observation < ApplicationRecord
   scope :published, -> { where.not(published_at: nil) }
   
   before_validation :set_observed_at_default
+  after_update :update_channel_notifications_if_needed
   
   def permalink_id
     base_id = "#{observed_at.strftime('%Y-%m-%d')}-#{id}"
@@ -134,6 +135,32 @@ class Observation < ApplicationRecord
       unless observee.teammate.organization == company
         errors.add(:observees, "must be in the same company as the observer")
         break
+      end
+    end
+  end
+
+  def update_channel_notifications_if_needed
+    # Only update if observation is still public and published
+    return unless privacy_level == 'public_observation' && published?
+    
+    # Check if relevant attributes changed (not just metadata like updated_at)
+    relevant_changes = saved_change_to_story? || 
+                       saved_change_to_primary_feeling? || 
+                       saved_change_to_secondary_feeling? ||
+                       saved_change_to_story_extras?
+    
+    if relevant_changes
+      # Find all organizations that have channel notifications for this observation
+      channel_notifications = notifications
+                                .where(notification_type: 'observation_channel')
+                                .where("metadata->>'is_main_message' = 'true'")
+                                .successful
+      
+      channel_notifications.each do |notification|
+        organization_id = notification.metadata['organization_id']
+        if organization_id.present?
+          Observations::PostNotificationJob.perform_later(id, [], organization_id)
+        end
       end
     end
   end

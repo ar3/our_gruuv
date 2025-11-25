@@ -8,21 +8,21 @@
       .col-md-8
         .row.text-center
           .col-6
-            .h4.text-primary= active_huddles_this_week.count
+            .h4.text-primary= (active_huddles_this_week || []).count
             %small.text-muted Active Huddles This Week
           .col-6
-            .h4.text-primary= total_participants_this_week
+            .h4.text-primary= total_participants_this_week || 0
             %small.text-muted Participants This Week
         .row.text-center.mt-3
           .col-12
-            .h4.text-info= average_rating_this_week
+            .h4.text-info= average_rating_this_week || 0
             %small.text-muted Average Rating This Week
         .row.text-center.mt-3
           .col-6
-            .h4.text-primary= total_huddles_all_time
+            .h4.text-primary= total_huddles_all_time || 0
             %small.text-muted Total Huddles All Time
           .col-6
-            .h4.text-primary= total_participants_all_time
+            .h4.text-primary= total_participants_all_time || 0
             %small.text-muted Total Participants All Time
         .row.text-center.mt-3
           .col-12

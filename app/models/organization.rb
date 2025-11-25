@@ -102,7 +102,9 @@ class Organization < ApplicationRecord
   
   def slack_group_id=(group_id)
     if group_id.present?
-      group = third_party_objects.where(third_party_source: 'slack', third_party_object_type: 'group').find_by(third_party_id: group_id)
+      # Use root company's third_party_objects since departments/teams don't have their own
+      root_company_obj = root_company || self
+      group = root_company_obj.third_party_objects.where(third_party_source: 'slack', third_party_object_type: 'group').find_by(third_party_id: group_id)
       if group
         # Remove existing association
         slack_group_association&.destroy
@@ -115,6 +117,39 @@ class Organization < ApplicationRecord
       end
     else
       slack_group_association&.destroy
+    end
+  end
+
+  # Kudos channel association methods
+  def kudos_channel_association
+    third_party_object_associations.where(association_type: 'observation_kudos_channel').first
+  end
+  
+  def kudos_channel
+    kudos_channel_association&.third_party_object
+  end
+  
+  def kudos_channel_id
+    kudos_channel&.third_party_id
+  end
+  
+  def kudos_channel_id=(channel_id)
+    if channel_id.present?
+      # Use root company's third_party_objects since departments/teams don't have their own
+      root_company_obj = root_company || self
+      channel = root_company_obj.third_party_objects.slack_channels.find_by(third_party_id: channel_id)
+      if channel
+        # Remove existing association
+        kudos_channel_association&.destroy
+        
+        # Create new association
+        third_party_object_associations.create!(
+          third_party_object: channel,
+          association_type: 'observation_kudos_channel'
+        )
+      end
+    else
+      kudos_channel_association&.destroy
     end
   end
   
