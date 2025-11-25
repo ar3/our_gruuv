@@ -80,13 +80,20 @@ RSpec.describe Prompt, type: :model do
     end
   end
 
-  describe 'validations for one open prompt per teammate' do
+  describe 'validations for one open prompt per teammate per template' do
     let!(:existing_open) { create(:prompt, :open, company_teammate: teammate, prompt_template: template) }
 
-    it 'allows only one open prompt per teammate' do
+    it 'allows only one open prompt per teammate per template' do
       new_open = build(:prompt, :open, company_teammate: teammate, prompt_template: template)
       expect(new_open).not_to be_valid
-      expect(new_open.errors[:base]).to include('Only one open prompt allowed per teammate')
+      expect(new_open.errors[:base]).to include('Only one open prompt allowed per teammate per template')
+    end
+
+    it 'allows multiple open prompts for different templates' do
+      other_template = create(:prompt_template, company: company)
+      new_open = build(:prompt, :open, company_teammate: teammate, prompt_template: other_template)
+      expect(new_open).to be_valid
+      expect(new_open.errors[:base]).to be_empty
     end
 
     it 'allows multiple closed prompts per teammate' do

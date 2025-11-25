@@ -9,7 +9,7 @@ class Prompt < ApplicationRecord
   # Validations
   validates :company_teammate, presence: true
   validates :prompt_template, presence: true
-  validate :only_one_open_prompt_per_teammate
+  validate :only_one_open_prompt_per_teammate_per_template
 
   # Scopes
   scope :open, -> { where(closed_at: nil) }
@@ -33,17 +33,18 @@ class Prompt < ApplicationRecord
 
   private
 
-  def only_one_open_prompt_per_teammate
+  def only_one_open_prompt_per_teammate_per_template
     return unless open?
     return unless company_teammate_id.present?
+    return unless prompt_template_id.present?
 
     existing_open = Prompt
-      .where(company_teammate_id: company_teammate_id)
+      .where(company_teammate_id: company_teammate_id, prompt_template_id: prompt_template_id)
       .open
       .where.not(id: id)
 
     if existing_open.exists?
-      errors.add(:base, 'Only one open prompt allowed per teammate')
+      errors.add(:base, 'Only one open prompt allowed per teammate per template')
     end
   end
 end

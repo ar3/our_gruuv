@@ -153,6 +153,19 @@ RSpec.describe Organizations::PromptsController, type: :controller do
       expect(assigns(:existing_open_prompts)).to include(template.id => existing_prompt)
     end
 
+    it 'assigns existing open prompts keyed by template id with at most one per template' do
+      other_template = create(:prompt_template, company: organization, available_at: Date.current)
+      prompt1 = create(:prompt, :open, company_teammate: teammate, prompt_template: template)
+      prompt2 = create(:prompt, :open, company_teammate: teammate, prompt_template: other_template)
+
+      get :new, params: { organization_id: organization.id }
+      existing_prompts = assigns(:existing_open_prompts)
+
+      expect(existing_prompts).to include(template.id => prompt1)
+      expect(existing_prompts).to include(other_template.id => prompt2)
+      expect(existing_prompts.keys).to contain_exactly(template.id, other_template.id)
+    end
+
     context 'when user is not a CompanyTeammate' do
       let(:team) { create(:organization, :team, parent: organization) }
       let(:team_teammate) { create(:teammate, person: person, organization: team) }
@@ -230,13 +243,21 @@ RSpec.describe Organizations::PromptsController, type: :controller do
       let(:other_template) { create(:prompt_template, company: organization, available_at: Date.current) }
       let!(:existing_open) { create(:prompt, :open, company_teammate: teammate, prompt_template: other_template) }
 
-      it 'redirects with alert' do
-        post :create, params: {
-          organization_id: organization.id,
-          template_id: template.id
-        }
-        expect(response).to redirect_to(new_organization_prompt_path(organization))
-        expect(flash[:alert]).to match(/already have an open prompt/)
+      it 'creates a new prompt and redirects to edit' do
+        expect {
+          post :create, params: {
+            organization_id: organization.id,
+            template_id: template.id
+          }
+        }.to change { Prompt.count }.by(1)
+
+        new_prompt = Prompt.last
+        expect(new_prompt.prompt_template).to eq(template)
+        expect(new_prompt.open?).to be true
+        expect(existing_open.reload.open?).to be true
+
+        expect(response).to redirect_to(edit_organization_prompt_path(organization, new_prompt))
+        expect(flash[:notice]).to eq('Prompt started successfully.')
       end
     end
   end

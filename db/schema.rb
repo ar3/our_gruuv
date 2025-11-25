@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_22_075912) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_25_025624) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -670,8 +670,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_22_075912) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["company_teammate_id", "prompt_template_id"], name: "index_prompts_on_company_teammate_id_and_prompt_template_id"
+    t.index ["company_teammate_id", "prompt_template_id"], name: "index_prompts_on_teammate_and_template_when_open", unique: true, where: "(closed_at IS NULL)"
     t.index ["company_teammate_id"], name: "index_prompts_on_company_teammate_id"
-    t.index ["company_teammate_id"], name: "index_prompts_on_company_teammate_id_when_open", unique: true, where: "(closed_at IS NULL)"
     t.index ["prompt_template_id"], name: "index_prompts_on_prompt_template_id"
   end
 

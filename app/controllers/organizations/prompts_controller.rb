@@ -131,14 +131,6 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
       existing_open.close!
     end
     
-    # Check if there's any other open prompt (shouldn't happen due to validation, but check anyway)
-    other_open = Prompt.where(company_teammate: teammate).open.where.not(prompt_template: template).first
-    if other_open
-      redirect_to new_organization_prompt_path(@organization), 
-                  alert: 'You already have an open prompt for a different template. Please close it before starting a new one.'
-      return
-    end
-    
     @prompt = Prompt.create!(
       company_teammate: teammate,
       prompt_template: template
