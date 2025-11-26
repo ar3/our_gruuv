@@ -177,6 +177,15 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       return
     end
 
+    # Create debug data if debug parameter is present
+    if params[:debug] == 'true'
+      debug_service = Debug::ObservationSlackDebugService.new(
+        observation: @observation,
+        organization: organization
+      )
+      @debug_data = debug_service.call
+    end
+
     # Load organizations with kudos channels for channel selection
     if @observation.privacy_level == 'public_observation' && policy(@observation).post_to_slack?
       company = @observation.company

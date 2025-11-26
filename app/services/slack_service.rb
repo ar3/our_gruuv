@@ -27,18 +27,25 @@ class SlackService
     
     return { success: false, error: "Slack not configured or channel missing" } unless slack_configured? && channel.present?
     
-    # Use organization-specific defaults if available
-    
-    bot_username = @config&.bot_username_or_default
+    # Use organization-specific defaults if available, but allow overrides from metadata
+    bot_username = notification.metadata['username'] || @config&.bot_username_or_default
     bot_emoji = @config&.bot_emoji_or_default
+    icon_url = notification.metadata['icon_url']
     
     message_params = {
       channel: channel,
       username: bot_username,
-      icon_emoji: bot_emoji,
       text: fallback_text,
       blocks: rich_message
     }
+    
+    # Slack API supports either icon_emoji or icon_url, but not both
+    # Prefer icon_url if provided, otherwise use icon_emoji
+    if icon_url.present?
+      message_params[:icon_url] = icon_url
+    elsif bot_emoji.present?
+      message_params[:icon_emoji] = bot_emoji
+    end
     
     # Add thread_ts if this is a thread reply
     if notification.main_thread.present? && notification.main_thread.message_id.present?
@@ -98,12 +105,28 @@ class SlackService
     
     return { success: false, error: "Slack not configured or channel missing" } unless slack_configured? && channel.present?
     
+    # Allow username and icon_url overrides from metadata for updates too
+    bot_username = notification.metadata['username'] || @config&.bot_username_or_default
+    bot_emoji = @config&.bot_emoji_or_default
+    icon_url = notification.metadata['icon_url']
+    
     message_params = {
       channel: channel,
       ts: original_notification.message_id,
       text: fallback_text,
       blocks: rich_message
     }
+    
+    # Add username if provided
+    message_params[:username] = bot_username if bot_username.present?
+    
+    # Slack API supports either icon_emoji or icon_url, but not both
+    # Prefer icon_url if provided, otherwise use icon_emoji
+    if icon_url.present?
+      message_params[:icon_url] = icon_url
+    elsif bot_emoji.present?
+      message_params[:icon_emoji] = bot_emoji
+    end
     
     Rails.logger.info "Slack: Updating message #{original_notification.message_id} in #{channel}"
     

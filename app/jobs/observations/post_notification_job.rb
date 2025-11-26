@@ -166,6 +166,22 @@ class Observations::PostNotificationJob < ApplicationJob
       main_blocks = build_channel_main_message(observation, organization)
       thread_blocks = build_channel_thread_reply(observation, organization)
       
+      # Get observer's casual name and Slack identity for username/icon override
+      # Look in observation.company, not organization (kudos channel org)
+      observer_teammate = observation.company.teammates.includes(:teammate_identities).find_by(person: observation.observer)
+      observer_slack_identity = observer_teammate&.teammate_identities&.find { |ti| ti.provider == 'slack' }
+      observer_casual_name = observation.observer.casual_name
+      username_override = "#{observer_casual_name} via OG"
+      
+      # Get icon URL from observer's Slack profile image, fallback to favicon
+      # Check that slack_identity exists and has a non-blank profile_image_url
+      icon_url = if observer_slack_identity.present? && observer_slack_identity.profile_image_url.present?
+        observer_slack_identity.profile_image_url
+      else
+        # Fallback to favicon - construct full URL
+        "#{Rails.application.routes.url_helpers.root_url.chomp('/')}/favicon-32x32.png"
+      end
+      
       # Update main message
       main_notification = observation.notifications.create!(
         notification_type: 'observation_channel',
@@ -174,7 +190,9 @@ class Observations::PostNotificationJob < ApplicationJob
         metadata: { 
           channel: channel_id,
           organization_id: organization_id.to_s,
-          is_main_message: true
+          is_main_message: true,
+          username: username_override,
+          icon_url: icon_url
         },
         rich_message: main_blocks,
         fallback_text: build_channel_fallback_text(observation, organization)
@@ -199,7 +217,9 @@ class Observations::PostNotificationJob < ApplicationJob
           metadata: {
             channel: channel_id,
             organization_id: organization_id.to_s,
-            is_thread_reply: true
+            is_thread_reply: true,
+            username: username_override,
+            icon_url: icon_url
           },
           rich_message: thread_blocks,
           fallback_text: build_thread_fallback_text(observation, organization)
@@ -214,7 +234,9 @@ class Observations::PostNotificationJob < ApplicationJob
           metadata: {
             channel: channel_id,
             organization_id: organization_id.to_s,
-            is_thread_reply: true
+            is_thread_reply: true,
+            username: username_override,
+            icon_url: icon_url
           },
           rich_message: thread_blocks,
           fallback_text: build_thread_fallback_text(observation, organization)
@@ -228,13 +250,31 @@ class Observations::PostNotificationJob < ApplicationJob
       main_blocks = build_channel_main_message(observation, organization)
       thread_blocks = build_channel_thread_reply(observation, organization)
       
+      # Get observer's casual name and Slack identity for username/icon override
+      # Look in observation.company, not organization (kudos channel org)
+      observer_teammate = observation.company.teammates.includes(:teammate_identities).find_by(person: observation.observer)
+      observer_slack_identity = observer_teammate&.teammate_identities&.find { |ti| ti.provider == 'slack' }
+      observer_casual_name = observation.observer.casual_name
+      username_override = "#{observer_casual_name} via OG"
+      
+      # Get icon URL from observer's Slack profile image, fallback to favicon
+      # Check that slack_identity exists and has a non-blank profile_image_url
+      icon_url = if observer_slack_identity.present? && observer_slack_identity.profile_image_url.present?
+        observer_slack_identity.profile_image_url
+      else
+        # Fallback to favicon - construct full URL
+        "#{Rails.application.routes.url_helpers.root_url.chomp('/')}/favicon-32x32.png"
+      end
+      
       main_notification = observation.notifications.create!(
         notification_type: 'observation_channel',
         status: 'preparing_to_send',
         metadata: {
           channel: channel_id,
           organization_id: organization_id.to_s,
-          is_main_message: true
+          is_main_message: true,
+          username: username_override,
+          icon_url: icon_url
         },
         rich_message: main_blocks,
         fallback_text: build_channel_fallback_text(observation, organization)
@@ -244,6 +284,7 @@ class Observations::PostNotificationJob < ApplicationJob
       
       # Create thread reply if main message was successful
       if result[:success] && main_notification.reload.message_id.present?
+        # Use same username and icon override for thread reply
         thread_notification = observation.notifications.create!(
           notification_type: 'observation_channel',
           main_thread: main_notification,
@@ -251,7 +292,9 @@ class Observations::PostNotificationJob < ApplicationJob
           metadata: {
             channel: channel_id,
             organization_id: organization_id.to_s,
-            is_thread_reply: true
+            is_thread_reply: true,
+            username: username_override,
+            icon_url: icon_url
           },
           rich_message: thread_blocks,
           fallback_text: build_thread_fallback_text(observation, organization)
@@ -268,68 +311,63 @@ class Observations::PostNotificationJob < ApplicationJob
   end
 
   def build_channel_main_message(observation, organization)
-    observer_name = observation.observer.preferred_name || observation.observer.first_name
-    observer_teammate = organization.teammates.find_by(person: observation.observer)
-    observer_slack_id = observer_teammate&.slack_user_id
+    # Load observer teammate with slack identity from observation's company (not the kudos channel org)
+    observer_teammate = observation.company.teammates.includes(:teammate_identities).find_by(person: observation.observer)
     
-    observed_names = observation.observed_teammates.map do |teammate|
-      name = teammate.person.preferred_name || teammate.person.first_name
-      slack_id = teammate.slack_user_id
-      if slack_id
+    # Get observer's Slack mention or fallback to casual name
+    # Check slack_identity directly to ensure it's loaded
+    observer_slack_identity = observer_teammate&.teammate_identities&.find { |ti| ti.provider == 'slack' }
+    observer_slack_id = observer_slack_identity&.uid
+    observer_mention = if observer_slack_id.present?
+      "<@#{observer_slack_id}>"
+    else
+      observation.observer.casual_name
+    end
+    
+    # Get observed Slack mentions or fallback to casual names
+    # Observed teammates are already in observation.company (validation ensures this)
+    # Ensure we load teammate_identities for observed teammates
+    observed_mentions = observation.observed_teammates.includes(:teammate_identities).map do |teammate|
+      # Check slack_identity directly to ensure it's loaded
+      slack_identity = teammate.teammate_identities.find { |ti| ti.provider == 'slack' }
+      slack_id = slack_identity&.uid
+      if slack_id.present?
         "<@#{slack_id}>"
       else
-        name
+        teammate.person.casual_name
       end
     end
     
-    observer_mention = observer_slack_id ? "<@#{observer_slack_id}>" : observer_name
+    # Build intro text: "New awesome story about <slack mentions of observed> as told by <slack mention of observer>"
+    intro_text = "New awesome story about #{observed_mentions.join(', ')} as told by #{observer_mention}"
     
     blocks = [
       {
-        type: "header",
-        text: {
-          type: "plain_text",
-          text: "🎉 New Public Observation!",
-          emoji: true
-        }
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: "_#{intro_text}_"
+          }
+        ]
       },
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: "*Observer:* #{observer_mention}"
+          text: observation.story
         }
       }
     ]
     
-    if observed_names.any?
-      blocks << {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: "*Observed:* #{observed_names.join(', ')}"
-        }
-      }
-    end
-    
-    blocks << {
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: observation.story
-      }
-    }
-    
-    # Add GIF URLs for unfurling in Slack
+    # Add GIF URLs as image blocks
     if observation.story_extras.present? && observation.story_extras['gif_urls'].present?
       gif_urls = Array(observation.story_extras['gif_urls']).reject(&:blank?)
       gif_urls.each do |gif_url|
         blocks << {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: gif_url
-          }
+          type: "image",
+          image_url: gif_url,
+          alt_text: "GIF"
         }
       end
     end
@@ -338,90 +376,67 @@ class Observations::PostNotificationJob < ApplicationJob
   end
 
   def build_channel_thread_reply(observation, organization)
+    observer_casual_name = observation.observer.casual_name
+    observer_public_url = Rails.application.routes.url_helpers.public_person_url(observation.observer)
+    feelings_sentence = observation.feelings_display
     permalink_url = observation.decorate.permalink_url
-    feelings_text = build_feelings_text(observation)
     
     blocks = []
     
-    if feelings_text.present?
-      blocks << {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: "*Feelings:* #{feelings_text}"
-        }
-      }
-    end
-    
-    # Add ratings with public page links
-    positive_ratings = observation.observation_ratings.positive
-    if positive_ratings.any?
-      ratings_sections = []
-      
-      abilities = observation.abilities
-      assignments = observation.assignments
-      aspirations = observation.aspirations
-      
-      if abilities.any?
-        ability_links = abilities.map do |ability|
-          url = Rails.application.routes.url_helpers.organization_public_maap_ability_url(ability.organization, ability)
-          "<#{url}|#{ability.name}>"
-        end
-        ratings_sections << "*Abilities:* #{ability_links.join(', ')}"
-      end
-      
-      if assignments.any?
-        assignment_links = assignments.map do |assignment|
-          url = Rails.application.routes.url_helpers.organization_public_maap_assignment_url(assignment.company, assignment)
-          "<#{url}|#{assignment.title}>"
-        end
-        ratings_sections << "*Assignments:* #{assignment_links.join(', ')}"
-      end
-      
-      if aspirations.any?
-        aspiration_links = aspirations.map do |aspiration|
-          url = Rails.application.routes.url_helpers.organization_public_maap_aspiration_url(aspiration.organization, aspiration)
-          "<#{url}|#{aspiration.name}>"
-        end
-        ratings_sections << "*Aspirations:* #{aspiration_links.join(', ')}"
-      end
-      
-      if ratings_sections.any?
-        blocks << {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: ratings_sections.join("\n")
-          }
-        }
-      end
-    end
-    
-    # Add observed's public pages
-    if observation.observed_teammates.any?
+    # Add feelings sentence at top: "This story about <observed links> made <observer link> feel <feelings_sentence>"
+    if feelings_sentence.present?
+      # Build observed links
       observed_links = observation.observed_teammates.map do |teammate|
         person = teammate.person
-        url = Rails.application.routes.url_helpers.public_person_url(person)
-        name = person.preferred_name || person.first_name
-        "<#{url}|#{name}>"
+        person_public_url = Rails.application.routes.url_helpers.public_person_url(person)
+        person_casual_name = person.casual_name
+        "<#{person_public_url}|#{person_casual_name}>"
       end
+      
+      # Build the sentence with links
+      story_link = "<#{permalink_url}|This story>"
+      observer_link = "<#{observer_public_url}|#{observer_casual_name}>"
+      about_text = observed_links.any? ? " about #{observed_links.join(', ')}" : ""
+      
+      feelings_text = "#{story_link}#{about_text} made #{observer_link} feel #{feelings_sentence}"
       
       blocks << {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: "*Observed People:* #{observed_links.join(', ')}"
+          text: feelings_text
         }
       }
     end
     
-    # Add engagement message and permalink
-    blocks << {
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: "💬 Share your thoughts and reactions! <#{permalink_url}|View the full observation>"
+    # Add ratings using new formatter (grouped by type, then rating level)
+    rating_sentences = observation.format_ratings_by_type_and_level(format: :slack)
+    if rating_sentences.any?
+      blocks << {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: rating_sentences.join("\n")
+        }
       }
+    end
+    
+    # Add ending message with company name and new observation link (in subtle context block)
+    # Get the observer's company (the company where the observer has a teammate)
+    observer_company = observation.company
+    company_name = observer_company.name
+    new_observation_url = Rails.application.routes.url_helpers.new_organization_observation_url(observer_company)
+    
+    ending_text = "Adding stories like this to the *#{company_name}* novel will help shape us, because they are specific about the best examples of us executing assignments, demonstrating abilities, and exemplifying the aspirations/values we focus on.\n\nThis one was great, who's next to add to <#{new_observation_url}|OUR Story>?"
+    
+    blocks << {
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: ending_text
+        }
+      ]
     }
     
     blocks

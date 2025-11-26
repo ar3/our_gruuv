@@ -240,5 +240,151 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
         expect(notification.rich_message).to include('Strongly agree')
       end
     end
+
+    context 'Slack handle and icon handling' do
+      let(:notify_teammate_ids) { [] }
+      let(:kudos_channel) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C999999') }
+      let(:observer_slack_identity) { observer_teammate.teammate_identities.find_by(provider: 'slack') }
+
+      before do
+        observation.update!(privacy_level: :public_observation, published_at: Time.current)
+        company.kudos_channel_id = kudos_channel.third_party_id
+        company.save!
+        allow(slack_service).to receive(:update_message) do |notification_id|
+          notification = Notification.find(notification_id)
+          notification.update!(status: 'sent_successfully', message_id: '9876543210.987654')
+          { success: true, message_id: '9876543210.987654' }
+        end
+      end
+
+      context 'when observer has Slack identity' do
+        before do
+          observer_slack_identity.update!(
+            uid: 'U123456',
+            name: 'Observer Slack Name',
+            profile_image_url: 'https://slack.com/avatar123.png'
+          )
+        end
+
+        it 'uses Slack handle in main message intro text' do
+          job = Observations::PostNotificationJob.new
+          job.perform(observation.id, notify_teammate_ids, company.id)
+
+          main_notification = Notification.where(notification_type: 'observation_channel')
+                                        .where("metadata->>'is_main_message' = 'true'")
+                                        .first
+          rich_message = main_notification.rich_message.is_a?(String) ? JSON.parse(main_notification.rich_message) : main_notification.rich_message
+          
+          intro_block = rich_message.find { |block| block['type'] == 'context' }
+          expect(intro_block).to be_present
+          intro_text = intro_block.dig('elements', 0, 'text')
+          expect(intro_text).to include('<@U123456>')
+          expect(intro_text).not_to include(observer.casual_name)
+        end
+
+        it 'sets username override in metadata' do
+          job = Observations::PostNotificationJob.new
+          job.perform(observation.id, notify_teammate_ids, company.id)
+
+          main_notification = Notification.where(notification_type: 'observation_channel')
+                                        .where("metadata->>'is_main_message' = 'true'")
+                                        .first
+          expect(main_notification.metadata['username']).to eq("#{observer.casual_name} via OG")
+        end
+
+        it 'uses Slack profile image as icon_url' do
+          job = Observations::PostNotificationJob.new
+          job.perform(observation.id, notify_teammate_ids, company.id)
+
+          main_notification = Notification.where(notification_type: 'observation_channel')
+                                        .where("metadata->>'is_main_message' = 'true'")
+                                        .first
+          expect(main_notification.metadata['icon_url']).to eq('https://slack.com/avatar123.png')
+        end
+
+        it 'sets username and icon_url on thread reply' do
+          job = Observations::PostNotificationJob.new
+          job.perform(observation.id, notify_teammate_ids, company.id)
+
+          thread_notification = Notification.where(notification_type: 'observation_channel')
+                                          .where("metadata->>'is_thread_reply' = 'true'")
+                                          .first
+          expect(thread_notification.metadata['username']).to eq("#{observer.casual_name} via OG")
+          expect(thread_notification.metadata['icon_url']).to eq('https://slack.com/avatar123.png')
+        end
+      end
+
+      context 'when observer has Slack identity but no profile image' do
+        before do
+          observer_slack_identity.update!(
+            uid: 'U123456',
+            name: 'Observer Slack Name',
+            profile_image_url: nil
+          )
+        end
+
+        it 'falls back to favicon for icon_url' do
+          job = Observations::PostNotificationJob.new
+          job.perform(observation.id, notify_teammate_ids, company.id)
+
+          main_notification = Notification.where(notification_type: 'observation_channel')
+                                        .where("metadata->>'is_main_message' = 'true'")
+                                        .first
+          expect(main_notification.metadata['icon_url']).to include('/favicon-32x32.png')
+        end
+      end
+
+      context 'when observer has no Slack identity' do
+        before do
+          observer_slack_identity.destroy
+        end
+
+        it 'uses casual name in main message intro text' do
+          job = Observations::PostNotificationJob.new
+          job.perform(observation.id, notify_teammate_ids, company.id)
+
+          main_notification = Notification.where(notification_type: 'observation_channel')
+                                        .where("metadata->>'is_main_message' = 'true'")
+                                        .first
+          rich_message = main_notification.rich_message.is_a?(String) ? JSON.parse(main_notification.rich_message) : main_notification.rich_message
+          
+          intro_block = rich_message.find { |block| block['type'] == 'context' }
+          intro_text = intro_block.dig('elements', 0, 'text')
+          expect(intro_text).to include(observer.casual_name)
+          expect(intro_text).not_to include('<@')
+        end
+
+        it 'falls back to favicon for icon_url' do
+          job = Observations::PostNotificationJob.new
+          job.perform(observation.id, notify_teammate_ids, company.id)
+
+          main_notification = Notification.where(notification_type: 'observation_channel')
+                                        .where("metadata->>'is_main_message' = 'true'")
+                                        .first
+          expect(main_notification.metadata['icon_url']).to include('/favicon-32x32.png')
+        end
+      end
+
+      context 'when observed people have Slack identities' do
+        before do
+          observee_slack_identity = observee_teammate.teammate_identities.find_by(provider: 'slack')
+          observee_slack_identity.update!(uid: 'U789012', name: 'Observed Slack Name')
+        end
+
+        it 'uses Slack handles for observed people in intro text' do
+          job = Observations::PostNotificationJob.new
+          job.perform(observation.id, notify_teammate_ids, company.id)
+
+          main_notification = Notification.where(notification_type: 'observation_channel')
+                                        .where("metadata->>'is_main_message' = 'true'")
+                                        .first
+          rich_message = main_notification.rich_message.is_a?(String) ? JSON.parse(main_notification.rich_message) : main_notification.rich_message
+          
+          intro_block = rich_message.find { |block| block['type'] == 'context' }
+          intro_text = intro_block.dig('elements', 0, 'text')
+          expect(intro_text).to include('<@U789012>')
+        end
+      end
+    end
   end
 end

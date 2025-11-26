@@ -93,38 +93,13 @@
             %i.bi.bi-star.me-2
             Ratings
         .card-body
-          - @observation.observation_ratings.each do |rating|
-            .d-flex.align-items-center.mb-2
-              = rating.decorate.to_descriptive_html.html_safe
-          
-          / Links to public MAAP resources
-          - rated_abilities = @observation.abilities
-          - rated_assignments = @observation.assignments
-          - rated_aspirations = @observation.aspirations
-          - if rated_abilities.any? || rated_assignments.any? || rated_aspirations.any?
-            %hr
-            %h6.mb-3 Related Public MAAP Resources
-            - if rated_abilities.any?
+          - rating_sentences = @observation.format_ratings_by_type_and_level(format: :html)
+          - if rating_sentences.any?
+            - rating_sentences.each do |sentence|
               %p.mb-2
-                %strong Abilities:
-                - rated_abilities.each_with_index do |ability, index|
-                  = link_to ability.name, organization_public_maap_ability_path(ability.organization, ability), class: "text-decoration-none"
-                  - unless index == rated_abilities.count - 1
-                    %span.text-muted , 
-            - if rated_assignments.any?
-              %p.mb-2
-                %strong Assignments:
-                - rated_assignments.each_with_index do |assignment, index|
-                  = link_to assignment.title, organization_public_maap_assignment_path(assignment.company, assignment), class: "text-decoration-none"
-                  - unless index == rated_assignments.count - 1
-                    %span.text-muted , 
-            - if rated_aspirations.any?
-              %p.mb-2
-                %strong Aspirations:
-                - rated_aspirations.each_with_index do |aspiration, index|
-                  = link_to aspiration.name, organization_public_maap_aspiration_path(aspiration.organization, aspiration), class: "text-decoration-none"
-                  - unless index == rated_aspirations.count - 1
-                    %span.text-muted , 
+                != sentence.html_safe
+          - else
+            %p.text-muted No ratings 
 
     - if @observation.notifications.successful.any?
       .card.mb-4{ role: "region", "aria-labelledby": "notification-history" }
@@ -207,6 +182,112 @@
               Send Notification
             %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Only the observer can send notifications"}
             %span.text-muted.ms-2 Only the observer can send notifications
+
+    / Debug Section
+    - if params[:debug] == 'true' && @debug_data
+      .card.mb-4{ role: "region", "aria-labelledby": "slack-debug" }
+        .card-header.bg-secondary
+          %h5.mb-0{ id: "slack-debug" }
+            %i.bi.bi-bug.me-2
+            Slack Notification Debug
+        .card-body
+          / People Table
+          %h6.mb-3 Observer and Observed People
+          .table-responsive
+            %table.table.table-sm.table-bordered
+              %thead
+                %tr
+                  %th Role
+                  %th Casual Name
+                  %th Slack Handle
+                  %th Slack Image
+              %tbody
+                / Observer row
+                - observer_data = @debug_data[:observer]
+                %tr
+                  %td
+                    %strong Observer
+                  %td= observer_data[:casual_name]
+                  %td
+                    - if observer_data[:slack_identity]&.dig(:uid).present?
+                      %code= observer_data[:slack_identity][:uid]
+                      %br
+                      %small.text-muted Slack ID
+                    - else
+                      %span.text-muted No Slack identity
+                  %td
+                    - if observer_data[:slack_identity]&.dig(:profile_image_url).present?
+                      = image_tag observer_data[:slack_identity][:profile_image_url], class: "rounded-circle", style: "width: 32px; height: 32px; object-fit: cover;", alt: "Slack profile"
+                      %br
+                      %small.text-muted
+                        = link_to observer_data[:slack_identity][:profile_image_url], observer_data[:slack_identity][:profile_image_url], target: '_blank', class: 'text-decoration-none'
+                    - else
+                      %span.text-muted No image
+                / Observed rows
+                - @debug_data[:observed].each do |observed_data|
+                  %tr
+                    %td
+                      %strong Observed
+                    %td= observed_data[:casual_name]
+                    %td
+                      - if observed_data[:slack_identity]&.dig(:uid).present?
+                        %code= observed_data[:slack_identity][:uid]
+                        %br
+                        %small.text-muted Slack ID
+                      - else
+                        %span.text-muted No Slack identity
+                    %td
+                      - if observed_data[:slack_identity]&.dig(:profile_image_url).present?
+                        = image_tag observed_data[:slack_identity][:profile_image_url], class: "rounded-circle", style: "width: 32px; height: 32px; object-fit: cover;", alt: "Slack profile"
+                        %br
+                        %small.text-muted
+                          = link_to observed_data[:slack_identity][:profile_image_url], observed_data[:slack_identity][:profile_image_url], target: '_blank', class: 'text-decoration-none'
+                      - else
+                        %span.text-muted No image
+          
+          %hr.mt-4.mb-4
+          
+          / What will be sent to Slack
+          - slack_metadata = @debug_data[:slack_metadata]
+          %h6.mb-3 What Will Be Sent to Slack
+          .row
+            .col-md-6
+              %p.mb-2
+                %strong Username Override:
+                %br
+                %code= slack_metadata[:username_override]
+            .col-md-6
+              %p.mb-2
+                %strong Icon URL:
+                %br
+                %code.small= slack_metadata[:icon_url]
+                - if slack_metadata[:using_slack_image]
+                  %br
+                  %small.text-success
+                    %i.bi.bi-check-circle.me-1
+                    Using observer's Slack profile image
+                - else
+                  %br
+                  %small.text-warning
+                    %i.bi.bi-exclamation-triangle.me-1
+                    Falling back to favicon
+          
+          %hr.mt-3.mb-3
+          
+          / Slack mentions that will be used
+          - slack_mentions = @debug_data[:slack_mentions]
+          %h6.mb-3 Slack Mentions in Message
+          .row
+            .col-md-6
+              %p.mb-2
+                %strong Observer Mention:
+                %br
+                %code= slack_mentions[:observer]
+            .col-md-6
+              %p.mb-2
+                %strong Observed Mentions:
+                %br
+                %code= slack_mentions[:observed].join(', ')
 
   .col-md-4
     / Spotlight section with analytics and interesting tidbits

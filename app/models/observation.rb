@@ -1,6 +1,7 @@
 class Observation < ApplicationRecord
   include Notifiable
   include PgSearch::Model
+  include ObservationRatingFormatter
   has_paper_trail
   
   belongs_to :observer, class_name: 'Person'
