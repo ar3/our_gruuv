@@ -159,7 +159,7 @@ class Observation < ApplicationRecord
       channel_notifications.each do |notification|
         organization_id = notification.metadata['organization_id']
         if organization_id.present?
-          Observations::PostNotificationJob.perform_later(id, [], organization_id)
+          Observations::PostNotificationJob.perform_and_get_result(id, [], organization_id)
         end
       end
     end

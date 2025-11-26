@@ -18,11 +18,15 @@ class Notification < ApplicationRecord
   def slack_url
     return nil unless message_id.present? && metadata&.dig('channel').present?
     
-    # Handle both cases: when notifiable is an organization (like Company) or has an organization
+    # Handle both cases: when notifiable is an organization (like Company) or has an organization/company
     slack_configuration = if notifiable.respond_to?(:calculated_slack_config)
       notifiable.calculated_slack_config
-    else
+    elsif notifiable.respond_to?(:organization)
       notifiable.organization&.calculated_slack_config
+    elsif notifiable.respond_to?(:company)
+      notifiable.company&.calculated_slack_config
+    else
+      nil
     end
     
     return nil unless slack_configuration&.workspace_subdomain.present?
