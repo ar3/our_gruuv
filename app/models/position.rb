@@ -1,7 +1,6 @@
 class Position < ApplicationRecord
   include PgSearch::Model
-  include SemanticVersionable
-  has_paper_trail
+  include ModelSemanticVersionable
   
   # Associations
   belongs_to :position_type

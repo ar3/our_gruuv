@@ -54,21 +54,19 @@ module FormSemanticVersionable
       def version_type_for_context
         return unless version_type.present?
         
+        model_type_name = model.class.name.underscore.humanize.downcase
+        
         if model.persisted?
           # For existing records, only allow update types
           unless %w[fundamental clarifying insignificant].include?(version_type)
-            errors.add(:version_type, "must be fundamental, clarifying, or insignificant for existing #{model_name}")
+            errors.add(:version_type, "must be fundamental, clarifying, or insignificant for existing #{model_type_name}")
           end
         else
           # For new records, only allow creation types
           unless %w[ready nearly_ready early_draft].include?(version_type)
-            errors.add(:version_type, "must be ready, nearly ready, or early draft for new #{model_name}")
+            errors.add(:version_type, "must be ready, nearly ready, or early draft for new #{model_type_name}")
           end
         end
-      end
-
-      def model_name
-        model.class.name.underscore.humanize.downcase
       end
     end
   end

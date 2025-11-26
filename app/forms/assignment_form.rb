@@ -1,5 +1,5 @@
 class AssignmentForm < Reform::Form
-  include SemanticVersionable
+  include FormSemanticVersionable
 
   # Define form properties - Reform handles Rails integration automatically
   property :title

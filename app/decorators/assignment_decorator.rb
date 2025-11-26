@@ -1,5 +1,5 @@
 class AssignmentDecorator < SimpleDelegator
-  include SemanticVersionable
+  include DecoratorSemanticVersionable
 
   def initialize(assignment)
     super(assignment)

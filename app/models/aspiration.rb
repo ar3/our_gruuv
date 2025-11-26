@@ -1,5 +1,5 @@
 class Aspiration < ApplicationRecord
-  include SemanticVersionable
+  include ModelSemanticVersionable
 
   belongs_to :organization
   has_many :observation_ratings, as: :rateable, dependent: :destroy

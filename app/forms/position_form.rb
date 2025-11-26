@@ -1,5 +1,5 @@
 class PositionForm < Reform::Form
-  include SemanticVersionable
+  include FormSemanticVersionable
 
   # Define form properties - Reform handles Rails integration automatically
   property :position_type_id

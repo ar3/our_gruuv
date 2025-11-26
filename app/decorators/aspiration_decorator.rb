@@ -1,5 +1,5 @@
 class AspirationDecorator < SimpleDelegator
-  include SemanticVersionable
+  include DecoratorSemanticVersionable
 
   def initialize(aspiration)
     super(aspiration)

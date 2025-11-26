@@ -1,5 +1,5 @@
 class PositionDecorator < SimpleDelegator
-  include SemanticVersionable
+  include DecoratorSemanticVersionable
 
   def initialize(position)
     super(position)

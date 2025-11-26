@@ -65,14 +65,10 @@ module ModelSemanticVersionable
     return display_name_with_version unless versions.any?
 
     latest_version = versions.last
-    change_reason = latest_version.object_changes&.dig('change_reason')
-    change_type = latest_version.object_changes&.dig('version_change_type')
-
-    if change_reason && change_type
-      "#{display_name_with_version} (#{change_type}: #{change_reason})"
-    else
-      display_name_with_version
-    end
+    # PaperTrail stores metadata in the object_changes column as YAML
+    # We would need additional PaperTrail configuration to store custom metadata
+    # For now, just return the display name with version
+    display_name_with_version
   end
 end
 

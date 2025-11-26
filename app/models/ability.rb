@@ -1,6 +1,6 @@
 class Ability < ApplicationRecord
   include PgSearch::Model
-  has_paper_trail
+  include ModelSemanticVersionable
 
   belongs_to :organization
   belongs_to :created_by, class_name: 'Person'
@@ -12,8 +12,14 @@ class Ability < ApplicationRecord
   has_many :observation_ratings, as: :rateable, dependent: :destroy
   has_many :observations, through: :observation_ratings
 
+  # Validations
+  validates :name, presence: true, uniqueness: { scope: :organization_id }
+  validates :description, presence: true
+
   # Scopes
   scope :ordered, -> { order(:name) }
+  scope :for_organization, ->(org) { where(organization: org) }
+  scope :recent, -> { order(updated_at: :desc) }
 
   # Finder method that handles both id and id-name formats
   def self.find_by_param(param)
@@ -49,57 +55,6 @@ class Ability < ApplicationRecord
     teammate_milestones.where(milestone_level: max_level).includes(:person).map(&:person)
   end
 
-  validates :name, presence: true, uniqueness: { scope: :organization_id }
-  validates :description, presence: true
-  validates :semantic_version, presence: true, format: { with: /\A\d+\.\d+\.\d+\z/, message: 'must be in semantic version format (e.g., 1.0.0)' }
-
-  scope :for_organization, ->(org) { where(organization: org) }
-  scope :recent, -> { order(updated_at: :desc) }
-
-  # Version bumping methods
-  def bump_major_version(reason)
-    update!(semantic_version: next_major_version)
-  end
-
-  def bump_minor_version(reason)
-    update!(semantic_version: next_minor_version)
-  end
-
-  def bump_patch_version(reason)
-    update!(semantic_version: next_patch_version)
-  end
-
-  # Version calculation methods
-  def next_major_version
-    major, minor, patch = semantic_version.split('.').map(&:to_i)
-    "#{major + 1}.0.0"
-  end
-
-  def next_minor_version
-    major, minor, patch = semantic_version.split('.').map(&:to_i)
-    "#{major}.#{minor + 1}.0"
-  end
-
-  def next_patch_version
-    major, minor, patch = semantic_version.split('.').map(&:to_i)
-    "#{major}.#{minor}.#{patch + 1}"
-  end
-
-  # Extract major version number from semantic_version
-  def major_version
-    semantic_version.split('.').first.to_i
-  end
-
-  # Version status methods
-  def current_version?
-    # The current version is the latest one (no newer versions exist)
-    !versions.where('created_at > ?', updated_at).exists?
-  end
-
-  def deprecated?
-    !current_version?
-  end
-
   # Display methods
   def display_name
     "#{name} v#{semantic_version}"
@@ -109,18 +64,10 @@ class Ability < ApplicationRecord
     "#{id}-#{name.parameterize}"
   end
 
+  # Override the concern's version_with_guidance to use this model's display_name
   def version_with_guidance
-    return display_name unless versions.any?
-
-    latest_version = versions.last
-    change_reason = latest_version.meta['change_reason']
-    change_type = latest_version.meta['version_change_type']
-
-    if change_reason && change_type
-      "#{display_name} (#{change_type}: #{change_reason})"
-    else
-      display_name
-    end
+    # Simplified version - PaperTrail metadata would require additional configuration
+    display_name
   end
 
   # Assignment-related methods

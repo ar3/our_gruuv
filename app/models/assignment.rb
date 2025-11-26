@@ -1,7 +1,6 @@
 class Assignment < ApplicationRecord
   include PgSearch::Model
-  include SemanticVersionable
-  has_paper_trail
+  include ModelSemanticVersionable
   
   # Associations
   belongs_to :company, class_name: 'Organization'

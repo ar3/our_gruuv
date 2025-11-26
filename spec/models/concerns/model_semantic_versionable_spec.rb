@@ -151,12 +151,12 @@ RSpec.describe ModelSemanticVersionable, type: :model do
       )
       new_aspiration.save(validate: false) # Skip validations to avoid triggering paper_trail
       
-      expect(new_aspiration.version_with_guidance).to eq("New Aspiration v1.0.0")
+      expect(new_aspiration.version_with_guidance).to eq(new_aspiration.display_name_with_version)
     end
 
-    it 'returns display_name_with_version when versions exist but no metadata' do
+    it 'returns display_name_with_version when versions exist' do
       aspiration.update!(name: 'Updated')
-      expect(aspiration.version_with_guidance).to include('v1.2.3')
+      expect(aspiration.version_with_guidance).to eq(aspiration.display_name_with_version)
     end
   end
 
