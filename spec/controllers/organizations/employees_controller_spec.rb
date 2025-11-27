@@ -100,7 +100,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
 
   describe 'GET #audit' do
     let(:maap_manager) { create(:person) }
-    let!(:maap_access) { create(:teammate, person: maap_manager, organization: company, can_manage_maap: true) }
+    let!(:maap_access) { create(:teammate, person: maap_manager, organization: company, can_manage_maap: true, can_manage_employment: true, first_employed_at: 1.year.ago) }
     let(:maap_snapshot1) { create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: company, change_type: 'assignment_management') }
     let(:maap_snapshot2) { create(:maap_snapshot, employee: employee1, created_by: maap_manager, company: company, change_type: 'position_tenure') }
 
@@ -143,7 +143,7 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       let(:unauthorized_user) { create(:person) }
       
       before do
-        unauthorized_teammate = create(:teammate, person: unauthorized_user, organization: company)
+        unauthorized_teammate = create(:teammate, person: unauthorized_user, organization: company, first_employed_at: 1.year.ago)
         sign_in_as_teammate(unauthorized_user, company)
       end
 

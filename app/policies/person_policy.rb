@@ -28,11 +28,10 @@ class PersonPolicy < ApplicationPolicy
     return true if admin_bypass?
     return false unless viewing_teammate && record
     return false if viewing_teammate.terminated?
-    # Allow users to view their own profile even without active employment tenure
+    # Allow users to view their own profile
     return true if viewing_teammate.person == record
-    # MAAP managers can view audit even without active employment tenure
-    return true if viewing_teammate.can_manage_maap?
-    return false if !viewing_teammate.has_active_employment_tenure?
+    # Trust teammate status exclusively - if teammate is active (employed), allow access
+    return false unless viewing_teammate.employed?
     return true if viewing_teammate.can_manage_employment?
     return true if viewing_teammate.person.in_managerial_hierarchy_of?(record, viewing_teammate.organization)
     false

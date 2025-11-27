@@ -12,14 +12,9 @@ RSpec.describe SeatPolicy, type: :policy do
   let(:active_employee_person) { create(:person) }
   let(:external_user_person) { create(:person) }
   
-  let(:maap_manager_teammate) { CompanyTeammate.create!(person: maap_manager_person, organization: organization, can_manage_maap: true) }
-  let(:active_employee_teammate) { CompanyTeammate.create!(person: active_employee_person, organization: organization, can_manage_maap: false) }
+  let(:maap_manager_teammate) { CompanyTeammate.create!(person: maap_manager_person, organization: organization, can_manage_maap: true, first_employed_at: 1.year.ago) }
+  let(:active_employee_teammate) { CompanyTeammate.create!(person: active_employee_person, organization: organization, can_manage_maap: false, first_employed_at: 1.year.ago) }
   let(:external_user_teammate) { CompanyTeammate.create!(person: external_user_person, organization: organization, can_manage_maap: false) }
-
-  before do
-    # Create active employment tenure for active_employee_person
-    create(:employment_tenure, teammate: active_employee_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
-  end
 
   let(:pundit_user_maap_manager) { OpenStruct.new(user: maap_manager_teammate, impersonating_teammate: nil) }
   let(:pundit_user_active_employee) { OpenStruct.new(user: active_employee_teammate, impersonating_teammate: nil) }
