@@ -50,7 +50,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
         teammate = person.teammates.find_by(organization: organization)
         teammate.update!(can_create_employment: false)
         # Verify the permission is actually removed
-        expect(person.can_create_employment?(organization)).to be false
+        expect(Teammate.can_create_employment?(person, organization)).to be false
       end
       
       it 'allows access to view but not create' do
@@ -175,7 +175,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
         teammate = person.teammates.find_by(organization: organization)
         teammate.update!(can_create_employment: false)
         # Verify the permission is actually removed
-        expect(person.can_create_employment?(organization)).to be false
+        expect(Teammate.can_create_employment?(person, organization)).to be false
       end
       
       it 'denies access' do
