@@ -18,9 +18,9 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
   let(:manager_teammate) { create(:teammate, person: manager_person, organization: organization) }
 
   before do
+    # Set up manager with employment management permission
+    manager_teammate.update!(can_manage_employment: true)
     sign_in_as_teammate_for_request(manager_person, organization)
-    allow(manager_person).to receive(:can_manage_employment?).with(organization).and_return(true)
-    allow(manager_person).to receive(:can_manage_employment?).and_return(true)
     
     assignment_tenure # ensure it exists
     # Create an open check-in
@@ -44,7 +44,8 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                         status: "draft"
                       }
                     }
-                  }
+                  },
+                  redirect_to: organization_person_check_ins_path(organization, employee_person)
                 }
           
           check_in.reload
@@ -72,7 +73,8 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                         status: "complete"
                       }
                     }
-                  }
+                  },
+                  redirect_to: organization_person_check_ins_path(organization, employee_person)
                 }
           
           check_in.reload
@@ -88,7 +90,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
       
       context "employee perspective" do
         before do
-          allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(employee_person)
+          sign_in_as_teammate_for_request(employee_person, organization)
         end
         
         it "marks employee side as complete" do
@@ -107,7 +109,8 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                         status: "complete"
                       }
                     }
-                  }
+                  },
+                  redirect_to: organization_person_check_ins_path(organization, employee_person)
                 }
           
           check_in.reload
@@ -119,6 +122,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
       context "when toggling from draft to complete" do
         it "properly updates completion status" do
           check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+          redirect_path = organization_person_check_ins_path(organization, employee_person)
           
           # First: Save as draft
           patch organization_person_check_ins_path(organization, employee_person),
@@ -132,7 +136,8 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                         status: "draft"
                       }
                     }
-                  }
+                  },
+                  redirect_to: redirect_path
                 }
           
           check_in.reload
@@ -150,7 +155,8 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                         status: "complete"
                       }
                     }
-                  }
+                  },
+                  redirect_to: redirect_path
                 }
           
           check_in.reload
@@ -162,6 +168,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
       context "when toggling from complete back to draft" do
         it "unmarks completion" do
           check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+          redirect_path = organization_person_check_ins_path(organization, employee_person)
           
           # First: Mark as complete
           patch organization_person_check_ins_path(organization, employee_person),
@@ -175,7 +182,8 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                         status: "complete"
                       }
                     }
-                  }
+                  },
+                  redirect_to: redirect_path
                 }
           
           check_in.reload
@@ -193,7 +201,8 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                         status: "draft"
                       }
                     }
-                  }
+                  },
+                  redirect_to: redirect_path
                 }
           
           check_in.reload
@@ -205,7 +214,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
     
     context "authorization" do
       it "requires authentication" do
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(nil)
+        sign_out_teammate_for_request
         
         check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
         

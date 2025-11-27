@@ -3,10 +3,11 @@ require 'rails_helper'
 RSpec.describe 'UploadEvents#new', type: :request do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
+  let(:teammate) { create(:teammate, person: person, organization: organization, can_manage_employment: true) }
   
   before do
+    teammate # ensure it exists
     sign_in_as_teammate_for_request(person, organization)
-    allow(person).to receive(:can_manage_employment?).and_return(true)
   end
 
   it 'handles requests without type parameter gracefully' do

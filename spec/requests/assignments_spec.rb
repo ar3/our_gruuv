@@ -2,13 +2,12 @@ require 'rails_helper'
 
 RSpec.describe "Assignments", type: :request do
   let(:company) { create(:organization, type: 'Company') }
-  let(:person) { create(:person) }
+  let(:person) { create(:person, og_admin: true) }
   let(:assignment) { create(:assignment, company: company) }
   
   before do
-    # Set up authentication and organization context
-    allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
-    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(company)
+    # Set up authentication and organization context using proper helper
+    sign_in_as_teammate_for_request(person, company)
   end
 
   describe "GET /assignments" do
@@ -37,7 +36,8 @@ RSpec.describe "Assignments", type: :request do
       expect {
         post organization_assignments_path(company), params: { assignment: { 
           title: "Test Assignment",
-          tagline: "Test tagline"
+          tagline: "Test tagline",
+          version_type: "ready"
         }}
       }.to change(Assignment, :count).by(1)
       
@@ -49,6 +49,7 @@ RSpec.describe "Assignments", type: :request do
         post organization_assignments_path(company), params: { assignment: { 
           title: "Test Assignment",
           tagline: "Test tagline",
+          version_type: "ready",
           published_source_url: "https://docs.google.com/document/d/published",
           draft_source_url: "https://docs.google.com/document/d/draft"
         }}
@@ -71,9 +72,13 @@ RSpec.describe "Assignments", type: :request do
 
   describe "PATCH /assignments/:id" do
     it "updates the assignment" do
-      patch organization_assignment_path(company, assignment), params: { assignment: { title: "Updated Title" } }
+      patch organization_assignment_path(company, assignment), params: { assignment: { 
+        title: "Updated Title",
+        version_type: "insignificant"
+      } }
+      assignment.reload
       expect(response).to redirect_to(organization_assignment_path(company, assignment))
-      expect(assignment.reload.title).to eq("Updated Title")
+      expect(assignment.title).to eq("Updated Title")
     end
 
     it "updates external references" do
@@ -82,6 +87,7 @@ RSpec.describe "Assignments", type: :request do
       assignment.create_draft_external_reference!(url: "https://old-draft.com", reference_type: 'draft')
       
       patch organization_assignment_path(company, assignment), params: { assignment: { 
+        version_type: "insignificant",
         published_source_url: "https://new-published.com",
         draft_source_url: "https://new-draft.com"
       }}
@@ -98,6 +104,7 @@ RSpec.describe "Assignments", type: :request do
       assignment.create_draft_external_reference!(url: "https://old-draft.com", reference_type: 'draft')
       
       patch organization_assignment_path(company, assignment), params: { assignment: { 
+        version_type: "insignificant",
         published_source_url: "",
         draft_source_url: ""
       }}
