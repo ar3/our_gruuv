@@ -7,6 +7,7 @@
       - if policy(Observation).create?
         = link_to new_organization_observation_path(@organization, return_url: organization_observations_path(@organization), return_text: 'Back to Culture of Feedback and Recognition'), class: "btn btn-primary ml-2" do
           %i.bi.bi-plus
+          New #{['Observation', 'Feedback', 'Recognition', 'Kudos', 'Celebration', 'Thank You', 'Appreciation', 'Praise', 'Acknowledgment', 'Shout Out', 'Radical Candor Feedback', 'Constructive Feedback'].sample}
       - else
         .btn.btn-primary.disabled.disabled-button
           %i.bi.bi-plus
