@@ -225,8 +225,11 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
         expect(main_notification).to be_present
         # rich_message is stored as JSON string, parse it
         rich_message = main_notification.rich_message.is_a?(String) ? JSON.parse(main_notification.rich_message) : main_notification.rich_message
-        header_text = rich_message.find { |block| block['type'] == 'header' }&.dig('text', 'text')
-        expect(header_text).to include('New Public Observation')
+        # Channel messages use context blocks for intro, not header blocks
+        intro_block = rich_message.find { |block| block['type'] == 'context' }
+        expect(intro_block).to be_present
+        intro_text = intro_block.dig('elements', 0, 'text')
+        expect(intro_text).to include('New awesome story')
         story_text = rich_message.find { |block| block['type'] == 'section' && block.dig('text', 'text')&.include?(observation.story) }&.dig('text', 'text')
         expect(story_text).to include(observation.story)
       end
@@ -350,8 +353,11 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
           
           intro_block = rich_message.find { |block| block['type'] == 'context' }
           intro_text = intro_block.dig('elements', 0, 'text')
+          # Observer should use casual name (not Slack mention) since they have no Slack identity
           expect(intro_text).to include(observer.casual_name)
-          expect(intro_text).not_to include('<@')
+          # Observer's mention should not be a Slack mention, but observed people may still have Slack mentions
+          # Check that the observer's mention specifically is not a Slack mention
+          expect(intro_text).to match(/as told by #{Regexp.escape(observer.casual_name)}/)
         end
 
         it 'falls back to favicon for icon_url' do
