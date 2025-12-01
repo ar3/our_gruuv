@@ -61,14 +61,14 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         )
 
         expect(result.ok?).to be true
-        expect(current_tenure.reload.ended_at).to eq(Date.current)
+        expect(current_tenure.reload.ended_at).to be_within(1.second).of(Time.current)
         
         new_tenure = EmploymentTenure.where(teammate: teammate, company: company).order(:created_at).last
         expect(new_tenure.manager).to eq(new_manager)
         expect(new_tenure.position).to eq(current_position)
         expect(new_tenure.employment_type).to eq('full_time')
         expect(new_tenure.seat).to eq(current_seat)
-        expect(new_tenure.started_at).to eq(Date.current)
+        expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
         expect(new_tenure.ended_at).to be_nil
       end
 
@@ -121,13 +121,14 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         )
 
         expect(result.ok?).to be true
-        expect(current_tenure.reload.ended_at).to eq(Date.current)
+        expect(current_tenure.reload.ended_at).to be_within(1.second).of(Time.current)
         
         new_tenure = EmploymentTenure.where(teammate: teammate, company: company).order(:created_at).last
         expect(new_tenure.position).to eq(new_position)
         expect(new_tenure.manager).to eq(current_manager)
         expect(new_tenure.employment_type).to eq('full_time')
         expect(new_tenure.seat).to eq(seat_for_new_position)
+        expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
       end
 
       it 'creates maap_snapshot' do
@@ -168,12 +169,13 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         )
 
         expect(result.ok?).to be true
-        expect(current_tenure.reload.ended_at).to eq(Date.current)
+        expect(current_tenure.reload.ended_at).to be_within(1.second).of(Time.current)
         
         new_tenure = EmploymentTenure.where(teammate: teammate, company: company).order(:created_at).last
         expect(new_tenure.employment_type).to eq('part_time')
         expect(new_tenure.manager).to eq(current_manager)
         expect(new_tenure.position).to eq(current_position)
+        expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
       end
 
       it 'creates maap_snapshot' do
@@ -214,7 +216,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         )
 
         expect(result.ok?).to be true
-        expect(current_tenure.reload.ended_at).to eq(termination_date)
+        expect(current_tenure.reload.ended_at).to eq(termination_date.to_time)
         expect(EmploymentTenure.where(teammate: teammate, company: company).count).to eq(1)
       end
 
@@ -304,12 +306,13 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         )
 
         expect(result.ok?).to be true
-        expect(current_tenure.reload.ended_at).to eq(Date.current)
+        expect(current_tenure.reload.ended_at).to be_within(1.second).of(Time.current)
         
         new_tenure = EmploymentTenure.where(teammate: teammate, company: company).order(:created_at).last
         expect(new_tenure.manager).to eq(new_manager)
         expect(new_tenure.position).to eq(new_position)
         expect(new_tenure.seat).to eq(seat_for_new_position)
+        expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
       end
 
       it 'creates maap_snapshot for multiple changes' do
@@ -392,7 +395,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         )
 
         expect(result.ok?).to be true
-        expect(current_tenure.reload.ended_at).to eq(termination_date)
+        expect(current_tenure.reload.ended_at).to eq(termination_date.to_time)
         
         # When termination_date is provided, we update the current tenure, not create new one
         expect(EmploymentTenure.where(teammate: teammate, company: company).count).to eq(1)

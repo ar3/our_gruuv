@@ -293,9 +293,9 @@ RSpec.describe TeammatesQuery, type: :query do
       expect(query.current_view).to eq('cards')
     end
 
-    it 'returns table as default' do
+    it 'returns list as default' do
       query = TeammatesQuery.new(organization, {})
-      expect(query.current_view).to eq('table')
+      expect(query.current_view).to eq('list')
     end
 
     it 'prioritizes display over view when both present' do

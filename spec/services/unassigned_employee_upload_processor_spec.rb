@@ -156,7 +156,8 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         
         update_success = processor.results[:successes].find { |s| s[:type] == 'unassigned_employee' && s[:action] == 'updated' }
         expect(update_success).to be_present
-        expect(update_success[:name]).to eq('John Doe')
+        # display_name returns preferred_name when set, which is "John" from the CSV
+        expect(update_success[:name]).to eq('John')
       end
 
       it 'includes employment tenure actions in results' do
@@ -165,8 +166,10 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         employment_tenure_successes = processor.results[:successes].select { |s| s[:type] == 'employment_tenure' }
         expect(employment_tenure_successes.count).to eq(2)
         
-        john_tenure_success = employment_tenure_successes.find { |s| s[:person_name] == 'John Doe' }
-        jane_tenure_success = employment_tenure_successes.find { |s| s[:person_name] == 'Jane Smith' }
+        # display_name returns preferred_name when set, which is "John" from the CSV
+        john_tenure_success = employment_tenure_successes.find { |s| s[:person_name] == 'John' }
+        # Jane's preferred name is "Jane" from the CSV
+        jane_tenure_success = employment_tenure_successes.find { |s| s[:person_name] == 'Jane' }
         
         expect(john_tenure_success).to be_present
         expect(john_tenure_success[:action]).to eq('created')
@@ -211,7 +214,8 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
       it 'includes exists action for employment tenure in results' do
         processor.process
         
-        employment_tenure_success = processor.results[:successes].find { |s| s[:type] == 'employment_tenure' && s[:person_name] == 'John Doe' }
+        # display_name returns preferred_name when set, which is "John" from the CSV
+        employment_tenure_success = processor.results[:successes].find { |s| s[:type] == 'employment_tenure' && s[:person_name] == 'John' }
         expect(employment_tenure_success).to be_present
         expect(employment_tenure_success[:action]).to eq('exists')
       end

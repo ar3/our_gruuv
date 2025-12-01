@@ -75,12 +75,13 @@ class UpdateEmploymentTenureService
         
         Rails.logger.debug "DEBUG UpdateEmploymentTenureService: parsed_date: #{parsed_date.inspect}"
         
-        # Update current tenure's ended_at
-        @current_tenure.update!(ended_at: parsed_date)
+        # Update current tenure's ended_at (convert Date to Time for timestamp)
+        ended_at_time = parsed_date.is_a?(Time) ? parsed_date : parsed_date.to_time
+        @current_tenure.update!(ended_at: ended_at_time)
         updated_tenure = @current_tenure
       elsif needs_new_tenure
         # End current tenure and create new one
-        @current_tenure.update!(ended_at: Date.current)
+        @current_tenure.update!(ended_at: Time.current)
         updated_tenure = create_new_tenure
       elsif seat_changed
         # Just update the seat
@@ -154,7 +155,7 @@ class UpdateEmploymentTenureService
       manager_id: manager_id_value,
       employment_type: params[:employment_type].presence || current_tenure.employment_type,
       seat_id: seat_id_value,
-      started_at: Date.current,
+      started_at: Time.current,
       ended_at: nil,
       official_position_rating: current_tenure.official_position_rating
     )
@@ -178,6 +179,16 @@ class UpdateEmploymentTenureService
       teammate.person,
       current_tenure.company
     )
+    
+    # Add employment_tenure data for position_tenure change_type
+    maap_data['employment_tenure'] = {
+      position_id: tenure.position_id,
+      manager_id: tenure.manager_id,
+      seat_id: tenure.seat_id,
+      employment_type: tenure.employment_type,
+      started_at: tenure.started_at.is_a?(Time) ? tenure.started_at.iso8601 : tenure.started_at.to_time.iso8601,
+      ended_at: tenure.ended_at ? (tenure.ended_at.is_a?(Time) ? tenure.ended_at.iso8601 : tenure.ended_at.to_time.iso8601) : nil
+    }
     
     MaapSnapshot.create!(
       employee: teammate.person,

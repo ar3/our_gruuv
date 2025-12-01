@@ -121,11 +121,11 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         
         expect(data[:check_in]).to eq(assignment_check_in)
         expect(data[:new_tenure]).to be_a(AssignmentTenure)
-        expect(data[:rating_data]).to include(
-          assignment_id: assignment.id,
-          official_rating: 'meeting',
-          rated_at: Date.current.to_s
-        )
+      expect(data[:rating_data]).to include(
+        assignment_id: assignment.id,
+        official_rating: 'meeting',
+        rated_at: Time.current.to_s
+      )
       end
     end
     

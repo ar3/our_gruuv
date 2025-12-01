@@ -18,24 +18,26 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
           expect(result.ok?).to be true
           
           employment_tenure.reload
-          expect(employment_tenure.ended_at).to eq(Date.current)
+          expect(employment_tenure.ended_at).to be_within(1.second).of(Time.current)
           expect(employment_tenure.official_position_rating).to eq(2)
         end
       end
 
       it 'creates new tenure with same values but nil rating' do
-        result = finalizer.finalize
-        expect(result.ok?).to be true
-        
-        new_tenure = result.value[:new_tenure]
-        expect(new_tenure.teammate).to eq(teammate)
-        expect(new_tenure.company).to eq(organization)
-        expect(new_tenure.position).to eq(employment_tenure.position)
-        expect(new_tenure.manager).to eq(manager)
-        expect(new_tenure.seat).to eq(employment_tenure.seat)
-        expect(new_tenure.employment_type).to eq(employment_tenure.employment_type)
-        expect(new_tenure.started_at).to eq(Date.current)
-        expect(new_tenure.official_position_rating).to be_nil
+        travel_to Time.current do
+          result = finalizer.finalize
+          expect(result.ok?).to be true
+          
+          new_tenure = result.value[:new_tenure]
+          expect(new_tenure.teammate).to eq(teammate)
+          expect(new_tenure.company).to eq(organization)
+          expect(new_tenure.position).to eq(employment_tenure.position)
+          expect(new_tenure.manager).to eq(manager)
+          expect(new_tenure.seat).to eq(employment_tenure.seat)
+          expect(new_tenure.employment_type).to eq(employment_tenure.employment_type)
+          expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
+          expect(new_tenure.official_position_rating).to be_nil
+        end
       end
 
       it 'finalizes the check-in' do
@@ -52,14 +54,16 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
       end
 
       it 'returns rating data for snapshot' do
-        result = finalizer.finalize
-        expect(result.ok?).to be true
-        
-        rating_data = result.value[:rating_data]
-        expect(rating_data[:position_id]).to eq(employment_tenure.position_id)
-        expect(rating_data[:manager_id]).to eq(manager.id)
-        expect(rating_data[:official_rating]).to eq(2)
-        expect(rating_data[:rated_at]).to eq(Date.current.to_s)
+        travel_to Time.current do
+          result = finalizer.finalize
+          expect(result.ok?).to be true
+          
+          rating_data = result.value[:rating_data]
+          expect(rating_data[:position_id]).to eq(employment_tenure.position_id)
+          expect(rating_data[:manager_id]).to eq(manager.id)
+          expect(rating_data[:official_rating]).to eq(2)
+          expect(rating_data[:rated_at]).to eq(Time.current.to_s)
+        end
       end
     end
 
