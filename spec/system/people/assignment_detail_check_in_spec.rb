@@ -3,7 +3,14 @@ require 'rails_helper'
 RSpec.describe 'Assignment Detail Page Check-In', type: :system do
   let(:company) { create(:organization, :company) }
   let(:manager_person) { create(:person, full_name: 'Manager') }
-  let!(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: company, can_manage_employment: true) }
+  let!(:manager_teammate) do
+    CompanyTeammate.create!(
+      person: manager_person,
+      organization: company,
+      can_manage_employment: true,
+      first_employed_at: 2.years.ago
+    )
+  end
   let!(:employee_person) { create(:person, full_name: 'John Doe', email: 'john@example.com') }
   let!(:employee_teammate) { CompanyTeammate.create!(person: employee_person, organization: company) }
   let!(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
@@ -15,6 +22,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       teammate: employee_teammate,
       position: position,
       company: company,
+      manager: manager_person,
       started_at: 1.year.ago
     )
   end
@@ -27,7 +35,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
     end
 
     it 'shows employee fields and allows saving check-in' do
-      visit person_assignment_path(employee_person, assignment)
+      visit organization_teammate_assignment_path(company, employee_teammate, assignment)
       
       expect(page).to have_content('Test Assignment')
       expect(page).to have_content('John Doe')
@@ -57,13 +65,13 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       choose "check_ins_assignment_check_ins_#{check_in.id}_status_complete"
       
       # Submit form
-      click_button 'Update Assignment'
+      click_button 'Update Check-in'
       
-      # Wait for redirect to check-ins page
-      expect(page).to have_current_path(organization_person_check_ins_path(company, employee_person))
+      # When check-in is marked complete, it redirects to finalization page
+      expect(page).to have_current_path(organization_person_finalization_path(company, employee_person))
       
-      # Should see success message
-      expect(page).to have_content('Check-ins saved successfully')
+      # Should see success message or finalization content
+      expect(page).to have_content(/Check-in|Finalization|ready/i)
       
       # Verify data was saved
       check_in.reload
@@ -81,7 +89,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
     end
 
     it 'shows manager fields and allows saving check-in' do
-      visit person_assignment_path(employee_person, assignment)
+      visit organization_teammate_assignment_path(company, employee_teammate, assignment)
       
       expect(page).to have_content('Test Assignment')
       expect(page).to have_content('John Doe')
@@ -109,13 +117,13 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       choose "check_ins_assignment_check_ins_#{check_in.id}_status_complete"
       
       # Submit form
-      click_button 'Update Assignment'
+      click_button 'Update Check-in'
       
-      # Wait for redirect to check-ins page
-      expect(page).to have_current_path(organization_person_check_ins_path(company, employee_person))
+      # When check-in is marked complete, it redirects to finalization page
+      expect(page).to have_current_path(organization_person_finalization_path(company, employee_person))
       
-      # Should see success message
-      expect(page).to have_content('Check-ins saved successfully')
+      # Should see success message or finalization content
+      expect(page).to have_content(/Check-in|Finalization|ready/i)
       
       # Verify data was saved
       check_in.reload

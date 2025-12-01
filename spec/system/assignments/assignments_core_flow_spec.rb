@@ -39,6 +39,8 @@ RSpec.describe 'Assignments Core Flow', type: :system do
       # Update
       visit edit_organization_assignment_path(company, assignment)
       fill_in 'assignment_title', with: 'Senior Product Manager'
+      # Select version type for update
+      choose 'version_type_insignificant'
       click_button 'Update Assignment'
       
       expect(page).to have_content('Senior Product Manager')
@@ -84,6 +86,8 @@ RSpec.describe 'Assignments Core Flow', type: :system do
       # Update
       visit edit_organization_assignment_path(department, assignment)
       fill_in 'assignment_title', with: 'Updated Department Assignment'
+      # Select version type for update
+      choose 'version_type_insignificant'
       click_button 'Update Assignment'
       
       expect(page).to have_content('Updated Department Assignment')

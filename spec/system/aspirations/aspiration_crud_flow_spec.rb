@@ -87,6 +87,8 @@ RSpec.describe 'Aspiration CRUD Flow', type: :system do
         # Update
         visit edit_organization_aspiration_path(department, aspiration)
         fill_in 'aspiration_name', with: 'Updated Department Aspiration'
+        # Select version type for update
+        choose 'version_type_insignificant'
         click_button 'Update Aspiration'
         
         expect(page).to have_content('Updated Department Aspiration')

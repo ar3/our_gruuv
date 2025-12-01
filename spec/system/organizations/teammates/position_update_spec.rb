@@ -14,6 +14,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
   let!(:position) { Position.create!(position_type_id: position_type1.id, position_level_id: position_level1.id, position_summary: 'Test position') }
   let!(:manager_employment_tenure) do
     # Create employment tenure for manager so they show up in employees list and have proper access
+    manager_teammate.update!(first_employed_at: 2.years.ago)
     EmploymentTenure.create!(
       teammate: manager_teammate,
       company: company,
@@ -93,7 +94,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       click_button 'Update Position'
       
       expect(page).to have_content('Position information was successfully updated')
-      expect(current_tenure.reload.ended_at).to eq(Date.current)
+      expect(current_tenure.reload.ended_at).to be_within(5.seconds).of(Time.current)
       
       new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: company).order(:created_at).last
       expect(new_tenure.manager).to eq(new_manager)
@@ -114,7 +115,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       expect(page).to have_content('Position information was successfully updated')
       
       # Verify new tenure was created
-      expect(current_tenure.reload.ended_at).to eq(Date.current)
+      expect(current_tenure.reload.ended_at).to be_within(5.seconds).of(Time.current)
       new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: company).order(:created_at).last
       expect(new_tenure.manager).to eq(new_manager)
       expect(new_tenure.position).to eq(new_position)
