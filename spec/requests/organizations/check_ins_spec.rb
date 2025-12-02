@@ -9,22 +9,26 @@ RSpec.describe "Organizations::CheckIns", type: :request do
   let(:position_type) { create(:position_type, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
   let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+  let(:manager_teammate) { create(:teammate, person: manager_person, organization: organization, can_manage_employment: true) }
   let(:employment_tenure) do
     create(:employment_tenure,
       teammate: employee_teammate,
       position: position,
       company: organization,
-      manager: manager_person
+      manager: manager_person,
+      started_at: 1.year.ago,
+      ended_at: nil
     )
   end
-  
-  let(:manager_teammate) { create(:teammate, person: manager_person, organization: organization) }
 
   before do
+    # Create active employment for manager
+    create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+    manager_teammate.update!(first_employed_at: 1.year.ago)
+    # Create active employment for employee (via employment_tenure let block)
+    employee_teammate.update!(first_employed_at: 1.year.ago)
     # Setup authentication
     sign_in_as_teammate_for_request(manager_person, organization)
-    allow(manager_person).to receive(:can_manage_employment?).with(organization).and_return(true)
-    allow(manager_person).to receive(:can_manage_employment?).and_return(true)
     
     employment_tenure # ensure it exists
   end
@@ -41,7 +45,8 @@ RSpec.describe "Organizations::CheckIns", type: :request do
                       manager_private_notes: "Draft notes",
                       status: "draft"
                     }
-                  }
+                  },
+                  redirect_to: organization_person_check_ins_path(organization, employee_person)
                 }
           
           check_in = PositionCheckIn.find_by(teammate: employee_teammate)
@@ -69,7 +74,8 @@ RSpec.describe "Organizations::CheckIns", type: :request do
                       manager_private_notes: "Complete notes",
                       status: "complete"
                     }
-                  }
+                  },
+                  redirect_to: organization_person_check_ins_path(organization, employee_person)
                 }
           
           check_in = PositionCheckIn.find_by(teammate: employee_teammate)
@@ -158,7 +164,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       
       context "employee perspective" do
         before do
-          allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(employee_person)
+          sign_in_as_teammate_for_request(employee_person, organization)
         end
         
         it "marks employee side as complete" do
@@ -192,8 +198,10 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       
       it "requires proper permissions" do
         other_person = create(:person)
-        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(other_person)
-        allow(other_person).to receive(:can_manage_employment?).with(organization).and_return(false)
+        other_teammate = create(:teammate, person: other_person, organization: organization, can_manage_employment: false)
+        create(:employment_tenure, teammate: other_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+        other_teammate.update!(first_employed_at: 1.year.ago)
+        sign_in_as_teammate_for_request(other_person, organization)
         
         patch organization_person_check_ins_path(organization, employee_person),
               params: { check_ins: { position_check_in: { status: "draft" } } }

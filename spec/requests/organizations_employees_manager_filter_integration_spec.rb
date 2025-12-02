@@ -31,7 +31,7 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
     get organization_employees_path(organization, manager_filter: 'direct_reports')
     
     expect(response).to be_successful
-    teammates = assigns(:teammates)
+    teammates = assigns(:filtered_and_paginated_teammates)
     
     # Should only include direct report, not non-direct report or manager
     expect(teammates.map(&:id)).to include(direct_report_teammate.id)

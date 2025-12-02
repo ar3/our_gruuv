@@ -481,15 +481,17 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
         click_button
       end
       
-      # Wait for redirect using Capybara's built-in waiting
-      expect(page).to have_current_path(organization_goal_path(organization, goal1), wait: 10)
+      # Wait for redirect (Capybara's built-in waiting)
+      expect(page).to have_current_path(organization_goal_path(organization, goal1))
       
-      # Verify database deletion first (this confirms the action worked)
+      # Verify database deletion after redirect completes
       expect(GoalLink.find_by(id: link_id)).to be_nil
       
       # Verify link is gone from page (uses built-in waiting)
-      # Use have_no_content which waits automatically and doesn't require within
       expect(page).to have_no_content(goal2.title)
+      
+      # Verify success message is present (may be in toast, so check with visible: false)
+      expect(page).to have_css('.toast-body', text: 'Goal link was successfully deleted', visible: false)
     end
     
     it 'shows Fix Goal button for child goal without target date' do
@@ -543,14 +545,17 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       
       # Find Start button within the linked goal's section
       within('li', text: child_goal.title) do
-        expect {
-          click_button 'Start'
-        }.to change { child_goal.reload.started_at }.from(nil)
+        click_button 'Start'
       end
       
-      # Should redirect back to parent goal's page
+      # Wait for redirect (Capybara's built-in waiting)
       expect(page).to have_current_path(organization_goal_path(organization, goal1))
-      expect(page).to have_content('Goal started successfully')
+      
+      # Verify database was updated after redirect completes
+      expect(child_goal.reload.started_at).not_to be_nil
+      
+      # Verify success message is present (may be in toast, so check with visible: false)
+      expect(page).to have_css('.toast-body', text: 'Goal started successfully', visible: false)
     end
     
     it 'does not show buttons for objective goals' do

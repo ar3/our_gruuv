@@ -275,12 +275,16 @@ RSpec.describe PersonPolicy, type: :policy do
     before do
       # Create active employment for manager
       create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      manager_teammate.update!(first_employed_at: 1.year.ago)
       # Create active employment for employment manager
       create(:employment_tenure, teammate: employment_manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      employment_manager_teammate.update!(first_employed_at: 1.year.ago)
       # Create active employment for regular teammate
       create(:employment_tenure, teammate: regular_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      regular_teammate.update!(first_employed_at: 1.year.ago)
       # Create active employment for other_person and set manager
       create(:employment_tenure, teammate: other_person_teammate, company: organization, started_at: 1.year.ago, ended_at: nil, manager: manager)
+      other_person_teammate.update!(first_employed_at: 1.year.ago)
     end
 
     it "allows person themselves to view their check-ins" do
@@ -304,6 +308,7 @@ RSpec.describe PersonPolicy, type: :policy do
       
       # Create employment for grand manager
       create(:employment_tenure, teammate: grand_manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+      grand_manager_teammate.update!(first_employed_at: 1.year.ago)
       # Update existing manager's employment to have grand manager as manager
       manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: organization)
       manager_tenure.update!(manager: grand_manager)

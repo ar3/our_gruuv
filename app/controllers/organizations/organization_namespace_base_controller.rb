@@ -17,10 +17,17 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
     return unless current_company_teammate
     
     route_org = Organization.find(params[:organization_id] || params[:id])
+    user_company = current_company_teammate.organization
     
     # Since only CompanyTeammates log in and companies are top-level,
     # check for exact company match
-    return if current_company_teammate.organization == route_org
+    return if user_company == route_org
+    
+    # Allow access if route_org is a descendant of user's company
+    # This allows accessing departments/teams within the user's company
+    if user_company.self_and_descendants.include?(route_org)
+      return
+    end
     
     # Find CompanyTeammate for the route company
     # Since only CompanyTeammates log in, filter for CompanyTeammate type

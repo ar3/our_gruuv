@@ -97,12 +97,20 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       let(:other_template) { create(:prompt_template, company: organization, available_at: Date.current) }
       let!(:existing_open) { create(:prompt, :open, company_teammate: teammate, prompt_template: other_template) }
 
-      it 'redirects with alert' do
-        post organization_prompts_path(organization), params: {
-          template_id: template.id
-        }
-        expect(response).to redirect_to(new_organization_prompt_path(organization))
-        expect(flash[:alert]).to match(/already have an open prompt/)
+      it 'creates new prompt and redirects to edit' do
+        expect {
+          post organization_prompts_path(organization), params: {
+            template_id: template.id
+          }
+        }.to change { Prompt.count }.by(1)
+
+        new_prompt = Prompt.last
+        expect(new_prompt.prompt_template).to eq(template)
+        expect(new_prompt.open?).to be true
+        expect(existing_open.reload.open?).to be true
+
+        expect(response).to redirect_to(edit_organization_prompt_path(organization, new_prompt))
+        expect(flash[:notice]).to eq('Prompt started successfully.')
       end
     end
   end

@@ -15,15 +15,21 @@ RSpec.describe 'People::Assignments', type: :request do
   let!(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, position: position, company: organization, manager: manager_person, started_at: 1.year.ago, ended_at: nil) }
 
   before do
-    sign_in_as_teammate_for_request(manager_person, organization)
-    # Set up manager with employment management permissions
-    manager_teammate.update!(can_manage_employment: true)
+    # Set up manager with employment management permissions BEFORE signing in
+    manager_teammate.update!(can_manage_employment: true, first_employed_at: 1.year.ago)
     # Create employment tenure if it doesn't exist
     EmploymentTenure.find_or_create_by!(teammate: manager_teammate, company: organization) do |et|
       et.position = position
       et.started_at = 1.year.ago
       et.ended_at = nil
     end
+    # Ensure employee_teammate also has first_employed_at set
+    employee_teammate.update!(first_employed_at: 1.year.ago) unless employee_teammate.first_employed_at
+
+    # Sign in AFTER setting up permissions
+    signed_in_teammate = sign_in_as_teammate_for_request(manager_person, organization)
+    # Ensure the signed-in teammate has the permissions (in case it's a different instance)
+    signed_in_teammate.update!(can_manage_employment: true, first_employed_at: 1.year.ago) if signed_in_teammate
   end
 
   describe 'GET #show' do

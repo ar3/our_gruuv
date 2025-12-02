@@ -342,6 +342,7 @@ get '/login', to: 'auth#login', as: :login
         get :employment_summary
       end
     end
+    resources :assignments, only: [:show], module: :people
   end
 
   # Organization access permissions - moved to organization namespace

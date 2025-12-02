@@ -4,9 +4,9 @@ RSpec.describe 'Goal Link Creation', type: :system do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
-  let(:goal1) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 1', privacy_level: 'everyone_in_company') }
-  let(:goal2) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 2', privacy_level: 'everyone_in_company') }
-  let(:goal3) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 3', privacy_level: 'everyone_in_company') }
+  let(:goal1) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 1', privacy_level: 'everyone_in_company', goal_type: 'stepping_stone_activity') }
+  let(:goal2) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 2', privacy_level: 'everyone_in_company', goal_type: 'stepping_stone_activity') }
+  let(:goal3) { create(:goal, creator: teammate, owner: teammate, title: 'Goal 3', privacy_level: 'everyone_in_company', goal_type: 'stepping_stone_activity') }
   
   # Create records in before block to ensure they're created AFTER DatabaseCleaner.clean runs
   # This prevents test isolation issues where stale data from previous tests interferes
@@ -218,7 +218,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
     
     it 'creates new goals as quantitative_key_result for outgoing links' do
       unique_title = "Bulk Key Result #{SecureRandom.hex(4)}"
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1, goal_type: 'quantitative_key_result')
       
       fill_in 'bulk_goal_titles', with: unique_title
       click_button 'Create Links', id: 'create-bulk-links-btn'
@@ -250,8 +250,11 @@ RSpec.describe 'Goal Link Creation', type: :system do
     end
     
     it 'creates new goals with no target dates' do
+      # Set goal1 to have no target date so created goals also have no target date
+      goal1.update!(most_likely_target_date: nil, earliest_target_date: nil, latest_target_date: nil)
+      
       unique_title = "Bulk Goal No Dates #{SecureRandom.hex(4)}"
-      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
+      visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1, goal_type: 'inspirational_objective')
       
       fill_in 'bulk_goal_titles', with: unique_title
       click_button 'Create Links', id: 'create-bulk-links-btn'
@@ -262,6 +265,8 @@ RSpec.describe 'Goal Link Creation', type: :system do
       
       created_goal = Goal.find_by(title: unique_title)
       expect(created_goal).to be_present
+      # Inspirational objectives don't get target dates set
+      expect(created_goal.goal_type).to eq('inspirational_objective')
       expect(created_goal.earliest_target_date).to be_nil
       expect(created_goal.most_likely_target_date).to be_nil
       expect(created_goal.latest_target_date).to be_nil
@@ -484,7 +489,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
   
   describe 'privacy level visualization' do
     it 'displays privacy levels as concentric circles' do
-      goal_with_privacy = create(:goal, creator: teammate, owner: teammate, title: 'Private Goal', privacy_level: 'only_creator_and_owner')
+      goal_with_privacy = create(:goal, creator: teammate, owner: teammate, title: 'Private Goal', privacy_level: 'only_creator_and_owner', goal_type: 'stepping_stone_activity')
       
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       
@@ -492,7 +497,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
     end
     
     it 'shows tooltip with privacy level description' do
-      goal_with_privacy = create(:goal, creator: teammate, owner: teammate, title: 'Private Goal', privacy_level: 'only_creator_and_owner')
+      goal_with_privacy = create(:goal, creator: teammate, owner: teammate, title: 'Private Goal', privacy_level: 'only_creator_and_owner', goal_type: 'stepping_stone_activity')
       
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
       

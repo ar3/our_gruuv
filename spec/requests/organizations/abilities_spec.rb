@@ -170,8 +170,8 @@ RSpec.describe 'Organizations::Abilities', type: :request do
         }
 
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_ability_path(organization, ability))
         ability.reload
+        expect(response).to redirect_to(organization_ability_path(organization, ability))
         expect(ability.name).to eq('Updated Ability')
         expect(ability.semantic_version).to eq('2.0.0') # Major version bump
       end

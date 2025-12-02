@@ -2,10 +2,13 @@ class AssignmentPolicy < ApplicationPolicy
   def show?
     return true if admin_bypass?
     
-    # Users can view assignments in their organization
-    return false unless actual_organization
-    return false unless record.company == actual_organization.root_company || 
-                        record.company.self_and_descendants.include?(actual_organization)
+    # Users can view assignments in their organization hierarchy
+    return false unless viewing_teammate
+    user_org = viewing_teammate.organization
+    record_org = record.company
+    
+    # Check if record's organization is in user's organization hierarchy
+    return false unless user_org.self_and_descendants.include?(record_org)
     
     true
   end
@@ -39,11 +42,16 @@ class AssignmentPolicy < ApplicationPolicy
   def can_manage_assignments?
     return false unless viewing_teammate
     return false unless actual_organization
-    return false unless record.company == actual_organization.root_company || 
-                        record.company.self_and_descendants.include?(actual_organization)
+    
+    # Get the organization from the record (for new records, this is set by the controller)
+    record_org = record.company || actual_organization
+    user_org = viewing_teammate.organization
+    
+    # Check if record's organization is in user's organization hierarchy
+    return false unless user_org.self_and_descendants.include?(record_org)
     
     # Check if user can manage employment in the organization
-    Teammate.can_manage_employment_in_hierarchy?(viewing_teammate.person, actual_organization)
+    Teammate.can_manage_employment_in_hierarchy?(viewing_teammate.person, record_org)
   end
 
   class Scope < ApplicationPolicy::Scope

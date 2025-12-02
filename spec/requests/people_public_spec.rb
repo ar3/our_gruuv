@@ -65,10 +65,12 @@ RSpec.describe 'Public Person View', type: :request do
       logged_in_teammate = create(:teammate, person: logged_in_person, organization: organization)
       # Create employment tenure for logged in person
       create(:employment_tenure, teammate: logged_in_teammate, company: organization, started_at: 1.year.ago)
+      logged_in_teammate.update!(first_employed_at: 1.year.ago)
       
       # Create employment tenure for the person being viewed
       person_teammate = create(:teammate, person: person, organization: organization)
       create(:employment_tenure, teammate: person_teammate, company: organization, started_at: 1.year.ago)
+      person_teammate.update!(first_employed_at: 1.year.ago)
       
       # Sign in
       sign_in_as_teammate_for_request(logged_in_person, organization)

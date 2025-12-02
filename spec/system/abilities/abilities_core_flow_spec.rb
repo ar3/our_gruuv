@@ -62,6 +62,9 @@ RSpec.describe 'Abilities Core Flow', type: :system do
 
   describe 'CRUD ability on department' do
     it 'creates, views, updates, and deletes an ability on a department' do
+      # Sign in with the company (parent of department) - user should have access to descendants
+      sign_in_as(person, company)
+      
       # Create
       visit new_organization_ability_path(department)
       expect(page).to have_content('New Ability')
@@ -106,6 +109,19 @@ RSpec.describe 'Abilities Core Flow', type: :system do
         created_by: person,
         updated_by: person
       )
+    end
+
+    before do
+      # Create active employment for employee so they can be viewed
+      employment_tenure = create(:employment_tenure, teammate: employee_teammate, company: company, started_at: 1.year.ago, ended_at: nil)
+      employee_teammate.update!(first_employed_at: 1.year.ago)
+      
+      # Set manager relationship so person can view employee's complete picture
+      employment_tenure.update!(manager: person)
+      
+      # Ensure manager also has active employment
+      create(:employment_tenure, teammate: company_teammate, company: company, started_at: 1.year.ago, ended_at: nil)
+      company_teammate.update!(first_employed_at: 1.year.ago)
     end
 
     it 'assigns a milestone to an employee via celebrate milestones page' do

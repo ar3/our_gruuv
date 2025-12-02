@@ -100,6 +100,7 @@ RSpec.describe 'Impersonation Security', type: :policy do
 
       before do
         create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+        manager_teammate.update!(first_employed_at: 1.year.ago)
         target_teammate.employment_tenures.first.update!(manager: manager_person)
       end
 

@@ -19,9 +19,11 @@ class PersonPolicy < ApplicationPolicy
     return true if admin_bypass? #admins can view any teammate
     return false unless viewing_teammate && record #if the viewer or the record are nil, this is invalid
     return true if viewing_teammate.person == record # viewer can view themself
-    return true if viewing_teammate.employed? && # viewer is employed and they are in the same org
-      record.teammates.where(organization: viewing_teammate.organization).first.present?
-    false
+    return false unless viewing_teammate.employed? # viewer must be employed
+    record_teammate = record.teammates.where(organization: viewing_teammate.organization).first
+    return false unless record_teammate # record must have teammate in same org
+    # Record's teammate must have employment in the organization
+    record_teammate.employment_tenures.active.where(company: viewing_teammate.organization).exists?
   end
   
   def audit?

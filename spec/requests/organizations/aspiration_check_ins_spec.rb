@@ -7,12 +7,17 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
   let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
   let(:aspiration) { create(:aspiration, organization: organization, name: 'Test Aspiration') }
   
-  let(:manager_teammate) { create(:teammate, person: manager_person, organization: organization) }
+  let(:manager_teammate) { create(:teammate, person: manager_person, organization: organization, can_manage_employment: true) }
 
   before do
+    # Create active employment for manager
+    create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+    manager_teammate.update!(first_employed_at: 1.year.ago)
+    # Create active employment for employee
+    create(:employment_tenure, teammate: employee_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+    employee_teammate.update!(first_employed_at: 1.year.ago)
+    # Setup authentication
     sign_in_as_teammate_for_request(manager_person, organization)
-    allow(manager_person).to receive(:can_manage_employment?).with(organization).and_return(true)
-    allow(manager_person).to receive(:can_manage_employment?).and_return(true)
     
     # Create an open check-in
     AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration)
@@ -35,7 +40,8 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
                         status: "draft"
                       }
                     }
-                  }
+                  },
+                  redirect_to: organization_person_check_ins_path(organization, employee_person)
                 }
           
           check_in.reload
@@ -63,7 +69,8 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
                         status: "complete"
                       }
                     }
-                  }
+                  },
+                  redirect_to: organization_person_check_ins_path(organization, employee_person)
                 }
           
           check_in.reload
@@ -79,7 +86,7 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
       
       context "employee perspective" do
         before do
-          allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(employee_person)
+          sign_in_as_teammate_for_request(employee_person, organization)
         end
         
         it "marks employee side as complete" do
@@ -121,7 +128,8 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
                         status: "draft"
                       }
                     }
-                  }
+                  },
+                  redirect_to: organization_person_check_ins_path(organization, employee_person)
                 }
           
           check_in.reload
@@ -139,7 +147,8 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
                         status: "complete"
                       }
                     }
-                  }
+                  },
+                  redirect_to: organization_person_check_ins_path(organization, employee_person)
                 }
           
           check_in.reload
@@ -164,7 +173,8 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
                         status: "complete"
                       }
                     }
-                  }
+                  },
+                  redirect_to: organization_person_check_ins_path(organization, employee_person)
                 }
           
           check_in.reload
@@ -182,7 +192,8 @@ RSpec.describe "Organizations::AspirationCheckIns", type: :request do
                         status: "draft"
                       }
                     }
-                  }
+                  },
+                  redirect_to: organization_person_check_ins_path(organization, employee_person)
                 }
           
           check_in.reload

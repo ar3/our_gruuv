@@ -1,13 +1,17 @@
 require 'rails_helper'
 
 RSpec.describe 'UploadEventsController comprehensive error handling', type: :request do
-  let(:organization) { create(:organization) }
+  let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:file) { fixture_file_upload('test.csv', 'text/csv') }
   
   before do
+    # Create teammate with employment management permission
+    teammate = create(:teammate, person: person, organization: organization, can_manage_employment: true, first_employed_at: 1.year.ago)
     sign_in_as_teammate_for_request(person, organization)
-    allow(person).to receive(:can_manage_employment?).and_return(true)
+    # Ensure the signed-in teammate has the permission
+    signed_in_teammate = person.teammates.find_by(organization: organization)
+    signed_in_teammate.update!(can_manage_employment: true, first_employed_at: 1.year.ago) if signed_in_teammate
   end
 
   context 'error handling - no silent failures' do

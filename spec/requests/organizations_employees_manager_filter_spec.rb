@@ -29,7 +29,7 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
     get organization_employees_path(organization, manager_filter: 'direct_reports')
     
     expect(response).to be_successful
-    teammates = assigns(:teammates)
+    teammates = assigns(:filtered_and_paginated_teammates)
     
     # Should include direct report
     expect(teammates.map(&:id)).to include(direct_report_teammate.id)
@@ -43,7 +43,7 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
     get organization_employees_path(organization)
     
     expect(response).to be_successful
-    teammates = assigns(:teammates)
+    teammates = assigns(:filtered_and_paginated_teammates)
     
     # Should include all teammates
     expect(teammates.map(&:id)).to include(direct_report_teammate.id)

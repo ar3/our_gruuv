@@ -14,7 +14,8 @@ RSpec.describe Organizations::PeopleController, type: :controller do
            can_manage_employment: true)
     
     # Create employment tenure for manager in the organization
-    create(:employment_tenure, teammate: manager_teammate, company: organization)
+    create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+    manager_teammate.update!(first_employed_at: 1.year.ago)
     
     # Set up session for authentication
     sign_in_as_teammate(manager, organization)

@@ -6,13 +6,13 @@ class EmploymentTenurePolicy < ApplicationPolicy
   def show?
     return false unless viewing_teammate
     person = viewing_teammate.person
-    admin_bypass? || record.viewing_teammate.person == person
+    admin_bypass? || record.teammate.person == person
   end
 
   def create?
     return false unless viewing_teammate
     person = viewing_teammate.person
-    admin_bypass? || record.viewing_teammate.person == person
+    admin_bypass? || record.teammate.person == person
   end
 
   def new?
@@ -26,19 +26,19 @@ class EmploymentTenurePolicy < ApplicationPolicy
   def update?
     return false unless viewing_teammate
     person = viewing_teammate.person
-    admin_bypass? || record.viewing_teammate.person == person
+    admin_bypass? || record.teammate.person == person
   end
 
   def destroy?
     return false unless viewing_teammate
     person = viewing_teammate.person
-    admin_bypass? || record.viewing_teammate.person == person
+    admin_bypass? || record.teammate.person == person
   end
 
   def change?
     return false unless viewing_teammate
     person = viewing_teammate.person
-    admin_bypass? || record.viewing_teammate.person == person
+    admin_bypass? || record.teammate.person == person
   end
 
   def add_history?
@@ -48,7 +48,7 @@ class EmploymentTenurePolicy < ApplicationPolicy
   def employment_summary?
     return false unless viewing_teammate
     person = viewing_teammate.person
-    admin_bypass? || record.viewing_teammate.person == person
+    admin_bypass? || record.teammate.person == person
   end
 
   class Scope < ApplicationPolicy::Scope
@@ -58,7 +58,7 @@ class EmploymentTenurePolicy < ApplicationPolicy
       if person&.admin?
         scope.all
       else
-        scope.joins(:viewing_teammate).where(viewing_teammates: { person: person })
+        scope.joins(:teammate).where(teammates: { person: person })
       end
     end
   end

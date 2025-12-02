@@ -56,7 +56,10 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       teammate_instance.update_column(:type, 'CompanyTeammate')
       teammate_instance = Teammate.find(teammate_instance.id) # Reload as CompanyTeammate
     end
-    
+
+    # Set first_employed_at for employed? check in policies
+    teammate_instance.update!(first_employed_at: 1.year.ago) unless teammate_instance.first_employed_at
+
     # Stub current_company_teammate for both ApplicationController and OrganizationNamespaceBaseController
     allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(teammate_instance)
     allow_any_instance_of(Organizations::OrganizationNamespaceBaseController).to receive(:current_company_teammate).and_return(teammate_instance)
@@ -187,7 +190,8 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
           }
         }
         
-        expect(current_tenure.reload.ended_at).to eq(termination_date)
+        # ended_at is stored as DateTime, so compare dates
+        expect(current_tenure.reload.ended_at.to_date).to eq(termination_date)
       end
 
       it 'creates maap_snapshot when manager changes' do
