@@ -364,6 +364,16 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   }
 }
 
+// ===== GIF CONTAINER STYLES =====
+// Uniform sizing for GIFs in observations with responsive Bootstrap columns
+.gif-container {
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+}
+
 // ===== BACK LINK STYLES =====
 // Standard styling for back navigation links
 .go-back-link {

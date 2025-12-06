@@ -20,42 +20,51 @@
         Employee-only view
       %i.bi.bi-exclamation-triangle.text-warning
 
-/ Main content - sentence style formatting
+/ Main content
 .mb-4
-  / Story
-  %p.mb-4{style: "font-size: 1.1rem; line-height: 1.6;"}
-    = @observation.decorate.story_html.html_safe
+  / Story section with left border
+  .markdown-content--bordered.mb-4
+    %p.mb-0{style: "font-size: 1.1rem; line-height: 1.6;"}
+      = @observation.decorate.story_html.html_safe
 
-  / Feelings sentence (if present)
-  - if @observation.feelings_display.present?
-    %p.mb-3
-      - observed_links = @observation.observed_teammates.map do |teammate|
-        - person = teammate.person
-        - link_to person.casual_name, public_person_path(person), class: "text-decoration-none"
-      - story_part = if @observation.observed_teammates.any?
-        - "This story about #{observed_links.join(', ')}"
-      - else
-        - "This story"
+  / Attribution section (right-aligned like a quote author)
+  .text-end.mb-4
+    %p.mb-1.text-muted
       - observer_link = link_to @observation.observer.casual_name, public_person_path(@observation.observer), class: "text-decoration-none"
-      = "#{story_part} made #{observer_link} feel #{@observation.feelings_display}".html_safe
+      = "Observed by #{observer_link}".html_safe
+      - if @observation.observed_teammates.any?
+        |  • Recognizing: 
+        - @observation.observed_teammates.map do |teammate|
+          - person = teammate.person
+          = link_to person.casual_name, public_person_path(person), class: "text-decoration-none"
+    %p.mb-0.text-muted.small
+      - full_datetime = @observation.observed_at.strftime('%B %d, %Y at %l:%M %p')
+      - date_only = @observation.observed_at.strftime('%B %d, %Y')
+      %span{title: full_datetime, "data-bs-toggle" => "tooltip", "data-bs-placement" => "top"}
+        = date_only
 
-  / Ratings sentences
+  / Feelings and ratings card
+  - has_feelings = @observation.primary_feeling.present? && @observation.feelings_display.present?
   - rating_sentences = @observation.format_ratings_by_type_and_level(format: :html)
-  - if rating_sentences.any?
-    - rating_sentences.each do |sentence|
-      %p.mb-3
-        != sentence.html_safe
+  - has_ratings = rating_sentences.any?
+  - if has_feelings || has_ratings
+    .card.mb-4
+      .card-body
+        / Feelings sentence (if present)
+        - if has_feelings
+          %p.mb-3
+            - observed_links = @observation.observed_teammates.map do |teammate|
+              - person = teammate.person
+              - link_to person.casual_name, public_person_path(person), class: "text-decoration-none"
+            - story_part = if @observation.observed_teammates.any?
+              - "This story about #{observed_links.join(', ')}"
+            - else
+              - "This story"
+            - observer_link = link_to @observation.observer.casual_name, public_person_path(@observation.observer), class: "text-decoration-none"
+            = "#{story_part} made #{observer_link} feel #{@observation.feelings_display}".html_safe
 
-  / Observer and observed info in sentence format
-  %p.mb-2.text-muted
-    - observer_link = link_to @observation.observer.casual_name, public_person_path(@observation.observer), class: "text-decoration-none"
-    = "Observed by #{observer_link}".html_safe
-    - if @observation.observed_teammates.any?
-      |  • Recognizing: 
-      - @observation.observed_teammates.map do |teammate|
-        - person = teammate.person
-        = link_to person.casual_name, public_person_path(person), class: "text-decoration-none"
-
-  / Date
-  %p.mb-4.text-muted.small
-    = @observation.observed_at.strftime('%B %d, %Y at %l:%M %p')
+        / Ratings sentences
+        - if has_ratings
+          - rating_sentences.each do |sentence|
+            %p.mb-3
+              != sentence.html_safe

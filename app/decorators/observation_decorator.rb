@@ -133,9 +133,16 @@ class ObservationDecorator < Draper::Decorator
     gif_urls = Array(gif_urls).reject(&:blank?)
     return '' if gif_urls.empty?
     
-    gif_urls.map do |url|
-      "<div class='gif-container mb-3'><img src='#{ERB::Util.html_escape(url)}' alt='GIF' class='img-fluid rounded' style='max-width: 100%; height: auto;' /></div>"
+    # Wrap GIFs in Bootstrap responsive row with columns
+    gif_columns = gif_urls.map do |url|
+      "<div class='col-12 col-md-6 col-lg-4 mb-3'>" \
+        "<div class='gif-container'>" \
+          "<img src='#{ERB::Util.html_escape(url)}' alt='GIF' class='img-fluid rounded' />" \
+        "</div>" \
+      "</div>"
     end.join
+    
+    "<div class=\"row\">#{gif_columns}</div>"
   end
 
   def timeframe

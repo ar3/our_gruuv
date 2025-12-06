@@ -176,4 +176,113 @@ RSpec.describe ObservationDecorator, type: :decorator do
       expect(decorated_observation.status_markup).to include('📝 Draft')
     end
   end
+
+  describe '#gifs_html' do
+    context 'when no GIFs present' do
+      it 'returns empty string when story_extras is nil' do
+        observation.story_extras = nil
+        expect(decorated_observation.gifs_html).to eq('')
+      end
+
+      it 'returns empty string when story_extras has no gif_urls key' do
+        observation.story_extras = { some_other_key: 'value' }
+        expect(decorated_observation.gifs_html).to eq('')
+      end
+
+      it 'returns empty string when gif_urls array is empty' do
+        observation.story_extras = { 'gif_urls' => [] }
+        expect(decorated_observation.gifs_html).to eq('')
+      end
+
+      it 'returns empty string when gif_urls contains only blank entries' do
+        observation.story_extras = { 'gif_urls' => ['', nil, '  '] }
+        expect(decorated_observation.gifs_html).to eq('')
+      end
+    end
+
+    context 'when GIFs are present' do
+      it 'generates HTML with Bootstrap row structure for single GIF' do
+        observation.story_extras = { 'gif_urls' => ['https://example.com/gif1.gif'] }
+        html = decorated_observation.gifs_html
+        
+        expect(html).to include('class="row"')
+        expect(html).to include('col-12 col-md-6 col-lg-4')
+        expect(html).to include('gif-container')
+        expect(html).to include('https://example.com/gif1.gif')
+        expect(html).to include('img-fluid rounded')
+      end
+
+      it 'generates HTML with Bootstrap row structure for two GIFs' do
+        observation.story_extras = { 'gif_urls' => ['https://example.com/gif1.gif', 'https://example.com/gif2.gif'] }
+        html = decorated_observation.gifs_html
+        
+        expect(html).to include('class="row"')
+        expect(html.scan(/col-12 col-md-6 col-lg-4/).count).to eq(2)
+        expect(html).to include('https://example.com/gif1.gif')
+        expect(html).to include('https://example.com/gif2.gif')
+      end
+
+      it 'generates HTML with Bootstrap row structure for three GIFs' do
+        observation.story_extras = { 'gif_urls' => ['https://example.com/gif1.gif', 'https://example.com/gif2.gif', 'https://example.com/gif3.gif'] }
+        html = decorated_observation.gifs_html
+        
+        expect(html).to include('class="row"')
+        expect(html.scan(/col-12 col-md-6 col-lg-4/).count).to eq(3)
+      end
+
+      it 'generates HTML for four or more GIFs' do
+        gif_urls = (1..5).map { |i| "https://example.com/gif#{i}.gif" }
+        observation.story_extras = { 'gif_urls' => gif_urls }
+        html = decorated_observation.gifs_html
+        
+        expect(html.scan(/col-12 col-md-6 col-lg-4/).count).to eq(5)
+        gif_urls.each do |url|
+          expect(html).to include(url)
+        end
+      end
+
+      it 'properly escapes GIF URLs' do
+        observation.story_extras = { 'gif_urls' => ['https://example.com/gif?param=value&other=<script>'] }
+        html = decorated_observation.gifs_html
+        
+        expect(html).to include('&lt;script&gt;')
+        expect(html).not_to include('<script>')
+      end
+
+      it 'handles symbol keys for gif_urls' do
+        observation.story_extras = { gif_urls: ['https://example.com/gif1.gif'] }
+        html = decorated_observation.gifs_html
+        
+        expect(html).to include('https://example.com/gif1.gif')
+      end
+
+      it 'does not include inline styles' do
+        observation.story_extras = { 'gif_urls' => ['https://example.com/gif1.gif'] }
+        html = decorated_observation.gifs_html
+        
+        expect(html).not_to include('style=')
+      end
+
+      it 'filters out blank GIF URLs from array' do
+        observation.story_extras = { 'gif_urls' => ['https://example.com/gif1.gif', '', nil, 'https://example.com/gif2.gif'] }
+        html = decorated_observation.gifs_html
+        
+        expect(html.scan(/col-12 col-md-6 col-lg-4/).count).to eq(2)
+        expect(html).to include('https://example.com/gif1.gif')
+        expect(html).to include('https://example.com/gif2.gif')
+      end
+    end
+  end
+
+  describe '#story_html' do
+    it 'appends GIFs when present' do
+      observation.story = 'Great work!'
+      observation.story_extras = { 'gif_urls' => ['https://example.com/gif1.gif'] }
+      html = decorated_observation.story_html
+      
+      expect(html).to include('Great work!')
+      expect(html).to include('https://example.com/gif1.gif')
+      expect(html).to include('class="row"')
+    end
+  end
 end
