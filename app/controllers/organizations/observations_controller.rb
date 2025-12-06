@@ -173,7 +173,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       authorize @observation, :show?
     rescue Pundit::NotAuthorizedError
       date_part = @observation.observed_at.strftime('%Y-%m-%d')
-      redirect_to kudos_path(date: date_part, id: @observation.id)
+      redirect_to organization_kudo_path(@observation.company, date: date_part, id: @observation.id)
       return
     end
 
@@ -352,7 +352,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       authorize @observation, :destroy?
     rescue Pundit::NotAuthorizedError
       date_part = @observation.observed_at.strftime('%Y-%m-%d')
-      redirect_to kudos_path(date: date_part, id: @observation.id)
+      redirect_to organization_kudo_path(@observation.company, date: date_part, id: @observation.id)
       return
     end
 

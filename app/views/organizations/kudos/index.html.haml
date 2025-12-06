@@ -1,0 +1,30 @@
+.container.mt-4.mb-5
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1.mb-0
+          %i.bi.bi-gift.me-2
+          = "#{@organization.name} Public Kudos"
+        - if current_person
+          = link_to organization_observations_path(@organization), class: "btn btn-outline-primary btn-sm" do
+            %i.bi.bi-arrow-left.me-2
+            Back to Observations
+
+  - if @observations.any?
+    - @observations.each do |observation|
+      .card.mb-4
+        .card-body
+          %p.mb-2= observation.decorate.story_html.html_safe
+          .d-flex.justify-content-between.align-items-center
+            .small.text-muted
+              From: #{observation.observer.preferred_name || observation.observer.first_name}
+              - if observation.observed_teammates.any?
+                |  • Recognizing: 
+                - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }
+                = names.join(', ')
+            = link_to "View Kudos", organization_kudo_path(@organization, date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id), class: "btn btn-sm btn-outline-primary"
+  - else
+    .card.mb-4
+      .card-body.text-center.py-5
+        %p.text-muted.mb-0 No public kudos yet.
+

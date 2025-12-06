@@ -22,14 +22,14 @@ RSpec.describe ObservationDecorator, type: :decorator do
 
   describe '#permalink_url' do
     it 'returns correct URL' do
-      expected_url = Rails.application.routes.url_helpers.kudos_url(date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id)
+      expected_url = Rails.application.routes.url_helpers.organization_kudo_url(company, date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id)
       expect(decorated_observation.permalink_url).to eq(expected_url)
     end
   end
 
   describe '#permalink_path' do
     it 'returns correct path' do
-      expected_path = Rails.application.routes.url_helpers.kudos_path(date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id)
+      expected_path = Rails.application.routes.url_helpers.organization_kudo_path(company, date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id)
       expect(decorated_observation.permalink_path).to eq(expected_path)
     end
   end

@@ -404,9 +404,6 @@ delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconn
   get '/huddles-overview', to: 'pages#huddles_overview', as: :huddles_overview
   get '/accountability', to: 'pages#accountability', as: :accountability
 
-  # Kudos permalinks (public observation links)
-  get '/kudos/:date/:id', to: 'kudos#show', as: :kudos
-
   # Public MAAP routes
   get '/public_maap', to: 'public_maap/index#index', as: :public_maap
   
@@ -420,6 +417,10 @@ delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconn
       resources :abilities, only: [:index, :show], controller: 'abilities'
       resources :aspirations, only: [:index, :show], controller: 'aspirations'
     end
+    
+    # Kudos (public observation links)
+    get 'kudos', to: 'organizations/kudos#index', as: :kudos
+    get 'kudos/:date/:id', to: 'organizations/kudos#show', as: :kudo
   end
 
   # ENM Alignment Typology App (completely isolated namespace)

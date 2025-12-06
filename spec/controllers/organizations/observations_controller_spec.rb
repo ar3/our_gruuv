@@ -66,7 +66,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       it 'redirects to kudos page' do
         get :show, params: { organization_id: company.id, id: observation.id }
         date_part = observation.observed_at.strftime('%Y-%m-%d')
-        expect(response).to redirect_to(kudos_path(date: date_part, id: observation.id))
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observation.id))
       end
     end
   end
@@ -378,7 +378,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       it 'redirects to kudos page' do
         delete :destroy, params: { organization_id: company.id, id: observation.id }
         date_part = observation.observed_at.strftime('%Y-%m-%d')
-        expect(response).to redirect_to(kudos_path(date: date_part, id: observation.id))
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observation.id))
       end
     end
   end

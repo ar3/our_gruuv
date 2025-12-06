@@ -3,12 +3,12 @@ class ObservationDecorator < Draper::Decorator
 
   def permalink_url
     date_part = observed_at.strftime('%Y-%m-%d')
-    Rails.application.routes.url_helpers.kudos_url(date: date_part, id: id)
+    Rails.application.routes.url_helpers.organization_kudo_url(company, date: date_part, id: id)
   end
   
   def permalink_path
     date_part = observed_at.strftime('%Y-%m-%d')
-    Rails.application.routes.url_helpers.kudos_path(date: date_part, id: id)
+    Rails.application.routes.url_helpers.organization_kudo_path(company, date: date_part, id: id)
   end
 
   def visibility_text

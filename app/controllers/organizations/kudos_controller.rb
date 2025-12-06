@@ -1,6 +1,9 @@
-class KudosController < ApplicationController
-  before_action :set_observation
-  before_action :authorize_view_permalink
+class Organizations::KudosController < ApplicationController
+  layout 'application'
+  
+  before_action :set_organization
+  before_action :set_observation, only: [:show]
+  before_action :authorize_view_permalink, only: [:show]
 
   # Override Pundit's default user method to return Teammate structure
   # Policies expect a Teammate, not a Person
@@ -17,12 +20,34 @@ class KudosController < ApplicationController
     redirect_to root_path
   end
 
+  def index
+    # Get all public observations for organization and its descendants
+    company = @organization.root_company || @organization
+    orgs_in_hierarchy = [company] + company.descendants.to_a
+    
+    @observations = Observation
+      .where(company: orgs_in_hierarchy)
+      .public_observations
+      .published
+      .includes(:observer, :observed_teammates, :observation_ratings)
+      .recent
+  end
+
   def show
     # This is the public permalink page that respects privacy settings
     # No authentication required for public observations
   end
 
   private
+
+  def set_organization
+    org_param = params[:organization_id]
+    @organization = Organization.find_by_param(org_param)
+    
+    unless @organization
+      raise ActiveRecord::RecordNotFound, "Organization not found"
+    end
+  end
 
   def set_observation
     date = params[:date]
@@ -35,6 +60,9 @@ class KudosController < ApplicationController
     unless @observation
       raise ActiveRecord::RecordNotFound, "Observation not found"
     end
+    
+    # Set organization from observation's company
+    @organization = @observation.company
   end
 
   def authorize_view_permalink
@@ -58,3 +86,4 @@ class KudosController < ApplicationController
     end
   end
 end
+
