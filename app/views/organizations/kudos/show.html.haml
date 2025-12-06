@@ -1,64 +1,61 @@
-%h1 TEST - HOW MANY TIMES DOES THIS TEMPLATE GET RENDERED?
-.container.mt-4.mb-5
-  .row
-    .col-12
-      / Back link
-      .mb-4
-        = link_to organization_kudos_path(@organization), class: "text-muted text-decoration-none" do
-          %i.bi.bi-arrow-left.me-2
-          Back to #{@organization.name} Public Kudos
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-gift.me-2
+    Public Kudos
 
-      / Main content - sentence style formatting
-      .mb-4
-        / Story
-        %p.mb-4{style: "font-size: 1.1rem; line-height: 1.6;"}
-          = @observation.decorate.story_html.html_safe
+- content_for :go_back_link do
+  = link_to organization_kudos_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@organization.name} Public Kudos
 
-        / Feelings sentence (if present)
-        - if @observation.feelings_display.present?
-          %p.mb-3
-            - observed_links = @observation.observed_teammates.map do |teammate|
-              - person = teammate.person
-              - link_to person.casual_name, public_person_path(person), class: "text-decoration-none"
-            - story_part = if @observation.observed_teammates.any?
-              - "This story about #{observed_links.join(', ')}"
-            - else
-              - "This story"
-            - observer_link = link_to @observation.observer.casual_name, public_person_path(@observation.observer), class: "text-decoration-none"
-            = "#{story_part} made #{observer_link} feel #{@observation.feelings_display}".html_safe
+- content_for :header_action do
+  - if current_person
+    = link_to organization_observation_path(@organization, @observation), class: "btn btn-outline-primary btn-sm" do
+      %i.bi.bi-eye.me-2
+      Employee-only view
+  - else
+    .d-flex.align-items-center.gap-2
+      %button.btn.btn-outline-secondary.btn-sm.disabled{disabled: true, "data-bs-toggle" => "tooltip", "data-bs-title" => "Requires login to view employee-only features"}
+        %i.bi.bi-eye.me-2
+        Employee-only view
+      %i.bi.bi-exclamation-triangle.text-warning
 
-        / Ratings sentences
-        - rating_sentences = @observation.format_ratings_by_type_and_level(format: :html)
-        - if rating_sentences.any?
-          - rating_sentences.each do |sentence|
-            %p.mb-3
-              != sentence.html_safe
+/ Main content - sentence style formatting
+.mb-4
+  / Story
+  %p.mb-4{style: "font-size: 1.1rem; line-height: 1.6;"}
+    = @observation.decorate.story_html.html_safe
 
-        / Observer and observed info in sentence format
-        %p.mb-2.text-muted
-          - observer_link = link_to @observation.observer.casual_name, public_person_path(@observation.observer), class: "text-decoration-none"
-          = "Observed by #{observer_link}".html_safe
-          - if @observation.observed_teammates.any?
-            |  • Recognizing: 
-            - @observation.observed_teammates.map do |teammate|
-              - person = teammate.person
-              = link_to person.casual_name, public_person_path(person), class: "text-decoration-none"
+  / Feelings sentence (if present)
+  - if @observation.feelings_display.present?
+    %p.mb-3
+      - observed_links = @observation.observed_teammates.map do |teammate|
+        - person = teammate.person
+        - link_to person.casual_name, public_person_path(person), class: "text-decoration-none"
+      - story_part = if @observation.observed_teammates.any?
+        - "This story about #{observed_links.join(', ')}"
+      - else
+        - "This story"
+      - observer_link = link_to @observation.observer.casual_name, public_person_path(@observation.observer), class: "text-decoration-none"
+      = "#{story_part} made #{observer_link} feel #{@observation.feelings_display}".html_safe
 
-        / Date
-        %p.mb-4.text-muted.small
-          = @observation.observed_at.strftime('%B %d, %Y at %l:%M %p')
+  / Ratings sentences
+  - rating_sentences = @observation.format_ratings_by_type_and_level(format: :html)
+  - if rating_sentences.any?
+    - rating_sentences.each do |sentence|
+      %p.mb-3
+        != sentence.html_safe
 
-      / Employee-only view button
-      .mb-4
-        - if current_person
-          = link_to organization_observation_path(@organization, @observation), class: "btn btn-outline-primary btn-sm" do
-            %i.bi.bi-eye.me-2
-            Employee-only view
-        - else
-          .d-flex.align-items-center.gap-2
-            %button.btn.btn-outline-secondary.btn-sm.disabled{disabled: true}
-              %i.bi.bi-eye.me-2
-              Employee-only view
-            %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires login to view employee-only features"}
+  / Observer and observed info in sentence format
+  %p.mb-2.text-muted
+    - observer_link = link_to @observation.observer.casual_name, public_person_path(@observation.observer), class: "text-decoration-none"
+    = "Observed by #{observer_link}".html_safe
+    - if @observation.observed_teammates.any?
+      |  • Recognizing: 
+      - @observation.observed_teammates.map do |teammate|
+        - person = teammate.person
+        = link_to person.casual_name, public_person_path(person), class: "text-decoration-none"
 
-%h1 END TEST - HOW MANY TIMES DOES THIS TEMPLATE GET RENDERED?
+  / Date
+  %p.mb-4.text-muted.small
+    = @observation.observed_at.strftime('%B %d, %Y at %l:%M %p')

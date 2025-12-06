@@ -99,9 +99,9 @@ RSpec.describe Organizations::KudosController, type: :controller do
       }.to raise_error(ActiveRecord::RecordNotFound)
     end
 
-    it 'uses application layout' do
+    it 'uses public_maap layout' do
       get :index, params: { organization_id: company.id }
-      expect(response).to render_template(layout: 'application')
+      expect(response).to render_template(layout: 'public_maap')
     end
   end
 
@@ -127,9 +127,9 @@ RSpec.describe Organizations::KudosController, type: :controller do
         expect(assigns(:organization)).to be_a(Organization)
       end
 
-      it 'uses application layout' do
+      it 'uses public_maap layout' do
         get :show, params: { organization_id: company.id, date: '2025-10-05', id: observation.id }
-        expect(response).to render_template(layout: 'application')
+        expect(response).to render_template(layout: 'public_maap')
       end
     end
 
