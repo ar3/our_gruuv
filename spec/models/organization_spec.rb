@@ -255,4 +255,22 @@ RSpec.describe Organization, type: :model do
       end
     end
   end
+
+  describe '.find_by_slack_workspace_id' do
+    let(:workspace_id) { 'T123456' }
+
+    context 'when Slack configuration exists' do
+      let!(:slack_config) { create(:slack_configuration, organization: company, workspace_id: workspace_id) }
+
+      it 'returns the organization' do
+        expect(Organization.find_by_slack_workspace_id(workspace_id)).to eq(company)
+      end
+    end
+
+    context 'when Slack configuration does not exist' do
+      it 'returns nil' do
+        expect(Organization.find_by_slack_workspace_id(workspace_id)).to be_nil
+      end
+    end
+  end
 end 

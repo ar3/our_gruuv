@@ -57,6 +57,12 @@ get '/login', to: 'auth#login', as: :login
   # Slack OAuth callback (fixed URL for Slack)
   get 'slack/oauth/callback', to: 'organizations/slack/oauth#callback'
   
+  # Slack webhooks (support both /slack/interactions and /webhooks/slack/interactions)
+  post 'slack/interactions', to: 'webhooks/slack#create'
+  namespace :webhooks do
+    post 'slack/interactions', to: 'slack#create'
+  end
+
   # Organizations routes
   resources :organizations do
     member do

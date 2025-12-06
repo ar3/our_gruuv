@@ -419,4 +419,308 @@ RSpec.describe SlackService do
       end
     end
   end
+
+  describe '#get_message_permalink' do
+    let(:mock_client) { instance_double(Slack::Web::Client) }
+    let(:channel_id) { 'C123456' }
+    let(:message_ts) { '1234567890.123456' }
+
+    before do
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
+    end
+
+    context 'when Slack is configured' do
+      before do
+        allow(mock_client).to receive(:chat_getPermalink).and_return({
+          'ok' => true,
+          'permalink' => 'https://slack.com/archives/C123456/p1234567890123456'
+        })
+      end
+
+      it 'returns permalink successfully' do
+        result = slack_service.get_message_permalink(channel_id, message_ts)
+        
+        expect(result[:success]).to be true
+        expect(result[:permalink]).to eq('https://slack.com/archives/C123456/p1234567890123456')
+        expect(mock_client).to have_received(:chat_getPermalink).with(
+          channel: channel_id,
+          message_ts: message_ts
+        )
+      end
+
+      it 'stores response in DebugResponse' do
+        expect(slack_service).to receive(:store_slack_response).with(
+          'chat_getPermalink',
+          { channel: channel_id, message_ts: message_ts },
+          hash_including('ok' => true, 'permalink' => kind_of(String))
+        )
+
+        slack_service.get_message_permalink(channel_id, message_ts)
+      end
+    end
+
+    context 'when Slack API fails' do
+      before do
+        allow(mock_client).to receive(:chat_getPermalink).and_raise(Slack::Web::Api::Errors::SlackError.new('Channel not found'))
+      end
+
+      it 'returns error hash' do
+        result = slack_service.get_message_permalink(channel_id, message_ts)
+        
+        expect(result[:success]).to be false
+        expect(result[:error]).to eq('Channel not found')
+      end
+
+      it 'stores error in DebugResponse' do
+        expect(slack_service).to receive(:store_slack_response).with(
+          'chat_getPermalink',
+          { channel: channel_id, message_ts: message_ts },
+          hash_including(error: 'Channel not found')
+        )
+
+        slack_service.get_message_permalink(channel_id, message_ts)
+      end
+    end
+
+    context 'when Slack is not configured' do
+      before do
+        allow(slack_service).to receive(:slack_configured?).and_return(false)
+      end
+
+      it 'returns error hash' do
+        result = slack_service.get_message_permalink(channel_id, message_ts)
+        
+        expect(result[:success]).to be false
+        expect(result[:error]).to eq('Slack not configured')
+      end
+    end
+  end
+
+  describe '#open_create_observation_modal' do
+    let(:mock_client) { instance_double(Slack::Web::Client) }
+    let(:trigger_id) { '1234567890.123456.abcdef' }
+    let(:private_metadata) { { team_id: 'T123456', channel_id: 'C123456' }.to_json }
+
+    before do
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
+    end
+
+    context 'when Slack is configured' do
+      before do
+        allow(mock_client).to receive(:views_open).and_return({ 'ok' => true })
+      end
+
+      it 'opens modal successfully' do
+        result = slack_service.open_create_observation_modal(trigger_id, private_metadata)
+        
+        expect(result[:success]).to be true
+        expect(mock_client).to have_received(:views_open).with(
+          hash_including(
+            trigger_id: trigger_id,
+            view: hash_including(
+              type: 'modal',
+              callback_id: 'create_observation_from_message'
+            )
+          )
+        )
+      end
+
+      it 'stores response in DebugResponse' do
+        expect(slack_service).to receive(:store_slack_response).with(
+          'views_open',
+          hash_including(trigger_id: trigger_id),
+          hash_including('ok' => true)
+        )
+
+        slack_service.open_create_observation_modal(trigger_id, private_metadata)
+      end
+    end
+
+    context 'when Slack API fails' do
+      before do
+        allow(mock_client).to receive(:views_open).and_raise(Slack::Web::Api::Errors::SlackError.new('Invalid trigger_id'))
+      end
+
+      it 'returns error hash' do
+        result = slack_service.open_create_observation_modal(trigger_id, private_metadata)
+        
+        expect(result[:success]).to be false
+        expect(result[:error]).to eq('Invalid trigger_id')
+      end
+    end
+  end
+
+  describe '#post_message_to_thread' do
+    let(:mock_client) { instance_double(Slack::Web::Client) }
+    let(:channel_id) { 'C123456' }
+    let(:thread_ts) { '1234567890.123456' }
+    let(:text) { 'Test thread message' }
+
+    before do
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
+    end
+
+    context 'when Slack is configured' do
+      before do
+        allow(mock_client).to receive(:chat_postMessage).and_return({
+          'ok' => true,
+          'ts' => '1234567890.123457'
+        })
+      end
+
+      it 'posts message to thread successfully' do
+        result = slack_service.post_message_to_thread(
+          channel_id: channel_id,
+          thread_ts: thread_ts,
+          text: text
+        )
+        
+        expect(result[:success]).to be true
+        expect(result[:message_id]).to eq('1234567890.123457')
+        expect(mock_client).to have_received(:chat_postMessage).with(
+          channel: channel_id,
+          thread_ts: thread_ts,
+          text: text
+        )
+      end
+
+      it 'stores response in DebugResponse' do
+        expect(slack_service).to receive(:store_slack_response).with(
+          'chat_postMessage_thread',
+          { channel: channel_id, thread_ts: thread_ts, text: text },
+          hash_including('ok' => true, 'ts' => kind_of(String))
+        )
+
+        slack_service.post_message_to_thread(
+          channel_id: channel_id,
+          thread_ts: thread_ts,
+          text: text
+        )
+      end
+    end
+
+    context 'when Slack API fails' do
+      before do
+        allow(mock_client).to receive(:chat_postMessage).and_raise(Slack::Web::Api::Errors::SlackError.new('Channel not found'))
+      end
+
+      it 'returns error hash' do
+        result = slack_service.post_message_to_thread(
+          channel_id: channel_id,
+          thread_ts: thread_ts,
+          text: text
+        )
+        
+        expect(result[:success]).to be false
+        expect(result[:error]).to eq('Channel not found')
+      end
+
+      it 'stores error in DebugResponse' do
+        expect(slack_service).to receive(:store_slack_response).with(
+          'chat_postMessage_thread',
+          { channel: channel_id, thread_ts: thread_ts },
+          hash_including(error: 'Channel not found')
+        )
+
+        slack_service.post_message_to_thread(
+          channel_id: channel_id,
+          thread_ts: thread_ts,
+          text: text
+        )
+      end
+    end
+
+    context 'when Slack is not configured' do
+      before do
+        allow(slack_service).to receive(:slack_configured?).and_return(false)
+      end
+
+      it 'returns error hash' do
+        result = slack_service.post_message_to_thread(
+          channel_id: channel_id,
+          thread_ts: thread_ts,
+          text: text
+        )
+        
+        expect(result[:success]).to be false
+        expect(result[:error]).to eq('Slack not configured')
+      end
+    end
+  end
+
+  describe '#post_dm' do
+    let(:mock_client) { instance_double(Slack::Web::Client) }
+    let(:user_id) { 'U123456' }
+    let(:text) { 'Test DM message' }
+
+    before do
+      allow(Slack::Web::Client).to receive(:new).and_return(mock_client)
+    end
+
+    context 'when Slack is configured' do
+      before do
+        allow(mock_client).to receive(:chat_postMessage).and_return({
+          'ok' => true,
+          'ts' => '1234567890.123458'
+        })
+      end
+
+      it 'posts DM successfully' do
+        result = slack_service.post_dm(user_id: user_id, text: text)
+        
+        expect(result[:success]).to be true
+        expect(result[:message_id]).to eq('1234567890.123458')
+        expect(mock_client).to have_received(:chat_postMessage).with(
+          channel: user_id,
+          text: text
+        )
+      end
+
+      it 'stores response in DebugResponse' do
+        expect(slack_service).to receive(:store_slack_response).with(
+          'chat_postMessage_dm',
+          { user_id: user_id, text: text },
+          hash_including('ok' => true, 'ts' => kind_of(String))
+        )
+
+        slack_service.post_dm(user_id: user_id, text: text)
+      end
+    end
+
+    context 'when Slack API fails' do
+      before do
+        allow(mock_client).to receive(:chat_postMessage).and_raise(Slack::Web::Api::Errors::SlackError.new('User not found'))
+      end
+
+      it 'returns error hash' do
+        result = slack_service.post_dm(user_id: user_id, text: text)
+        
+        expect(result[:success]).to be false
+        expect(result[:error]).to eq('User not found')
+      end
+
+      it 'stores error in DebugResponse' do
+        expect(slack_service).to receive(:store_slack_response).with(
+          'chat_postMessage_dm',
+          { user_id: user_id },
+          hash_including(error: 'User not found')
+        )
+
+        slack_service.post_dm(user_id: user_id, text: text)
+      end
+    end
+
+    context 'when Slack is not configured' do
+      before do
+        allow(slack_service).to receive(:slack_configured?).and_return(false)
+      end
+
+      it 'returns error hash' do
+        result = slack_service.post_dm(user_id: user_id, text: text)
+        
+        expect(result[:success]).to be false
+        expect(result[:error]).to eq('Slack not configured')
+      end
+    end
+  end
 end 

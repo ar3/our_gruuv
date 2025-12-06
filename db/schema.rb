@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_25_025624) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_06_005421) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -350,6 +350,26 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_25_025624) do
     t.bigint "huddle_playbook_id"
     t.index ["expires_at"], name: "index_huddles_on_expires_at"
     t.index ["huddle_playbook_id"], name: "index_huddles_on_huddle_playbook_id"
+  end
+
+  create_table "incoming_webhooks", force: :cascade do |t|
+    t.string "provider", null: false
+    t.string "event_type", null: false
+    t.string "status", default: "unprocessed", null: false
+    t.jsonb "payload", default: {}, null: false
+    t.jsonb "headers", default: {}, null: false
+    t.bigint "organization_id"
+    t.text "error_message"
+    t.datetime "processed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "resultable_type"
+    t.bigint "resultable_id"
+    t.index ["event_type"], name: "index_incoming_webhooks_on_event_type"
+    t.index ["organization_id"], name: "index_incoming_webhooks_on_organization_id"
+    t.index ["provider"], name: "index_incoming_webhooks_on_provider"
+    t.index ["resultable_type", "resultable_id"], name: "index_incoming_webhooks_on_resultable"
+    t.index ["status"], name: "index_incoming_webhooks_on_status"
   end
 
   create_table "interest_submissions", force: :cascade do |t|
@@ -868,6 +888,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_25_025624) do
   add_foreign_key "huddle_participants", "teammates"
   add_foreign_key "huddle_playbooks", "organizations"
   add_foreign_key "huddles", "huddle_playbooks"
+  add_foreign_key "incoming_webhooks", "organizations"
   add_foreign_key "interest_submissions", "people"
   add_foreign_key "maap_snapshots", "organizations", column: "company_id"
   add_foreign_key "maap_snapshots", "people", column: "created_by_id"

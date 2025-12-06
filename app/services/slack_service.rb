@@ -550,6 +550,198 @@ class SlackService
 
 
 
+  # Get message permalink
+  def get_message_permalink(channel_id, message_ts)
+    return { success: false, error: "Slack not configured" } unless slack_configured?
+
+    begin
+      response = @client.chat_getPermalink(channel: channel_id, message_ts: message_ts)
+
+      store_slack_response('chat_getPermalink', { channel: channel_id, message_ts: message_ts }, response)
+
+      if response['ok'] && response['permalink']
+        { success: true, permalink: response['permalink'] }
+      else
+        error = response['error'] || 'Unknown error'
+        { success: false, error: error }
+      end
+    rescue Slack::Web::Api::Errors::SlackError => e
+      Rails.logger.error "Slack: Error getting message permalink - #{e.message}"
+      store_slack_response('chat_getPermalink', { channel: channel_id, message_ts: message_ts }, { error: e.message })
+      { success: false, error: e.message }
+    rescue => e
+      Rails.logger.error "Slack: Unexpected error getting message permalink - #{e.message}"
+      { success: false, error: "Unexpected error: #{e.message}" }
+    end
+  end
+
+  # Open a modal view
+  def open_modal(trigger_id, view_hash)
+    return { success: false, error: "Slack not configured" } unless slack_configured?
+
+    begin
+      response = @client.views_open(trigger_id: trigger_id, view: view_hash)
+
+      store_slack_response('views_open', { trigger_id: trigger_id, view: view_hash }, response)
+
+      if response['ok']
+        { success: true, response: response }
+      else
+        error = response['error'] || 'Unknown error'
+        { success: false, error: error }
+      end
+    rescue Slack::Web::Api::Errors::SlackError => e
+      Rails.logger.error "Slack: Error opening modal - #{e.message}"
+      store_slack_response('views_open', { trigger_id: trigger_id }, { error: e.message })
+      { success: false, error: e.message }
+    rescue => e
+      Rails.logger.error "Slack: Unexpected error opening modal - #{e.message}"
+      { success: false, error: "Unexpected error: #{e.message}" }
+    end
+  end
+
+  # Open the create observation modal
+  def open_create_observation_modal(trigger_id, private_metadata)
+    view = {
+      type: 'modal',
+      callback_id: 'create_observation_from_message',
+      title: {
+        type: 'plain_text',
+        text: 'Create Observation'
+      },
+      submit: {
+        type: 'plain_text',
+        text: 'Create'
+      },
+      close: {
+        type: 'plain_text',
+        text: 'Cancel'
+      },
+      private_metadata: private_metadata,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: 'Share in the thread that an observation was created from this?'
+          }
+        },
+        {
+          type: 'input',
+          block_id: 'share_in_thread',
+          element: {
+            type: 'radio_buttons',
+            action_id: 'share_in_thread',
+            initial_option: {
+              text: {
+                type: 'plain_text',
+                text: 'Yes'
+              },
+              value: 'yes'
+            },
+            options: [
+              {
+                text: {
+                  type: 'plain_text',
+                  text: 'Yes'
+                },
+                value: 'yes'
+              },
+              {
+                text: {
+                  type: 'plain_text',
+                  text: 'No'
+                },
+                value: 'no'
+              }
+            ]
+          },
+          label: {
+            type: 'plain_text',
+            text: 'Share in thread?'
+          }
+        },
+        {
+          type: 'input',
+          block_id: 'notes',
+          element: {
+            type: 'plain_text_input',
+            action_id: 'notes',
+            multiline: true,
+            placeholder: {
+              type: 'plain_text',
+              text: 'Add a note about this observation...'
+            }
+          },
+          label: {
+            type: 'plain_text',
+            text: 'Note about this observation'
+          },
+          optional: true
+        }
+      ]
+    }
+
+    open_modal(trigger_id, view)
+  end
+
+  # Post a message to a thread
+  def post_message_to_thread(channel_id:, thread_ts:, text:)
+    return { success: false, error: "Slack not configured" } unless slack_configured?
+
+    begin
+      response = @client.chat_postMessage(
+        channel: channel_id,
+        thread_ts: thread_ts,
+        text: text
+      )
+
+      store_slack_response('chat_postMessage_thread', { channel: channel_id, thread_ts: thread_ts, text: text }, response)
+
+      if response['ok']
+        { success: true, message_id: response['ts'] }
+      else
+        error = response['error'] || 'Unknown error'
+        { success: false, error: error }
+      end
+    rescue Slack::Web::Api::Errors::SlackError => e
+      Rails.logger.error "Slack: Error posting thread message - #{e.message}"
+      store_slack_response('chat_postMessage_thread', { channel: channel_id, thread_ts: thread_ts }, { error: e.message })
+      { success: false, error: e.message }
+    rescue => e
+      Rails.logger.error "Slack: Unexpected error posting thread message - #{e.message}"
+      { success: false, error: "Unexpected error: #{e.message}" }
+    end
+  end
+
+  # Post a DM to a user
+  def post_dm(user_id:, text:)
+    return { success: false, error: "Slack not configured" } unless slack_configured?
+
+    begin
+      response = @client.chat_postMessage(
+        channel: user_id,
+        text: text
+      )
+
+      store_slack_response('chat_postMessage_dm', { user_id: user_id, text: text }, response)
+
+      if response['ok']
+        { success: true, message_id: response['ts'] }
+      else
+        error = response['error'] || 'Unknown error'
+        { success: false, error: error }
+      end
+    rescue Slack::Web::Api::Errors::SlackError => e
+      Rails.logger.error "Slack: Error posting DM - #{e.message}"
+      store_slack_response('chat_postMessage_dm', { user_id: user_id }, { error: e.message })
+      { success: false, error: e.message }
+    rescue => e
+      Rails.logger.error "Slack: Unexpected error posting DM - #{e.message}"
+      { success: false, error: "Unexpected error: #{e.message}" }
+    end
+  end
+
   def store_slack_response(method, request_params, response_data)
     return unless @organization&.slack_configuration.present?
     

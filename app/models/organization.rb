@@ -42,6 +42,12 @@ class Organization < ApplicationRecord
     find(id)
   end
   
+  # Find organization by Slack workspace ID
+  def self.find_by_slack_workspace_id(workspace_id)
+    slack_config = SlackConfiguration.find_by(workspace_id: workspace_id)
+    slack_config&.organization
+  end
+
   # Instance methods
   def company?
     type == 'Company'
