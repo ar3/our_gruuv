@@ -11,17 +11,22 @@
 
 - if @observations.any?
   - @observations.each do |observation|
-    .card.mb-4
-      .card-body
-        %p.mb-2= observation.decorate.story_html.html_safe
-        .d-flex.justify-content-between.align-items-center
-          .small.text-muted
-            From: #{observation.observer.preferred_name || observation.observer.first_name}
-            - if observation.observed_teammates.any?
-              |  • Recognizing: 
-              - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }
-              = names.join(', ')
-          = link_to "View Kudos", organization_kudo_path(@organization, date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id), class: "btn btn-sm btn-outline-primary"
+    .mb-4
+      / Story section with left border (truncated, no GIFs)
+      .markdown-content--bordered.mb-3
+        %p.mb-0{style: "font-size: 1.1rem; line-height: 1.6;"}
+          = observation.decorate.story_html_truncated(length: 300, omit_gifs: true).html_safe
+
+      / Two-column layout: Attribution (left) and Ratings (right)
+      .row.mb-3
+        .col-md-6
+          = render 'organizations/kudos/ratings', observation: observation, show_feelings: false
+        .col-md-6
+          = render 'organizations/kudos/attribution', observation: observation, show_date: true, show_full_datetime: false
+
+      / View link
+      .text-end
+        = link_to "View Full Kudos", organization_kudo_path(@organization, date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id), class: "btn btn-sm btn-outline-primary"
 - else
   .card.mb-4
     .card-body.text-center.py-5

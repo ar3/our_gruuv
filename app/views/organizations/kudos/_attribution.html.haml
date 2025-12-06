@@ -1,0 +1,21 @@
+/ Attribution section with observer and recognized people
+- observer_link = link_to observation.observer.casual_name, public_person_path(observation.observer), class: "text-decoration-none"
+%p.mb-1.text-muted.text-end
+  = "Observed by #{observer_link}".html_safe
+  - if observation.observed_teammates.any?
+    |  • Recognizing: 
+    - recognized_links = observation.observed_teammates.map do |teammate|
+      - person = teammate.person
+      - link_to person.casual_name, public_person_path(person), class: "text-decoration-none"
+    = recognized_links.join(', ').html_safe
+- if show_date
+  %p.mb-0.text-muted.small.text-end
+    - if show_full_datetime
+      - full_datetime = observation.observed_at.strftime('%B %d, %Y at %l:%M %p')
+      - date_only = observation.observed_at.strftime('%B %d, %Y')
+      %span{title: full_datetime, "data-bs-toggle" => "tooltip", "data-bs-placement" => "top"}
+        = date_only
+    - else
+      - date_only = observation.observed_at.strftime('%B %d, %Y')
+      = date_only
+

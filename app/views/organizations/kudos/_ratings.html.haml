@@ -1,0 +1,27 @@
+/ Feelings and ratings card
+- has_feelings = observation.primary_feeling.present? && observation.feelings_display.present?
+- show_feelings = local_assigns[:show_feelings].nil? ? true : local_assigns[:show_feelings]
+- rating_sentences = observation.format_ratings_by_type_and_level(format: :html)
+- has_ratings = rating_sentences.any?
+- if has_feelings || has_ratings
+  .card
+    .card-body
+      / Feelings sentence (if present)
+      - if has_feelings && show_feelings
+        %p.mb-3
+          - observed_links = observation.observed_teammates.map do |teammate|
+            - person = teammate.person
+            - link_to person.casual_name, public_person_path(person), class: "text-decoration-none"
+          - story_part = if observation.observed_teammates.any?
+            - "This story about #{observed_links.join(', ')}"
+          - else
+            - "This story"
+          - observer_link = link_to observation.observer.casual_name, public_person_path(observation.observer), class: "text-decoration-none"
+          = "#{story_part} made #{observer_link} feel #{observation.feelings_display}".html_safe
+
+      / Ratings sentences
+      - if has_ratings
+        - rating_sentences.each do |sentence|
+          %p.mb-3
+            != sentence.html_safe
+

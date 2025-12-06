@@ -64,8 +64,14 @@ RSpec.describe 'organizations/kudos/show', type: :view do
       expect(rendered).to have_css('[title]', text: /October 05, 2025/)
     end
 
-    it 'is right-aligned' do
-      expect(rendered).to have_css('.text-end')
+    it 'is in a two-column layout' do
+      expect(rendered).to have_css('.row')
+      expect(rendered).to have_css('.col-md-6', count: 2)
+    end
+
+    it 'has observer and recognized people as links' do
+      expect(rendered).to have_link('Andrew R.', href: /people/)
+      expect(rendered).to have_link('Aims C.', href: /people/)
     end
   end
 

@@ -285,4 +285,75 @@ RSpec.describe ObservationDecorator, type: :decorator do
       expect(html).to include('class="row"')
     end
   end
+
+  describe '#story_html_truncated' do
+    it 'returns empty string when story is nil' do
+      observation.story = nil
+      expect(decorated_observation.story_html_truncated).to eq('')
+    end
+
+    it 'returns full story when story is shorter than length' do
+      observation.story = 'Short story.'
+      html = decorated_observation.story_html_truncated(length: 300)
+      expect(html).to include('Short story.')
+      expect(html).not_to include('...')
+    end
+
+    it 'truncates long stories and adds ellipsis' do
+      observation.story = 'This is a very long story. ' * 20 # ~500 characters
+      html = decorated_observation.story_html_truncated(length: 300)
+      
+      expect(html).to include('...')
+      expect(html.length).to be < observation.story.length + 10 # Should be significantly shorter
+    end
+
+    it 'truncates at word boundary when possible' do
+      observation.story = 'Word ' * 100 # 500 characters, all word boundaries
+      html = decorated_observation.story_html_truncated(length: 300)
+      
+      # Should end with a word, not mid-word
+      expect(html).to match(/Word\.\.\.$/)
+    end
+
+    it 'omits GIFs by default' do
+      observation.story = 'Great work!'
+      observation.story_extras = { 'gif_urls' => ['https://example.com/gif1.gif'] }
+      html = decorated_observation.story_html_truncated
+      
+      expect(html).to include('Great work!')
+      expect(html).not_to include('https://example.com/gif1.gif')
+      expect(html).not_to include('class="row"')
+    end
+
+    it 'includes GIFs when omit_gifs is false' do
+      observation.story = 'Great work!'
+      observation.story_extras = { 'gif_urls' => ['https://example.com/gif1.gif'] }
+      html = decorated_observation.story_html_truncated(omit_gifs: false)
+      
+      expect(html).to include('Great work!')
+      expect(html).to include('https://example.com/gif1.gif')
+    end
+
+    it 'converts markdown to HTML' do
+      observation.story = '**Bold text** and *italic text*'
+      html = decorated_observation.story_html_truncated
+      expect(html).to include('<strong>Bold text</strong>')
+      expect(html).to include('<em>italic text</em>')
+    end
+
+    it 'converts newlines to br tags' do
+      observation.story = "Line 1\nLine 2"
+      html = decorated_observation.story_html_truncated
+      expect(html).to include('Line 1<br>Line 2')
+    end
+
+    it 'respects custom length parameter' do
+      observation.story = 'Word ' * 50 # ~250 characters
+      html_short = decorated_observation.story_html_truncated(length: 100)
+      html_long = decorated_observation.story_html_truncated(length: 500)
+      
+      expect(html_short).to include('...')
+      expect(html_long).not_to include('...')
+    end
+  end
 end

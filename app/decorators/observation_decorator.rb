@@ -125,6 +125,34 @@ class ObservationDecorator < Draper::Decorator
     html
   end
 
+  def story_html_truncated(length: 300, omit_gifs: true)
+    return '' unless story.present?
+    
+    # Truncate plain text story first
+    was_truncated = story.length > length
+    truncated_story = if was_truncated
+      truncated = story[0...length].strip
+      # Try to truncate at word boundary
+      truncated = truncated[0...truncated.rindex(/\s/)] if truncated.rindex(/\s/)
+      truncated + '...'
+    else
+      story
+    end
+    
+    # Apply markdown rendering to truncated story
+    html = truncated_story.gsub(/\*\*(.*?)\*\*/, '<strong>\1</strong>')
+                          .gsub(/\*(.*?)\*/, '<em>\1</em>')
+                          .gsub(/\n/, '<br>')
+    
+    # Don't append GIFs if omit_gifs is true
+    unless omit_gifs
+      gifs_html = self.gifs_html
+      html += gifs_html if gifs_html.present?
+    end
+    
+    html
+  end
+
   def gifs_html
     return '' unless story_extras.present?
     
