@@ -1,5 +1,5 @@
 class Organizations::KudosController < ApplicationController
-  layout 'application'
+  layout 'public_maap'
   
   before_action :set_organization
   before_action :set_observation, only: [:show]

@@ -1,3 +1,4 @@
+%h1 TEST - HOW MANY TIMES DOES THIS TEMPLATE GET RENDERED?
 .container.mt-4.mb-5
   .row
     .col-12
@@ -39,10 +40,9 @@
           = "Observed by #{observer_link}".html_safe
           - if @observation.observed_teammates.any?
             |  • Recognizing: 
-            - observed_links = @observation.observed_teammates.map do |teammate|
+            - @observation.observed_teammates.map do |teammate|
               - person = teammate.person
               = link_to person.casual_name, public_person_path(person), class: "text-decoration-none"
-            = observed_links.join(', ').html_safe
 
         / Date
         %p.mb-4.text-muted.small
@@ -61,3 +61,4 @@
               Employee-only view
             %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires login to view employee-only features"}
 
+%h1 END TEST - HOW MANY TIMES DOES THIS TEMPLATE GET RENDERED?
