@@ -173,6 +173,12 @@ module NavigationHelper
     current_page?(path) || request.path.start_with?(path.to_s.split('?').first)
   end
   
+  # Check if a section has any active items
+  def section_has_active_item?(section_items)
+    return false unless section_items
+    section_items.any? { |item| nav_item_active?(item[:path]) }
+  end
+  
   # Filter navigation items by permissions
   def visible_nav_items(section_items)
     return [] unless section_items

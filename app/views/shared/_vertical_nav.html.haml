@@ -29,13 +29,14 @@
             = section[:label]
         - else
           / Section with items
+          - visible_items = visible_nav_items(section[:items])
+          - section_has_active = section_has_active_item?(visible_items)
           .nav-section
-            %button.nav-section-toggle.btn.btn-link{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#navSection#{section[:section].capitalize}", "aria-expanded": "true"}
+            %button.nav-section-toggle.btn.btn-link{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#navSection#{section[:section].capitalize}", "aria-expanded": section_has_active.to_s}
               %i.bi{class: section[:icon]}
               = section[:label]
               %i.bi.bi-chevron-down.float-end
-            .collapse.show{id: "navSection#{section[:section].capitalize}"}
-              - visible_items = visible_nav_items(section[:items])
+            .collapse{id: "navSection#{section[:section].capitalize}", class: "#{'show' if section_has_active}"}
               - visible_items.each do |item|
                 = link_to item[:path], class: "nav-link nav-item-link #{'active' if nav_item_active?(item[:path])}" do
                   %i.bi{class: item[:icon]}
@@ -44,13 +45,14 @@
                     %span.badge.bg-secondary.ms-2 Coming Soon
     
       / Recently Visited section (last nav section)
-      - if current_person
+      - if current_person && recent_page_visits.any?
+        - recent_visits_has_active = recent_page_visits.any? { |visit| nav_item_active?(visit.url) }
         .nav-section
-          %button.nav-section-toggle.btn.btn-link{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#navSectionRecentlyVisited", "aria-expanded": "true"}
+          %button.nav-section-toggle.btn.btn-link{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#navSectionRecentlyVisited", "aria-expanded": recent_visits_has_active.to_s}
             %i.bi.bi-clock-history
             Recently Visited
             %i.bi.bi-chevron-down.float-end
-          .collapse.show{id: "navSectionRecentlyVisited"}
+          .collapse{id: "navSectionRecentlyVisited", class: "#{'show' if recent_visits_has_active}"}
             - if recent_page_visits.any?
               - recent_page_visits.each do |visit|
                 = link_to visit.url, class: "nav-link nav-item-link #{'active' if nav_item_active?(visit.url)}" do

@@ -27,6 +27,10 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
                   .where(teammates: { person: @person, organization: organization })
                   .includes(:huddle)
                   .load
+
+    # Load page visits for this person
+    @most_visited_pages = @person.page_visits.most_visited.limit(5)
+    @most_recent_pages = @person.page_visits.recent.limit(5)
   end
 
   def complete_picture
