@@ -11,6 +11,13 @@ module NavigationHelper
         section: nil
       },
       {
+        label: 'My Check-In',
+        icon: 'bi-clipboard-check',
+        path: organization_person_check_ins_path(current_organization, current_person),
+        section: nil,
+        policy_check: -> { policy(current_person).view_check_ins? }
+      },
+      {
         label: 'Align',
         icon: 'bi-compass',
         section: 'align',
@@ -209,7 +216,21 @@ module NavigationHelper
           nil
         end
       else
-        section
+        # Standalone items (section: nil) - check policy if present
+        if section[:policy_check]
+          begin
+            if section[:policy_check].call
+              section
+            else
+              nil
+            end
+          rescue => e
+            Rails.logger.error "Navigation policy check failed: #{e.message}"
+            nil
+          end
+        else
+          section
+        end
       end
     end.compact
   end
