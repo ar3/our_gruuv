@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_07_200633) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_07_223538) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -493,6 +493,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_07_200633) do
     t.index ["teammate_id"], name: "index_observees_on_teammate_id"
   end
 
+  create_table "one_on_one_links", force: :cascade do |t|
+    t.bigint "teammate_id", null: false
+    t.string "url"
+    t.jsonb "deep_integration_config", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["teammate_id"], name: "index_one_on_one_links_on_teammate_id"
+  end
+
   create_table "organizations", force: :cascade do |t|
     t.string "name"
     t.string "type"
@@ -913,6 +922,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_07_200633) do
   add_foreign_key "observations", "people", column: "observer_id"
   add_foreign_key "observees", "observations"
   add_foreign_key "observees", "teammates"
+  add_foreign_key "one_on_one_links", "teammates"
   add_foreign_key "organizations", "organizations", column: "parent_id"
   add_foreign_key "page_visits", "people"
   add_foreign_key "person_identities", "people"

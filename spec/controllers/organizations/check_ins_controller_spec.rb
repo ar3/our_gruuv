@@ -616,4 +616,140 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
       end
     end
   end
+
+  describe 'POST #save_and_redirect' do
+    context 'as manager' do
+      it 'saves form data and redirects to specified URL' do
+        position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
+        redirect_url = organization_person_path(organization, employee)
+        
+        post :save_and_redirect, params: {
+          organization_id: organization.id,
+          person_id: employee.id,
+          redirect_url: redirect_url,
+          position_check_in: {
+            manager_rating: 2,
+            manager_private_notes: 'Test notes',
+            status: 'complete'
+          }
+        }
+
+        expect(response).to redirect_to(redirect_url)
+        expect(flash[:notice]).to eq('Check-ins saved successfully.')
+        
+        position_check_in.reload
+        expect(position_check_in.manager_rating).to eq(2)
+        expect(position_check_in.manager_private_notes).to eq('Test notes')
+        expect(position_check_in.manager_completed?).to be true
+      end
+
+      it 'saves form data and redirects to finalization page when no redirect_url provided' do
+        position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
+        
+        post :save_and_redirect, params: {
+          organization_id: organization.id,
+          person_id: employee.id,
+          position_check_in: {
+            manager_rating: 1,
+            manager_private_notes: 'Test notes',
+            status: 'complete'
+          }
+        }
+
+        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
+        expect(flash[:notice]).to eq('Check-ins saved successfully.')
+        
+        position_check_in.reload
+        expect(position_check_in.manager_rating).to eq(1)
+      end
+
+      it 'handles multiple check-in types in single request' do
+        assignment_check_in = create(:assignment_check_in, teammate: employee.teammates.first, assignment: assignment)
+        aspiration_check_in = create(:aspiration_check_in, teammate: employee.teammates.first, aspiration: aspiration)
+        redirect_url = organization_person_path(organization, employee)
+        
+        post :save_and_redirect, params: {
+          organization_id: organization.id,
+          person_id: employee.id,
+          redirect_url: redirect_url,
+          assignment_check_ins: {
+            assignment_check_in.id => {
+              assignment_id: assignment.id,
+              manager_rating: 'meeting',
+              manager_private_notes: 'Good work',
+              status: 'complete'
+            }
+          },
+          aspiration_check_ins: {
+            aspiration_check_in.id => {
+              aspiration_id: aspiration.id,
+              manager_rating: 'exceeding',
+              manager_private_notes: 'Great progress',
+              status: 'draft'
+            }
+          }
+        }
+
+        expect(response).to redirect_to(redirect_url)
+        
+        assignment_check_in.reload
+        aspiration_check_in.reload
+        
+        expect(assignment_check_in.manager_completed?).to be true
+        expect(aspiration_check_in.manager_completed?).to be false
+      end
+
+      it 'handles check_ins scoped parameters' do
+        position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
+        redirect_url = organization_person_path(organization, employee)
+        
+        post :save_and_redirect, params: {
+          organization_id: organization.id,
+          person_id: employee.id,
+          redirect_url: redirect_url,
+          check_ins: {
+            position_check_in: {
+              manager_rating: 2,
+              manager_private_notes: 'Scoped notes',
+              status: 'complete'
+            }
+          }
+        }
+
+        expect(response).to redirect_to(redirect_url)
+        
+        position_check_in.reload
+        expect(position_check_in.manager_rating).to eq(2)
+        expect(position_check_in.manager_private_notes).to eq('Scoped notes')
+      end
+    end
+
+    context 'as employee' do
+      before { sign_in_as_teammate(employee, organization) }
+
+      it 'saves form data and redirects to specified URL' do
+        position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
+        redirect_url = organization_person_path(organization, employee)
+        
+        post :save_and_redirect, params: {
+          organization_id: organization.id,
+          person_id: employee.id,
+          redirect_url: redirect_url,
+          position_check_in: {
+            employee_rating: 1,
+            employee_private_notes: 'Employee notes',
+            status: 'complete'
+          }
+        }
+
+        expect(response).to redirect_to(redirect_url)
+        expect(flash[:notice]).to eq('Check-ins saved successfully.')
+        
+        position_check_in.reload
+        expect(position_check_in.employee_rating).to eq(1)
+        expect(position_check_in.employee_private_notes).to eq('Employee notes')
+        expect(position_check_in.employee_completed?).to be true
+      end
+    end
+  end
 end

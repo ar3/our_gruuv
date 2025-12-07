@@ -171,7 +171,9 @@ get '/login', to: 'auth#login', as: :login
       end
       
       # Unified check-ins page (spreadsheet-style giant form)
-      resource :check_ins, only: [:show, :update]
+      resource :check_ins, only: [:show, :update] do
+        post :save_and_redirect, on: :member
+      end
       
       # Finalization flow (separate from check-ins)
       resource :finalization, only: [:show, :create] do

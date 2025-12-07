@@ -9,6 +9,7 @@ RSpec.describe Teammate, type: :model do
     it { should belong_to(:person) }
     it { should belong_to(:organization) }
     it { should have_many(:teammate_identities).dependent(:destroy) }
+    it { should have_one(:one_on_one_link).dependent(:destroy) }
   end
   
   describe 'validations' do

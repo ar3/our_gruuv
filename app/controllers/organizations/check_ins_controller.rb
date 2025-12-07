@@ -47,6 +47,25 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     redirect_url = params[:redirect_to].presence || organization_person_finalization_path(@organization, @person)
     redirect_to redirect_url, notice: 'Check-ins saved successfully.'
   end
+
+  def save_and_redirect
+    # Save the form using existing update logic
+    # Handle both old and new parameter structures (with and without check_ins scope)
+    check_ins_params = params[:check_ins] || params
+    
+    update_position_check_in(check_ins_params) if check_ins_params[:position_check_in] || check_ins_params["[position_check_in]"]
+    update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
+    update_aspiration_check_ins(check_ins_params) if check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"]
+    
+    # After successful save, redirect to the URL provided
+    redirect_url = params[:redirect_url]
+    if redirect_url.present?
+      redirect_to redirect_url, notice: 'Check-ins saved successfully.'
+    else
+      # Fallback to default behavior
+      redirect_to organization_person_finalization_path(@organization, @person), notice: 'Check-ins saved successfully.'
+    end
+  end
   
   private
   

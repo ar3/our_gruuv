@@ -18,6 +18,7 @@ class Teammate < ApplicationRecord
   has_many :observees, dependent: :destroy
   has_many :observations, through: :observees
   has_many :teammate_identities, dependent: :destroy
+  has_one :one_on_one_link, dependent: :destroy
   
   # Validations
   validates :person_id, uniqueness: { scope: :organization_id }
