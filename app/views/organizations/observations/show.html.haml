@@ -23,9 +23,6 @@
         %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Only the creator can publish this observation"}
     = render 'mode_switcher', organization: @organization, observation: @observation
 
-.mb-4
-  = content_for :go_back_link
-
 .row
   .col-md-8
     / Main content sections
@@ -36,6 +33,15 @@
           Story
       .card-body
         = @observation.decorate.story_html.html_safe
+        
+    - if @observation.decorate.gifs_html.present?
+      .card.mb-4{ role: "region", "aria-labelledby": "observation-gifs" }
+        .card-header
+          %h5.mb-0{ id: "observation-gifs" }
+            %i.bi.bi-images.me-2
+            GIFs
+        .card-body
+          != @observation.decorate.gifs_html.html_safe
         
     .card.mb-4{ role: "region", "aria-labelledby": "observation-details" }
       .card-header

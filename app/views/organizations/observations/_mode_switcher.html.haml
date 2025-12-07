@@ -29,3 +29,14 @@
           %i.bi.bi-pencil.me-2
           Edit Mode
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be the observer to edit this observation"}
+    
+    %li
+      - if observation.privacy_level == 'public_to_world'
+        = link_to organization_kudo_path(organization, date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id), class: 'dropdown-item' do
+          %i.bi.bi-globe.me-2
+          Public Mode
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-globe.me-2
+          Public Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "Public Mode is only available for observations with 'Public to World' privacy level"}

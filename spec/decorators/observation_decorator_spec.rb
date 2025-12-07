@@ -343,14 +343,14 @@ RSpec.describe ObservationDecorator, type: :decorator do
   end
 
   describe '#story_html' do
-    it 'appends GIFs when present' do
+    it 'does not include GIFs (GIFs are displayed in a separate section)' do
       observation.story = 'Great work!'
       observation.story_extras = { 'gif_urls' => ['https://example.com/gif1.gif'] }
       html = decorated_observation.story_html
       
       expect(html).to include('Great work!')
-      expect(html).to include('https://example.com/gif1.gif')
-      expect(html).to include('class="row"')
+      expect(html).not_to include('https://example.com/gif1.gif')
+      expect(html).not_to include('class="row"')
     end
   end
 

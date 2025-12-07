@@ -120,19 +120,14 @@ class ObservationDecorator < Draper::Decorator
 
   def story_html
     # Simple markdown rendering - can be enhanced later
-    html = if story.present?
+    # GIFs are now displayed in a separate section, so they are not included here
+    if story.present?
       story.gsub(/\*\*(.*?)\*\*/, '<strong>\1</strong>')
            .gsub(/\*(.*?)\*/, '<em>\1</em>')
            .gsub(/\n/, '<br>')
     else
       ''
     end
-    
-    # Append GIFs if present
-    gifs_html = self.gifs_html
-    html += gifs_html if gifs_html.present?
-    
-    html
   end
 
   def story_html_truncated(length: 300, omit_gifs: true)
