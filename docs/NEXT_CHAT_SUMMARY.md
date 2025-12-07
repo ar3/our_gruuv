@@ -66,5 +66,6 @@ The AI should:
 - `RULES.md` - Collaboration process and OKR3 framework
 - `docs/vision/` - All 10 vision documents
 - `spec/fixtures/files/amy_maap.md` - Target job description
-- `app/views/layouts/authenticated-v2-0.html.haml` - Current navigation structure
+- `app/views/layouts/authenticated-horizontal-navigation.html.haml` - Default navigation layout
+- `app/views/layouts/authenticated-vertical-navigation.html.haml` - Alternative navigation layout
 

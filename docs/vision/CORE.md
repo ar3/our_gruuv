@@ -67,20 +67,12 @@ The Core module provides the foundational infrastructure that enables all other 
 - [ ] Remove temporary `xit` skips and add comprehensive coverage
 - **Deliverable**: Robust test coverage for organization-scoped access management
 
-### **Layout Migration Progress**
-- [x] Create `authenticated-v2-0.html.haml` layout
-- [x] Migrate person show page
-- [x] Migrate person public page  
-- [x] Migrate person teammate page
-- [ ] Migrate person edit page
-- [ ] Migrate person index page
-- [ ] Migrate organization show page
-- [ ] Migrate organization index page
-- [ ] Migrate employment management page
-- [ ] Migrate employees page
-- [ ] Migrate huddle pages
-- [ ] Migrate assignment pages
-- [ ] Migrate other authenticated pages
+### **Layout System**
+- [x] User-selectable navigation layouts (horizontal/vertical)
+- [x] `authenticated-horizontal-navigation.html.haml` - Default horizontal navigation
+- [x] `authenticated-vertical-navigation.html.haml` - Vertical sidebar navigation
+- [x] User preferences stored and persisted across sessions
+- [x] Dynamic layout switching via user dropdown menu
 
 ## DREAMING 💭
 
@@ -134,14 +126,17 @@ The Core module provides the foundational infrastructure that enables all other 
 - **Security Considerations**: Prevent impersonation hijacking, implement session validation, and add audit logging for all impersonation events
 - **Future: Security Hardening** - Enhanced validation, comprehensive testing, audit logging foundation, and bulletproof security for production use
 
-### **Layout Migration Status**
-**Pages using authenticated-v2-0 layout:**
-- Dashboard, Organizations, People, Assignments, Positions, Position Types, Huddles, Abilities, All new "Coming Soon" pages
+### **Layout Usage**
+**All authenticated pages** use either:
+- `authenticated-horizontal-navigation.html.haml` (default)
+- `authenticated-vertical-navigation.html.haml` (user preference)
 
-**Pages still using old layout (need migration):**
-- Employment Tenures, Assignment Tenures, Upload Events, Person Accesses, Huddle Playbooks, Seats, Slack Integration, Impersonation, Profile Management
-
-**Migration Priority:** Complete layout migration for consistent UI/UX across all authenticated pages.
+Both layouts provide:
+- Consistent navigation structure with Align, Collab, and Transform menus
+- User profile dropdown with organization switching
+- Impersonation warnings and controls
+- Responsive mobile navigation
+- Recent page visits tracking
 
 ### **Future Possibilities**
 - **Microservices Architecture**: Potential evolution to microservices for better scalability
