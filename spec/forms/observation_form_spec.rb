@@ -117,5 +117,115 @@ RSpec.describe ObservationForm, type: :form do
       observation.reload
       expect(observation.story_extras).to eq({ 'gif_urls' => [] })
     end
+
+    context 'with auto-added aspirations' do
+      let(:aspiration1) { create(:aspiration, organization: company, name: 'Company Growth', sort_order: 1) }
+      let(:aspiration2) { create(:aspiration, organization: company, name: 'Innovation', sort_order: 2) }
+      let(:aspiration3) { create(:aspiration, organization: company, name: 'Customer Satisfaction', sort_order: 3) }
+
+      before do
+        aspiration1
+        aspiration2
+        aspiration3
+      end
+
+      it 'can handle observations with auto-added aspirations (ratings with nil/default rating)' do
+        # Build observation with auto-added aspirations (as controller would do)
+        observation.observation_ratings.build(
+          rateable_type: 'Aspiration',
+          rateable_id: aspiration1.id
+        )
+        observation.observation_ratings.build(
+          rateable_type: 'Aspiration',
+          rateable_id: aspiration2.id
+        )
+        observation.observation_ratings.build(
+          rateable_type: 'Aspiration',
+          rateable_id: aspiration3.id
+        )
+
+        form.story = 'Test story'
+        form.privacy_level = 'observer_only'
+        form.primary_feeling = 'happy'
+
+        expect(form).to be_valid
+        expect(form.save).to be true
+
+        observation.reload
+        aspiration_ratings = observation.observation_ratings.where(rateable_type: 'Aspiration')
+        expect(aspiration_ratings.count).to eq(3)
+        aspiration_ratings.each do |rating|
+          expect(rating.rating).to eq('na') # Default rating
+        end
+      end
+
+      it 'saves observations with auto-added aspirations correctly' do
+        # Build observation with auto-added aspirations
+        observation.observation_ratings.build(
+          rateable_type: 'Aspiration',
+          rateable_id: aspiration1.id
+        )
+        observation.observation_ratings.build(
+          rateable_type: 'Aspiration',
+          rateable_id: aspiration2.id
+        )
+
+        form.story = 'Test story'
+        form.privacy_level = 'observer_only'
+        form.primary_feeling = 'happy'
+
+        expect {
+          form.save
+        }.to change(ObservationRating, :count).by(2)
+
+        observation.reload
+        aspiration_ratings = observation.observation_ratings.where(rateable_type: 'Aspiration')
+        expect(aspiration_ratings.count).to eq(2)
+        expect(aspiration_ratings.pluck(:rateable_id)).to contain_exactly(aspiration1.id, aspiration2.id)
+      end
+
+      it 'allows updating ratings for auto-added aspirations' do
+        # Build observation with auto-added aspirations
+        observation.observation_ratings.build(
+          rateable_type: 'Aspiration',
+          rateable_id: aspiration1.id
+        )
+        observation.observation_ratings.build(
+          rateable_type: 'Aspiration',
+          rateable_id: aspiration2.id
+        )
+
+        # Populate form's observation_ratings collection from model
+        # This simulates what happens when the form is initialized with an observation
+        # that has built (but not saved) observation_ratings
+        form.observation_ratings.clear
+        observation.observation_ratings.each do |rating|
+          form.observation_ratings << ObservationRating.new(
+            rateable_type: rating.rateable_type,
+            rateable_id: rating.rateable_id,
+            rating: rating.rating
+          )
+        end
+
+        # Update ratings through form collection
+        form.story = 'Test story'
+        form.privacy_level = 'observer_only'
+        form.primary_feeling = 'happy'
+        
+        # Update the ratings in the form's collection
+        aspiration1_rating_form = form.observation_ratings.find { |r| r.rateable_id == aspiration1.id }
+        aspiration2_rating_form = form.observation_ratings.find { |r| r.rateable_id == aspiration2.id }
+        aspiration1_rating_form.rating = 'strongly_agree'
+        aspiration2_rating_form.rating = 'agree'
+
+        expect(form.save).to be true
+
+        observation.reload
+        rating1_reloaded = observation.observation_ratings.find_by(rateable_id: aspiration1.id)
+        rating2_reloaded = observation.observation_ratings.find_by(rateable_id: aspiration2.id)
+        expect(rating1_reloaded.rating).to eq('strongly_agree')
+        expect(rating2_reloaded.rating).to eq('agree')
+      end
+    end
   end
 end

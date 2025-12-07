@@ -356,6 +356,154 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(assigns(:aspirations)).to be_a(ActiveRecord::Associations::CollectionProxy)
       expect(assigns(:abilities)).to be_a(ActiveRecord::Relation)
     end
+
+    context 'auto-adding company aspirations' do
+      let(:company_aspiration_1) { create(:aspiration, organization: company, name: 'Company Growth', sort_order: 1) }
+      let(:company_aspiration_2) { create(:aspiration, organization: company, name: 'Innovation', sort_order: 2) }
+      let(:company_aspiration_3) { create(:aspiration, organization: company, name: 'Customer Satisfaction', sort_order: 3) }
+
+      before do
+        company_aspiration_1
+        company_aspiration_2
+        company_aspiration_3
+      end
+
+      it 'automatically adds all company aspirations when no rateable params are passed' do
+        get :new, params: { organization_id: company.id }
+        observation = assigns(:observation)
+        
+        aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
+        expect(aspiration_ratings.count).to eq(3)
+        expect(aspiration_ratings.map { |r| r.rateable_id }).to contain_exactly(
+          company_aspiration_1.id,
+          company_aspiration_2.id,
+          company_aspiration_3.id
+        )
+      end
+
+      it 'pre-loads the rateable association for each aspiration rating' do
+        get :new, params: { organization_id: company.id }
+        observation = assigns(:observation)
+        
+        aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
+        aspiration_ratings.each do |rating|
+          expect(rating.rateable).to be_present
+          expect(rating.rateable).to be_a(Aspiration)
+        end
+      end
+
+      it 'does not add company aspirations when rateable_type and rateable_id are passed' do
+        assignment = create(:assignment, company: company)
+        get :new, params: {
+          organization_id: company.id,
+          rateable_type: 'Assignment',
+          rateable_id: assignment.id
+        }
+        observation = assigns(:observation)
+        
+        aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
+        expect(aspiration_ratings.count).to eq(0)
+        
+        assignment_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Assignment' }
+        expect(assignment_ratings.count).to eq(1)
+        expect(assignment_ratings.first.rateable_id).to eq(assignment.id)
+      end
+
+      it 'does not add company aspirations when an aspiration is explicitly passed' do
+        get :new, params: {
+          organization_id: company.id,
+          rateable_type: 'Aspiration',
+          rateable_id: company_aspiration_1.id
+        }
+        observation = assigns(:observation)
+        
+        aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
+        expect(aspiration_ratings.count).to eq(1)
+        expect(aspiration_ratings.first.rateable_id).to eq(company_aspiration_1.id)
+      end
+
+      it 'only adds root company aspirations, not department or team aspirations' do
+        department = create(:organization, :department, parent: company)
+        department_aspiration = create(:aspiration, organization: department, name: 'Department Goal', sort_order: 1)
+        
+        get :new, params: { organization_id: company.id }
+        observation = assigns(:observation)
+        
+        aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
+        aspiration_ids = aspiration_ratings.map { |r| r.rateable_id }
+        
+        expect(aspiration_ids).to contain_exactly(
+          company_aspiration_1.id,
+          company_aspiration_2.id,
+          company_aspiration_3.id
+        )
+        expect(aspiration_ids).not_to include(department_aspiration.id)
+      end
+
+      it 'handles gracefully when no company aspirations exist' do
+        # Delete all aspirations
+        Aspiration.destroy_all
+        
+        get :new, params: { organization_id: company.id }
+        observation = assigns(:observation)
+        
+        aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
+        expect(aspiration_ratings.count).to eq(0)
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'does not add aspirations when loading an existing draft' do
+        draft = build(:observation, observer: observer, company: company, published_at: nil)
+        draft.observees.build(teammate: observee_teammate)
+        draft.save!
+        
+        get :new, params: {
+          organization_id: company.id,
+          draft_id: draft.id
+        }
+        observation = assigns(:observation)
+        
+        aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
+        expect(aspiration_ratings.count).to eq(0)
+      end
+
+      it 'does not add aspirations when loading an existing published observation' do
+        published_obs = build(:observation, observer: observer, company: company, published_at: Time.current)
+        published_obs.observees.build(teammate: observee_teammate)
+        published_obs.save!
+        
+        get :new, params: {
+          organization_id: company.id,
+          id: published_obs.id
+        }
+        observation = assigns(:observation)
+        
+        aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
+        expect(aspiration_ratings.count).to eq(0)
+      end
+
+      context 'when organization is a department' do
+        let(:department) { create(:organization, :department, parent: company) }
+        let(:department_teammate) { create(:teammate, person: observer, organization: department) }
+
+        before do
+          department_teammate
+        end
+
+        it 'uses root company aspirations even when accessed from a department' do
+          get :new, params: { organization_id: department.id }
+          observation = assigns(:observation)
+          
+          aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
+          expect(aspiration_ratings.count).to eq(3)
+          expect(aspiration_ratings.map { |r| r.rateable_id }).to contain_exactly(
+            company_aspiration_1.id,
+            company_aspiration_2.id,
+            company_aspiration_3.id
+          )
+        end
+      end
+    end
   end
 
   describe 'POST #create' do
