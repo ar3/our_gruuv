@@ -5,6 +5,9 @@ class Slack::ProcessInteractionJob < ApplicationJob
     incoming_webhook = IncomingWebhook.find_by(id: incoming_webhook_id)
     return unless incoming_webhook
     
+    # Reload to ensure we have the latest status (important for tests)
+    incoming_webhook.reload
+    
     # Mark as processing (with optimistic locking to avoid double-processing)
     return unless incoming_webhook.status == 'unprocessed'
     incoming_webhook.mark_processing!
@@ -44,12 +47,18 @@ class Slack::ProcessInteractionJob < ApplicationJob
     private_metadata_str = payload.dig('view', 'private_metadata')
     return unless private_metadata_str
     
-    private_metadata = JSON.parse(private_metadata_str)
-    team_id = private_metadata['team_id']
-    channel_id = private_metadata['channel_id']
-    message_ts = private_metadata['message_ts']
-    message_user_id = private_metadata['message_user_id']
-    triggering_user_id = private_metadata['triggering_user_id']
+    # Handle both string (from JSON) and hash (from JSONB) cases
+    private_metadata = if private_metadata_str.is_a?(String)
+      JSON.parse(private_metadata_str)
+    else
+      # Convert hash with symbol keys to string keys if needed
+      private_metadata_str.is_a?(Hash) ? private_metadata_str.with_indifferent_access : private_metadata_str
+    end
+    team_id = private_metadata['team_id'] || private_metadata[:team_id]
+    channel_id = private_metadata['channel_id'] || private_metadata[:channel_id]
+    message_ts = private_metadata['message_ts'] || private_metadata[:message_ts]
+    message_user_id = private_metadata['message_user_id'] || private_metadata[:message_user_id]
+    triggering_user_id = private_metadata['triggering_user_id'] || private_metadata[:triggering_user_id]
     
     # Resolve organization
     organization = Organization.find_by_slack_workspace_id(team_id)

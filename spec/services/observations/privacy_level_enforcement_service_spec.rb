@@ -8,7 +8,7 @@ RSpec.describe Observations::PrivacyLevelEnforcementService do
   let(:assignment) { create(:assignment, company: company) }
 
   describe '.call' do
-    context 'when privacy level is not public_observation' do
+    context 'when privacy level is not public_to_world' do
       let(:observation) do
         obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
         obs.observees.build(teammate: observee_teammate)
@@ -26,9 +26,9 @@ RSpec.describe Observations::PrivacyLevelEnforcementService do
       end
     end
 
-    context 'when privacy level is public_observation but no negative ratings exist' do
+    context 'when privacy level is public_to_world but no negative ratings exist' do
       let(:observation) do
-        obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation)
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world)
         obs.observees.build(teammate: observee_teammate)
         obs.save!
         create(:observation_rating, observation: obs, rateable: ability, rating: :strongly_agree)
@@ -45,9 +45,9 @@ RSpec.describe Observations::PrivacyLevelEnforcementService do
       end
     end
 
-    context 'when privacy level is public_observation but only neutral ratings exist' do
+    context 'when privacy level is public_to_world but only neutral ratings exist' do
       let(:observation) do
-        obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation)
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world)
         obs.observees.build(teammate: observee_teammate)
         obs.save!
         create(:observation_rating, observation: obs, rateable: ability, rating: :na)
@@ -63,9 +63,9 @@ RSpec.describe Observations::PrivacyLevelEnforcementService do
       end
     end
 
-    context 'when privacy level is public_observation and negative ratings exist' do
+    context 'when privacy level is public_to_world and negative ratings exist' do
       let(:observation) do
-        obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation)
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world)
         obs.observees.build(teammate: observee_teammate)
         obs.save!
         create(:observation_rating, observation: obs, rateable: ability, rating: :disagree)
@@ -77,13 +77,13 @@ RSpec.describe Observations::PrivacyLevelEnforcementService do
       end
 
       it 'changes privacy level to observed_and_managers' do
-        expect { described_class.call(observation) }.to change { observation.reload.privacy_level }.from('public_observation').to('observed_and_managers')
+        expect { described_class.call(observation) }.to change { observation.reload.privacy_level }.from('public_to_world').to('observed_and_managers')
       end
     end
 
-    context 'when privacy level is public_observation with mixed ratings including negative' do
+    context 'when privacy level is public_to_world with mixed ratings including negative' do
       let(:observation) do
-        obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation)
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world)
         obs.observees.build(teammate: observee_teammate)
         obs.save!
         create(:observation_rating, observation: obs, rateable: ability, rating: :strongly_agree)
@@ -96,13 +96,13 @@ RSpec.describe Observations::PrivacyLevelEnforcementService do
       end
 
       it 'changes privacy level to observed_and_managers' do
-        expect { described_class.call(observation) }.to change { observation.reload.privacy_level }.from('public_observation').to('observed_and_managers')
+        expect { described_class.call(observation) }.to change { observation.reload.privacy_level }.from('public_to_world').to('observed_and_managers')
       end
     end
 
-    context 'when privacy level is public_observation with strongly_disagree rating' do
+    context 'when privacy level is public_to_world with strongly_disagree rating' do
       let(:observation) do
-        obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation)
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world)
         obs.observees.build(teammate: observee_teammate)
         obs.save!
         create(:observation_rating, observation: obs, rateable: ability, rating: :strongly_disagree)
@@ -114,13 +114,13 @@ RSpec.describe Observations::PrivacyLevelEnforcementService do
       end
 
       it 'changes privacy level to observed_and_managers' do
-        expect { described_class.call(observation) }.to change { observation.reload.privacy_level }.from('public_observation').to('observed_and_managers')
+        expect { described_class.call(observation) }.to change { observation.reload.privacy_level }.from('public_to_world').to('observed_and_managers')
       end
     end
 
     context 'when observation_ratings association is not loaded' do
       let(:observation) do
-        obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation)
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world)
         obs.observees.build(teammate: observee_teammate)
         obs.save!
         create(:observation_rating, observation: obs, rateable: ability, rating: :disagree)
@@ -137,7 +137,7 @@ RSpec.describe Observations::PrivacyLevelEnforcementService do
 
     context 'when observation has no ratings' do
       let(:observation) do
-        obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation)
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world)
         obs.observees.build(teammate: observee_teammate)
         obs.save!
         obs

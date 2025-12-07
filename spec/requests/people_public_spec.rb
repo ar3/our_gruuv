@@ -34,7 +34,7 @@ RSpec.describe 'Public Person View', type: :request do
       observation = create(:observation,
         observer: observer,
         company: organization,
-        privacy_level: 'public_observation',
+        privacy_level: 'public_to_world',
         published_at: 1.day.ago,
         observed_at: 1.day.ago
       )

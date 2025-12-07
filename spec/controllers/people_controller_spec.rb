@@ -21,7 +21,7 @@ RSpec.describe PeopleController, type: :controller do
       obs = create(:observation, 
         observer: observer, 
         company: organization,
-        privacy_level: 'public_observation',
+        privacy_level: 'public_to_world',
         published_at: 1.day.ago,
         observed_at: 1.day.ago
       )
@@ -47,7 +47,7 @@ RSpec.describe PeopleController, type: :controller do
       obs = create(:observation,
         observer: observer,
         company: organization,
-        privacy_level: 'public_observation',
+        privacy_level: 'public_to_world',
         published_at: nil,
         observed_at: 1.day.ago
       )
@@ -112,7 +112,7 @@ RSpec.describe PeopleController, type: :controller do
       older_obs = create(:observation,
         observer: create(:person),
         company: organization,
-        privacy_level: 'public_observation',
+        privacy_level: 'public_to_world',
         published_at: 2.days.ago,
         observed_at: 2.days.ago
       )

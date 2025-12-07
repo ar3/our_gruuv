@@ -21,11 +21,11 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
       'view' => {
         'callback_id' => 'create_observation_from_message',
         'private_metadata' => {
-          team_id: team_id,
-          channel_id: channel_id,
-          message_ts: message_ts,
-          message_user_id: observee_slack_id,
-          triggering_user_id: observer_slack_id
+          'team_id' => team_id,
+          'channel_id' => channel_id,
+          'message_ts' => message_ts,
+          'message_user_id' => observee_slack_id,
+          'triggering_user_id' => observer_slack_id
         }.to_json,
         'state' => {
           'values' => {
@@ -76,7 +76,7 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
     context 'when webhook does not exist' do
       it 'returns early without error' do
         expect {
-          described_class.perform_now(999999)
+          described_class.new.perform(999999)
         }.not_to raise_error
       end
     end
@@ -86,116 +86,111 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
 
       it 'returns early without processing' do
         expect(Slack::CreateObservationFromMessageService).not_to receive(:new)
-        described_class.perform_now(incoming_webhook.id)
+        described_class.new.perform(incoming_webhook.id)
       end
     end
 
     context 'when event type is view_submission' do
       before do
         incoming_webhook.update!(payload: view_submission_payload)
+        incoming_webhook.reload
       end
 
       context 'when callback_id matches create_observation_from_message' do
-        let(:observation) { create(:observation, company: organization, observer: observer_person) }
-        let(:mock_service) { instance_double(Slack::CreateObservationFromMessageService) }
-
+        # Use real service but mock external Slack API calls
         before do
-          allow(Slack::CreateObservationFromMessageService).to receive(:new).and_return(mock_service)
+          # Mock SlackService methods that call external API
+          allow_any_instance_of(SlackService).to receive(:get_message_permalink).and_return({
+            success: true,
+            permalink: 'https://slack.com/archives/C123456/p1234567890123456'
+          })
+          allow_any_instance_of(SlackService).to receive(:post_message_to_thread).and_return({
+            success: true,
+            message_id: '1234567890.123457'
+          })
+          allow_any_instance_of(SlackService).to receive(:post_dm).and_return({
+            success: true,
+            message_id: '1234567890.123458'
+          })
+          allow_any_instance_of(SlackService).to receive(:store_slack_response)
           allow(Rails.application.routes.url_helpers).to receive(:organization_observation_url).and_return('https://example.com/observations/123')
         end
 
-        it 'calls Slack::CreateObservationFromMessageService' do
-          allow(mock_service).to receive(:call).and_return(Result.ok(observation))
+        it 'creates observation and links webhook' do
+          webhook_id = incoming_webhook.id
+          # Ensure webhook is fully persisted before job runs
+          webhook = IncomingWebhook.find(webhook_id)
+          webhook.update!(payload: view_submission_payload)
+          expect(webhook.reload.status).to eq('unprocessed')
           
-          expect(Slack::CreateObservationFromMessageService).to receive(:new).with(
-            hash_including(
-              organization: organization,
-              team_id: team_id,
-              channel_id: channel_id,
-              message_ts: message_ts,
-              message_user_id: observee_slack_id,
-              triggering_user_id: observer_slack_id,
-              notes: notes
-            )
-          ).and_return(mock_service)
-
-          described_class.perform_now(incoming_webhook.id)
+          # Execute job using perform_and_get_result to bypass ActiveJob framework
+          job = described_class.new
+          job.perform(webhook_id)
+          
+          # Check webhook was processed
+          webhook.reload
+          expect(webhook.status).to eq('processed')
+          expect(Observation.count).to eq(1)
+          expect(webhook.resultable).to be_a(Observation)
+          expect(webhook.resultable.observer).to eq(observer_person)
         end
 
-        context 'when observation creation succeeds' do
-          before do
-            allow(mock_service).to receive(:call).and_return(Result.ok(observation))
+        context 'when share_in_thread is yes' do
+          it 'posts message to thread' do
+            expect_any_instance_of(SlackService).to receive(:post_message_to_thread).with(
+              channel_id: channel_id,
+              thread_ts: message_ts,
+              text: match(/Draft observation created/)
+            )
+
+            described_class.new.perform(incoming_webhook.id)
           end
 
-          it 'links webhook to created observation' do
-            described_class.perform_now(incoming_webhook.id)
+          it 'marks webhook as processed' do
+            described_class.new.perform(incoming_webhook.id)
             
-            expect(incoming_webhook.reload.resultable).to eq(observation)
+            expect(incoming_webhook.reload.status).to eq('processed')
+          end
+        end
+
+        context 'when share_in_thread is no' do
+          before do
+            # Update payload to set share_in_thread to 'no'
+            updated_payload = view_submission_payload.deep_dup
+            updated_payload['view']['state']['values']['share_in_thread']['share_in_thread']['selected_option']['value'] = 'no'
+            incoming_webhook.update!(payload: updated_payload)
+            incoming_webhook.reload
           end
 
-          context 'when share_in_thread is yes' do
-            it 'posts message to thread' do
-              slack_service = instance_double(SlackService)
-              allow(SlackService).to receive(:new).with(organization).and_return(slack_service)
-              allow(slack_service).to receive(:post_message_to_thread).and_return({ success: true, message_id: '123' })
-              
-              expect(slack_service).to receive(:post_message_to_thread).with(
-                channel_id: channel_id,
-                thread_ts: message_ts,
-                text: match(/Draft observation created/)
-              )
+          it 'posts DM to triggering user' do
+            expect_any_instance_of(SlackService).to receive(:post_dm).with(
+              user_id: observer_slack_id,
+              text: match(/Draft observation created/)
+            )
 
-              described_class.perform_now(incoming_webhook.id)
-            end
-
-            it 'marks webhook as processed' do
-              described_class.perform_now(incoming_webhook.id)
-              
-              expect(incoming_webhook.reload.status).to eq('processed')
-            end
-          end
-
-          context 'when share_in_thread is no' do
-            before do
-              view_submission_payload['view']['state']['values']['share_in_thread']['share_in_thread']['selected_option']['value'] = 'no'
-              incoming_webhook.update!(payload: view_submission_payload)
-            end
-
-            it 'posts DM to triggering user' do
-              slack_service = instance_double(SlackService)
-              allow(SlackService).to receive(:new).with(organization).and_return(slack_service)
-              allow(slack_service).to receive(:post_dm).and_return({ success: true, message_id: '123' })
-              
-              expect(slack_service).to receive(:post_dm).with(
-                user_id: observer_slack_id,
-                text: match(/Draft observation created/)
-              )
-
-              described_class.perform_now(incoming_webhook.id)
-            end
+            described_class.new.perform(incoming_webhook.id)
           end
         end
 
         context 'when observation creation fails' do
           before do
-            allow(mock_service).to receive(:call).and_return(Result.err('Observer not found'))
+            # Make observer not found by removing the teammate identity
+            TeammateIdentity.where(teammate: observer_teammate, provider: 'slack').destroy_all
           end
 
           it 'marks webhook as failed with error message' do
-            described_class.perform_now(incoming_webhook.id)
+            described_class.new.perform(incoming_webhook.id)
             
-            expect(incoming_webhook.reload.status).to eq('failed')
-            expect(incoming_webhook.error_message).to eq('Observer not found')
+            webhook = IncomingWebhook.find(incoming_webhook.id)
+            expect(webhook.status).to eq('failed')
+            expect(webhook.error_message).to include('Observer')
           end
 
           it 'does not post any messages' do
-            slack_service = instance_double(SlackService)
-            allow(SlackService).to receive(:new).with(organization).and_return(slack_service)
-            
-            expect(slack_service).not_to receive(:post_message_to_thread)
-            expect(slack_service).not_to receive(:post_dm)
+            expect_any_instance_of(SlackService).not_to receive(:post_message_to_thread)
+            expect_any_instance_of(SlackService).not_to receive(:post_dm)
 
-            described_class.perform_now(incoming_webhook.id)
+            described_class.new.perform(incoming_webhook.id)
           end
         end
       end
@@ -208,7 +203,7 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
 
         it 'does not process the submission' do
           expect(Slack::CreateObservationFromMessageService).not_to receive(:new)
-          described_class.perform_now(incoming_webhook.id)
+          described_class.new.perform(incoming_webhook.id)
         end
       end
     end
@@ -219,7 +214,7 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
       end
 
       it 'marks webhook as failed with appropriate message' do
-        described_class.perform_now(incoming_webhook.id)
+        described_class.new.perform(incoming_webhook.id)
         
         expect(incoming_webhook.reload.status).to eq('failed')
         expect(incoming_webhook.error_message).to include('should be handled synchronously')
@@ -228,12 +223,23 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
 
     context 'when organization is not found' do
       before do
-        view_submission_payload['team']['id'] = 'T999999'
-        incoming_webhook.update!(payload: view_submission_payload, organization: nil)
+        # Update private_metadata to use a team_id that doesn't exist
+        updated_payload = view_submission_payload.deep_dup
+        updated_payload['view']['private_metadata'] = {
+          'team_id' => 'T999999',
+          'channel_id' => channel_id,
+          'message_ts' => message_ts,
+          'message_user_id' => observee_slack_id,
+          'triggering_user_id' => observer_slack_id
+        }.to_json
+        updated_payload['team']['id'] = 'T999999'
+        incoming_webhook.update!(payload: updated_payload, organization_id: nil)
+        # Ensure no slack config exists for this team_id
+        SlackConfiguration.where(workspace_id: 'T999999').destroy_all
       end
 
       it 'marks webhook as failed' do
-        described_class.perform_now(incoming_webhook.id)
+        described_class.new.perform(incoming_webhook.id)
         
         expect(incoming_webhook.reload.status).to eq('failed')
         expect(incoming_webhook.error_message).to include('Organization not found')
@@ -250,7 +256,7 @@ RSpec.describe Slack::ProcessInteractionJob, type: :job do
       end
 
       it 'marks webhook as failed' do
-        described_class.perform_now(incoming_webhook.id)
+        described_class.new.perform(incoming_webhook.id)
         
         expect(incoming_webhook.reload.status).to eq('failed')
         expect(incoming_webhook.error_message).to eq('Unexpected error')

@@ -10,7 +10,7 @@ RSpec.describe UnassignedEmployeeUploadProcessorJob, type: :job do
       before do
         # Mock the processor to return success
         processor_instance = instance_double(UnassignedEmployeeUploadProcessor)
-        allow(UnassignedEmployeeUploadProcessor).to receive(:new).with(kind_of(UploadEvent::UploadEmployees), kind_of(Organization)).and_return(processor_instance)
+        allow(UnassignedEmployeeUploadProcessor).to receive(:new).with(kind_of(BulkSyncEvent::UploadEmployees), kind_of(Organization)).and_return(processor_instance)
         allow(processor_instance).to receive(:process).and_return(true)
         allow(processor_instance).to receive(:results).and_return({
           successes: [
@@ -50,7 +50,7 @@ RSpec.describe UnassignedEmployeeUploadProcessorJob, type: :job do
     context 'when processor returns false' do
       before do
         processor_instance = instance_double(UnassignedEmployeeUploadProcessor)
-        allow(UnassignedEmployeeUploadProcessor).to receive(:new).with(kind_of(UploadEvent::UploadEmployees), kind_of(Organization)).and_return(processor_instance)
+        allow(UnassignedEmployeeUploadProcessor).to receive(:new).with(kind_of(BulkSyncEvent::UploadEmployees), kind_of(Organization)).and_return(processor_instance)
         allow(processor_instance).to receive(:process).and_return(false)
         allow(processor_instance).to receive(:parser).and_return(
           double(errors: ['Invalid CSV format'])
@@ -91,7 +91,7 @@ RSpec.describe UnassignedEmployeeUploadProcessorJob, type: :job do
 
     context 'when unexpected error occurs' do
       before do
-        allow(UnassignedEmployeeUploadProcessor).to receive(:new).with(kind_of(UploadEvent::UploadEmployees), kind_of(Organization)).and_raise(StandardError.new('Database connection failed'))
+        allow(UnassignedEmployeeUploadProcessor).to receive(:new).with(kind_of(BulkSyncEvent::UploadEmployees), kind_of(Organization)).and_raise(StandardError.new('Database connection failed'))
       end
 
       it 'marks upload event as failed with error message' do

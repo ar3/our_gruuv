@@ -225,7 +225,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
       it 'redirects terminated teammate to kudos page' do
         terminated_person = create(:person)
-        terminated_teammate = create(:teammate, person: terminated_person, organization: company, last_terminated_at: 1.day.ago)
+        terminated_teammate = create(:teammate, person: terminated_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: 1.day.ago)
         sign_in_as_teammate(terminated_person, company)
         get :show, params: { organization_id: company.id, id: public_company_observation.id }
         date_part = public_company_observation.observed_at.strftime('%Y-%m-%d')
@@ -277,7 +277,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
       it 'redirects terminated teammate to kudos page' do
         terminated_person = create(:person)
-        terminated_teammate = create(:teammate, person: terminated_person, organization: company, last_terminated_at: 1.day.ago)
+        terminated_teammate = create(:teammate, person: terminated_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: 1.day.ago)
         sign_in_as_teammate(terminated_person, company)
         get :show, params: { organization_id: company.id, id: public_world_observation.id }
         date_part = public_world_observation.observed_at.strftime('%Y-%m-%d')

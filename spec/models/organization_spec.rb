@@ -263,7 +263,9 @@ RSpec.describe Organization, type: :model do
       let!(:slack_config) { create(:slack_configuration, organization: company, workspace_id: workspace_id) }
 
       it 'returns the organization' do
-        expect(Organization.find_by_slack_workspace_id(workspace_id)).to eq(company)
+        result = Organization.find_by_slack_workspace_id(workspace_id)
+        expect(result).to be_a(Organization)
+        expect(result.id).to eq(company.id)
       end
     end
 

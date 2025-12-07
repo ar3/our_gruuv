@@ -225,7 +225,7 @@ RSpec.describe ObservationPolicy, type: :policy do
 
       it 'denies terminated teammates' do
         terminated_person = create(:person)
-        terminated_teammate = CompanyTeammate.create!(person: terminated_person, organization: company, last_terminated_at: 1.day.ago)
+        terminated_teammate = CompanyTeammate.create!(person: terminated_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: 1.day.ago)
         terminated_pundit_user = OpenStruct.new(user: terminated_teammate, impersonating_teammate: nil)
 
         terminated_policy = ObservationPolicy.new(terminated_pundit_user, company_public_obs)
@@ -269,7 +269,7 @@ RSpec.describe ObservationPolicy, type: :policy do
 
       it 'denies terminated teammates' do
         terminated_person = create(:person)
-        terminated_teammate = CompanyTeammate.create!(person: terminated_person, organization: company, last_terminated_at: 1.day.ago)
+        terminated_teammate = CompanyTeammate.create!(person: terminated_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: 1.day.ago)
         terminated_pundit_user = OpenStruct.new(user: terminated_teammate, impersonating_teammate: nil)
 
         terminated_policy = ObservationPolicy.new(terminated_pundit_user, public_obs)

@@ -42,6 +42,16 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
       # Clear cached teammate so it reloads
       @current_company_teammate = nil
     else
+      # For observation show actions, redirect to kudos page instead of organizations
+      if controller_name == 'observations' && action_name == 'show' && params[:id].present?
+        observation = Observation.find_by(id: params[:id])
+        if observation.present?
+          date_part = observation.observed_at.strftime('%Y-%m-%d')
+          redirect_to organization_kudo_path(route_org, date: date_part, id: observation.id)
+          return
+        end
+      end
+      
       # User doesn't have access to this company
       flash[:alert] = "You don't have access to that organization."
       redirect_to organizations_path

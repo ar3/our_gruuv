@@ -1023,6 +1023,19 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
   end
 
+  # Override user_not_authorized to redirect to kudos page for observation show actions
+  def user_not_authorized
+    # For observation show actions, redirect to kudos page instead of root
+    if action_name == 'show' && @observation.present?
+      date_part = @observation.observed_at.strftime('%Y-%m-%d')
+      redirect_to organization_kudo_path(@observation.company, date: date_part, id: @observation.id)
+      return
+    end
+    
+    # For all other cases, use the default behavior
+    super
+  end
+
   private
 
   def base_filtered(query)

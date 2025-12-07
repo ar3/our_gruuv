@@ -16,7 +16,7 @@ RSpec.describe Organizations::PublicMaap::AbilitiesController, type: :controller
 
   let(:observer) { create(:person) }
   let(:observation) do
-    obs = create(:observation, observer: observer, company: company, privacy_level: :public_observation, published_at: Time.current)
+    obs = create(:observation, observer: observer, company: company, privacy_level: :public_to_world, published_at: Time.current)
     create(:observation_rating, observation: obs, rateable: ability_company, rating: :strongly_agree)
     obs
   end
@@ -67,7 +67,7 @@ RSpec.describe Organizations::PublicMaap::AbilitiesController, type: :controller
       create(:observation_rating, observation: private_obs, rateable: ability_company, rating: :agree)
       
       # Create an unpublished observation
-      draft_obs = create(:observation, observer: observer, company: company, privacy_level: :public_observation, published_at: nil)
+      draft_obs = create(:observation, observer: observer, company: company, privacy_level: :public_to_world, published_at: nil)
       create(:observation_rating, observation: draft_obs, rateable: ability_company, rating: :agree)
       
       get :show, params: { organization_id: company.id, id: ability_company.id }

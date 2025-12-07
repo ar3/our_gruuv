@@ -26,7 +26,7 @@ RSpec.describe ObservationsQuery, type: :query do
   end
 
   let!(:observation3) do
-    build(:observation, observer: observer, company: company, privacy_level: :public_observation, observed_at: 1.day.ago).tap do |obs|
+    build(:observation, observer: observer, company: company, privacy_level: :public_to_world, observed_at: 1.day.ago).tap do |obs|
       obs.observees.build(teammate: observee_teammate)
       obs.save!
       obs.publish!
@@ -34,7 +34,7 @@ RSpec.describe ObservationsQuery, type: :query do
   end
 
   let!(:draft_observation) do
-    build(:observation, observer: observer, company: company, privacy_level: :public_observation, published_at: nil).tap do |obs|
+    build(:observation, observer: observer, company: company, privacy_level: :public_to_world, published_at: nil).tap do |obs|
       obs.observees.build(teammate: observee_teammate)
       obs.save!
     end
@@ -105,7 +105,7 @@ RSpec.describe ObservationsQuery, type: :query do
     end
 
     context 'by multiple privacy levels' do
-      let(:params) { { privacy: ['observer_only', 'public_observation'] } }
+      let(:params) { { privacy: ['observer_only', 'public_to_world'] } }
 
       it 'returns observations matching any of the privacy levels' do
         results = query.call.to_a
@@ -144,7 +144,7 @@ RSpec.describe ObservationsQuery, type: :query do
 
     context 'by ratings_count_desc' do
       let!(:observation_with_rating) do
-        build(:observation, observer: observer, company: company, privacy_level: :public_observation).tap do |obs|
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_world).tap do |obs|
           obs.observees.build(teammate: observee_teammate)
           obs.save!
           obs.publish!

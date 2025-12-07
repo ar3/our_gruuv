@@ -7,7 +7,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
 
   describe '#initialize' do
     it 'sets upload_event, organization, and parser' do
-      expect(processor.upload_event).to eq(upload_event)
+      expect(processor.bulk_sync_event).to eq(upload_event)
       expect(processor.organization).to eq(organization)
       expect(processor.parser).to be_a(UnassignedEmployeeUploadParser)
       expect(processor.results).to eq({

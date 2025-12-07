@@ -1,40 +1,43 @@
 # Last Full Spec Suite Run
 
 ## Run Date
-2025-12-02
+2025-12-06
 
 ## Execution Method
 Run in segments to avoid timeouts and identify issues more efficiently. Never run `bundle exec rspec` without arguments.
 
 ## Status
-✅ **Complete** - All specs run successfully, flaky test fixed
+✅ **Complete** - All specs run successfully with minor flaky test
 
-**Started**: 2025-12-02 17:07:47 EST
-**Last Updated**: 2025-12-02 17:22:40 EST (flaky test fixed: 2025-12-02)
+**Started**: 2025-12-06 23:37:33 EST
+**Last Updated**: 2025-12-07 00:47:08 EST
 
 ## Timing Results
 
 ### Model Specs
 - **Status**: ✅ Complete
-- **Time**: 46.29 seconds (52.16 seconds total with load time)
-- **Date/Time**: 2025-12-02 17:07:47 EST
-- **Examples**: 1232
+- **Time**: 59.02 seconds (63.55 seconds total with load time)
+- **Date/Time**: 2025-12-06 23:37:33 EST
+- **Examples**: 1208
 - **Failures**: 0
 - **Pending**: 1
+- **Notes**: Fixed Organization.find_by_slack_workspace_id test to handle Company subclass. Deleted obsolete UploadEvent specs (model renamed to BulkSyncEvent).
 
 ### Controller Specs
 - **Status**: ✅ Complete
-- **Time**: 79.38 seconds (85.08 seconds total with load time)
-- **Date/Time**: 2025-12-02 17:08:55 EST
-- **Examples**: 751
+- **Time**: 109.87 seconds (114.05 seconds total with load time)
+- **Date/Time**: 2025-12-06 23:40:06 EST
+- **Examples**: 759
 - **Failures**: 0
+- **Notes**: Fixed privacy_level enum values (public_observation → public_to_world). Fixed terminated teammate validation (added first_employed_at). Fixed redirect for people from other companies viewing observations (added kudos redirect in ensure_teammate_matches_organization). Deleted obsolete UploadEventsController spec.
 
 ### Request Specs
 - **Status**: ✅ Complete
-- **Time**: 48.8 seconds (54.09 seconds total with load time)
-- **Date/Time**: 2025-12-02 17:10:29 EST
-- **Examples**: 367
+- **Time**: 60.39 seconds (64.32 seconds total with load time)
+- **Date/Time**: 2025-12-06 23:55:19 EST
+- **Examples**: 358
 - **Failures**: 0
+- **Notes**: Fixed privacy_level enum value (public_observation → public_to_world). Deleted obsolete UploadEvents request specs.
 
 ### Decorator Specs
 - **Status**: ✅ Complete
@@ -88,8 +91,8 @@ Run in segments to avoid timeouts and identify issues more efficiently. Never ru
 
 ### System Specs - Abilities
 - **Status**: ✅ Complete
-- **Time**: 17.55 seconds (22.55 seconds total with load time)
-- **Date/Time**: 2025-12-02 17:13:26 EST
+- **Time**: 18.14 seconds (20.96 seconds total with load time)
+- **Date/Time**: 2025-12-07 00:24:08 EST
 - **Examples**: 3
 - **Failures**: 0
 
@@ -198,8 +201,8 @@ Run in segments to avoid timeouts and identify issues more efficiently. Never ru
 
 ### ENM Specs
 - **Status**: ✅ Complete
-- **Time**: 27.96 seconds (31.85 seconds total with load time)
-- **Date/Time**: 2025-12-02 17:22:40 EST
+- **Time**: 20.03 seconds (22.98 seconds total with load time)
+- **Date/Time**: 2025-12-07 00:47:08 EST
 - **Examples**: 106
 - **Failures**: 0
 

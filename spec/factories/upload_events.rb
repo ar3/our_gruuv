@@ -1,9 +1,9 @@
 FactoryBot.define do
-  factory :upload_event do
-    type { 'UploadEvent::UploadAssignmentCheckins' }
+  factory :upload_event, class: 'BulkSyncEvent' do
+    type { 'BulkSyncEvent::UploadAssignmentCheckins' }
     filename { "test_upload.xlsx" }
-    file_content { "test file content" }
-    preview_actions { { people: [], assignments: [] } }
+    source_contents { "test file content" }
+    source_data { { type: 'file_upload', filename: "test_upload.xlsx", file_size: 100, uploaded_at: Time.current } }
     results { { successes: [], failures: [] } }
     status { 'preview' }
     
@@ -11,15 +11,17 @@ FactoryBot.define do
     association :initiator, factory: :person
     association :organization, factory: :organization
 
-    factory :upload_assignment_checkins, class: 'UploadEvent::UploadAssignmentCheckins' do
+    factory :upload_assignment_checkins, class: 'BulkSyncEvent::UploadAssignmentCheckins' do
       filename { "test_upload.xlsx" }
-      file_content { "test xlsx content" }
+      source_contents { "test xlsx content" }
+      source_data { { type: 'file_upload', filename: "test_upload.xlsx", file_size: 100, uploaded_at: Time.current } }
     end
 
-    factory :upload_employees, class: 'UploadEvent::UploadEmployees' do
-      type { 'UploadEvent::UploadEmployees' }
+    factory :upload_employees, class: 'BulkSyncEvent::UploadEmployees' do
+      type { 'BulkSyncEvent::UploadEmployees' }
       filename { "test_upload.csv" }
-      file_content { "test csv content" }
+      source_contents { "test csv content" }
+      source_data { { type: 'file_upload', filename: "test_upload.csv", file_size: 100, uploaded_at: Time.current } }
     end
     
     trait :processing do
