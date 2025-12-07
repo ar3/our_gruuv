@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_07_032426) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_07_152317) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -840,6 +840,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_07_032426) do
     t.index ["organization_id"], name: "index_third_party_objects_on_organization_id"
   end
 
+  create_table "user_preferences", force: :cascade do |t|
+    t.bigint "person_id", null: false
+    t.jsonb "preferences", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["person_id"], name: "index_user_preferences_on_person_id", unique: true
+  end
+
   create_table "versions", force: :cascade do |t|
     t.string "whodunnit"
     t.datetime "created_at"
@@ -938,4 +946,5 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_07_032426) do
   add_foreign_key "teammates", "people"
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
+  add_foreign_key "user_preferences", "people"
 end

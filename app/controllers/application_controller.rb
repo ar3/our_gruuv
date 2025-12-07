@@ -26,6 +26,7 @@ class ApplicationController < ActionController::Base
   helper_method :impersonating?
   helper_method :impersonating_teammate
   helper_method :recent_page_visits
+  helper_method :current_user_preferences
   
   private
   
@@ -169,7 +170,14 @@ class ApplicationController < ActionController::Base
   end
   
   def determine_layout
-    current_company_teammate ? 'authenticated-v2-0' : 'application'
+    return 'application' unless current_company_teammate
+    
+    # Check user preference for layout, default to horizontal
+    if current_user_preferences&.layout == 'vertical'
+      'authenticated-vertical-navigation'
+    else
+      'authenticated-horizontal-navigation'
+    end
   end
   
   def current_company_teammate
@@ -214,6 +222,12 @@ class ApplicationController < ActionController::Base
   # Helper method that delegates to current_company_teammate.organization
   def current_organization
     current_company_teammate&.organization
+  end
+  
+  # Helper method to get or create user preferences
+  def current_user_preferences
+    return nil unless current_person
+    @current_user_preferences ||= UserPreference.for_person(current_person)
   end
 
   # Try to detect timezone from request headers

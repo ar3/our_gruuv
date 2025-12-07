@@ -30,18 +30,18 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
       @debug_data = debug_service.call
     end
     
-    render layout: 'authenticated-v2-0'
+    render layout: 'authenticated-horizontal-navigation'
   end
 
   def show
     authorize @seat
-    render layout: 'authenticated-v2-0'
+    render layout: 'authenticated-horizontal-navigation'
   end
 
   def new
     @seat = Seat.new
     authorize @seat
-    render layout: 'authenticated-v2-0'
+    render layout: 'authenticated-horizontal-navigation'
   end
 
   def create
@@ -57,7 +57,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
 
   def edit
     authorize @seat
-    render layout: 'authenticated-v2-0'
+    render layout: 'authenticated-horizontal-navigation'
   end
 
   def update

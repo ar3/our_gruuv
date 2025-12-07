@@ -1,0 +1,63 @@
+!!!
+%html
+  %head
+    = render partial: 'layouts/head_common', locals: { title_default: "OurGruuv" }
+
+  %body
+    = render partial: 'layouts/toast_container'
+    
+    / Floating toggle button for vertical navigation (when nav is closed)
+    %button.btn.btn-primary.vertical-nav-toggle-btn.floating-toggle{type: "button", title: "Toggle navigation", "aria-label": "Toggle navigation", class: "#{'d-none' if current_user_preferences&.vertical_nav_open?}"}
+      %i.bi.bi-list
+    
+    / Vertical Navigation Sidebar
+    - if current_organization
+      = render 'shared/vertical_nav'
+    
+    / Main Content Container with Structured Areas
+    .main-content-container{class: "#{'nav-open' if current_user_preferences&.vertical_nav_open?}"}
+      .container.mt-4
+        / Header Area - Title (left) + Primary Action/View Switcher (right)
+        - if content_for?(:header)
+          .row.mb-1
+            .col-12
+              .d-flex.justify-content-between.align-items-center
+                .flex-grow-1
+                  = yield :header
+              -# TODO: Remove this once we have a consistent way to handle header actions
+              - if content_for?(:header_action)
+                .ms-3
+                  = yield :header_action
+              / Action Area - Top-right actions (optional, designed for 1 button but flexible)
+              - if content_for?(:top_actions)
+                .ms-3
+                  = yield :top_actions
+        
+        / Navigation Area - "Back to X" links (optional)
+        - if content_for?(:go_back_link)
+          .row.mb-3
+            .col-12
+              = yield :go_back_link
+        
+        
+        / Impersonation Warning Banner
+        - if impersonating? && current_person
+          .row.mb-3
+            .col-12
+              .alert.alert-warning.alert-dismissible.fade.show{role: "alert"}
+                .d-flex.align-items-center
+                  %i.bi.bi-exclamation-triangle.me-2
+                  %strong.me-2 Impersonation Active
+                  %span You are currently impersonating #{current_person.display_name}. 
+                  %small.text-muted.ms-2 All actions will be performed as this user.
+                %button.btn-close{type: "button", "data-bs-dismiss": "alert", "aria-label": "Close"}
+                .mt-2
+                  = button_to impersonation_path(1), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline;" } do
+                    %i.bi.bi-person-x.me-1
+                    Stop Impersonation
+        
+        / Content Area - Main page content
+        = yield 
+      / JavaScript content area
+      = yield :javascript
+

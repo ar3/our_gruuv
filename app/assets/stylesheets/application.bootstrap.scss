@@ -545,3 +545,226 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   }
 }
 
+// ===== VERTICAL NAVIGATION STYLES =====
+.vertical-nav {
+  position: fixed;
+  top: 0; // At top since no navbar
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background-color: #f8f9fa;
+  border-right: 1px solid #dee2e6;
+  z-index: 1030;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+  overflow-y: auto;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  
+  &.open {
+    transform: translateX(0);
+  }
+  
+  &.closed {
+    transform: translateX(-100%);
+  }
+  
+  &.locked {
+    transform: translateX(0);
+  }
+  
+  .vertical-nav-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    
+    h5 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    
+    .vertical-nav-controls {
+      display: flex;
+      gap: 0.5rem;
+      
+      .btn-link {
+        padding: 0.25rem 0.5rem;
+        color: #6c757d;
+        text-decoration: none;
+        
+        &:hover {
+          color: #495057;
+        }
+      }
+    }
+  }
+  
+  .vertical-nav-body {
+    padding: 0.5rem 0;
+    
+    .nav {
+      .nav-link {
+        padding: 0.75rem 1rem;
+        color: #495057;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+        
+        i {
+          width: 20px;
+          text-align: center;
+        }
+        
+        &:hover {
+          background-color: #e9ecef;
+          color: #212529;
+        }
+        
+        &.active {
+          background-color: #e7f1ff;
+          color: #0d6efd;
+          border-left-color: #0d6efd;
+          font-weight: 600;
+        }
+        
+        .badge {
+          font-size: 0.65rem;
+          margin-left: auto;
+        }
+      }
+      
+      .nav-section {
+        .nav-section-toggle {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          text-align: left;
+          color: #495057;
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          border: none;
+          background: none;
+          font-weight: 600;
+          border-left: 3px solid transparent;
+          
+          i:first-child {
+            width: 20px;
+            text-align: center;
+          }
+          
+          &:hover {
+            background-color: #e9ecef;
+            color: #212529;
+          }
+          
+          .bi-chevron-down {
+            margin-left: auto;
+            transition: transform 0.2s ease;
+          }
+          
+          &[aria-expanded="true"] .bi-chevron-down {
+            transform: rotate(180deg);
+          }
+        }
+        
+        .nav-item-link {
+          padding-left: 2.5rem; // Indent sub-items
+        }
+      }
+    }
+  }
+}
+
+// Backdrop for mobile overlay
+.vertical-nav-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1029;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  
+  &.show {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+// Main content container adjustment when nav is open
+.main-content-container {
+  transition: margin-left 0.3s ease-in-out;
+  
+  &.nav-open {
+    @media (min-width: 992px) {
+      margin-left: 250px;
+    }
+  }
+}
+
+// Mobile responsive styles
+@media (max-width: 991.98px) {
+  .vertical-nav {
+    box-shadow: 4px 0 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .main-content-container.nav-open {
+    margin-left: 0; // Don't shift content on mobile
+  }
+}
+
+// Desktop: nav should not overlay content when open
+@media (min-width: 992px) {
+  .vertical-nav-backdrop {
+    display: none; // No backdrop on desktop
+  }
+}
+
+// Floating toggle button for vertical navigation
+.vertical-nav-toggle-btn.floating-toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1040;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  // Hide when nav is open
+  .vertical-nav.open ~ .main-content-container &,
+  body:has(.vertical-nav.open) & {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+// Hide floating toggle when nav is open (using data attribute)
+.vertical-nav[data-open="true"] ~ .main-content-container .floating-toggle,
+body:has(.vertical-nav.open) .floating-toggle {
+  display: none;
+}
+

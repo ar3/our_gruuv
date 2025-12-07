@@ -1,5 +1,5 @@
 class Integrations::PendoAsanaController < ApplicationController
-  layout 'authenticated-v2-0'
+  layout 'authenticated-horizontal-navigation'
   
   def index
     # Handle form submissions

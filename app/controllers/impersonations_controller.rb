@@ -1,5 +1,5 @@
 class ImpersonationsController < ApplicationController
-  layout 'authenticated-v2-0'
+  layout 'authenticated-horizontal-navigation'
   before_action :authenticate_person!
   before_action :ensure_admin!, except: [:destroy]
   before_action :ensure_impersonating!, only: [:destroy]

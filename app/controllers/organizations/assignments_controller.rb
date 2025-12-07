@@ -59,12 +59,12 @@ class Organizations::AssignmentsController < ApplicationController
       @assignments = @assignments.ordered
     end
     
-    render layout: 'authenticated-v2-0'
+    render layout: 'authenticated-horizontal-navigation'
   end
 
   def show
     authorize @assignment
-    render layout: 'authenticated-v2-0'
+    render layout: 'authenticated-horizontal-navigation'
   end
 
   def new
@@ -74,7 +74,7 @@ class Organizations::AssignmentsController < ApplicationController
     @form.current_person = current_person
     @form.instance_variable_set(:@form_data_empty, true)
     authorize @assignment
-    render layout: 'authenticated-v2-0'
+    render layout: 'authenticated-horizontal-navigation'
   end
 
   def create
@@ -111,7 +111,7 @@ class Organizations::AssignmentsController < ApplicationController
     @form = AssignmentForm.new(@assignment)
     @form.current_person = current_person
     authorize @assignment
-    render layout: 'authenticated-v2-0'
+    render layout: 'authenticated-horizontal-navigation'
   end
 
   def update

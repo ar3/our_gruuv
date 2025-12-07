@@ -371,6 +371,12 @@ resources :interest_submissions, path: 'interest', only: [:index, :new, :create,
 # Identity management
 post '/profile/identities/connect_google', to: 'people#connect_google_identity', as: :connect_google_identity
 delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconnect_identity
+
+# User preferences
+resource :user_preferences, only: [] do
+  patch :layout, on: :collection, to: 'user_preferences#update_layout'
+  patch :vertical_nav, on: :collection, to: 'user_preferences#update_vertical_nav'
+end
   
   # Test-only routes (only loaded in test environment)
   if Rails.env.test?

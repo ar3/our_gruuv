@@ -1,5 +1,5 @@
 class Organizations::PeopleController < Organizations::OrganizationNamespaceBaseController
-  layout 'authenticated-v2-0'
+  layout 'authenticated-horizontal-navigation'
   before_action :authenticate_person!
   before_action :set_person
   after_action :verify_authorized

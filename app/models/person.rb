@@ -8,6 +8,7 @@ class Person < ApplicationRecord
   has_many :observations, foreign_key: :observer_id, dependent: :destroy
   has_many :maap_snapshots, foreign_key: :employee_id, dependent: :destroy
   has_many :page_visits, dependent: :destroy
+  has_one :user_preference, dependent: :destroy
 
   # Milestone-related methods
   def milestone_attainments(organization)

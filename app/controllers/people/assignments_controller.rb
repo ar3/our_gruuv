@@ -1,5 +1,5 @@
 class People::AssignmentsController < ApplicationController
-  layout 'authenticated-v2-0'
+  layout 'authenticated-horizontal-navigation'
   before_action :require_authentication
   before_action :set_person
   before_action :set_assignment
