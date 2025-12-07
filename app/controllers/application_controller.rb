@@ -27,6 +27,7 @@ class ApplicationController < ActionController::Base
   helper_method :impersonating_teammate
   helper_method :recent_page_visits
   helper_method :current_user_preferences
+  helper_method :determine_layout
   
   private
   

@@ -7,12 +7,12 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
     company = @organization.root_company
     @aspirations = policy_scope(Aspiration).where(organization: company.self_and_descendants).ordered
     authorize @aspirations
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
 
   def show
     authorize @aspiration
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
 
   def new
@@ -22,7 +22,7 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
     @form.current_person = current_person
     @form.instance_variable_set(:@form_data_empty, true)
     authorize @aspiration
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
 
   def create
@@ -53,7 +53,7 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
     @form = AspirationForm.new(@aspiration)
     @form.current_person = current_person
     authorize @aspiration
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
 
   def update

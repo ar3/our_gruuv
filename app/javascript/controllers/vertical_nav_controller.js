@@ -18,11 +18,33 @@ export default class extends Controller {
   
   connect() {
     // Restore state from data attributes
-    this.open = this.navTarget.dataset.open === 'true'
-    this.locked = this.navTarget.dataset.locked === 'true'
+    // Read locked state (can be string 'true'/'false' or boolean)
+    const lockedValue = this.navTarget.dataset.locked
+    this.locked = lockedValue === 'true' || lockedValue === true
+    
+    // If locked, nav must be open. Otherwise read from data attribute
+    const openValue = this.navTarget.dataset.open
+    this.open = this.locked ? true : (openValue === 'true' || openValue === true)
+    
+    // Ensure locked nav is always open
+    if (this.locked) {
+      this.open = true
+    }
     
     // Apply initial state
     this.updateNavState()
+    
+    // Ensure floating toggle button is visible on mobile when nav is closed
+    const floatingToggle = document.querySelector('.floating-toggle')
+    if (floatingToggle && !this.open) {
+      // On mobile, ensure button is visible
+      if (window.innerWidth <= 991.98) {
+        floatingToggle.style.display = 'flex'
+        floatingToggle.style.visibility = 'visible'
+        floatingToggle.style.opacity = '1'
+        floatingToggle.classList.remove('d-none', 'nav-open-hidden')
+      }
+    }
     
     // Handle escape key
     this.boundHandleEscape = this.handleEscape.bind(this)
@@ -86,19 +108,22 @@ export default class extends Controller {
     this.saveState()
   }
   
+  // Lock/unlock is now handled via form POST for reliability
+  // This method is kept for backwards compatibility but shouldn't be called
   toggleLock() {
-    this.locked = !this.locked
-    
-    // If locking, ensure nav is open
-    if (this.locked && !this.open) {
-      this.open = true
+    // Lock/unlock is now handled via form POST - redirect to form action
+    const lockBtn = document.querySelector('.vertical-nav-lock-btn')
+    if (lockBtn && lockBtn.closest('form')) {
+      lockBtn.closest('form').submit()
     }
-    
-    this.updateNavState()
-    this.saveState()
   }
   
   updateNavState() {
+    // If locked, nav must always be open
+    if (this.locked) {
+      this.open = true
+    }
+    
     if (this.open) {
       this.navTarget.classList.add('open')
       this.navTarget.classList.remove('closed')
@@ -106,15 +131,24 @@ export default class extends Controller {
         this.backdropElement.classList.add('show')
       }
     } else {
-      this.navTarget.classList.remove('open')
-      this.navTarget.classList.add('closed')
-      if (this.hasBackdrop) {
-        this.backdropElement.classList.remove('show')
+      // Only allow closing if not locked
+      if (!this.locked) {
+        this.navTarget.classList.remove('open')
+        this.navTarget.classList.add('closed')
+        if (this.hasBackdrop) {
+          this.backdropElement.classList.remove('show')
+        }
       }
     }
     
     if (this.locked) {
       this.navTarget.classList.add('locked')
+      // Ensure open class is present when locked
+      this.navTarget.classList.add('open')
+      this.navTarget.classList.remove('closed')
+      if (this.hasBackdrop) {
+        this.backdropElement.classList.add('show')
+      }
       if (this.hasLockBtnTarget) {
         const icon = this.lockBtnTarget.querySelector('i')
         if (icon) {
@@ -147,9 +181,25 @@ export default class extends Controller {
     const floatingToggle = document.querySelector('.floating-toggle')
     if (floatingToggle) {
       if (this.open) {
-        floatingToggle.classList.add('d-none')
+        floatingToggle.classList.add('d-none', 'nav-open-hidden')
+        floatingToggle.style.display = 'none'
+        floatingToggle.style.visibility = 'hidden'
       } else {
-        floatingToggle.classList.remove('d-none')
+        floatingToggle.classList.remove('d-none', 'nav-open-hidden')
+        // Always ensure it's visible when nav is closed
+        floatingToggle.style.display = 'flex'
+        floatingToggle.style.visibility = 'visible'
+        floatingToggle.style.opacity = '1'
+      }
+    }
+    
+    // Update top bar spacer visibility
+    const spacer = document.querySelector('.vertical-nav-toggle-spacer')
+    if (spacer) {
+      if (this.open) {
+        spacer.style.width = '0'
+      } else {
+        spacer.style.width = '68px'
       }
     }
   }

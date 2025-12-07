@@ -140,6 +140,48 @@ RSpec.describe 'User Preferences', type: :request do
         expect(response).to have_http_status(:success)
         expect(user_preference.reload.vertical_nav_locked?).to eq(false)
       end
+      
+      it 'automatically sets open to true when locking' do
+        # Start with nav closed
+        user_preference.update_preference(:vertical_nav_open, false)
+        user_preference.update_preference(:vertical_nav_locked, false)
+        
+        # Lock the navigation
+        patch vertical_nav_user_preferences_path, params: { locked: 'true' }, headers: { 'Accept' => 'application/json' }
+        
+        expect(response).to have_http_status(:success)
+        user_preference.reload
+        expect(user_preference.vertical_nav_locked?).to eq(true)
+        expect(user_preference.vertical_nav_open?).to eq(true)
+      end
+      
+      it 'automatically sets open to true when locking via HTML request' do
+        # Start with nav closed
+        user_preference.update_preference(:vertical_nav_open, false)
+        user_preference.update_preference(:vertical_nav_locked, false)
+        
+        # Lock the navigation via HTML (form POST)
+        patch vertical_nav_user_preferences_path, params: { locked: 'true', open: 'true' }
+        
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq('Navigation preference updated')
+        user_preference.reload
+        expect(user_preference.vertical_nav_locked?).to eq(true)
+        expect(user_preference.vertical_nav_open?).to eq(true)
+      end
+      
+      it 'persists locked state with open=true across page loads' do
+        # Lock the navigation
+        patch vertical_nav_user_preferences_path, params: { locked: 'true' }
+        
+        # Simulate a new page load
+        get dashboard_organization_path(organization)
+        
+        # Both locked and open should be true
+        user_preference.reload
+        expect(user_preference.vertical_nav_locked?).to eq(true)
+        expect(user_preference.vertical_nav_open?).to eq(true)
+      end
     end
     
     context 'updating both states' do

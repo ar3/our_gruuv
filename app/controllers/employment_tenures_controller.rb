@@ -1,5 +1,4 @@
 class EmploymentTenuresController < ApplicationController
-  layout 'authenticated-horizontal-navigation'
   before_action :require_authentication
   before_action :set_person
   before_action :set_employment_tenure, only: [:show, :edit, :update, :destroy, :employment_summary]

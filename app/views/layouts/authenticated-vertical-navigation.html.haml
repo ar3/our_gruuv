@@ -6,8 +6,96 @@
   %body
     = render partial: 'layouts/toast_container'
     
-    / Floating toggle button for vertical navigation (when nav is closed)
-    %button.btn.btn-primary.vertical-nav-toggle-btn.floating-toggle{type: "button", title: "Toggle navigation", "aria-label": "Toggle navigation", class: "#{'d-none' if current_user_preferences&.vertical_nav_open?}"}
+    / Thin top bar with company name, search, and user menu
+    .vertical-nav-top-bar
+      .container-fluid.d-flex.justify-content-between.align-items-center
+        .d-flex.align-items-center
+          / Space for floating toggle button when nav is closed
+          .vertical-nav-toggle-spacer
+          - if current_person && current_organization
+            = link_to dashboard_organization_path(current_organization), class: "navbar-brand fw-bold text-decoration-none" do
+              = "#{current_organization.display_name}'s Gruuv"
+          - else
+            = link_to "OurGruuv", root_path, class: "navbar-brand fw-bold text-decoration-none"
+        
+        .d-flex.align-items-center.gap-3
+          - if current_person
+            - if current_organization
+              = link_to organization_search_path(current_organization), class: "nav-link text-dark", title: "Search" do
+                %i.bi.bi-search
+            .dropdown
+              %a.nav-link.text-dark.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false", style: "text-decoration: none;"}
+                - if impersonating?
+                  %i.bi.bi-exclamation-triangle.text-warning.me-1
+                %i.bi.bi-person-circle.me-1
+                = current_person.full_name
+              %ul.dropdown-menu.dropdown-menu-end
+                - if impersonating?
+                  %li
+                    = button_to impersonation_path(1), method: :delete, class: "dropdown-item text-danger", form: { style: "display: inline;" } do
+                      %i.bi.bi-person-x.me-2
+                      Stop Impersonation
+                  %li
+                    %hr.dropdown-divider
+                - if current_organization
+                  %li= link_to "My Profile", organization_person_path(current_organization, current_person), class: "dropdown-item"
+                - else
+                  %li= link_to "My Profile", public_person_path(current_person), class: "dropdown-item"
+                - if current_organization
+                  %li= link_to "Home / Dashboard", dashboard_organization_path(current_organization), class: "dropdown-item"
+                %li
+                  %hr.dropdown-divider
+                - if current_organization
+                  %li.dropdown-header
+                    %small.text-muted Current Organization
+                  %li
+                    = link_to organization_path(current_organization), class: "dropdown-item text-primary" do
+                      %i.bi.bi-building.me-2
+                      = current_organization.display_name
+                      - if current_organization.team?
+                        %small.text-muted.ms-1= "(#{current_organization.parent&.name})"
+                  %li
+                    %hr.dropdown-divider
+                - else
+                  %li.dropdown-header
+                    %small.text-muted No Organization Selected
+                  %li
+                    %hr.dropdown-divider
+                - if current_organization
+                  %li= link_to "View Teammates", organization_employees_path(current_organization), class: "dropdown-item"
+                  - if current_organization && policy(current_organization).manage_employment?
+                    %li= link_to "Check-ins Health", organization_check_ins_health_path(current_organization), class: "dropdown-item"
+                  - if current_person&.has_direct_reports?(current_organization)
+                    %li= link_to "My Employees", organization_employees_path(current_organization, manager_filter: 'direct_reports', display: 'check_in_status'), class: "dropdown-item"
+                
+                / Layout switcher
+                %li
+                  %hr.dropdown-divider
+                %li.dropdown-header
+                  %small.text-muted Navigation Layout
+                %li
+                  = button_to layout_user_preferences_path, method: :patch, params: { layout: 'horizontal' }, class: "dropdown-item #{'active' if current_user_preferences&.layout == 'horizontal'}", form: { style: "display: inline;" } do
+                    %i.bi.bi-list.me-2
+                    Horizontal Navigation
+                %li
+                  = button_to layout_user_preferences_path, method: :patch, params: { layout: 'vertical' }, class: "dropdown-item #{'active' if current_user_preferences&.layout == 'vertical'}", form: { style: "display: inline;" } do
+                    %i.bi.bi-layout-sidebar.me-2
+                    Vertical Navigation
+                
+                %li= link_to "Switch Organization", switch_organizations_path, class: "dropdown-item"
+                - if current_person&.og_admin?
+                  %li= link_to "Manage Organizations", organizations_path, class: "dropdown-item"
+                  %li
+                    %hr.dropdown-divider
+                  %li= link_to "Interest Submissions", interest_submissions_path, class: "dropdown-item"
+                %li
+                  %hr.dropdown-divider
+                %li= button_to "Logout", logout_path, method: :delete, class: "dropdown-item", form: { style: "display: inline;" }
+    
+    / Floating toggle button for vertical navigation (when nav is closed and not locked)
+    - nav_locked = current_user_preferences&.vertical_nav_locked? || false
+    - nav_open = nav_locked ? true : (current_user_preferences&.vertical_nav_open? || false)
+    %button.btn.btn-primary.vertical-nav-toggle-btn.floating-toggle{type: "button", title: "Toggle navigation", "aria-label": "Toggle navigation", class: "#{'d-none' if nav_open}"}
       %i.bi.bi-list
     
     / Vertical Navigation Sidebar
@@ -15,7 +103,7 @@
       = render 'shared/vertical_nav'
     
     / Main Content Container with Structured Areas
-    .main-content-container{class: "#{'nav-open' if current_user_preferences&.vertical_nav_open?}"}
+    .main-content-container{class: "#{'nav-open' if nav_open}"}
       .container.mt-4
         / Header Area - Title (left) + Primary Action/View Switcher (right)
         - if content_for?(:header)

@@ -1,5 +1,4 @@
 class Organizations::Teammates::PositionController < Organizations::OrganizationNamespaceBaseController
-  layout 'authenticated-horizontal-navigation'
   before_action :authenticate_person!
   before_action :set_teammate
   after_action :verify_authorized

@@ -31,13 +31,24 @@ class UserPreferencesController < ApplicationController
     end
     
     if params[:locked].present?
-      current_user_preferences.update_preference(:vertical_nav_locked, params[:locked] == 'true')
+      locked = params[:locked] == 'true' || params[:locked] == true
+      current_user_preferences.update_preference(:vertical_nav_locked, locked)
+      
+      # When locking, ensure nav is open
+      if locked
+        current_user_preferences.update_preference(:vertical_nav_open, true)
+      end
     end
     
-    render json: {
-      open: current_user_preferences.vertical_nav_open?,
-      locked: current_user_preferences.vertical_nav_locked?
-    }
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: root_path, notice: 'Navigation preference updated') }
+      format.json {
+        render json: {
+          open: current_user_preferences.vertical_nav_open?,
+          locked: current_user_preferences.vertical_nav_locked?
+        }
+      }
+    end
   end
   
   private

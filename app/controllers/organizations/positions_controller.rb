@@ -44,15 +44,15 @@ class Organizations::PositionsController < ApplicationController
     
     @position_types = @organization.position_types.includes(:positions, :position_major_level).order(:external_title)
     
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
 
   def show
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
 
   def job_description
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
 
   def new
@@ -67,7 +67,7 @@ class Organizations::PositionsController < ApplicationController
     @form = PositionForm.new(@position)
     @form.current_person = current_person
     @form.instance_variable_set(:@form_data_empty, true)
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
 
   def create
@@ -92,7 +92,7 @@ class Organizations::PositionsController < ApplicationController
     @position_decorator = PositionDecorator.new(@position)
     @form = PositionForm.new(@position)
     @form.current_person = current_person
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
 
   def update

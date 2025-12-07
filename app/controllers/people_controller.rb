@@ -1,5 +1,4 @@
 class PeopleController < ApplicationController
-  layout 'authenticated-horizontal-navigation'
   before_action :require_login, except: [:public]
   after_action :verify_authorized
   

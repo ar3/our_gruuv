@@ -1,5 +1,4 @@
 class HuddlesController < ApplicationController
-  layout 'authenticated-horizontal-navigation'
   before_action :set_huddle, only: [:show, :feedback, :submit_feedback, :join, :join_huddle, :direct_feedback, :post_start_announcement_to_slack, :notifications_debug]
 
   def index

@@ -1,5 +1,4 @@
 class Organizations::Teammates::AspirationsController < Organizations::OrganizationNamespaceBaseController
-  layout 'authenticated-horizontal-navigation'
   before_action :authenticate_person!
   before_action :set_teammate
   before_action :set_aspiration

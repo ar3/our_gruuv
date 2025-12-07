@@ -7,7 +7,7 @@ class Organizations::Assignments::AbilityMilestonesController < Organizations::A
     load_abilities_in_hierarchy
     load_existing_associations
     @form = AssignmentAbilityMilestonesForm.new(@assignment)
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
 
   def update

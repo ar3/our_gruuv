@@ -1,16 +1,16 @@
 - nav_structure = visible_navigation_structure
 - prefs = current_user_preferences
-- is_open = prefs&.vertical_nav_open? || false
 - is_locked = prefs&.vertical_nav_locked? || false
+- is_open = is_locked ? true : (prefs&.vertical_nav_open? || false)
 
 / Backdrop for mobile overlay
 .vertical-nav-backdrop
 
-.vertical-nav{data: { controller: "vertical-nav", vertical_nav_target: "nav", open: is_open, locked: is_locked }, class: "#{'open' if is_open} #{'locked' if is_locked}"}
+.vertical-nav{data: { controller: "vertical-nav", vertical_nav_target: "nav", open: is_open.to_s, locked: is_locked.to_s }, class: "#{'open' if is_open} #{'locked' if is_locked}"}
   .vertical-nav-header
     %h5.mb-0 Navigation
     .vertical-nav-controls
-      %button.btn.btn-sm.btn-link.vertical-nav-lock-btn{type: "button", title: is_locked ? "Unlock navigation" : "Lock navigation open", data: { vertical_nav_target: "lockBtn", action: "click->vertical-nav#toggleLock" }}
+      = button_to vertical_nav_user_preferences_path, method: :patch, params: { locked: !is_locked, open: true }, class: "btn btn-sm btn-link vertical-nav-lock-btn", title: is_locked ? "Unlock navigation" : "Lock navigation open", form: { style: "display: inline;" } do
         - if is_locked
           %i.bi.bi-pin-fill
         - else
@@ -21,13 +21,6 @@
   
   .vertical-nav-body
     %nav.nav.flex-column
-      / Search link at top
-      - if current_organization
-        = link_to organization_search_path(current_organization), class: "nav-link #{'active' if nav_item_active?(organization_search_path(current_organization))}" do
-          %i.bi.bi-search
-          Search
-        %hr.my-2
-      
       - nav_structure.each do |section|
         - if section[:section].nil?
           / Dashboard link (no section)
@@ -49,86 +42,4 @@
                   = item[:label]
                   - if item[:coming_soon]
                     %span.badge.bg-secondary.ms-2 Coming Soon
-      
-      / User Menu Section
-      - if current_person
-        %hr.my-3
-        .nav-section.user-menu-section
-          %button.nav-section-toggle.btn.btn-link{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#navSectionUser", "aria-expanded": "false"}
-            - if impersonating?
-              %i.bi.bi-exclamation-triangle.text-warning.me-2
-            %i.bi.bi-person-circle.me-2
-            = current_person.full_name
-            %i.bi.bi-chevron-down.float-end
-          .collapse{id: "navSectionUser"}
-            .nav.flex-column
-              - if impersonating?
-                = button_to impersonation_path(1), method: :delete, class: "nav-link nav-item-link text-danger", form: { style: "display: inline; width: 100%;" } do
-                  %i.bi.bi-person-x.me-2
-                  Stop Impersonation
-                %hr.my-2
-              - if current_organization
-                = link_to organization_person_path(current_organization, current_person), class: "nav-link nav-item-link" do
-                  %i.bi.bi-person.me-2
-                  My Profile
-              - else
-                = link_to public_person_path(current_person), class: "nav-link nav-item-link" do
-                  %i.bi.bi-person.me-2
-                  My Profile
-              - if current_organization
-                = link_to dashboard_organization_path(current_organization), class: "nav-link nav-item-link" do
-                  %i.bi.bi-house.me-2
-                  Home / Dashboard
-                %hr.my-2
-                .nav-link.nav-item-link.text-muted
-                  %small.text-muted Current Organization
-                = link_to organization_path(current_organization), class: "nav-link nav-item-link text-primary" do
-                  %i.bi.bi-building.me-2
-                  = current_organization.display_name
-                  - if current_organization.team?
-                    %small.text-muted.ms-1= "(#{current_organization.parent&.name})"
-                %hr.my-2
-                = link_to organization_employees_path(current_organization), class: "nav-link nav-item-link" do
-                  %i.bi.bi-people.me-2
-                  View Teammates
-                - if current_organization && policy(current_organization).manage_employment?
-                  = link_to organization_check_ins_health_path(current_organization), class: "nav-link nav-item-link" do
-                    %i.bi.bi-heart-pulse.me-2
-                    Check-ins Health
-                - if current_person&.has_direct_reports?(current_organization)
-                  = link_to organization_employees_path(current_organization, manager_filter: 'direct_reports', display: 'check_in_status'), class: "nav-link nav-item-link" do
-                    %i.bi.bi-person-badge.me-2
-                    My Employees
-              - else
-                %hr.my-2
-                .nav-link.nav-item-link.text-muted
-                  %small.text-muted No Organization Selected
-                %hr.my-2
-              
-              / Layout switcher
-              %hr.my-2
-              .nav-link.nav-item-link.text-muted
-                %small.text-muted Navigation Layout
-              = button_to layout_user_preferences_path, method: :patch, params: { layout: 'horizontal' }, class: "nav-link nav-item-link #{'active' if current_user_preferences&.layout == 'horizontal'}", form: { style: "display: inline; width: 100%;" } do
-                %i.bi.bi-list.me-2
-                Horizontal Navigation
-              = button_to layout_user_preferences_path, method: :patch, params: { layout: 'vertical' }, class: "nav-link nav-item-link #{'active' if current_user_preferences&.layout == 'vertical'}", form: { style: "display: inline; width: 100%;" } do
-                %i.bi.bi-layout-sidebar.me-2
-                Vertical Navigation
-              
-              = link_to switch_organizations_path, class: "nav-link nav-item-link" do
-                %i.bi.bi-arrow-left-right.me-2
-                Switch Organization
-              - if current_person&.og_admin?
-                = link_to organizations_path, class: "nav-link nav-item-link" do
-                  %i.bi.bi-building.me-2
-                  Manage Organizations
-                %hr.my-2
-                = link_to interest_submissions_path, class: "nav-link nav-item-link" do
-                  %i.bi.bi-inbox.me-2
-                  Interest Submissions
-              %hr.my-2
-              = button_to logout_path, method: :delete, class: "nav-link nav-item-link text-danger", form: { style: "display: inline; width: 100%;" } do
-                %i.bi.bi-box-arrow-right.me-2
-                Logout
 

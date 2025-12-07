@@ -1,5 +1,4 @@
 class OrganizationsController < Organizations::OrganizationNamespaceBaseController
-  layout 'authenticated-horizontal-navigation'
   before_action :require_authentication, except: [:pundit_healthcheck]
   
   def index

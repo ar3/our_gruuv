@@ -1,5 +1,4 @@
 class Organizations::DepartmentsAndTeamsController < Organizations::OrganizationNamespaceBaseController
-  layout 'authenticated-horizontal-navigation'
   before_action :require_authentication
 
   def index

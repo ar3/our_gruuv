@@ -19,55 +19,55 @@ class PagesController < ApplicationController
   
   # Coming Soon placeholder pages
   def seats_coming_soon
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   def aspirations_coming_soon
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   def observations_coming_soon
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   def good_issues_coming_soon
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   def diverge_converge_coming_soon
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   def team_signals_coming_soon
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   def okr3_management_coming_soon
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   def hypothesis_management_coming_soon
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   def eligibility_reviews_coming_soon
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   # Overview pages for Level 2 navigation
   def position_management_overview
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   def milestones_overview
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   def huddles_overview
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
   
   def accountability
-    render layout: 'authenticated-horizontal-navigation'
+    render layout: determine_layout
   end
 end 

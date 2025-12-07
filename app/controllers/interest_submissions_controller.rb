@@ -1,5 +1,4 @@
 class InterestSubmissionsController < ApplicationController
-  layout 'authenticated-horizontal-navigation'
   before_action :require_login, except: [:new, :create, :show]
   before_action :ensure_admin!, only: [:index]
   

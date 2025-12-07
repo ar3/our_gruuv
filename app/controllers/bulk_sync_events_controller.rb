@@ -1,5 +1,4 @@
 class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseController
-  layout 'authenticated-horizontal-navigation'
   before_action :require_login
   before_action :set_bulk_sync_event, only: [:show, :destroy, :process_sync]
   before_action :authorize_bulk_sync_events, only: [:index, :new, :create, :process_sync]

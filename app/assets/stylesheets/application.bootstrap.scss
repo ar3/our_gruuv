@@ -546,18 +546,58 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
 }
 
 // ===== VERTICAL NAVIGATION STYLES =====
+// Top bar for vertical navigation layout
+.vertical-nav-top-bar {
+  padding: 0.75rem 1rem;
+  background-color: white;
+  border-bottom: 1px solid #dee2e6;
+  min-height: 56px;
+  position: relative;
+  z-index: 1035; // Below floating toggle button
+  
+  .navbar-brand {
+    font-size: 1rem;
+    color: #212529;
+    
+    &:hover {
+      color: #0d6efd;
+    }
+  }
+  
+  .vertical-nav-toggle-spacer {
+    width: 68px; // Space for floating toggle button (48px + 20px margin)
+    flex-shrink: 0;
+    transition: width 0.3s ease;
+  }
+  
+  // Hide spacer when nav is open (using JavaScript to add class)
+  .vertical-nav.open ~ .main-content-container & {
+    width: 0;
+  }
+  
+  .nav-link {
+    padding: 0.5rem;
+    color: #212529;
+    
+    &:hover {
+      color: #0d6efd;
+    }
+  }
+}
+
 .vertical-nav {
   position: fixed;
-  top: 0; // At top since no navbar
+  top: 56px; // Below top bar
   left: 0;
   width: 250px;
-  height: 100vh;
+  height: calc(100vh - 56px);
   background-color: #f8f9fa;
   border-right: 1px solid #dee2e6;
   z-index: 1030;
   transform: translateX(-100%);
   transition: transform 0.3s ease-in-out;
   overflow-y: auto;
+  overflow-x: hidden; // Prevent horizontal scrolling
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
   
   &.open {
@@ -719,10 +759,37 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
 @media (max-width: 991.98px) {
   .vertical-nav {
     box-shadow: 4px 0 8px rgba(0, 0, 0, 0.2);
+    overflow-x: hidden !important; // Prevent horizontal scrolling on mobile
+    max-width: 100vw; // Ensure it doesn't exceed viewport width
+    width: 100vw; // Full viewport width on mobile
+  }
+  
+  .vertical-nav-body {
+    overflow-x: hidden !important; // Prevent horizontal scrolling in nav body
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .vertical-nav-body .nav {
+    overflow-x: hidden !important;
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .vertical-nav-body .nav-section {
+    max-width: 100%;
+    width: 100%;
+    overflow-x: hidden;
   }
   
   .main-content-container.nav-open {
     margin-left: 0; // Don't shift content on mobile
+  }
+  
+  .vertical-nav-top-bar {
+    .vertical-nav-toggle-spacer {
+      width: 68px; // Keep space for toggle button on mobile too
+    }
   }
 }
 
@@ -736,9 +803,9 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
 // Floating toggle button for vertical navigation
 .vertical-nav-toggle-btn.floating-toggle {
   position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 1040;
+  top: 12px; // Adjusted for top bar
+  left: 12px;
+  z-index: 1050; // Higher than top bar to ensure visibility
   border-radius: 50%;
   width: 48px;
   height: 48px;
@@ -766,5 +833,42 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
 .vertical-nav[data-open="true"] ~ .main-content-container .floating-toggle,
 body:has(.vertical-nav.open) .floating-toggle {
   display: none;
+}
+
+// Ensure button and top bar are visible on mobile
+@media (max-width: 991.98px) {
+  // Ensure top bar is always visible on mobile
+  .vertical-nav-top-bar {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative;
+    z-index: 1035;
+  }
+  
+  .vertical-nav-toggle-btn.floating-toggle {
+    z-index: 1050 !important; // Ensure it's above everything on mobile
+    top: 12px;
+    left: 12px;
+    position: fixed !important;
+    
+    // Always show on mobile unless explicitly hidden by JavaScript
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    
+    // Only hide if nav is actually open (via JavaScript class)
+    &.nav-open-hidden {
+      display: none !important;
+      visibility: hidden !important;
+    }
+    
+    // Override d-none on mobile - we'll use nav-open-hidden instead
+    &.d-none:not(.nav-open-hidden) {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+  }
 }
 
