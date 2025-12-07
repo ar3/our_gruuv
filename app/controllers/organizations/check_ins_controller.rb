@@ -32,6 +32,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     @aspiration_check_ins = load_or_build_aspiration_check_ins
     @relevant_abilities = load_relevant_abilities || []
     load_goals
+    load_stories
   end
   
   def update
@@ -142,14 +143,88 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
   def load_goals
     # Load active goals for the teammate, filtered by timeframe
     if @teammate
-      base_goals = Goal.for_teammate(@teammate).active
+      base_goals = Goal.for_teammate(@teammate).active.includes(:goal_check_ins)
       @now_goals = base_goals.timeframe_now
       @next_goals = base_goals.timeframe_next
       @later_goals = base_goals.timeframe_later
+      
+      # Get all active goals for check-in loading
+      all_active_goals = @now_goals + @next_goals + @later_goals
+      
+      # Load latest check-in for each goal
+      goal_ids = all_active_goals.map(&:id)
+      current_week_start = Date.current.beginning_of_week(:monday)
+      
+      # Get all check-ins for these goals, ordered by week start desc
+      all_check_ins = GoalCheckIn
+        .where(goal_id: goal_ids)
+        .includes(:confidence_reporter)
+        .order(check_in_week_start: :desc)
+      
+      # Group by goal_id and take the first (latest) for each goal
+      latest_check_ins = {}
+      all_check_ins.each do |check_in|
+        latest_check_ins[check_in.goal_id] ||= check_in
+      end
+      
+      # Get current week check-ins to determine if new check-in is needed
+      current_week_check_ins = GoalCheckIn
+        .where(goal_id: goal_ids, check_in_week_start: current_week_start)
+        .index_by(&:goal_id)
+      
+      # Attach latest check-in to each goal
+      all_active_goals.each do |goal|
+        goal.instance_variable_set(:@latest_check_in, latest_check_ins[goal.id])
+        goal.instance_variable_set(:@needs_check_in, current_week_check_ins[goal.id].nil?)
+      end
+      
+      # Build goals check-in URL
+      @goals_check_in_url = organization_goals_path(
+        @organization,
+        owner_type: 'Teammate',
+        owner_id: @teammate.id,
+        view: 'check-in'
+      )
     else
       @now_goals = []
       @next_goals = []
       @later_goals = []
+      @goals_check_in_url = organization_goals_path(@organization)
+    end
+  end
+
+  def load_stories
+    # Load observations from past 45 days visible to current user about @person
+    if @person && @organization
+      visibility_query = ObservationVisibilityQuery.new(current_person, @organization)
+      visible_observations = visibility_query.visible_observations
+      
+      # Filter to observations about @person (where @person is an observee)
+      teammate_ids = @person.teammates.where(organization: @organization).pluck(:id)
+      observations_about_person = visible_observations
+        .joins(:observees)
+        .where(observees: { teammate_id: teammate_ids })
+        .distinct
+      
+      # Filter to past 45 days
+      since_date = 45.days.ago
+      recent_observations = observations_about_person
+        .where('observed_at >= ?', since_date)
+        .order(observed_at: :desc)
+      
+      @stories_count = recent_observations.count
+      @recent_stories = recent_observations.limit(3).includes(:observer, :observees)
+      
+      # Build filter URL for observations page
+      @stories_filter_url = filtered_observations_organization_observations_path(
+        @organization,
+        observee_ids: teammate_ids,
+        start_date: since_date.iso8601
+      )
+    else
+      @stories_count = 0
+      @recent_stories = []
+      @stories_filter_url = organization_observations_path(@organization)
     end
   end
 

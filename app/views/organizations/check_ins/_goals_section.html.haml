@@ -1,0 +1,55 @@
+= render 'shared/section_header', 
+         title: 'Active Goals', 
+         icon: 'bi-bullseye', 
+         description: 'View goals and confidence ratings'
+
+.card.mb-4
+  .card-body
+    - all_goals = @now_goals + @next_goals + @later_goals
+    - if all_goals.any?
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Goal
+              %th Timeframe
+              %th Last Confidence
+              %th Status
+          %tbody
+            - all_goals.each do |goal|
+              - latest_check_in = goal.instance_variable_get(:@latest_check_in)
+              - needs_check_in = goal.instance_variable_get(:@needs_check_in)
+              %tr
+                %td
+                  = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
+                %td
+                  - if @now_goals.include?(goal)
+                    %span.badge.bg-primary Now
+                  - elsif @next_goals.include?(goal)
+                    %span.badge.bg-info Next
+                  - elsif @later_goals.include?(goal)
+                    %span.badge.bg-secondary Later
+                %td
+                  - if latest_check_in
+                    %strong= "#{latest_check_in.confidence_percentage}%"
+                    %br
+                    %small.text-muted= latest_check_in.check_in_week_start.strftime('%b %d, %Y')
+                  - else
+                    %span.text-muted No check-in yet
+                %td
+                  - if needs_check_in
+                    %span.badge.bg-warning.text-dark New check-in needed
+                  - elsif latest_check_in
+                    %span.badge.bg-success Up to date
+                  - else
+                    %span.badge.bg-secondary No check-in yet
+    - else
+      %p.text-muted.mb-3 No active goals found.
+    
+    .d-grid.mt-3
+      = button_to "Manage Goals & Confidence Ratings", 
+                  save_and_redirect_organization_person_check_ins_path(@organization, @person), 
+                  method: :post,
+                  params: { redirect_url: @goals_check_in_url },
+                  class: "btn btn-outline-primary"
+

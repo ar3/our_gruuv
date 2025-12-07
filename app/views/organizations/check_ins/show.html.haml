@@ -197,6 +197,12 @@
         %i.bi.bi-x-circle-fill.me-1
         #{@debug_data[:policy_action]} = FALSE (Access Denied)
 
+-# Stories Section (Read-Only)
+= render 'stories_section'
+
+-# Active Goals Section (Read-Only)
+= render 'goals_section'
+
 = form_with url: organization_person_check_ins_path(@organization, @person), method: :patch, scope: :check_ins do |f|
   
   -# Position Section
@@ -274,75 +280,6 @@
            person: @person
     
 
-  = render 'shared/section_header', 
-           title: 'Personal Growth/Development', 
-           icon: 'bi-briefcase', 
-           description: '3 years, 2 quarters, 1 month'
-
-  .row.mt-4
-    .col-12
-      .alert.alert-warning.alert-dismissible.fade.show{role: "alert"}
-        .d-flex.align-items-center
-          %i.bi.bi-heart.me-2
-          %strong.me-2 Considering adding general goals to check-ins
-          %span We'd love to build with you... ! Let's get started. 
-          = link_to "Tell us what you think", new_interest_submission_path(source_page: nil, return_url: request.url), class: "alert-link ms-2"
-        %button.btn-close{type: "button", "data-bs-dismiss": "alert", "aria-label": "Close"}
-
-    .col-4 
-      .card
-        .card-header
-          %h5.mb-0 Current Goals (Now - up to 3 months)
-        .card-body
-          - if @now_goals.any?
-            %ul
-              - @now_goals.each do |goal|
-                %li
-                  = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
-          - else
-            .text-center.py-3
-              %p.text-muted.mb-3 No current goals yet
-              = link_to new_organization_goal_path(@organization), class: "btn btn-primary btn-sm" do
-                %i.bi.bi-plus-circle.me-1
-                Create Your First Goal
-    .col-4 
-      .card
-        .card-header
-          %h5.mb-0 Next Goals (3-9 months)
-        .card-body
-          - if @next_goals.any?
-            %ul
-              - @next_goals.each do |goal|
-                %li
-                  = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
-          - else
-            .text-center.py-3
-              %p.text-muted.mb-3 No next goals yet
-              = link_to new_organization_goal_path(@organization), class: "btn btn-primary btn-sm" do
-                %i.bi.bi-plus-circle.me-1
-                Create Your First Goal
-    .col-4 
-      .card
-        .card-header
-          %h5.mb-0 Later Goals (9+ months)
-        .card-body
-          - if @later_goals.any?
-            %ul
-              - @later_goals.each do |goal|
-                %li
-                  = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
-          - else
-            .text-center.py-3
-              %p.text-muted.mb-3 No later goals yet
-              = link_to new_organization_goal_path(@organization), class: "btn btn-primary btn-sm" do
-                %i.bi.bi-plus-circle.me-1
-                Create Your First Goal
-
-  .row.mt-3
-    .col-12.text-center
-      %p.text-muted
-        For more details, 
-        = link_to "visit the goals check-in page", organization_goals_path(@organization, owner_id: "Teammate_#{@teammate.id}", view: 'check-in'), class: "text-decoration-none"
 
   = render 'shared/section_header', 
            title: '1:1 Todos', 
