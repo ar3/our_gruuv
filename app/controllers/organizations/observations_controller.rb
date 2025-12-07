@@ -725,7 +725,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       observees_to_add.each do |teammate_id|
         # Check if it already exists (might have been added by another process)
         unless @observation.observees.exists?(teammate_id: teammate_id)
-          @observation.observees.create!(teammate_id: teammate_id)
+          Observations::AddObserveeService.new(observation: @observation, teammate_id: teammate_id).call
           added_count += 1
         end
       end
@@ -1290,7 +1290,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     teammate_ids = params[:observation][:teammate_ids] || []
     teammate_ids.each do |teammate_id|
       next if teammate_id.blank?
-      observation.observees.create!(teammate_id: teammate_id)
+      Observations::AddObserveeService.new(observation: observation, teammate_id: teammate_id).call
     end
   end
 
@@ -1356,7 +1356,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def handle_observees_from_wizard(observation, wizard_data)
     teammate_ids = wizard_data['teammate_ids'] || []
     teammate_ids.each do |teammate_id|
-      observation.observees.create!(teammate_id: teammate_id)
+      Observations::AddObserveeService.new(observation: observation, teammate_id: teammate_id).call
     end
   end
 

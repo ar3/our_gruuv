@@ -10,6 +10,7 @@ class AssignmentTenure < ApplicationRecord
   validate :no_overlapping_active_tenures_for_same_teammate_and_assignment
 
   scope :active, -> { where(ended_at: nil) }
+  scope :active_and_given_energy, -> { where(ended_at: nil).where('anticipated_energy_percentage > ?', 0) }
   scope :inactive, -> { where.not(ended_at: nil) }
   scope :for_teammate, ->(teammate) { where(teammate: teammate) }
   scope :for_assignment, ->(assignment) { where(assignment_id: assignment.id) }

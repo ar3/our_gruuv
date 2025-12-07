@@ -43,11 +43,11 @@ class Slack::CreateObservationFromMessageService
       published_at: nil # Ensure it's a draft
     )
 
-    if observee_teammate
-      observation.observees.build(teammate: observee_teammate)
-    end
-
     if observation.save
+      # Add observee using service (which will also add active assignments)
+      if observee_teammate
+        Observations::AddObserveeService.new(observation: observation, teammate_id: observee_teammate.id).call
+      end
       log_debug_response("create_observation_from_message", { status: 'success', observation_id: observation.id }, { observation_url: Rails.application.routes.url_helpers.organization_observation_url(@organization, observation) })
       Result.ok(observation)
     else
