@@ -1001,10 +1001,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     # Publish will validate story is present (required for published observations)
     begin
-      @observation.publish!
+      # Use service to publish, which handles na rating removal and privacy enforcement
+      privacy_changed = Observations::PublishService.call(@observation)
       
-      # Enforce privacy level if public observation has negative ratings
-      if Observations::PrivacyLevelEnforcementService.call(@observation)
+      if privacy_changed
         flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
       end
       

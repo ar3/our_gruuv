@@ -1042,6 +1042,49 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(flash[:alert]).to be_nil
       end
     end
+
+    context 'with na ratings' do
+      let(:ability) { create(:ability, organization: company) }
+      let(:assignment) { create(:assignment, company: company) }
+      let(:aspiration) { create(:aspiration, organization: company) }
+      let(:draft_with_na_ratings) do
+        obs = build(:observation, observer: observer, company: company, published_at: nil, story: 'Test story')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        create(:observation_rating, observation: obs, rateable: ability, rating: :na)
+        create(:observation_rating, observation: obs, rateable: assignment, rating: :na)
+        create(:observation_rating, observation: obs, rateable: aspiration, rating: :agree)
+        obs
+      end
+
+      it 'removes all na ratings when publishing' do
+        expect(draft_with_na_ratings.observation_ratings.neutral.count).to eq(2)
+        expect(draft_with_na_ratings.observation_ratings.count).to eq(3)
+        
+        post :publish, params: {
+          organization_id: company.id,
+          id: draft_with_na_ratings.id
+        }
+        
+        draft_with_na_ratings.reload
+        expect(draft_with_na_ratings.observation_ratings.neutral.count).to eq(0)
+        expect(draft_with_na_ratings.observation_ratings.count).to eq(1)
+        expect(draft_with_na_ratings.observation_ratings.first.rating).to eq('agree')
+      end
+
+      it 'preserves non-na ratings' do
+        agree_rating = draft_with_na_ratings.observation_ratings.find_by(rating: 'agree')
+        
+        post :publish, params: {
+          organization_id: company.id,
+          id: draft_with_na_ratings.id
+        }
+        
+        draft_with_na_ratings.reload
+        expect(ObservationRating.find_by(id: agree_rating.id)).to be_present
+        expect(draft_with_na_ratings.observation_ratings.pluck(:rating)).to eq(['agree'])
+      end
+    end
   end
 
   describe 'GET #manage_observees' do
