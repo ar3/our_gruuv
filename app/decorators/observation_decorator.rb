@@ -21,8 +21,10 @@ class ObservationDecorator < Draper::Decorator
       'Between Observer and Managers'
     when 'observed_and_managers'
       'Shared with everyone directly involved'
-    when 'public_observation'
-      'Public Recognition'
+    when 'public_to_company'
+      'Visible to Company'
+    when 'public_to_world'
+      'Public to World'
     end
   end
 
@@ -36,7 +38,9 @@ class ObservationDecorator < Draper::Decorator
       '👔'
     when 'observed_and_managers'
       '👥'
-    when 'public_observation'
+    when 'public_to_company'
+      '🏢'
+    when 'public_to_world'
       '🌍'
     end
   end
@@ -51,23 +55,27 @@ class ObservationDecorator < Draper::Decorator
       'Managers'
     when 'observed_and_managers'
       'Team'
-    when 'public_observation'
-      'Public'
+    when 'public_to_company'
+      'Company'
+    when 'public_to_world'
+      'World'
     end
   end
 
   def privacy_rings
     case privacy_level
     when 'observer_only'
-      '🔘○○○'
+      '🔘○○○○'
     when 'observed_only'
-      '🔘🔘○○'
+      '🔘🔘○○○'
     when 'managers_only'
-      '🔘○🔘○'
+      '🔘○🔘○○'
     when 'observed_and_managers'
-      '🔘🔘🔘○'
-    when 'public_observation'
-      '🔘🔘🔘🔘'
+      '🔘🔘🔘○○'
+    when 'public_to_company'
+      '🔘🔘🔘🔘○'
+    when 'public_to_world'
+      '🔘🔘🔘🔘🔘'
     end
   end
 
@@ -81,8 +89,10 @@ class ObservationDecorator < Draper::Decorator
       'Manager Only'
     when 'observed_and_managers'
       'Stakeholders'
-    when 'public_observation'
-      'Public'
+    when 'public_to_company'
+      'Company-Wide'
+    when 'public_to_world'
+      'World-Wide'
     end
   end
 

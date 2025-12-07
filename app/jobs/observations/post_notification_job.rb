@@ -125,8 +125,10 @@ class Observations::PostNotificationJob < ApplicationJob
       "Privacy: 👔 For your managers"
     when 'observed_and_managers'
       "Privacy: 👥 For you and your managers"
-    when 'public_observation'
-      "Privacy: 🌍 Public to organization"
+    when 'public_to_company'
+      "Privacy: 🏢 Visible to company"
+    when 'public_to_world'
+      "Privacy: 🌍 Public to world"
     else
       "Privacy: #{observation.privacy_level.humanize}"
     end
@@ -145,7 +147,7 @@ class Observations::PostNotificationJob < ApplicationJob
   end
 
   def post_to_channel(observation, organization_id)
-    return unless observation.privacy_level == 'public_observation' && observation.published?
+    return unless observation.can_post_to_slack_channel? && observation.published?
     
     organization = Organization.find(organization_id)
     return unless organization.kudos_channel_id.present?

@@ -34,11 +34,15 @@ FactoryBot.define do
     end
 
     trait :public do
-      privacy_level { :public_observation }
+      privacy_level { :public_to_world }
     end
 
-    trait :public_observation do
-      privacy_level { :public_observation }
+    trait :public_to_world do
+      privacy_level { :public_to_world }
+    end
+
+    trait :public_to_company do
+      privacy_level { :public_to_company }
     end
 
     trait :journal do

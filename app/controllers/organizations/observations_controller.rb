@@ -187,7 +187,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
 
     # Load organizations with kudos channels for channel selection
-    if @observation.privacy_level == 'public_observation' && policy(@observation).post_to_slack?
+    if (@observation.privacy_level == 'public_to_company' || @observation.privacy_level == 'public_to_world') && policy(@observation).post_to_slack?
       company = @observation.company
       organizations_with_channels = ([company] + company.descendants.to_a).select { |org| org.kudos_channel_id.present? }
       @kudos_channel_options = organizations_with_channels.map do |org|
@@ -1052,11 +1052,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       }
     when 'team_wins'
       {
-        total_public: observations.where(privacy_level: :public_observation).count,
-        this_week: observations.where(privacy_level: :public_observation, observed_at: 1.week.ago..).count,
-        this_month: observations.where(privacy_level: :public_observation, observed_at: 1.month.ago..).count,
-        with_ratings: observations_relation.where(privacy_level: :public_observation).joins(:observation_ratings).distinct.count,
-        positive_ratings: observations_relation.where(privacy_level: :public_observation)
+        total_public: observations.where(privacy_level: [:public_to_company, :public_to_world]).count,
+        this_week: observations.where(privacy_level: [:public_to_company, :public_to_world], observed_at: 1.week.ago..).count,
+        this_month: observations.where(privacy_level: [:public_to_company, :public_to_world], observed_at: 1.month.ago..).count,
+        with_ratings: observations_relation.where(privacy_level: [:public_to_company, :public_to_world]).joins(:observation_ratings).distinct.count,
+        positive_ratings: observations_relation.where(privacy_level: [:public_to_company, :public_to_world])
                                                 .joins(:observation_ratings)
                                                 .where(observation_ratings: { rating: [:strongly_agree, :agree] })
                                                 .distinct.count
@@ -1065,7 +1065,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       {
         total_this_week: observations.where(observed_at: 1.week.ago..).count,
         journal_entries: observations.where(privacy_level: :observer_only, observed_at: 1.week.ago..).count,
-        public_observations: observations.where(privacy_level: :public_observation, observed_at: 1.week.ago..).count,
+        public_observations: observations.where(privacy_level: [:public_to_company, :public_to_world], observed_at: 1.week.ago..).count,
         with_ratings: observations_relation.where(observed_at: 1.week.ago..).joins(:observation_ratings).distinct.count
       }
     when 'feedback_health'
@@ -1090,7 +1090,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     three_months_ago = 3.months.ago
     
     # Privacy levels
-    privacy_levels = ['observer_only', 'observed_only', 'managers_only', 'observed_and_managers', 'public_observation']
+    privacy_levels = ['observer_only', 'observed_only', 'managers_only', 'observed_and_managers', 'public_to_company', 'public_to_world']
     
     # Build matrix data
     matrix = {}
@@ -1384,8 +1384,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       '👔 For their managers'
     when 'observed_and_managers'
       '👥 For them and their managers'
-    when 'public_observation'
-      '🌍 Public to organization'
+    when 'public_to_company'
+      '🏢 Public to company'
+    when 'public_to_world'
+      '🌍 Public to world'
     else
       privacy_level&.humanize || 'Not set'
     end

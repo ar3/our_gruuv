@@ -20,7 +20,8 @@ module Observations
     attr_reader :observation
 
     def should_enforce_privacy?
-      return false unless observation.privacy_level == 'public_observation'
+      # Enforce privacy for both public levels (company and world) when there are negative ratings
+      return false unless observation.privacy_level == 'public_to_company' || observation.privacy_level == 'public_to_world'
       
       # Reload ratings association to ensure we check saved ratings
       observation.observation_ratings.reload

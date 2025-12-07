@@ -45,14 +45,12 @@
             %small.text-muted= observation.observed_at.strftime('%b %d, %Y')
         .card-footer
           .btn-group.btn-group-sm.w-100
-            = link_to observation.decorate.permalink_path, class: "btn btn-outline-primary", title: "Public permalink" do
-              %i.bi.bi-link-45deg
+            - if observation.privacy_level == 'public_to_world'
+              = link_to observation.decorate.permalink_path, class: "btn btn-outline-primary", title: "Public permalink" do
+                %i.bi.bi-globe
             = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary", title: "Show page" do
               %i.bi.bi-eye
             - if policy(observation).update?
               = link_to new_organization_observation_path(@organization, draft_id: observation.id, return_url: organization_observation_path(@organization, observation), return_text: 'Back to Observation'), class: "btn btn-outline-secondary" do
                 %i.bi.bi-pencil
-            - if policy(observation).destroy?
-              = link_to organization_observation_path(@organization, observation), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
-                %i.bi.bi-trash
 

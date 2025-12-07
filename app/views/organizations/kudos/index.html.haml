@@ -6,8 +6,7 @@
 - content_for :header_action do
   - if current_person
     = link_to organization_observations_path(@organization), class: "btn btn-outline-primary btn-sm" do
-      %i.bi.bi-arrow-left.me-2
-      Back to Observations
+      Logged-in view of Observations
 
 - if @observations.any?
   - @observations.each do |observation|

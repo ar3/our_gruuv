@@ -66,8 +66,9 @@ class Organizations::KudosController < ApplicationController
   end
 
   def authorize_view_permalink
-    # For public observations, no authentication required
-    return if @observation.privacy_level == 'public_observation'
+    # Only public_to_world observations are accessible via permalink without authentication
+    # public_to_company observations are not accessible via permalink
+    return if @observation.privacy_level == 'public_to_world'
     
     # For other privacy levels, require authentication
     unless current_person

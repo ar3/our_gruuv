@@ -44,7 +44,8 @@ RSpec.describe Observation, type: :model do
         'observed_only' => 'observed_only', 
         'managers_only' => 'managers_only',
         'observed_and_managers' => 'observed_and_managers',
-        'public_observation' => 'public_observation'
+        'public_to_company' => 'public_to_company',
+        'public_to_world' => 'public_to_world'
       })
     end
   end

@@ -12,7 +12,7 @@ RSpec.describe 'organizations/kudos/show', type: :view do
       company: company, 
       observed_at: Time.parse('2025-10-05 14:30:00'),
       story: 'This is a test story about great work.',
-      privacy_level: :public_observation,
+      privacy_level: :public_to_world,
       published_at: Time.current
     )
     obs.observees.build(teammate: observee_teammate)
@@ -83,7 +83,7 @@ RSpec.describe 'organizations/kudos/show', type: :view do
           company: company,
           observed_at: Time.parse('2025-10-05 14:30:00'),
           story: 'This is a test story.',
-          privacy_level: :public_observation,
+          privacy_level: :public_to_world,
           published_at: Time.current,
           primary_feeling: 'happy'
         )
@@ -110,7 +110,7 @@ RSpec.describe 'organizations/kudos/show', type: :view do
           company: company,
           observed_at: Time.parse('2025-10-05 14:30:00'),
           story: 'This is a test story.',
-          privacy_level: :public_observation,
+          privacy_level: :public_to_world,
           published_at: Time.current
         )
         obs.observees.build(teammate: observee_teammate)
@@ -134,7 +134,7 @@ RSpec.describe 'organizations/kudos/show', type: :view do
           company: company,
           observed_at: Time.parse('2025-10-05 14:30:00'),
           story: 'This is a test story.',
-          privacy_level: :public_observation,
+          privacy_level: :public_to_world,
           published_at: Time.current,
           primary_feeling: 'happy'
         )
@@ -157,7 +157,7 @@ RSpec.describe 'organizations/kudos/show', type: :view do
           company: company,
           observed_at: Time.parse('2025-10-05 14:30:00'),
           story: 'This is a test story.',
-          privacy_level: :public_observation,
+          privacy_level: :public_to_world,
           published_at: Time.current,
           primary_feeling: nil
         )

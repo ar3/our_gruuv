@@ -12,7 +12,7 @@ RSpec.describe 'organizations/kudos/index', type: :view do
       company: company,
       observed_at: Time.parse('2025-10-05 14:30:00'),
       story: 'This is a test story about great work. ' * 20, # Long story to test truncation
-      privacy_level: :public_observation,
+      privacy_level: :public_to_world,
       published_at: Time.current
     )
     obs.observees.build(teammate: observee_teammate)
@@ -109,7 +109,7 @@ RSpec.describe 'organizations/kudos/index', type: :view do
         company: company,
         observed_at: Time.parse('2025-10-06 14:30:00'), # Different date to avoid conflicts
         story: 'Short story.',
-        privacy_level: :public_observation,
+        privacy_level: :public_to_world,
         published_at: Time.current
       )
       obs.observees.build(teammate: observee_teammate)

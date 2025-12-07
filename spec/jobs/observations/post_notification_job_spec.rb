@@ -80,7 +80,7 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
       let(:kudos_channel) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C999999') }
 
       before do
-        observation.update!(privacy_level: :public_observation, published_at: Time.current)
+        observation.update!(privacy_level: :public_to_world, published_at: Time.current)
         company.kudos_channel_id = kudos_channel.third_party_id
         company.save!
         allow(slack_service).to receive(:update_message) do |notification_id|
@@ -163,7 +163,7 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
       let(:kudos_channel) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C999999') }
 
       before do
-        observation.update!(privacy_level: :public_observation, published_at: Time.current)
+        observation.update!(privacy_level: :public_to_world, published_at: Time.current)
         company.kudos_channel_id = kudos_channel.third_party_id
         company.save!
         allow(slack_service).to receive(:update_message) do |notification_id|
@@ -184,8 +184,7 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
     context 'when observation cannot post to Slack' do
       before do
         observation.update!(privacy_level: :observer_only)
-        # Remove Slack identity so can_post_to_slack? returns false
-        observee_person.person_identities.destroy_all
+        # Observer_only cannot post to channels (only public levels can)
       end
 
       it 'does not create any notifications' do
@@ -211,7 +210,7 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
       end
 
       it 'includes observation details in channel message' do
-        observation.update!(privacy_level: :public_observation, published_at: Time.current)
+        observation.update!(privacy_level: :public_to_world, published_at: Time.current)
         kudos_channel = create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C999999')
         company.kudos_channel_id = kudos_channel.third_party_id
         company.save!
@@ -250,7 +249,7 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
       let(:observer_slack_identity) { observer_teammate.teammate_identities.find_by(provider: 'slack') }
 
       before do
-        observation.update!(privacy_level: :public_observation, published_at: Time.current)
+        observation.update!(privacy_level: :public_to_world, published_at: Time.current)
         company.kudos_channel_id = kudos_channel.third_party_id
         company.save!
         allow(slack_service).to receive(:update_message) do |notification_id|

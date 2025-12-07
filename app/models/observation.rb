@@ -22,7 +22,8 @@ class Observation < ApplicationRecord
     observed_only: 'observed_only',              # 👤 Observer + observed (1-on-1 feedback)
     managers_only: 'managers_only',              # 👔 Observer + observed's managers (NOT the observed)
     observed_and_managers: 'observed_and_managers',      # 👥 Observer + observed + managers (full transparency)
-    public_observation: 'public_observation'         # 🌍 Everyone in organization + anyone with permalink
+    public_to_company: 'public_to_company',         # 🏢 All authenticated company members
+    public_to_world: 'public_to_world'         # 🌍 Everyone including unauthenticated (public permalinks)
   }
   
   validates :observer, :company, presence: true
@@ -39,7 +40,8 @@ class Observation < ApplicationRecord
   
   scope :recent, -> { order(observed_at: :desc) }
   scope :journal, -> { where(privacy_level: :observer_only) }
-  scope :public_observations, -> { where(privacy_level: :public_observation) }
+  scope :public_observations, -> { where(privacy_level: :public_to_world) }
+  scope :company_wide, -> { where(privacy_level: :public_to_company) }
   scope :for_company, ->(company) { where(company: company) }
   scope :by_observer, ->(observer) { where(observer: observer) }
   scope :by_feeling, ->(feeling) { where(primary_feeling: feeling) }
@@ -112,15 +114,10 @@ class Observation < ApplicationRecord
     update!(published_at: Time.current)
   end
   
-  def can_post_to_slack?
-    # Only public observations can be posted to channels
+  def can_post_to_slack_channel?
+    # Only public observations (company-wide or world-wide) can be posted to channels
     # DMs can be sent for any observation where observees have Slack identities
-    return true if privacy_level == 'public_observation'
-    
-    # For non-public observations, check if any observees have Slack identities
-    observed_teammates.any? do |teammate|
-      teammate.person.person_identities.exists?(provider: 'slack')
-    end
+    privacy_level == 'public_to_company' || privacy_level == 'public_to_world'
   end
   
   private
@@ -141,8 +138,8 @@ class Observation < ApplicationRecord
   end
 
   def update_channel_notifications_if_needed
-    # Only update if observation is still public and published
-    return unless privacy_level == 'public_observation' && published?
+    # Only update if observation is still public (company or world) and published
+    return unless (privacy_level == 'public_to_company' || privacy_level == 'public_to_world') && published?
     
     # Check if relevant attributes changed (not just metadata like updated_at)
     relevant_changes = saved_change_to_story? || 

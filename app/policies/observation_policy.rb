@@ -4,8 +4,33 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def show?
-    # Show page is only for the observer
-    viewing_teammate.person == record.observer
+    return false unless viewing_teammate
+    
+    person = viewing_teammate.person
+    
+    # Observer is always allowed
+    return true if person == record.observer
+    
+    # Check privacy level and apply appropriate rules
+    case record.privacy_level
+    when 'observer_only'
+      # Only the observer (already checked above)
+      false
+    when 'observed_only'
+      # Observer + observed person(s)
+      user_in_observees?
+    when 'managers_only'
+      # Observer + managers of the observed
+      user_in_management_hierarchy?
+    when 'observed_and_managers'
+      # Observer + observed + managers of the observed
+      user_in_observees? || user_in_management_hierarchy?
+    when 'public_to_company', 'public_to_world'
+      # Observer + anyone with an active company teammate
+      user_is_active_company_teammate?
+    else
+      false
+    end
   end
 
   def new?
@@ -31,12 +56,18 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def view_permalink?
+    # Draft observations are only visible to their creator
+    return false if record.draft? && viewing_teammate && viewing_teammate.person != record.observer
+    
+    # Only public_to_world observations have permalink access (no auth required)
+    # public_to_company observations are visible through authenticated pages only
+    return true if record.privacy_level == 'public_to_world'
+    
+    # For other privacy levels, require authentication and check permissions
     return false unless viewing_teammate
     person = viewing_teammate.person
-    # Draft observations are only visible to their creator
-    return false if record.draft? && person != record.observer
     
-    # Permalink page respects privacy settings
+    # Permalink page respects privacy settings for internal levels
     case record.privacy_level
     when 'observer_only'
       person == record.observer
@@ -46,8 +77,9 @@ class ObservationPolicy < ApplicationPolicy
       person == record.observer || user_in_management_hierarchy?
     when 'observed_and_managers'
       person == record.observer || user_in_observees? || user_in_management_hierarchy? || user_can_manage_employment?
-    when 'public_observation'
-      true
+    when 'public_to_company'
+      # public_to_company is visible to authenticated company members, but not via permalink
+      false
     else
       false
     end
@@ -152,5 +184,12 @@ class ObservationPolicy < ApplicationPolicy
   def user_can_manage_employment?
     return false unless record.company
     policy(record.company).manage_employment?
+  end
+
+  def user_is_active_company_teammate?
+    return false unless viewing_teammate
+    return false unless record.company
+    
+    viewing_teammate.person.active_teammates.exists?(organization: record.company)
   end
 end

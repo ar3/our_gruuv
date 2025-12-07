@@ -48,8 +48,11 @@ RSpec.describe ObservationDecorator, type: :decorator do
       observation.privacy_level = 'observed_and_managers'
       expect(decorated_observation.visibility_text).to eq('Shared with everyone directly involved')
       
-      observation.privacy_level = 'public_observation'
-      expect(decorated_observation.visibility_text).to eq('Public Recognition')
+      observation.privacy_level = 'public_to_company'
+      expect(decorated_observation.visibility_text).to eq('Visible to Company')
+      
+      observation.privacy_level = 'public_to_world'
+      expect(decorated_observation.visibility_text).to eq('Public to World')
     end
   end
 
@@ -67,7 +70,10 @@ RSpec.describe ObservationDecorator, type: :decorator do
       observation.privacy_level = 'observed_and_managers'
       expect(decorated_observation.visibility_icon).to eq('👥')
       
-      observation.privacy_level = 'public_observation'
+      observation.privacy_level = 'public_to_company'
+      expect(decorated_observation.visibility_icon).to eq('🏢')
+      
+      observation.privacy_level = 'public_to_world'
       expect(decorated_observation.visibility_icon).to eq('🌍')
     end
   end
@@ -86,8 +92,70 @@ RSpec.describe ObservationDecorator, type: :decorator do
       observation.privacy_level = 'observed_and_managers'
       expect(decorated_observation.visibility_text_style).to eq('Team')
       
-      observation.privacy_level = 'public_observation'
-      expect(decorated_observation.visibility_text_style).to eq('Public')
+      observation.privacy_level = 'public_to_company'
+      expect(decorated_observation.visibility_text_style).to eq('Company')
+      
+      observation.privacy_level = 'public_to_world'
+      expect(decorated_observation.visibility_text_style).to eq('World')
+    end
+  end
+
+  describe '#privacy_rings' do
+    it 'always returns exactly 5 circles for all privacy levels' do
+      observation.privacy_level = 'observer_only'
+      expect(decorated_observation.privacy_rings.length).to eq(5)
+      expect(decorated_observation.privacy_rings).to eq('🔘○○○○')
+      
+      observation.privacy_level = 'observed_only'
+      expect(decorated_observation.privacy_rings.length).to eq(5)
+      expect(decorated_observation.privacy_rings).to eq('🔘🔘○○○')
+      
+      observation.privacy_level = 'managers_only'
+      expect(decorated_observation.privacy_rings.length).to eq(5)
+      expect(decorated_observation.privacy_rings).to eq('🔘○🔘○○')
+      
+      observation.privacy_level = 'observed_and_managers'
+      expect(decorated_observation.privacy_rings.length).to eq(5)
+      expect(decorated_observation.privacy_rings).to eq('🔘🔘🔘○○')
+      
+      observation.privacy_level = 'public_to_company'
+      expect(decorated_observation.privacy_rings.length).to eq(5)
+      expect(decorated_observation.privacy_rings).to eq('🔘🔘🔘🔘○')
+      
+      observation.privacy_level = 'public_to_world'
+      expect(decorated_observation.privacy_rings.length).to eq(5)
+      expect(decorated_observation.privacy_rings).to eq('🔘🔘🔘🔘🔘')
+    end
+  end
+
+  describe '#privacy_label' do
+    it 'returns correct label for each privacy level' do
+      observation.privacy_level = 'observer_only'
+      expect(decorated_observation.privacy_label).to eq('Private Journal')
+      
+      observation.privacy_level = 'observed_only'
+      expect(decorated_observation.privacy_label).to eq('Private Direct')
+      
+      observation.privacy_level = 'managers_only'
+      expect(decorated_observation.privacy_label).to eq('Manager Only')
+      
+      observation.privacy_level = 'observed_and_managers'
+      expect(decorated_observation.privacy_label).to eq('Stakeholders')
+      
+      observation.privacy_level = 'public_to_company'
+      expect(decorated_observation.privacy_label).to eq('Company-Wide')
+      
+      observation.privacy_level = 'public_to_world'
+      expect(decorated_observation.privacy_label).to eq('World-Wide')
+    end
+  end
+
+  describe '#privacy_rings_with_label' do
+    it 'combines privacy rings and label' do
+      observation.privacy_level = 'observed_and_managers'
+      result = decorated_observation.privacy_rings_with_label
+      expect(result).to include('🔘🔘🔘○○')
+      expect(result).to include('Stakeholders')
     end
   end
 

@@ -13,7 +13,7 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
   let!(:observation2) { build(:observation, observer: observee_person, company: company, privacy_level: :observed_only).tap { |obs| obs.observees.build(teammate: create(:teammate, organization: company)); obs.save!; obs.publish! } }
   let!(:observation3) { build(:observation, observer: manager_person, company: company, privacy_level: :managers_only).tap { |obs| obs.observees.build(teammate: observee_teammate); obs.save!; obs.publish! } }
   let!(:observation4) { build(:observation, observer: observer, company: company, privacy_level: :observed_and_managers).tap { |obs| obs.observees.build(teammate: observee_teammate); obs.save!; obs.publish! } }
-  let!(:observation5) { build(:observation, observer: random_person, company: company, privacy_level: :public_observation).tap { |obs| obs.observees.build(teammate: create(:teammate, organization: company)); obs.save!; obs.publish! } }
+  let!(:observation5) { build(:observation, observer: random_person, company: company, privacy_level: :public_to_world).tap { |obs| obs.observees.build(teammate: create(:teammate, organization: company)); obs.save!; obs.publish! } }
 
   before do
     # Set up real management hierarchy
@@ -270,7 +270,29 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
       end
     end
 
-    context 'public_observation privacy' do
+    context 'public_to_company privacy' do
+      let!(:company_public_obs) do
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_company).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      it 'allows all authenticated company members' do
+        observer_query = described_class.new(observer, company)
+        observee_query = described_class.new(observee_person, company)
+        manager_query = described_class.new(manager_person, company)
+        random_query = described_class.new(random_person, company)
+        
+        expect(observer_query.visible_to?(company_public_obs)).to be true
+        expect(observee_query.visible_to?(company_public_obs)).to be true
+        expect(manager_query.visible_to?(company_public_obs)).to be true
+        expect(random_query.visible_to?(company_public_obs)).to be true
+      end
+    end
+
+    context 'public_to_world privacy' do
       it 'allows everyone' do
         observer_query = described_class.new(observer, company)
         observee_query = described_class.new(observee_person, company)
@@ -345,7 +367,7 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
 
     context '#visible_to? with drafts' do
       let(:draft_observation) do
-        build(:observation, observer: observer, company: company, privacy_level: :public_observation, published_at: nil).tap do |obs|
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_world, published_at: nil).tap do |obs|
           obs.observees.build(teammate: observee_teammate)
           obs.save!
         end

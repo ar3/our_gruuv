@@ -85,9 +85,14 @@ class ObservationVisibilityQuery
       params << 'observed_only'
     end
 
-    # public_observation: Anyone can view
+    # public_to_company: All authenticated company members can view
+    conditions << "(privacy_level = ? AND company_id = ?)"
+    params << 'public_to_company'
+    params << @company.id
+
+    # public_to_world: Anyone can view (including unauthenticated)
     conditions << "privacy_level = ?"
-    params << 'public_observation'
+    params << 'public_to_world'
 
     # Combine all conditions with OR
     where_clause = conditions.join(' OR ')
@@ -118,7 +123,11 @@ class ObservationVisibilityQuery
       user_in_observees?(observation) || 
       user_in_management_hierarchy?(observation) || 
       user_can_manage_employment?
-    when 'public_observation'
+    when 'public_to_company'
+      # Visible to all authenticated company members
+      true
+    when 'public_to_world'
+      # Visible to everyone (including unauthenticated)
       true
     else
       false

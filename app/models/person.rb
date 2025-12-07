@@ -117,8 +117,9 @@ class Person < ApplicationRecord
   end
   
   def casual_name
+    return preferred_name if preferred_name.present?
     parts = [
-      preferred_name.present? ? preferred_name : first_name, 
+      first_name, 
       last_name.present? ? "#{last_name[0]}." : nil, 
       suffix].compact
     parts.join(' ')

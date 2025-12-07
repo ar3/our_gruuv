@@ -48,25 +48,250 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
   end
 
   describe 'GET #show' do
-    context 'when user is the observer' do
-      it 'renders the show page' do
-        get :show, params: { organization_id: company.id, id: observation.id }
+    let(:manager_person) { create(:person) }
+    let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
+    let(:random_person) { create(:person) }
+    let(:random_teammate) { create(:teammate, person: random_person, organization: company) }
+
+    before do
+      # Set up managerial hierarchy: observee -> manager
+      create(:employment_tenure, teammate: manager_teammate, company: company)
+      create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+    end
+
+    context 'observer_only privacy' do
+      let(:observer_only_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observer_only)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      it 'allows observer to view' do
+        get :show, params: { organization_id: company.id, id: observer_only_observation.id }
         expect(response).to have_http_status(:success)
+      end
+
+      it 'redirects observee to kudos page' do
+        sign_in_as_teammate(observee_person, company)
+        get :show, params: { organization_id: company.id, id: observer_only_observation.id }
+        date_part = observer_only_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observer_only_observation.id))
+      end
+
+      it 'redirects manager to kudos page' do
+        sign_in_as_teammate(manager_person, company)
+        get :show, params: { organization_id: company.id, id: observer_only_observation.id }
+        date_part = observer_only_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observer_only_observation.id))
+      end
+
+      it 'redirects random person to kudos page' do
+        sign_in_as_teammate(random_person, company)
+        get :show, params: { organization_id: company.id, id: observer_only_observation.id }
+        date_part = observer_only_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observer_only_observation.id))
       end
     end
 
-    context 'when user is not the observer' do
-      let(:other_person) { create(:person) }
-      let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
-      
-      before do
-        sign_in_as_teammate(other_person, company)
+    context 'observed_only privacy' do
+      it 'allows observer to view' do
+        get :show, params: { organization_id: company.id, id: observation.id }
+        expect(response).to have_http_status(:success)
       end
 
-      it 'redirects to kudos page' do
+      it 'allows observee to view' do
+        sign_in_as_teammate(observee_person, company)
+        get :show, params: { organization_id: company.id, id: observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'redirects manager to kudos page' do
+        sign_in_as_teammate(manager_person, company)
         get :show, params: { organization_id: company.id, id: observation.id }
         date_part = observation.observed_at.strftime('%Y-%m-%d')
         expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observation.id))
+      end
+
+      it 'redirects random person to kudos page' do
+        sign_in_as_teammate(random_person, company)
+        get :show, params: { organization_id: company.id, id: observation.id }
+        date_part = observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observation.id))
+      end
+    end
+
+    context 'managers_only privacy' do
+      let(:managers_only_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :managers_only)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      it 'allows observer to view' do
+        get :show, params: { organization_id: company.id, id: managers_only_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'allows manager to view' do
+        sign_in_as_teammate(manager_person, company)
+        get :show, params: { organization_id: company.id, id: managers_only_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'redirects observee to kudos page' do
+        sign_in_as_teammate(observee_person, company)
+        get :show, params: { organization_id: company.id, id: managers_only_observation.id }
+        date_part = managers_only_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: managers_only_observation.id))
+      end
+
+      it 'redirects random person to kudos page' do
+        sign_in_as_teammate(random_person, company)
+        get :show, params: { organization_id: company.id, id: managers_only_observation.id }
+        date_part = managers_only_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: managers_only_observation.id))
+      end
+    end
+
+    context 'observed_and_managers privacy' do
+      let(:observed_and_managers_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observed_and_managers)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      it 'allows observer to view' do
+        get :show, params: { organization_id: company.id, id: observed_and_managers_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'allows observee to view' do
+        sign_in_as_teammate(observee_person, company)
+        get :show, params: { organization_id: company.id, id: observed_and_managers_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'allows manager to view' do
+        sign_in_as_teammate(manager_person, company)
+        get :show, params: { organization_id: company.id, id: observed_and_managers_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'redirects random person to kudos page' do
+        sign_in_as_teammate(random_person, company)
+        get :show, params: { organization_id: company.id, id: observed_and_managers_observation.id }
+        date_part = observed_and_managers_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observed_and_managers_observation.id))
+      end
+    end
+
+    context 'public_to_company privacy' do
+      let(:public_company_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      it 'allows observer to view' do
+        get :show, params: { organization_id: company.id, id: public_company_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'allows observee to view' do
+        sign_in_as_teammate(observee_person, company)
+        get :show, params: { organization_id: company.id, id: public_company_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'allows manager to view' do
+        sign_in_as_teammate(manager_person, company)
+        get :show, params: { organization_id: company.id, id: public_company_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'allows random active teammate to view' do
+        sign_in_as_teammate(random_person, company)
+        get :show, params: { organization_id: company.id, id: public_company_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'redirects terminated teammate to kudos page' do
+        terminated_person = create(:person)
+        terminated_teammate = create(:teammate, person: terminated_person, organization: company, last_terminated_at: 1.day.ago)
+        sign_in_as_teammate(terminated_person, company)
+        get :show, params: { organization_id: company.id, id: public_company_observation.id }
+        date_part = public_company_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: public_company_observation.id))
+      end
+
+      it 'redirects person from other company to kudos page' do
+        other_company = create(:organization, :company)
+        other_person = create(:person)
+        create(:teammate, person: other_person, organization: other_company)
+        sign_in_as_teammate(other_person, other_company)
+        get :show, params: { organization_id: company.id, id: public_company_observation.id }
+        date_part = public_company_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: public_company_observation.id))
+      end
+    end
+
+    context 'public_to_world privacy' do
+      let(:public_world_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      it 'allows observer to view' do
+        get :show, params: { organization_id: company.id, id: public_world_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'allows observee to view' do
+        sign_in_as_teammate(observee_person, company)
+        get :show, params: { organization_id: company.id, id: public_world_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'allows manager to view' do
+        sign_in_as_teammate(manager_person, company)
+        get :show, params: { organization_id: company.id, id: public_world_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'allows random active teammate to view' do
+        sign_in_as_teammate(random_person, company)
+        get :show, params: { organization_id: company.id, id: public_world_observation.id }
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'redirects terminated teammate to kudos page' do
+        terminated_person = create(:person)
+        terminated_teammate = create(:teammate, person: terminated_person, organization: company, last_terminated_at: 1.day.ago)
+        sign_in_as_teammate(terminated_person, company)
+        get :show, params: { organization_id: company.id, id: public_world_observation.id }
+        date_part = public_world_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: public_world_observation.id))
+      end
+
+      it 'redirects person from other company to kudos page' do
+        other_company = create(:organization, :company)
+        other_person = create(:person)
+        create(:teammate, person: other_person, organization: other_company)
+        sign_in_as_teammate(other_person, other_company)
+        get :show, params: { organization_id: company.id, id: public_world_observation.id }
+        date_part = public_world_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: public_world_observation.id))
       end
     end
   end
@@ -182,7 +407,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
           organization_id: company.id,
           observation: {
             story: 'Some feedback',
-            privacy_level: 'public_observation',
+            privacy_level: 'public_to_world',
             primary_feeling: 'happy',
             observed_at: Date.current,
             observees_attributes: {
@@ -223,7 +448,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
           organization_id: company.id,
           observation: {
             story: 'Great feedback',
-            privacy_level: 'public_observation',
+            privacy_level: 'public_to_world',
             primary_feeling: 'happy',
             observed_at: Date.current,
             observees_attributes: {
@@ -243,7 +468,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       it 'does not change privacy level' do
         post :create, params: public_params_with_positive_rating
         observation = Observation.last
-        expect(observation.privacy_level).to eq('public_observation')
+        expect(observation.privacy_level).to eq('public_to_world')
       end
 
       it 'does not set flash alert' do
@@ -465,7 +690,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       let(:ability) { create(:ability, organization: company) }
       let(:assignment) { create(:assignment, company: company) }
       let(:public_draft) do
-        obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_observation)
+        obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_to_world)
         obs.observees.build(teammate: observee_teammate)
         obs.save!
         # Create existing negative rating
@@ -475,7 +700,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
       it 'maintains observed_and_managers privacy level after adding another rateable' do
         # Privacy should already be changed due to existing negative rating
-        expect(public_draft.privacy_level).to eq('public_observation')
+        expect(public_draft.privacy_level).to eq('public_to_world')
         
         post :add_rateables, params: {
           organization_id: company.id,
@@ -613,7 +838,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     context 'with public privacy level and negative ratings' do
       let(:ability) { create(:ability, organization: company) }
       let(:draft_with_negative_rating) do
-        obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_observation)
+        obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_to_world)
         obs.observees.build(teammate: observee_teammate)
         obs.save!
         create(:observation_rating, observation: obs, rateable: ability, rating: :disagree)
@@ -647,7 +872,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
     context 'with public privacy level but no ratings' do
       let(:draft_without_ratings) do
-        obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_observation)
+        obs = build(:observation, observer: observer, company: company, published_at: nil, privacy_level: :public_to_world)
         obs.observees.build(teammate: observee_teammate)
         obs.save!
         obs
@@ -658,7 +883,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
           organization_id: company.id,
           id: draft_without_ratings.id
         }
-        expect(draft_without_ratings.reload.privacy_level).to eq('public_observation')
+        expect(draft_without_ratings.reload.privacy_level).to eq('public_to_world')
       end
 
       it 'does not set flash alert' do
@@ -982,7 +1207,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         
         it 'includes published observations visible to the user' do
           # Create a published observation visible to other_person
-          visible_obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation, story: 'Visible to other person')
+          visible_obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world, story: 'Visible to other person')
           visible_obs.observees.build(teammate: other_teammate)
           visible_obs.save!
           visible_obs.publish!
@@ -1238,13 +1463,13 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     it 'assigns current filters, sort, view, and spotlight from params' do
       get :customize_view, params: {
         organization_id: company.id,
-        privacy: ['observer_only', 'public_observation'],
+        privacy: ['observer_only', 'public_to_world'],
         timeframe: 'this_week',
         sort: 'ratings_count_desc',
         view: 'cards',
         spotlight: 'team_wins'
       }
-      expect(assigns(:current_filters)[:privacy]).to include('observer_only', 'public_observation')
+      expect(assigns(:current_filters)[:privacy]).to include('observer_only', 'public_to_world')
       expect(assigns(:current_filters)[:timeframe]).to eq('this_week')
       expect(assigns(:current_sort)).to eq('ratings_count_desc')
       expect(assigns(:current_view)).to eq('cards')
@@ -1334,7 +1559,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
   describe '#calculate_spotlight_stats with feedback_health' do
     let!(:published_observation) do
-      obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation, observed_at: 1.week.ago)
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world, observed_at: 1.week.ago)
       obs.observees.build(teammate: observee_teammate)
       obs.save!
       obs.publish!
@@ -1350,7 +1575,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
 
     let!(:old_observation) do
-      obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation, observed_at: 4.months.ago)
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world, observed_at: 4.months.ago)
       obs.observees.build(teammate: observee_teammate)
       obs.save!
       obs.publish!
@@ -1369,7 +1594,8 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       
       expect(stats).to have_key(:matrix)
       expect(stats[:matrix]).to have_key('observer_only')
-      expect(stats[:matrix]).to have_key('public_observation')
+      expect(stats[:matrix]).to have_key('public_to_company')
+      expect(stats[:matrix]).to have_key('public_to_world')
       
       # Check that each privacy level has timeframe data
       stats[:matrix].each do |privacy_level, timeframes|

@@ -22,8 +22,8 @@ RSpec.describe Organizations::KudosController, type: :controller do
   end
 
   describe 'GET #index' do
-    let!(:public_observation) do
-      obs = create(:observation, observer: observer, company: company, privacy_level: :public_observation, published_at: Time.current, observed_at: 2.days.ago)
+    let!(:public_to_world) do
+      obs = create(:observation, observer: observer, company: company, privacy_level: :public_to_world, published_at: Time.current, observed_at: 2.days.ago)
       obs.observees.build(teammate: observee_teammate)
       obs.save!
       obs
@@ -31,7 +31,7 @@ RSpec.describe Organizations::KudosController, type: :controller do
 
     let!(:department_observee_teammate) { create(:teammate, person: observee_person, organization: department) }
     let!(:department_observation) do
-      obs = build(:observation, observer: observer, company: department, privacy_level: :public_observation, published_at: Time.current, observed_at: 1.day.ago)
+      obs = build(:observation, observer: observer, company: department, privacy_level: :public_to_world, published_at: Time.current, observed_at: 1.day.ago)
       obs.observees.build(teammate: department_observee_teammate)
       obs.save!
       obs
@@ -45,7 +45,7 @@ RSpec.describe Organizations::KudosController, type: :controller do
     end
 
     let!(:unpublished_observation) do
-      obs = build(:observation, observer: observer, company: company, privacy_level: :public_observation, published_at: nil, observed_at: 4.days.ago)
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_world, published_at: nil, observed_at: 4.days.ago)
       obs.observees.build(teammate: observee_teammate)
       obs.save!
       obs
@@ -66,7 +66,7 @@ RSpec.describe Organizations::KudosController, type: :controller do
       get :index, params: { organization_id: company.id }
       observations = assigns(:observations)
       
-      expect(observations).to include(public_observation)
+      expect(observations).to include(public_to_world)
       expect(observations).to include(department_observation)
       expect(observations).not_to include(private_observation)
       expect(observations).not_to include(unpublished_observation)
@@ -108,7 +108,7 @@ RSpec.describe Organizations::KudosController, type: :controller do
   describe 'GET #show' do
     context 'with public observation' do
       before do
-        observation.update!(privacy_level: :public_observation)
+        observation.update!(privacy_level: :public_to_world)
       end
 
       it 'renders the kudos page without authentication' do
@@ -225,7 +225,7 @@ RSpec.describe Organizations::KudosController, type: :controller do
 
     context 'with custom slug in permalink' do
       before do
-        observation.update!(custom_slug: 'awesome-work', privacy_level: :public_observation)
+        observation.update!(custom_slug: 'awesome-work', privacy_level: :public_to_world)
       end
 
       it 'finds the observation by date and id, ignoring slug' do
@@ -237,7 +237,7 @@ RSpec.describe Organizations::KudosController, type: :controller do
 
     context 'with organization lookup by param' do
       before do
-        observation.update!(privacy_level: :public_observation)
+        observation.update!(privacy_level: :public_to_world)
       end
 
       it 'handles id-name-parameterized format' do
