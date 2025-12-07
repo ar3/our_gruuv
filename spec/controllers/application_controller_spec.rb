@@ -169,4 +169,127 @@ RSpec.describe ApplicationController, type: :controller do
       expect(controller.instance_variable_get(:@_pundit_policy_query)).to eq('test_authorize?')
     end
   end
+
+  describe '#recent_page_visits' do
+    let(:person) { create(:person) }
+    let(:other_person) { create(:person) }
+
+    before do
+      session[:current_company_teammate_id] = nil
+      allow(controller).to receive(:current_person).and_return(person)
+    end
+
+    context 'when person has no visits' do
+      it 'returns empty array' do
+        expect(controller.send(:recent_page_visits)).to eq([])
+      end
+    end
+
+    context 'when person has visits' do
+      let!(:most_visited1) { create(:page_visit, person: person, url: '/page1', visit_count: 10, visited_at: 5.days.ago) }
+      let!(:most_visited2) { create(:page_visit, person: person, url: '/page2', visit_count: 8, visited_at: 4.days.ago) }
+      let!(:most_visited3) { create(:page_visit, person: person, url: '/page3', visit_count: 6, visited_at: 3.days.ago) }
+      let!(:recent1) { create(:page_visit, person: person, url: '/page4', visit_count: 2, visited_at: 1.hour.ago) }
+      let!(:recent2) { create(:page_visit, person: person, url: '/page5', visit_count: 1, visited_at: 2.hours.ago) }
+      let!(:recent3) { create(:page_visit, person: person, url: '/page6', visit_count: 1, visited_at: 3.hours.ago) }
+      let!(:other_person_visit) { create(:page_visit, person: other_person, url: '/other', visit_count: 5) }
+
+      it 'returns top 3 most visited first, then top 3 recent (deduped)' do
+        result = controller.send(:recent_page_visits)
+        
+        # Should have 6 items total (3 most visited + 3 recent, no overlap)
+        expect(result.length).to eq(6)
+        
+        # First 3 should be most visited (ordered by visit_count desc)
+        expect(result[0..2]).to contain_exactly(most_visited1, most_visited2, most_visited3)
+        expect(result[0]).to eq(most_visited1)
+        expect(result[1]).to eq(most_visited2)
+        expect(result[2]).to eq(most_visited3)
+        
+        # Last 3 should be recent (ordered by visited_at desc)
+        expect(result[3..5]).to contain_exactly(recent1, recent2, recent3)
+        expect(result[3]).to eq(recent1)
+        expect(result[4]).to eq(recent2)
+        expect(result[5]).to eq(recent3)
+        
+        # Should not include other person's visits
+        expect(result).not_to include(other_person_visit)
+      end
+
+      context 'when there is overlap between most visited and recent' do
+        let!(:overlap_visit) { create(:page_visit, person: person, url: '/overlap', visit_count: 7, visited_at: 30.minutes.ago) }
+
+        it 'deduplicates - shows in most visited, not in recent' do
+          result = controller.send(:recent_page_visits)
+          
+          # Should have overlap_visit in most visited section
+          most_visited_section = result[0..2]
+          expect(most_visited_section).to include(overlap_visit)
+          
+          # Should not have overlap_visit in recent section
+          recent_section = result[3..-1]
+          expect(recent_section).not_to include(overlap_visit)
+        end
+      end
+
+      context 'when there are fewer than 3 most visited' do
+        before do
+          most_visited2.destroy
+          most_visited3.destroy
+        end
+
+        it 'returns available most visited plus recent' do
+          result = controller.send(:recent_page_visits)
+          
+          expect(result.length).to eq(4) # 1 most visited + 3 recent
+          expect(result[0]).to eq(most_visited1)
+          expect(result[1..3]).to contain_exactly(recent1, recent2, recent3)
+        end
+      end
+
+      context 'when there are fewer than 3 recent' do
+        before do
+          recent2.destroy
+          recent3.destroy
+        end
+
+        it 'returns most visited plus available recent' do
+          result = controller.send(:recent_page_visits)
+          
+          expect(result.length).to eq(4) # 3 most visited + 1 recent
+          expect(result[0..2]).to contain_exactly(most_visited1, most_visited2, most_visited3)
+          expect(result[3]).to eq(recent1)
+        end
+      end
+
+      context 'when all recent are also in most visited' do
+        before do
+          # Make the most visited pages also the most recent
+          most_visited1.update(visited_at: 10.minutes.ago)
+          most_visited2.update(visited_at: 20.minutes.ago)
+          most_visited3.update(visited_at: 30.minutes.ago)
+          recent1.destroy
+          recent2.destroy
+          recent3.destroy
+        end
+
+        it 'returns only most visited (no duplicates)' do
+          result = controller.send(:recent_page_visits)
+          
+          expect(result.length).to eq(3)
+          expect(result).to contain_exactly(most_visited1, most_visited2, most_visited3)
+        end
+      end
+    end
+
+    context 'when current_person is nil' do
+      before do
+        allow(controller).to receive(:current_person).and_return(nil)
+      end
+
+      it 'returns empty array' do
+        expect(controller.send(:recent_page_visits)).to eq([])
+      end
+    end
+  end
 end 

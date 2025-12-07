@@ -42,4 +42,20 @@
                   = item[:label]
                   - if item[:coming_soon]
                     %span.badge.bg-secondary.ms-2 Coming Soon
+    
+      / Recently Visited section (last nav section)
+      - if current_person
+        .nav-section
+          %button.nav-section-toggle.btn.btn-link{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#navSectionRecentlyVisited", "aria-expanded": "true"}
+            %i.bi.bi-clock-history
+            Recently Visited
+            %i.bi.bi-chevron-down.float-end
+          .collapse.show{id: "navSectionRecentlyVisited"}
+            - if recent_page_visits.any?
+              - recent_page_visits.each do |visit|
+                = link_to visit.url, class: "nav-link nav-item-link #{'active' if nav_item_active?(visit.url)}" do
+                  = visit.page_title
+            - else
+              .nav-link.nav-item-link.text-muted
+                No recent visits
 

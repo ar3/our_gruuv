@@ -377,9 +377,24 @@ class ApplicationController < ActionController::Base
   end
 
   # Helper method for recent page visits
+  # Returns combined list: top 3 most visited + top 3 most recent (deduped)
   def recent_page_visits
-    return PageVisit.none unless current_person
-    PageVisit.recent.for_person(current_person).limit(30)
+    return [] unless current_person
+    
+    # Get top 3 most visited pages
+    most_visited = PageVisit.for_person(current_person).most_visited.limit(3).to_a
+    
+    # Get top 3 most recent pages
+    most_recent = PageVisit.for_person(current_person).recent.limit(3).to_a
+    
+    # Get IDs of most visited pages to dedupe
+    most_visited_ids = most_visited.map(&:id).to_set
+    
+    # Filter out duplicates from most_recent (if a page is in most_visited, exclude from recent)
+    recent_deduped = most_recent.reject { |visit| most_visited_ids.include?(visit.id) }
+    
+    # Combine: most visited first, then recent (deduped)
+    most_visited + recent_deduped
   end
 
   # Track page visits for recently visited feature

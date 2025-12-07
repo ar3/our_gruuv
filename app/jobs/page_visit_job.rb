@@ -8,18 +8,18 @@ class PageVisitJob < ApplicationJob
     # Find or initialize PageVisit by person_id + url
     page_visit = PageVisit.find_or_initialize_by(person: person, url: url)
     
-    # Update visited_at to current time (moves to top)
+    # For new records, set visit_count to 1; for existing, increment it
+    if page_visit.new_record?
+      page_visit.visit_count = 1
+    else
+      page_visit.visit_count += 1
+    end
+    
+    # Always update visited_at, page_title, and user_agent
     page_visit.visited_at = Time.current
     page_visit.page_title = page_title
     page_visit.user_agent = user_agent
     page_visit.save!
-    
-    # Clean up: delete visits beyond the 30th most recent for this person
-    # Get all visits after the 30th (offset 30) and delete them
-    visits_to_delete = PageVisit.for_person(person)
-                                 .ordered_by_visited_at
-                                 .offset(30)
-    visits_to_delete.delete_all
   rescue ActiveRecord::RecordNotFound => e
     Rails.logger.error "PageVisitJob: Person with ID #{person_id} not found: #{e.message}"
   rescue => e
