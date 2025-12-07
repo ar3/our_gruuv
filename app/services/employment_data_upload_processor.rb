@@ -1,16 +1,16 @@
 class EmploymentDataUploadProcessor
-  attr_reader :upload_event, :organization, :results
+  attr_reader :bulk_sync_event, :organization, :results
 
-  def initialize(upload_event, organization)
-    @upload_event = upload_event
+  def initialize(bulk_sync_event, organization)
+    @bulk_sync_event = bulk_sync_event
     @organization = organization
     @results = { successes: [], failures: [] }
   end
 
   def process
-    return false unless upload_event.can_process?
+    return false unless bulk_sync_event.can_process?
     
-    upload_event.mark_as_processing!
+    bulk_sync_event.mark_as_processing!
     
     begin
       # Process each section of data
@@ -21,11 +21,11 @@ class EmploymentDataUploadProcessor
       process_external_references
       
       # Mark as completed with results
-      upload_event.mark_as_completed!(@results)
+      bulk_sync_event.mark_as_completed!(@results)
       true
     rescue => e
       # Mark as failed with error
-      upload_event.mark_as_failed!(e.message)
+      bulk_sync_event.mark_as_failed!(e.message)
       false
     end
   end
@@ -33,9 +33,9 @@ class EmploymentDataUploadProcessor
   private
 
   def process_people
-    return unless upload_event.preview_actions['people']
+    return unless bulk_sync_event.preview_actions['people']
     
-    upload_event.preview_actions['people'].each do |person_data|
+    bulk_sync_event.preview_actions['people'].each do |person_data|
       begin
         Rails.logger.debug "Processing person: #{person_data.inspect}"
         person, was_created = find_or_create_person(person_data)
@@ -58,9 +58,9 @@ class EmploymentDataUploadProcessor
   end
 
   def process_assignments
-    return unless upload_event.preview_actions['assignments']
+    return unless bulk_sync_event.preview_actions['assignments']
     
-    upload_event.preview_actions['assignments'].each do |assignment_data|
+    bulk_sync_event.preview_actions['assignments'].each do |assignment_data|
       begin
         Rails.logger.debug "Processing assignment: #{assignment_data.inspect}"
         assignment, was_created = find_or_create_assignment(assignment_data)
@@ -83,9 +83,9 @@ class EmploymentDataUploadProcessor
   end
 
   def process_assignment_tenures
-    return unless upload_event.preview_actions['assignment_tenures']
+    return unless bulk_sync_event.preview_actions['assignment_tenures']
     
-    upload_event.preview_actions['assignment_tenures'].each do |tenure_data|
+    bulk_sync_event.preview_actions['assignment_tenures'].each do |tenure_data|
       begin
         # Find the person and assignment for this tenure based on row number
         person = find_person_by_row(tenure_data['row'])
@@ -117,9 +117,9 @@ class EmploymentDataUploadProcessor
   end
 
   def process_assignment_check_ins
-    return unless upload_event.preview_actions['assignment_check_ins']
+    return unless bulk_sync_event.preview_actions['assignment_check_ins']
     
-    upload_event.preview_actions['assignment_check_ins'].each do |check_in_data|
+    bulk_sync_event.preview_actions['assignment_check_ins'].each do |check_in_data|
       begin
         # Find the person and assignment for this check-in based on row number
         person = find_person_by_row(check_in_data['row'])
@@ -151,9 +151,9 @@ class EmploymentDataUploadProcessor
   end
 
   def process_external_references
-    return unless upload_event.preview_actions['external_references']
+    return unless bulk_sync_event.preview_actions['external_references']
     
-    upload_event.preview_actions['external_references'].each do |ref_data|
+    bulk_sync_event.preview_actions['external_references'].each do |ref_data|
       begin
         Rails.logger.info "Processing external reference for assignment name: '#{ref_data['assignment_name']}'"
         # Find the assignment for this external reference

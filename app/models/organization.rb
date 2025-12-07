@@ -19,7 +19,8 @@ class Organization < ApplicationRecord
   has_many :third_party_objects, dependent: :destroy
   has_many :third_party_object_associations, as: :associatable, dependent: :destroy
   has_many :teammates, dependent: :destroy
-  has_many :upload_events, dependent: :destroy
+  has_many :bulk_sync_events, dependent: :destroy
+  has_many :upload_events, class_name: 'BulkSyncEvent', dependent: :destroy # Backward compatibility alias
   has_many :observations, foreign_key: :company_id, dependent: :destroy
   
   # Validations

@@ -1,4 +1,4 @@
-class UploadEvent < ApplicationRecord
+class BulkSyncEvent < ApplicationRecord
   belongs_to :creator, class_name: 'Person'
   belongs_to :initiator, class_name: 'Person'
   belongs_to :organization
@@ -6,14 +6,14 @@ class UploadEvent < ApplicationRecord
   # Handle STI type mapping for backward compatibility
   def self.find_sti_class(type_name)
     case type_name
-    when 'UploadAssignmentCheckins'
-      UploadEvent::UploadAssignmentCheckins
-    when 'UploadEmployees'
-      UploadEvent::UploadEmployees
+    when 'UploadAssignmentCheckins', 'BulkSyncEvent::UploadAssignmentCheckins'
+      BulkSyncEvent::UploadAssignmentCheckins
+    when 'UploadEmployees', 'BulkSyncEvent::UploadEmployees'
+      BulkSyncEvent::UploadEmployees
     when 'UploadEvent::UploadAssignmentCheckins'
-      UploadEvent::UploadAssignmentCheckins
+      BulkSyncEvent::UploadAssignmentCheckins
     when 'UploadEvent::UploadEmployees'
-      UploadEvent::UploadEmployees
+      BulkSyncEvent::UploadEmployees
     else
       super
     end
@@ -32,8 +32,11 @@ class UploadEvent < ApplicationRecord
   }
 
   validates :status, presence: true, inclusion: { in: statuses.keys }
-  validates :file_content, presence: true
-  validates :filename, presence: true
+  validates :source_data, presence: true
+  
+  # Conditional validations based on source type
+  validate :validate_source_contents_for_file_uploads
+  validate :validate_filename_for_file_uploads
 
   # Scopes
   scope :recent, -> { order(created_at: :desc) }
@@ -113,6 +116,43 @@ class UploadEvent < ApplicationRecord
     processed? && failure_count == 0
   end
 
+  # Helper methods for unified access
+  def file_content
+    # Backward compatibility alias
+    source_contents
+  end
+
+  def file_content=(value)
+    # Backward compatibility alias
+    self.source_contents = value
+  end
+
+  def source_type
+    source_data&.dig('type') || 'unknown'
+  end
+
+  def source_info
+    case source_type
+    when 'file_upload'
+      "File: #{source_data['filename']} (#{source_data['file_size']} bytes)"
+    when 'slack_sync'
+      "Slack: #{source_data['workspace_name']} (#{source_data['total_users_fetched']} users)"
+    when 'database_sync'
+      "Database: #{source_data['sync_type']} (#{source_data['total_records_found']} records)"
+    else
+      'Unknown source'
+    end
+  end
+
+  def has_source_contents?
+    source_contents.present?
+  end
+
+  def raw_slack_data
+    return nil unless source_type == 'slack_sync' && source_contents.present?
+    JSON.parse(source_contents) rescue nil
+  end
+
   # Abstract methods to be implemented by subclasses
   def validate_file_type(file)
     raise NotImplementedError, 'Subclasses must implement validate_file_type'
@@ -174,6 +214,20 @@ class UploadEvent < ApplicationRecord
       "#{assignment_title} (#{url})"
     else
       'Unknown type'
+    end
+  end
+
+  private
+
+  def validate_source_contents_for_file_uploads
+    if source_type == 'file_upload' && source_contents.blank?
+      errors.add(:source_contents, 'is required for file uploads')
+    end
+  end
+
+  def validate_filename_for_file_uploads
+    if source_type == 'file_upload' && filename.blank?
+      errors.add(:filename, 'is required for file uploads')
     end
   end
 end

@@ -1,14 +1,14 @@
 .container-fluid
   -# Define all data variables at the very top level for proper scope
-  - preview_actions = @upload_event.preview_actions.is_a?(Hash) ? @upload_event.preview_actions : {}
-  - results = @upload_event.results.is_a?(Hash) ? @upload_event.results : {}
+  - preview_actions = @bulk_sync_event.preview_actions.is_a?(Hash) ? @bulk_sync_event.preview_actions : {}
+  - results = @bulk_sync_event.results.is_a?(Hash) ? @bulk_sync_event.results : {}
   
   -# Back navigation
   .row.mb-3
     .col-12
-      = link_to organization_upload_events_path(current_organization), class: "text-muted text-decoration-none" do
+      = link_to organization_bulk_sync_events_path(current_organization), class: "text-muted text-decoration-none" do
         %i.bi.bi-arrow-left.me-2
-        Back to Uploads
+        Back to Bulk Sync Events
   
   -# Debug: Let's see what we're working with
   -# preview_actions_debug = preview_actions.inspect
@@ -28,6 +28,14 @@
   - positions_data = Array(preview_actions&.dig('positions'))
   - teammates_data = Array(preview_actions&.dig('teammates'))
   - employment_tenures_data = Array(preview_actions&.dig('employment_tenures'))
+  
+  -# RefreshNamesSync data
+  - preferred_name_updates_data = Array(preview_actions&.dig('preferred_name_updates'))
+  
+  -# RefreshSlackSync data
+  - update_slack_identities_data = Array(preview_actions&.dig('update_slack_identities'))
+  - create_slack_associations_data = Array(preview_actions&.dig('create_slack_associations'))
+  - suggest_terminations_data = Array(preview_actions&.dig('suggest_terminations'))
   
   - successes_data = Array(results&.dig('successes'))
   - failures_data = Array(results&.dig('failures'))
@@ -67,7 +75,7 @@
   .row
     .col-12
       -# Safety check - ensure we have valid data
-      - if @upload_event.preview_actions.blank? && @upload_event.results.blank?
+      - if @bulk_sync_event.preview_actions.blank? && @bulk_sync_event.results.blank?
         .alert.alert-warning
           %strong No data available:
           This upload event doesn't have any preview actions or results to display.
@@ -75,9 +83,9 @@
       .d-flex.justify-content-between.align-items-center.mb-4
         %h1 Upload Details
         .d-flex.gap-2
-          = link_to 'Back to Uploads', organization_upload_events_path(current_organization), class: 'btn btn-outline-secondary'
-          - if @upload_event.can_destroy?
-            = link_to 'Delete', organization_upload_event_path(current_organization, @upload_event), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-outline-danger'
+          = link_to 'Back to Uploads', organization_bulk_sync_events_path(current_organization), class: 'btn btn-outline-secondary'
+          - if @bulk_sync_event.can_destroy?
+            = link_to 'Delete', organization_bulk_sync_event_path(current_organization, @bulk_sync_event), method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-outline-danger'
       
   .row
     .col-md-12
@@ -88,40 +96,40 @@
           %dl.row
             %dt.col-sm-4 Status
             %dd.col-sm-8
-              %span{class: "badge bg-#{@upload_event.status == 'completed' ? 'success' : @upload_event.status == 'failed' ? 'danger' : @upload_event.status == 'processing' ? 'warning' : 'secondary'}"}
-                = @upload_event.status.humanize
+              %span{class: "badge bg-#{@bulk_sync_event.status == 'completed' ? 'success' : @bulk_sync_event.status == 'failed' ? 'danger' : @bulk_sync_event.status == 'processing' ? 'warning' : 'secondary'}"}
+                = @bulk_sync_event.status.humanize
             
             %dt.col-sm-4 Filename
             %dd.col-sm-8
-              %code= @upload_event.filename
+              %code= @bulk_sync_event.filename
             
             %dt.col-sm-4 Created
-            %dd.col-sm-8= @upload_event.created_at.strftime('%B %d, %Y at %I:%M %p')
+            %dd.col-sm-8= @bulk_sync_event.created_at.strftime('%B %d, %Y at %I:%M %p')
             
             %dt.col-sm-4 Creator
-            %dd.col-sm-8= @upload_event.creator.display_name
+            %dd.col-sm-8= @bulk_sync_event.creator.display_name
             
             %dt.col-sm-4 Initiator
-            %dd.col-sm-8= @upload_event.initiator.display_name
+            %dd.col-sm-8= @bulk_sync_event.initiator.display_name
             
-            - if @upload_event.attempted_at
+            - if @bulk_sync_event.attempted_at
               %dt.col-sm-4 Attempted
-              %dd.col-sm-8= @upload_event.attempted_at.strftime('%B %d, %Y at %I:%M %p')
+              %dd.col-sm-8= @bulk_sync_event.attempted_at.strftime('%B %d, %Y at %I:%M %p')
             
-            - if @upload_event.completed?
+            - if @bulk_sync_event.completed?
               %dt.col-sm-4 Results
               %dd.col-sm-8
-                %span.text-success= "#{@upload_event.success_count} successful"
+                %span.text-success= "#{@bulk_sync_event.success_count} successful"
                 %br
-                %span.text-danger= "#{@upload_event.failure_count} failed"
+                %span.text-danger= "#{@bulk_sync_event.failure_count} failed"
       
-      - if @upload_event.preview? && @upload_event.preview_actions.present?
+      - if @bulk_sync_event.preview? && @bulk_sync_event.preview_actions.present?
         .card.mb-4
           .card-header
             %h5.card-title.mb-0 Preview Actions
             %p.text-muted.mb-0 Review the actions that will be taken and select which ones to process
           .card-body
-            = form_with url: process_upload_organization_upload_event_path(current_organization, @upload_event), method: :post, local: true do |form|
+            = form_with url: process_sync_organization_bulk_sync_event_path(current_organization, @bulk_sync_event), method: :post, local: true do |form|
               - if people_data.present?
                 %h6 People (#{people_data.length})
                 .table-responsive.mb-3
@@ -572,21 +580,141 @@
                               %span.text-muted None
                           %td= employment_tenure['row']
               
+              -# RefreshNamesSync sections
+              - if preferred_name_updates_data.present?
+                %h6 Preferred Name Updates (#{preferred_name_updates_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_preferred_name_updates', '1', true, class: 'form-check-input', data: { target: 'preferred-name-updates-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Person Name
+                        %th Email
+                        %th Current Preferred Name
+                        %th New Preferred Name
+                        %th Row
+                    %tbody
+                      - preferred_name_updates_data.each do |update|
+                        %tr
+                          %td
+                            = check_box_tag "selected_preferred_name_updates[]", update['row'], true, class: 'form-check-input preferred-name-updates-checkbox'
+                          %td= update['person_name']
+                          %td= update['email']
+                          %td= update['current_preferred_name']
+                          %td
+                            %strong= update['new_preferred_name']
+                          %td= update['row']
+              
+              -# RefreshSlackSync sections
+              - if update_slack_identities_data.present?
+                - updatable_count = update_slack_identities_data.count { |u| u['will_update'] == true }
+                %h6 Slack Identities (#{update_slack_identities_data.length})
+                - if updatable_count > 0
+                  %p.text-muted.small
+                    #{updatable_count} need updates, #{update_slack_identities_data.length - updatable_count} already synced
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          - if updatable_count > 0
+                            = check_box_tag 'select_all_update_slack_identities', '1', true, class: 'form-check-input', data: { target: 'update-slack-identities-checkbox' }
+                            %label.form-check-label.ms-1 Select All (#{updatable_count})
+                          - else
+                            %span.text-muted All synced
+                        %th Person Name
+                        %th Slack User
+                        %th Status
+                        %th Changes
+                        %th Row
+                    %tbody
+                      - update_slack_identities_data.each do |update|
+                        - status = update['status'] || (update['will_update'] ? 'needs_update' : 'already_synced')
+                        %tr{class: status == 'already_synced' ? 'table-secondary' : status == 'not_found' ? 'table-warning' : ''}
+                          %td
+                            - if update['will_update']
+                              = check_box_tag "selected_update_slack_identities[]", update['row'], true, class: 'form-check-input update-slack-identities-checkbox'
+                            - else
+                              = check_box_tag "selected_update_slack_identities[]", update['row'], false, class: 'form-check-input update-slack-identities-checkbox', disabled: true
+                          %td= update['person_name']
+                          %td= update['slack_user_name']
+                          %td
+                            - if status == 'already_synced'
+                              %span.badge.bg-success Already Synced
+                            - elsif status == 'not_found'
+                              %span.badge.bg-warning Not Found
+                            - else
+                              %span.badge.bg-info Needs Update
+                          %td
+                            %small= update['changes']
+                          %td= update['row']
+              
+              - if create_slack_associations_data.present?
+                %h6 Create Slack Associations (#{create_slack_associations_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_create_slack_associations', '1', true, class: 'form-check-input', data: { target: 'create-slack-associations-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Person Name
+                        %th Person Email
+                        %th Slack User
+                        %th Row
+                    %tbody
+                      - create_slack_associations_data.each do |association|
+                        %tr
+                          %td
+                            = check_box_tag "selected_create_slack_associations[]", association['row'], true, class: 'form-check-input create-slack-associations-checkbox'
+                          %td= association['person_name']
+                          %td= association['person_email']
+                          %td= association['slack_user_name']
+                          %td= association['row']
+              
+              - if suggest_terminations_data.present?
+                %h6 Suggest Terminations (#{suggest_terminations_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_suggest_terminations', '1', true, class: 'form-check-input', data: { target: 'suggest-terminations-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Person Name
+                        %th Slack User
+                        %th Reason
+                        %th Suggested Date
+                        %th Row
+                    %tbody
+                      - suggest_terminations_data.each do |termination|
+                        %tr
+                          %td
+                            = check_box_tag "selected_suggest_terminations[]", termination['row'], true, class: 'form-check-input suggest-terminations-checkbox'
+                          %td= termination['person_name']
+                          %td= termination['slack_user_name']
+                          %td
+                            %span.badge.bg-warning= termination['termination_reason']
+                          %td= termination['suggested_termination_date']
+                          %td= termination['row']
+              
               .d-flex.gap-2.mt-4
                 = form.submit 'Process Selected Items', class: 'btn btn-success btn-lg', data: { confirm: 'Are you sure you want to process the selected items? This action cannot be undone.' }
-                = link_to 'Cancel', organization_upload_events_path(current_organization), class: 'btn btn-outline-secondary'
+                = link_to 'Cancel', organization_bulk_sync_events_path(current_organization), class: 'btn btn-outline-secondary'
 
     
     .col-md-8
       -# Processing Results Section
-      - if @upload_event.completed? && @upload_event.results.present?
+      - if @bulk_sync_event.completed? && @bulk_sync_event.results.present?
         .card.mb-4
           .card-header
             %h5.card-title.mb-0 Processing Results
           .card-body
             -# Check if we have successful operations
-            - if @upload_event.results&.dig('successes')&.present?
-              %h6.text-success Successful Operations (#{@upload_event.results&.dig('successes')&.length})
+            - if @bulk_sync_event.results&.dig('successes')&.present?
+              %h6.text-success Successful Operations (#{@bulk_sync_event.results&.dig('successes')&.length})
               .table-responsive.mb-3
                 %table.table.table-sm.table-success
                   %thead
@@ -596,18 +724,18 @@
                       %th Details
                       %th Row
                   %tbody
-                    - @upload_event.results&.dig('successes')&.each do |success|
+                    - @bulk_sync_event.results&.dig('successes')&.each do |success|
                       - success = success || {}
                       %tr
                         %td= (success['type'] || 'Unknown').to_s.humanize
                         %td= (success['action'] || 'Unknown').to_s.humanize
                         %td
-                          != @upload_event.success_details_for(success)
+                          != @bulk_sync_event.success_details_for(success)
                         %td= success['row']
             
             -# Check if we have failed operations
-            - if @upload_event.results&.dig('failures')&.present?
-              %h6.text-danger Failed Operations (#{@upload_event.results&.dig('failures')&.length})
+            - if @bulk_sync_event.results&.dig('failures')&.present?
+              %h6.text-danger Failed Operations (#{@bulk_sync_event.results&.dig('failures')&.length})
               .table-responsive.mb-3
                 %table.table.table-sm.table-danger
                   %thead
@@ -617,7 +745,7 @@
                       %th Data
                       %th Row
                   %tbody
-                    - @upload_event.results&.dig('failures')&.each do |failure|
+                    - @bulk_sync_event.results&.dig('failures')&.each do |failure|
                       %tr
                         %td= failure['type'].humanize
                         %td= failure['error']
@@ -626,18 +754,18 @@
                         %td= failure['row']
       
       -# Processing Failed Section
-      - if @upload_event.failed?
+      - if @bulk_sync_event.failed?
         .card.mb-4
           .card-header
             %h5.card-title.mb-0 Processing Failed
           .card-body
             .alert.alert-danger
               %strong Error:
-              = @upload_event.results&.dig('error') || 'Unknown error occurred'
+              = @bulk_sync_event.results&.dig('error') || 'Unknown error occurred'
             
             -# Check if we have failed operations
-            - if @upload_event.results&.dig('failures')&.present?
-              %h6 Failed Operations (#{@upload_event.results&.dig('failures')&.length})
+            - if @bulk_sync_event.results&.dig('failures')&.present?
+              %h6 Failed Operations (#{@bulk_sync_event.results&.dig('failures')&.length})
               .table-responsive
                 %table.table.table-sm.table-danger
                   %thead
@@ -647,7 +775,7 @@
                       %th Data
                       %th Row
                   %tbody
-                    - @upload_event.results&.dig('failures')&.each do |failure|
+                    - @bulk_sync_event.results&.dig('failures')&.each do |failure|
                       %tr
                         %td= failure['type'].humanize
                         %td= failure['error']
@@ -656,7 +784,7 @@
                         %td= failure['row']
       
       -# Processing Section
-      - if @upload_event.processing?
+      - if @bulk_sync_event.processing?
         .card.mb-4
           .card-header
             %h5.card-title.mb-0 Processing

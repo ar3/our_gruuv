@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_07_002609) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_07_032426) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -169,6 +169,27 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_07_002609) do
     t.string "semantic_version", default: "0.0.1", null: false
     t.index ["company_id"], name: "index_assignments_on_company_id"
     t.index ["department_id"], name: "index_assignments_on_department_id"
+  end
+
+  create_table "bulk_sync_events", force: :cascade do |t|
+    t.text "source_contents"
+    t.jsonb "preview_actions", default: {}
+    t.bigint "creator_id", null: false
+    t.bigint "initiator_id", null: false
+    t.datetime "attempted_at"
+    t.string "status", default: "preview", null: false
+    t.jsonb "results", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "organization_id", null: false
+    t.string "filename"
+    t.string "type"
+    t.jsonb "source_data", default: {}
+    t.index ["created_at"], name: "index_bulk_sync_events_on_created_at"
+    t.index ["creator_id"], name: "index_bulk_sync_events_on_creator_id"
+    t.index ["initiator_id"], name: "index_bulk_sync_events_on_initiator_id"
+    t.index ["organization_id"], name: "index_bulk_sync_events_on_organization_id"
+    t.index ["status"], name: "index_bulk_sync_events_on_status"
   end
 
   create_table "debug_responses", force: :cascade do |t|
@@ -819,26 +840,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_07_002609) do
     t.index ["organization_id"], name: "index_third_party_objects_on_organization_id"
   end
 
-  create_table "upload_events", force: :cascade do |t|
-    t.text "file_content"
-    t.jsonb "preview_actions", default: {}
-    t.bigint "creator_id", null: false
-    t.bigint "initiator_id", null: false
-    t.datetime "attempted_at"
-    t.string "status", default: "preview", null: false
-    t.jsonb "results", default: {}
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.bigint "organization_id", null: false
-    t.string "filename"
-    t.string "type"
-    t.index ["created_at"], name: "index_upload_events_on_created_at"
-    t.index ["creator_id"], name: "index_upload_events_on_creator_id"
-    t.index ["initiator_id"], name: "index_upload_events_on_initiator_id"
-    t.index ["organization_id"], name: "index_upload_events_on_organization_id"
-    t.index ["status"], name: "index_upload_events_on_status"
-  end
-
   create_table "versions", force: :cascade do |t|
     t.string "whodunnit"
     t.datetime "created_at"
@@ -871,6 +872,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_07_002609) do
   add_foreign_key "assignment_tenures", "teammates"
   add_foreign_key "assignments", "organizations", column: "company_id"
   add_foreign_key "assignments", "organizations", column: "department_id"
+  add_foreign_key "bulk_sync_events", "organizations"
+  add_foreign_key "bulk_sync_events", "people", column: "creator_id"
+  add_foreign_key "bulk_sync_events", "people", column: "initiator_id"
   add_foreign_key "employment_tenures", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "people", column: "manager_id"
   add_foreign_key "employment_tenures", "positions"
@@ -934,7 +938,4 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_07_002609) do
   add_foreign_key "teammates", "people"
   add_foreign_key "third_party_object_associations", "third_party_objects"
   add_foreign_key "third_party_objects", "organizations"
-  add_foreign_key "upload_events", "organizations"
-  add_foreign_key "upload_events", "people", column: "creator_id"
-  add_foreign_key "upload_events", "people", column: "initiator_id"
 end

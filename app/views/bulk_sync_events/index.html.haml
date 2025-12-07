@@ -5,93 +5,104 @@
 
 - content_for :header do
   .d-flex.align-items-center
-    %h1.mb-0.me-2 Upload Events
+    %h1.mb-0.me-2 Bulk Sync Events
     .d-flex.align-items-center
-      - if policy([UploadEvent]).create?
+      - if policy([BulkSyncEvent]).create?
         .dropdown
           %button#dropdownMenuButton.btn.btn-primary.dropdown-toggle.ml-2{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", :type => "button"}
             %i.bi.bi-plus
           %ul.dropdown-menu{"aria-labelledby" => "dropdownMenuButton"}
+            %li.dropdown-header Uploads
             %li
-              = link_to "Upload Assignment Check-Ins", new_organization_upload_event_path(current_organization, upload_event: {type: 'UploadEvent::UploadAssignmentCheckins'}), class: 'dropdown-item'
+              = link_to "Upload Assignment Check-Ins", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::UploadAssignmentCheckins'}), class: 'dropdown-item'
             %li
-              = link_to "Upload Employee Positions", new_organization_upload_event_path(current_organization, upload_event: {type: 'UploadEvent::UploadEmployees'}), class: 'dropdown-item'
+              = link_to "Upload Employee Positions", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::UploadEmployees'}), class: 'dropdown-item'
+            %li
+              %hr.dropdown-divider
+            %li.dropdown-header Syncs
+            %li
+              = link_to "Refresh People Names", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::RefreshNamesSync'}), class: 'dropdown-item'
+            %li
+              = link_to "Refresh Slack Identities", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::RefreshSlackSync'}), class: 'dropdown-item'
       - else
         .btn.btn-primary.disabled.ml-2{style: "opacity: 0.6; cursor: not-allowed;"}
           %i.bi.bi-plus
         %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permission to perform this action"}
 
 - content_for :header_action do
-  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#uploadEventFilterModal", type: "button"}
+  %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#bulkSyncEventFilterModal", type: "button"}
     %i.bi.bi-funnel.me-2
     Filter & Sort
 
-= render 'upload_events/spotlights/upload_data_overview'
+= render 'bulk_sync_events/spotlights/upload_data_overview'
 
 .row.justify-content-center
   .col-lg-12
-    - if @upload_events.any?
+    - if @bulk_sync_events.any?
       .table-responsive
         %table.table.table-hover
           %thead
             %tr
               %th Created
-              %th Filename
-              %th Version
+              %th Source
+              %th Type
               %th Status
               %th Creator
               %th Results
               %th Actions
           %tbody
-            - @upload_events.each do |upload_event|
+            - @bulk_sync_events.each do |bulk_sync_event|
               %tr
                 %td
-                  %small.text-muted= upload_event.created_at.strftime('%b %d, %Y')
+                  %small.text-muted= bulk_sync_event.created_at.strftime('%b %d, %Y')
                   %br
-                  %small.text-muted= upload_event.created_at.strftime('%I:%M %p')
+                  %small.text-muted= bulk_sync_event.created_at.strftime('%I:%M %p')
                 %td
-                  %code.small= upload_event.filename
+                  - if bulk_sync_event.filename.present?
+                    %code.small= bulk_sync_event.filename
+                  - else
+                    %span.text-muted.small= bulk_sync_event.source_info
                 %td
-                  %span{class: "badge bg-#{upload_event.type == 'UploadEvent::UploadAssignmentCheckins' ? 'primary' : 'success'}"}
-                    = upload_event.display_name
+                  %span{class: "badge bg-#{bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentCheckins' ? 'primary' : bulk_sync_event.type == 'BulkSyncEvent::UploadEmployees' ? 'success' : bulk_sync_event.type == 'BulkSyncEvent::RefreshNamesSync' ? 'info' : 'warning'}"}
+                    = bulk_sync_event.display_name
                 %td
-                  %span{class: "badge bg-#{upload_event.status == 'completed' ? 'success' : upload_event.status == 'failed' ? 'danger' : upload_event.status == 'processing' ? 'warning' : 'secondary'}"}
-                    = upload_event.status.humanize
+                  %span{class: "badge bg-#{bulk_sync_event.status == 'completed' ? 'success' : bulk_sync_event.status == 'failed' ? 'danger' : bulk_sync_event.status == 'processing' ? 'warning' : 'secondary'}"}
+                    = bulk_sync_event.status.humanize
                 %td
-                  %small= upload_event.creator.display_name
+                  %small= bulk_sync_event.creator.display_name
                 %td
-                  - if upload_event.completed?
+                  - if bulk_sync_event.completed?
                     %span.text-success.small
-                      = "#{upload_event.success_count} success, #{upload_event.failure_count} failed"
-                  - elsif upload_event.failed?
+                      = "#{bulk_sync_event.success_count} success, #{bulk_sync_event.failure_count} failed"
+                  - elsif bulk_sync_event.failed?
                     %span.text-danger.small
-                      = "#{upload_event.failure_count} failed"
-                  - elsif upload_event.processing?
+                      = "#{bulk_sync_event.failure_count} failed"
+                  - elsif bulk_sync_event.processing?
                     %span.text-warning.small Processing...
                   - else
                     %span.text-muted.small Preview ready
                 %td
                   .btn-group.btn-group-sm
-                    = link_to organization_upload_event_path(current_organization, upload_event), class: "btn btn-outline-primary" do
+                    = link_to organization_bulk_sync_event_path(current_organization, bulk_sync_event), class: "btn btn-outline-primary" do
                       %i.bi.bi-eye
-                    = link_to organization_upload_event_path(current_organization, upload_event), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
+                    = link_to organization_bulk_sync_event_path(current_organization, bulk_sync_event), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
                       %i.bi.bi-trash
     - else
       .alert.alert-info
         %h6.mb-2
           %i.bi.bi-info-circle.me-2
-          No Upload Events Created
-        %p.mb-2 Upload files to manage assignment check-ins or employee positions for your organization.
-        = link_to "Create First Upload Event", new_organization_upload_event_path(current_organization, upload_event: {type: 'UploadEvent::UploadAssignmentCheckins'}), class: "btn btn-primary btn-sm"
+          No Bulk Sync Events Created
+        %p.mb-2 Upload files or run syncs to manage data for your organization.
+        = link_to "Create First Sync Event", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::UploadAssignmentCheckins'}), class: "btn btn-primary btn-sm"
 
 / Modal for Filter & Sort
-#uploadEventFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "uploadEventFilterModalLabel", tabindex: "-1"}
+#bulkSyncEventFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "bulkSyncEventFilterModalLabel", tabindex: "-1"}
   .modal-dialog.modal-lg
     .modal-content
       .modal-header
-        %h5.modal-title#uploadEventFilterModalLabel
+        %h5.modal-title#bulkSyncEventFilterModalLabel
           %i.bi.bi-funnel.me-2
-          Filter & Sort Upload Events (coming soon)
+          Filter & Sort Bulk Sync Events (coming soon)
         %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "modal", type: "button"}
       .modal-body
         .row
@@ -100,11 +111,13 @@
               %i.bi.bi-funnel.me-2
               Filters
             .mb-3
-              %label.form-label Upload Type
+              %label.form-label Sync Type
               %select.form-select
                 %option All Types
                 %option Assignment Check-Ins
                 %option Employee Positions
+                %option Refresh Names
+                %option Refresh Slack
             .mb-3
               %label.form-label Status
               %select.form-select
@@ -127,8 +140,8 @@
               %select.form-select
                 %option Created Date (Newest First)
                 %option Created Date (Oldest First)
-                %option Filename (A-Z)
-                %option Filename (Z-A)
+                %option Source (A-Z)
+                %option Source (Z-A)
                 %option Status
             .mb-3
               %label.form-label View Style
@@ -151,9 +164,9 @@
               %label.form-label Spotlight
               %select.form-select
                 %option No Spotlight
-                %option Recent Uploads (Last 7 Days)
-                %option Failed Uploads
-                %option Processing Uploads
+                %option Recent Syncs (Last 7 Days)
+                %option Failed Syncs
+                %option Processing Syncs
       .modal-footer
         %button.btn.btn-secondary{"data-bs-dismiss" => "modal", type: "button"} Cancel
         %button.btn.btn-primary.disabled{type: "button"}

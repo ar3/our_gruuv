@@ -1,10 +1,10 @@
 class UnassignedEmployeeUploadProcessor
-  attr_reader :upload_event, :organization, :parser, :results
+  attr_reader :bulk_sync_event, :organization, :parser, :results
 
-  def initialize(upload_event, organization)
-    @upload_event = upload_event
+  def initialize(bulk_sync_event, organization)
+    @bulk_sync_event = bulk_sync_event
     @organization = organization
-    @parser = UnassignedEmployeeUploadParser.new(upload_event.file_content)
+    @parser = UnassignedEmployeeUploadParser.new(bulk_sync_event.source_contents)
     @results = {
       successes: [],
       failures: [],

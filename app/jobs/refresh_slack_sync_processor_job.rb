@@ -1,4 +1,4 @@
-class UnassignedEmployeeUploadProcessorJob < ApplicationJob
+class RefreshSlackSyncProcessorJob < ApplicationJob
   queue_as :default
 
   def perform(bulk_sync_event_id, organization_id)
@@ -8,8 +8,8 @@ class UnassignedEmployeeUploadProcessorJob < ApplicationJob
     # Mark as processing
     bulk_sync_event.mark_as_processing!
 
-    # Process the upload
-    processor = UnassignedEmployeeUploadProcessor.new(bulk_sync_event, organization)
+    # Process the sync
+    processor = RefreshSlackSyncProcessor.new(bulk_sync_event, organization)
     
     if processor.process
       # Mark as completed with results
@@ -17,7 +17,7 @@ class UnassignedEmployeeUploadProcessorJob < ApplicationJob
       true
     else
       # Mark as failed
-      error_message = "Processing failed: #{processor.parser.errors.join(', ')}"
+      error_message = "Processing failed: #{processor.results[:failures].map { |f| f[:error] }.join(', ')}"
       bulk_sync_event.mark_as_failed!(error_message)
       false
     end
@@ -33,14 +33,16 @@ class UnassignedEmployeeUploadProcessorJob < ApplicationJob
     end
     
     # Log the error for debugging
-    Rails.logger.error "UnassignedEmployeeUploadProcessorJob failed: #{e.message}"
+    Rails.logger.error "RefreshSlackSyncProcessorJob failed: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
     
     false
   end
 
+  # Class method to perform and get result immediately (for inline processing)
   def self.perform_and_get_result(bulk_sync_event_id, organization_id)
     job = new
     job.perform(bulk_sync_event_id, organization_id)
   end
 end
+

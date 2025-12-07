@@ -78,6 +78,8 @@ get '/login', to: 'auth#login', as: :login
       post :refresh_slack_profiles
       get :pundit_healthcheck
       get :accountability_chart
+      get :new_refresh_names
+      get :new_refresh_slack
     end
     
     resources :employees, only: [:index, :new, :create], controller: 'organizations/employees' do
@@ -103,10 +105,17 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
-    # Upload events (consolidated for all upload types)
-    resources :upload_events, only: [:index, :show, :new, :create, :destroy] do
+    # Bulk sync events (consolidated for all upload and sync types)
+    resources :bulk_sync_events, only: [:index, :show, :new, :create, :destroy] do
       member do
-        post :process_upload
+        post :process_sync
+      end
+    end
+    
+    # Legacy upload_events routes for backward compatibility
+    resources :upload_events, only: [:index, :show, :new, :create, :destroy], controller: 'bulk_sync_events' do
+      member do
+        post :process_upload, to: 'bulk_sync_events#process_sync'
       end
     end
     

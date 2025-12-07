@@ -1,10 +1,10 @@
-class UploadEvent::UploadEmployees < UploadEvent
+class BulkSyncEvent::UploadEmployees < BulkSyncEvent
   def validate_file_type(file)
     file.content_type.in?(['text/csv', 'application/csv']) || file.original_filename.end_with?('.csv')
   end
 
   def process_file_for_preview
-    parser = UnassignedEmployeeUploadParser.new(file_content)
+    parser = UnassignedEmployeeUploadParser.new(source_contents)
     
     if parser.parse
       update!(
@@ -39,7 +39,3 @@ class UploadEvent::UploadEmployees < UploadEvent
     file.read
   end
 end
-
-
-
-

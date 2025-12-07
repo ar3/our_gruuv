@@ -1,10 +1,10 @@
-class UploadEvent::UploadAssignmentCheckins < UploadEvent
+class BulkSyncEvent::UploadAssignmentCheckins < BulkSyncEvent
   def validate_file_type(file)
     file.content_type.in?(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])
   end
 
   def process_file_for_preview
-    parser = EmploymentDataUploadParser.new(file_content)
+    parser = EmploymentDataUploadParser.new(source_contents)
     
     if parser.parse
       update!(
@@ -40,7 +40,3 @@ class UploadEvent::UploadAssignmentCheckins < UploadEvent
     Base64.strict_encode64(binary_content)
   end
 end
-
-
-
-

@@ -147,6 +147,16 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
       redirect_to organization_slack_path(@organization), alert: "Failed to refresh Slack profiles: #{result[:error]}"
     end
   end
+
+  def new_refresh_names
+    authorize @organization, :manage_employment?, policy_class: OrganizationPolicy
+    redirect_to new_organization_bulk_sync_event_path(@organization, bulk_sync_event: { type: 'BulkSyncEvent::RefreshNamesSync' })
+  end
+
+  def new_refresh_slack
+    authorize @organization, :manage_employment?, policy_class: OrganizationPolicy
+    redirect_to new_organization_bulk_sync_event_path(@organization, bulk_sync_event: { type: 'BulkSyncEvent::RefreshSlackSync' })
+  end
   
   def new
     @organization = Organization.new

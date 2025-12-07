@@ -1,0 +1,109 @@
+.container-fluid
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1= @bulk_sync_event.display_name
+        = link_to 'Back to Bulk Sync Events', organization_bulk_sync_events_path(current_organization), class: 'btn btn-outline-secondary'
+      
+      .row
+        .col-md-8
+          .card
+            .card-header
+              %h5.card-title.mb-0
+                - if @bulk_sync_event.is_a?(BulkSyncEvent::RefreshNamesSync) || @bulk_sync_event.is_a?(BulkSyncEvent::RefreshSlackSync)
+                  = "Start #{@bulk_sync_event.display_name}"
+                - else
+                  = "Upload #{@bulk_sync_event.file_extension&.upcase} File"
+            .card-body
+              = form_with url: organization_bulk_sync_events_path(current_organization), local: true do |form|
+                = hidden_field_tag 'bulk_sync_event[type]', @bulk_sync_event.type
+                
+                - if @bulk_sync_event.is_a?(BulkSyncEvent::RefreshNamesSync) || @bulk_sync_event.is_a?(BulkSyncEvent::RefreshSlackSync)
+                  -# Sync types don't need file upload
+                  .mb-3
+                    .alert.alert-info
+                      %h6.mb-2= "#{@bulk_sync_event.display_name} Description:"
+                      - if @bulk_sync_event.is_a?(BulkSyncEvent::RefreshNamesSync)
+                        %p.mb-0
+                          This sync will find all active company teammates where preferred_name is nil or empty, and set it to their first_name.
+                      - elsif @bulk_sync_event.is_a?(BulkSyncEvent::RefreshSlackSync)
+                        %p.mb-0
+                          This sync will:
+                          %ul.mb-0
+                            %li Update existing Slack identities with latest data from Slack
+                            %li Match unassociated company teammates to available Slack users
+                            %li Suggest terminations for teammates whose Slack accounts are deleted, bots, or disabled
+                  
+                  .d-flex.gap-2
+                    = form.submit 'Start Sync and Preview', class: 'btn btn-primary'
+                    = link_to 'Cancel', organization_bulk_sync_events_path(current_organization), class: 'btn btn-outline-secondary'
+                - else
+                  -# Upload types need file upload
+                  .mb-3
+                    = form.label :file, "Select #{@bulk_sync_event.file_extension&.upcase} File", class: 'form-label', for: 'bulk_sync_event_file'
+                    = form.file_field :file, name: 'bulk_sync_event[file]', id: 'bulk_sync_event_file', accept: ".#{@bulk_sync_event.file_extension}", class: 'form-control', required: true
+                    .form-text
+                      Only #{@bulk_sync_event.file_extension&.upcase} files are supported. Maximum file size: 10MB.
+                  
+                  .mb-3
+                    .alert.alert-info
+                      %h6.mb-2= "#{@bulk_sync_event.display_name} Format Requirements:"
+                      - if @bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentCheckins'
+                        %p.mb-1
+                          %strong Required columns:
+                          %code email
+                          and 
+                          %code assignment_name
+                        %p.mb-0
+                          %strong Optional columns:
+                          check_in_date, energy_percentage, manager_rating, employee_rating, official_rating, manager_private_notes, employee_private_notes
+                      - else
+                        %p.mb-1
+                          %strong Required columns:
+                          %code Name
+                          , 
+                          %code Email
+                          , and 
+                          %code Start Date
+                        %p.mb-0
+                          %strong Optional columns:
+                          Department, Manager, Location, Country, Employment Type, Job Title, Job Title Level
+                  
+                  .d-flex.gap-2
+                    = form.submit 'Upload and Preview', class: 'btn btn-primary'
+                    = link_to 'Cancel', organization_bulk_sync_events_path(current_organization), class: 'btn btn-outline-secondary'
+        
+        .col-md-4
+          .card
+            .card-header
+              %h5.card-title.mb-0
+                - if @bulk_sync_event.is_a?(BulkSyncEvent::RefreshNamesSync) || @bulk_sync_event.is_a?(BulkSyncEvent::RefreshSlackSync)
+                  Sync Process
+                - else
+                  Upload Process
+            .card-body
+              %ol.mb-0
+                %li
+                  %strong
+                    - if @bulk_sync_event.is_a?(BulkSyncEvent::RefreshNamesSync) || @bulk_sync_event.is_a?(BulkSyncEvent::RefreshSlackSync)
+                      Start:
+                      Click the button to start the sync
+                    - else
+                      Upload:
+                      Select your file and click upload
+                %li
+                  %strong Preview:
+                  Review the parsed data and actions that will be taken
+                %li
+                  %strong Process:
+                  Confirm and execute to create/update records
+                %li
+                  %strong Review:
+                  View results and any errors that occurred
+              
+              .alert.alert-warning.mt-3
+                %strong Note:
+                - if @bulk_sync_event.is_a?(BulkSyncEvent::RefreshNamesSync) || @bulk_sync_event.is_a?(BulkSyncEvent::RefreshSlackSync)
+                  Syncs are processed immediately.
+                - else
+                  Uploads are processed in the background. You'll be notified when complete.

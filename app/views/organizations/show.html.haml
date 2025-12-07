@@ -1,6 +1,22 @@
 - content_for :header do
   %h1.mb-0{id: "organization-title"}= @organization.display_name
   
+- content_for :header_action do
+  - if policy(@organization).manage_employment?
+    .dropdown
+      %button.btn.btn-outline-primary.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button"}
+        %i.bi.bi-arrow-clockwise.me-2
+        Refresh People
+      %ul.dropdown-menu.dropdown-menu-end
+        %li
+          = link_to new_refresh_names_organization_path(@organization), class: 'dropdown-item' do
+            %i.bi.bi-person-badge.me-2
+            Refresh People Names
+        %li
+          = link_to new_refresh_slack_organization_path(@organization), class: 'dropdown-item' do
+            %i.bi.bi-slack.me-2
+            Refresh Slack Identities
+  
 - content_for :go_back_link do
   = link_to organizations_path, class: "text-muted text-decoration-none" do
     %i.bi.bi-arrow-left.me-2
