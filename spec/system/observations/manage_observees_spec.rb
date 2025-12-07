@@ -51,7 +51,7 @@ RSpec.describe 'Manage Observees', type: :system do
       
       # Check the new teammate
       check "teammate_#{new_teammate.id}"
-      click_button 'Save Changes'
+      find('input[type="submit"][value="Save Changes"]', match: :first).click
       
       # Should show success message (regardless of redirect path)
       expect(page).to have_content('Added 1 observee(s)')
@@ -66,7 +66,7 @@ RSpec.describe 'Manage Observees', type: :system do
       
       # Uncheck the existing observee
       uncheck "teammate_#{observee_teammate.id}"
-      click_button 'Save Changes'
+      find('input[type="submit"][value="Save Changes"]', match: :first).click
       
       # Should show success message (regardless of redirect path)
       expect(page).to have_content('Removed 1 observee(s)')
@@ -85,7 +85,7 @@ RSpec.describe 'Manage Observees', type: :system do
       # Uncheck one, check another
       uncheck "teammate_#{observee_teammate.id}"
       check "teammate_#{new_teammate.id}"
-      click_button 'Save Changes'
+      find('input[type="submit"][value="Save Changes"]', match: :first).click
       
       # Should show success message (regardless of redirect path)
       expect(page).to have_content('Added 1 observee(s) and removed 1 observee(s)')
@@ -101,7 +101,7 @@ RSpec.describe 'Manage Observees', type: :system do
       visit manage_observees_organization_observation_path(company, draft)
       
       check "teammate_#{new_teammate.id}"
-      click_button 'Save Changes'
+      find('input[type="submit"][value="Save Changes"]', match: :first).click
       
       expect(page).to have_content('Added 1 observee(s)')
     end
@@ -114,7 +114,7 @@ RSpec.describe 'Manage Observees', type: :system do
         return_text: 'Back to Observations'
       )
       
-      click_button 'Save Changes'
+      find('input[type="submit"][value="Save Changes"]', match: :first).click
       
       expect(page).to have_current_path(
         new_organization_observation_path(
