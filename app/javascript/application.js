@@ -330,6 +330,36 @@ function initializeAuditToggle() {
   })
 }
 
+// Initialize collapse summary visibility toggle
+function initializeCollapseSummaries() {
+  // Handle collapse show/hide events to toggle summary visibility
+  document.addEventListener('shown.bs.collapse', function(e) {
+    const collapseElement = e.target
+    // Find the summary element for this collapse (previous sibling with .collapse-summary class)
+    const summaryElement = collapseElement.previousElementSibling
+    if (summaryElement && summaryElement.classList.contains('collapse-summary')) {
+      summaryElement.classList.add('hidden')
+    }
+  })
+  
+  document.addEventListener('hidden.bs.collapse', function(e) {
+    const collapseElement = e.target
+    // Find the summary element for this collapse (previous sibling with .collapse-summary class)
+    const summaryElement = collapseElement.previousElementSibling
+    if (summaryElement && summaryElement.classList.contains('collapse-summary')) {
+      summaryElement.classList.remove('hidden')
+    }
+  })
+  
+  // Initialize visibility on page load - hide summaries for any expanded collapses
+  document.querySelectorAll('.collapse.show').forEach(collapseElement => {
+    const summaryElement = collapseElement.previousElementSibling
+    if (summaryElement && summaryElement.classList.contains('collapse-summary')) {
+      summaryElement.classList.add('hidden')
+    }
+  })
+}
+
 // Try multiple events to ensure tooltips and toasts are initialized
 document.addEventListener('turbo:load', () => {
   initializeTooltips()
@@ -339,6 +369,7 @@ document.addEventListener('turbo:load', () => {
   updateEnergyTotal()
   initializeEnergyUpdateListening()
   initializeAuditToggle()
+  initializeCollapseSummaries()
 })
 document.addEventListener('DOMContentLoaded', () => {
   initializeTooltips()
@@ -348,4 +379,5 @@ document.addEventListener('DOMContentLoaded', () => {
   updateEnergyTotal()
   initializeEnergyUpdateListening()
   initializeAuditToggle()
+  initializeCollapseSummaries()
 })

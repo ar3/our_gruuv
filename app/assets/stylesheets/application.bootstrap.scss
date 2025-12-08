@@ -337,6 +337,15 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
   display: inline;
 }
 
+// Collapse summary visibility
+.collapse-summary {
+  display: block;
+}
+
+.collapse-summary.hidden {
+  display: none;
+}
+
 
 // Bordered markdown content for visual separation
 .markdown-content--bordered {

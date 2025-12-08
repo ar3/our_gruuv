@@ -1,4 +1,6 @@
 -include_top_header_margin = local_assigns[:include_top_header_margin].nil? ? true : local_assigns[:include_top_header_margin]
+-collapsible = local_assigns[:collapsible] || false
+-collapse_target = local_assigns[:collapse_target]
 -# Section Header (Dashboard Style)
 .row.mb-4{class: include_top_header_margin ? 'mt-5' : ''}
   .col-12{class: include_top_header_margin ? 'mt-5' : ''}
@@ -10,6 +12,14 @@
         = link_to action_link[:url], class: "btn btn-sm btn-outline-primary ms-3", title: action_link[:title] do
           %i{class: "#{action_link[:icon]} #{action_link[:text].present? ? 'me-1' : ''}"}
           = action_link[:text]
+      - if collapsible && collapse_target
+        %a.text-decoration-none.ms-3{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_target}", "aria-expanded" => "false", "aria-controls" => collapse_target, style: "cursor: pointer;"}
+          %span.not-collapsed
+            %i.bi.bi-chevron-up.me-2
+            %small.text-muted (Hide details)
+          %span.collapsed
+            %i.bi.bi-chevron-down.me-2
+            %small.text-muted (Show details)
       .flex-grow-1
         %hr.border-primary
       %small.text-muted.ms-3= description

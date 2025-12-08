@@ -1,45 +1,59 @@
 = render 'shared/section_header', 
          title: 'Prompts / Reflections', 
          icon: 'bi-file-text', 
-         description: 'Recent reflection prompts'
+         description: 'Recent reflection prompts',
+         collapsible: true,
+         collapse_target: 'promptsSection'
 
-.card.mb-4
+-# Summary view (shown when collapsed)
+.card.mb-4.collapse-summary
   .card-body
-    - if @open_prompts_count > 0
-      %p.mb-3
+    %p.mb-0
+      - if @open_prompts_count > 0
         %strong= pluralize(@open_prompts_count, 'open prompt')
         available
-    
-    - if @recent_prompts.any?
-      .list-group.mb-3
-        - @recent_prompts.each do |prompt|
-          .list-group-item
-            .d-flex.justify-content-between.align-items-start
-              .flex-grow-1
-                %h6.mb-1
-                  = prompt.prompt_template.title
-                  - if prompt.open?
-                    %span.badge.bg-warning.text-dark.ms-2 Open
-                  - else
-                    %span.badge.bg-secondary.ms-2 Closed
-                %p.mb-1.text-muted
-                  = prompt.created_at.strftime('%B %d, %Y')
-                - if prompt.prompt_answers.any?
-                  %small.text-muted
-                    = pluralize(prompt.prompt_answers.count, 'answer')
-              - if policy(prompt).show?
-                = link_to organization_prompt_path(@organization, prompt), 
-                          class: "btn btn-sm btn-outline-primary ms-2",
-                          target: "_blank" do
-                  %i.bi.bi-eye.me-1
-                  View
-    - else
-      %p.text-muted.mb-3 No recent prompts to display.
-    
-    .d-grid
-      = button_to "View All Prompts", 
-                  save_and_redirect_organization_person_check_ins_path(@organization, @person), 
-                  method: :post,
-                  params: { redirect_url: @prompts_url },
-                  class: "btn btn-outline-primary"
+      - else
+        No open prompts available.
+
+-# Collapsible content
+.collapse#promptsSection
+  .card.mb-4
+    .card-body
+      - if @open_prompts_count > 0
+        %p.mb-3
+          %strong= pluralize(@open_prompts_count, 'open prompt')
+          available
+      
+      - if @recent_prompts.any?
+        .list-group.mb-3
+          - @recent_prompts.each do |prompt|
+            .list-group-item
+              .d-flex.justify-content-between.align-items-start
+                .flex-grow-1
+                  %h6.mb-1
+                    = prompt.prompt_template.title
+                    - if prompt.open?
+                      %span.badge.bg-warning.text-dark.ms-2 Open
+                    - else
+                      %span.badge.bg-secondary.ms-2 Closed
+                  %p.mb-1.text-muted
+                    = prompt.created_at.strftime('%B %d, %Y')
+                  - if prompt.prompt_answers.any?
+                    %small.text-muted
+                      = pluralize(prompt.prompt_answers.count, 'answer')
+                - if policy(prompt).show?
+                  = link_to organization_prompt_path(@organization, prompt), 
+                            class: "btn btn-sm btn-outline-primary ms-2",
+                            target: "_blank" do
+                    %i.bi.bi-eye.me-1
+                    View
+      - else
+        %p.text-muted.mb-3 No recent prompts to display.
+      
+      .d-grid
+        = button_to "View All Prompts", 
+                    save_and_redirect_organization_person_check_ins_path(@organization, @person), 
+                    method: :post,
+                    params: { redirect_url: @prompts_url },
+                    class: "btn btn-outline-primary"
 
