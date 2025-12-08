@@ -1,0 +1,53 @@
+- content_for :header do
+  %h1.mb-0 1:1 Area for #{@person.display_name}
+  %p.text-muted.mb-0 Manage your 1:1 link and integration
+
+- content_for :go_back_link do
+  = link_to organization_person_check_ins_path(@organization, @person), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Check-Ins
+
+.card
+  .card-body
+    = form_with model: [@organization, @person, @one_on_one_link], url: organization_person_one_on_one_link_path(@organization, @person), method: :patch, local: true do |f|
+      .mb-3
+        = f.label :url, "1:1 Link URL", class: "form-label"
+        = f.url_field :url, class: "form-control", placeholder: "https://app.asana.com/0/123456/789 or https://docs.google.com/..."
+        - if @one_on_one_link.errors[:url].any?
+          .invalid-feedback.d-block
+            = @one_on_one_link.errors[:url].join(', ')
+        %small.form-text.text-muted
+          Enter a link to your 1:1 document, project, or system. 
+          %br
+          Supported systems: Asana (with integration), Google Docs, Notion, etc.
+      
+      - if @one_on_one_link.url.present?
+        .mb-3
+          %strong Current Link:
+          = link_to @one_on_one_link.url, @one_on_one_link.url, target: '_blank', rel: 'noopener noreferrer', class: "ms-2"
+          - if @one_on_one_link.is_asana_link?
+            %span.badge.bg-info.ms-2 Asana Project Detected
+      
+      - if @one_on_one_link.is_asana_link? && !@one_on_one_link.has_deep_integration?
+        .alert.alert-info
+          %strong Asana Project Detected
+          %p.mb-2
+            This appears to be an Asana project link. 
+            %br
+            To enable full integration (sections, tasks, etc.), you'll need to connect your Asana account.
+          %p.mb-0
+            %em Integration setup will be available in a future phase.
+      
+      - if @one_on_one_link.has_deep_integration?
+        .alert.alert-success
+          %strong Deep Integration Active
+          %p.mb-0
+            This 1:1 is fully integrated. 
+            %br
+            - if @one_on_one_link.asana_project_id
+              Asana Project ID: #{@one_on_one_link.asana_project_id}
+      
+      .d-flex.gap-2
+        = f.submit "Save 1:1 Link", class: "btn btn-primary"
+        = link_to "Cancel", organization_person_check_ins_path(@organization, @person), class: "btn btn-outline-secondary"
+

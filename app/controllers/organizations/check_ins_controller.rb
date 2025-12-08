@@ -34,6 +34,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     load_goals
     load_stories
     load_prompts
+    load_one_on_one
   end
   
   def update
@@ -270,6 +271,17 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
       @recent_prompts = []
       @open_prompts_count = 0
       @prompts_url = organization_prompts_path(@organization)
+    end
+  end
+
+  def load_one_on_one
+    # Load one-on-one link for the teammate
+    if @teammate
+      @one_on_one_link = @teammate.one_on_one_link
+      @one_on_one_url = organization_person_one_on_one_link_path(@organization, @person)
+    else
+      @one_on_one_link = nil
+      @one_on_one_url = organization_person_one_on_one_link_path(@organization, @person)
     end
   end
 

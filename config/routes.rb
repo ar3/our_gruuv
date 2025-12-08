@@ -175,6 +175,8 @@ get '/login', to: 'auth#login', as: :login
         post :save_and_redirect, on: :member
       end
       
+      resource :one_on_one_link, only: [:show, :update]
+      
       # Finalization flow (separate from check-ins)
       resource :finalization, only: [:show, :create] do
         patch :acknowledge, on: :member

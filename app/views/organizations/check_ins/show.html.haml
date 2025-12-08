@@ -206,6 +206,9 @@
 -# Prompts/Reflections Section (Read-Only)
 = render 'prompts_section'
 
+-# 1:1 Area Section (Read-Only)
+= render 'one_on_one_section'
+
 = form_with url: organization_person_check_ins_path(@organization, @person), method: :patch, scope: :check_ins do |f|
   
   -# Position Section

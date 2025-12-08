@@ -1,0 +1,48 @@
+= render 'shared/section_header', 
+         title: '1:1 Area', 
+         icon: 'bi-link-45deg', 
+         description: 'Headlines, todos, and topics to discuss'
+
+.card.mb-4
+  .card-body
+    - if @one_on_one_link&.url.present?
+      .mb-3
+        %p.mb-2
+          %strong 1:1 Source:
+          = link_to @one_on_one_link.url, @one_on_one_link.url, target: '_blank', rel: 'noopener noreferrer'
+        - if @one_on_one_link.is_asana_link?
+          %span.badge.bg-info Asana Project
+        - if @one_on_one_link.has_deep_integration?
+          %span.badge.bg-success.ms-2 Integrated
+          - if @one_on_one_link.asana_project_id
+            %small.text-muted.ms-2
+              Project ID: #{@one_on_one_link.asana_project_id}
+      
+      -# Placeholder for headlines, todos, and issues/topics/opportunities
+      -# These will be populated when deep integration is set up (e.g., Asana)
+      - if @one_on_one_link.has_deep_integration?
+        .alert.alert-info
+          %strong Deep Integration Active
+          %p.mb-0.mt-2
+            This 1:1 is connected to an external system. 
+            %br
+            Headlines, todos, and discussion topics will be displayed here once fully integrated.
+      - else
+        .alert.alert-warning
+          %strong No Deep Integration
+          %p.mb-0.mt-2
+            This 1:1 link is not yet integrated. 
+            %br
+            Connect your account to enable automatic syncing of headlines, todos, and discussion topics.
+    - else
+      %p.text-muted.mb-3 No 1:1 link configured yet.
+      %p.text-muted.mb-3
+        Add a link to your 1:1 document, project, or system to get started.
+    
+    .d-grid
+      = button_to "Manage 1:1 Area", 
+                  save_and_redirect_organization_person_check_ins_path(@organization, @person), 
+                  method: :post,
+                  params: { redirect_url: @one_on_one_url },
+                  class: "btn btn-outline-primary"
+

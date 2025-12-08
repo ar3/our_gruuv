@@ -968,5 +968,28 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         expect(assigns(:prompts_url)).to be_present
       end
     end
+
+    context 'load_one_on_one' do
+      before do
+        sign_in_as_teammate(manager, organization)
+        employment_tenure
+      end
+
+      it 'loads one-on-one link when it exists' do
+        one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789')
+        
+        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        
+        expect(assigns(:one_on_one_link)).to eq(one_on_one_link)
+        expect(assigns(:one_on_one_url)).to be_present
+      end
+
+      it 'handles empty state when no one-on-one link exists' do
+        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        
+        expect(assigns(:one_on_one_link)).to be_nil
+        expect(assigns(:one_on_one_url)).to be_present
+      end
+    end
   end
 end
