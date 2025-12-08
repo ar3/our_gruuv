@@ -33,6 +33,7 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     @relevant_abilities = load_relevant_abilities || []
     load_goals
     load_stories
+    load_prompts
   end
   
   def update
@@ -225,6 +226,50 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
       @stories_count = 0
       @recent_stories = []
       @stories_filter_url = organization_observations_path(@organization)
+    end
+  end
+
+  def load_prompts
+    # Load prompts visible to current user for the teammate
+    if @teammate && @organization
+      company = @organization.root_company || @organization
+      
+      # Find CompanyTeammate for this person in the company
+      company_teammate = if @teammate.is_a?(CompanyTeammate) && @teammate.organization == company
+        @teammate
+      else
+        CompanyTeammate.find_by(organization: company, person: @person)
+      end
+      
+      if company_teammate && current_company_teammate
+        # Use policy scope to get accessible prompts
+        pundit_user = OpenStruct.new(user: current_company_teammate, impersonating_teammate: nil)
+        policy = PromptPolicy::Scope.new(pundit_user, Prompt)
+        accessible_prompts = policy.resolve
+        
+        # Filter to prompts for this teammate
+        prompts_for_teammate = accessible_prompts.where(company_teammate: company_teammate)
+        
+        # Get recent prompts (last 3, ordered by created_at desc)
+        @recent_prompts = prompts_for_teammate
+          .includes(:prompt_template, :prompt_answers)
+          .order(created_at: :desc)
+          .limit(3)
+        
+        # Get open prompts count
+        @open_prompts_count = prompts_for_teammate.open.count
+        
+        # Build prompts URL
+        @prompts_url = organization_prompts_path(@organization, teammate: company_teammate.id)
+      else
+        @recent_prompts = []
+        @open_prompts_count = 0
+        @prompts_url = organization_prompts_path(@organization)
+      end
+    else
+      @recent_prompts = []
+      @open_prompts_count = 0
+      @prompts_url = organization_prompts_path(@organization)
     end
   end
 

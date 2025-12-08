@@ -203,6 +203,9 @@
 -# Active Goals Section (Read-Only)
 = render 'goals_section'
 
+-# Prompts/Reflections Section (Read-Only)
+= render 'prompts_section'
+
 = form_with url: organization_person_check_ins_path(@organization, @person), method: :patch, scope: :check_ins do |f|
   
   -# Position Section

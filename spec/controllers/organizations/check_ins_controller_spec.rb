@@ -911,5 +911,62 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         expect(assigns(:stories_filter_url)).to be_present
       end
     end
+
+    context 'load_prompts' do
+      before do
+        sign_in_as_teammate(manager, organization)
+        employment_tenure
+      end
+
+      it 'loads recent prompts and open prompts count' do
+        # Find or create company teammate for employee
+        company = organization.root_company || organization
+        company_teammate = CompanyTeammate.find_or_create_by(person: employee, organization: company) do |ct|
+          ct.type = 'CompanyTeammate'
+        end
+        
+        # Create prompt templates
+        template1 = create(:prompt_template, company: company)
+        template2 = create(:prompt_template, company: company)
+        template3 = create(:prompt_template, company: company)
+        template4 = create(:prompt_template, company: company)
+        
+        # Create prompts (one per template to avoid validation error)
+        prompt1 = create(:prompt, company_teammate: company_teammate, prompt_template: template1, created_at: 1.day.ago)
+        prompt2 = create(:prompt, company_teammate: company_teammate, prompt_template: template2, created_at: 2.days.ago)
+        prompt3 = create(:prompt, company_teammate: company_teammate, prompt_template: template3, created_at: 3.days.ago, closed_at: 1.day.ago)
+        prompt4 = create(:prompt, company_teammate: company_teammate, prompt_template: template4, created_at: 4.days.ago)
+        
+        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        
+        expect(assigns(:recent_prompts).count).to eq(3) # Limited to 3
+        expect(assigns(:recent_prompts)).to include(prompt1, prompt2, prompt3)
+        expect(assigns(:recent_prompts)).not_to include(prompt4)
+        expect(assigns(:open_prompts_count)).to eq(3) # prompt1, prompt2, prompt4 (prompt3 is closed)
+        expect(assigns(:prompts_url)).to be_present
+      end
+
+      it 'handles empty state when no prompts' do
+        # Find or create company teammate for employee
+        company = organization.root_company || organization
+        CompanyTeammate.find_or_create_by(person: employee, organization: company) do |ct|
+          ct.type = 'CompanyTeammate'
+        end
+        
+        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        
+        expect(assigns(:recent_prompts)).to be_empty
+        expect(assigns(:open_prompts_count)).to eq(0)
+        expect(assigns(:prompts_url)).to be_present
+      end
+
+      it 'handles case when no company teammate exists' do
+        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        
+        expect(assigns(:recent_prompts)).to be_empty
+        expect(assigns(:open_prompts_count)).to eq(0)
+        expect(assigns(:prompts_url)).to be_present
+      end
+    end
   end
 end
