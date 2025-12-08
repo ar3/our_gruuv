@@ -18,15 +18,45 @@
             %small.text-muted.ms-2
               Project ID: #{@one_on_one_link.asana_project_id}
       
-      -# Placeholder for headlines, todos, and issues/topics/opportunities
-      -# These will be populated when deep integration is set up (e.g., Asana)
-      - if @one_on_one_link.has_deep_integration?
+      -# Display Asana project data if integrated
+      - if @one_on_one_link.is_asana_link? && @one_on_one_link.has_deep_integration? && @teammate&.has_asana_identity? && @asana_sections.any?
+        .mt-3
+          %h5.mb-3 Project Sections & Tasks
+          - @asana_sections.each do |section|
+            .card.mb-3
+              .card-header
+                %strong= section['name'] || 'Unnamed Section'
+              .card-body
+                - section_tasks = @asana_section_tasks[section['gid']] || []
+                - if section_tasks.any?
+                  %ul.list-unstyled.mb-0
+                    - section_tasks.each do |task|
+                      %li.mb-2
+                        %i.bi.bi-circle.me-2
+                        - task_url = AsanaService.task_url(task['gid'], @one_on_one_link.asana_project_id)
+                        = link_to task['name'], task_url, target: '_blank', rel: 'noopener noreferrer', class: 'text-decoration-none'
+                        - if task['due_on']
+                          %small.text-muted.ms-2
+                            Due: #{Date.parse(task['due_on']).strftime('%b %d, %Y')}
+                - else
+                  %p.text-muted.mb-0 No incomplete tasks in this section.
+      - elsif @one_on_one_link.has_deep_integration?
         .alert.alert-info
           %strong Deep Integration Active
           %p.mb-0.mt-2
             This 1:1 is connected to an external system. 
             %br
             Headlines, todos, and discussion topics will be displayed here once fully integrated.
+      - elsif @one_on_one_link.is_asana_link?
+        .alert.alert-warning
+          %strong Asana Project Detected
+          %p.mb-0.mt-2
+            This is an Asana project link. 
+            %br
+            - if @teammate && !@teammate.has_asana_identity?
+              Connect your Asana account to enable automatic syncing of sections and tasks.
+            - else
+              Integration will be enabled after connecting your account.
       - else
         .alert.alert-warning
           %strong No Deep Integration

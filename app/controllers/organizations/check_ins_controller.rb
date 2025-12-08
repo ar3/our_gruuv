@@ -279,9 +279,35 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
     if @teammate
       @one_on_one_link = @teammate.one_on_one_link
       @one_on_one_url = organization_person_one_on_one_link_path(@organization, @person)
+      
+      # If Asana integration is active, fetch project data
+      if @one_on_one_link&.is_asana_link? && @one_on_one_link.has_deep_integration? && @teammate.has_asana_identity?
+        asana_service = AsanaService.new(@teammate)
+        project_id = @one_on_one_link.asana_project_id
+        
+        if project_id && asana_service.authenticated?
+          # Fetch project sections
+          @asana_sections = asana_service.fetch_project_sections(project_id)
+          
+          # Fetch incomplete tasks for each section
+          @asana_section_tasks = {}
+          @asana_sections.each do |section|
+            tasks = asana_service.fetch_section_tasks(section['gid'])
+            @asana_section_tasks[section['gid']] = tasks.reject { |task| task['completed'] == true }
+          end
+        else
+          @asana_sections = []
+          @asana_section_tasks = {}
+        end
+      else
+        @asana_sections = []
+        @asana_section_tasks = {}
+      end
     else
       @one_on_one_link = nil
       @one_on_one_url = organization_person_one_on_one_link_path(@organization, @person)
+      @asana_sections = []
+      @asana_section_tasks = {}
     end
   end
 

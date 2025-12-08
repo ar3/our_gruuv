@@ -113,6 +113,18 @@ class Teammate < ApplicationRecord
     teammate_identities.slack.exists?
   end
 
+  def asana_identity
+    teammate_identities.asana.first
+  end
+
+  def asana_user_id
+    asana_identity&.uid
+  end
+
+  def has_asana_identity?
+    teammate_identities.asana.exists?
+  end
+
   def jira_identity
     teammate_identities.jira.first
   end

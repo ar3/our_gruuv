@@ -57,6 +57,9 @@ get '/login', to: 'auth#login', as: :login
   # Slack OAuth callback (fixed URL for Slack)
   get 'slack/oauth/callback', to: 'organizations/slack/oauth#callback'
   
+  # Asana OAuth callback (fixed URL for Asana)
+  get 'asana/oauth/callback', to: 'organizations/asana/oauth#callback'
+  
   # Slack webhooks (support both /slack/interactions and /webhooks/slack/interactions)
   post 'slack/interactions', to: 'webhooks/slack#create'
   namespace :webhooks do
@@ -175,7 +178,11 @@ get '/login', to: 'auth#login', as: :login
         post :save_and_redirect, on: :member
       end
       
-      resource :one_on_one_link, only: [:show, :update]
+      resource :one_on_one_link, only: [:show, :update] do
+        member do
+          get 'asana/oauth/authorize', to: 'asana/oauth#authorize', as: :asana_oauth_authorize
+        end
+      end
       
       # Finalization flow (separate from check-ins)
       resource :finalization, only: [:show, :create] do
