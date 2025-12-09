@@ -134,12 +134,12 @@ module PeopleHelper
     
     # Check for check_ins controller
     if controller_name == 'check_ins' && action_name == 'show'
-      return 'Self-Check-In Mode'
+      return 'Check-In'
     end
     
     # Check for finalizations controller
     if controller_name == 'finalizations' && action_name == 'show'
-      return 'Manager-Check-In Mode'
+      return 'Check-In Review'
     end
     
     # Check for position controller
@@ -157,11 +157,11 @@ module PeopleHelper
     when 'complete_picture'
       'Active Job View'
     when 'audit'
-      'Acknowledge-Check-In Mode'
+      'Acknowledgement'
     when 'growth'
       'Growth View'
     when 'check_in'
-      'Self-Check-In Mode'
+      'Check-In'
     else
       action_name.titleize
     end

@@ -50,48 +50,48 @@
       - if action_name == 'show' && controller_name == 'check_ins'
         .dropdown-item.text-muted
           %i.bi.bi-chat-square-text.me-2
-          Self-Check-In Mode (Active)
+          Check-In (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).can_view_manage_mode?
         = link_to organization_person_check_ins_path(current_organization, @person), class: 'dropdown-item' do
           %i.bi.bi-chat-square-text.me-2
-          Self-Check-In Mode
+          Check-In
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-chat-square-text.me-2
-          Self-Check-In Mode
+          Check-In
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
     
     %li
       - if action_name == 'show' && controller_name == 'finalizations'
         .dropdown-item.text-muted
           %i.bi.bi-check-circle.me-2
-          Manager-Check-In Mode (Active)
+          Check-In Review (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).can_view_manage_mode?
         = link_to organization_person_finalization_path(current_organization, @person), class: 'dropdown-item' do
           %i.bi.bi-check-circle.me-2
-          Manager-Check-In Mode
+          Check-In Review
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-check-circle.me-2
-          Manager-Check-In Mode
+          Check-In Review
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access finalization features"}
       
     %li
       - if action_name == 'audit'
         .dropdown-item.text-muted
           %i.bi.bi-clock-history.me-2
-          Acknowledge-Check-In Mode (Active)
+          Acknowledgement (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@person).audit?
         = link_to audit_organization_employee_path(current_organization, @person), class: 'dropdown-item' do
           %i.bi.bi-clock-history.me-2
-          Acknowledge-Check-In Mode
+          Acknowledgement
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-clock-history.me-2
-          Acknowledge-Check-In Mode
+          Acknowledgement
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need MAAP management permissions for this organization or to be in the managerial hierarchy to access audit features"}
       
     %li

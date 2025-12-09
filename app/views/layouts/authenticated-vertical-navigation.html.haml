@@ -108,18 +108,15 @@
         / Header Area - Title (left) + Primary Action/View Switcher (right)
         - if content_for?(:header)
           .row.mb-1
-            .col-12
+            .col-9
               .d-flex.justify-content-between.align-items-center
                 .flex-grow-1
                   = yield :header
-              -# TODO: Remove this once we have a consistent way to handle header actions
+            .col-3.text-end
               - if content_for?(:header_action)
                 .ms-3
                   = yield :header_action
-              / Action Area - Top-right actions (optional, designed for 1 button but flexible)
-              - if content_for?(:top_actions)
-                .ms-3
-                  = yield :top_actions
+
         
         / Navigation Area - "Back to X" links (optional)
         - if content_for?(:go_back_link)

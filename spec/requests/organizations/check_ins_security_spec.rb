@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe 'Self-Check-In Security', type: :request do
+RSpec.describe 'Check-In Security', type: :request do
   let(:organization) { create(:organization, :company) }
   let(:other_organization) { create(:organization, :company) }
   let(:person) { create(:person) }

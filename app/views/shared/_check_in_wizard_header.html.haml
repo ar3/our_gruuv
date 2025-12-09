@@ -11,22 +11,22 @@
     .d-flex.justify-content-between
       - if current_step == 1
         = link_to step1_path, class: "text-primary fw-bold text-decoration-none" do
-          Step 1: Individual Check-in
+          Step 1: Check-in
       - else
         = link_to step1_path, class: "text-muted text-decoration-none" do
-          Step 1: Individual Check-in
+          Step 1: Check-in
       
       - if current_step == 2
         = link_to step2_path, class: "text-primary fw-bold text-decoration-none" do
-          Step 2: Manager Confirmation
+          Step 2: Review
       - else
         = link_to step2_path, class: "text-muted text-decoration-none" do
-          Step 2: Manager Confirmation
+          Step 2: Review
       
       - if current_step == 3
         = link_to step3_path, class: "text-primary fw-bold text-decoration-none" do
-          Step 3: Employee Acknowledgement
+          Step 3: Acknowledgement
       - else
         = link_to step3_path, class: "text-muted text-decoration-none" do
-          Step 3: Employee Acknowledgement
+          Step 3: Acknowledgement
 
