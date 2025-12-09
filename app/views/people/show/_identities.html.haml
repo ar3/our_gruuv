@@ -17,26 +17,27 @@
                 %th Connected
                 %th Actions
             %tbody
-              - @person.person_identities.each do |identity|
-                %tr
-                  %td
-                    = identity_profile_image(identity, size: 24)
-                    %i{class: "bi #{identity_provider_icon(identity)} me-2"}
-                    = identity_provider_name(identity)
-                  %td
-                    - if identity.name.present?
-                      = identity.name
-                    - else
-                      %span.text-muted Not provided
-                  %td= identity.email
-                  %td= identity_status_badge(identity)
-                  %td= identity.created_at.strftime('%B %d, %Y')
-                  %td
-                    = disconnect_identity_button(identity)
-                %tr
-                  %td{colspan: 6}
-                    = identity_raw_data_display(identity)
-              - if @person.person_identities.none?
+              - all_identities = @person.person_identities.to_a + (@teammate_identities || [])
+              - if all_identities.any?
+                - all_identities.each do |identity|
+                  %tr
+                    %td
+                      = identity_profile_image(identity, size: 24)
+                      %i{class: "bi #{identity_provider_icon(identity)} me-2"}
+                      = identity_provider_name(identity)
+                    %td
+                      - if identity.name.present?
+                        = identity.name
+                      - else
+                        %span.text-muted Not provided
+                    %td= identity.email
+                    %td= identity_status_badge(identity)
+                    %td= identity.created_at.strftime('%B %d, %Y')
+                    %td
+                      .d-flex.gap-2.align-items-center
+                        = identity_raw_data_button(identity)
+                        = disconnect_identity_button(identity)
+              - else
                 %tr
                   %td{colspan: 6}
                     .text-muted No connected accounts found.
@@ -46,25 +47,11 @@
           = link_to connect_google_identity_path, class: "btn btn-outline-primary" do
             %i.bi.bi-google.me-2
             Connect Google Account
+          - if @teammate && !@teammate.has_asana_identity?
+            = link_to asana_oauth_authorize_organization_person_path(organization, @person), class: "btn btn-outline-primary" do
+              %i.bi.bi-kanban.me-2
+              Connect Asana Account
           - if @person.person_identities.any?
             = link_to "#", class: "btn btn-outline-info" do
               %i.bi.bi-shield.me-2
               Security Settings
-        
-        .mt-4
-          %h6.text-muted.border-bottom.pb-2 Slack Integration
-          - slack_identity = @person.teammates.find_by(organization: current_organization)&.slack_identity
-          - if slack_identity
-            .d-flex.align-items-center.mb-2
-              %i.bi.bi-check-circle.text-success.me-2
-              %span Connected to #{current_organization.name} Slack workspace
-            - if slack_identity.profile_image_url.present?
-              .mb-2
-                = image_tag slack_identity.profile_image_url, class: "rounded-circle", style: "width: 48px; height: 48px; object-fit: cover;", alt: slack_identity.name || "Slack profile"
-            - if slack_identity.name.present?
-              %small.text-muted Slack name: #{slack_identity.name}
-          - else
-            .text-muted
-              %small Not connected to #{current_organization.name} Slack workspace
-              %br
-              %small An administrator can refresh Slack profiles to connect your account.

@@ -105,4 +105,145 @@ RSpec.describe PeopleHelper, type: :helper do
       end
     end
   end
+
+  describe '#identity_provider_icon' do
+    let(:person) { create(:person) }
+    let(:organization) { create(:organization, :company) }
+    let(:teammate) { create(:teammate, person: person, organization: organization) }
+
+    it 'returns bi-google for google_oauth2 provider' do
+      identity = create(:person_identity, :google, person: person)
+      expect(helper.identity_provider_icon(identity)).to eq('bi-google')
+    end
+
+    it 'returns bi-envelope for email provider' do
+      identity = create(:person_identity, :email, person: person)
+      expect(helper.identity_provider_icon(identity)).to eq('bi-envelope')
+    end
+
+    it 'returns bi-slack for slack provider' do
+      identity = create(:teammate_identity, :slack, teammate: teammate)
+      expect(helper.identity_provider_icon(identity)).to eq('bi-slack')
+    end
+
+    it 'returns bi-kanban for asana provider' do
+      identity = create(:teammate_identity, :asana, teammate: teammate)
+      expect(helper.identity_provider_icon(identity)).to eq('bi-kanban')
+    end
+  end
+
+  describe '#identity_provider_name' do
+    let(:person) { create(:person) }
+    let(:organization) { create(:organization, :company) }
+    let(:teammate) { create(:teammate, person: person, organization: organization) }
+
+    it 'returns Google for google_oauth2 provider' do
+      identity = create(:person_identity, :google, person: person)
+      expect(helper.identity_provider_name(identity)).to eq('Google')
+    end
+
+    it 'returns Email for email provider' do
+      identity = create(:person_identity, :email, person: person)
+      expect(helper.identity_provider_name(identity)).to eq('Email')
+    end
+
+    it 'returns Slack for slack provider' do
+      identity = create(:teammate_identity, :slack, teammate: teammate)
+      expect(helper.identity_provider_name(identity)).to eq('Slack')
+    end
+
+    it 'returns Asana for asana provider' do
+      identity = create(:teammate_identity, :asana, teammate: teammate)
+      expect(helper.identity_provider_name(identity)).to eq('Asana')
+    end
+  end
+
+  describe '#identity_status_badge' do
+    let(:person) { create(:person) }
+    let(:organization) { create(:organization, :company, name: 'Test Company') }
+    let(:teammate) { create(:teammate, person: person, organization: organization) }
+
+    context 'for PersonIdentity' do
+      it 'returns Connected badge for Google identity' do
+        identity = create(:person_identity, :google, person: person)
+        result = helper.identity_status_badge(identity)
+        expect(result).to include('Connected')
+        expect(result).to include('badge bg-success')
+      end
+
+      it 'returns Email badge for email identity' do
+        identity = create(:person_identity, :email, person: person)
+        result = helper.identity_status_badge(identity)
+        expect(result).to include('Email')
+        expect(result).to include('badge bg-secondary')
+      end
+    end
+
+    context 'for TeammateIdentity' do
+      it 'returns organization name badge for Slack identity' do
+        identity = create(:teammate_identity, :slack, teammate: teammate)
+        result = helper.identity_status_badge(identity)
+        expect(result).to include(organization.display_name)
+        expect(result).to include('badge bg-info')
+      end
+
+      it 'returns organization name badge for Asana identity' do
+        identity = create(:teammate_identity, :asana, teammate: teammate)
+        result = helper.identity_status_badge(identity)
+        expect(result).to include(organization.display_name)
+        expect(result).to include('badge bg-info')
+      end
+    end
+  end
+
+  describe '#disconnect_identity_button' do
+    let(:person) { create(:person) }
+    let(:organization) { create(:organization, :company) }
+    let(:teammate) { create(:teammate, person: person, organization: organization) }
+
+    before do
+      # Stub the helper methods that are called
+      allow(helper).to receive(:can_disconnect_identity?).and_return(true)
+      allow(helper).to receive(:disconnect_identity_path).and_return('/profile/identities/1')
+    end
+
+    it 'returns button for PersonIdentity' do
+      identity = create(:person_identity, :google, person: person)
+      result = helper.disconnect_identity_button(identity)
+      expect(result).to be_present
+      expect(result).to include('Disconnect')
+    end
+
+    it 'returns nil for TeammateIdentity' do
+      identity = create(:teammate_identity, :slack, teammate: teammate)
+      result = helper.disconnect_identity_button(identity)
+      expect(result).to be_nil
+    end
+  end
+
+  describe '#identity_raw_data_button' do
+    let(:person) { create(:person) }
+    let(:organization) { create(:organization, :company) }
+    let(:teammate) { create(:teammate, person: person, organization: organization) }
+
+    it 'returns details element for identity with raw_data' do
+      identity = create(:person_identity, :google, person: person, raw_data: { 'test' => 'data' })
+      result = helper.identity_raw_data_button(identity)
+      expect(result).to be_present
+      expect(result).to include('View Raw Data')
+    end
+
+    it 'returns nil for identity without raw_data' do
+      identity = create(:person_identity, :google, person: person, raw_data: nil)
+      result = helper.identity_raw_data_button(identity)
+      expect(result).to be_nil
+    end
+
+    it 'works for TeammateIdentity' do
+      identity = create(:teammate_identity, :slack, teammate: teammate, raw_data: { 'test' => 'data' })
+      result = helper.identity_raw_data_button(identity)
+      expect(result).to be_present
+      expect(result).to include('View Raw Data')
+    end
+  end
 end

@@ -171,6 +171,7 @@ get '/login', to: 'auth#login', as: :login
         post :update_permission
         get :assignment_selection
         post :update_assignments
+        get 'asana/oauth/authorize', to: 'asana/oauth#authorize', as: :asana_oauth_authorize
       end
       
       # Unified check-ins page (spreadsheet-style giant form)
@@ -180,7 +181,7 @@ get '/login', to: 'auth#login', as: :login
       
       resource :one_on_one_link, only: [:show, :update] do
         member do
-          get 'asana/oauth/authorize', to: 'asana/oauth#authorize', as: :asana_oauth_authorize
+          get 'asana/oauth/authorize', to: 'asana/oauth#authorize', as: :asana_oauth_authorize_one_on_one
         end
       end
       

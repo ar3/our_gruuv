@@ -5,6 +5,10 @@ module PeopleHelper
       'bi-google'
     when 'email'
       'bi-envelope'
+    when 'slack'
+      'bi-slack'
+    when 'asana'
+      'bi-kanban'
     else
       'bi-person'
     end
@@ -16,16 +20,29 @@ module PeopleHelper
       'Google'
     when 'email'
       'Email'
+    when 'slack'
+      'Slack'
+    when 'asana'
+      'Asana'
     else
       identity.provider.titleize
     end
   end
 
   def identity_status_badge(identity)
-    if identity.google?
-      content_tag :span, 'Connected', class: 'badge bg-success'
+    case identity
+    when PersonIdentity
+      if identity.respond_to?(:google?) && identity.google?
+        content_tag :span, 'Connected', class: 'badge bg-success'
+      else
+        content_tag :span, 'Email', class: 'badge bg-secondary'
+      end
+    when TeammateIdentity
+      # Show workspace/organization context for teammate identities
+      organization_name = identity.teammate&.organization&.display_name || 'Workspace'
+      content_tag :span, organization_name, class: 'badge bg-info'
     else
-      content_tag :span, 'Email', class: 'badge bg-secondary'
+      content_tag :span, 'Unknown', class: 'badge bg-secondary'
     end
   end
 
@@ -43,6 +60,8 @@ module PeopleHelper
   end
 
   def disconnect_identity_button(identity)
+    # Only show disconnect button for person identities, not teammate identities
+    return unless identity.is_a?(PersonIdentity)
     return unless can_disconnect_identity?(identity)
     
     button_to disconnect_identity_path(identity), 
@@ -75,6 +94,15 @@ module PeopleHelper
     return unless identity.raw_data.present?
     
     content_tag :details, class: "mt-2" do
+      content_tag(:summary, "View Raw Data", class: "btn btn-sm btn-outline-info") +
+      content_tag(:pre, JSON.pretty_generate(identity.raw_data), class: "mt-2 p-2 bg-light rounded small")
+    end
+  end
+
+  def identity_raw_data_button(identity)
+    return unless identity.raw_data.present?
+    
+    content_tag :details, class: "d-inline-block" do
       content_tag(:summary, "View Raw Data", class: "btn btn-sm btn-outline-info") +
       content_tag(:pre, JSON.pretty_generate(identity.raw_data), class: "mt-2 p-2 bg-light rounded small")
     end

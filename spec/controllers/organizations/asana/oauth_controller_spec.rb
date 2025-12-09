@@ -22,16 +22,33 @@ RSpec.describe Organizations::Asana::OauthController, type: :controller do
   end
 
   describe 'GET #authorize' do
-    it 'redirects to Asana OAuth URL' do
-      get :authorize, params: { 
-        organization_id: organization.id, 
-        person_id: employee.id,
-        one_on_one_link_id: 'dummy' # Route requires this but we don't use it
-      }
-      
-      expect(response).to have_http_status(:redirect)
-      expect(response.location).to include('app.asana.com/-/oauth_authorize')
-      expect(response.location).to include('client_id=')
+    context 'from one_on_one_link route' do
+      it 'redirects to Asana OAuth URL' do
+        get :authorize, params: { 
+          organization_id: organization.id, 
+          person_id: employee.id,
+          one_on_one_link_id: 'dummy' # Route requires this but we don't use it
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response.location).to include('app.asana.com/-/oauth_authorize')
+        expect(response.location).to include('client_id=')
+        expect(response.location).to include('one_on_one') # State should include source
+      end
+    end
+
+    context 'from identities section route' do
+      it 'redirects to Asana OAuth URL with identities source' do
+        get :authorize, params: { 
+          organization_id: organization.id, 
+          person_id: employee.id
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response.location).to include('app.asana.com/-/oauth_authorize')
+        expect(response.location).to include('client_id=')
+        expect(response.location).to include('identities') # State should include source
+      end
     end
   end
 
@@ -63,7 +80,7 @@ RSpec.describe Organizations::Asana::OauthController, type: :controller do
     end
 
     it 'creates Asana identity on successful OAuth' do
-      state = "#{organization.id}_#{employee_teammate.id}"
+      state = "#{organization.id}_#{employee_teammate.id}_one_on_one"
       
       expect {
         get :callback, params: { code: oauth_code, state: state }
@@ -76,6 +93,24 @@ RSpec.describe Organizations::Asana::OauthController, type: :controller do
       expect(identity.name).to eq('Test User')
     end
 
+    it 'redirects to person show page when coming from identities section' do
+      state = "#{organization.id}_#{employee_teammate.id}_identities"
+      
+      get :callback, params: { code: oauth_code, state: state }
+      
+      expect(response).to redirect_to(organization_person_path(organization, employee))
+      expect(flash[:notice]).to include('Asana account connected successfully!')
+    end
+
+    it 'redirects to one_on_one_link page when coming from one_on_one_link' do
+      state = "#{organization.id}_#{employee_teammate.id}_one_on_one"
+      
+      get :callback, params: { code: oauth_code, state: state }
+      
+      expect(response).to redirect_to(organization_person_one_on_one_link_path(organization, employee))
+      expect(flash[:notice]).to include('Asana account connected successfully!')
+    end
+
     it 'updates existing Asana identity' do
       existing_identity = create(:teammate_identity, 
         teammate: employee_teammate, 
@@ -84,7 +119,7 @@ RSpec.describe Organizations::Asana::OauthController, type: :controller do
         email: 'old@example.com'
       )
       
-      state = "#{organization.id}_#{employee_teammate.id}"
+      state = "#{organization.id}_#{employee_teammate.id}_one_on_one"
       
       get :callback, params: { code: oauth_code, state: state }
       
@@ -98,11 +133,24 @@ RSpec.describe Organizations::Asana::OauthController, type: :controller do
         double(body: double(to_s: { 'error' => 'invalid_grant', 'error_description' => 'Invalid code' }.to_json))
       )
       
-      state = "#{organization.id}_#{employee_teammate.id}"
+      state = "#{organization.id}_#{employee_teammate.id}_one_on_one"
       
       get :callback, params: { code: 'invalid_code', state: state }
       
       expect(response).to redirect_to(organization_person_one_on_one_link_path(organization, employee))
+      expect(flash[:alert]).to include('Failed to connect Asana')
+    end
+
+    it 'redirects to person show page on error when coming from identities section' do
+      allow(HTTP).to receive(:post).and_return(
+        double(body: double(to_s: { 'error' => 'invalid_grant', 'error_description' => 'Invalid code' }.to_json))
+      )
+      
+      state = "#{organization.id}_#{employee_teammate.id}_identities"
+      
+      get :callback, params: { code: 'invalid_code', state: state }
+      
+      expect(response).to redirect_to(organization_person_path(organization, employee))
       expect(flash[:alert]).to include('Failed to connect Asana')
     end
   end

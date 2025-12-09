@@ -6,19 +6,19 @@ class Organizations::PeopleController < Organizations::OrganizationNamespaceBase
   def show
     authorize @person, :view_check_ins?, policy_class: PersonPolicy
     # Organization-scoped person view - filtered by the organization from the route
-    teammate = @person.teammates.find_by(organization: organization)
-    @employment_tenures = teammate&.employment_tenures&.includes(:company, :position, :manager)
+    @teammate = @person.teammates.find_by(organization: organization)
+    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, :manager)
                                  &.where(company: organization)
                                  &.order(started_at: :desc)
                                  &.decorate || []
-    @assignment_tenures = teammate&.assignment_tenures&.includes(:assignment)
+    @assignment_tenures = @teammate&.assignment_tenures&.includes(:assignment)
                                  &.joins(:assignment)
                                  &.where(assignments: { company: organization })
                                  &.order(started_at: :desc) || []
     @teammates = @person.teammates.includes(:organization)
+    @teammate_identities = @teammate&.teammate_identities || []
 
     # Preload huddle associations to avoid N+1 queries
-    teammate = @person.teammates.find_by(organization: organization)
     HuddleParticipant.joins(:teammate)
                     .where(teammates: { person: @person, organization: organization })
                     .includes(:huddle, huddle: :huddle_playbook)

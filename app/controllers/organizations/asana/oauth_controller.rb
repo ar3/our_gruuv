@@ -13,7 +13,9 @@ class Organizations::Asana::OauthController < ApplicationController
     # If you have "Full Permissions" enabled in Asana app settings, you can use 'default'
     # Otherwise, use specific scopes like: 'default' or 'tasks:read projects:read'
     scope = ENV.fetch('ASANA_OAUTH_SCOPE', 'default') # Can be overridden via env var
-    state = "#{@organization.id}_#{@teammate.id}" # Use organization and teammate IDs as state
+    # Store source in state: 'one_on_one' or 'identities'
+    source = params[:one_on_one_link_id].present? ? 'one_on_one' : 'identities'
+    state = "#{@organization.id}_#{@teammate.id}_#{source}" # Use organization, teammate IDs, and source as state
     
     oauth_url = "https://app.asana.com/-/oauth_authorize?client_id=#{client_id}&redirect_uri=#{CGI.escape(redirect_uri)}&response_type=code&scope=#{CGI.escape(scope)}&state=#{CGI.escape(state)}"
     
@@ -74,25 +76,52 @@ class Organizations::Asana::OauthController < ApplicationController
               one_on_one_link.save
             end
             
-            redirect_to organization_person_one_on_one_link_path(@organization, @teammate.person), 
-                        notice: 'Asana account connected successfully!'
+            # Redirect based on where the request came from (stored in state)
+            redirect_path = if @oauth_source == 'identities'
+              organization_person_path(@organization, @teammate.person)
+            else
+              organization_person_one_on_one_link_path(@organization, @teammate.person)
+            end
+            
+            redirect_to redirect_path, notice: 'Asana account connected successfully!'
           else
-            redirect_to organization_person_one_on_one_link_path(@organization, @teammate.person), 
-                        alert: "Failed to save Asana identity: #{identity.errors.full_messages.join(', ')}"
+            redirect_path = if @oauth_source == 'identities'
+              organization_person_path(@organization, @teammate.person)
+            else
+              organization_person_one_on_one_link_path(@organization, @teammate.person)
+            end
+            
+            redirect_to redirect_path, alert: "Failed to save Asana identity: #{identity.errors.full_messages.join(', ')}"
           end
         else
-          redirect_to organization_person_one_on_one_link_path(@organization, @teammate.person), 
-                      alert: 'Failed to get user information from Asana'
+          redirect_path = if @oauth_source == 'identities'
+            organization_person_path(@organization, @teammate.person)
+          else
+            organization_person_one_on_one_link_path(@organization, @teammate.person)
+          end
+          
+          redirect_to redirect_path, alert: 'Failed to get user information from Asana'
         end
       else
-        redirect_to organization_person_one_on_one_link_path(@organization, @teammate.person), 
-                    alert: "Failed to connect Asana: #{data['error_description'] || data['error'] || 'Unknown error'}"
+        redirect_path = if @oauth_source == 'identities'
+          organization_person_path(@organization, @teammate.person)
+        else
+          organization_person_one_on_one_link_path(@organization, @teammate.person)
+        end
+        
+        redirect_to redirect_path, alert: "Failed to connect Asana: #{data['error_description'] || data['error'] || 'Unknown error'}"
       end
     rescue => e
       Rails.logger.error "Asana OAuth error: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
-      redirect_to organization_person_one_on_one_link_path(@organization, @teammate.person), 
-                  alert: "Failed to connect Asana: #{e.message}"
+      
+      redirect_path = if @oauth_source == 'identities'
+        organization_person_path(@organization, @teammate.person)
+      else
+        organization_person_one_on_one_link_path(@organization, @teammate.person)
+      end
+      
+      redirect_to redirect_path, alert: "Failed to connect Asana: #{e.message}"
     end
   end
 
@@ -114,7 +143,12 @@ class Organizations::Asana::OauthController < ApplicationController
   def set_organization_from_state
     state = params[:state]
     if state.present?
-      org_id, teammate_id = state.split('_')
+      parts = state.split('_')
+      org_id = parts[0]
+      teammate_id = parts[1]
+      # Handle backward compatibility: old state format was just org_id_teammate_id
+      # New format is org_id_teammate_id_source
+      @oauth_source = parts[2] || 'one_on_one' # Default to one_on_one for backward compatibility
       @organization = Organization.find(org_id)
       @teammate = Teammate.find(teammate_id)
     else
