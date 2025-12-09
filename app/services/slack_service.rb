@@ -742,6 +742,61 @@ class SlackService
     end
   end
 
+  # Open or create a group DM (MPIM) with multiple users
+  def open_or_create_group_dm(user_ids:)
+    return { success: false, error: "Slack not configured" } unless slack_configured?
+    return { success: false, error: "At least 2 user IDs required for group DM" } if user_ids.length < 2
+
+    begin
+      response = @client.conversations_open(users: user_ids.join(','))
+
+      store_slack_response('conversations_open_group_dm', { user_ids: user_ids }, response)
+
+      if response['ok']
+        channel_id = response.dig('channel', 'id')
+        { success: true, channel_id: channel_id }
+      else
+        error = response['error'] || 'Unknown error'
+        { success: false, error: error }
+      end
+    rescue Slack::Web::Api::Errors::SlackError => e
+      Rails.logger.error "Slack: Error opening group DM - #{e.message}"
+      store_slack_response('conversations_open_group_dm', { user_ids: user_ids }, { error: e.message })
+      { success: false, error: e.message }
+    rescue => e
+      Rails.logger.error "Slack: Unexpected error opening group DM - #{e.message}"
+      { success: false, error: "Unexpected error: #{e.message}" }
+    end
+  end
+
+  # Post a message to a group DM channel
+  def post_group_dm(channel_id:, text:)
+    return { success: false, error: "Slack not configured" } unless slack_configured?
+
+    begin
+      response = @client.chat_postMessage(
+        channel: channel_id,
+        text: text
+      )
+
+      store_slack_response('chat_postMessage_group_dm', { channel_id: channel_id, text: text }, response)
+
+      if response['ok']
+        { success: true, message_id: response['ts'] }
+      else
+        error = response['error'] || 'Unknown error'
+        { success: false, error: error }
+      end
+    rescue Slack::Web::Api::Errors::SlackError => e
+      Rails.logger.error "Slack: Error posting group DM - #{e.message}"
+      store_slack_response('chat_postMessage_group_dm', { channel_id: channel_id }, { error: e.message })
+      { success: false, error: e.message }
+    rescue => e
+      Rails.logger.error "Slack: Unexpected error posting group DM - #{e.message}"
+      { success: false, error: "Unexpected error: #{e.message}" }
+    end
+  end
+
   def store_slack_response(method, request_params, response_data)
     return unless @organization&.slack_configuration.present?
     

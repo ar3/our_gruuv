@@ -329,18 +329,30 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
         update_attrs = attrs.except(:status, :assignment_id).reject { |k, v| v.blank? }
         check_in.update!(update_attrs) if update_attrs.present?
         
+        completion_service = CheckInCompletionService.new(check_in)
+        
         if @view_mode == :employee
-          check_in.complete_employee_side!
+          completion_service.complete_employee_side!
         elsif @view_mode == :manager
-          check_in.complete_manager_side!(completed_by: current_person)
+          completion_service.complete_manager_side!(completed_by: current_person)
         elsif @view_mode == :readonly
           # For readonly, determine which side to complete based on what fields are present
           if attrs[:employee_rating].present? || attrs[:employee_private_notes].present?
-            check_in.complete_employee_side!
+            completion_service.complete_employee_side!
           end
           if attrs[:manager_rating].present? || attrs[:manager_private_notes].present?
-            check_in.complete_manager_side!(completed_by: current_person)
+            completion_service.complete_manager_side!(completed_by: current_person)
           end
+        end
+
+        # Trigger notification if completion was detected
+        if completion_service.completion_detected?
+          CheckIns::NotifyCompletionJob.perform_and_get_result(
+            check_in_id: check_in.id,
+            check_in_type: 'AssignmentCheckIn',
+            completion_state: completion_service.completion_state,
+            organization_id: @organization.id
+          )
         end
       else
         # Save as draft - uncomplete if previously completed
@@ -379,18 +391,30 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
         update_attrs = attrs.except(:status, :aspiration_id).reject { |k, v| v.blank? }
         check_in.update!(update_attrs) if update_attrs.present?
         
+        completion_service = CheckInCompletionService.new(check_in)
+        
         if @view_mode == :employee
-          check_in.complete_employee_side!
+          completion_service.complete_employee_side!
         elsif @view_mode == :manager
-          check_in.complete_manager_side!(completed_by: current_person)
+          completion_service.complete_manager_side!(completed_by: current_person)
         elsif @view_mode == :readonly
           # For readonly, determine which side to complete based on what fields are present
           if attrs[:employee_rating].present? || attrs[:employee_private_notes].present?
-            check_in.complete_employee_side!
+            completion_service.complete_employee_side!
           end
           if attrs[:manager_rating].present? || attrs[:manager_private_notes].present?
-            check_in.complete_manager_side!(completed_by: current_person)
+            completion_service.complete_manager_side!(completed_by: current_person)
           end
+        end
+
+        # Trigger notification if completion was detected
+        if completion_service.completion_detected?
+          CheckIns::NotifyCompletionJob.perform_and_get_result(
+            check_in_id: check_in.id,
+            check_in_type: 'AspirationCheckIn',
+            completion_state: completion_service.completion_state,
+            organization_id: @organization.id
+          )
         end
       else
         # Save as draft - uncomplete if previously completed
@@ -422,10 +446,22 @@ class Organizations::CheckInsController < Organizations::OrganizationNamespaceBa
       update_attrs = attrs.except(:status).reject { |k, v| v.blank? }
       check_in.update!(update_attrs) if update_attrs.present?
       
+      completion_service = CheckInCompletionService.new(check_in)
+      
       if @view_mode == :employee
-        check_in.complete_employee_side!
+        completion_service.complete_employee_side!
       elsif @view_mode == :manager
-        check_in.complete_manager_side!(completed_by: current_person)
+        completion_service.complete_manager_side!(completed_by: current_person)
+      end
+
+      # Trigger notification if completion was detected
+      if completion_service.completion_detected?
+        CheckIns::NotifyCompletionJob.perform_and_get_result(
+          check_in_id: check_in.id,
+          check_in_type: 'PositionCheckIn',
+          completion_state: completion_service.completion_state,
+          organization_id: @organization.id
+        )
       end
     else
       # Save as draft - uncomplete if previously completed
