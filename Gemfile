@@ -91,7 +91,7 @@ end
 
 gem "rspec-rails", "~> 8.0", groups: [:development, :test]
 
-gem "shoulda-matchers", "~> 6.5", group: :test
+gem "shoulda-matchers", "~> 7.0", group: :test
 gem "factory_bot_rails", "~> 6.4", group: :test
 
 gem "pry", "~> 0.15.2", groups: [:development, :test]
