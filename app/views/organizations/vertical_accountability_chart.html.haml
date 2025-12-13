@@ -19,6 +19,28 @@
         .tree-visualization{style: "padding: 20px;"}
           - @hierarchy_tree.each do |root_node|
             = render 'organizations/vertical_accountability_chart/employee_node', node: root_node, depth: 0, organization: @organization
+        
+        - if @unassigned_teammates.any?
+          %hr.mt-5.mb-4
+          .mt-4
+            %h4.mb-3
+              %i.bi.bi-people.me-2
+              Company Teammates Without Active Positions
+            .row
+              - @unassigned_teammates.each do |teammate|
+                .col-md-6.col-lg-4.mb-3
+                  .card
+                    .card-body.p-2
+                      .d-flex.align-items-start
+                        .flex-shrink-0.me-3
+                          = teammate_profile_image(teammate, size: 48)
+                        .flex-grow-1
+                          - if policy(teammate).show?
+                            = link_to teammate.person.display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
+                          - else
+                            %span.fw-bold= teammate.person.display_name
+                          %br
+                          %span.text-muted.small= teammate.person.email
 
 :javascript
   // Handle collapse/expand icon toggle

@@ -27,6 +27,10 @@ class Seat < ApplicationRecord
     "#{position_type.external_title} - #{seat_needed_by.strftime('%B %Y')}"
   end
 
+  def to_s
+    display_name
+  end
+
   def title
     position_type.external_title
   end

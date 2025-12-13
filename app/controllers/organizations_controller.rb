@@ -308,6 +308,23 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     
     query = VerticalHierarchyQuery.new(organization: @organization)
     @hierarchy_tree = query.call
+    
+    # Find company teammates without active employment tenures
+    org_ids = @organization.company? ? @organization.self_and_descendants.map(&:id) : [@organization.id]
+    teammates_with_active_tenures = EmploymentTenure.active
+                                                     .joins(:teammate)
+                                                     .where(company_id: org_ids)
+                                                     .where(teammates: { organization_id: org_ids })
+                                                     .select('DISTINCT teammates.id')
+    
+    @unassigned_teammates = Teammate.where(organization_id: org_ids)
+                                     .where(type: 'CompanyTeammate')
+                                     .where.not(id: teammates_with_active_tenures)
+                                     .where.not(first_employed_at: nil)
+                                     .where(last_terminated_at: nil)
+                                     .includes(:person)
+                                     .order('people.last_name, people.first_name')
+                                     .joins(:person)
   end
 
   def pundit_healthcheck

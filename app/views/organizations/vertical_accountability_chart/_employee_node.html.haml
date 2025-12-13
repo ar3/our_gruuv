@@ -1,5 +1,6 @@
 - person = node[:person]
 - position = node[:position]
+- employment_tenure = node[:employment_tenure]
 - children = node[:children]
 - direct_reports_count = node[:direct_reports_count] || 0
 - total_reports_count = node[:total_reports_count] || 0
@@ -9,29 +10,45 @@
 - org_ids = organization.company? ? organization.self_and_descendants.map(&:id) : [organization.id]
 - teammate = person.teammates.find_by(organization_id: org_ids)
 - teammate_org = teammate&.organization || organization
+- active_seat = employment_tenure&.seat
+- position_obj = employment_tenure&.position
 
 .tree-node{id: node_id, style: "margin-left: #{depth * 40}px; margin-bottom: 10px;"}
   .d-flex.align-items-center
     - if depth > 0
       %i.bi.bi-arrow-return-right.me-2{style: "color: #999;"}
-    .card{style: "min-width: 300px; max-width: 500px;"}
+    .card{style: "min-width: 300px; max-width: 500px; position: relative;"}
+      - if has_subordinates
+        .position-absolute{style: "top: 8px; right: 8px; text-align: right; width:200px"}
+          %span.badge.bg-light.text-dark.small
+            - if direct_reports_count == total_reports_count
+              serving #{pluralize(direct_reports_count, 'person')} directly
+            - else
+              serving #{pluralize(direct_reports_count, 'person')} directly & #{total_reports_count} total
       .card-body.p-2
-        .d-flex.align-items-center.justify-content-between
+        .d-flex.align-items-start
+          .flex-shrink-0.me-3
+            - if teammate
+              = teammate_profile_image(teammate, size: 48)
+            - else
+              = content_tag :div, class: "bg-primary rounded-circle d-flex align-items-center justify-content-center text-white", style: "width: 48px; height: 48px;" do
+                = content_tag :span, person.first_name&.first&.upcase || person.email.first.upcase, class: "fw-bold", style: "font-size: 19px;"
           .flex-grow-1
             .d-flex.align-items-center
               - if has_subordinates
                 %button.btn.btn-sm.btn-link.p-0.me-2.toggle-children{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 20px;"}
                   %i.bi.bi-chevron-down.toggle-icon
               - if teammate && policy(teammate).show?
-                = link_to person.display_name, internal_organization_company_teammate_path(teammate_org, teammate), class: "text-decoration-none fw-bold"
+                = link_to person.display_name, internal_organization_company_teammate_path(teammate_org, teammate), class: "text-decoration-none fw-bold #{has_subordinates ? 'mt-5' : ''}"
               - else
                 %span.fw-bold= person.display_name
             %br
-            %span.text-muted.small= position
-            - if has_subordinates
-              %br
-              %span.text-muted.small
-                serving #{pluralize(direct_reports_count, 'person')} directly / serving a total of #{pluralize(total_reports_count, 'person')} hierarchically
+            - if active_seat
+              = link_to active_seat, organization_seat_path(organization, active_seat), class: "text-muted small text-decoration-none"
+            - elsif position_obj
+              = link_to position_obj, organization_position_path(organization, position_obj), class: "text-muted small text-decoration-none"
+            - else
+              %span.text-muted.small= position
 
 - if has_subordinates
   .collapse.show{id: children_id}

@@ -36,9 +36,16 @@ class Position < ApplicationRecord
   end
   
   # Instance methods
-  def display_name
-    base_name = "#{position_type.external_title} - #{position_level.level}"
+  def display_name_with_version
     "#{base_name} v#{semantic_version}"
+  end
+
+  def display_name
+    "#{position_type.external_title} - #{position_level.level}"
+  end
+
+  def to_s
+    display_name
   end
 
   def to_param
