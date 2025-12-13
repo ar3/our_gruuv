@@ -1,11 +1,16 @@
 - person = node[:person]
 - position = node[:position]
 - children = node[:children]
+- direct_reports_count = node[:direct_reports_count] || 0
+- total_reports_count = node[:total_reports_count] || 0
+- has_subordinates = children.any?
+- node_id = "employee-node-#{person.id}"
+- children_id = "employee-children-#{person.id}"
 - org_ids = organization.company? ? organization.self_and_descendants.map(&:id) : [organization.id]
 - teammate = person.teammates.find_by(organization_id: org_ids)
 - teammate_org = teammate&.organization || organization
 
-.tree-node{style: "margin-left: #{depth * 40}px; margin-bottom: 10px;"}
+.tree-node{id: node_id, style: "margin-left: #{depth * 40}px; margin-bottom: 10px;"}
   .d-flex.align-items-center
     - if depth > 0
       %i.bi.bi-arrow-return-right.me-2{style: "color: #999;"}
@@ -13,17 +18,23 @@
       .card-body.p-2
         .d-flex.align-items-center.justify-content-between
           .flex-grow-1
-            - if teammate && policy(teammate).show?
-              = link_to person.display_name, internal_organization_company_teammate_path(teammate_org, teammate), class: "text-decoration-none fw-bold"
-            - else
-              %span.fw-bold= person.display_name
+            .d-flex.align-items-center
+              - if has_subordinates
+                %button.btn.btn-sm.btn-link.p-0.me-2.toggle-children{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 20px;"}
+                  %i.bi.bi-chevron-down.toggle-icon
+              - if teammate && policy(teammate).show?
+                = link_to person.display_name, internal_organization_company_teammate_path(teammate_org, teammate), class: "text-decoration-none fw-bold"
+              - else
+                %span.fw-bold= person.display_name
             %br
             %span.text-muted.small= position
-          - if children.any?
-            %span.badge.bg-light.text-dark
-              = pluralize(children.count, 'direct report')
+            - if has_subordinates
+              %br
+              %span.text-muted.small
+                serving #{pluralize(direct_reports_count, 'person')} directly / serving a total of #{pluralize(total_reports_count, 'person')} hierarchically
 
-- if children.any?
-  - children.each do |child_node|
-    = render 'organizations/vertical_accountability_chart/employee_node', node: child_node, depth: depth + 1, organization: organization
+- if has_subordinates
+  .collapse.show{id: children_id}
+    - children.each do |child_node|
+      = render 'organizations/vertical_accountability_chart/employee_node', node: child_node, depth: depth + 1, organization: organization
 

@@ -20,3 +20,37 @@
           - @hierarchy_tree.each do |root_node|
             = render 'organizations/vertical_accountability_chart/employee_node', node: root_node, depth: 0, organization: @organization
 
+:javascript
+  // Handle collapse/expand icon toggle
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleButtons = document.querySelectorAll('.toggle-children');
+    
+    toggleButtons.forEach(function(button) {
+      const targetId = button.getAttribute('data-bs-target');
+      const target = document.querySelector(targetId);
+      const icon = button.querySelector('.toggle-icon');
+      
+      if (target) {
+        // Set initial icon state based on whether it's expanded
+        if (target.classList.contains('show')) {
+          icon.classList.remove('bi-chevron-up');
+          icon.classList.add('bi-chevron-down');
+        } else {
+          icon.classList.remove('bi-chevron-down');
+          icon.classList.add('bi-chevron-up');
+        }
+        
+        // Listen for Bootstrap collapse events
+        target.addEventListener('show.bs.collapse', function() {
+          icon.classList.remove('bi-chevron-up');
+          icon.classList.add('bi-chevron-down');
+        });
+        
+        target.addEventListener('hide.bs.collapse', function() {
+          icon.classList.remove('bi-chevron-down');
+          icon.classList.add('bi-chevron-up');
+        });
+      }
+    });
+  });
+

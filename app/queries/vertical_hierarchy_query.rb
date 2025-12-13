@@ -6,7 +6,7 @@ class VerticalHierarchyQuery
   end
 
   # Returns an array of root employee nodes, each with nested children
-  # Each node is a hash with: person, position, children (array of child nodes)
+  # Each node is a hash with: person, position, children (array of child nodes), direct_reports_count, total_reports_count
   def call
     return [] unless @organization
 
@@ -85,10 +85,16 @@ class VerticalHierarchyQuery
       build_tree_node(child_id, person_data, parent_child_map)
     end.compact.sort_by { |node| node[:person].display_name }
 
+    # Calculate direct reports (immediate children) and total reports (all descendants)
+    direct_reports_count = children.length
+    total_reports_count = direct_reports_count + children.sum { |child| child[:total_reports_count] }
+
     {
       person: data[:person],
       position: data[:position],
-      children: children
+      children: children,
+      direct_reports_count: direct_reports_count,
+      total_reports_count: total_reports_count
     }
   end
 end
