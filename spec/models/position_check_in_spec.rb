@@ -82,6 +82,97 @@ RSpec.describe PositionCheckIn, type: :model do
       result = PositionCheckIn.find_or_create_open_for(teammate)
       expect(result).to be_nil
     end
+
+    it 'creates a new check-in when a finalized one exists' do
+      finalized_by = create(:person)
+      finalized_check_in = create(:position_check_in, 
+        teammate: teammate, 
+        employment_tenure: employment_tenure,
+        official_check_in_completed_at: 1.day.ago,
+        official_rating: 2,
+        finalized_by: finalized_by
+      )
+      
+      expect(finalized_check_in.officially_completed?).to be true
+      expect(finalized_check_in.open?).to be false
+      
+      result = PositionCheckIn.find_or_create_open_for(teammate)
+      
+      expect(result).not_to eq(finalized_check_in)
+      expect(result).to be_present
+      expect(result.open?).to be true
+      expect(result.officially_completed?).to be false
+      expect(PositionCheckIn.where(teammate: teammate).open.count).to eq(1)
+    end
+
+    it 'excludes finalized check-ins from open scope' do
+      finalized_check_in = create(:position_check_in,
+        teammate: teammate,
+        employment_tenure: employment_tenure,
+        official_check_in_completed_at: 1.day.ago
+      )
+      
+      open_check_ins = PositionCheckIn.where(teammate: teammate).open
+      expect(open_check_ins).not_to include(finalized_check_in)
+      expect(finalized_check_in.open?).to be false
+    end
+  end
+
+  describe 'latest_finalized_for' do
+    it 'returns the most recent finalized check-in' do
+      finalized_by = create(:person)
+      
+      old_finalized = create(:position_check_in,
+        teammate: teammate,
+        employment_tenure: employment_tenure,
+        official_check_in_completed_at: 3.days.ago,
+        official_rating: 1,
+        finalized_by: finalized_by
+      )
+      
+      recent_finalized = create(:position_check_in,
+        teammate: teammate,
+        employment_tenure: employment_tenure,
+        official_check_in_completed_at: 1.day.ago,
+        official_rating: 2,
+        finalized_by: finalized_by
+      )
+      
+      result = PositionCheckIn.latest_finalized_for(teammate)
+      
+      expect(result).to eq(recent_finalized)
+      expect(result).not_to eq(old_finalized)
+      expect(result.official_rating).to eq(2)
+    end
+
+    it 'returns nil when no finalized check-ins exist' do
+      open_check_in = create(:position_check_in,
+        teammate: teammate,
+        employment_tenure: employment_tenure
+      )
+      
+      result = PositionCheckIn.latest_finalized_for(teammate)
+      
+      expect(result).to be_nil
+    end
+
+    it 'returns the latest finalized check-in even when open check-ins exist' do
+      finalized_by = create(:person)
+      finalized_check_in = create(:position_check_in,
+        teammate: teammate,
+        employment_tenure: employment_tenure,
+        official_check_in_completed_at: 1.day.ago,
+        official_rating: 2,
+        finalized_by: finalized_by
+      )
+      
+      open_check_in = PositionCheckIn.find_or_create_open_for(teammate)
+      
+      result = PositionCheckIn.latest_finalized_for(teammate)
+      
+      expect(result).to eq(finalized_check_in)
+      expect(result).not_to eq(open_check_in)
+    end
   end
 
   describe 'employment_tenure association' do

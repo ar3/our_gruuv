@@ -1,8 +1,14 @@
 -# Position Check-Ins Table View with Interactive Forms
 - if position_check_in
-  - display_mode = position_check_in.viewer_display_mode(view_mode)
-  - partial_name = "position_check_ins_table_#{view_mode}_#{display_mode}"
-  = render partial_name, check_in: position_check_in, form: form, view_mode: view_mode
+  -# Defensive check: finalized check-ins should never be shown here (find_or_create_open_for excludes them)
+  - if position_check_in.officially_completed?
+    .alert.alert-warning
+      %i.bi.bi-exclamation-triangle.me-2
+      This check-in has been finalized. A new check-in should be created.
+  - else
+    - display_mode = position_check_in.viewer_display_mode(view_mode)
+    - partial_name = "position_check_ins_table_#{view_mode}_#{display_mode}"
+    = render partial_name, check_in: position_check_in, form: form, view_mode: view_mode
 - else
   .alert.alert-info
     %i.bi.bi-info-circle.me-2

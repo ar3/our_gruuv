@@ -991,5 +991,82 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         expect(assigns(:one_on_one_url)).to be_present
       end
     end
+
+    context 'when check-in has been finalized' do
+      let(:finalized_by) { manager }
+      let!(:finalized_check_in) do
+        create(:position_check_in,
+          teammate: employee_teammate,
+          employment_tenure: employment_tenure,
+          employee_rating: 1,
+          manager_rating: 2,
+          employee_completed_at: 2.days.ago,
+          manager_completed_at: 2.days.ago,
+          official_check_in_completed_at: 1.day.ago,
+          official_rating: 2,
+          shared_notes: 'Great work overall',
+          finalized_by: finalized_by
+        )
+      end
+
+      context 'as manager' do
+        before do
+          sign_in_as_teammate(manager, organization)
+        end
+
+        it 'shows a blank/new check-in (not the finalized one)' do
+          get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+          
+          position_check_in = assigns(:position_check_in)
+          
+          expect(position_check_in).to be_present
+          expect(position_check_in).not_to eq(finalized_check_in)
+          expect(position_check_in.open?).to be true
+          expect(position_check_in.officially_completed?).to be false
+          expect(position_check_in.employee_rating).to be_nil
+          expect(position_check_in.manager_rating).to be_nil
+        end
+
+        it 'allows access to finalized check-in via latest_finalized_for for hover popover' do
+          get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+          
+          latest_finalized = PositionCheckIn.latest_finalized_for(employee_teammate)
+          
+          expect(latest_finalized).to eq(finalized_check_in)
+          expect(latest_finalized.official_rating).to eq(2)
+          expect(latest_finalized.shared_notes).to eq('Great work overall')
+          expect(latest_finalized.finalized_by).to eq(finalized_by)
+        end
+      end
+
+      context 'as employee' do
+        before do
+          sign_in_as_teammate(employee, organization)
+        end
+
+        it 'shows a blank/new check-in (not the finalized one)' do
+          get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+          
+          position_check_in = assigns(:position_check_in)
+          
+          expect(position_check_in).to be_present
+          expect(position_check_in).not_to eq(finalized_check_in)
+          expect(position_check_in.open?).to be true
+          expect(position_check_in.officially_completed?).to be false
+          expect(position_check_in.employee_rating).to be_nil
+          expect(position_check_in.manager_rating).to be_nil
+        end
+
+        it 'allows access to finalized check-in via latest_finalized_for for hover popover' do
+          get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+          
+          latest_finalized = PositionCheckIn.latest_finalized_for(employee_teammate)
+          
+          expect(latest_finalized).to eq(finalized_check_in)
+          expect(latest_finalized.official_rating).to eq(2)
+          expect(latest_finalized.shared_notes).to eq('Great work overall')
+        end
+      end
+    end
   end
 end
