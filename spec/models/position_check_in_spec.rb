@@ -321,4 +321,128 @@ RSpec.describe PositionCheckIn, type: :model do
       end
     end
   end
+
+  describe 'maap_snapshot association' do
+    it 'belongs to maap_snapshot' do
+      expect(check_in).to respond_to(:maap_snapshot)
+      expect(check_in).to respond_to(:maap_snapshot_id)
+    end
+
+    it 'can be linked to a snapshot' do
+      snapshot = create(:maap_snapshot, employee: person)
+      
+      check_in.update!(maap_snapshot: snapshot)
+      
+      expect(check_in.maap_snapshot).to eq(snapshot)
+      expect(check_in.maap_snapshot_id).to eq(snapshot.id)
+    end
+
+    it 'allows nil maap_snapshot for open check-ins' do
+      expect(check_in.maap_snapshot).to be_nil
+      expect(check_in.maap_snapshot_id).to be_nil
+      expect(check_in).to be_valid
+    end
+
+    it 'finalized check-in can be linked to snapshot' do
+      finalized_by = create(:person)
+      snapshot = create(:maap_snapshot, employee: person)
+      
+      finalized_check_in = create(:position_check_in,
+        teammate: teammate,
+        employment_tenure: employment_tenure,
+        official_check_in_completed_at: 1.day.ago,
+        official_rating: 2,
+        finalized_by: finalized_by,
+        maap_snapshot: snapshot
+      )
+      
+      expect(finalized_check_in.maap_snapshot).to eq(snapshot)
+      expect(finalized_check_in.maap_snapshot_id).to eq(snapshot.id)
+    end
+  end
+
+  describe 'rating consistency after finalization' do
+    let(:manager) { create(:person) }
+    let(:position_type) { create(:position_type, organization: organization) }
+    let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
+    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:employment_tenure) do
+      EmploymentTenure.find_by(teammate: teammate, company: organization) ||
+        create(:employment_tenure,
+          teammate: teammate,
+          company: organization,
+          manager: manager,
+          position: position,
+          started_at: 1.month.ago)
+    end
+    let(:ready_check_in) do
+      create(:position_check_in,
+        :ready_for_finalization,
+        teammate: teammate,
+        employment_tenure: employment_tenure,
+        employee_rating: 1,
+        manager_rating: 2)
+    end
+
+    it 'official_rating matches tenure official_position_rating after finalization' do
+      finalizer = Finalizers::PositionCheckInFinalizer.new(
+        check_in: ready_check_in,
+        official_rating: 2,
+        shared_notes: 'Test notes',
+        finalized_by: manager
+      )
+      
+      result = finalizer.finalize
+      
+      expect(result.ok?).to be true
+      
+      ready_check_in.reload
+      closed_tenure = teammate.employment_tenures.inactive.order(ended_at: :desc).first
+      
+      expect(ready_check_in.official_rating).to eq(2)
+      expect(closed_tenure.official_position_rating).to eq(2)
+      expect(ready_check_in.official_rating).to eq(closed_tenure.official_position_rating)
+    end
+
+    it 'check-in can access snapshot after linking' do
+      snapshot = create(:maap_snapshot, employee: person)
+      
+      finalized_check_in = create(:position_check_in,
+        teammate: teammate,
+        employment_tenure: employment_tenure,
+        official_check_in_completed_at: 1.day.ago,
+        official_rating: 2,
+        finalized_by: manager,
+        maap_snapshot: snapshot
+      )
+      
+      expect(finalized_check_in.maap_snapshot).to eq(snapshot)
+      expect(finalized_check_in.maap_snapshot.employee).to eq(person)
+    end
+
+    it 'maintains rating consistency when snapshot is linked' do
+      snapshot = create(:maap_snapshot, employee: person)
+      
+      finalized_check_in = create(:position_check_in,
+        teammate: teammate,
+        employment_tenure: employment_tenure,
+        official_check_in_completed_at: 1.day.ago,
+        official_rating: 2,
+        finalized_by: manager,
+        maap_snapshot: snapshot
+      )
+      
+      closed_tenure = teammate.employment_tenures.inactive.order(ended_at: :desc).first
+      
+      # All should have consistent rating
+      expect(finalized_check_in.official_rating).to eq(2)
+      if closed_tenure
+        expect(closed_tenure.official_position_rating).to eq(2)
+        expect(finalized_check_in.official_rating).to eq(closed_tenure.official_position_rating)
+      end
+      
+      # Snapshot should be accessible
+      expect(finalized_check_in.maap_snapshot).to eq(snapshot)
+    end
+  end
 end

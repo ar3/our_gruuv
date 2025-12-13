@@ -60,6 +60,121 @@ RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :
       get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
       expect(response).to have_http_status(:success)
     end
+
+    context 'position check-ins' do
+      let(:position_type) { create(:position_type, organization: organization) }
+      let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
+      let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+      let(:employment_tenure) do
+        # Use the existing employment_tenure from the before block, or find/create one
+        EmploymentTenure.find_by(teammate: employee_teammate, company: organization) ||
+          create(:employment_tenure,
+            teammate: employee_teammate,
+            company: organization,
+            manager: manager,
+            position: position,
+            started_at: 1.month.ago)
+      end
+
+      context 'when position check-in is ready for finalization' do
+        let!(:ready_position_check_in) do
+          create(:position_check_in,
+            teammate: employee_teammate,
+            employment_tenure: employment_tenure,
+            employee_rating: 1,
+            manager_rating: 2,
+            employee_completed_at: 1.day.ago,
+            manager_completed_at: 1.day.ago)
+        end
+
+        it 'loads ready position check-in' do
+          get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+          
+          expect(assigns(:ready_position_check_in)).to eq(ready_position_check_in)
+          expect(assigns(:ready_position_check_in).officially_completed?).to be false
+        end
+      end
+
+      context 'when position check-in has been finalized' do
+        let!(:finalized_position_check_in) do
+          create(:position_check_in,
+            teammate: employee_teammate,
+            employment_tenure: employment_tenure,
+            employee_rating: 1,
+            manager_rating: 2,
+            employee_completed_at: 2.days.ago,
+            manager_completed_at: 2.days.ago,
+            official_check_in_completed_at: 1.day.ago,
+            official_rating: 2,
+            finalized_by: manager)
+        end
+
+        it 'does NOT load finalized position check-in in ready_for_finalization' do
+          get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+          
+          expect(assigns(:ready_position_check_in)).to be_nil
+          expect(finalized_position_check_in.officially_completed?).to be true
+        end
+
+        it 'loads finalized position check-in separately for acknowledgment view' do
+          get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+          
+          expect(assigns(:finalized_position_check_in)).to eq(finalized_position_check_in)
+          expect(assigns(:finalized_position_check_in).officially_completed?).to be true
+        end
+
+        it 'does NOT include finalized check-in in incomplete_position_check_ins' do
+          get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+          
+          incomplete = assigns(:incomplete_position_check_ins)
+          expect(incomplete).not_to include(finalized_position_check_in)
+          if incomplete.present?
+            incomplete.each do |check_in|
+              expect(check_in.officially_completed?).to be false
+            end
+          end
+        end
+      end
+
+      context 'when both ready and finalized position check-ins exist' do
+        let!(:finalized_position_check_in) do
+          create(:position_check_in,
+            teammate: employee_teammate,
+            employment_tenure: employment_tenure,
+            employee_rating: 1,
+            manager_rating: 2,
+            employee_completed_at: 3.days.ago,
+            manager_completed_at: 3.days.ago,
+            official_check_in_completed_at: 2.days.ago,
+            official_rating: 2,
+            finalized_by: manager)
+        end
+
+        let!(:ready_position_check_in) do
+          create(:position_check_in,
+            teammate: employee_teammate,
+            employment_tenure: employment_tenure,
+            employee_rating: 1,
+            manager_rating: 2,
+            employee_completed_at: 1.day.ago,
+            manager_completed_at: 1.day.ago)
+        end
+
+        it 'only loads ready check-in, not finalized one' do
+          get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+          
+          expect(assigns(:ready_position_check_in)).to eq(ready_position_check_in)
+          expect(assigns(:ready_position_check_in)).not_to eq(finalized_position_check_in)
+          expect(assigns(:ready_position_check_in).officially_completed?).to be false
+        end
+
+        it 'loads finalized check-in separately for acknowledgment' do
+          get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+          
+          expect(assigns(:finalized_position_check_in)).to eq(finalized_position_check_in)
+        end
+      end
+    end
   end
 
   describe 'POST #create' do

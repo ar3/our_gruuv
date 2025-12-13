@@ -141,6 +141,303 @@ RSpec.describe CheckInFinalizationService, type: :service do
         expect(snapshot.reason).to eq("Check-in finalization for #{employee.display_name}")
       end
     end
+
+    context 'position check-in finalization' do
+      let(:position_type) { create(:position_type, organization: organization) }
+      let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
+      let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+      let(:employment_tenure) do
+        EmploymentTenure.find_by(teammate: employee_teammate, company: organization) ||
+          create(:employment_tenure,
+            teammate: employee_teammate,
+            company: organization,
+            manager: manager,
+            position: position,
+            started_at: 1.month.ago)
+      end
+      let!(:position_check_in) do
+        create(:position_check_in,
+          :ready_for_finalization,
+          teammate: employee_teammate,
+          employment_tenure: employment_tenure,
+          employee_rating: 1,
+          manager_rating: 2)
+      end
+      let(:position_finalization_params) do
+        {
+          position_check_in: {
+            finalize: '1',
+            official_rating: '2',
+            shared_notes: 'Excellent performance'
+          }
+        }
+      end
+
+      context 'position check-in rating matches snapshot rating' do
+        it 'snapshot contains the same rating as the finalized check-in' do
+          service = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: position_finalization_params,
+            finalized_by: manager,
+            request_info: request_info
+          )
+          
+          result = service.call
+          
+          expect(result.ok?).to be true
+          
+          # Reload check-in to get updated data
+          position_check_in.reload
+          snapshot = MaapSnapshot.last
+          
+          # Verify check-in has the correct rating
+          expect(position_check_in.official_rating).to eq(2)
+          
+          # Verify snapshot's position rating matches check-in rating
+          snapshot_rating = snapshot.maap_data['position']['rated_position']['official_position_rating']
+          expect(snapshot_rating).to eq(2)
+          expect(snapshot_rating).to eq(position_check_in.official_rating)
+        end
+
+        it 'tenure rating also matches check-in and snapshot rating' do
+          service = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: position_finalization_params,
+            finalized_by: manager,
+            request_info: request_info
+          )
+          
+          result = service.call
+          
+          expect(result.ok?).to be true
+          
+          position_check_in.reload
+          snapshot = MaapSnapshot.last
+          
+          # Find the closed tenure (the one that was just finalized)
+          closed_tenure = employee_teammate.employment_tenures.inactive.order(ended_at: :desc).first
+          
+          expect(closed_tenure.official_position_rating).to eq(2)
+          expect(closed_tenure.official_position_rating).to eq(position_check_in.official_rating)
+          
+          snapshot_rating = snapshot.maap_data['position']['rated_position']['official_position_rating']
+          expect(snapshot_rating).to eq(closed_tenure.official_position_rating)
+        end
+      end
+
+      context 'check-in links to snapshot' do
+        it 'check-in maap_snapshot_id is set to created snapshot' do
+          service = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: position_finalization_params,
+            finalized_by: manager,
+            request_info: request_info
+          )
+          
+          result = service.call
+          
+          expect(result.ok?).to be true
+          
+          position_check_in.reload
+          snapshot = MaapSnapshot.last
+          
+          # Verify the check-in is linked to the snapshot
+          expect(position_check_in.maap_snapshot_id).to eq(snapshot.id)
+          expect(position_check_in.maap_snapshot).to eq(snapshot)
+        end
+
+        it 'check-in can access snapshot via association' do
+          service = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: position_finalization_params,
+            finalized_by: manager,
+            request_info: request_info
+          )
+          
+          result = service.call
+          
+          expect(result.ok?).to be true
+          
+          position_check_in.reload
+          snapshot = MaapSnapshot.last
+          
+          # Verify bidirectional relationship works
+          expect(position_check_in.maap_snapshot).to eq(snapshot)
+          expect(position_check_in.maap_snapshot_id).to be_present
+        end
+      end
+
+      context 'full position finalization flow' do
+        it 'finalizes position, creates snapshot, and links check-in with consistent ratings' do
+          service = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: position_finalization_params,
+            finalized_by: manager,
+            request_info: request_info
+          )
+          
+          result = service.call
+          
+          expect(result.ok?).to be true
+          
+          position_check_in.reload
+          snapshot = MaapSnapshot.last
+          closed_tenure = employee_teammate.employment_tenures.inactive.order(ended_at: :desc).first
+          
+          # Verify check-in is finalized
+          expect(position_check_in.officially_completed?).to be true
+          expect(position_check_in.official_rating).to eq(2)
+          expect(position_check_in.shared_notes).to eq('Excellent performance')
+          
+          # Verify tenure is closed with correct rating
+          expect(closed_tenure.ended_at).to be_present
+          expect(closed_tenure.official_position_rating).to eq(2)
+          
+          # Verify snapshot is created
+          expect(snapshot).to be_present
+          expect(snapshot.employee).to eq(employee)
+          expect(snapshot.created_by).to eq(manager)
+          
+          # Verify snapshot position data structure
+          expect(snapshot.maap_data['position']).to be_present
+          expect(snapshot.maap_data['position']['rated_position']).to be_present
+          
+          # Verify all three have consistent ratings
+          expect(position_check_in.official_rating).to eq(closed_tenure.official_position_rating)
+          snapshot_rating = snapshot.maap_data['position']['rated_position']['official_position_rating']
+          expect(snapshot_rating).to eq(position_check_in.official_rating)
+          expect(snapshot_rating).to eq(closed_tenure.official_position_rating)
+          
+          # Verify check-in is linked to snapshot
+          expect(position_check_in.maap_snapshot_id).to eq(snapshot.id)
+          expect(position_check_in.maap_snapshot).to eq(snapshot)
+        end
+
+        it 'snapshot contains correct position data structure' do
+          service = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: position_finalization_params,
+            finalized_by: manager,
+            request_info: request_info
+          )
+          
+          result = service.call
+          
+          expect(result.ok?).to be true
+          
+          snapshot = MaapSnapshot.last
+          closed_tenure = employee_teammate.employment_tenures.inactive.order(ended_at: :desc).first
+          
+          position_data = snapshot.maap_data['position']
+          expect(position_data).to be_present
+          
+          rated_position = position_data['rated_position']
+          expect(rated_position).to be_present
+          expect(rated_position['official_position_rating']).to eq(2)
+          expect(rated_position['position_id']).to eq(closed_tenure.position_id)
+          expect(rated_position['manager_id']).to eq(closed_tenure.manager_id)
+          expect(rated_position['started_at']).to be_present
+          expect(rated_position['ended_at']).to be_present
+        end
+
+        it 'uses the most recently closed tenure when multiple closed tenures exist' do
+          # Create an older closed tenure with a different rating
+          old_tenure = create(:employment_tenure,
+            teammate: employee_teammate,
+            company: organization,
+            manager: manager,
+            position: position,
+            started_at: 3.months.ago,
+            ended_at: 2.months.ago,
+            official_position_rating: 1)
+          
+          service = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: position_finalization_params,
+            finalized_by: manager,
+            request_info: request_info
+          )
+          
+          result = service.call
+          
+          expect(result.ok?).to be true
+          
+          position_check_in.reload
+          snapshot = MaapSnapshot.last
+          
+          # The snapshot should use the NEWEST closed tenure (rating 2), not the old one (rating 1)
+          newest_closed_tenure = employee_teammate.employment_tenures.inactive.order(ended_at: :desc).first
+          
+          expect(newest_closed_tenure.official_position_rating).to eq(2)
+          expect(newest_closed_tenure.id).not_to eq(old_tenure.id)
+          
+          snapshot_rating = snapshot.maap_data['position']['rated_position']['official_position_rating']
+          expect(snapshot_rating).to eq(2)
+          expect(snapshot_rating).not_to eq(old_tenure.official_position_rating)
+        end
+
+        it 'results hash contains check_in for linking' do
+          service = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: position_finalization_params,
+            finalized_by: manager,
+            request_info: request_info
+          )
+          
+          result = service.call
+          
+          expect(result.ok?).to be true
+          
+          # Verify results hash structure
+          expect(result.value[:results][:position]).to be_present
+          expect(result.value[:results][:position][:check_in]).to be_present
+          expect(result.value[:results][:position][:check_in]).to eq(position_check_in)
+        end
+
+        it 'results hash contains rating_data with official_rating' do
+          service = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: position_finalization_params,
+            finalized_by: manager,
+            request_info: request_info
+          )
+          
+          result = service.call
+          
+          expect(result.ok?).to be true
+          
+          # Verify rating_data is in results
+          expect(result.value[:results][:position][:rating_data]).to be_present
+          expect(result.value[:results][:position][:rating_data][:official_rating]).to eq(2)
+        end
+
+        it 'snapshot rating should match rating from results hash, not database query' do
+          # This test ensures the snapshot uses the rating from the finalization results
+          # rather than querying the database, which could be inconsistent
+          service = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: position_finalization_params,
+            finalized_by: manager,
+            request_info: request_info
+          )
+          
+          result = service.call
+          
+          expect(result.ok?).to be true
+          
+          position_check_in.reload
+          snapshot = MaapSnapshot.last
+          
+          # Get rating from results hash
+          results_rating = result.value[:results][:position][:rating_data][:official_rating]
+          
+          # Verify snapshot uses the same rating
+          snapshot_rating = snapshot.maap_data['position']['rated_position']['official_position_rating']
+          expect(snapshot_rating).to eq(results_rating)
+          expect(snapshot_rating).to eq(position_check_in.official_rating)
+        end
+      end
+    end
   end
 end
 
