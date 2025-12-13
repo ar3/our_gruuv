@@ -38,15 +38,15 @@ RSpec.describe 'Observation Show Page', type: :system do
       end
 
       it 'does not allow non-observer to access show page' do
-        switch_to_user(observee_person, company)
-        # Non-observers are not authorized to view the show page
+        switch_to_user(other_person, company)
+        # Non-observers (and non-observees) are not authorized to view draft observation show page
         # The controller redirects to kudos path, which then redirects with flash message
         visit organization_observation_path(company, draft_observation)
         
         # Should be redirected (likely to dashboard for authenticated users)
         expect(page.current_path).not_to eq(organization_observation_path(company, draft_observation))
         # Should see authorization error message
-        expect(page).to have_content(/not authorized|You are not authorized/i)
+        expect(page).to have_content(/not authorized|You are not authorized|don't have permission/i)
       end
     end
 

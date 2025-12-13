@@ -6,7 +6,7 @@
   .card-body
     - can_edit = policy(@person).edit?
     - if can_edit
-      - form_url = organization_person_path(@organization || current_organization, @person)
+      - form_url = organization_company_teammate_path(@organization || current_organization, @teammate)
       .row.mt-3
         .col-12.col-md-8
           = form_with model: @person, url: form_url, method: :patch, local: true do |form|
@@ -120,7 +120,7 @@
                 = @person.created_at.strftime("%b %Y")
               
               / Other Companies Section (only visible to person themselves or og_admin)
-              - if policy(@person).view_other_companies?
+              - if @teammate && (current_person == @person || current_person&.og_admin?)
                 .mt-4
                   %h6.text-muted.border-bottom.pb-2 Other Companies
                   - other_companies = @employment_tenures.select { |t| t.company != current_organization }.map(&:company).uniq

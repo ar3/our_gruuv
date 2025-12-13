@@ -1,0 +1,46 @@
+- content_for :header do
+  %h1.mb-0{id: "person-title"}
+  - if @teammate.person == current_person
+    My Profile
+  - else
+    = @teammate.person.display_name
+        
+- content_for :header_action do
+  = render 'people/view_switcher'
+
+- content_for :go_back_link do
+  = link_to organization_employees_path(organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    ="Back to Teammates in #{organization.display_name}"
+
+/ About Me Section
+.row
+  .col-12
+    = render 'people/show/about_me'
+
+/ Security & Permissions Section
+.row
+  .col-12  
+    = render 'people/show/identities'
+
+/ Organization Permissions Section
+.row
+  .col-12
+    = render 'people/show/permissions'
+
+/ Align Section
+.row.mb-4
+  .col-12
+    = render 'people/show/align'
+
+/ Transform Section
+.row.mb-4
+  .col-12
+    = render 'people/show/transform'
+
+/ Page Visits Section
+.row.mb-4
+  .col-12
+    = render 'people/show/page_visits'
+
+= render 'people/show/footer'

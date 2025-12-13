@@ -20,9 +20,12 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
     non_direct_report_teammate.update!(first_employed_at: 1.month.ago)
     manager_teammate.update!(first_employed_at: 1.month.ago)
     
+    # Reload as CompanyTeammate to ensure has_direct_reports? method is available
+    manager_ct = CompanyTeammate.find(manager_teammate.id)
+    
     # Mock authentication for manager
     sign_in_as_teammate_for_request(manager, organization)
-    allow(manager).to receive(:has_direct_reports?).and_return(true)
+    allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
   end
 
   it 'returns only direct reports when manager_filter is direct_reports' do

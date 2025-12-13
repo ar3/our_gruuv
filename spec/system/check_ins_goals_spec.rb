@@ -39,9 +39,13 @@ RSpec.describe 'Check-ins Goals Section', type: :system do
       confidence_percentage: 85
     )
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     expect(page).to have_content('ACTIVE GOALS')
+    
+    # Expand the goals section to see details
+    page.find('a[data-bs-target="#goalsSection"]').click
+    
     expect(page).to have_content('Now Goal')
     expect(page).to have_content('85%')
     expect(page).to have_content('Up to date')
@@ -66,7 +70,10 @@ RSpec.describe 'Check-ins Goals Section', type: :system do
       confidence_percentage: 75
     )
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
+    
+    # Expand the goals section to see details
+    page.find('a[data-bs-target="#goalsSection"]').click
     
     expect(page).to have_content('Goal Needing Check-in')
     expect(page).to have_content('75%')
@@ -83,22 +90,32 @@ RSpec.describe 'Check-ins Goals Section', type: :system do
       title: 'Goal Without Check-in'
     )
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
+    
+    # Expand the goals section to see details
+    page.find('a[data-bs-target="#goalsSection"]').click
     
     expect(page).to have_content('Goal Without Check-in')
     expect(page).to have_content('No check-in yet')
   end
 
   it 'displays empty state when no goals' do
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     expect(page).to have_content('ACTIVE GOALS')
+    
+    # Expand the goals section to see details
+    page.find('a[data-bs-target="#goalsSection"]').click
+    
     expect(page).to have_content('No active goals found.')
     expect(page).to have_button('Manage Goals & Confidence Ratings')
   end
 
   it 'redirects when clicking Manage Goals button' do
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
+    
+    # Expand the goals section to see the button
+    page.find('a[data-bs-target="#goalsSection"]').click
     
     # Verify button is present
     expect(page).to have_button('Manage Goals & Confidence Ratings')

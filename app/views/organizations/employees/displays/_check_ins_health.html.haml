@@ -16,7 +16,7 @@
           - health = data[:health]
           %tr
             %td
-              = link_to person.display_name, organization_person_path(@organization, person), class: "text-decoration-none fw-bold"
+              = link_to person.display_name, organization_company_teammate_path(@organization, person), class: "text-decoration-none fw-bold"
               %br
               %small.text-muted= person.email
             
@@ -68,9 +68,9 @@
             / Actions cell
             %td
               .btn-group.btn-group-sm
-                = link_to organization_person_path(@organization, person), class: "btn btn-outline-primary" do
+                = link_to organization_company_teammate_path(@organization, person), class: "btn btn-outline-primary" do
                   %i.bi.bi-eye
-                = link_to organization_person_check_ins_path(@organization, person), class: "btn btn-outline-secondary" do
+                = link_to organization_company_teammate_check_ins_path(@organization, person), class: "btn btn-outline-secondary" do
                   %i.bi.bi-clipboard-check
 - else
   .alert.alert-info

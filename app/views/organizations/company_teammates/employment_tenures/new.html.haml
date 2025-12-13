@@ -1,0 +1,17 @@
+.container
+  .row.justify-content-center
+    .col-md-8
+      .card
+        .card-header
+          %h4.card-title.mb-0 Select Company for New Employment
+        .card-body
+          = form_tag change_organization_company_teammate_employment_tenures_path(organization, @teammate), method: :get, local: true do
+            .mb-3
+              = label_tag :company_id, "Company", class: "form-label"
+              = select_tag :company_id, 
+                          options_from_collection_for_select(@companies, :id, :name), 
+                          prompt: "Select a company...",
+                          class: "form-select",
+                          required: true
+            .d-grid
+              = submit_tag "Continue to Employment Form", class: "btn btn-primary"

@@ -1,0 +1,11 @@
+-# Position Finalization Row - Incomplete
+%tr.bg-light
+  %td
+    %strong= check_in.employment_tenure.position.display_name
+  %td{colspan: 5}
+    .d-flex.align-items-center.gap-2
+      %i.bi.bi-info-circle.text-info
+      - if check_in.employee_completed_at.present? && check_in.manager_completed_at.nil?
+        %span Employee completed on #{check_in.employee_completed_at.to_date}. Waiting for manager.
+      - elsif check_in.manager_completed_at.present? && check_in.employee_completed_at.nil?
+        %span Manager completed on #{check_in.manager_completed_at.to_date}. Waiting for employee.

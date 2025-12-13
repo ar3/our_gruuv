@@ -1,0 +1,17 @@
+-# Aspiration Check-Ins Card View
+- if aspiration_check_ins&.any?
+  - aspiration_check_ins.each do |check_in|
+    .row.mt-4
+      .col-12
+        = render 'aspiration_check_in_form',
+                 form: form,
+                 check_in: check_in,
+                 view_mode: view_mode
+- else
+  .alert.alert-info
+    %i.bi.bi-info-circle.me-2
+    No aspirations available to do a check-in on
+    .mt-2
+      = link_to organization_aspirations_path(@organization), class: "btn btn-outline-primary btn-sm" do
+        %i.bi.bi-plus-circle.me-1
+        Manage Aspirations

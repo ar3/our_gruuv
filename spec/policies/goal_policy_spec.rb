@@ -92,6 +92,13 @@ RSpec.describe GoalPolicy, type: :policy do
       let(:goal) { create(:goal, creator: creator_teammate, owner: owner_teammate, privacy_level: 'only_creator_owner_and_managers') }
       
       before do
+        # Create employment tenure for manager (needed for in_managerial_hierarchy_of? to work)
+        create(:employment_tenure, 
+          teammate: manager_teammate, 
+          company: company,
+          started_at: 1.month.ago,
+          ended_at: nil
+        )
         # Create employment tenure with manager
         owner_employment = create(:employment_tenure, 
           teammate: owner_teammate, 
@@ -100,6 +107,9 @@ RSpec.describe GoalPolicy, type: :policy do
           started_at: 1.month.ago,
           ended_at: nil
         )
+        # Reload teammates to clear association cache
+        manager_teammate.reload
+        owner_teammate.reload
       end
       
       it 'allows creator to view' do

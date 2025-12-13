@@ -1,0 +1,6 @@
+.container
+  .d-flex.justify-content-between.align-items-center.mb-4
+    %h1 Edit Employment Tenure
+    = link_to 'Back to Profile', organization_company_teammate_path(organization, @teammate), class: 'btn btn-outline-secondary'
+
+  = render 'form', employment_tenure: @employment_tenure

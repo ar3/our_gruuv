@@ -1,0 +1,353 @@
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-people.me-2
+    = @teammate.person.full_name
+    %small.text-muted.ms-2 (Teammate View)
+
+- content_for :header_action do
+  = render 'people/view_switcher'
+
+- content_for :go_back_link do
+  = link_to organization_employees_path(@current_organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Teammates in #{@current_organization.display_name}
+
+- if @debug_mode
+  .row.mb-4
+    .col-12
+      .card.border-warning
+        .card-header.bg-warning.text-dark
+          %h4.mb-0
+            %i.bi.bi-bug.me-2
+            Authorization Debug Panel
+            %small.ms-2 (Add ?debug=true to URL to enable)
+        .card-body
+          .accordion#debugAccordion
+            / Section 1: Current User Context
+            .accordion-item
+              %h2.accordion-header#headingCurrentUser
+                %button.accordion-button{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#collapseCurrentUser", "aria-expanded": "true", "aria-controls": "collapseCurrentUser"}
+                  %i.bi.bi-person-badge.me-2
+                  Current User Context
+              #collapseCurrentUser.accordion-collapse.collapse.show{"aria-labelledby": "headingCurrentUser", "data-bs-parent": "#debugAccordion"}
+                .accordion-body
+                  %table.table.table-sm.table-bordered
+                    %tbody
+                      %tr
+                        %th Person ID
+                        %td= debug_format_value(@debug_data[:current_user][:person_id])
+                      %tr
+                        %th Person Email
+                        %td= debug_format_value(@debug_data[:current_user][:person_email])
+                      %tr
+                        %th Person Name
+                        %td= debug_format_value(@debug_data[:current_user][:person_name])
+                      %tr
+                        %th CompanyTeammate ID
+                        %td= debug_format_value(@debug_data[:current_user][:company_teammate_id])
+                      %tr
+                        %th CompanyTeammate Org
+                        %td= debug_format_value(@debug_data[:current_user][:company_teammate_org]&.name)
+                      %tr
+                        %th Current Organization
+                        %td= debug_format_value(@debug_data[:current_user][:current_organization]&.name)
+                      %tr
+                        %th Session Teammate ID
+                        %td= debug_format_value(@debug_data[:current_user][:session_teammate_id])
+                      %tr
+                        %th Impersonating?
+                        %td= debug_boolean_badge(@debug_data[:current_user][:impersonating])
+                      %tr
+                        %th OG Admin?
+                        %td= debug_boolean_badge(@debug_data[:current_user][:og_admin])
+
+            / Section 2: Subject Person Context
+            .accordion-item
+              %h2.accordion-header#headingSubjectPerson
+                %button.accordion-button.collapsed{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#collapseSubjectPerson", "aria-expanded": "false", "aria-controls": "collapseSubjectPerson"}
+                  %i.bi.bi-person.me-2
+                  Subject Person Context
+              #collapseSubjectPerson.accordion-collapse.collapse{"aria-labelledby": "headingSubjectPerson", "data-bs-parent": "#debugAccordion"}
+                .accordion-body
+                  %h6 Basic Info
+                  %table.table.table-sm.table-bordered.mb-3
+                    %tbody
+                      %tr
+                        %th Person ID
+                        %td= debug_format_value(@debug_data[:subject_person][:person_id])
+                      %tr
+                        %th Person Email
+                        %td= debug_format_value(@debug_data[:subject_person][:person_email])
+                      %tr
+                        %th Person Name
+                        %td= debug_format_value(@debug_data[:subject_person][:person_name])
+                      %tr
+                        %th Teammates Count
+                        %td= debug_format_value(@debug_data[:subject_person][:teammates_count])
+                  
+                  %h6 Teammates
+                  - @debug_data[:subject_person][:teammates].each do |tm|
+                    .card.mb-2
+                      .card-body.p-2
+                        %strong= tm[:organization]
+                        %span.ms-2.badge.bg-secondary= tm[:type]
+                        %table.table.table-sm.mb-0.mt-2
+                          %tbody
+                            %tr
+                              %th ID
+                              %td= tm[:id]
+                            %tr
+                              %th Can Manage Employment
+                              %td= debug_boolean_badge(tm[:can_manage_employment])
+                            %tr
+                              %th Can Create Employment
+                              %td= debug_boolean_badge(tm[:can_create_employment])
+                            %tr
+                              %th Can Manage MAAP
+                              %td= debug_boolean_badge(tm[:can_manage_maap])
+                            %tr
+                              %th Can Manage Prompts
+                              %td= debug_boolean_badge(tm[:can_manage_prompts])
+                            %tr
+                              %th Employed?
+                              %td= debug_boolean_badge(tm[:employed])
+                            %tr
+                              %th Terminated?
+                              %td= debug_boolean_badge(tm[:terminated])
+                  
+                  %h6.mt-3 Employment Tenures
+                  - if @debug_data[:subject_person][:employment_tenures].any?
+                    %table.table.table-sm.table-bordered
+                      %thead
+                        %tr
+                          %th Company
+                          %th Started
+                          %th Ended
+                          %th Active
+                      %tbody
+                        - @debug_data[:subject_person][:employment_tenures].each do |et|
+                          %tr
+                            %td= et[:company]
+                            %td= et[:started_at]
+                            %td= et[:ended_at] || 'Present'
+                            %td= debug_boolean_badge(et[:active])
+                  - else
+                    %p.text-muted No employment tenures
+
+            / Section 3: Policy Evaluations
+            .accordion-item
+              %h2.accordion-header#headingPolicies
+                %button.accordion-button.collapsed{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#collapsePolicies", "aria-expanded": "false", "aria-controls": "collapsePolicies"}
+                  %i.bi.bi-shield-check.me-2
+                  Policy Evaluations
+              #collapsePolicies.accordion-collapse.collapse{"aria-labelledby": "headingPolicies", "data-bs-parent": "#debugAccordion"}
+                .accordion-body
+                  %table.table.table-sm.table-bordered
+                    %thead
+                      %tr
+                        %th Policy Method
+                        %th Result
+                        %th Explanation
+                    %tbody
+                      - @debug_data[:policies].each do |method, data|
+                        %tr
+                          %td
+                            %code= method
+                          %td= debug_boolean_badge(data[:result])
+                          %td
+                            %pre.mb-0.small= data[:explanation]
+
+            / Section 4: Permission Checks
+            .accordion-item
+              %h2.accordion-header#headingPermissions
+                %button.accordion-button.collapsed{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#collapsePermissions", "aria-expanded": "false", "aria-controls": "collapsePermissions"}
+                  %i.bi.bi-key.me-2
+                  Permission Checks
+              #collapsePermissions.accordion-collapse.collapse{"aria-labelledby": "headingPermissions", "data-bs-parent": "#debugAccordion"}
+                .accordion-body
+                  %h6 Viewer Permissions
+                  - @debug_data[:permissions][:viewer_permissions].each do |org_name, perms|
+                    .card.mb-2
+                      .card-body.p-2
+                        %strong= org_name
+                        %span.ms-2.badge.bg-info= perms[:organization_type]
+                        %table.table.table-sm.mb-0.mt-2
+                          %tbody
+                            %tr
+                              %th Teammate ID
+                              %td= perms[:teammate_id]
+                            %tr
+                              %th Can Manage Employment
+                              %td= debug_boolean_badge(perms[:can_manage_employment])
+                            %tr
+                              %th Can Create Employment
+                              %td= debug_boolean_badge(perms[:can_create_employment])
+                            %tr
+                              %th Can Manage MAAP
+                              %td= debug_boolean_badge(perms[:can_manage_maap])
+                            %tr
+                              %th Can Manage Prompts
+                              %td= debug_boolean_badge(perms[:can_manage_prompts])
+                            %tr
+                              %th Can Manage Employment (Hierarchy)
+                              %td= debug_boolean_badge(perms[:can_manage_employment_hierarchy])
+                            %tr
+                              %th Can Manage MAAP (Hierarchy)
+                              %td= debug_boolean_badge(perms[:can_manage_maap_hierarchy])
+                            %tr
+                              %th Can Manage Prompts (Hierarchy)
+                              %td= debug_boolean_badge(perms[:can_manage_prompts_hierarchy])
+                            %tr
+                              %th.bg-light{colspan: 2} Teammate Flags (Direct)
+                            %tr
+                              %th.ps-4 can_manage_employment
+                              %td= debug_boolean_badge(perms[:teammate_flags][:can_manage_employment])
+                            %tr
+                              %th.ps-4 can_create_employment
+                              %td= debug_boolean_badge(perms[:teammate_flags][:can_create_employment])
+                            %tr
+                              %th.ps-4 can_manage_maap
+                              %td= debug_boolean_badge(perms[:teammate_flags][:can_manage_maap])
+                            %tr
+                              %th.ps-4 can_manage_prompts
+                              %td= debug_boolean_badge(perms[:teammate_flags][:can_manage_prompts])
+                  
+                  %h6.mt-3 Subject Permissions
+                  - @debug_data[:permissions][:subject_permissions].each do |org_name, perms|
+                    .card.mb-2
+                      .card-body.p-2
+                        %strong= org_name
+                        %span.ms-2.badge.bg-info= perms[:organization_type]
+                        %table.table.table-sm.mb-0.mt-2
+                          %tbody
+                            %tr
+                              %th Teammate ID
+                              %td= perms[:teammate_id]
+                            %tr
+                              %th Can Manage Employment
+                              %td= debug_boolean_badge(perms[:can_manage_employment])
+                            %tr
+                              %th Can Create Employment
+                              %td= debug_boolean_badge(perms[:can_create_employment])
+                            %tr
+                              %th Can Manage MAAP
+                              %td= debug_boolean_badge(perms[:can_manage_maap])
+                            %tr
+                              %th Can Manage Prompts
+                              %td= debug_boolean_badge(perms[:can_manage_prompts])
+                  
+                  %h6.mt-3 Hierarchy Checks
+                  - @debug_data[:permissions][:hierarchy_checks].each do |org_name, checks|
+                    .card.mb-2
+                      .card-body.p-2
+                        %strong= org_name
+                        %table.table.table-sm.mb-0.mt-2
+                          %tbody
+                            %tr
+                              %th Parent
+                              %td= checks[:parent] || 'None'
+                            %tr
+                              %th Viewer in Hierarchy?
+                              %td= debug_boolean_badge(checks[:viewer_in_hierarchy])
+                            %tr
+                              %th Self and Descendants
+                              %td
+                                - checks[:self_and_descendants].each do |id, name|
+                                  %div
+                                    %code= "#{id}: #{name}"
+
+            / Section 5: Warnings & Issues
+            .accordion-item
+              %h2.accordion-header#headingWarnings
+                %button.accordion-button.collapsed{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#collapseWarnings", "aria-expanded": "false", "aria-controls": "collapseWarnings"}
+                  %i.bi.bi-exclamation-triangle.me-2
+                  Warnings & Issues
+                  - if @debug_data[:warnings].any? { |w| w[:type] == 'error' }
+                    %span.badge.bg-danger.ms-2= @debug_data[:warnings].count { |w| w[:type] == 'error' }
+                  - if @debug_data[:warnings].any? { |w| w[:type] == 'warning' }
+                    %span.badge.bg-warning.ms-2= @debug_data[:warnings].count { |w| w[:type] == 'warning' }
+              #collapseWarnings.accordion-collapse.collapse{"aria-labelledby": "headingWarnings", "data-bs-parent": "#debugAccordion"}
+                .accordion-body
+                  - if @debug_data[:warnings].any?
+                    - @debug_data[:warnings].each do |warning|
+                      = debug_warning_badge(warning)
+                  - else
+                    .alert.alert-success
+                      %i.bi.bi-check-circle.me-2
+                      No issues detected!
+
+.row.justify-content-center
+  .col-12
+    .card
+      .card-body
+        / Current Organization Information
+        - if @current_organization
+          .row.mb-4
+            .col-12
+              %h5.text-muted Current Organization: #{@current_organization.name}
+              
+              / Current Position
+              - current_tenure = @employment_tenures.find { |t| t.company == @current_organization && t.ended_at.nil? }
+              - if current_tenure&.position&.position_type
+                .alert.alert-success
+                  %strong Current Position:
+                  = current_tenure.position.position_type.external_title
+                  - if current_tenure.started_at
+                    %br
+                    %small Started: #{current_tenure.started_at.strftime("%B %d, %Y")}
+              
+              / Organization Access
+              - org_access = @teammates.find { |a| a.organization == @current_organization }
+              - if org_access
+                .alert.alert-info
+                  %strong Organization Access:
+                  %br
+                  - if org_access.can_manage_employment?
+                    %span.badge.bg-warning.me-2 Employment Management
+                  - if org_access.can_manage_maap?
+                    %span.badge.bg-warning.me-2 MAAP Management
+                  - if !org_access.can_manage_employment? && !org_access.can_manage_maap?
+                    %span.badge.bg-secondary Standard Access
+        
+        / Huddle Stats (Placeholder)
+        .row.mb-4
+          .col-12
+            %h5.text-muted Huddle Participation
+            .alert.alert-info
+              %i.bi.bi-info-circle.me-2
+              %strong Coming Soon:
+              Huddle participation statistics and feedback within this organization will be displayed here.
+        
+        / Other Organizations
+        .row.mb-4
+          .col-12
+            %h5.text-muted Other Organizations
+            - other_tenures = @employment_tenures.reject { |t| t.company == @current_organization }
+            - if other_tenures.any?
+              .table-responsive
+                %table.table.table-hover
+                  %thead
+                    %tr
+                      %th Organization
+                      %th Status
+                      %th Start Date
+                      %th End Date
+                  %tbody
+                    - other_tenures.each do |tenure|
+                      %tr
+                        %td= tenure.company.name
+                        %td
+                          - if tenure.ended_at.nil?
+                            %span.badge.bg-success Active
+                          - else
+                            %span.badge.bg-secondary Former
+                        %td= tenure.started_at.strftime("%B %Y")
+                        %td
+                          - if tenure.ended_at
+                            = tenure.ended_at.strftime("%B %Y")
+                          - else
+                            %span.text-muted Present
+            - else
+              %p.text-muted No other organizational affiliations.
+
+

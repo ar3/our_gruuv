@@ -4,7 +4,7 @@
       .d-flex.justify-content-between.align-items-center.mb-4
         %h1 Employment Summary for #{@person.display_name}
         - company = @employment_tenures.first&.company || current_organization
-        = link_to "Back to Profile", organization_person_path(company, @person), class: "btn btn-outline-secondary"
+        = link_to "Back to Profile", organization_company_teammate_path(company, @person), class: "btn btn-outline-secondary"
 
   .row
     .col-12
@@ -47,7 +47,7 @@
                           - else
                             %span.badge.bg-secondary Inactive
                           %br
-                          = link_to "View", person_employment_tenure_path(@person, tenure), class: "btn btn-sm btn-outline-primary mt-1"
+                          = link_to "View", organization_company_teammate_employment_tenure_path(tenure.company, tenure.teammate, tenure), class: "btn btn-sm btn-outline-primary mt-1"
           - else
             %p.text-muted No employment history found.
 

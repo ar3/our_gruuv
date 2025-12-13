@@ -1,0 +1,45 @@
+- if check_in&.manager_completed?
+  -# Manager has completed their side
+  .row
+    .col-md-8
+      .card.border-primary
+        .card-header.bg-primary.text-white
+          %h5.mb-0 Your Assessment
+        .card-body
+          = render 'shared/check_ins_and_finalizations/aspiration_manager_perspective', check_in: check_in
+
+    .col-md-4
+      - if check_in&.employee_completed?
+        .card.border-info
+          .card-header.bg-info.text-white
+            %h5.mb-0 Status
+          .card-body.text-center
+            %p.mb-3 #{@person.first_name} is ready to finalize this check-in
+            = link_to "Go to Finalization", organization_company_teammate_finalization_path(organization, @teammate),
+                      class: 'btn btn-success btn-sm',
+                      data: { confirm: 'Are you ready to finalize this check-in? This will create the official rating.' }
+      - else
+        .card.border-warning
+          .card-header.bg-warning.text-dark
+            %h5.mb-0 Status
+          .card-body.text-center
+            %p.mb-0 #{@person.first_name} is not ready to finalize this check-in
+
+  .form-group.mt-3
+    %label Status
+    = form.fields_for :aspiration_check_ins, check_in, index: check_in.id do |af|
+      = af.hidden_field :aspiration_id, value: check_in.aspiration.id
+      .btn-group-vertical{role: "group", "aria-label": "Status selection"}
+        = af.radio_button :status, 'draft', checked: !check_in.manager_completed?, class: 'btn-check', id: "aspiration_manager_status_draft_#{check_in.id}"
+        = af.label :status_draft, 'Make Changes', class: 'btn btn-outline-secondary', for: "aspiration_manager_status_draft_#{check_in.id}"
+        = af.radio_button :status, 'complete', checked: check_in.manager_completed?, class: 'btn-check', id: "aspiration_manager_status_complete_#{check_in.id}"
+        = af.label :status_complete, 'Ready for Finalization', class: 'btn btn-outline-primary', for: "aspiration_manager_status_complete_#{check_in.id}"
+
+    .small.text-muted.mt-1
+      Select "Make Changes" to edit your assessment and notes
+
+- else
+  -# Manager has not completed their side - show the form
+  = render 'aspiration_check_in_in_progress', check_in: check_in, form: form, view_mode: :manager
+
+

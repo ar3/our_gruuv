@@ -1,0 +1,58 @@
+-# Position Check-In Table View - Employee Completed State
+.table-responsive
+  %table.table.table-striped
+    %thead
+      %tr
+        %th Position
+        %th Employee Rating
+        %th Employee Notes
+        %th Manager Status
+        %th Actions
+    %tbody
+      %tr
+        %td
+          = button_tag type: "submit", 
+                       name: "redirect_to", 
+                       value: organization_teammate_position_path(@organization, check_in.teammate),
+                       "data-bs-toggle" => "popover", 
+                       "data-bs-trigger" => "hover", 
+                       "data-bs-placement" => "right", 
+                       "data-bs-html" => "true", 
+                       "data-bs-content" => latest_position_check_in_popover_content(check_in.teammate),
+                       class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start" do
+            = check_in.employment_tenure.position.display_name
+            %i.bi.bi-clock-history.ms-1.text-muted
+        %td
+          = position_rating_display(check_in.employee_rating)
+        %td
+          = simple_format(check_in.employee_private_notes)
+        %td
+          - if check_in.manager_completed?
+            .badge.bg-success Ready for Finalization
+            %br
+            %small.text-muted #{check_in.manager_completed_by&.first_name || 'Your manager'} has completed their assessment
+          - else
+            .badge.bg-warning Waiting for Manager
+            %br
+            %small.text-muted Your manager has not completed their assessment
+        %td
+          - if check_in.manager_completed?
+            = link_to "Go to Finalization", organization_company_teammate_finalization_path(organization, @teammate), 
+                      class: 'btn btn-success btn-sm',
+                      data: { confirm: 'Your manager will review both assessments and set the official rating.' }
+
+.form-group.mt-3
+  %label Status
+  = form.fields_for :position_check_in, check_in do |pf|
+    -# Hidden fields to preserve existing values when form is submitted
+    = pf.hidden_field :employee_rating, value: check_in.employee_rating
+    = pf.hidden_field :employee_private_notes, value: check_in.employee_private_notes
+    
+    .btn-group-vertical{role: "group", "aria-label": "Status selection"}
+      = pf.radio_button :status, 'draft', checked: !check_in.employee_completed?, class: 'btn-check', id: "position_employee_completed_status_draft_#{check_in.id}"
+      = pf.label :status_draft, 'Make Changes', class: 'btn btn-outline-secondary', for: "position_employee_completed_status_draft_#{check_in.id}"
+      = pf.radio_button :status, 'complete', checked: check_in.employee_completed?, class: 'btn-check', id: "position_employee_completed_status_complete_#{check_in.id}"
+      = pf.label :status_complete, 'Ready for Manager', class: 'btn btn-outline-primary', for: "position_employee_completed_status_complete_#{check_in.id}"
+  
+  .small.text-muted.mt-1
+    Select "Make Changes" to edit your assessment and notes

@@ -48,7 +48,7 @@
             %i.bi.bi-google.me-2
             Connect Google Account
           - if @teammate && !@teammate.has_asana_identity?
-            = link_to asana_oauth_authorize_organization_person_path(organization, @person), class: "btn btn-outline-primary" do
+            = link_to organization_company_teammate_asana_oauth_authorize_path(organization, @teammate), class: "btn btn-outline-primary" do
               %i.bi.bi-kanban.me-2
               Connect Asana Account
           - if @person.person_identities.any?

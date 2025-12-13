@@ -26,7 +26,7 @@
 
 .text-center.mt-4
   - confirm_message = view_mode == :manager ? 'Are you ready to finalize this check-in? This will create the official rating.' : 'Your manager will review and finalize this check-in.'
-  = link_to "Go to Finalization", organization_person_finalization_path(@organization, @person), 
+  = link_to "Go to Finalization", organization_company_teammate_finalization_path(@organization, @person), 
             class: 'btn btn-success btn-lg',
             data: { confirm: confirm_message }
   

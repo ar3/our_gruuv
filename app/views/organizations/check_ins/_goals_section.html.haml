@@ -64,7 +64,7 @@
       
       .d-grid.mt-3
         = button_to "Manage Goals & Confidence Ratings", 
-                    save_and_redirect_organization_person_check_ins_path(@organization, @person), 
+                    save_and_redirect_organization_company_teammate_check_ins_path(@organization, @person), 
                     method: :post,
                     params: { redirect_url: @goals_check_in_url },
                     class: "btn btn-outline-primary"

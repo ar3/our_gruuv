@@ -1,0 +1,88 @@
+-# Abilities Table View
+- if relevant_abilities&.any?
+  .table-responsive
+    %table.table.table-striped{data: {abilities_table: true}}
+      %thead
+        %tr
+          %th Ability
+          %th Why It's Relevant
+          %th When Milestones Achieved
+          %th Notes
+          %th #{person.first_name} is actively pursuing:
+      %tbody
+        - relevant_abilities.each do |ability_data|
+          - ability = ability_data[:ability]
+          - milestone_attainments = ability_data[:milestone_attainments]
+          - assignment_requirements = ability_data[:assignment_requirements]
+          %tr
+            %td
+              - begin
+                - if policy(ability).show?
+                  = link_to organization_ability_path(@organization, ability), class: "text-decoration-none" do
+                    = ability.name
+                - else
+                  = ability.name
+              - rescue
+                = ability.name
+            %td
+              - relevance_items = []
+              - milestone_attainments.each do |milestone|
+                - relevance_items << "You have Milestone #{milestone.milestone_level}"
+              - assignment_requirements.each do |assignment_ability|
+                - assignment = assignment_ability.assignment
+                - relevance_items << "You need Milestone #{assignment_ability.milestone_level} for #{assignment.title}"
+              - if relevance_items.any?
+                %ul.mb-0.pl-3{style: "list-style: disc;"}
+                  - relevance_items.each do |item|
+                    %li= item
+              - else
+                %span.text-muted None
+            %td
+              - if milestone_attainments.any?
+                %ul.mb-0.pl-3{style: "list-style: disc;"}
+                  - milestone_attainments.each do |milestone|
+                    %li
+                      Milestone #{milestone.milestone_level}: #{milestone.attained_at.strftime('%B %d, %Y')}
+              - else
+                %span.text-muted None
+            %td
+              %textarea.form-control.form-control-sm{rows: "2", placeholder: "Coming Soon... Ability notes..." }
+              .mt-2
+                - since_date = 1.year.ago
+                - teammate = person.teammates.find_by(organization: @organization)
+                - if teammate
+                  - observations = visible_observations_for_person(current_person, @organization)
+                  - observations = observations.joins(:observed_teammates).where(teammates: { id: teammate.id })
+                  - observations = observations.joins(:observation_ratings).where(observation_ratings: { rateable_type: 'Ability', rateable_id: ability.id })
+                  - observations = observations.where('observed_at >= ?', since_date) if since_date.present?
+                  - observation_count = observations.count
+                  .d-flex.flex-column.gap-1
+                    - time_ago = time_ago_in_words(since_date)
+                    = link_to filtered_observations_organization_observations_path(@organization, rateable_type: 'Ability', rateable_id: ability.id, observee_ids: [teammate.id], start_date: since_date), target: '_blank', class: "text-muted text-decoration-none small" do
+                      %i.bi.bi-eye.me-1
+                      - if observation_count > 0
+                        #{pluralize(observation_count, 'observation')} on this since #{time_ago} ago
+                      - else
+                        No notes to show since #{time_ago} ago
+                    = link_to new_organization_observation_path(@organization, return_url: organization_company_teammate_check_ins_path(organization, @teammate), return_text: "Check-ins", observee_ids: [teammate.id], rateable_type: 'Ability', rateable_id: ability.id, privacy_level: 'observed_and_managers'), class: "text-muted text-decoration-none small" do
+                      %i.bi.bi-plus-circle.me-1
+                      Add Win / Challenge
+            %td
+              .btn-group-vertical{role: "group", "aria-label": "Ability goal selection"}
+                = radio_button_tag "ability_goal[#{ability.id}]", "na", true, class: "btn-check", id: "ability_goal_#{ability.id}_na", disabled: true
+                = label_tag "ability_goal_#{ability.id}_na", "N/A", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_na"
+                = radio_button_tag "ability_goal[#{ability.id}]", "m1", false, class: "btn-check", id: "ability_goal_#{ability.id}_m1", disabled: true
+                = label_tag "ability_goal_#{ability.id}_m1", "M1: Demonstrated", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m1"
+                = radio_button_tag "ability_goal[#{ability.id}]", "m2", false, class: "btn-check", id: "ability_goal_#{ability.id}_m2", disabled: true
+                = label_tag "ability_goal_#{ability.id}_m2", "M2: Advanced", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m2"
+                = radio_button_tag "ability_goal[#{ability.id}]", "m3", false, class: "btn-check", id: "ability_goal_#{ability.id}_m3", disabled: true
+                = label_tag "ability_goal_#{ability.id}_m3", "M3: Expert", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m3"
+                = radio_button_tag "ability_goal[#{ability.id}]", "m4", false, class: "btn-check", id: "ability_goal_#{ability.id}_m4", disabled: true
+                = label_tag "ability_goal_#{ability.id}_m4", "M4: Distinguished", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m4"
+                = radio_button_tag "ability_goal[#{ability.id}]", "m5", false, class: "btn-check", id: "ability_goal_#{ability.id}_m5", disabled: true
+                = label_tag "ability_goal_#{ability.id}_m5", "M5: Industry-Recognized", class: "btn btn-outline-secondary", for: "ability_goal_#{ability.id}_m5"
+- else
+  .alert.alert-info{data: {abilities_empty_state: true}}
+    %i.bi.bi-info-circle.me-2
+    No relevant abilities found
+

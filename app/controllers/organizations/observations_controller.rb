@@ -46,6 +46,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     all_observations_query = ObservationsQuery.new(organization, params.except(:sort), current_person: current_person)
     all_observations = all_observations_query.call
     @spotlight_stats = calculate_spotlight_stats(all_observations)
+    
+    # Store return context for back link
+    @return_url = params[:return_url]
+    @return_text = params[:return_text]
   end
 
   def customize_view

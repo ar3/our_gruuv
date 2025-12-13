@@ -1,0 +1,94 @@
+.container
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h1 Employment Summary for #{@teammate.person.display_name}
+        - company = @employment_tenures.first&.company || current_organization
+        = link_to "Back to Profile", organization_company_teammate_path(organization, @teammate), class: "btn btn-outline-secondary"
+
+  .row
+    .col-12
+      .card.mb-4
+        .card-header
+          %h5.card-title.mb-0 Employment History
+        .card-body
+          - if @employment_tenures.any?
+            - companies_with_employment = @employment_tenures.map(&:company).uniq
+            - companies_with_employment.each do |company|
+              .company-section.mb-4
+                %h6.text-primary= company.name
+                .timeline
+                  - company_tenures = @employment_tenures.select { |t| t.company == company }.sort_by(&:started_at).reverse
+                  - company_tenures.each_with_index do |tenure, index|
+                    .timeline-item.mb-3
+                      .row
+                        .col-md-2
+                          %small.text-muted
+                            = tenure.started_at.strftime('%b %Y')
+                            - if tenure.ended_at
+                              %br
+                              to #{tenure.ended_at.strftime('%b %Y')}
+                        .col-md-8
+                          .card{class: tenure.active? ? 'border-success' : 'border-secondary'}
+                            .card-body.py-2
+                              %strong= tenure.position.display_name
+                              - if tenure.seat
+                                %br
+                                %small.text-muted Seat: #{tenure.seat.display_name}
+                              - if tenure.manager
+                                %br
+                                %small.text-muted Manager: #{tenure.manager.display_name}
+                              - if tenure.employment_change_notes.present?
+                                %br
+                                %small.text-muted Notes: #{tenure.employment_change_notes}
+                        .col-md-2.text-end
+                          - if tenure.active?
+                            %span.badge.bg-success Active
+                          - else
+                            %span.badge.bg-secondary Inactive
+                          %br
+                          = link_to "View", organization_company_teammate_employment_tenure_path(organization, @teammate, tenure), class: "btn btn-sm btn-outline-primary mt-1"
+          - else
+            %p.text-muted No employment history found.
+
+      .card.mb-4
+        .card-header
+          %h5.card-title.mb-0 Assignment History
+        .card-body
+          %p.text-muted
+            %i.bi.bi-clock.me-2
+            Assignment tracking will be implemented in future phases.
+          %p.text-muted This section will show:
+          %ul
+            %li Assignment tenures and their duration
+            %li Performance ratings and check-ins
+            %li Manager feedback and official ratings
+            %li Energy spent and satisfaction metrics
+
+      .card.mb-4
+        .card-header
+          %h5.card-title.mb-0 Ability Milestone Attainment
+        .card-body
+          %p.text-muted
+            %i.bi.bi-trophy.me-2
+            Ability milestone tracking will be implemented in future phases.
+          %p.text-muted This section will show:
+          %ul
+            %li Certifications and qualifications earned
+            %li Skills and competencies developed
+            %li Training completion records
+            %li Professional development milestones
+
+      .card
+        .card-header
+          %h5.card-title.mb-0 Observations
+        .card-body
+          %p.text-muted
+            %i.bi.bi-eye.me-2
+            Observation tracking will be implemented in future phases.
+          %p.text-muted This section will show:
+          %ul
+            %li Notable actions and achievements
+            %li Recognition and awards
+            %li Contributions to organizational goals
+            %li Performance highlights and feedback

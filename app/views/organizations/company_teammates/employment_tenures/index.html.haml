@@ -1,0 +1,35 @@
+.container
+  .d-flex.justify-content-between.align-items-center.mb-4
+    %h1 Employment Tenures
+    = link_to 'New Employment Tenure', new_employment_tenure_path, class: 'btn btn-primary'
+
+  - if @employment_tenures.any?
+    .table-responsive
+      %table.table.table-striped
+        %thead
+          %tr
+            %th Person
+            %th Company
+            %th Position
+            %th Manager
+            %th Duration
+            %th Status
+            %th Actions
+        %tbody
+          - @employment_tenures.each do |tenure|
+            %tr
+              %td= tenure.person.display_name
+              %td= tenure.company.display_name
+              %td= tenure.position.display_name
+              %td= tenure.manager&.display_name || 'No manager'
+              %td= tenure.duration_display
+              %td= tenure.status_badge
+              %td
+                .btn-group.btn-group-sm
+                  = link_to 'View', tenure, class: 'btn btn-outline-primary'
+                  = link_to 'Edit', edit_employment_tenure_path(tenure), class: 'btn btn-outline-secondary'
+                  = link_to 'Delete', tenure, method: :delete, data: { confirm: 'Are you sure?' }, class: 'btn btn-outline-danger'
+  - else
+    .alert.alert-info
+      %h5 No employment tenures found
+      %p= link_to 'Create the first employment tenure', new_employment_tenure_path, class: 'alert-link'

@@ -10,6 +10,8 @@ RSpec.describe 'Vertical Navigation', type: :request do
     sign_in_as_teammate_for_request(person, organization)
     user_preference.update_preference(:layout, 'vertical')
     user_preference.update_preference(:vertical_nav_open, true)
+    # Mock policy for check-ins visibility
+    allow_any_instance_of(CompanyTeammatePolicy).to receive(:view_check_ins?).and_return(true)
   end
   
   describe 'collapsible sections' do
@@ -52,7 +54,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
     
     context 'when on a page within Align section' do
       before do
-        policy_double = double(index?: true, show?: true, create?: true, manage_employment?: true)
+        policy_double = double(index?: true, show?: true, create?: true, manage_employment?: true, view_check_ins?: true)
         allow_any_instance_of(ApplicationController).to receive(:policy).and_return(policy_double)
       end
       
@@ -87,7 +89,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
     
     context 'when on a page within Admin section' do
       before do
-        policy_double = double(index?: true, show?: true, create?: true, manage_employment?: true)
+        policy_double = double(index?: true, show?: true, create?: true, manage_employment?: true, view_check_ins?: true)
         allow_any_instance_of(ApplicationController).to receive(:policy).and_return(policy_double)
       end
       
@@ -119,7 +121,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
     
     context 'when on a page within Collab section' do
       before do
-        policy_double = double(index?: true, show?: true, create?: true, manage_employment?: true)
+        policy_double = double(index?: true, show?: true, create?: true, manage_employment?: true, view_check_ins?: true)
         allow_any_instance_of(ApplicationController).to receive(:policy).and_return(policy_double)
       end
       

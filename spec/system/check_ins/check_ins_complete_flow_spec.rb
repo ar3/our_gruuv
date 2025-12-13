@@ -41,7 +41,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
     end
 
     it 'allows filling out multiple assignments, aspirations, and position in one save' do
-      visit organization_person_check_ins_path(company, employee_person)
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
       
       expect(page).to have_content('Check-Ins for John Doe')
       expect(page).to have_content('Assignment 1')
@@ -109,7 +109,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         employee_completed_at: Time.current
       )
       
-      visit organization_person_check_ins_path(company, employee_person)
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
       
       # Employee view should show completed - check for completion status
       # The status shows as "Ready for Manager" radio button or "Waiting for Manager" badge
@@ -118,7 +118,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
       
       # Manager view should show manager can complete
       switch_to_user(manager_person, company)
-      visit organization_person_check_ins_path(company, employee_person)
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
       
       # In table view, header shows "Manager Rating", not "Manager Assessment"
       # Check for the field itself (Capybara's fill_in/select have implicit waits)
@@ -142,7 +142,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         manager_private_notes: 'Manager draft notes'
       )
       
-      visit organization_person_check_ins_path(company, employee_person)
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
       
       # Check for employee completion status - use database check
       expect(check_in.reload.employee_completed_at).to be_present
@@ -163,7 +163,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         manager_completed_by: manager_person
       )
       
-      visit organization_person_check_ins_path(company, employee_person)
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
       
       # Approach 1: Check database state (most reliable)
       expect(check_in.reload.ready_for_finalization?).to be true
@@ -200,7 +200,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
       end
 
       it 'shows only employee fields and hides manager fields' do
-        visit organization_person_check_ins_path(company, employee_person)
+        visit organization_company_teammate_check_ins_path(company, employee_teammate)
         
         # Should see employee fields for assignments
         expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][employee_rating]")
@@ -222,6 +222,47 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         
         # Should NOT see manager assessment section headers
         expect(page).not_to have_content('Manager Assessment')
+        
+        # Critical: Should NOT see both Employee Assessment and Manager Assessment sections
+        # Count occurrences to ensure we're not seeing both
+        html = page.html
+        employee_assessment_count = html.scan(/Employee Assessment/).count
+        manager_assessment_count = html.scan(/Manager Assessment/).count
+        
+        # Note: Employee Assessment sections may not appear if check-ins are completed
+        # The key test is that we should NOT see Manager Assessment sections
+        expect(manager_assessment_count).to eq(0), "Employee should NOT see Manager Assessment sections (found #{manager_assessment_count})"
+        
+        # If Employee Assessment sections are present, verify Manager sections are not
+        if employee_assessment_count > 0
+          expect(manager_assessment_count).to eq(0), "When Employee Assessment is visible, Manager Assessment should NOT be visible (found #{manager_assessment_count})"
+        end
+      end
+      
+      context 'card view' do
+        it 'shows only employee fields in card view' do
+          visit organization_company_teammate_check_ins_path(company, employee_teammate, view: 'card')
+          
+          # Should see employee section headers
+          expect(page).to have_content('Employee Assessment')
+          
+          # Should NOT see manager section headers
+          expect(page).not_to have_content('Manager Assessment')
+        end
+      end
+      
+      context 'table view' do
+        it 'shows only employee fields in table view' do
+          visit organization_company_teammate_check_ins_path(company, employee_teammate, view: 'table')
+          
+          # Should see employee headers in table
+          expect(page).to have_css('th', text: 'Employee Rating')
+          expect(page).to have_css('th', text: 'Employee Notes')
+          
+          # Should NOT see manager headers in table
+          expect(page).not_to have_css('th', text: 'Manager Rating')
+          expect(page).not_to have_css('th', text: 'Manager Notes')
+        end
       end
     end
 
@@ -231,7 +272,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
       end
 
       it 'shows only manager fields and hides employee fields' do
-        visit organization_person_check_ins_path(company, employee_person)
+        visit organization_company_teammate_check_ins_path(company, employee_teammate)
         
         # Should see manager fields for assignments
         expect(page).to have_field("check_ins[assignment_check_ins][#{assignment_check_in.id}][manager_rating]")
@@ -253,6 +294,47 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         
         # Should NOT see employee assessment section headers
         expect(page).not_to have_content('Employee Assessment')
+        
+        # Critical: Should NOT see both Employee Assessment and Manager Assessment sections
+        # Count occurrences to ensure we're not seeing both
+        html = page.html
+        employee_assessment_count = html.scan(/Employee Assessment/).count
+        manager_assessment_count = html.scan(/Manager Assessment/).count
+        
+        # Note: Manager Assessment sections may not appear if check-ins are completed
+        # The key test is that we should NOT see Employee Assessment sections
+        expect(employee_assessment_count).to eq(0), "Manager should NOT see Employee Assessment sections (found #{employee_assessment_count})"
+        
+        # If Manager Assessment sections are present, verify Employee sections are not
+        if manager_assessment_count > 0
+          expect(employee_assessment_count).to eq(0), "When Manager Assessment is visible, Employee Assessment should NOT be visible (found #{employee_assessment_count})"
+        end
+      end
+      
+      context 'card view' do
+        it 'shows only manager fields in card view' do
+          visit organization_company_teammate_check_ins_path(company, employee_teammate, view: 'card')
+          
+          # Should see manager section headers
+          expect(page).to have_content('Manager Assessment')
+          
+          # Should NOT see employee section headers
+          expect(page).not_to have_content('Employee Assessment')
+        end
+      end
+      
+      context 'table view' do
+        it 'shows only manager fields in table view' do
+          visit organization_company_teammate_check_ins_path(company, employee_teammate, view: 'table')
+          
+          # Should see manager headers in table
+          expect(page).to have_css('th', text: 'Manager Rating')
+          expect(page).to have_css('th', text: 'Manager Notes')
+          
+          # Should NOT see employee headers in table
+          expect(page).not_to have_css('th', text: 'Employee Rating')
+          expect(page).not_to have_css('th', text: 'Employee Notes')
+        end
       end
     end
   end

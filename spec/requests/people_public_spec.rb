@@ -78,7 +78,7 @@ RSpec.describe 'Public Person View', type: :request do
       get public_person_path(person)
       expect(response).to have_http_status(:success)
       expect(response.body).to include('View Teammate Profile')
-      expect(response.body).to include(teammate_organization_person_path(organization, person))
+      expect(response.body).to include(internal_organization_company_teammate_path(organization, person_teammate))
     end
 
     it 'does not show teammate link when user is not logged in' do

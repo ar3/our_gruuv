@@ -1,5 +1,5 @@
 - content_for :go_back_link do
-  = link_to organization_person_check_ins_path(current_organization, @person), class: "go-back-link" do
+  = link_to organization_company_teammate_check_ins_path(current_organization, @person), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     Back to #{@person.display_name}'s Assignments
 
@@ -187,7 +187,7 @@
           .col-12
             %h6 Edit Assignment
             - if @open_check_in
-              = form_with url: organization_person_check_ins_path(current_organization, @person), method: :patch, scope: :check_ins, local: true do |form|
+              = form_with url: organization_company_teammate_check_ins_path(current_organization, @person), method: :patch, scope: :check_ins, local: true do |form|
                 = form.fields_for :assignment_check_ins, @open_check_in, index: @open_check_in.id do |af|
                   .row
                     .col-12
@@ -243,4 +243,4 @@
                     
                     .col-12.text-end
                       = form.submit "Update Assignment", class: "btn btn-primary me-2"
-                      = link_to "Back to All Assignments", organization_person_check_ins_path(current_organization, @person), class: "btn btn-outline-secondary"
+                      = link_to "Back to All Assignments", organization_company_teammate_check_ins_path(current_organization, @person), class: "btn btn-outline-secondary"

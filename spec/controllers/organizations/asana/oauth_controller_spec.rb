@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe Organizations::Asana::OauthController, type: :controller do
+RSpec.describe Organizations::CompanyTeammates::Asana::OauthController, type: :controller do
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person, full_name: 'Manager Person') }
   let(:employee) { create(:person, full_name: 'Employee Person') }
@@ -26,7 +26,7 @@ RSpec.describe Organizations::Asana::OauthController, type: :controller do
       it 'redirects to Asana OAuth URL' do
         get :authorize, params: { 
           organization_id: organization.id, 
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           one_on_one_link_id: 'dummy' # Route requires this but we don't use it
         }
         
@@ -41,7 +41,7 @@ RSpec.describe Organizations::Asana::OauthController, type: :controller do
       it 'redirects to Asana OAuth URL with identities source' do
         get :authorize, params: { 
           organization_id: organization.id, 
-          person_id: employee.id
+          company_teammate_id: employee_teammate.id
         }
         
         expect(response).to have_http_status(:redirect)
@@ -98,7 +98,7 @@ RSpec.describe Organizations::Asana::OauthController, type: :controller do
       
       get :callback, params: { code: oauth_code, state: state }
       
-      expect(response).to redirect_to(organization_person_path(organization, employee))
+      expect(response).to redirect_to(organization_company_teammate_path(organization, employee_teammate))
       expect(flash[:notice]).to include('Asana account connected successfully!')
     end
 
@@ -107,7 +107,7 @@ RSpec.describe Organizations::Asana::OauthController, type: :controller do
       
       get :callback, params: { code: oauth_code, state: state }
       
-      expect(response).to redirect_to(organization_person_one_on_one_link_path(organization, employee))
+      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
       expect(flash[:notice]).to include('Asana account connected successfully!')
     end
 
@@ -137,7 +137,7 @@ RSpec.describe Organizations::Asana::OauthController, type: :controller do
       
       get :callback, params: { code: 'invalid_code', state: state }
       
-      expect(response).to redirect_to(organization_person_one_on_one_link_path(organization, employee))
+      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
       expect(flash[:alert]).to include('Failed to connect Asana')
     end
 
@@ -150,7 +150,7 @@ RSpec.describe Organizations::Asana::OauthController, type: :controller do
       
       get :callback, params: { code: 'invalid_code', state: state }
       
-      expect(response).to redirect_to(organization_person_path(organization, employee))
+      expect(response).to redirect_to(organization_company_teammate_path(organization, employee_teammate))
       expect(flash[:alert]).to include('Failed to connect Asana')
     end
   end

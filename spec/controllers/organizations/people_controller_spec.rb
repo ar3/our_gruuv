@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe Organizations::PeopleController, type: :controller do
+RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person) }
   let(:manager_access) { create(:teammate, person: manager, organization: organization, can_manage_employment: true) }
@@ -39,21 +39,21 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         end
 
         it 'allows access' do
-          get :show, params: { organization_id: organization.id, id: person.id }
+          get :show, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:success)
         end
       end
 
       context 'when user is the manager of the person' do
         it 'allows access' do
-          get :show, params: { organization_id: organization.id, id: person.id }
+          get :show, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:success)
         end
       end
 
       context 'when user has employment management permissions' do
         it 'allows access' do
-          get :show, params: { organization_id: organization.id, id: person.id }
+          get :show, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:success)
         end
       end
@@ -65,9 +65,9 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         end
 
         it 'denies access' do
-          get :show, params: { organization_id: organization.id, id: person.id }
+          get :show, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:redirect)
-          expect(response).to redirect_to(public_person_path(person))
+          expect(response).to redirect_to(root_path)
         end
       end
 
@@ -83,7 +83,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         end
 
         it 'denies access and redirects to organizations index' do
-          get :show, params: { organization_id: organization.id, id: person.id }
+          get :show, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:redirect)
           # When user doesn't have access to the organization, they get redirected to organizations index
           expect(response).to redirect_to(organizations_path)
@@ -96,7 +96,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         end
 
         it 'redirects to login' do
-          get :show, params: { organization_id: organization.id, id: person.id }
+          get :show, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:redirect)
           expect(response).to redirect_to(root_path)
         end
@@ -111,7 +111,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         end
 
         it 'allows access' do
-          get :show, params: { organization_id: organization.id, id: person.id }
+          get :show, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:success)
         end
       end
@@ -141,17 +141,17 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       end
 
       it 'returns http success' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(response).to have_http_status(:success)
       end
 
       it 'assigns the correct person' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
-        expect(assigns(:person)).to eq(person)
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
+        expect(assigns(:teammate).person).to eq(person)
       end
 
       it 'assigns employment tenures ordered by start date descending' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         
         employment_tenures = assigns(:employment_tenures)
         expect(employment_tenures).to include(active_employment, past_employment)
@@ -160,18 +160,18 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       end
 
       it 'assigns the current employment tenure' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(assigns(:current_employment)).to eq(active_employment)
       end
 
       it 'assigns the current organization from active employment' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(assigns(:current_organization)).to be_a(Organization)
         expect(assigns(:current_organization).id).to eq(organization.id)
       end
 
       it 'assigns filtered assignment tenures for the organization' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         assignment_tenures = assigns(:assignment_tenures)
         expect(assignment_tenures).to be_present
         # All assignments should belong to the organization
@@ -182,7 +182,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       end
 
       it 'includes associated data to avoid N+1 queries' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         
         # Verify that the query includes the necessary associations
         employment_tenures = assigns(:employment_tenures)
@@ -216,14 +216,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       end
 
       it 'returns http success' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(response).to have_http_status(:success)
       end
 
       it 'assigns employment tenures ordered by start date descending' do
         # Note: We need active employment for authorization, but the test expects to see past employment
         # The active employment created in before block will be included, but we can still test past employment ordering
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         
         employment_tenures = assigns(:employment_tenures)
         expect(employment_tenures).to include(past_employment1)
@@ -235,12 +235,12 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       it 'assigns nil for current employment tenure' do
         # End the active employment created for authorization to test the "no active" scenario
         person_teammate.employment_tenures.active.update_all(ended_at: 1.day.ago)
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(assigns(:current_employment)).to be_nil
       end
 
       it 'assigns nil for current organization' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(assigns(:current_organization)).to be_a(Organization)
         expect(assigns(:current_organization).id).to eq(organization.id)
       end
@@ -257,14 +257,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       end
 
       it 'returns http success' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(response).to have_http_status(:success)
       end
 
       it 'assigns empty employment tenures collection when filtered' do
         # We need active employment for authorization, so we can't actually test "no employment tenures"
         # Instead, test that we can view the page and see the employment tenure (even if ended)
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         
         employment_tenures = assigns(:employment_tenures)
         # Should have the employment tenure created in before block
@@ -274,12 +274,12 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       it 'assigns nil for current employment tenure when none active' do
         # End the employment
         person_teammate.employment_tenures.update_all(ended_at: 1.day.ago)
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(assigns(:current_employment)).to be_nil
       end
 
       it 'assigns the organization from the route' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(assigns(:current_organization)).to be_a(Organization)
         expect(assigns(:current_organization).id).to eq(organization.id)
       end
@@ -307,12 +307,12 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       end
 
       it 'returns http success' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(response).to have_http_status(:success)
       end
 
       it 'assigns all employment tenures' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         
         employment_tenures = assigns(:employment_tenures)
         expect(employment_tenures).to include(active_employment1)
@@ -320,12 +320,12 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       end
 
       it 'assigns the active employment from the organization as current' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(assigns(:current_employment)).to eq(active_employment1) # Only one from this organization
       end
 
       it 'assigns the organization from the route' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(assigns(:current_organization)).to be_a(Organization)
         expect(assigns(:current_organization).id).to eq(organization.id)
       end
@@ -343,7 +343,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
       context 'when user is an active teammate in same organization' do
         let(:viewer) { create(:person) }
-        let(:viewer_teammate) { create(:teammate, person: viewer, organization: organization) }
+        let(:viewer_teammate) { create(:teammate, person: viewer, organization: organization, can_manage_employment: true) }
 
         before do
           viewer_teammate.update!(first_employed_at: 1.year.ago)
@@ -353,7 +353,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         end
 
         it 'allows access' do
-          get :complete_picture, params: { organization_id: organization.id, id: person.id }
+          get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:success)
         end
       end
@@ -361,14 +361,15 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       context 'when user has employment management permissions but is not active teammate' do
         before do
           unauthorized_teammate = create(:teammate, person: unauthorized_user, organization: organization, can_manage_employment: true)
+          unauthorized_teammate.update!(first_employed_at: 2.years.ago, last_terminated_at: 1.year.ago)
           create(:employment_tenure, teammate: unauthorized_teammate, company: organization, started_at: 2.years.ago, ended_at: 1.year.ago) # Past employment
           sign_in_as_teammate(unauthorized_user, organization)
         end
 
         it 'redirects when authorization fails (inactive teammate)' do
-          get :complete_picture, params: { organization_id: organization.id, id: person.id }
+          get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:redirect)
-          expect(response).to redirect_to(public_person_path(person))
+          expect(response).to redirect_to(root_path)
         end
       end
 
@@ -379,7 +380,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         end
 
         it 'allows access to own complete picture view' do
-          get :complete_picture, params: { organization_id: organization.id, id: person.id }
+          get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:success)
         end
       end
@@ -393,7 +394,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         end
 
         it 'allows access' do
-          get :complete_picture, params: { organization_id: organization.id, id: person.id }
+          get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:success)
         end
       end
@@ -409,23 +410,25 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
     context 'when organization is not found' do
       let(:person) { create(:person) }
+      let(:person_teammate) { create(:teammate, person: person, organization: organization) }
 
       it 'raises ActiveRecord::RecordNotFound' do
         expect {
-          get :complete_picture, params: { organization_id: 99999, id: person.id }
+          get :complete_picture, params: { organization_id: 99999, id: person_teammate.id }
         }.to raise_error(ActiveRecord::RecordNotFound)
       end
     end
 
     context 'when user is not authenticated' do
       let(:person) { create(:person) }
+      let(:person_teammate) { create(:teammate, person: person, organization: organization) }
 
       before do
         session[:current_company_teammate_id] = nil
       end
 
       it 'redirects to login' do
-        get :complete_picture, params: { organization_id: organization.id, id: person.id }
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
         expect(response).to have_http_status(:redirect)
         expect(response).to redirect_to(root_path)
       end
@@ -445,7 +448,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       let(:valid_params) do
         {
           organization_id: organization.id,
-          id: person.id,
+          id: person_teammate.id,
           person: {
             first_name: 'Jane',
             last_name: 'Smith',
@@ -470,7 +473,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
         it 'redirects to organization person path with notice' do
           patch :update, params: valid_params
-          expect(response).to redirect_to(organization_person_path(organization, person))
+          expect(response).to redirect_to(organization_company_teammate_path(organization, person_teammate))
           expect(flash[:notice]).to eq('Profile updated successfully!')
         end
       end
@@ -485,7 +488,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
         it 'redirects to organization person path with notice' do
           patch :update, params: valid_params
-          expect(response).to redirect_to(organization_person_path(organization, person))
+          expect(response).to redirect_to(organization_company_teammate_path(organization, person_teammate))
           expect(flash[:notice]).to eq('Profile updated successfully!')
         end
       end
@@ -495,7 +498,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       let(:new_fields_params) do
         {
           organization_id: organization.id,
-          id: person.id,
+          id: person_teammate.id,
           person: {
             preferred_name: 'Johnny',
             gender_identity: 'man',
@@ -532,7 +535,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       let(:invalid_params) do
         {
           organization_id: organization.id,
-          id: person.id,
+          id: person_teammate.id,
           person: {
             gender_identity: 'invalid_gender'
           }
@@ -562,7 +565,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       let(:blank_phone_params) do
         {
           organization_id: organization.id,
-          id: person.id,
+          id: person_teammate.id,
           person: {
             unique_textable_phone_number: ''
           }
@@ -587,7 +590,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       let(:duplicate_phone_params) do
         {
           organization_id: organization.id,
-          id: person.id,
+          id: person_teammate.id,
           person: {
             unique_textable_phone_number: '+1234567890'
           }
@@ -603,7 +606,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         patch :update, params: duplicate_phone_params
         expect(response).to render_template(:show)
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(assigns(:person).errors[:unique_textable_phone_number]).to include('has already been taken')
+        expect(assigns(:teammate).person.errors[:unique_textable_phone_number]).to include('has already been taken')
       end
     end
 
@@ -617,10 +620,10 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       end
 
       it 'handles database constraint violation gracefully' do
-        patch :update, params: { organization_id: organization.id, id: person.id, person: { first_name: 'Jane' } }
+        patch :update, params: { organization_id: organization.id, id: person_teammate.id, person: { first_name: 'Jane' } }
         expect(response).to render_template(:show)
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(assigns(:person).errors[:base]).to include('Unable to update profile due to a database constraint. Please try again.')
+        expect(assigns(:teammate).person.errors[:base]).to include('Unable to update profile due to a database constraint. Please try again.')
       end
     end
 
@@ -632,10 +635,10 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       end
 
       it 'handles unexpected errors gracefully' do
-        patch :update, params: { organization_id: organization.id, id: person.id, person: { first_name: 'Jane' } }
+        patch :update, params: { organization_id: organization.id, id: person_teammate.id, person: { first_name: 'Jane' } }
         expect(response).to render_template(:show)
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(assigns(:person).errors[:base]).to include('An unexpected error occurred while updating your profile. Please try again.')
+        expect(assigns(:teammate).person.errors[:base]).to include('An unexpected error occurred while updating your profile. Please try again.')
       end
     end
 
@@ -643,7 +646,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       before { session[:current_company_teammate_id] = nil }
 
       it 'redirects to root path' do
-        patch :update, params: { organization_id: organization.id, id: person.id, person: { first_name: 'Jane' } }
+        patch :update, params: { organization_id: organization.id, id: person_teammate.id, person: { first_name: 'Jane' } }
         expect(response).to redirect_to(root_path)
       end
     end
@@ -659,14 +662,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
       context 'when user is a manager with employment management permissions' do
         it 'allows updating the target person' do
-          patch :update, params: { organization_id: organization.id, id: target_person.id, person: { first_name: 'Updated' } }
+          patch :update, params: { organization_id: organization.id, id: target_teammate.id, person: { first_name: 'Updated' } }
           target_person.reload
           expect(target_person.first_name).to eq('Updated')
         end
 
         it 'redirects to organization person path with notice' do
-          patch :update, params: { organization_id: organization.id, id: target_person.id, person: { first_name: 'Updated' } }
-          expect(response).to redirect_to(organization_person_path(organization, target_person))
+          patch :update, params: { organization_id: organization.id, id: target_teammate.id, person: { first_name: 'Updated' } }
+          expect(response).to redirect_to(organization_company_teammate_path(organization, target_teammate))
           expect(flash[:notice]).to eq('Profile updated successfully!')
         end
       end
@@ -686,14 +689,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         end
 
         it 'allows updating the target person' do
-          patch :update, params: { organization_id: organization.id, id: target_person.id, person: { first_name: 'Updated' } }
+          patch :update, params: { organization_id: organization.id, id: target_teammate.id, person: { first_name: 'Updated' } }
           target_person.reload
           expect(target_person.first_name).to eq('Updated')
         end
 
         it 'redirects to organization person path with notice' do
-          patch :update, params: { organization_id: organization.id, id: target_person.id, person: { first_name: 'Updated' } }
-          expect(response).to redirect_to(organization_person_path(organization, target_person))
+          patch :update, params: { organization_id: organization.id, id: target_teammate.id, person: { first_name: 'Updated' } }
+          expect(response).to redirect_to(organization_company_teammate_path(organization, target_teammate))
           expect(flash[:notice]).to eq('Profile updated successfully!')
         end
       end
@@ -716,7 +719,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
           # Since both are active teammates in same org, they can view each other, but update might still work
           # Let's verify the person wasn't actually updated
           original_name = target_person.first_name
-          patch :update, params: { organization_id: organization.id, id: target_person.id, person: { first_name: 'Updated' } }
+          patch :update, params: { organization_id: organization.id, id: target_teammate.id, person: { first_name: 'Updated' } }
           # If authorization passes but update fails for other reasons, check the response status
           # If it's a redirect, authorization passed; if it's 422, there was a validation error
           # If it's 403 or raises error, authorization failed

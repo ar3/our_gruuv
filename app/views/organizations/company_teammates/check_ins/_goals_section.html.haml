@@ -1,0 +1,71 @@
+= render 'shared/section_header', 
+         title: 'Active Goals', 
+         icon: 'bi-bullseye', 
+         description: 'View goals and confidence ratings',
+         collapsible: true,
+         collapse_target: 'goalsSection'
+
+-# Summary view (shown when collapsed)
+- all_goals = @now_goals + @next_goals + @later_goals
+- goals_needing_check_in = all_goals.count { |goal| goal.instance_variable_get(:@needs_check_in) }
+.card.mb-4.collapse-summary
+  .card-body
+    %p.mb-0
+      - if all_goals.any?
+        %strong= pluralize(all_goals.count, 'active goal')
+        - if goals_needing_check_in > 0
+          , #{pluralize(goals_needing_check_in, 'needs check-in')}
+      - else
+        No active goals found.
+
+-# Collapsible content
+.collapse#goalsSection
+  .card.mb-4
+    .card-body
+      - if all_goals.any?
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Goal
+                %th Timeframe
+                %th Last Confidence
+                %th Status
+            %tbody
+              - all_goals.each do |goal|
+                - latest_check_in = goal.instance_variable_get(:@latest_check_in)
+                - needs_check_in = goal.instance_variable_get(:@needs_check_in)
+                %tr
+                  %td
+                    = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
+                  %td
+                    - if @now_goals.include?(goal)
+                      %span.badge.bg-primary Now
+                    - elsif @next_goals.include?(goal)
+                      %span.badge.bg-info Next
+                    - elsif @later_goals.include?(goal)
+                      %span.badge.bg-secondary Later
+                  %td
+                    - if latest_check_in
+                      %strong= "#{latest_check_in.confidence_percentage}%"
+                      %br
+                      %small.text-muted= latest_check_in.check_in_week_start.strftime('%b %d, %Y')
+                    - else
+                      %span.text-muted No check-in yet
+                  %td
+                    - if needs_check_in
+                      %span.badge.bg-warning.text-dark New check-in needed
+                    - elsif latest_check_in
+                      %span.badge.bg-success Up to date
+                    - else
+                      %span.badge.bg-secondary No check-in yet
+      - else
+        %p.text-muted.mb-3 No active goals found.
+      
+      .d-grid.mt-3
+        = button_to "Manage Goals & Confidence Ratings", 
+                    save_and_redirect_organization_company_teammate_check_ins_path(organization, @teammate), 
+                    method: :post,
+                    params: { redirect_url: @goals_check_in_url },
+                    class: "btn btn-outline-primary"
+

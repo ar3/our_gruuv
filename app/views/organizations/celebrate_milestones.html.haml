@@ -106,7 +106,7 @@
             - @recent_milestones.each do |milestone|
               %tr
                 %td
-                  = link_to complete_picture_organization_person_path(@organization, milestone.teammate.person), class: "text-decoration-none" do
+                  = link_to complete_picture_organization_company_teammate_path(@organization, milestone.teammate.person), class: "text-decoration-none" do
                     %strong= milestone.teammate.person.display_name
                 %td
                   = milestone.ability.name
@@ -118,7 +118,7 @@
                   = milestone.certified_by.display_name
                 %td
                   .btn-group.btn-group-sm
-                    = link_to complete_picture_organization_person_path(@organization, milestone.teammate.person), class: "btn btn-outline-primary", title: "View Person" do
+                    = link_to complete_picture_organization_company_teammate_path(@organization, milestone.teammate.person), class: "btn btn-outline-primary", title: "View Person" do
                       %i.bi.bi-eye
                     = link_to organization_ability_path(@organization, milestone.ability), class: "btn btn-outline-secondary", title: "View Ability" do
                       %i.bi.bi-eye

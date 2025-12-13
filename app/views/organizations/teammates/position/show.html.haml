@@ -1,5 +1,5 @@
 - content_for :go_back_link do
-  = link_to organization_person_check_ins_path(@organization, @teammate.person), class: "go-back-link" do
+  = link_to organization_company_teammate_check_ins_path(@organization, @teammate), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     Back to Check-ins
 
@@ -162,7 +162,7 @@
               %small.text-muted Manager: #{@current_employment.manager.display_name}
           
           / Inline Edit Form
-          - can_manage = policy(@teammate.person).change_employment?
+          - can_manage = policy(@teammate).update?
           = form_with model: @form, url: organization_teammate_position_path(@organization, @teammate), local: true, method: :patch do |form|
             - if @form.errors.any?
               .alert.alert-danger.mt-3
@@ -279,9 +279,9 @@
                       - if check_in.officially_completed?
                         = link_to "View Details", "#", class: "btn btn-sm btn-outline-primary", "data-bs-toggle" => "modal", "data-bs-target" => "#checkInModal#{check_in.id}"
                       - elsif check_in.ready_for_finalization?
-                        = link_to "Finalize", organization_person_check_ins_path(@organization, @teammate.person), class: "btn btn-sm btn-warning"
+                        = link_to "Finalize", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-warning"
                       - else
-                        = link_to "Continue", organization_person_check_ins_path(@organization, @teammate.person), class: "btn btn-sm btn-primary"
+                        = link_to "Continue", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-primary"
 
           - @check_ins.each do |check_in|
             / Modal for each check-in
@@ -329,7 +329,7 @@
               %i.bi.bi-info-circle.me-2
               No Check-ins Found
             %p.mb-0 No position check-ins have been created yet.
-            = link_to "Start First Check-in", organization_person_check_ins_path(@organization, @teammate.person), class: "btn btn-primary btn-sm mt-2"
+            = link_to "Start First Check-in", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-primary btn-sm mt-2"
 
     / Current Check-in Form (if open check-in exists)
     - if @open_check_in

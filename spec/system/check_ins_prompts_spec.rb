@@ -38,11 +38,15 @@ RSpec.describe 'Check-ins Prompts Section', type: :system do
       created_at: 1.day.ago
     )
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     expect(page).to have_content('PROMPTS / REFLECTIONS')
-    expect(page).to have_content('Weekly Reflection')
     expect(page).to have_content('1 open prompt')
+    
+    # Expand the prompts section to see details
+    page.find('a[data-bs-target="#promptsSection"]').click
+    
+    expect(page).to have_content('Weekly Reflection')
     expect(page).to have_content('Open')
     expect(page).to have_button('View All Prompts')
   end
@@ -54,9 +58,13 @@ RSpec.describe 'Check-ins Prompts Section', type: :system do
       ct.type = 'CompanyTeammate'
     end
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     expect(page).to have_content('PROMPTS / REFLECTIONS')
+    
+    # Expand the prompts section to see details
+    page.find('a[data-bs-target="#promptsSection"]').click
+    
     expect(page).to have_content('No recent prompts to display.')
     expect(page).to have_button('View All Prompts')
   end
@@ -79,7 +87,10 @@ RSpec.describe 'Check-ins Prompts Section', type: :system do
       closed_at: 1.hour.ago
     )
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
+    
+    # Expand the prompts section to see details
+    page.find('a[data-bs-target="#promptsSection"]').click
     
     expect(page).to have_content('Completed Reflection')
     expect(page).to have_content('Closed')
@@ -105,10 +116,14 @@ RSpec.describe 'Check-ins Prompts Section', type: :system do
       )
     end
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
-    # Should show count of all open prompts (5), but only display last 3 in list
+    # Should show count of all open prompts (5)
     expect(page).to have_content('5 open prompts')
+    
+    # Expand the prompts section to see details
+    page.find('a[data-bs-target="#promptsSection"]').click
+    
     # Verify only 3 prompts are displayed in the list
     expect(page).to have_css('.list-group-item', count: 3)
   end
@@ -120,7 +135,10 @@ RSpec.describe 'Check-ins Prompts Section', type: :system do
       ct.type = 'CompanyTeammate'
     end
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
+    
+    # Expand the prompts section to see the button
+    page.find('a[data-bs-target="#promptsSection"]').click
     
     # Verify button is present
     expect(page).to have_button('View All Prompts')

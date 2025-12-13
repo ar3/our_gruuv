@@ -173,7 +173,10 @@ class Goal < ApplicationRecord
         # Owner can always view
         return true if owner.person == person
         # Check if person is in managerial hierarchy of owner's person
-        person.in_managerial_hierarchy_of?(owner.person, company)
+        person_teammate = CompanyTeammate.find_by(organization: company, person: person)
+        owner_teammate = owner.is_a?(CompanyTeammate) ? owner : CompanyTeammate.find_by(organization: company, person: owner.person)
+        return false unless person_teammate && owner_teammate
+        person_teammate.in_managerial_hierarchy_of?(owner_teammate)
       elsif owner_type == 'Organization' && owner.is_a?(Organization)
         # Organization owner with only_creator_owner_and_managers:
         # - Direct members of owner organization can see
@@ -202,8 +205,12 @@ class Goal < ApplicationRecord
     org_teammates = owner.teammates.where(organization: owner)
     
     # Check if person manages any of these teammates
+    person_teammate = CompanyTeammate.find_by(organization: company, person: person)
+    return false unless person_teammate
+    
     org_teammates.any? do |teammate|
-      person.in_managerial_hierarchy_of?(teammate.person, company)
+      teammate_company_teammate = teammate.is_a?(CompanyTeammate) ? teammate : CompanyTeammate.find_by(organization: company, person: teammate.person)
+      teammate_company_teammate && person_teammate.in_managerial_hierarchy_of?(teammate_company_teammate)
     end
   end
   

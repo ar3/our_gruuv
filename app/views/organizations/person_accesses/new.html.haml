@@ -46,5 +46,5 @@
                 = form.label :can_manage_prompts_nil, 'Inherit from parent organization', class: 'form-check-label'
 
             .d-flex.justify-content-between
-              = link_to 'Cancel', organization_person_path(@organization, current_person), class: 'btn btn-secondary'
+              = link_to 'Cancel', organization_company_teammate_path(@organization, current_company_teammate), class: 'btn btn-secondary'
               = form.submit 'Create Permission', class: 'btn btn-success'

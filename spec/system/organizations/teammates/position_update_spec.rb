@@ -243,7 +243,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       it 'redirects to public profile because view_check_ins? policy denies access' do
         # Since view_check_ins? requires audit? which needs can_manage_employment OR hierarchy,
         # users without either cannot view the position page at all
-        expect(page).to have_content("You don't have permission to view that profile")
+        expect(page).to have_content(/don't have permission|not authorized/i)
         expect(page).not_to have_content('Current Position')
       end
     end

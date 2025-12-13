@@ -108,7 +108,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
           }
         }.to change { existing_person.teammates.joins(:employment_tenures).count }.by(1)
         
-        expect(response).to redirect_to(organization_person_path(organization, existing_person))
+        expect(response).to redirect_to(organization_company_teammate_path(organization, existing_person.teammates.find_by(organization: organization)))
       end
       
       it 'sets the correct company' do
@@ -143,7 +143,7 @@ RSpec.describe Organizations::EmploymentManagementController, type: :controller 
           save_and_continue: 'true'
         }
         
-        expect(response).to redirect_to(organization_person_path(organization, Person.last))
+        expect(response).to redirect_to(organization_company_teammate_path(organization, Person.last.teammates.find_by(organization: organization)))
       end
       
       it 'redirects back to form when save and create another' do

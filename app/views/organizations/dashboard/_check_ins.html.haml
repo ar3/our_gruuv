@@ -24,11 +24,11 @@
 = render 'organizations/dashboard/dashboard_hero_card',
   header_html: check_ins_header_html,
   description: check_ins_description,
-  primary_action_url: organization_person_check_ins_path(@organization, current_person),
+  primary_action_url: organization_company_teammate_check_ins_path(@organization, current_company_teammate),
   primary_action_html: check_ins_primary_html,
-  secondary_action_url: @ready_for_finalization_count.to_i > 0 ? organization_person_finalization_path(@organization, current_person) : organization_person_check_ins_path(@organization, current_person),
+  secondary_action_url: @ready_for_finalization_count.to_i > 0 ? organization_company_teammate_finalization_path(@organization, current_company_teammate) : organization_company_teammate_check_ins_path(@organization, current_company_teammate),
   secondary_action_html: check_ins_secondary_html,
-  tertiary_action_url: @finalized_check_in_exists ? organization_person_finalization_path(@organization, current_person) : organization_person_check_ins_path(@organization, current_person),
+  tertiary_action_url: @finalized_check_in_exists ? organization_company_teammate_finalization_path(@organization, current_company_teammate) : organization_company_teammate_check_ins_path(@organization, current_company_teammate),
   tertiary_action_html: check_ins_tertiary_html
 
 

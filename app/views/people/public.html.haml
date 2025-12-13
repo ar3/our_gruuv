@@ -5,10 +5,12 @@
         %h1.mb-0
           %i.bi.bi-person-badge.me-2
           = "#{@person.first_name}#{' ' + @person.last_name[0] + '.' if @person.last_name.present?}"
-        - if current_person && current_organization && policy(@person).teammate?
-          = link_to teammate_organization_person_path(current_organization, @person), class: "btn btn-outline-primary btn-sm" do
-            %i.bi.bi-people.me-2
-            View Teammate Profile
+        - if current_person && current_organization && current_company_teammate && policy(current_company_teammate).internal?
+          - person_teammate = @person.teammates.find_by(organization: current_organization)
+          - if person_teammate
+            = link_to internal_organization_company_teammate_path(current_organization, person_teammate), class: "btn btn-outline-primary btn-sm" do
+              %i.bi.bi-people.me-2
+              View Teammate Profile
 
   .row
     .col-12

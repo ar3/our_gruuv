@@ -19,7 +19,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     params[:status] = 'active' if params[:status].nil?
     
     # Additional authorization for manager filter
-    if params[:manager_filter] == 'direct_reports' && (!current_person || !current_person.has_direct_reports?(@organization))
+    if params[:manager_filter] == 'direct_reports' && (!current_company_teammate || !current_company_teammate.has_direct_reports?)
       redirect_to organization_employees_path(@organization), 
                   alert: 'You do not have any direct reports in this organization.'
       return
@@ -173,11 +173,19 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Initialize maap_snapshots to ensure it's always set
     @maap_snapshots = MaapSnapshot.none
     
-    # Find the person/employee
-    @person = @organization.employees.find(params[:id])
+    # Route now uses teammate ID (migrated from person ID)
+    # Try to find teammate first, then get person from teammate
+    @teammate = @organization.teammates.find_by(id: params[:id])
+    if @teammate
+      @person = @teammate.person
+    else
+      # Fallback: try to find by person ID for backward compatibility
+      @person = @organization.employees.find(params[:id])
+      @teammate = @organization.teammates.find_by(person: @person)
+    end
     
     # Authorize access to audit view (organization context passed via pundit_user)
-    authorize @person, :audit?, policy_class: PersonPolicy
+    authorize @teammate, :audit?, policy_class: CompanyTeammatePolicy
     
     # Get MAAP snapshots for this person within this organization
     @maap_snapshots = MaapSnapshot.for_employee(@person)

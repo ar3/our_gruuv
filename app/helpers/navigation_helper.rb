@@ -13,9 +13,9 @@ module NavigationHelper
       {
         label: 'My Check-In',
         icon: 'bi-clipboard-check',
-        path: organization_person_check_ins_path(current_organization, current_person),
+        path: organization_company_teammate_check_ins_path(current_organization, current_company_teammate),
         section: nil,
-        policy_check: -> { policy(current_person).view_check_ins? }
+        policy_check: -> { policy(current_company_teammate).view_check_ins? }
       },
       {
         label: 'Align',

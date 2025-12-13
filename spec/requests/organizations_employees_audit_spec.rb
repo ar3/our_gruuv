@@ -47,12 +47,12 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     end
     
     it 'renders the audit page successfully' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       expect(response).to be_successful
     end
     
     it 'assigns the correct variables' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       
       expect(assigns(:person)).to eq(employee)
       expect(assigns(:organization)).to be_a(Organization)
@@ -64,26 +64,26 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
       other_company = create(:organization, :company)
       other_snapshot = create(:maap_snapshot, employee: employee, created_by: maap_manager, company: other_company)
       
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       
       expect(assigns(:maap_snapshots)).to include(maap_snapshot1, maap_snapshot2)
       expect(assigns(:maap_snapshots)).not_to include(other_snapshot)
     end
     
     it 'renders the audit view template' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       expect(response).to render_template(:audit)
     end
     
     it 'includes snapshot details in the response' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       
       expect(response.body).to include(maap_snapshot1.reason)
       expect(response.body).to include(maap_snapshot2.reason)
     end
     
     it 'displays reason field in snapshot rows' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       
       # Verify reason column header exists
       expect(response.body).to include('Reason')
@@ -102,7 +102,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
                                reason: 'Q4 2024 Performance Review',
                                effective_date: Date.current)
       
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       
       expect(response.body).to include('Q4 2024 Performance Review')
       expect(response.body).to include(custom_snapshot.reason)
@@ -115,7 +115,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     end
     
     it 'redirects when authorization fails' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       expect(response).to redirect_to(root_path)
     end
   end
@@ -126,12 +126,12 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     end
     
     it 'allows access to own audit view' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       expect(response).to be_successful
     end
     
     it 'assigns pending snapshots' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       
       expect(assigns(:pending_snapshots)).to be_present
       expect(assigns(:pending_snapshots)).to include(maap_snapshot1)
@@ -139,7 +139,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     end
     
     it 'assigns acknowledged snapshots' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       
       expect(assigns(:acknowledged_snapshots)).to be_present
       expect(assigns(:acknowledged_snapshots)).to include(maap_snapshot2)
@@ -147,14 +147,14 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     end
     
     it 'shows pending acknowledgements section' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       
       expect(response.body).to include('Pending Acknowledgements')
       expect(response.body).to include('select_all_snapshots')
     end
     
     it 'renders snapshot_row partial for pending snapshots' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       
       # Check that the snapshot data is present in the response
       expect(response.body).to include(maap_snapshot1.created_by.display_name)
@@ -162,7 +162,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     end
     
     it 'renders snapshot_row partial for audit trail' do
-      get audit_organization_employee_path(organization, employee)
+      get audit_organization_employee_path(organization, employee_teammate)
       
       # Check that both snapshots appear in the audit trail
       expect(response.body).to include(maap_snapshot1.reason)
@@ -180,7 +180,7 @@ RSpec.describe 'Organizations::Employees#audit', type: :request do
     end
     
     it 'renders successfully with empty state' do
-      get audit_organization_employee_path(organization, employee_without_snapshots)
+      get audit_organization_employee_path(organization, employee_without_snapshots_teammate)
       
       expect(response).to be_successful
       expect(assigns(:maap_snapshots)).to be_empty

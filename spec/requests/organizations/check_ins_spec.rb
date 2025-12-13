@@ -33,11 +33,11 @@ RSpec.describe "Organizations::CheckIns", type: :request do
     employment_tenure # ensure it exists
   end
   
-  describe "PATCH /organizations/:org_id/people/:person_id/check_ins" do
+  describe "PATCH /organizations/:org_id/company_teammates/:company_teammate_id/check_ins" do
     context "position check-in" do
       context "when marking as draft" do
         it "saves data but does not mark as completed" do
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     position_check_in: {
@@ -46,7 +46,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
                       status: "draft"
                     }
                   },
-                  redirect_to: organization_person_check_ins_path(organization, employee_person)
+                  redirect_to: organization_company_teammate_check_ins_path(organization, employee_teammate)
                 }
           
           check_in = PositionCheckIn.find_by(teammate: employee_teammate)
@@ -58,7 +58,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
           expect(check_in.manager_completed_by).to be_nil
           
           # Assert response
-          expect(response).to redirect_to(organization_person_check_ins_path(organization, employee_person))
+          expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, employee_teammate))
           follow_redirect!
           expect(response.body).to include("Check-ins saved successfully")
         end
@@ -66,7 +66,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       
       context "when marking as complete" do
         it "saves data and marks as completed with timestamp and person" do
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     position_check_in: {
@@ -75,7 +75,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
                       status: "complete"
                     }
                   },
-                  redirect_to: organization_person_check_ins_path(organization, employee_person)
+                  redirect_to: organization_company_teammate_check_ins_path(organization, employee_teammate)
                 }
           
           check_in = PositionCheckIn.find_by(teammate: employee_teammate)
@@ -88,14 +88,14 @@ RSpec.describe "Organizations::CheckIns", type: :request do
           expect(check_in.manager_completed_by).to eq(manager_person)
           
           # Assert response
-          expect(response).to redirect_to(organization_person_check_ins_path(organization, employee_person))
+          expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, employee_teammate))
         end
       end
       
       context "when toggling from draft to complete" do
         it "properly updates completion status" do
           # First: Save as draft
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     position_check_in: {
@@ -110,7 +110,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
           expect(check_in.manager_completed_at).to be_nil
           
           # Then: Mark as complete
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     position_check_in: {
@@ -130,7 +130,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       context "when toggling from complete back to draft" do
         it "unmarks completion" do
           # First: Mark as complete
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     position_check_in: {
@@ -145,7 +145,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
           expect(check_in.manager_completed_at).to be_present
           
           # Then: Change back to draft
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     position_check_in: {
@@ -168,7 +168,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         end
         
         it "marks employee side as complete" do
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     position_check_in: {
@@ -190,7 +190,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
       it "requires authentication" do
         allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(nil)
         
-        patch organization_person_check_ins_path(organization, employee_person),
+        patch organization_company_teammate_check_ins_path(organization, employee_teammate),
               params: { check_ins: { position_check_in: { status: "draft" } } }
         
         expect(response).to have_http_status(:redirect)
@@ -203,10 +203,217 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         other_teammate.update!(first_employed_at: 1.year.ago)
         sign_in_as_teammate_for_request(other_person, organization)
         
-        patch organization_person_check_ins_path(organization, employee_person),
+        patch organization_company_teammate_check_ins_path(organization, employee_teammate),
               params: { check_ins: { position_check_in: { status: "draft" } } }
         
         expect(response).to have_http_status(:redirect)
+      end
+    end
+  end
+
+  describe "GET /organizations/:org_id/company_teammates/:company_teammate_id/check_ins" do
+    let!(:assignment) { create(:assignment, company: organization, title: 'Test Assignment') }
+    let!(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 6.months.ago) }
+    let!(:aspiration) { create(:aspiration, organization: organization, name: 'Test Aspiration') }
+    let!(:assignment_check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment) }
+    let!(:aspiration_check_in) { AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration) }
+
+    context "manager viewing employee check-ins" do
+      before do
+        sign_in_as_teammate_for_request(manager_person, organization)
+      end
+
+      context "card view" do
+        it "shows only manager fields and hides employee fields" do
+          get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'card')
+          
+          expect(response).to have_http_status(:success)
+          html = response.body
+          
+          # Should see manager section headers
+          expect(html).to include('Manager Assessment')
+          
+          # Should NOT see employee section headers
+          expect(html).not_to include('Employee Assessment')
+          
+          # Should see manager fields for aspirations
+          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_rating\]/)
+          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_private_notes\]/)
+          
+          # Should NOT see employee fields for aspirations
+          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_rating\]/)
+          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_private_notes\]/)
+          
+          # Should see manager fields for assignments
+          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[manager_rating\]/)
+          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[manager_private_notes\]/)
+          
+          # Should NOT see employee fields for assignments
+          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_rating\]/)
+          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_private_notes\]/)
+          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[actual_energy_percentage\]/)
+          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_personal_alignment\]/)
+        end
+      end
+
+      context "table view" do
+        it "shows only manager fields and hides employee fields" do
+          get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'table')
+          
+          expect(response).to have_http_status(:success)
+          html = response.body
+          
+          # Should see manager section headers in table headers
+          expect(html).to include('Manager Rating')
+          expect(html).to include('Manager Notes')
+          
+          # Should NOT see employee section headers in table headers
+          expect(html).not_to include('Employee Rating')
+          expect(html).not_to include('Employee Notes')
+          
+          # Should see manager fields for aspirations
+          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_rating\]/)
+          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_private_notes\]/)
+          
+          # Should NOT see employee fields for aspirations
+          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_rating\]/)
+          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_private_notes\]/)
+        end
+      end
+    end
+
+    context "employee viewing their own check-ins" do
+      before do
+        sign_in_as_teammate_for_request(employee_person, organization)
+      end
+
+      context "card view" do
+        it "shows only employee fields and hides manager fields" do
+          get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'card')
+          
+          expect(response).to have_http_status(:success)
+          html = response.body
+          
+          # Should see employee section headers
+          expect(html).to include('Employee Assessment')
+          
+          # Should NOT see manager section headers
+          expect(html).not_to include('Manager Assessment')
+          
+          # Should see employee fields for aspirations
+          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_rating\]/)
+          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_private_notes\]/)
+          
+          # Should NOT see manager fields for aspirations
+          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_rating\]/)
+          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_private_notes\]/)
+          
+          # Should see employee fields for assignments
+          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_rating\]/)
+          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_private_notes\]/)
+          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[actual_energy_percentage\]/)
+          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_personal_alignment\]/)
+          
+          # Should NOT see manager fields for assignments
+          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[manager_rating\]/)
+          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[manager_private_notes\]/)
+        end
+      end
+
+      context "table view" do
+        it "shows only employee fields and hides manager fields" do
+          get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'table')
+          
+          expect(response).to have_http_status(:success)
+          html = response.body
+          
+          # Should see employee section headers in table headers
+          expect(html).to include('Employee Rating')
+          expect(html).to include('Employee Notes')
+          
+          # Should NOT see manager section headers in table headers
+          expect(html).not_to include('Manager Rating')
+          expect(html).not_to include('Manager Notes')
+          
+          # Should see employee fields for aspirations
+          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_rating\]/)
+          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_private_notes\]/)
+          
+          # Should NOT see manager fields for aspirations
+          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_rating\]/)
+          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_private_notes\]/)
+        end
+      end
+    end
+
+    context "critical bug test: manager should not see both sections" do
+      before do
+        sign_in_as_teammate_for_request(manager_person, organization)
+        # Ensure check-ins are NOT completed so they go through the in_progress partial
+        assignment_check_in.update!(manager_completed_at: nil, employee_completed_at: nil)
+        aspiration_check_in.update!(manager_completed_at: nil, employee_completed_at: nil)
+      end
+
+      it "does not show both Employee Assessment and Manager Assessment sections in card view" do
+        get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'card')
+        
+        expect(response).to have_http_status(:success)
+        html = response.body
+        
+        # Count occurrences of section headers
+        employee_assessment_count = html.scan(/Employee Assessment/).count
+        manager_assessment_count = html.scan(/Manager Assessment/).count
+        
+        # Manager should only see Manager Assessment sections
+        expect(manager_assessment_count).to be > 0, "Manager should see Manager Assessment sections"
+        expect(employee_assessment_count).to eq(0), "Manager should NOT see Employee Assessment sections (found #{employee_assessment_count})"
+      end
+
+      it "does not show both Employee Assessment and Manager Assessment sections in table view" do
+        get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'table')
+        
+        expect(response).to have_http_status(:success)
+        html = response.body
+        
+        # In table view, check for both section headers (they might appear in different contexts)
+        # The key is that we should NOT see both "Employee Rating" and "Manager Rating" in the same row/context
+        # when viewing as manager
+        
+        # Manager should see Manager Rating header
+        expect(html).to include('Manager Rating')
+        
+        # Manager should NOT see Employee Rating header (unless in readonly mode showing both)
+        # But since we're testing manager view mode, we should only see manager fields
+        expect(html).not_to include('Employee Rating')
+        expect(html).not_to include('Employee Notes')
+      end
+      
+      it "does not show both sections when check-in is in progress (not completed)" do
+        # This tests the specific scenario where the bug occurs:
+        # When manager views an incomplete check-in, it should render _aspiration_check_in_manager_view
+        # which then renders _aspiration_check_in_in_progress with view_mode: :manager
+        # The bug is that _aspiration_check_in_in_progress uses two separate 'if' statements
+        # instead of 'if'/'elsif', which could allow both sections to render
+        
+        get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'card')
+        
+        expect(response).to have_http_status(:success)
+        html = response.body
+        
+        # Extract the aspiration section from the HTML to check for the bug
+        # Look for the pattern where both sections might appear in the same card
+        aspiration_sections = html.scan(/Aspiration:.*?<\/div>/m)
+        
+        # In each aspiration section, we should NOT see both "Employee Assessment" and "Manager Assessment"
+        aspiration_sections.each do |section|
+          has_employee = section.include?('Employee Assessment')
+          has_manager = section.include?('Manager Assessment')
+          
+          # If we're viewing as manager, we should only see Manager Assessment
+          if has_employee && has_manager
+            fail "Found both Employee Assessment and Manager Assessment in the same aspiration section. This is the bug!"
+          end
+        end
       end
     end
   end

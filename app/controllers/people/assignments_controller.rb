@@ -5,7 +5,14 @@ class People::AssignmentsController < ApplicationController
   after_action :verify_authorized
 
   def show
-    authorize @person, :manager?, policy_class: PersonPolicy
+    # Find the teammate for the assignment's company
+    teammate = @person.teammates.find_by(organization: @assignment.company)
+    if teammate
+      authorize teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+    else
+      # Fallback: authorize the person directly if no teammate found
+      authorize @person, :public?, policy_class: PersonPolicy
+    end
     load_assignment_data
     load_tenure_history
   end

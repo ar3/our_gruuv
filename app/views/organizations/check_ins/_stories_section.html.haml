@@ -45,7 +45,7 @@
       
       .d-grid
         = button_to "View All Observations", 
-                    save_and_redirect_organization_person_check_ins_path(@organization, @person), 
+                    save_and_redirect_organization_company_teammate_check_ins_path(@organization, @person), 
                     method: :post,
                     params: { redirect_url: @stories_filter_url },
                     class: "btn btn-outline-primary"

@@ -27,13 +27,13 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
     AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
   end
   
-  describe "PATCH /organizations/:org_id/people/:person_id/check_ins" do
+  describe "PATCH /organizations/:org_id/company_teammates/:company_teammate_id/check_ins" do
     context "assignment check-in" do
       context "when marking as draft" do
         it "saves data but does not mark as completed" do
           check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
           
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     assignment_check_ins: {
@@ -45,7 +45,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                       }
                     }
                   },
-                  redirect_to: organization_person_check_ins_path(organization, employee_person)
+                  redirect_to: organization_company_teammate_check_ins_path(organization, employee_teammate)
                 }
           
           check_in.reload
@@ -54,7 +54,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
           expect(check_in.manager_completed_at).to be_nil
           expect(check_in.manager_completed_by).to be_nil
           
-          expect(response).to redirect_to(organization_person_check_ins_path(organization, employee_person))
+          expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, employee_teammate))
         end
       end
       
@@ -62,7 +62,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
         it "saves data and marks as completed" do
           check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
           
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     assignment_check_ins: {
@@ -74,7 +74,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                       }
                     }
                   },
-                  redirect_to: organization_person_check_ins_path(organization, employee_person)
+                  redirect_to: organization_company_teammate_check_ins_path(organization, employee_teammate)
                 }
           
           check_in.reload
@@ -84,7 +84,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
           expect(check_in.manager_completed_at).to be_within(1.second).of(Time.current)
           expect(check_in.manager_completed_by).to eq(manager_person)
           
-          expect(response).to redirect_to(organization_person_check_ins_path(organization, employee_person))
+          expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, employee_teammate))
         end
       end
       
@@ -96,7 +96,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
         it "marks employee side as complete" do
           check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
           
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     assignment_check_ins: {
@@ -110,7 +110,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
                       }
                     }
                   },
-                  redirect_to: organization_person_check_ins_path(organization, employee_person)
+                  redirect_to: organization_company_teammate_check_ins_path(organization, employee_teammate)
                 }
           
           check_in.reload
@@ -122,10 +122,10 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
       context "when toggling from draft to complete" do
         it "properly updates completion status" do
           check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
-          redirect_path = organization_person_check_ins_path(organization, employee_person)
+          redirect_path = organization_company_teammate_check_ins_path(organization, employee_teammate)
           
           # First: Save as draft
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     assignment_check_ins: {
@@ -144,7 +144,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
           expect(check_in.manager_completed_at).to be_nil
           
           # Then: Mark as complete
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     assignment_check_ins: {
@@ -168,10 +168,10 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
       context "when toggling from complete back to draft" do
         it "unmarks completion" do
           check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
-          redirect_path = organization_person_check_ins_path(organization, employee_person)
+          redirect_path = organization_company_teammate_check_ins_path(organization, employee_teammate)
           
           # First: Mark as complete
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     assignment_check_ins: {
@@ -190,7 +190,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
           expect(check_in.manager_completed_at).to be_present
           
           # Then: Change back to draft
-          patch organization_person_check_ins_path(organization, employee_person),
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
                 params: {
                   check_ins: {
                     assignment_check_ins: {
@@ -218,7 +218,7 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
         
         check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
         
-        patch organization_person_check_ins_path(organization, employee_person),
+        patch organization_company_teammate_check_ins_path(organization, employee_teammate),
               params: {
                 check_ins: {
                   assignment_check_ins: {

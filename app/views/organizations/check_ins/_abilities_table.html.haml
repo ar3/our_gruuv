@@ -64,7 +64,7 @@
                         #{pluralize(observation_count, 'observation')} on this since #{time_ago} ago
                       - else
                         No notes to show since #{time_ago} ago
-                    = link_to new_organization_observation_path(@organization, return_url: organization_person_check_ins_path(@organization, person, show_observations_for: "ability_#{ability.id}"), return_text: "Check-ins", observee_ids: [teammate.id], rateable_type: 'Ability', rateable_id: ability.id, privacy_level: 'observed_and_managers'), class: "text-muted text-decoration-none small" do
+                    = link_to new_organization_observation_path(@organization, return_url: organization_company_teammate_check_ins_path(@organization, person, show_observations_for: "ability_#{ability.id}"), return_text: "Check-ins", observee_ids: [teammate.id], rateable_type: 'Ability', rateable_id: ability.id, privacy_level: 'observed_and_managers'), class: "text-muted text-decoration-none small" do
                       %i.bi.bi-plus-circle.me-1
                       Add Win / Challenge
             %td

@@ -35,7 +35,7 @@
     primary_action_style: 'not_urgent',
     secondary_action_url: organization_abilities_path(organization),
     secondary_action_html: milestones_secondary_html,
-    tertiary_action_url: complete_picture_organization_person_path(organization, current_person) + '#milestones',
+    tertiary_action_url: complete_picture_organization_company_teammate_path(organization, current_person) + '#milestones',
     tertiary_action_html: milestones_tertiary_html
 
   / Assignments Card
@@ -44,13 +44,13 @@
     Assignments
   - assignments_primary_html = capture do
     %i.bi.bi-check-circle.me-2
-    Check-in on my #{pluralize(current_person.active_assignments(organization).count, 'Assignment')}
+    Check-in on my #{pluralize(current_company_teammate&.active_assignments&.count || 0, 'Assignment')}
   - assignments_secondary_html = capture do
     %i.bi.bi-list.me-1
     All #{pluralize(organization.all_assignments_including_descendants.count, 'Assignment')}
   - assignments_tertiary_html = capture do
     %i.bi.bi-eye.me-1
-    My #{pluralize(current_person.assignments_ready_for_finalization_count(organization), 'Review-Ready Assignment')} 
+    My #{pluralize(current_company_teammate&.assignments_ready_for_finalization_count || 0, 'Review-Ready Assignment')} 
   - assignments_popover_content = capture do
     Assignments break traditional job descriptions into specific mini-jobs that represent the specific outcomes we can truly rely on each other to deliver. 
     %hr.mt-1.mb-1/
@@ -73,12 +73,12 @@
     header_popover_content: assignments_popover_content,
     header_popover_title: "About Assignments",
     description: ['Flexible assignments, focused feedback, better results', 'Replace job confusion with assignment clarity', 'Accountability that\'s clear and works'].sample,
-    primary_action_url: organization_person_check_ins_path(organization, current_person),
+    primary_action_url: organization_company_teammate_check_ins_path(organization, current_person),
     primary_action_html: assignments_primary_html,
     primary_action_style: 'urgent',
     secondary_action_url: organization_assignments_path(organization),
     secondary_action_html: assignments_secondary_html,
-    tertiary_action_url: organization_person_check_ins_path(organization, current_person),
+    tertiary_action_url: organization_company_teammate_check_ins_path(organization, current_person),
     tertiary_action_html: assignments_tertiary_html
 
   / Positions Card
@@ -106,7 +106,7 @@
     header_popover_content: positions_popover_content,
     header_popover_title: "About Positions",
     description: ['Framework for fairness, freedom for growth', 'Structure for consistency, space for strengths, fairness for all', 'Ensure equity, provide structure, allow uniqueness'].sample,
-    primary_action_url: complete_picture_organization_person_path(organization, current_person),
+    primary_action_url: complete_picture_organization_company_teammate_path(organization, current_person),
     primary_action_html: positions_primary_html,
     primary_action_style: 'not_urgent',
     secondary_action_url: organization_positions_path(organization),

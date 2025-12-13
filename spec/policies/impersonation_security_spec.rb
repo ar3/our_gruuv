@@ -102,6 +102,9 @@ RSpec.describe 'Impersonation Security', type: :policy do
         create(:employment_tenure, teammate: manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
         manager_teammate.update!(first_employed_at: 1.year.ago)
         target_teammate.employment_tenures.first.update!(manager: manager_person)
+        # Reload teammates to clear association cache
+        manager_teammate.reload
+        target_teammate.reload
       end
 
       let(:pundit_user) do

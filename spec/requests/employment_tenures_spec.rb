@@ -3,6 +3,7 @@ require 'rails_helper'
 RSpec.describe "EmploymentTenures", type: :request do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
+  let(:organization) { company }
   let(:position) do
     position_major_level = create(:position_major_level)
     position_type = create(:position_type, organization: company, position_major_level: position_major_level)
@@ -16,33 +17,32 @@ RSpec.describe "EmploymentTenures", type: :request do
     person.teammates.find_by(organization: company) || 
       create(:teammate, person: person, organization: company)
   end
+  let(:teammate) { person_teammate }
   let(:employment_tenure) { create(:employment_tenure, teammate: person_teammate, company: company, position: position) }
 
   before do
-    # Sign in but don't set organization (for tests that need no organization)
-    # This creates a teammate, which we'll use via person_teammate
+    # Sign in and set organization
     sign_in_as_teammate_for_request(person, company)
-    # Override to nil for tests that specifically need no organization
-    allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(nil)
   end
 
   describe "GET /people/:id/employment_tenures/new" do
     it "returns http success" do
-      get new_person_employment_tenure_path(person)
+      get new_organization_company_teammate_employment_tenure_path(organization, teammate)
+      # The new action shows company selection, which should render successfully
       expect(response).to have_http_status(:success)
     end
   end
 
   describe "GET /people/:id/employment_tenures/change" do
     it "returns http success" do
-      get change_person_employment_tenures_path(person, company_id: company.id)
+      get change_organization_company_teammate_employment_tenures_path(organization, teammate, company_id: company.id)
       expect(response).to have_http_status(:success)
     end
   end
 
   describe "POST /people/:id/employment_tenures" do
     it "returns http success" do
-      post person_employment_tenures_path(person), params: { employment_tenure: { 
+      post organization_company_teammate_employment_tenures_path(organization, teammate), params: { employment_tenure: { 
         company_id: company.id, 
         position_id: position.id, 
         started_at: 1.month.ago 
@@ -63,7 +63,7 @@ RSpec.describe "EmploymentTenures", type: :request do
         effective_date = Date.current
         
         expect {
-          post person_employment_tenures_path(person), params: { 
+          post organization_company_teammate_employment_tenures_path(organization, teammate), params: { 
             employment_tenure: { 
               company_id: company.id, 
               position_id: new_position.id, 
@@ -83,7 +83,7 @@ RSpec.describe "EmploymentTenures", type: :request do
       end
 
       it "shows 'no changes' message when position and manager are the same" do
-        post person_employment_tenures_path(person), params: { 
+        post organization_company_teammate_employment_tenures_path(organization, teammate), params: { 
           employment_tenure: { 
             company_id: company.id, 
             position_id: active_tenure.position_id, 
@@ -92,7 +92,7 @@ RSpec.describe "EmploymentTenures", type: :request do
           }
         }
         
-        expect(response).to redirect_to(organization_person_path(company, person))
+        expect(response).to redirect_to(organization_company_teammate_path(organization, person_teammate))
         expect(flash[:notice]).to eq('No changes were made to your employment.')
       end
     end
@@ -100,35 +100,35 @@ RSpec.describe "EmploymentTenures", type: :request do
 
   describe "GET /people/:id/employment_tenures/:id" do
     it "returns http success" do
-      get person_employment_tenure_path(person, employment_tenure)
+      get organization_company_teammate_employment_tenure_path(organization, teammate, employment_tenure)
       expect(response).to have_http_status(:success)
     end
   end
 
   describe "GET /people/:id/employment_tenures/:id/edit" do
     it "returns http success" do
-      get edit_person_employment_tenure_path(person, employment_tenure)
+      get edit_organization_company_teammate_employment_tenure_path(organization, teammate, employment_tenure)
       expect(response).to have_http_status(:success)
     end
   end
 
   describe "PATCH /people/:id/employment_tenures/:id" do
     it "returns http success" do
-      patch person_employment_tenure_path(person, employment_tenure), params: { employment_tenure: { started_at: 2.months.ago } }
+      patch organization_company_teammate_employment_tenure_path(organization, teammate, employment_tenure), params: { employment_tenure: { started_at: 2.months.ago } }
       expect(response).to have_http_status(:redirect)
     end
   end
 
   describe "DELETE /people/:id/employment_tenures/:id" do
     it "returns http success" do
-      delete person_employment_tenure_path(person, employment_tenure)
+      delete organization_company_teammate_employment_tenure_path(organization, teammate, employment_tenure)
       expect(response).to have_http_status(:redirect)
     end
   end
 
   describe "GET /people/:id/employment_tenures/:id/employment_summary" do
     it "returns http success" do
-      get employment_summary_person_employment_tenure_path(person, employment_tenure)
+      get employment_summary_organization_company_teammate_employment_tenure_path(organization, teammate, employment_tenure)
       expect(response).to have_http_status(:success)
     end
   end

@@ -145,7 +145,7 @@ RSpec.describe 'Abilities Core Flow', type: :system do
       expect(page).to have_content('Milestone 2')
       
       # Verify milestone appears on employee's complete picture
-      visit complete_picture_organization_person_path(company, employee_person)
+      visit complete_picture_organization_company_teammate_path(company, employee_teammate)
       expect(page).to have_content('Achieved Milestones')
       expect(page).to have_content('Leadership')
       expect(page).to have_content('Milestone 2')

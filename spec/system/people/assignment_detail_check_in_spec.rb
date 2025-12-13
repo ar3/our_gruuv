@@ -68,7 +68,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       click_button 'Update Check-in'
       
       # When check-in is marked complete, it redirects to finalization page
-      expect(page).to have_current_path(organization_person_finalization_path(company, employee_person))
+      expect(page).to have_current_path(organization_company_teammate_finalization_path(company, employee_teammate))
       
       # Should see success message or finalization content
       expect(page).to have_content(/Check-in|Finalization|ready/i)
@@ -120,7 +120,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       click_button 'Update Check-in'
       
       # When check-in is marked complete, it redirects to finalization page
-      expect(page).to have_current_path(organization_person_finalization_path(company, employee_person))
+      expect(page).to have_current_path(organization_company_teammate_finalization_path(company, employee_teammate))
       
       # Should see success message or finalization content
       expect(page).to have_content(/Check-in|Finalization|ready/i)

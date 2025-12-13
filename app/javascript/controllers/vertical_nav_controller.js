@@ -6,7 +6,7 @@ export default class extends Controller {
     locked: Boolean
   }
   
-  static targets = ["nav", "toggleBtn", "lockBtn", "closeBtn"]
+  static targets = ["toggleBtn", "lockBtn", "closeBtn"]
   
   get backdropElement() {
     return document.querySelector('.vertical-nav-backdrop')
@@ -18,12 +18,14 @@ export default class extends Controller {
   
   connect() {
     // Restore state from data attributes
+    // The controller element IS the nav element, so use this.element
+    const navElement = this.element
     // Read locked state (can be string 'true'/'false' or boolean)
-    const lockedValue = this.navTarget.dataset.locked
+    const lockedValue = navElement.dataset.locked
     this.locked = lockedValue === 'true' || lockedValue === true
     
     // If locked, nav must be open. Otherwise read from data attribute
-    const openValue = this.navTarget.dataset.open
+    const openValue = navElement.dataset.open
     this.open = this.locked ? true : (openValue === 'true' || openValue === true)
     
     // Ensure locked nav is always open
@@ -119,22 +121,25 @@ export default class extends Controller {
   }
   
   updateNavState() {
+    // The controller element IS the nav element
+    const navElement = this.element
+    
     // If locked, nav must always be open
     if (this.locked) {
       this.open = true
     }
     
     if (this.open) {
-      this.navTarget.classList.add('open')
-      this.navTarget.classList.remove('closed')
+      navElement.classList.add('open')
+      navElement.classList.remove('closed')
       if (this.hasBackdrop) {
         this.backdropElement.classList.add('show')
       }
     } else {
       // Only allow closing if not locked
       if (!this.locked) {
-        this.navTarget.classList.remove('open')
-        this.navTarget.classList.add('closed')
+        navElement.classList.remove('open')
+        navElement.classList.add('closed')
         if (this.hasBackdrop) {
           this.backdropElement.classList.remove('show')
         }
@@ -142,10 +147,10 @@ export default class extends Controller {
     }
     
     if (this.locked) {
-      this.navTarget.classList.add('locked')
+      navElement.classList.add('locked')
       // Ensure open class is present when locked
-      this.navTarget.classList.add('open')
-      this.navTarget.classList.remove('closed')
+      navElement.classList.add('open')
+      navElement.classList.remove('closed')
       if (this.hasBackdrop) {
         this.backdropElement.classList.add('show')
       }
@@ -157,7 +162,7 @@ export default class extends Controller {
         }
       }
     } else {
-      this.navTarget.classList.remove('locked')
+      navElement.classList.remove('locked')
       if (this.hasLockBtnTarget) {
         const icon = this.lockBtnTarget.querySelector('i')
         if (icon) {

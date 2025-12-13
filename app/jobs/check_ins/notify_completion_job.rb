@@ -12,11 +12,14 @@ module CheckIns
       check_in = find_check_in(check_in_type, check_in_id)
       return unless check_in
 
-      employee = check_in.teammate.person
-      manager = employee.current_manager_for(organization)
+      employee_teammate = check_in.teammate
+      employee = employee_teammate.person
+      
+      # Get manager from active employment tenure in this organization
+      employment_tenure = employee_teammate.employment_tenures.active.where(company: organization).first
+      manager = employment_tenure&.manager
       return unless manager
 
-      employee_teammate = check_in.teammate
       manager_teammate = manager.teammates.find_by(organization: organization)
       return unless manager_teammate
 
@@ -78,28 +81,30 @@ module CheckIns
 
       url_options = Rails.application.routes.default_url_options || {}
       
+      employee_teammate = check_in.teammate
+      
       case completion_state.to_sym
       when :both_complete
         completer_name = check_in.manager_completed_by == manager ? manager_name : employee_name
-        link = Rails.application.routes.url_helpers.organization_person_finalization_url(
+        link = Rails.application.routes.url_helpers.organization_company_teammate_finalization_url(
           organization,
-          employee,
+          employee_teammate,
           url_options
         )
         "#{completer_name} has completed a check-in for #{check_in_name}... we are now ready to review together! #{link}"
       when :employee_only
         other_person_name = manager_name
-        link = Rails.application.routes.url_helpers.organization_person_check_ins_url(
+        link = Rails.application.routes.url_helpers.organization_company_teammate_check_ins_url(
           organization,
-          employee,
+          employee_teammate,
           url_options
         )
         "#{employee_name} has completed a check-in for #{check_in_name}... once #{other_person_name} is done, we can review together #{link}"
       when :manager_only
         other_person_name = employee_name
-        link = Rails.application.routes.url_helpers.organization_person_check_ins_url(
+        link = Rails.application.routes.url_helpers.organization_company_teammate_check_ins_url(
           organization,
-          employee,
+          employee_teammate,
           url_options
         )
         "#{manager_name} has completed a check-in for #{check_in_name}... once #{other_person_name} is done, we can review together #{link}"

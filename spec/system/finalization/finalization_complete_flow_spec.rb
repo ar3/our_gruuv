@@ -96,7 +96,7 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
     end
 
     it 'shows all items ready for finalization but cannot save' do
-      visit organization_person_finalization_path(company, employee_person)
+      visit organization_company_teammate_finalization_path(company, employee_teammate)
       
       # Should see all ready items
       expect(page).to have_content('Assignment 1')
@@ -120,7 +120,7 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
     end
 
     it 'shows everything employee can see plus enabled save button and form fields' do
-      visit organization_person_finalization_path(company, employee_person)
+      visit organization_company_teammate_finalization_path(company, employee_teammate)
       
       # Should see all ready items
       expect(page).to have_content('Assignment 1')
@@ -142,7 +142,7 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
     end
 
     it 'removes items from to be finalized list when manager saves' do
-      visit organization_person_finalization_path(company, employee_person)
+      visit organization_company_teammate_finalization_path(company, employee_teammate)
       
       # Finalize first assignment - use correct field names
       check_box = find("input[type='checkbox'][name='assignment_check_ins[#{check_in_both1.id}][finalize]']")
@@ -164,7 +164,7 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
       
       if db_correct
         # Database is correct, now check UI
-        visit organization_person_finalization_path(company, employee_person)
+        visit organization_company_teammate_finalization_path(company, employee_teammate)
         ui_correct = !page.has_content?(check_in_both1.assignment.title, wait: 5)
         
         if ui_correct
@@ -226,7 +226,7 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
       end
       
       # Visit finalization page again - should not see finalized item
-      visit organization_person_finalization_path(company, employee_person)
+      visit organization_company_teammate_finalization_path(company, employee_teammate)
       expect(page).not_to have_content('Assignment 1')
       expect(page).to have_content('Assignment 2') # Still pending
     end

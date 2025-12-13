@@ -103,7 +103,7 @@ RSpec.describe 'People::Assignments', type: :request do
       it 'saves employee check-in data with nested format' do
         check_in = AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
         
-        patch organization_person_check_ins_path(organization, employee_person),
+        patch organization_company_teammate_check_ins_path(organization, employee_teammate),
               params: {
                 check_ins: {
                   assignment_check_ins: {
@@ -130,7 +130,7 @@ RSpec.describe 'People::Assignments', type: :request do
       it 'does not allow employee to update manager fields' do
         check_in = AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
         
-        patch organization_person_check_ins_path(organization, employee_person),
+        patch organization_company_teammate_check_ins_path(organization, employee_teammate),
               params: {
                 check_ins: {
                   assignment_check_ins: {
@@ -155,7 +155,7 @@ RSpec.describe 'People::Assignments', type: :request do
       it 'saves manager check-in data' do
         check_in = AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
         
-        patch organization_person_check_ins_path(organization, employee_person),
+        patch organization_company_teammate_check_ins_path(organization, employee_teammate),
               params: {
                 check_ins: {
                   assignment_check_ins: {
@@ -182,7 +182,7 @@ RSpec.describe 'People::Assignments', type: :request do
         original_alignment = check_in.employee_personal_alignment
         original_rating = check_in.employee_rating
         
-        patch organization_person_check_ins_path(organization, employee_person),
+        patch organization_company_teammate_check_ins_path(organization, employee_teammate),
               params: {
                 check_ins: {
                   assignment_check_ins: {
@@ -211,7 +211,7 @@ RSpec.describe 'People::Assignments', type: :request do
         check_in = AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
         original_notes = check_in.employee_private_notes
         
-        patch organization_person_check_ins_path(organization, employee_person),
+        patch organization_company_teammate_check_ins_path(organization, employee_teammate),
               params: {
                 "check_in_#{assignment.id}_employee_private_notes" => 'New notes',
                 "check_in_#{assignment.id}_employee_complete" => '1'

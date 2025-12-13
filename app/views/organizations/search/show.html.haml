@@ -48,15 +48,20 @@
                       %th Actions
                   %tbody
                     - @results[:people].each do |person|
+                      - teammate = person.teammates.find_by(organization: @organization, type: 'CompanyTeammate')
                       %tr
                         %td
-                          = link_to person.display_name, teammate_organization_person_path(@organization, person), class: "text-decoration-none fw-bold"
+                          - if teammate
+                            = link_to person.display_name, organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
+                          - else
+                            = person.display_name
                         %td= person.email
                         %td= @organization.display_name
                         %td
                           .btn-group.btn-group-sm
-                            = link_to teammate_organization_person_path(@organization, person), class: "btn btn-outline-primary" do
-                              %i.bi.bi-eye
+                            - if teammate
+                              = link_to organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-primary" do
+                                %i.bi.bi-eye
 
         - if @results[:organizations].any?
           .card.mb-4

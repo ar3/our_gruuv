@@ -6,7 +6,7 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
   let(:direct_report) { create(:person) }
   let(:non_direct_report) { create(:person) }
   
-  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let!(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
   let!(:direct_report_teammate) { create(:teammate, person: direct_report, organization: organization) }
   let!(:non_direct_report_teammate) { create(:teammate, person: non_direct_report, organization: organization) }
 
@@ -20,13 +20,19 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
     non_direct_report_teammate.update!(first_employed_at: 1.month.ago)
     manager_teammate.update!(first_employed_at: 1.month.ago)
     
+    # Reload as CompanyTeammate to ensure has_direct_reports? method is available
+    manager_ct = CompanyTeammate.find(manager_teammate.id)
+    
     # Mock authentication for manager
     sign_in_as_teammate_for_request(manager, organization)
+    allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
   end
 
   it 'filters results when manager has direct reports' do
     # This test will fail if has_direct_reports? doesn't work correctly
-    expect(manager.has_direct_reports?(organization)).to be true
+    # Reload to get CompanyTeammate instance
+    manager_ct = CompanyTeammate.find(manager_teammate.id)
+    expect(manager_ct.has_direct_reports?).to be true
     
     get organization_employees_path(organization, manager_filter: 'direct_reports')
     
@@ -43,7 +49,9 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
     # Remove the direct report relationship
     EmploymentTenure.where(manager: manager).destroy_all
     
-    expect(manager.has_direct_reports?(organization)).to be false
+    # Reload to get CompanyTeammate instance
+    manager_ct = CompanyTeammate.find(manager_teammate.id)
+    expect(manager_ct.has_direct_reports?).to be false
     
     get organization_employees_path(organization, manager_filter: 'direct_reports')
     

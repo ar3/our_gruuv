@@ -30,7 +30,7 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
       switch_to_user(employee_person, company)
       
       # Try card view instead of table view (approach 2)
-      visit organization_person_check_ins_path(company, employee_person, view: 'card')
+      visit organization_company_teammate_check_ins_path(company, employee_teammate, view: 'card')
       
       # Fill out check-in form
       # Card view uses assignment_check_in_form which has Employee Assessment section

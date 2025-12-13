@@ -21,10 +21,7 @@ class PromptPolicy < ApplicationPolicy
     organization = actual_organization || viewing_teammate.organization
     return false unless organization
     
-    viewing_teammate.person.in_managerial_hierarchy_of?(
-      record.company_teammate.person,
-      organization
-    )
+    viewing_teammate.is_a?(CompanyTeammate) && record.company_teammate && viewing_teammate.in_managerial_hierarchy_of?(record.company_teammate)
   end
 
   def create?

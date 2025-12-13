@@ -33,7 +33,7 @@
               You will be notified when the finalization is complete.
   - elsif @position_check_in&.officially_completed?
     -# Manager view when position is already finalized - render own form
-    = form_with url: organization_person_finalization_path(@organization, @person), method: :post do |f|
+    = form_with url: organization_company_teammate_finalization_path(@organization, @person), method: :post do |f|
       = render 'assignment_finalization_form', 
                form: f, 
                assignment_check_ins: @assignment_check_ins, 

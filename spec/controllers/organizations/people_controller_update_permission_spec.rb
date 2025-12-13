@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe Organizations::PeopleController, type: :controller do
+RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
   let(:organization) { create(:organization) }
   let(:manager) { create(:person) }
   let(:person) { create(:person) }
@@ -26,13 +26,13 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       it 'updates employment management permission' do
         post :update_permission, params: { 
           organization_id: organization.id,
-          id: person.id, 
+          id: current_access.id, 
           permission_type: 'can_manage_employment', 
           permission_value: 'true' 
         }
         
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_person_path(organization, person))
+        expect(response).to redirect_to(organization_company_teammate_path(organization, current_access))
         
         # Verify the permission was updated
         person.reload
@@ -43,13 +43,13 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       it 'updates employment creation permission' do
         post :update_permission, params: { 
           organization_id: organization.id,
-          id: person.id, 
+          id: current_access.id, 
           permission_type: 'can_create_employment', 
           permission_value: 'false' 
         }
         
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_person_path(organization, person))
+        expect(response).to redirect_to(organization_company_teammate_path(organization, current_access))
         
         # Verify the permission was updated
         person.reload
@@ -60,13 +60,13 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       it 'updates MAAP management permission' do
         post :update_permission, params: { 
           organization_id: organization.id,
-          id: person.id, 
+          id: current_access.id, 
           permission_type: 'can_manage_maap', 
           permission_value: 'nil' 
         }
         
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_person_path(organization, person))
+        expect(response).to redirect_to(organization_company_teammate_path(organization, current_access))
         
         # Verify the permission was updated
         person.reload
@@ -77,13 +77,13 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       it 'updates prompts management permission' do
         post :update_permission, params: {
           organization_id: organization.id,
-          id: person.id,
+          id: current_access.id,
           permission_type: 'can_manage_prompts',
           permission_value: 'true'
         }
 
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_person_path(organization, person))
+        expect(response).to redirect_to(organization_company_teammate_path(organization, current_access))
 
         # Verify the permission was updated
         person.reload
@@ -98,14 +98,14 @@ RSpec.describe Organizations::PeopleController, type: :controller do
         expect {
           post :update_permission, params: {
             organization_id: organization.id,
-            id: person.id,
+            id: current_access.id,
             permission_type: 'can_manage_prompts',
             permission_value: 'true'
           }
         }.to change { person.teammates.where(organization: organization).count }.from(0).to(1)
 
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_person_path(organization, person))
+        expect(response).to redirect_to(organization_company_teammate_path(organization, current_access))
 
         # Verify the permission was updated
         person.reload
@@ -119,13 +119,13 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       it 'handles invalid permission type' do
         post :update_permission, params: { 
           organization_id: organization.id,
-          id: person.id, 
+          id: current_access.id, 
           permission_type: 'invalid_permission', 
           permission_value: 'true' 
         }
         
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_person_path(organization, person))
+        expect(response).to redirect_to(organization_company_teammate_path(organization, current_access))
         expect(flash[:alert]).to eq('Invalid permission type.')
       end
     end
@@ -139,7 +139,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
       it 'handles authorization failure' do
         post :update_permission, params: { 
           organization_id: organization.id,
-          id: person.id, 
+          id: current_access.id, 
           permission_type: 'can_manage_employment', 
           permission_value: 'true' 
         }
@@ -155,7 +155,7 @@ RSpec.describe Organizations::PeopleController, type: :controller do
     it 'sets @organization (via base controller)' do
       get :show, params: {
         organization_id: organization.id,
-        id: person.id
+        id: current_access.id
       }
 
       expect(assigns(:organization)).to be_present
@@ -165,18 +165,18 @@ RSpec.describe Organizations::PeopleController, type: :controller do
 
   describe 'route accessibility' do
     it 'has the correct route' do
-      expect(post: "/organizations/#{organization.id}/people/#{person.id}/update_permission").to route_to(
-        controller: 'organizations/people',
+      expect(post: "/organizations/#{organization.id}/company_teammates/#{current_access.id}/update_permission").to route_to(
+        controller: 'organizations/company_teammates',
         action: 'update_permission',
         organization_id: organization.id.to_s,
-        id: person.id.to_s
+        id: current_access.id.to_s
       )
     end
 
     it 'generates the correct route helper' do
       # Organization routes include slug format: id-name-parameterized
-      expected_path = "/organizations/#{organization.to_param}/people/#{person.id}/update_permission"
-      expect(update_permission_organization_person_path(organization, person)).to eq(expected_path)
+      expected_path = "/organizations/#{organization.to_param}/company_teammates/#{current_access.id}/update_permission"
+      expect(update_permission_organization_company_teammate_path(organization, current_access)).to eq(expected_path)
     end
   end
 end

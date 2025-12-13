@@ -55,14 +55,20 @@ RSpec.describe PersonPolicy, type: :policy do
       let(:grand_manager) { create(:person) }
       let(:grand_manager_teammate) { CompanyTeammate.create!(person: grand_manager, organization: organization) }
       let(:grand_manager_pundit_user) { OpenStruct.new(user: grand_manager_teammate, impersonating_teammate: nil) }
-      let(:direct_manager_employment) { create(:employment_tenure, teammate: direct_manager_teammate, company: organization, manager: grand_manager) }
-      let(:grand_manager_employment) { create(:employment_tenure, teammate: grand_manager_teammate, company: organization) }
-      let(:employee_employment) { create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: direct_manager) }
       
       before do
-        direct_manager_employment
-        grand_manager_employment
-        employee_employment
+        # Ensure all teammates exist before creating tenures
+        direct_manager_teammate
+        grand_manager_teammate
+        other_person_teammate
+        # Create employment tenures directly in before block (like model spec does)
+        create(:employment_tenure, teammate: direct_manager_teammate, company: organization, manager: grand_manager)
+        create(:employment_tenure, teammate: grand_manager_teammate, company: organization)
+        create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: direct_manager)
+        # Reload teammates to clear association cache
+        direct_manager_teammate.reload
+        grand_manager_teammate.reload
+        other_person_teammate.reload
       end
 
       it "allows direct managers in hierarchy to edit their employees' profiles" do
@@ -108,14 +114,20 @@ RSpec.describe PersonPolicy, type: :policy do
       let(:grand_manager) { create(:person) }
       let(:grand_manager_teammate) { CompanyTeammate.create!(person: grand_manager, organization: organization) }
       let(:grand_manager_pundit_user) { OpenStruct.new(user: grand_manager_teammate, impersonating_teammate: nil) }
-      let(:direct_manager_employment) { create(:employment_tenure, teammate: direct_manager_teammate, company: organization, manager: grand_manager) }
-      let(:grand_manager_employment) { create(:employment_tenure, teammate: grand_manager_teammate, company: organization) }
-      let(:employee_employment) { create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: direct_manager) }
       
       before do
-        direct_manager_employment
-        grand_manager_employment
-        employee_employment
+        # Ensure all teammates exist before creating tenures
+        direct_manager_teammate
+        grand_manager_teammate
+        other_person_teammate
+        # Create employment tenures directly in before block (like model spec does)
+        create(:employment_tenure, teammate: direct_manager_teammate, company: organization, manager: grand_manager)
+        create(:employment_tenure, teammate: grand_manager_teammate, company: organization)
+        create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: direct_manager)
+        # Reload teammates to clear association cache
+        direct_manager_teammate.reload
+        grand_manager_teammate.reload
+        other_person_teammate.reload
       end
 
       it "allows direct managers in hierarchy to update their employees' profiles" do
@@ -285,6 +297,9 @@ RSpec.describe PersonPolicy, type: :policy do
       # Create active employment for other_person and set manager
       create(:employment_tenure, teammate: other_person_teammate, company: organization, started_at: 1.year.ago, ended_at: nil, manager: manager)
       other_person_teammate.update!(first_employed_at: 1.year.ago)
+      # Reload teammates to clear association cache
+      manager_teammate.reload
+      other_person_teammate.reload
     end
 
     it "allows person themselves to view their check-ins" do
@@ -312,6 +327,10 @@ RSpec.describe PersonPolicy, type: :policy do
       # Update existing manager's employment to have grand manager as manager
       manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: organization)
       manager_tenure.update!(manager: grand_manager)
+      # Reload teammates to clear association cache
+      manager_teammate.reload
+      grand_manager_teammate.reload
+      other_person_teammate.reload
       
       policy = PersonPolicy.new(grand_manager_pundit_user, other_person)
       allow(policy).to receive(:actual_organization).and_return(organization)
@@ -459,10 +478,18 @@ RSpec.describe PersonPolicy, type: :policy do
       let(:grand_manager_pundit_user) { OpenStruct.new(user: grand_manager_teammate, impersonating_teammate: nil) }
       
       before do
+        # Ensure all teammates exist before creating tenures
+        direct_manager_teammate
+        grand_manager_teammate
+        other_person_teammate
         # Create employment tenures with manager relationships
         create(:employment_tenure, teammate: direct_manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil, manager: grand_manager)
         create(:employment_tenure, teammate: grand_manager_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
         create(:employment_tenure, teammate: other_person_teammate, company: organization, started_at: 1.year.ago, ended_at: nil, manager: direct_manager)
+        # Reload teammates to clear association cache
+        direct_manager_teammate.reload
+        grand_manager_teammate.reload
+        other_person_teammate.reload
       end
 
       it "allows direct managers in hierarchy to change their employees' employment" do

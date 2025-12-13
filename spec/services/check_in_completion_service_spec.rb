@@ -7,10 +7,7 @@ RSpec.describe CheckInCompletionService, type: :service do
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
 
-  before do
-    # Set up manager relationship
-    tenure = create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager)
-  end
+  let!(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager) }
 
   describe 'AssignmentCheckIn' do
     let(:assignment) { create(:assignment, company: organization) }
@@ -106,7 +103,6 @@ RSpec.describe CheckInCompletionService, type: :service do
   end
 
   describe 'PositionCheckIn' do
-    let(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager) }
     let(:check_in) { create(:position_check_in, teammate: employee_teammate, employment_tenure: employment_tenure) }
 
     context 'when employee completes' do

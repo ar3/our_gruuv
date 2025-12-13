@@ -1,0 +1,61 @@
+= form_with model: employment_tenure, url: (employment_tenure.persisted? ? organization_company_teammate_employment_tenure_path(@organization || current_organization, @teammate, employment_tenure) : organization_company_teammate_employment_tenures_path(@organization || current_organization, @teammate)), local: true do |form|
+  - if employment_tenure.errors.any?
+    .alert.alert-danger
+      %h5= "#{pluralize(employment_tenure.errors.count, "error")} prohibited this employment tenure from being saved:"
+      %ul.mb-0
+        - employment_tenure.errors.full_messages.each do |message|
+          %li= message
+
+  .row
+    .col-md-6
+      .mb-3
+        = form.label :company_id, "Company", class: "form-label"
+        = form.collection_select :company_id, Organization.companies.order(:name), :id, :display_name, 
+          { selected: employment_tenure.company_id }, { class: "form-select", required: true, disabled: employment_tenure.persisted? }
+        - if employment_tenure.persisted?
+          = form.hidden_field :company_id
+
+    .col-md-6
+      .mb-3
+        = form.label :position_id, "Position", class: "form-label"
+        - positions = employment_tenure.company ? employment_tenure.company.positions.includes(:position_type, :position_level) : []
+        = form.collection_select :position_id, positions, :id, :display_name, 
+          { prompt: 'Select a position' }, { class: "form-select", required: true }
+
+  .row
+    .col-md-6
+      .mb-3
+        = form.label :manager_id, "Manager (Optional)", class: "form-label"
+        - managers = employment_tenure.company ? employment_tenure.company.employees : []
+        = form.collection_select :manager_id, managers, :id, :display_name, 
+          { prompt: 'Select a manager (optional)', include_blank: 'No Manager' }, { class: "form-select" }
+
+    .col-md-6
+      .mb-3
+        = form.label :started_at, "Start Date", class: "form-label"
+        = form.date_field :started_at, class: "form-control", required: true
+
+  .row
+    .col-md-6
+      .mb-3
+        = form.label :seat_id, "Seat (Optional)", class: "form-label"
+        - seats = employment_tenure.company ? employment_tenure.company.seats.includes(:position_type).where(state: [:open, :filled]) : []
+        = form.collection_select :seat_id, seats, :id, :display_name, 
+          { prompt: 'Select a seat (optional)', include_blank: 'No Specific Seat' }, { class: "form-select" }
+        %small.form-text.text-muted
+          Seats represent specific job requisitions. Selecting a seat links this employment to a specific seat.
+
+  .row
+    .col-md-6
+      .mb-3
+        = form.label :ended_at, "End Date (Leave blank for current employment)", class: "form-label"
+        = form.date_field :ended_at, class: "form-control"
+
+    .col-md-6
+      .mb-3
+        = form.label :employment_change_notes, "Notes (Optional)", class: "form-label"
+        = form.text_area :employment_change_notes, rows: 3, class: "form-control", placeholder: "Add any notes about this employment..."
+
+  .d-flex.justify-content-between
+    = link_to 'Back to Profile', organization_company_teammate_path(organization, @teammate), class: 'btn btn-outline-secondary'
+    = form.submit class: 'btn btn-primary'

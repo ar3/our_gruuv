@@ -15,7 +15,7 @@
             %h5.mb-0 Status
           .card-body.text-center
             %p.mb-3 #{check_in.manager_completed_by&.first_name || 'Your manager'} is ready to finalize this check-in
-            = link_to "Go to Finalization", organization_person_finalization_path(@organization, @person),
+            = link_to "Go to Finalization", organization_company_teammate_finalization_path(@organization, @person),
                       class: 'btn btn-success btn-sm',
                       data: { confirm: 'Your manager will review both assessments and set the official rating.' }
       - else

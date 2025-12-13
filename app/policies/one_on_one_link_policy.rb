@@ -8,7 +8,8 @@ class OneOnOneLinkPolicy < ApplicationPolicy
     # Can view if viewing own link or if manager
     return true if viewing_teammate.person == record.teammate.person
     return true if viewing_teammate.can_manage_employment?
-    return true if viewing_teammate.person.in_managerial_hierarchy_of?(record.teammate.person, viewing_teammate.organization)
+    record_teammate = record.teammate.is_a?(CompanyTeammate) ? record.teammate : CompanyTeammate.find_by(organization: viewing_teammate.organization, person: record.teammate.person)
+    return true if record_teammate && viewing_teammate.in_managerial_hierarchy_of?(record_teammate)
     
     false
   end

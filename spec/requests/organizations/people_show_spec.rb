@@ -27,7 +27,7 @@ RSpec.describe 'Organizations::People Show', type: :request do
       end
 
       it 'returns success' do
-        get organization_person_path(organization, person)
+        get organization_company_teammate_path(organization, person_teammate)
         expect(response).to have_http_status(:success)
       end
 
@@ -39,7 +39,7 @@ RSpec.describe 'Organizations::People Show', type: :request do
         create(:page_visit, person: person, url: '/organizations/1/assignments', page_title: 'Assignments', visit_count: 2, visited_at: 5.days.ago)
         create(:page_visit, person: person, url: '/organizations/1/abilities', page_title: 'Abilities', visit_count: 1, visited_at: 1.hour.ago)
 
-        get organization_person_path(organization, person)
+        get organization_company_teammate_path(organization, person_teammate)
 
         expect(assigns(:most_visited_pages)).to be_present
         expect(assigns(:most_visited_pages).count).to eq(5)
@@ -56,7 +56,7 @@ RSpec.describe 'Organizations::People Show', type: :request do
           create(:page_visit, person: person, url: "/page#{i}", page_title: "Page #{i}", visit_count: i + 1, visited_at: i.days.ago)
         end
 
-        get organization_person_path(organization, person)
+        get organization_company_teammate_path(organization, person_teammate)
 
         expect(assigns(:most_visited_pages).count).to eq(5)
       end
@@ -67,13 +67,13 @@ RSpec.describe 'Organizations::People Show', type: :request do
           create(:page_visit, person: person, url: "/page#{i}", page_title: "Page #{i}", visit_count: 1, visited_at: i.hours.ago)
         end
 
-        get organization_person_path(organization, person)
+        get organization_company_teammate_path(organization, person_teammate)
 
         expect(assigns(:most_recent_pages).count).to eq(5)
       end
 
       it 'handles person with no page visits' do
-        get organization_person_path(organization, person)
+        get organization_company_teammate_path(organization, person_teammate)
 
         expect(assigns(:most_visited_pages)).to be_empty
         expect(assigns(:most_recent_pages)).to be_empty
@@ -83,7 +83,7 @@ RSpec.describe 'Organizations::People Show', type: :request do
       it 'renders the page visits section in the response' do
         create(:page_visit, person: person, url: '/test', page_title: 'Test Page', visit_count: 1, visited_at: 1.hour.ago)
 
-        get organization_person_path(organization, person)
+        get organization_company_teammate_path(organization, person_teammate)
 
         expect(response.body).to include('Page Visits')
         expect(response.body).to include('Top 5 Most Visited Pages')
@@ -97,14 +97,14 @@ RSpec.describe 'Organizations::People Show', type: :request do
       end
 
       it 'returns success' do
-        get organization_person_path(organization, person)
+        get organization_company_teammate_path(organization, person_teammate)
         expect(response).to have_http_status(:success)
       end
 
       it 'loads their own page visits' do
         create(:page_visit, person: person, url: '/my-page', page_title: 'My Page', visit_count: 1, visited_at: 1.hour.ago)
 
-        get organization_person_path(organization, person)
+        get organization_company_teammate_path(organization, person_teammate)
 
         expect(assigns(:most_visited_pages)).to be_present
         expect(assigns(:most_visited_pages).first.person).to eq(person)
@@ -122,15 +122,15 @@ RSpec.describe 'Organizations::People Show', type: :request do
       end
 
       it 'redirects with authorization error' do
-        get organization_person_path(organization, person)
+        get organization_company_teammate_path(organization, person_teammate)
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(public_person_path(person))
+        expect(response).to redirect_to(root_path)
       end
     end
 
     context 'when user is unauthenticated' do
       it 'redirects to login' do
-        get organization_person_path(organization, person)
+        get organization_company_teammate_path(organization, person_teammate)
         expect(response).to have_http_status(:redirect)
         expect(response).to redirect_to(root_path)
       end

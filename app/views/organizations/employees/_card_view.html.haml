@@ -8,7 +8,7 @@
               = teammate_profile_image(teammate, size: 48)
             .flex-grow-1
               %h6.card-title.mb-1
-                = link_to teammate.person.display_name, teammate_organization_person_path(@organization, teammate.person), class: "text-decoration-none fw-bold"
+                = link_to teammate.person.display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
               %small.text-muted= teammate.person.email
               %br
               %small.text-muted= teammate_organization_display(teammate)
@@ -35,10 +35,10 @@
           
           .mt-auto
             .btn-group.w-100
-              = link_to teammate_organization_person_path(@organization, teammate.person), class: "btn btn-outline-primary btn-sm" do
+              = link_to internal_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-primary btn-sm" do
                 %i.bi.bi-eye.me-1
                 View
               - if policy(@organization).manage_employment?
-                = link_to organization_person_check_ins_path(@organization, teammate.person), class: "btn btn-outline-secondary btn-sm" do
+                = link_to organization_company_teammate_check_ins_path(@organization, teammate.person), class: "btn btn-outline-secondary btn-sm" do
                   %i.bi.bi-list-task.me-1
                   Assignments

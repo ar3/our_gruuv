@@ -41,21 +41,29 @@ RSpec.describe 'Check-ins Stories Section', type: :system do
     create(:observee, observation: observation1, teammate: employee_teammate)
     create(:observee, observation: observation2, teammate: employee_teammate)
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     expect(page).to have_content("STORIES ABOUT #{employee.first_name.upcase}")
     expect(page).to have_content('2 observations')
     expect(page).to have_content('in the last 45 days')
+    
+    # Expand the stories section to see details
+    page.find('a[data-bs-target="#storiesSection"]').click
+    
     expect(page).to have_content(manager.display_name)
     expect(page).to have_content('This is a test observation story')
     expect(page).to have_button('View All Observations')
   end
 
   it 'displays empty state when no observations' do
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     expect(page).to have_content("STORIES ABOUT #{employee.first_name.upcase}")
     expect(page).to have_content('0 observations')
+    
+    # Expand the stories section to see details
+    page.find('a[data-bs-target="#storiesSection"]').click
+    
     expect(page).to have_content('No recent observations to display.')
     expect(page).to have_button('View All Observations')
   end
@@ -73,9 +81,13 @@ RSpec.describe 'Check-ins Stories Section', type: :system do
       create(:observee, observation: observation, teammate: employee_teammate)
     end
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     expect(page).to have_content('5 observations')
+    
+    # Expand the stories section to see details
+    page.find('a[data-bs-target="#storiesSection"]').click
+    
     # Should only show last 3
     expect(page).to have_content('Observation 1')
     expect(page).to have_content('Observation 2')
@@ -95,7 +107,10 @@ RSpec.describe 'Check-ins Stories Section', type: :system do
     )
     create(:observee, observation: observation, teammate: employee_teammate)
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
+    
+    # Expand the stories section to see the button
+    page.find('a[data-bs-target="#storiesSection"]').click
     
     # Verify button is present
     expect(page).to have_button('View All Observations')

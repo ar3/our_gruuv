@@ -9,7 +9,7 @@
           %i.bi.bi-globe.me-2
           Public View (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - else
+      - elsif @person
         = link_to public_person_path(@person), class: 'dropdown-item' do
           %i.bi.bi-globe.me-2
           Public View
@@ -20,8 +20,8 @@
           %i.bi.bi-people.me-2
           Teammate View (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif policy(@person).teammate?
-        = link_to teammate_organization_person_path(current_organization, @person), class: 'dropdown-item' do
+      - elsif @teammate && policy(@teammate).internal?
+        = link_to internal_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-people.me-2
           Teammate View
       - else
@@ -36,8 +36,8 @@
           %i.bi.bi-graph-up.me-2
           Active Job View (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif policy(@person).can_view_manage_mode?
-        = link_to complete_picture_organization_person_path(current_organization, @person), class: 'dropdown-item' do
+      - elsif @teammate && policy(@teammate).complete_picture?
+        = link_to complete_picture_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-graph-up.me-2
           Active Job View
       - else
@@ -52,8 +52,8 @@
           %i.bi.bi-chat-square-text.me-2
           Check-In (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif policy(@person).can_view_manage_mode?
-        = link_to organization_person_check_ins_path(current_organization, @person), class: 'dropdown-item' do
+      - elsif @teammate && policy(@teammate).view_check_ins?
+        = link_to organization_company_teammate_check_ins_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-chat-square-text.me-2
           Check-In
       - else
@@ -68,8 +68,8 @@
           %i.bi.bi-check-circle.me-2
           Check-In Review (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif policy(@person).can_view_manage_mode?
-        = link_to organization_person_finalization_path(current_organization, @person), class: 'dropdown-item' do
+      - elsif @teammate && policy(@teammate).view_check_ins?
+        = link_to organization_company_teammate_finalization_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-check-circle.me-2
           Check-In Review
       - else
@@ -84,8 +84,8 @@
           %i.bi.bi-clock-history.me-2
           Acknowledgement (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif policy(@person).audit?
-        = link_to audit_organization_employee_path(current_organization, @person), class: 'dropdown-item' do
+      - elsif @teammate && policy(@teammate).audit?
+        = link_to audit_organization_employee_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-clock-history.me-2
           Acknowledgement
       - else
@@ -100,17 +100,10 @@
           %i.bi.bi-briefcase.me-2
           Seat History Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif current_organization && policy(@person).can_view_manage_mode?
-        - teammate = @person.teammates.find_by(organization: current_organization)
-        - if teammate
-          = link_to organization_teammate_position_path(current_organization, teammate), class: 'dropdown-item' do
-            %i.bi.bi-briefcase.me-2
-            Seat History Mode
-        - else
-          .dropdown-item.text-muted.disabled
-            %i.bi.bi-briefcase.me-2
-            Seat History Mode
-            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access seat history"}
+      - elsif current_organization && @teammate && policy(@teammate).show?
+        = link_to organization_teammate_position_path(current_organization, @teammate), class: 'dropdown-item' do
+          %i.bi.bi-briefcase.me-2
+          Seat History Mode
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-briefcase.me-2
@@ -123,8 +116,8 @@
           %i.bi.bi-gear.me-2
           Manage Profile Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif policy(@person).can_view_manage_mode?
-        = link_to organization_person_path(current_organization, @person), class: 'dropdown-item' do
+      - elsif @teammate && policy(@teammate).show?
+        = link_to organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-gear.me-2
           Manage Profile Mode
       - else

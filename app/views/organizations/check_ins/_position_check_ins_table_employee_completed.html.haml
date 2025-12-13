@@ -37,7 +37,7 @@
             %small.text-muted Your manager has not completed their assessment
         %td
           - if check_in.manager_completed?
-            = link_to "Go to Finalization", organization_person_finalization_path(@organization, @person), 
+            = link_to "Go to Finalization", organization_company_teammate_finalization_path(@organization, @person), 
                       class: 'btn btn-success btn-sm',
                       data: { confirm: 'Your manager will review both assessments and set the official rating.' }
 

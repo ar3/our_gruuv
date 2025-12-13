@@ -6,6 +6,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
   let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:person_teammate) { teammate }
   let!(:position_type) { create(:position_type, organization: organization) }
   let!(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
   let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
@@ -33,7 +34,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
   describe 'GET #assignment_selection' do
     context 'when user is authorized' do
       it 'returns success' do
-        get assignment_selection_organization_person_path(organization, person)
+        get assignment_selection_organization_company_teammate_path(organization, person_teammate)
         
         if response.status == 302
           puts "Redirected to: #{response.location}"
@@ -44,7 +45,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
       end
 
       it 'loads all assignments for the organization' do
-        get assignment_selection_organization_person_path(organization, person)
+        get assignment_selection_organization_company_teammate_path(organization, person_teammate)
         expect(assigns(:assignments)).to include(required_assignment, optional_assignment1, optional_assignment2)
       end
 
@@ -52,7 +53,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
         # Ensure the employment tenure uses the correct position
         employment_tenure.update!(position: position)
         
-        get assignment_selection_organization_person_path(organization, person)
+        get assignment_selection_organization_company_teammate_path(organization, person_teammate)
         
         expect(assigns(:required_assignment_ids)).to include(required_assignment.id)
         expect(assigns(:required_assignment_ids)).not_to include(optional_assignment1.id)
@@ -61,13 +62,13 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
       it 'identifies assignments with active tenures' do
         create(:assignment_tenure, teammate: teammate, assignment: optional_assignment1, started_at: 1.month.ago, ended_at: nil)
         
-        get assignment_selection_organization_person_path(organization, person)
+        get assignment_selection_organization_company_teammate_path(organization, person_teammate)
         expect(assigns(:assigned_assignment_ids)).to include(optional_assignment1.id)
         expect(assigns(:assigned_assignment_ids)).not_to include(optional_assignment2.id)
       end
 
       it 'loads the current employment tenure' do
-        get assignment_selection_organization_person_path(organization, person)
+        get assignment_selection_organization_company_teammate_path(organization, person_teammate)
         expect(assigns(:current_employment)).to eq(employment_tenure)
       end
     end
@@ -84,7 +85,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
       end
 
       it 'redirects with authorization error' do
-        get assignment_selection_organization_person_path(organization, person)
+        get assignment_selection_organization_company_teammate_path(organization, person_teammate)
         expect(response).to have_http_status(:redirect)
         expect(flash[:alert]).to match(/permission/)
       end
@@ -96,7 +97,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
       end
 
       it 'returns success but with no required assignments' do
-        get assignment_selection_organization_person_path(organization, person)
+        get assignment_selection_organization_company_teammate_path(organization, person_teammate)
 
         # When person has no employment, the audit? policy's in_managerial_hierarchy_of? check fails
         # However, can_manage_employment? should still allow access. If authorization fails,
@@ -113,7 +114,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
     context 'when user is authorized' do
       it 'creates new assignment tenures for checked assignments' do
         expect {
-          post update_assignments_organization_person_path(organization, person), params: {
+          post update_assignments_organization_company_teammate_path(organization, person_teammate), params: {
             assignment_ids: [optional_assignment1.id.to_s, optional_assignment2.id.to_s]
           }
         }.to change(AssignmentTenure, :count).by(2)
@@ -136,7 +137,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
         existing_tenure = create(:assignment_tenure, teammate: teammate, assignment: optional_assignment1, started_at: 1.month.ago, ended_at: nil)
         
         expect {
-          post update_assignments_organization_person_path(organization, person), params: {
+          post update_assignments_organization_company_teammate_path(organization, person_teammate), params: {
             assignment_ids: [optional_assignment1.id.to_s]
           }
         }.not_to change(AssignmentTenure, :count)
@@ -145,15 +146,15 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
       end
 
       it 'redirects to check-ins page after save' do
-        post update_assignments_organization_person_path(organization, person), params: {
+        post update_assignments_organization_company_teammate_path(organization, person_teammate), params: {
           assignment_ids: [optional_assignment1.id.to_s]
         }
         
-        expect(response).to redirect_to(organization_person_check_ins_path(organization, person))
+        expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, person_teammate))
       end
 
       it 'shows success message' do
-        post update_assignments_organization_person_path(organization, person), params: {
+        post update_assignments_organization_company_teammate_path(organization, person_teammate), params: {
           assignment_ids: [optional_assignment1.id.to_s]
         }
         
@@ -162,20 +163,20 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
 
       it 'handles empty assignment selection' do
         expect {
-          post update_assignments_organization_person_path(organization, person), params: {
+          post update_assignments_organization_company_teammate_path(organization, person_teammate), params: {
             assignment_ids: []
           }
         }.not_to change(AssignmentTenure, :count)
         
-        expect(response).to redirect_to(organization_person_check_ins_path(organization, person))
+        expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, person_teammate))
       end
 
       it 'handles nil assignment_ids parameter' do
         expect {
-          post update_assignments_organization_person_path(organization, person)
+          post update_assignments_organization_company_teammate_path(organization, person_teammate)
         }.not_to change(AssignmentTenure, :count)
         
-        expect(response).to redirect_to(organization_person_check_ins_path(organization, person))
+        expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, person_teammate))
       end
     end
 
@@ -191,7 +192,7 @@ RSpec.describe 'Organizations::People Assignment Selection', type: :request do
       end
 
       it 'redirects with authorization error' do
-        post update_assignments_organization_person_path(organization, person), params: {
+        post update_assignments_organization_company_teammate_path(organization, person_teammate), params: {
           assignment_ids: [optional_assignment1.id.to_s]
         }
         expect(response).to have_http_status(:redirect)

@@ -177,8 +177,8 @@ class MaapChangeExecutionService
     # Employee cannot update their own manager fields
     return false if current_user.person == check_in.teammate.person
     
-    # Check if current user can manage this person's assignments
-    policy(check_in.teammate.person)&.manage_assignments? || false
+    # Check if current user can manage this teammate's assignments
+    teammate_policy(check_in.teammate)&.manage_assignments? || false
   end
 
   def can_finalize_check_in?(check_in)
@@ -186,8 +186,8 @@ class MaapChangeExecutionService
     return false unless current_user.is_a?(CompanyTeammate)
     return true if admin_bypass?
     
-    # Check if current user can manage this person's assignments
-    policy(check_in.teammate.person)&.manage_assignments? || false
+    # Check if current user can manage this teammate's assignments
+    teammate_policy(check_in.teammate)&.manage_assignments? || false
   end
 
   def update_employee_check_in_fields(check_in, employee_data)
@@ -241,5 +241,11 @@ class MaapChangeExecutionService
     return nil unless current_user.is_a?(CompanyTeammate)
     pundit_user = OpenStruct.new(user: current_user, real_user: current_user)
     PersonPolicy.new(pundit_user, record)
+  end
+
+  def teammate_policy(teammate)
+    return nil unless current_user.is_a?(CompanyTeammate)
+    pundit_user = OpenStruct.new(user: current_user, real_user: current_user)
+    CompanyTeammatePolicy.new(pundit_user, teammate)
   end
 end

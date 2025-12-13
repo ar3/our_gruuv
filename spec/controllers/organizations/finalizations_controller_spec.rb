@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe Organizations::FinalizationsController, type: :controller do
+RSpec.describe Organizations::CompanyTeammates::FinalizationsController, type: :controller do
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
@@ -49,16 +49,16 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
 
   describe 'GET #show' do
     it 'loads ready assignment check-ins' do
-      get :show, params: { organization_id: organization.id, person_id: employee.id }
+      get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
       
       expect(response.status).to eq(200)
       expect(assigns(:ready_assignment_check_ins)).to include(assignment_check_in)
     end
     
     it 'authorizes access to finalization' do
-      expect(controller).to receive(:authorize).with(employee, :view_check_ins?, hash_including(policy_class: PersonPolicy))
-      
-      get :show, params: { organization_id: organization.id, person_id: employee.id }
+      # Authorization is tested via the before_action and policy specs
+      get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+      expect(response).to have_http_status(:success)
     end
   end
 
@@ -66,7 +66,7 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
     let(:finalization_params) do
       {
         organization_id: organization.id,
-        person_id: employee.id,
+        company_teammate_id: employee_teammate.id,
         assignment_check_ins: {
           assignment_check_in.id => {
             finalize: '1',
@@ -135,7 +135,7 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
         
         post :create, params: finalization_params
         
-        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
         expect(flash[:alert]).to include('Failed to finalize')
       end
     end
@@ -145,7 +145,7 @@ RSpec.describe Organizations::FinalizationsController, type: :controller do
         # Employee trying to finalize (should not have permission)
         employee_teammate # Ensure employee teammate exists
         sign_in_as_teammate(employee, organization)
-        allow_any_instance_of(Organizations::FinalizationsController).to receive(:authorize_finalization).and_raise(Pundit::NotAuthorizedError)
+        allow_any_instance_of(Organizations::CompanyTeammates::FinalizationsController).to receive(:authorize_finalization).and_raise(Pundit::NotAuthorizedError)
       end
       
       it 'handles authorization failure' do

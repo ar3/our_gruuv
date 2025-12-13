@@ -118,7 +118,7 @@ RSpec.describe MaapChangeExecutionService do
         end
 
         before do
-          allow_any_instance_of(PersonPolicy).to receive(:manage_assignments?).and_return(true)
+          allow_any_instance_of(CompanyTeammatePolicy).to receive(:manage_assignments?).and_return(true)
           check_in # Create the check-in
         end
 
@@ -318,7 +318,7 @@ RSpec.describe MaapChangeExecutionService do
         end
 
         before do
-          allow_any_instance_of(PersonPolicy).to receive(:manage_assignments?).and_return(false)
+          allow_any_instance_of(CompanyTeammatePolicy).to receive(:manage_assignments?).and_return(false)
           check_in # Create the check-in
         end
 

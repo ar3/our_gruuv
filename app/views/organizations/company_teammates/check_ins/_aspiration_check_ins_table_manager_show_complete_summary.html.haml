@@ -1,0 +1,25 @@
+-# Aspiration Check-Ins Table View - Manager Show Complete Summary
+%td{style: "display: none;"}
+  = form.hidden_field :aspiration_id, value: check_in.aspiration_id
+%td
+  = aspiration_rating_display(check_in.manager_rating)
+%td
+  = simple_format(check_in.manager_private_notes)
+%td
+  - other_mode = check_in.other_participant_display_mode(:manager)
+  - partial_name = "aspiration_check_ins_table_manager_#{other_mode}"
+  = render partial_name, check_in: check_in
+%td
+  -# Hidden fields to preserve existing values when form is submitted
+  = form.hidden_field :manager_rating, value: check_in.manager_rating
+  = form.hidden_field :manager_private_notes, value: check_in.manager_private_notes
+  
+  .btn-group-vertical{role: "group", "aria-label": "Status selection"}
+    = form.radio_button :status, 'draft', checked: !check_in.manager_completed?, class: 'btn-check', id: "aspiration_table_manager_status_draft_#{check_in.id}"
+    = form.label :status_draft, 'Make Changes', class: 'btn btn-outline-secondary', for: "aspiration_table_manager_status_draft_#{check_in.id}"
+    = form.radio_button :status, 'complete', checked: check_in.manager_completed?, class: 'btn-check', id: "aspiration_table_manager_status_complete_#{check_in.id}"
+    = form.label :status_complete, 'Ready for Finalization', class: 'btn btn-outline-primary', for: "aspiration_table_manager_status_complete_#{check_in.id}"
+
+.small.text-muted.mt-1
+  Select "Make Changes" to edit your assessment and notes
+

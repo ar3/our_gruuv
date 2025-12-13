@@ -3,7 +3,7 @@
   %p.text-muted.mb-0 Manage your 1:1 link and integration
 
 - content_for :go_back_link do
-  = link_to organization_person_check_ins_path(@organization, @person), class: "go-back-link" do
+  = link_to organization_company_teammate_check_ins_path(@organization, @person), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     Back to Check-Ins
 
@@ -85,5 +85,5 @@
       
       .d-flex.gap-2
         = f.submit "Save 1:1 Link", class: "btn btn-primary"
-        = link_to "Cancel", organization_person_check_ins_path(@organization, @person), class: "btn btn-outline-secondary"
+        = link_to "Cancel", organization_company_teammate_check_ins_path(@organization, @person), class: "btn btn-outline-secondary"
 

@@ -4,7 +4,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
   after_action :verify_authorized
 
   def show
-    authorize @teammate.person, :view_check_ins?, policy_class: PersonPolicy
+    authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
     
     # Set @person for view switcher
     @person = @teammate.person
@@ -31,7 +31,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
   end
 
   def update
-    authorize @teammate.person, :change_employment?, policy_class: PersonPolicy
+    authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
     
     @current_employment = @teammate.employment_tenures.active.first
     

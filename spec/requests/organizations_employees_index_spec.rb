@@ -37,17 +37,19 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
   end
 
   describe 'manager filter functionality' do
-    let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+    let!(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
     let(:direct_report_teammate) { create(:teammate, person: direct_report, organization: organization) }
 
     before do
       # Create employment tenure with manager relationship
       create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, ended_at: nil)
       
+      # Reload to ensure we have the CompanyTeammate instance
+      manager_ct = CompanyTeammate.find(manager_teammate.id)
+      
       # Mock authentication for manager
       allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)
-      # Allow has_direct_reports? to be called with any object (Organization or Company)
-      allow(manager).to receive(:has_direct_reports?).and_return(true)
+      allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
     end
 
     it 'renders manager direct reports view successfully' do
@@ -106,12 +108,11 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     it 'handles empty direct reports gracefully' do
       # Remove the direct report
       EmploymentTenure.where(manager: manager).destroy_all
-      allow(manager).to receive(:has_direct_reports?).with(organization).and_return(false)
       
       get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
       
-      expect(response).to be_successful
-      expect(assigns(:filtered_and_paginated_teammates)).to be_empty
+      # Should redirect since manager has no direct reports
+      expect(response).to redirect_to(organization_employees_path(organization))
     end
 
     it 'maintains pagination with manager filter' do
@@ -131,10 +132,13 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
   describe 'authorization' do
     let(:non_manager) { create(:person) }
+    let!(:non_manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: non_manager, organization: organization) }
 
     before do
+      # Reload as CompanyTeammate to ensure has_direct_reports? method is available
+      non_manager_ct = CompanyTeammate.find(non_manager_teammate.id)
       allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(non_manager)
-      allow(non_manager).to receive(:has_direct_reports?).and_return(false)
+      allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(non_manager_ct)
     end
 
     it 'redirects when non-manager tries to access direct reports view' do
@@ -180,13 +184,17 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
   end
 
   describe 'integration with existing filters' do
-    let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+    let(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
     let(:direct_report_teammate) { create(:teammate, person: direct_report, organization: organization) }
 
     before do
       create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, ended_at: nil)
+      
+      # Reload as CompanyTeammate to ensure has_direct_reports? method is available
+      manager_ct = CompanyTeammate.find(manager_teammate.id)
+      
       allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)
-      allow(manager).to receive(:has_direct_reports?).and_return(true)
+      allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
     end
 
     it 'combines manager filter with status filter' do

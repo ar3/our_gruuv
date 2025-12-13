@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe Organizations::CheckInsController, type: :controller do
+RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :controller do
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person, full_name: 'Manager Person') }
   let(:employee) { create(:person, full_name: 'Employee Person') }
@@ -37,7 +37,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         
         patch :update, params: {
           organization_id: organization.id,
-        person_id: employee.id,
+        company_teammate_id: employee_teammate.id,
           position_check_in: {
             manager_rating: 2,  # Integer value for "Praising/Trusting"
             manager_private_notes: 'Outstanding work',
@@ -45,7 +45,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
         expect(flash[:notice]).to eq('Check-ins saved successfully.')
         
         position_check_in.reload
@@ -59,7 +59,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         
         patch :update, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           assignment_check_ins: {
             assignment_check_in.id => {
               assignment_id: assignment.id,
@@ -70,7 +70,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
         
         assignment_check_in.reload
         expect(assignment_check_in.manager_rating).to eq('meeting')
@@ -83,7 +83,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         
         patch :update, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           aspiration_check_ins: {
             aspiration_check_in.id => {
               aspiration_id: aspiration.id,
@@ -94,7 +94,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
         
         aspiration_check_in.reload
         expect(aspiration_check_in.manager_rating).to eq('exceeding')
@@ -108,7 +108,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         
         patch :update, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           assignment_check_ins: {
             assignment_check_in.id => {
               assignment_id: assignment.id,
@@ -127,7 +127,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
         
         assignment_check_in.reload
         aspiration_check_in.reload
@@ -145,7 +145,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         
         patch :update, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           position_check_in: {
             employee_rating: 1,  # Integer value for "Meeting"
             employee_private_notes: 'Making good progress',
@@ -153,7 +153,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
         
         position_check_in.reload
         expect(position_check_in.employee_rating).to eq(1)
@@ -166,7 +166,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         
         patch :update, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           assignment_check_ins: {
             assignment_check_in.id => {
               assignment_id: assignment.id,
@@ -179,7 +179,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
         
         assignment_check_in.reload
         expect(assignment_check_in.employee_rating).to eq('exceeding')
@@ -197,7 +197,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         expect {
           patch :update, params: {
             organization_id: organization.id,
-            person_id: employee.id,
+            company_teammate_id: employee_teammate.id,
             assignment_check_ins: {
               assignment_check_in.id => {
                 assignment_id: assignment.id,
@@ -217,7 +217,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         expect {
           patch :update, params: {
             organization_id: organization.id,
-            person_id: employee.id,
+            company_teammate_id: employee_teammate.id,
             assignment_check_ins: {
               assignment_check_in.id => {
                 assignment_id: assignment.id,
@@ -236,7 +236,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         
         patch :update, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           aspiration_check_ins: {
             aspiration_check_in.id => {
               aspiration_id: aspiration.id,
@@ -247,7 +247,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
         
         aspiration_check_in.reload
         expect(aspiration_check_in.employee_rating).to eq('meeting')
@@ -264,7 +264,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         
         patch :update, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           position_check_in: {
             manager_rating: 2,
             manager_private_notes: 'Great work',
@@ -283,7 +283,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         
         patch :update, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           position_check_in: {
             manager_rating: 1,
             manager_private_notes: 'Updated assessment',
@@ -309,7 +309,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         # This should update since we support dual-format for backward compatibility
         patch :update, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           '[assignment_check_ins]' => {
             assignment_check_in.id => {
               assignment_id: assignment.id,
@@ -330,7 +330,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         # This should update since we support dual-format for backward compatibility
         patch :update, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           '[aspiration_check_ins]' => {
             aspiration_check_in.id => {
               aspiration_id: aspiration.id,
@@ -351,7 +351,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         # This should update since we support dual-format for backward compatibility
         patch :update, params: {
           organization_id: organization.id,
-        person_id: employee.id,
+        company_teammate_id: employee_teammate.id,
           '[position_check_in]' => {
             manager_rating: 1,
             manager_private_notes: 'Test notes',
@@ -382,7 +382,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
       it 'includes abilities where employee has milestone attainments' do
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certified_by: certifier, milestone_level: 2)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:relevant_abilities)).to be_present
         ability_data = assigns(:relevant_abilities).find { |a| a[:ability].id == ability_with_milestone.id }
@@ -396,7 +396,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         active_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_with_ability, ended_at: nil)
         assignment_ability = create(:assignment_ability, assignment: assignment_with_ability, ability: ability_with_assignment, milestone_level: 3)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:relevant_abilities)).to be_present
         ability_data = assigns(:relevant_abilities).find { |a| a[:ability].id == ability_with_assignment.id }
@@ -411,7 +411,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         active_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_with_ability, ended_at: nil)
         assignment_ability = create(:assignment_ability, assignment: assignment_with_ability, ability: ability_with_both, milestone_level: 3)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:relevant_abilities)).to be_present
         ability_data = assigns(:relevant_abilities).find { |a| a[:ability].id == ability_with_both.id }
@@ -426,7 +426,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         active_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_with_ability, ended_at: nil)
         assignment_ability = create(:assignment_ability, assignment: assignment_with_ability, ability: ability_with_both, milestone_level: 3)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         relevant_abilities = assigns(:relevant_abilities)
         ability_data_list = relevant_abilities.select { |a| a[:ability].id == ability_with_both.id }
@@ -439,7 +439,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         milestone_outside = create(:teammate_milestone, teammate: employee_teammate, ability: ability_outside_hierarchy, certified_by: certifier, milestone_level: 1)
         milestone_inside = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certified_by: certifier, milestone_level: 1)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         relevant_abilities = assigns(:relevant_abilities)
         ability_ids = relevant_abilities.map { |a| a[:ability].id }
@@ -452,7 +452,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         ability_in_department = create(:ability, name: 'Department Ability', organization: department)
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_in_department, certified_by: certifier, milestone_level: 2)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         relevant_abilities = assigns(:relevant_abilities)
         ability_ids = relevant_abilities.map { |a| a[:ability].id }
@@ -468,7 +468,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         create(:teammate_milestone, teammate: employee_teammate, ability: ability_a, certified_by: certifier, milestone_level: 1)
         create(:teammate_milestone, teammate: employee_teammate, ability: ability_m, certified_by: certifier, milestone_level: 1)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         relevant_abilities = assigns(:relevant_abilities)
         ability_names = relevant_abilities.map { |a| a[:ability].name }
@@ -479,7 +479,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         milestone1 = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certified_by: certifier, milestone_level: 1, attained_at: 6.months.ago)
         milestone2 = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certified_by: certifier, milestone_level: 3, attained_at: 1.month.ago)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         ability_data = assigns(:relevant_abilities).find { |a| a[:ability].id == ability_with_milestone.id }
         expect(ability_data[:milestone_attainments].size).to eq(2)
@@ -494,7 +494,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         assignment_ability1 = create(:assignment_ability, assignment: assignment1, ability: ability_with_assignment, milestone_level: 2)
         assignment_ability2 = create(:assignment_ability, assignment: assignment2, ability: ability_with_assignment, milestone_level: 4)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         ability_data = assigns(:relevant_abilities).find { |a| a[:ability].id == ability_with_assignment.id }
         expect(ability_data[:assignment_requirements].size).to eq(2)
@@ -506,7 +506,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         inactive_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 3.months.ago, ended_at: 1.month.ago)
         assignment_ability = create(:assignment_ability, assignment: assignment, ability: ability_with_assignment, milestone_level: 2)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         relevant_abilities = assigns(:relevant_abilities)
         ability_ids = relevant_abilities.map { |a| a[:ability].id }
@@ -514,7 +514,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
       end
 
       it 'handles empty state when employee has no milestones or active assignments' do
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:relevant_abilities)).to be_empty
       end
@@ -547,7 +547,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           started_at: 1.day.ago
         )
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:now_goals)).to include(now_goal)
         expect(assigns(:next_goals)).to include(next_goal)
@@ -576,7 +576,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           completed_at: 1.day.ago
         )
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:now_goals)).to include(active_goal)
         expect(assigns(:now_goals)).not_to include(draft_goal)
@@ -585,7 +585,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
       end
 
       it 'handles empty state when employee has no goals' do
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:now_goals)).to be_empty
         expect(assigns(:next_goals)).to be_empty
@@ -609,7 +609,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           started_at: 1.day.ago
         )
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:now_goals)).to include(employee_goal)
         expect(assigns(:now_goals)).not_to include(other_goal)
@@ -635,7 +635,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           confidence_percentage: 80
         )
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         loaded_goal = assigns(:now_goals).find { |g| g.id == goal.id }
         latest_check_in = loaded_goal.instance_variable_get(:@latest_check_in)
@@ -659,7 +659,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           confidence_percentage: 75
         )
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         loaded_goal = assigns(:now_goals).find { |g| g.id == goal.id }
         needs_check_in = loaded_goal.instance_variable_get(:@needs_check_in)
@@ -683,7 +683,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           confidence_percentage: 75
         )
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         loaded_goal = assigns(:now_goals).find { |g| g.id == goal.id }
         needs_check_in = loaded_goal.instance_variable_get(:@needs_check_in)
@@ -692,7 +692,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
       end
 
       it 'sets goals_check_in_url' do
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:goals_check_in_url)).to be_present
         expect(assigns(:goals_check_in_url)).to include('goals')
@@ -705,11 +705,11 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
     context 'as manager' do
       it 'saves form data and redirects to specified URL' do
         position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
-        redirect_url = organization_person_path(organization, employee)
+        redirect_url = organization_company_teammate_path(organization, employee_teammate)
         
         post :save_and_redirect, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           redirect_url: redirect_url,
           position_check_in: {
             manager_rating: 2,
@@ -732,7 +732,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         
         post :save_and_redirect, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           position_check_in: {
             manager_rating: 1,
             manager_private_notes: 'Test notes',
@@ -740,7 +740,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           }
         }
 
-        expect(response).to redirect_to(organization_person_finalization_path(organization, employee))
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
         expect(flash[:notice]).to eq('Check-ins saved successfully.')
         
         position_check_in.reload
@@ -750,11 +750,11 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
       it 'handles multiple check-in types in single request' do
         assignment_check_in = create(:assignment_check_in, teammate: employee.teammates.first, assignment: assignment)
         aspiration_check_in = create(:aspiration_check_in, teammate: employee.teammates.first, aspiration: aspiration)
-        redirect_url = organization_person_path(organization, employee)
+        redirect_url = organization_company_teammate_path(organization, employee_teammate)
         
         post :save_and_redirect, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           redirect_url: redirect_url,
           assignment_check_ins: {
             assignment_check_in.id => {
@@ -785,11 +785,11 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
 
       it 'handles check_ins scoped parameters' do
         position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
-        redirect_url = organization_person_path(organization, employee)
+        redirect_url = organization_company_teammate_path(organization, employee_teammate)
         
         post :save_and_redirect, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           redirect_url: redirect_url,
           check_ins: {
             position_check_in: {
@@ -813,11 +813,11 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
 
       it 'saves form data and redirects to specified URL' do
         position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
-        redirect_url = organization_person_path(organization, employee)
+        redirect_url = organization_company_teammate_path(organization, employee_teammate)
         
         post :save_and_redirect, params: {
           organization_id: organization.id,
-          person_id: employee.id,
+          company_teammate_id: employee_teammate.id,
           redirect_url: redirect_url,
           position_check_in: {
             employee_rating: 1,
@@ -855,7 +855,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         create(:observee, observation: observation3, teammate: employee_teammate)
         create(:observee, observation: observation4, teammate: employee_teammate)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:stories_count)).to eq(3) # Only last 45 days
         expect(assigns(:recent_stories).count).to eq(3)
@@ -876,7 +876,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         )
         create(:observee, observation: observation, teammate: employee_teammate)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         # Manager with can_manage_employment can see most privacy levels, but observed_only
         # is restricted to observer and observees only (not managers)
@@ -897,14 +897,14 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           create(:observee, observation: observation, teammate: employee_teammate)
         end
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:stories_count)).to eq(5)
         expect(assigns(:recent_stories).count).to eq(3) # Limited to 3
       end
 
       it 'handles empty state when no observations' do
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:stories_count)).to eq(0)
         expect(assigns(:recent_stories)).to be_empty
@@ -937,7 +937,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
         prompt3 = create(:prompt, company_teammate: company_teammate, prompt_template: template3, created_at: 3.days.ago, closed_at: 1.day.ago)
         prompt4 = create(:prompt, company_teammate: company_teammate, prompt_template: template4, created_at: 4.days.ago)
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:recent_prompts).count).to eq(3) # Limited to 3
         expect(assigns(:recent_prompts)).to include(prompt1, prompt2, prompt3)
@@ -953,7 +953,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
           ct.type = 'CompanyTeammate'
         end
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:recent_prompts)).to be_empty
         expect(assigns(:open_prompts_count)).to eq(0)
@@ -961,7 +961,7 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
       end
 
       it 'handles case when no company teammate exists' do
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:recent_prompts)).to be_empty
         expect(assigns(:open_prompts_count)).to eq(0)
@@ -978,14 +978,14 @@ RSpec.describe Organizations::CheckInsController, type: :controller do
       it 'loads one-on-one link when it exists' do
         one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789')
         
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:one_on_one_link)).to eq(one_on_one_link)
         expect(assigns(:one_on_one_url)).to be_present
       end
 
       it 'handles empty state when no one-on-one link exists' do
-        get :show, params: { organization_id: organization.id, person_id: employee.id }
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:one_on_one_link)).to be_nil
         expect(assigns(:one_on_one_url)).to be_present

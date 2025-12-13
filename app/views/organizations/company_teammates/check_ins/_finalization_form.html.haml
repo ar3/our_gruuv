@@ -1,0 +1,33 @@
+/ Finalization Form Section
+.container
+  .row
+    - if !check_in.ready_for_finalization?
+      .col-12
+        .alert.alert-light
+          %i.bi.bi-lock.me-2
+          Final rating will be available once both employee and manager complete their sections.
+    - elsif check_in.ready_for_finalization? && !@is_manager
+      .col-12
+        .alert.alert-info
+          %i.bi.bi-info-circle.me-2
+          Final rating is ready for manager review. Only managers can set the final rating.
+    - if check_in.official_check_in_completed_at.present?
+      .col-12
+        %h1 YOU SHOULD NEVER SEE ME
+    - elsif check_in.ready_for_finalization? && @is_manager
+      .col-12 
+        %hr/
+      .col-3
+        = form.hidden_field "check_in_#{check_in.id}_id", value: check_in.id
+        .mb-3
+          = form.label "check_in_#{check_in.id}_final_rating", "Final Rating", class: "form-label"
+          %span.text-danger *
+          = form.select "check_in_#{check_in.id}_final_rating", options_for_select([ ['Working to Meet Expectations', 'working_to_meet'], ['Meeting Expectations', 'meeting'], ['Exceeding Expectations', 'exceeding'] ], check_in.official_rating), { prompt: 'Select final rating...' }, { class: "form-select", required: true }
+      .col-6
+        .mb-3
+          = form.label "check_in_#{check_in.id}_shared_notes", "Shared Notes", class: "form-label"
+          = form.text_area "check_in_#{check_in.id}_shared_notes", value: check_in.shared_notes, rows: 2, class: "form-control", placeholder: "Notes visible to both parties..."
+      .col-3  
+        .form-check.mb-3
+          = form.check_box "check_in_#{check_in.id}_close_rating", { class: "form-check-input completion-toggle" }, "true", "false"
+          = form.label "check_in_#{check_in.id}_close_rating", "Finalize Check-In", class: "form-check-label"

@@ -1,0 +1,16 @@
+.btn-group-vertical{role: "group", "aria-label": "Status selection"}
+  = form.radio_button :status, 'draft',
+                      checked: (check_in.status == 'draft' || check_in.status.nil?),
+                      class: 'btn-check',
+                      id: "assignment_status_draft_#{check_in.id}"
+  = form.label :status_draft, 'Make Changes', class: 'btn btn-outline-secondary', for: "assignment_status_draft_#{check_in.id}"
+  = form.radio_button :status, 'complete',
+                      checked: check_in.status == 'complete',
+                      class: 'btn-check',
+                      id: "assignment_status_complete_#{check_in.id}"
+  = form.label :status_complete, 'Ready', class: 'btn btn-outline-primary', for: "assignment_status_complete_#{check_in.id}"
+
+
+
+
+

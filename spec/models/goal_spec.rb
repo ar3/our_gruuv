@@ -4,7 +4,7 @@ RSpec.describe Goal, type: :model do
   let(:person) { create(:person) }
   let(:company) { create(:organization, :company) }
   let(:team) { create(:organization, :team, parent: company) }
-  let(:creator_teammate) { create(:teammate, person: person, organization: company) }
+  let(:creator_teammate) { CompanyTeammate.find(create(:teammate, person: person, organization: company).id) }
   
   describe 'associations' do
     it { should belong_to(:owner).optional(false) }
@@ -358,7 +358,7 @@ RSpec.describe Goal, type: :model do
       let(:other_person) { create(:person) }
       let(:owner_person) { create(:person) }
       let(:admin) { create(:person, :admin) }
-      let(:owner_teammate) { create(:teammate, person: owner_person, organization: company) }
+      let(:owner_teammate) { CompanyTeammate.find(create(:teammate, person: owner_person, organization: company).id) }
       let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
       
       context 'with Teammate owner' do
@@ -417,10 +417,12 @@ RSpec.describe Goal, type: :model do
         context 'with only_creator_owner_and_managers privacy level' do
           let(:goal) { create(:goal, creator: creator_teammate, owner: owner_teammate, privacy_level: 'only_creator_owner_and_managers') }
           let(:manager_person) { create(:person) }
-          let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
+          let!(:manager_teammate) { CompanyTeammate.find(create(:teammate, person: manager_person, organization: company).id) }
           
           before do
             # Set up employment tenure where manager_person manages owner_person
+            # Force manager_teammate to be created first
+            manager_teammate
             create(:employment_tenure,
               teammate: owner_teammate,
               company: company,

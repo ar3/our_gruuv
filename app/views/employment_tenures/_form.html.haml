@@ -57,5 +57,5 @@
         = form.text_area :employment_change_notes, rows: 3, class: "form-control", placeholder: "Add any notes about this employment..."
 
   .d-flex.justify-content-between
-    = link_to 'Back to Profile', organization_person_path(employment_tenure.company, @person), class: 'btn btn-outline-secondary'
+    = link_to 'Back to Profile', organization_company_teammate_path(employment_tenure.company, @person), class: 'btn btn-outline-secondary'
     = form.submit class: 'btn btn-primary'

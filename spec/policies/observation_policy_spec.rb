@@ -36,6 +36,9 @@ RSpec.describe ObservationPolicy, type: :policy do
     # Admin has employment management permissions
     admin_teammate.update!(can_manage_employment: true)
     create(:employment_tenure, teammate: admin_teammate, company: company)
+    
+    # Reload manager_teammate to clear association cache
+    manager_teammate.reload
   end
 
   describe '#index?' do
@@ -126,6 +129,11 @@ RSpec.describe ObservationPolicy, type: :policy do
       end
 
       it 'allows observer and direct manager' do
+        # Reload manager_teammate to ensure fresh data
+        manager_teammate.reload
+        # Reload the observation to ensure all associations are fresh
+        managers_only_obs.reload
+        
         observer_policy = ObservationPolicy.new(pundit_user_observer, managers_only_obs)
         manager_policy = ObservationPolicy.new(pundit_user_manager, managers_only_obs)
 
@@ -139,11 +147,18 @@ RSpec.describe ObservationPolicy, type: :policy do
         grand_manager_pundit_user = OpenStruct.new(user: grand_manager_teammate, impersonating_teammate: nil)
         
         # Set up hierarchy: observee -> manager -> grand_manager
+        # Create employment tenure for grand_manager first
         create(:employment_tenure, teammate: grand_manager_teammate, company: company)
-        # Update existing manager tenure to have grand_manager as manager
+        # Delete and recreate manager tenure with grand_manager as manager to avoid association caching issues
         manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
-        manager_tenure.update!(manager: grand_manager)
-        
+        manager_tenure.destroy
+        create(:employment_tenure, teammate: manager_teammate, company: company, manager: grand_manager)
+        # Reload manager and grand_manager teammates to clear association cache
+        manager_teammate.reload
+        grand_manager_teammate.reload
+        # Reload observation to clear association cache for observed_teammates
+        managers_only_obs.reload
+
         grand_manager_policy = ObservationPolicy.new(grand_manager_pundit_user, managers_only_obs)
         expect(grand_manager_policy.show?).to be true
       end
@@ -169,6 +184,11 @@ RSpec.describe ObservationPolicy, type: :policy do
       end
 
       it 'allows observer, observee, and direct manager' do
+        # Reload manager_teammate to ensure fresh data
+        manager_teammate.reload
+        # Reload the observation to ensure all associations are fresh
+        observed_and_managers_obs.reload
+        
         observer_policy = ObservationPolicy.new(pundit_user_observer, observed_and_managers_obs)
         observee_policy = ObservationPolicy.new(pundit_user_observee, observed_and_managers_obs)
         manager_policy = ObservationPolicy.new(pundit_user_manager, observed_and_managers_obs)
@@ -185,9 +205,15 @@ RSpec.describe ObservationPolicy, type: :policy do
         
         # Set up hierarchy: observee -> manager -> grand_manager
         create(:employment_tenure, teammate: grand_manager_teammate, company: company)
-        # Update existing manager tenure to have grand_manager as manager
+        # Delete and recreate manager tenure with grand_manager as manager to avoid association caching issues
         manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
-        manager_tenure.update!(manager: grand_manager)
+        manager_tenure.destroy
+        create(:employment_tenure, teammate: manager_teammate, company: company, manager: grand_manager)
+        # Reload teammates to clear association cache
+        manager_teammate.reload
+        grand_manager_teammate.reload
+        # Reload observation to clear association cache for observed_teammates
+        observed_and_managers_obs.reload
         
         grand_manager_policy = ObservationPolicy.new(grand_manager_pundit_user, observed_and_managers_obs)
         expect(grand_manager_policy.show?).to be true
@@ -425,6 +451,11 @@ RSpec.describe ObservationPolicy, type: :policy do
         end
 
         it 'allows observer and direct manager' do
+          # Reload manager_teammate to ensure fresh data
+          manager_teammate.reload
+          # Reload the observation to ensure all associations are fresh
+          managers_only_obs.reload
+          
           observer_policy = ObservationPolicy.new(pundit_user_observer, managers_only_obs)
           manager_policy = ObservationPolicy.new(pundit_user_manager, managers_only_obs)
 
@@ -439,9 +470,15 @@ RSpec.describe ObservationPolicy, type: :policy do
           
           # Set up hierarchy: observee -> manager -> grand_manager
           create(:employment_tenure, teammate: grand_manager_teammate, company: company)
-          # Update existing manager tenure to have grand_manager as manager
+          # Delete and recreate manager tenure with grand_manager as manager to avoid association caching issues
           manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
-          manager_tenure.update!(manager: grand_manager)
+          manager_tenure.destroy
+          create(:employment_tenure, teammate: manager_teammate, company: company, manager: grand_manager)
+          # Reload teammates to clear association cache
+          manager_teammate.reload
+          grand_manager_teammate.reload
+          # Reload observation to clear association cache for observed_teammates
+          managers_only_obs.reload
           
           grand_manager_policy = ObservationPolicy.new(grand_manager_pundit_user, managers_only_obs)
           expect(grand_manager_policy.view_permalink?).to be true
@@ -463,6 +500,11 @@ RSpec.describe ObservationPolicy, type: :policy do
         end
 
         it 'allows observer, observee, and direct manager' do
+          # Reload manager_teammate to ensure fresh data
+          manager_teammate.reload
+          # Reload the observation to ensure all associations are fresh
+          observed_and_managers_obs.reload
+          
           observer_policy = ObservationPolicy.new(pundit_user_observer, observed_and_managers_obs)
           observee_policy = ObservationPolicy.new(pundit_user_observee, observed_and_managers_obs)
           manager_policy = ObservationPolicy.new(pundit_user_manager, observed_and_managers_obs)
@@ -479,9 +521,15 @@ RSpec.describe ObservationPolicy, type: :policy do
           
           # Set up hierarchy: observee -> manager -> grand_manager
           create(:employment_tenure, teammate: grand_manager_teammate, company: company)
-          # Update existing manager tenure to have grand_manager as manager
+          # Delete and recreate manager tenure with grand_manager as manager to avoid association caching issues
           manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
-          manager_tenure.update!(manager: grand_manager)
+          manager_tenure.destroy
+          create(:employment_tenure, teammate: manager_teammate, company: company, manager: grand_manager)
+          # Reload teammates to clear association cache
+          manager_teammate.reload
+          grand_manager_teammate.reload
+          # Reload observation to clear association cache for observed_teammates
+          observed_and_managers_obs.reload
           
           grand_manager_policy = ObservationPolicy.new(grand_manager_pundit_user, observed_and_managers_obs)
           expect(grand_manager_policy.view_permalink?).to be true

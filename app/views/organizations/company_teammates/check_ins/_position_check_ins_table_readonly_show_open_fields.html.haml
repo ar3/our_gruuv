@@ -1,0 +1,36 @@
+-# Position Check-Ins Table View - Readonly Show Open Fields
+= form.fields_for :position_check_in do |pf|
+  .table-responsive
+    %table.table.table-striped
+      %thead
+        %tr
+          %th Position
+          %th Employee Rating
+          %th Employee Notes
+          %th Manager Rating
+          %th Manager Notes
+          %th Status
+      %tbody
+        %tr
+          %td
+            = button_tag type: "submit", 
+                         name: "redirect_to", 
+                         value: organization_teammate_position_path(@organization, check_in.teammate),
+                         "data-bs-toggle" => "popover", 
+                         "data-bs-trigger" => "hover", 
+                         "data-bs-placement" => "right", 
+                         "data-bs-html" => "true", 
+                         "data-bs-content" => latest_position_check_in_popover_content(check_in.teammate),
+                         class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start" do
+              = check_in.employment_tenure.position.display_name
+              %i.bi.bi-clock-history.ms-1.text-muted
+          %td
+            = render 'organizations/check_ins/form_fields/employee_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+          %td
+            = render 'organizations/check_ins/form_fields/employee_private_notes_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+          %td
+            = render 'organizations/check_ins/form_fields/manager_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+          %td
+            = render 'organizations/check_ins/form_fields/manager_private_notes_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+          %td
+            = render 'organizations/check_ins/form_fields/position_status_field', form: pf, check_in: check_in

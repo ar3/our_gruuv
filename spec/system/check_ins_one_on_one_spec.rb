@@ -24,9 +24,13 @@ RSpec.describe 'Check-ins 1:1 Area Section', type: :system do
   it 'displays 1:1 section with link' do
     one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789')
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     expect(page).to have_content('1:1 AREA')
+    
+    # Expand the one-on-one section to see details
+    page.find('a[data-bs-target="#oneOnOneSection"]').click
+    
     expect(page).to have_content('1:1 Source:')
     expect(page).to have_link('https://app.asana.com/0/123456/789', href: 'https://app.asana.com/0/123456/789')
     expect(page).to have_content('Asana Project')
@@ -34,9 +38,13 @@ RSpec.describe 'Check-ins 1:1 Area Section', type: :system do
   end
 
   it 'displays empty state when no link exists' do
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     expect(page).to have_content('1:1 AREA')
+    
+    # Expand the one-on-one section to see details
+    page.find('a[data-bs-target="#oneOnOneSection"]').click
+    
     expect(page).to have_content('No 1:1 link configured yet.')
     expect(page).to have_button('Manage 1:1 Area')
   end
@@ -48,7 +56,10 @@ RSpec.describe 'Check-ins 1:1 Area Section', type: :system do
       deep_integration_config: { 'asana_project_id' => '123456' }
     )
     
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
+    
+    # Expand the one-on-one section to see details
+    page.find('a[data-bs-target="#oneOnOneSection"]').click
     
     expect(page).to have_content('Integrated')
     expect(page).to have_content('Project ID: 123456')
@@ -56,7 +67,10 @@ RSpec.describe 'Check-ins 1:1 Area Section', type: :system do
   end
 
   it 'redirects when clicking Manage 1:1 Area button' do
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
+    
+    # Expand the one-on-one section to see the button
+    page.find('a[data-bs-target="#oneOnOneSection"]').click
     
     # Verify button is present
     expect(page).to have_button('Manage 1:1 Area')

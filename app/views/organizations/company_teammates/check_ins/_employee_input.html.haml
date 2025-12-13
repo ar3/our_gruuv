@@ -1,0 +1,22 @@
+/ Employee Section
+.col-md-6
+  .employee-section
+    %h6.text-primary.mb-3
+      %i.bi.bi-person.me-2
+      Employee Assessment
+    - if check_in.employee_completed_at.present?
+      .completed-section
+        %p.mb-1
+          = render 'people/assignments/senences/employee_rating', check_in: check_in
+        %p.mb-1
+          = render 'people/assignments/senences/employee_reflections', check_in: check_in
+        %p.mb-1
+          %strong Private Notes:
+          = check_in.employee_private_notes if check_in.employee_private_notes.present?
+        %small.text-muted
+          Completed: #{check_in.employee_completed_at.strftime('%B %d, %Y at %l:%M %p')}
+    - else
+      .pending-section
+        %p.text-muted
+          %i.bi.bi-clock.me-2
+          Employee assessment pending

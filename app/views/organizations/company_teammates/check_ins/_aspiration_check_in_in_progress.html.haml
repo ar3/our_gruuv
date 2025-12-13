@@ -1,0 +1,42 @@
+-# Aspiration Check-In Form Fields
+= form.fields_for :aspiration_check_ins, check_in, index: check_in.id do |af|
+  .row
+    - if view_mode == :employee
+      .col-md-6
+        %h5 Employee Assessment
+        .form-group
+          = af.label :employee_rating, "Rating"
+          = render 'organizations/check_ins/form_fields/aspiration_employee_rating_field', form: af, check_in: check_in, css_class: 'form-control'
+
+        .form-group
+          = af.label :employee_private_notes, "Private Notes"
+          = render 'organizations/check_ins/form_fields/aspiration_employee_private_notes_field', form: af, check_in: check_in, css_class: 'form-control'
+
+    - if view_mode == :manager
+      .col-md-6
+        %h5 Manager Assessment
+        .form-group
+          = af.label :manager_rating, "Rating"
+          = render 'organizations/check_ins/form_fields/aspiration_manager_rating_field', form: af, check_in: check_in, css_class: 'form-control'
+
+        .form-group
+          = af.label :manager_private_notes, "Private Notes"
+          = render 'organizations/check_ins/form_fields/aspiration_manager_private_notes_field', form: af, check_in: check_in, css_class: 'form-control'
+
+  -# Hidden fields
+  = render 'organizations/check_ins/form_fields/aspiration_id_field', form: af, check_in: check_in
+
+  -# Status radio buttons
+  .form-group.mt-3
+    %label Status
+    = render 'organizations/check_ins/form_fields/aspiration_status_field', form: af, check_in: check_in
+
+    .small.text-muted.mt-1
+      - if view_mode == :employee
+        Select "Mark Ready" when you're done with your assessment
+      - elsif view_mode == :manager
+        Select "Mark Ready" when you're done with your assessment
+      - else
+        Select "Mark Ready" when both assessments are complete
+
+

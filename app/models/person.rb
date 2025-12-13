@@ -10,76 +10,6 @@ class Person < ApplicationRecord
   has_many :page_visits, dependent: :destroy
   has_one :user_preference, dependent: :destroy
 
-  # Milestone-related methods
-  def milestone_attainments(organization)
-    teammate = teammates.find_by(organization: organization)
-    teammate&.teammate_milestones&.by_milestone_level&.includes(:ability) || []
-  end
-
-  def milestone_attainments_count(organization)
-    teammate = teammates.find_by(organization: organization)
-    teammate&.teammate_milestones&.count || 0
-  end
-
-  def has_milestone_attainments?(organization)
-    teammate = teammates.find_by(organization: organization)
-    teammate&.teammate_milestones&.exists? || false
-  end
-
-  def highest_milestone_for_ability(ability, organization)
-    teammate = teammates.find_by(organization: organization)
-    teammate&.teammate_milestones&.where(ability: ability)&.maximum(:milestone_level)
-  end
-
-  def has_milestone_for_ability?(ability, level, organization)
-    teammate = teammates.find_by(organization: organization)
-    teammate&.teammate_milestones&.where(ability: ability, milestone_level: level)&.exists? || false
-  end
-
-  def add_milestone_attainment(ability, level, certified_by, organization)
-    teammate = teammates.find_by(organization: organization)
-    teammate&.teammate_milestones&.create!(ability: ability, milestone_level: level, certified_by: certified_by, attained_at: Date.current)
-  end
-
-  def remove_milestone_attainment(ability, level, organization)
-    teammate = teammates.find_by(organization: organization)
-    teammate&.teammate_milestones&.where(ability: ability, milestone_level: level)&.destroy_all
-  end
-
-
-  def active_assignment_tenures(company)
-    return [] unless company
-    teammate = teammates.find_by(organization: company)
-    return [] unless teammate
-    
-    teammate.assignment_tenures.active.where(assignments: { company: company })
-  end
-
-  # Scopes for active assignments in a specific company
-  def assignments_ready_for_finalization_count(company)
-    return 0 unless company
-    teammate = teammates.find_by(organization: company)
-    return 0 unless teammate
-    
-    AssignmentCheckIn.joins(:assignment)
-                     .where(teammate: teammate, assignments: { company: company })
-                     .ready_for_finalization
-                     .count
-  end
-
-  def active_assignments(company)
-    return [] unless company
-    teammate = teammates.find_by(organization: company)
-    return [] unless teammate
-    
-    teammate.assignments.joins(:assignment_tenures)
-            .where(assignment_tenures: { 
-              assignments: { company: company }, 
-              ended_at: nil 
-            })
-            .where('assignment_tenures.anticipated_energy_percentage > 0')
-            .distinct
-  end
   has_many :teammates, dependent: :destroy
   has_many :addresses, dependent: :destroy
   
@@ -254,51 +184,6 @@ class Person < ApplicationRecord
     end
   end
 
-  def in_managerial_hierarchy_of?(other_person, organization)
-    return false unless organization
-    
-    other_teammate = other_person.teammates.find_by(organization: organization)
-    return false unless other_teammate
-    
-    # Recursively check if this person is anywhere in the managerial hierarchy
-    # Use a Set to prevent infinite loops from circular references
-    visited = Set.new
-    
-    check_hierarchy = lambda do |person, org, visited_set|
-      return false if visited_set.include?(person.id)
-      visited_set.add(person.id)
-      
-      # Get active employment tenures for this person in this organization
-      tenures = EmploymentTenure.joins(:teammate)
-                               .where(teammates: { person: person, organization: org })
-                               .active
-                               .includes(:manager)
-      
-      tenures.each do |tenure|
-        manager = tenure.manager
-        next unless manager
-        
-        # Found self in the hierarchy
-        return true if manager == self
-        
-        # Recursively check managers of this manager
-        return true if check_hierarchy.call(manager, org, visited_set)
-      end
-      
-      false
-    end
-    
-    check_hierarchy.call(other_person, organization, visited)
-  end
-
-  def has_direct_reports?(organization)
-    return false unless organization
-    
-    # Check if this person manages anyone in the organization
-    # EmploymentTenure has a company association, not an organization association
-    EmploymentTenure.where(company: organization, manager: self, ended_at: nil)
-                    .exists?
-  end
 
   # Huddle participation methods
   def huddle_playbook_stats
@@ -401,9 +286,6 @@ class Person < ApplicationRecord
     ActiveEmploymentTenureQuery.new(person: self, organization: organization).first
   end
 
-  def current_manager_for(organization)
-    active_employment_tenure_for(organization)&.manager
-  end
   
   private
   

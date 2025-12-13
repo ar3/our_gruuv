@@ -1,0 +1,21 @@
+-# Assignment Finalization Row - Ready to Finalize
+%tr
+  %td
+    %strong= check_in.assignment.title
+  %td
+    %div
+      = assignment_rating_display(check_in.employee_rating)
+    - if check_in.actual_energy_percentage.present?
+      %small.text-muted Energy: #{check_in.actual_energy_percentage}%
+    %small.text-muted= simple_format(check_in.employee_private_notes)
+  %td
+    %div
+      = assignment_rating_display(check_in.manager_rating)
+    %small.text-muted= simple_format(check_in.manager_private_notes)
+  %td
+    = form.text_area "assignment_check_ins[#{check_in.id}][shared_notes]", class: "form-control form-control-sm", rows: 2, placeholder: "Shared summary and action items..."
+  %td
+    %div.mb-2
+      = form.select "assignment_check_ins[#{check_in.id}][official_rating]", assignment_rating_options, { selected: check_in.manager_rating || check_in.employee_rating, prompt: 'Select rating...' }, { class: "form-select form-select-sm", required: true }
+  %td.text-center
+    = form.check_box "assignment_check_ins[#{check_in.id}][finalize]", { class: "form-check-input" }, "1", "0"

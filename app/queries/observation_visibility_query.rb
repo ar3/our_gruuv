@@ -154,7 +154,13 @@ class ObservationVisibilityQuery
   def user_in_management_hierarchy?(observation)
     return false unless @person.is_a?(Person)
     
-    observation.observed_teammates.any? { |teammate| @person.in_managerial_hierarchy_of?(teammate.person, @company) }
+    viewing_teammate = CompanyTeammate.find_by(organization: @company, person: @person)
+    return false unless viewing_teammate
+    
+    observation.observed_teammates.any? do |observed_teammate|
+      observed_company_teammate = observed_teammate.is_a?(CompanyTeammate) ? observed_teammate : CompanyTeammate.find_by(organization: @company, person: observed_teammate.person)
+      observed_company_teammate && viewing_teammate.in_managerial_hierarchy_of?(observed_company_teammate)
+    end
   end
 
   def user_can_manage_employment?

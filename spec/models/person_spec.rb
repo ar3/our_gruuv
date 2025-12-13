@@ -272,15 +272,15 @@ RSpec.describe Person, type: :model do
   describe '#in_managerial_hierarchy_of?' do
     let(:company) { create(:organization, :company) }
     let(:employee) { create(:person) }
-    let(:employee_teammate) { create(:teammate, person: employee, organization: company) }
+    let(:employee_teammate) { CompanyTeammate.find(create(:teammate, person: employee, organization: company).id) }
     let(:direct_manager) { create(:person) }
-    let(:direct_manager_teammate) { create(:teammate, person: direct_manager, organization: company) }
+    let(:direct_manager_teammate) { CompanyTeammate.find(create(:teammate, person: direct_manager, organization: company).id) }
     let(:grand_manager) { create(:person) }
-    let(:grand_manager_teammate) { create(:teammate, person: grand_manager, organization: company) }
+    let(:grand_manager_teammate) { CompanyTeammate.find(create(:teammate, person: grand_manager, organization: company).id) }
     let(:great_grand_manager) { create(:person) }
-    let(:great_grand_manager_teammate) { create(:teammate, person: great_grand_manager, organization: company) }
+    let(:great_grand_manager_teammate) { CompanyTeammate.find(create(:teammate, person: great_grand_manager, organization: company).id) }
     let(:unrelated_person) { create(:person) }
-    let(:unrelated_teammate) { create(:teammate, person: unrelated_person, organization: company) }
+    let(:unrelated_teammate) { CompanyTeammate.find(create(:teammate, person: unrelated_person, organization: company).id) }
 
     before do
       # Set up employment tenures
@@ -292,31 +292,31 @@ RSpec.describe Person, type: :model do
 
     context 'when person is direct manager' do
       it 'returns true' do
-        expect(direct_manager.in_managerial_hierarchy_of?(employee, company)).to be true
+        expect(direct_manager_teammate.in_managerial_hierarchy_of?(employee_teammate)).to be true
       end
     end
 
     context 'when person is indirect manager (grand manager)' do
       it 'returns true' do
-        expect(grand_manager.in_managerial_hierarchy_of?(employee, company)).to be true
+        expect(grand_manager_teammate.in_managerial_hierarchy_of?(employee_teammate)).to be true
       end
     end
 
     context 'when person is great-grand manager' do
       it 'returns true' do
-        expect(great_grand_manager.in_managerial_hierarchy_of?(employee, company)).to be true
+        expect(great_grand_manager_teammate.in_managerial_hierarchy_of?(employee_teammate)).to be true
       end
     end
 
     context 'when person is not in hierarchy' do
       it 'returns false' do
-        expect(unrelated_person.in_managerial_hierarchy_of?(employee, company)).to be false
+        expect(unrelated_teammate.in_managerial_hierarchy_of?(employee_teammate)).to be false
       end
     end
 
     context 'when person is the same as other_person' do
       it 'returns false (not in their own hierarchy)' do
-        expect(employee.in_managerial_hierarchy_of?(employee, company)).to be false
+        expect(employee_teammate.in_managerial_hierarchy_of?(employee_teammate)).to be false
       end
     end
 
@@ -324,19 +324,21 @@ RSpec.describe Person, type: :model do
       let(:person_without_employment) { create(:person) }
 
       it 'returns false' do
-        expect(direct_manager.in_managerial_hierarchy_of?(person_without_employment, company)).to be false
+        # Person without employment has no teammate, so we can't check hierarchy
+        expect(direct_manager_teammate.in_managerial_hierarchy_of?(nil)).to be false
       end
     end
 
     context 'when organization is nil' do
       it 'returns false' do
-        expect(direct_manager.in_managerial_hierarchy_of?(employee, nil)).to be false
+        # CompanyTeammate always has an organization, this tests checking against nil
+        expect(direct_manager_teammate.in_managerial_hierarchy_of?(nil)).to be false
       end
     end
 
     context 'when there are multiple employment tenures with different managers' do
       let(:other_manager) { create(:person) }
-      let(:other_manager_teammate) { create(:teammate, person: other_manager, organization: company) }
+      let(:other_manager_teammate) { CompanyTeammate.find(create(:teammate, person: other_manager, organization: company).id) }
 
       before do
         # Employee has another tenure with a different manager (inactive)
@@ -349,8 +351,8 @@ RSpec.describe Person, type: :model do
       end
 
       it 'only checks active tenures' do
-        expect(other_manager.in_managerial_hierarchy_of?(employee, company)).to be false
-        expect(direct_manager.in_managerial_hierarchy_of?(employee, company)).to be true
+        expect(other_manager_teammate.in_managerial_hierarchy_of?(employee_teammate)).to be false
+        expect(direct_manager_teammate.in_managerial_hierarchy_of?(employee_teammate)).to be true
       end
     end
 
@@ -368,7 +370,7 @@ RSpec.describe Person, type: :model do
         # The Set prevents infinite loops, but the circular reference breaks the path
         # So grand_manager is no longer in hierarchy of employee after circular ref is created
         expect {
-          result = grand_manager.in_managerial_hierarchy_of?(employee, company)
+          result = grand_manager_teammate.in_managerial_hierarchy_of?(employee_teammate)
           # Result may be false due to circular reference breaking the path, but no infinite loop
           expect(result).to be_in([true, false])
         }.not_to raise_error
@@ -379,7 +381,8 @@ RSpec.describe Person, type: :model do
       let(:other_company) { create(:organization, :company) }
       let(:other_company_manager) { create(:person) }
       let(:other_company_employee) { create(:person) }
-      let(:other_company_employee_teammate) { create(:teammate, person: other_company_employee, organization: other_company) }
+      let(:other_company_employee_teammate) { CompanyTeammate.find(create(:teammate, person: other_company_employee, organization: other_company).id) }
+      let(:other_company_manager_teammate) { CompanyTeammate.find(create(:teammate, person: other_company_manager, organization: other_company).id) }
 
       before do
         create(:employment_tenure, 
@@ -389,9 +392,10 @@ RSpec.describe Person, type: :model do
       end
 
       it 'only checks within the specified organization' do
-        expect(other_company_manager.in_managerial_hierarchy_of?(other_company_employee, other_company)).to be true
-        expect(other_company_manager.in_managerial_hierarchy_of?(employee, company)).to be false
-        expect(direct_manager.in_managerial_hierarchy_of?(other_company_employee, other_company)).to be false
+        expect(other_company_manager_teammate.in_managerial_hierarchy_of?(other_company_employee_teammate)).to be true
+        # Different organizations - teammate doesn't have access to other org
+        expect(other_company_manager_teammate.in_managerial_hierarchy_of?(employee_teammate)).to be false
+        expect(direct_manager_teammate.in_managerial_hierarchy_of?(other_company_employee_teammate)).to be false
       end
     end
   end

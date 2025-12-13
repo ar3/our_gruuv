@@ -36,16 +36,16 @@
                   = current_tenure.manager_display || "No manager assigned"
               .row.mt-3
                 .col-md-6
-                  = link_to edit_person_employment_tenure_path(@person, current_tenure), class: "btn btn-outline-primary" do
+                  = link_to edit_organization_company_teammate_employment_tenure_path(@organization || current_organization, @teammate, current_tenure), class: "btn btn-outline-primary" do
                     %i.bi.bi-pencil.me-2
                     Edit Position
                 .col-md-6
-                  = link_to change_person_employment_tenures_path(@person, company_id: current_company.id), class: "btn btn-outline-success" do
+                  = link_to change_organization_company_teammate_employment_tenures_path(@organization || current_organization, @teammate, company_id: current_company.id), class: "btn btn-outline-success" do
                     %i.bi.bi-plus.me-2
                     Change Position
           - else
             %p.text-muted No current position assigned.
-            = link_to change_person_employment_tenures_path(@person, company_id: current_company.id), class: "btn btn-outline-success" do
+            = link_to change_organization_company_teammate_employment_tenures_path(@organization || current_organization, @teammate, company_id: current_company.id), class: "btn btn-outline-success" do
               %i.bi.bi-plus.me-2
               Assign Position
 
@@ -78,7 +78,7 @@
                     %span.text-success Ongoing
               .row.mt-3
                 .col-md-6
-                  = link_to organization_person_check_ins_path(current_organization, @person), class: "btn btn-outline-primary" do
+                  = link_to organization_company_teammate_check_ins_path(current_organization, @person), class: "btn btn-outline-primary" do
                     %i.bi.bi-pencil.me-2
                     Manage Assignments
                 .col-md-6

@@ -53,7 +53,7 @@ RSpec.describe 'Finalization Simple Flow - Default Reason', type: :system do
     end
 
     it 'displays the reason field with default value' do
-      visit organization_person_finalization_path(company, employee_person)
+      visit organization_company_teammate_finalization_path(company, employee_teammate)
       
       expect(page).to have_field('maap_snapshot_reason', with: "Check-in finalization for #{employee_person.display_name}")
       expect(page).to have_content('Reason (optional)')
@@ -66,7 +66,7 @@ RSpec.describe 'Finalization Simple Flow - Default Reason', type: :system do
     end
 
     it 'creates snapshot with default reason when no custom reason entered' do
-      visit organization_person_finalization_path(company, employee_person)
+      visit organization_company_teammate_finalization_path(company, employee_teammate)
       
       # Verify check-in is ready
       expect(check_in.reload.ready_for_finalization?).to be true

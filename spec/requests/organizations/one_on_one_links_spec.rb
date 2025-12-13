@@ -32,9 +32,9 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     sign_in_as_teammate_for_request(manager_person, organization)
   end
 
-  describe "GET /organizations/:organization_id/people/:person_id/one_on_one_link" do
+  describe "GET /organizations/:organization_id/company_teammates/:company_teammate_id/one_on_one_link" do
     it "shows the one-on-one link page" do
-      get organization_person_one_on_one_link_path(organization, employee_person)
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include("1:1 Area")
@@ -43,7 +43,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     it "shows existing one-on-one link" do
       one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789')
       
-      get organization_person_one_on_one_link_path(organization, employee_person)
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include('https://app.asana.com/0/123456/789')
@@ -52,7 +52,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     it "shows Asana link detection" do
       one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789')
       
-      get organization_person_one_on_one_link_path(organization, employee_person)
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Asana Project Detected")
@@ -61,7 +61,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     it "shows connect button when Asana link but no identity" do
       one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789')
       
-      get organization_person_one_on_one_link_path(organization, employee_person)
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Connect Your Asana Account")
@@ -71,7 +71,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       create(:teammate_identity, :asana, teammate: employee_teammate)
       one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789')
       
-      get organization_person_one_on_one_link_path(organization, employee_person)
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Asana account connected")
@@ -91,22 +91,22 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       create(:employment_tenure, teammate: unauthorized_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
       sign_in_as_teammate_for_request(unauthorized_person, organization)
       
-      get organization_person_one_on_one_link_path(organization, employee_person)
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       # Authorization failures typically redirect
       expect(response).to have_http_status(:redirect)
     end
   end
 
-  describe "PATCH /organizations/:organization_id/people/:person_id/one_on_one_link" do
+  describe "PATCH /organizations/:organization_id/company_teammates/:company_teammate_id/one_on_one_link" do
     it "creates a new one-on-one link" do
       expect {
-        patch organization_person_one_on_one_link_path(organization, employee_person), params: {
+        patch organization_company_teammate_one_on_one_link_path(organization, employee_teammate), params: {
           one_on_one_link: { url: 'https://example.com/1on1' }
         }
       }.to change(OneOnOneLink, :count).by(1)
       
-      expect(response).to redirect_to(organization_person_one_on_one_link_path(organization, employee_person))
+      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
       expect(flash[:notice]).to include('created successfully')
       
       link = employee_teammate.reload.one_on_one_link
@@ -116,21 +116,21 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     it "updates existing one-on-one link" do
       one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://old-url.com')
       
-      patch organization_person_one_on_one_link_path(organization, employee_person), params: {
+      patch organization_company_teammate_one_on_one_link_path(organization, employee_teammate), params: {
         one_on_one_link: { url: 'https://new-url.com' }
       }
       
-      expect(response).to redirect_to(organization_person_one_on_one_link_path(organization, employee_person))
+      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
       expect(flash[:notice]).to include('updated successfully')
       expect(one_on_one_link.reload.url).to eq('https://new-url.com')
     end
 
     it "extracts Asana project ID from URL" do
-      patch organization_person_one_on_one_link_path(organization, employee_person), params: {
+      patch organization_company_teammate_one_on_one_link_path(organization, employee_teammate), params: {
         one_on_one_link: { url: 'https://app.asana.com/0/123456/789' }
       }
       
-      expect(response).to redirect_to(organization_person_one_on_one_link_path(organization, employee_person))
+      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
       
       link = employee_teammate.reload.one_on_one_link
       expect(link.asana_project_id).to eq('123456')
@@ -138,7 +138,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     end
 
     it "validates URL format" do
-      patch organization_person_one_on_one_link_path(organization, employee_person), params: {
+      patch organization_company_teammate_one_on_one_link_path(organization, employee_teammate), params: {
         one_on_one_link: { url: 'not-a-valid-url' }
       }
       
@@ -160,7 +160,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       create(:employment_tenure, teammate: unauthorized_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
       sign_in_as_teammate_for_request(unauthorized_person, organization)
       
-      patch organization_person_one_on_one_link_path(organization, employee_person), params: {
+      patch organization_company_teammate_one_on_one_link_path(organization, employee_teammate), params: {
         one_on_one_link: { url: 'https://example.com' }
       }
       

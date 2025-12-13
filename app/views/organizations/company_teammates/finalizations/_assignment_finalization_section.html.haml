@@ -1,0 +1,61 @@
+-# Show assignment check-ins if they exist (even when position is finalized)
+- if @assignment_check_ins&.any?
+  - if current_person == @person
+    -# Employee view of ready assignment check-ins
+    .card.mb-4
+      .card-header
+        %h3 Assignment Check-Ins - Ready for Finalization
+        %p.text-muted Your manager will review and finalize these check-ins
+      
+      .card-body
+        - @assignment_check_ins.each do |check_in|
+          .assignment-finalization.mb-4.p-3.border.rounded
+            %h5= check_in.assignment.title
+            
+            .row
+              .col-md-6
+                .card.border-primary
+                  .card-header.bg-primary.text-white
+                    %h6.mb-0 Your Assessment
+                  .card-body
+                    = render 'shared/check_ins_and_finalizations/assignment_employee_perspective', check_in: check_in
+              
+              .col-md-6
+                .card.border-info
+                  .card-header.bg-info.text-white
+                    %h6.mb-0 Manager's Assessment
+                  .card-body
+                    = render 'shared/check_ins_and_finalizations/assignment_manager_perspective', check_in: check_in
+            
+            .alert.alert-info.mt-3
+              %i.bi.bi-info-circle.me-2
+              %strong Your manager will review both assessments and set the official rating.
+              You will be notified when the finalization is complete.
+  - elsif @position_check_in&.officially_completed?
+    -# Manager view when position is already finalized - render own form
+    = form_with url: organization_company_teammate_finalization_path(organization, @teammate), method: :post do |f|
+      = render 'assignment_finalization_form', 
+               form: f, 
+               assignment_check_ins: @assignment_check_ins, 
+               person: @person, 
+               organization: @organization
+      
+      .row.mt-4
+        .col-12
+          .alert.alert-warning
+            %strong ⚠️ This will:
+            %ul
+              %li Create MAAP snapshot with complete ratings
+              %li Close selected tenures and open new ones
+              %li Make all notes visible to #{@person.first_name}
+              %li Send notification to #{@person.first_name}
+          
+          = f.submit 'Finalize Selected Check-Ins', class: 'btn btn-success btn-lg',
+                     data: { confirm: 'Are you sure you want to finalize these check-ins?' }
+  - else
+    -# Manager view in main finalization flow - just render the form content without wrapper
+    = render 'assignment_finalization_form', 
+             form: form, 
+             assignment_check_ins: @assignment_check_ins, 
+             person: @person, 
+             organization: @organization

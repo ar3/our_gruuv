@@ -22,7 +22,8 @@ RSpec.describe NavigationHelper, type: :helper do
     policy_double = double(
       index?: true,
       show?: true,
-      manage_employment?: true
+      manage_employment?: true,
+      view_check_ins?: true
     )
     
     helper.define_singleton_method(:policy) do |record|

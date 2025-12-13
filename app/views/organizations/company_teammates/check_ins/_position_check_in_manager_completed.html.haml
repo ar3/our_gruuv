@@ -1,0 +1,39 @@
+.alert.alert-success.mb-3
+  %i.bi.bi-check-circle.me-2
+  %strong Your assessment is complete and ready for finalization
+
+.row
+  .col-md-6
+    .card.border-primary
+      .card-header.bg-primary.text-white
+        %h5.mb-0 Your Assessment
+      .card-body
+        = render 'shared/check_ins_and_finalizations/position_manager_perspective', check_in: check_in
+  
+  .col-md-6
+    .card.border-info
+      .card-header.bg-info.text-white
+        %h5.mb-0 Employee Perspective
+      .card-body
+        - if check_in.employee_completed?
+          %p.mb-2
+            %strong Rating:
+            = position_rating_display(check_in.employee_rating)
+          %p.mb-0
+            %strong Notes:
+            = simple_format(check_in.employee_private_notes)
+        - else
+          %p.text-muted Waiting for #{@person.first_name} to complete their assessment
+
+.form-group.mt-3
+  %label Status
+  = form.fields_for :position_check_in, check_in do |pf|
+    .form-check
+      = pf.radio_button :status, 'complete', checked: true
+      = pf.label :status_complete, 'Ready for Finalization', class: 'form-check-label'
+    .form-check
+      = pf.radio_button :status, 'draft'
+      = pf.label :status_draft, 'Make Changes', class: 'form-check-label'
+  
+  .small.text-muted.mt-1
+    Select "Make Changes" to edit your assessment and notes

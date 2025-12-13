@@ -9,17 +9,18 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
   let(:slack_service) { instance_double(SlackService) }
 
   before do
-    # Set up manager relationship
-    create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager)
-    
     # Set up Slack identities
     create(:teammate_identity, :slack, teammate: employee_teammate, uid: 'U123456')
     create(:teammate_identity, :slack, teammate: manager_teammate, uid: 'U789012')
     
-    allow(SlackService).to receive(:new).with(organization).and_return(slack_service)
+    allow(SlackService).to receive(:new).and_return(slack_service)
   end
 
   describe 'AssignmentCheckIn' do
+    before do
+      # Set up manager relationship for AssignmentCheckIn specs
+      create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager)
+    end
     let(:assignment) { create(:assignment, company: organization) }
     let(:check_in) { create(:assignment_check_in, teammate: employee_teammate, assignment: assignment) }
 
@@ -50,7 +51,7 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
         expect(slack_service).to receive(:open_or_create_group_dm).and_return({ success: true, channel_id: 'D123456' })
         expect(slack_service).to receive(:post_group_dm) do |args|
           expect(args[:text]).to include('once')
-          expect(args[:text]).to include(organization_person_check_ins_path(organization, employee))
+          expect(args[:text]).to include(organization_company_teammate_check_ins_path(organization, employee_teammate))
           { success: true }
         end
 
@@ -98,7 +99,7 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
         expect(slack_service).to receive(:open_or_create_group_dm).and_return({ success: true, channel_id: 'D123456' })
         expect(slack_service).to receive(:post_group_dm) do |args|
           expect(args[:text]).to include('we are now ready to review together')
-          expect(args[:text]).to include(organization_person_finalization_path(organization, employee))
+          expect(args[:text]).to include(organization_company_teammate_finalization_path(organization, employee_teammate))
           { success: true }
         end
 
@@ -175,7 +176,7 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
   end
 
   describe 'PositionCheckIn' do
-    let(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager) }
+    let!(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager) }
     let(:check_in) { create(:position_check_in, teammate: employee_teammate, employment_tenure: employment_tenure) }
 
     before do
@@ -199,6 +200,10 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
   end
 
   describe 'AspirationCheckIn' do
+    before do
+      # Set up manager relationship for AspirationCheckIn specs
+      create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager)
+    end
     let(:aspiration) { create(:aspiration, organization: organization) }
     let(:check_in) { create(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration) }
 
@@ -223,6 +228,10 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
   end
 
   describe 'error handling' do
+    before do
+      # Set up manager relationship for error handling specs
+      create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager)
+    end
     let(:assignment) { create(:assignment, company: organization) }
     let(:check_in) { create(:assignment_check_in, teammate: employee_teammate, assignment: assignment) }
 

@@ -58,7 +58,7 @@ get '/login', to: 'auth#login', as: :login
   get 'slack/oauth/callback', to: 'organizations/slack/oauth#callback'
   
   # Asana OAuth callback (fixed URL for Asana)
-  get 'asana/oauth/callback', to: 'organizations/asana/oauth#callback'
+  get 'asana/oauth/callback', to: 'organizations/company_teammates/asana/oauth#callback'
   
   # Slack webhooks (support both /slack/interactions and /webhooks/slack/interactions)
   post 'slack/interactions', to: 'webhooks/slack#create'
@@ -163,32 +163,45 @@ get '/login', to: 'auth#login', as: :login
       resource :ability_milestones, only: [:show, :update], module: :assignments
     end
     
-    # People management
-    resources :people, module: :organizations, only: [:show, :update] do
+    # Company teammates management
+    resources :company_teammates, module: :organizations, only: [:show, :update] do
       member do
         get :complete_picture
-        get :teammate
+        get :internal
         post :update_permission
         get :assignment_selection
         post :update_assignments
-        get 'asana/oauth/authorize', to: 'asana/oauth#authorize', as: :asana_oauth_authorize
       end
       
       # Unified check-ins page (spreadsheet-style giant form)
-      resource :check_ins, only: [:show, :update] do
+      resource :check_ins, controller: 'company_teammates/check_ins', only: [:show, :update] do
         post :save_and_redirect, on: :member
       end
       
-      resource :one_on_one_link, only: [:show, :update] do
+      resource :one_on_one_link, controller: 'company_teammates/one_on_one_links', only: [:show, :update] do
         member do
-          get 'asana/oauth/authorize', to: 'asana/oauth#authorize', as: :asana_oauth_authorize_one_on_one
+          get 'asana/oauth/authorize', to: 'company_teammates/asana/oauth#authorize', as: :asana_oauth_authorize_one_on_one
         end
       end
       
       # Finalization flow (separate from check-ins)
-      resource :finalization, only: [:show, :create] do
+      resource :finalization, controller: 'company_teammates/finalizations', only: [:show, :create] do
         patch :acknowledge, on: :member
       end
+      
+      # Employment tenures
+      resources :employment_tenures, controller: 'company_teammates/employment_tenures', only: [:new, :create, :edit, :update, :destroy, :show] do
+        collection do
+          get :change
+          get :add_history
+        end
+        member do
+          get :employment_summary
+        end
+      end
+      
+      # Asana OAuth (nested under company_teammates)
+      get 'asana/oauth/authorize', to: 'company_teammates/asana/oauth#authorize', as: :asana_oauth_authorize
     end
     
     # Teammates resource routes for position, assignments, and aspirations
@@ -359,15 +372,6 @@ get '/login', to: 'auth#login', as: :login
   resources :people, only: [] do
     member do
       get :public
-    end
-    resources :employment_tenures, only: [:new, :create, :edit, :update, :destroy, :show] do
-      collection do
-        get :change
-        get :add_history
-      end
-      member do
-        get :employment_summary
-      end
     end
     resources :assignments, only: [:show], module: :people
   end

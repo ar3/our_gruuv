@@ -22,7 +22,7 @@ RSpec.describe 'Check-ins Save and Redirect', type: :system do
   end
 
   it 'displays check-ins page with form fields' do
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     # Verify the page loads correctly
     expect(page).to have_content('Check-Ins for')
@@ -30,7 +30,7 @@ RSpec.describe 'Check-ins Save and Redirect', type: :system do
   end
 
   it 'displays check-ins page correctly' do
-    visit organization_person_check_ins_path(organization, employee)
+    visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
     # Verify the page loads and form is present
     expect(page).to have_content('Check-Ins for')

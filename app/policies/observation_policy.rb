@@ -173,17 +173,36 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def user_in_management_hierarchy?
-    person = viewing_teammate.person
+    return false unless viewing_teammate
+    return false unless viewing_teammate.is_a?(CompanyTeammate)
+    return false unless record.company
     
-    # Use organization from viewing_teammate, fallback to record.company
-    organization = actual_organization || record.company
+    # Use the company from the observation
+    company = record.company
     
-    record.observed_teammates.any? { |observed_teammate| person.in_managerial_hierarchy_of?(observed_teammate.person, organization) }
+    # Ensure viewing teammate is in the same company
+    viewing_company_teammate = if viewing_teammate.organization == company
+      viewing_teammate
+    else
+      CompanyTeammate.find_by(organization: company, person: viewing_teammate.person)
+    end
+    
+    return false unless viewing_company_teammate
+    
+    # Get all observed teammates and check if viewing teammate is in management hierarchy of any
+    record.observed_teammates.any? do |observed_teammate|
+      # Skip if not a CompanyTeammate or not in the same company
+      next false unless observed_teammate.is_a?(CompanyTeammate)
+      next false unless observed_teammate.organization == company
+      
+      # Check if viewing teammate is in the managerial hierarchy of observed teammate
+      viewing_company_teammate.in_managerial_hierarchy_of?(observed_teammate)
+    end
   end
 
   def user_can_manage_employment?
     return false unless record.company
-    policy(record.company).manage_employment?
+    Pundit.policy(pundit_user, record.company).manage_employment?
   end
 
   def user_is_active_company_teammate?

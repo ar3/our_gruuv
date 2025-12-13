@@ -20,7 +20,7 @@
             %h5.mb-0 Status
           .card-body.text-center
             %p.mb-3 #{@person.first_name} completed #{time_ago_in_words(check_in.employee_completed_at)} ago
-            = link_to "Go to Finalization", organization_person_finalization_path(@organization, @person), 
+            = link_to "Go to Finalization", organization_company_teammate_finalization_path(@organization, @person), 
                       class: 'btn btn-success btn-sm',
                       data: { confirm: 'Are you ready to finalize this check-in? This will create the official rating.' }
       - else

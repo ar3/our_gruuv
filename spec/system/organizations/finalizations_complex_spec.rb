@@ -53,7 +53,7 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
     end
 
     it 'allows manager to edit the reason field' do
-      visit organization_person_finalization_path(company, employee_person)
+      visit organization_company_teammate_finalization_path(company, employee_teammate)
       
       reason_field = find_field('maap_snapshot_reason')
       expect(reason_field).to be_visible
@@ -71,7 +71,7 @@ RSpec.describe 'Finalization Complex Flow - Custom Reason', type: :system do
     end
 
     it 'creates snapshot with custom reason' do
-      visit organization_person_finalization_path(company, employee_person)
+      visit organization_company_teammate_finalization_path(company, employee_teammate)
       
       # Verify check-in is ready
       expect(check_in.reload.ready_for_finalization?).to be true
