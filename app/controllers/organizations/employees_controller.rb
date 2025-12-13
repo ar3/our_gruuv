@@ -34,8 +34,88 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Get teammates with all filters except status (to keep ActiveRecord relation)
     filtered_teammates = query.call
     
+    # Handle vertical_hierarchy view
+    if query.current_view == 'vertical_hierarchy'
+      # Build hierarchy tree
+      hierarchy_query = VerticalHierarchyQuery.new(organization: @organization)
+      full_hierarchy_tree = hierarchy_query.call
+      
+      # Get filtered teammates with all filters applied
+      status_filtered_teammates = query.filter_by_status(filtered_teammates)
+      filtered_teammates_array = status_filtered_teammates.is_a?(Array) ? status_filtered_teammates : status_filtered_teammates.to_a
+      
+      # Get person IDs from filtered teammates
+      filtered_person_ids = filtered_teammates_array.map { |t| t.person_id }.to_set
+      
+      # Filter hierarchy tree to only include nodes matching filters
+      @hierarchy_tree = filter_hierarchy_tree(full_hierarchy_tree, filtered_person_ids)
+      
+      # Find unassigned teammates matching filters
+      org_ids = @organization.company? ? @organization.self_and_descendants.map(&:id) : [@organization.id]
+      teammates_with_active_tenures = EmploymentTenure.active
+                                                       .joins(:teammate)
+                                                       .where(company_id: org_ids)
+                                                       .where(teammates: { organization_id: org_ids })
+                                                       .select('DISTINCT teammates.id')
+      
+      # Start with unassigned teammates query
+      unassigned_base = Teammate.where(organization_id: org_ids)
+                                .where(type: 'CompanyTeammate')
+                                .where.not(id: teammates_with_active_tenures)
+                                .where.not(first_employed_at: nil)
+                                .where(last_terminated_at: nil)
+                                .includes(:person)
+                                .joins(:person)
+      
+      # Apply the same filters from TeammatesQuery manually (since methods are private)
+      # Filter by organization
+      if params[:organization_id].present?
+        org_id = params[:organization_id].to_i
+        filter_org = Organization.find(org_id)
+        unassigned_base = unassigned_base.where(organization: filter_org.self_and_descendants)
+      end
+      
+      # Filter by permissions
+      if params[:permission].present?
+        permissions = Array(params[:permission])
+        permissions.each do |permission|
+          case permission
+          when 'employment_mgmt'
+            unassigned_base = unassigned_base.where(can_manage_employment: true)
+          when 'employment_create'
+            unassigned_base = unassigned_base.where(can_create_employment: true)
+          when 'maap_mgmt'
+            unassigned_base = unassigned_base.where(can_manage_maap: true)
+          end
+        end
+      end
+      
+      # Filter by manager relationship
+      if params[:manager_filter] == 'direct_reports' && current_person
+        unassigned_base = unassigned_base.joins(:employment_tenures)
+                                         .where(employment_tenures: { manager: current_person, ended_at: nil })
+                                         .distinct
+      end
+      
+      # Apply status filter
+      @unassigned_teammates = query.filter_by_status(unassigned_base)
+      
+      # Store filtered teammates for spotlight calculations
+      @filtered_teammates = filtered_teammates_array
+      
+      # Calculate spotlight statistics
+      filtered_teammates_for_joins = filtered_teammates
+      if @current_spotlight == 'employee_locations'
+        filtered_teammates_for_joins = filtered_teammates_for_joins.includes(person: :addresses) if filtered_teammates_for_joins.respond_to?(:includes)
+      end
+      @spotlight_stats = calculate_spotlight_stats(@filtered_teammates, @current_spotlight, filtered_teammates_for_joins)
+      
+      # Disable pagination for hierarchy view
+      unassigned_count = @unassigned_teammates.is_a?(Array) ? @unassigned_teammates.count : @unassigned_teammates.count
+      @pagy = Pagy.new(count: @hierarchy_tree.count + unassigned_count, page: 1, items: 999999)
+      @filtered_and_paginated_teammates = []
     # Handle check_ins_health view
-    if query.current_view == 'check_ins_health'
+    elsif query.current_view == 'check_ins_health'
       # Filter to active employees only for check-ins health
       filtered_teammates = filtered_teammates.where.not(first_employed_at: nil).where(last_terminated_at: nil)
       
@@ -286,6 +366,13 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
           display: 'check_ins_health',
           spotlight: 'check_ins_health',
           status: 'active'
+        }
+      when 'hierarchical_accountability_chart'
+        {
+          view: 'vertical_hierarchy',
+          status: ['unassigned_employee', 'assigned_employee'],
+          organization_id: @organization.id,
+          spotlight: 'manager_distribution'
         }
       else
         nil
@@ -591,6 +678,30 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         total_teammates: teammates_array.count
       }
     end
+
+  def filter_hierarchy_tree(hierarchy_tree, filtered_person_ids)
+    # Recursively filter the hierarchy tree to only include nodes matching filters
+    hierarchy_tree.map do |node|
+      person_id = node[:person]&.id
+      next nil unless person_id && filtered_person_ids.include?(person_id)
+      
+      # Recursively filter children
+      filtered_children = filter_hierarchy_tree(node[:children] || [], filtered_person_ids).compact
+      
+      # Recalculate counts based on filtered children
+      direct_reports_count = filtered_children.length
+      total_reports_count = direct_reports_count + filtered_children.sum { |child| child[:total_reports_count] || 0 }
+      
+      {
+        person: node[:person],
+        position: node[:position],
+        employment_tenure: node[:employment_tenure],
+        children: filtered_children,
+        direct_reports_count: direct_reports_count,
+        total_reports_count: total_reports_count
+      }
+    end.compact
+  end
 
   def require_authentication
     unless current_person

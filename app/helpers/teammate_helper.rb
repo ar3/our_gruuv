@@ -423,14 +423,14 @@ module TeammateHelper
   end
 
   def available_presets_for_select(organization, current_company_teammate)
+    # Legacy method for backward compatibility - returns array of [name, value] pairs
+    available_presets_with_permissions(organization, current_company_teammate).map { |p| [p[:name], p[:value]] }
+  end
+
+  def available_presets_with_permissions(organization, current_company_teammate)
     presets = []
     
-    # My Direct Reports - Check-in Status Style 1
-    if current_company_teammate&.has_direct_reports?
-      presets << ['My Direct Reports - Check-in Status Style 1', 'my_direct_reports_check_in_status_1']
-    end
-    
-    # My Direct Reports - Check-in Status Style 2
+    # Check permissions once
     can_manage = if respond_to?(:policy) && current_company_teammate&.organization == organization
       policy(organization).manage_employment?
     elsif current_company_teammate
@@ -438,17 +438,54 @@ module TeammateHelper
     else
       false
     end
-    if current_company_teammate&.has_direct_reports? && can_manage
-      presets << ['My Direct Reports - Check-in Status Style 2', 'my_direct_reports_check_in_status_2']
-    end
+    
+    has_direct_reports = current_company_teammate&.has_direct_reports? || false
+    
+    # My Direct Reports - Check-in Status Style 1
+    presets << {
+      name: 'My Direct Reports - Check-in Status Style 1',
+      value: 'my_direct_reports_check_in_status_1',
+      available: has_direct_reports,
+      permission_required: has_direct_reports ? nil : 'direct reports',
+      tooltip: has_direct_reports ? nil : 'You need to have direct reports to use this preset'
+    }
+    
+    # My Direct Reports - Check-in Status Style 2
+    available_style_2 = has_direct_reports && can_manage
+    presets << {
+      name: 'My Direct Reports - Check-in Status Style 2',
+      value: 'my_direct_reports_check_in_status_2',
+      available: available_style_2,
+      permission_required: available_style_2 ? nil : (has_direct_reports ? 'employment management' : 'direct reports and employment management'),
+      tooltip: available_style_2 ? nil : (has_direct_reports ? 'You need employment management permission to use this preset' : 'You need direct reports and employment management permission to use this preset')
+    }
     
     # All Employees - Check-in Status Style 1
-    presets << ['All Employees - Check-in Status Style 1', 'all_employees_check_in_status_1']
+    presets << {
+      name: 'All Employees - Check-in Status Style 1',
+      value: 'all_employees_check_in_status_1',
+      available: true,
+      permission_required: nil,
+      tooltip: nil
+    }
     
     # All Employees - Check-in Status Style 2
-    if can_manage
-      presets << ['All Employees - Check-in Status Style 2', 'all_employees_check_in_status_2']
-    end
+    presets << {
+      name: 'All Employees - Check-in Status Style 2',
+      value: 'all_employees_check_in_status_2',
+      available: can_manage,
+      permission_required: can_manage ? nil : 'employment management',
+      tooltip: can_manage ? nil : 'You need employment management permission to use this preset'
+    }
+    
+    # Hierarchical Accountability Chart
+    presets << {
+      name: 'Hierarchical Accountability Chart',
+      value: 'hierarchical_accountability_chart',
+      available: true,
+      permission_required: nil,
+      tooltip: nil
+    }
     
     presets
   end

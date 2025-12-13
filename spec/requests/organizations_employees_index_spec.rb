@@ -325,4 +325,49 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     end
   end
 
+  describe 'vertical_hierarchy view' do
+    let(:company_org) { create(:organization, :company) }
+    let(:employee_person) { create(:person) }
+    let!(:employee_teammate) { create(:teammate, person: employee_person, organization: company_org, first_employed_at: 1.month.ago) }
+    let!(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: company_org, started_at: 1.month.ago, ended_at: nil) }
+
+    before do
+      allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(employee_person)
+      allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(company_org)
+    end
+
+    it 'does not raise NoMethodError when accessing vertical_hierarchy view with organization filter' do
+      expect {
+        get organization_employees_path(company_org, view: 'vertical_hierarchy', organization_id: company_org.id)
+      }.not_to raise_error
+      expect(response).to be_successful
+      expect(assigns(:hierarchy_tree)).to be_an(Array)
+    end
+
+    it 'does not raise NoMethodError when accessing vertical_hierarchy view with permission filter' do
+      expect {
+        get organization_employees_path(company_org, view: 'vertical_hierarchy', permission: ['employment_mgmt'])
+      }.not_to raise_error
+      expect(response).to be_successful
+      expect(assigns(:hierarchy_tree)).to be_an(Array)
+    end
+
+    it 'does not raise NoMethodError when accessing vertical_hierarchy view with manager filter' do
+      manager = create(:person)
+      manager_teammate = create(:teammate, person: manager, organization: company_org, first_employed_at: 1.month.ago)
+      # Update existing employment tenure to have manager instead of creating a new one
+      employment_tenure.update!(manager: manager)
+      
+      manager_ct = CompanyTeammate.find(manager_teammate.id)
+      allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)
+      allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
+
+      expect {
+        get organization_employees_path(company_org, view: 'vertical_hierarchy', manager_filter: 'direct_reports')
+      }.not_to raise_error
+      expect(response).to be_successful
+      expect(assigns(:hierarchy_tree)).to be_an(Array)
+    end
+  end
+
 end

@@ -303,29 +303,6 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     @chart_data = query.call
   end
 
-  def vertical_accountability_chart
-    authorize @organization, :show?
-    
-    query = VerticalHierarchyQuery.new(organization: @organization)
-    @hierarchy_tree = query.call
-    
-    # Find company teammates without active employment tenures
-    org_ids = @organization.company? ? @organization.self_and_descendants.map(&:id) : [@organization.id]
-    teammates_with_active_tenures = EmploymentTenure.active
-                                                     .joins(:teammate)
-                                                     .where(company_id: org_ids)
-                                                     .where(teammates: { organization_id: org_ids })
-                                                     .select('DISTINCT teammates.id')
-    
-    @unassigned_teammates = Teammate.where(organization_id: org_ids)
-                                     .where(type: 'CompanyTeammate')
-                                     .where.not(id: teammates_with_active_tenures)
-                                     .where.not(first_employed_at: nil)
-                                     .where(last_terminated_at: nil)
-                                     .includes(:person)
-                                     .order('people.last_name, people.first_name')
-                                     .joins(:person)
-  end
 
   def pundit_healthcheck
     # Skip authentication and organization setup for this debugging route
@@ -386,7 +363,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
 
   # Skip organization setup for actions that don't need it
   def skip_organization_setup?
-    !%w[show edit update destroy switch huddles_review dashboard celebrate_milestones pundit_healthcheck accountability_chart vertical_accountability_chart refresh_slack_profiles].include?(action_name)
+    !%w[show edit update destroy switch huddles_review dashboard celebrate_milestones pundit_healthcheck accountability_chart refresh_slack_profiles].include?(action_name)
   end
   
   def organization_params

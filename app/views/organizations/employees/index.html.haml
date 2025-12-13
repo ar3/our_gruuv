@@ -80,6 +80,8 @@
       .d-flex.justify-content-center.mt-4
         - if @pagy.pages > 1
           = raw pagy_nav(@pagy)
+    - elsif @current_view == 'vertical_hierarchy'
+      = render 'organizations/employees/displays/vertical_hierarchy'
     - elsif @filtered_and_paginated_teammates.any?
       - case @current_view
       - when 'check_in_status'
