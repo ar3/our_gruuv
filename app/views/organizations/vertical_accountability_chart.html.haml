@@ -1,0 +1,22 @@
+- content_for :header do
+  %h1.mb-0 Vertical Accountability Chart
+  
+- content_for :go_back_link do
+  = link_to organization_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Organization
+
+.container-fluid.py-4
+  .row
+    .col-12
+      - if @hierarchy_tree.empty?
+        .alert.alert-info
+          %h5.mb-3
+            %i.bi.bi-info-circle.me-2
+            No Employees Found
+          %p No active employees found in this organization to display in the accountability chart.
+      - else
+        .tree-visualization{style: "padding: 20px;"}
+          - @hierarchy_tree.each do |root_node|
+            = render 'organizations/vertical_accountability_chart/employee_node', node: root_node, depth: 0, organization: @organization
+

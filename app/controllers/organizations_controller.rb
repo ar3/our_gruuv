@@ -303,6 +303,13 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     @chart_data = query.call
   end
 
+  def vertical_accountability_chart
+    authorize @organization, :show?
+    
+    query = VerticalHierarchyQuery.new(organization: @organization)
+    @hierarchy_tree = query.call
+  end
+
   def pundit_healthcheck
     # Skip authentication and organization setup for this debugging route
     health_data = Debug::PunditHealthCheckService.call(self)
@@ -362,7 +369,7 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
 
   # Skip organization setup for actions that don't need it
   def skip_organization_setup?
-    !%w[show edit update destroy switch huddles_review dashboard celebrate_milestones pundit_healthcheck accountability_chart refresh_slack_profiles].include?(action_name)
+    !%w[show edit update destroy switch huddles_review dashboard celebrate_milestones pundit_healthcheck accountability_chart vertical_accountability_chart refresh_slack_profiles].include?(action_name)
   end
   
   def organization_params

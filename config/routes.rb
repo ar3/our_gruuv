@@ -81,6 +81,7 @@ get '/login', to: 'auth#login', as: :login
       post :refresh_slack_profiles
       get :pundit_healthcheck
       get :accountability_chart
+      get :vertical_accountability_chart
       get :new_refresh_names
       get :new_refresh_slack
     end
