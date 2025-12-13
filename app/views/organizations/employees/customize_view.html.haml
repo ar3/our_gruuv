@@ -16,7 +16,7 @@
       .card.mb-4
         .card-body
           %label.form-label.fw-bold Choose Preset
-          = select_tag 'preset', options_for_select(available_presets_for_select(@organization, current_person), params[:preset]), { include_blank: 'Select a preset...', class: 'form-select', id: 'preset_select', onchange: 'if(this.value) { this.form.submit(); }' }
+          = select_tag 'preset', options_for_select(available_presets_for_select(@organization, current_company_teammate), params[:preset]), { include_blank: 'Select a preset...', class: 'form-select', id: 'preset_select', onchange: 'if(this.value) { this.form.submit(); }' }
           %small.form-text.text-muted Select a preset to apply its settings immediately
     .col-2 
       = form.submit 'Apply View', class: 'btn btn-primary'

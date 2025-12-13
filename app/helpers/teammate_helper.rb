@@ -422,24 +422,23 @@ module TeammateHelper
     }
   end
 
-  def available_presets_for_select(organization, current_person)
+  def available_presets_for_select(organization, current_company_teammate)
     presets = []
     
     # My Direct Reports - Check-in Status Style 1
-    if current_person&.has_direct_reports?(organization)
+    if current_company_teammate&.has_direct_reports?
       presets << ['My Direct Reports - Check-in Status Style 1', 'my_direct_reports_check_in_status_1']
     end
     
     # My Direct Reports - Check-in Status Style 2
     can_manage = if respond_to?(:policy) && current_company_teammate&.organization == organization
       policy(organization).manage_employment?
-    elsif current_person
-      teammate = current_person.teammates.find_by(organization: organization)
-      teammate&.can_manage_employment? || false
+    elsif current_company_teammate
+      current_company_teammate.can_manage_employment? || false
     else
       false
     end
-    if current_person&.has_direct_reports?(organization) && can_manage
+    if current_company_teammate&.has_direct_reports? && can_manage
       presets << ['My Direct Reports - Check-in Status Style 2', 'my_direct_reports_check_in_status_2']
     end
     
