@@ -115,8 +115,8 @@ class TeammatesQuery
   end
 
   def base_scope
-    Teammate.for_organization_hierarchy(organization)
-            .includes(:person, :employment_tenures, :organization)
+    CompanyTeammate.for_organization_hierarchy(organization)
+                   .includes(:person, :employment_tenures, :organization)
   end
 
   def filter_by_organization(teammates)
