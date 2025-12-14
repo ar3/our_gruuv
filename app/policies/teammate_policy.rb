@@ -51,8 +51,8 @@ class TeammatePolicy < ApplicationPolicy
     # Users can view their own teammate record, admins can view any, or if they have employment management or MAAP permissions
     return true if admin_bypass?
     return false unless viewing_teammate && record
-    return false if viewing_teammate.terminated?
     return true if viewing_teammate == record
+    return false if viewing_teammate.terminated?
     return true if viewing_teammate.can_manage_employment?
     return true if viewing_teammate.in_managerial_hierarchy_of?(record)
     false

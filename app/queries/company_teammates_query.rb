@@ -1,4 +1,4 @@
-class TeammatesQuery
+class CompanyTeammatesQuery
   attr_reader :organization, :params, :current_person
 
   def initialize(organization, params = {}, current_person: nil)

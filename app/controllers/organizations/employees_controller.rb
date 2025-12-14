@@ -28,8 +28,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Determine spotlight type
     @current_spotlight = determine_spotlight
     
-    # Use TeammatesQuery for filtering and sorting
-    query = TeammatesQuery.new(@organization, params, current_person: current_person)
+    # Use CompanyTeammatesQuery for filtering and sorting
+    query = CompanyTeammatesQuery.new(@organization, params, current_person: current_person)
     
     # Get teammates with all filters except status (to keep ActiveRecord relation)
     filtered_teammates = query.call
@@ -67,7 +67,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
                                 .includes(:person)
                                 .joins(:person)
       
-      # Apply the same filters from TeammatesQuery manually (since methods are private)
+      # Apply the same filters from CompanyTeammatesQuery manually (since methods are private)
       # Filter by organization
       if params[:organization_id].present?
         org_id = params[:organization_id].to_i
@@ -182,7 +182,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     authorize @organization, :show?
     
     # Load current state from params or defaults
-    query = TeammatesQuery.new(@organization, params, current_person: current_person)
+    query = CompanyTeammatesQuery.new(@organization, params, current_person: current_person)
     
     @current_filters = query.current_filters
     @current_sort = query.current_sort
@@ -386,7 +386,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       # Auto-select manager_overview if manager filter is active
       return 'manager_overview' if params[:manager_filter] == 'direct_reports'
       
-      # Default to teammates_overview (matches TeammatesQuery default)
+      # Default to teammates_overview (matches CompanyTeammatesQuery default)
       'teammates_overview'
     end
 

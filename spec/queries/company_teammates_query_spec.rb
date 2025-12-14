@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe TeammatesQuery, type: :query do
+RSpec.describe CompanyTeammatesQuery, type: :query do
   let(:organization) { create(:organization) }
   let(:manager) { create(:person) }
   let(:direct_report1) { create(:person) }
@@ -8,10 +8,10 @@ RSpec.describe TeammatesQuery, type: :query do
   let(:other_employee) { create(:person) }
   let(:non_employee) { create(:person) }
   
-  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
-  let!(:direct_report1_teammate) { create(:teammate, person: direct_report1, organization: organization) }
-  let!(:direct_report2_teammate) { create(:teammate, person: direct_report2, organization: organization) }
-  let!(:other_employee_teammate) { create(:teammate, person: other_employee, organization: organization) }
+  let!(:manager_teammate) { CompanyTeammate.find(create(:teammate, person: manager, organization: organization).id) }
+  let!(:direct_report1_teammate) { CompanyTeammate.find(create(:teammate, person: direct_report1, organization: organization).id) }
+  let!(:direct_report2_teammate) { CompanyTeammate.find(create(:teammate, person: direct_report2, organization: organization).id) }
+  let!(:other_employee_teammate) { CompanyTeammate.find(create(:teammate, person: other_employee, organization: organization).id) }
 
   before do
     # Create employment tenures with manager relationships
@@ -22,19 +22,19 @@ RSpec.describe TeammatesQuery, type: :query do
 
   describe '#initialize' do
     it 'accepts organization, params, and current_person' do
-      query = TeammatesQuery.new(organization, { sort: 'name_asc' }, current_person: manager)
+      query = CompanyTeammatesQuery.new(organization, { sort: 'name_asc' }, current_person: manager)
       expect(query.organization).to eq(organization)
       expect(query.params).to eq({ sort: 'name_asc' })
       expect(query.current_person).to eq(manager)
     end
 
     it 'works without current_person' do
-      query = TeammatesQuery.new(organization, { sort: 'name_asc' })
+      query = CompanyTeammatesQuery.new(organization, { sort: 'name_asc' })
       expect(query.current_person).to be_nil
     end
 
     it 'handles nil current_person explicitly' do
-      query = TeammatesQuery.new(organization, { sort: 'name_asc' }, current_person: nil)
+      query = CompanyTeammatesQuery.new(organization, { sort: 'name_asc' }, current_person: nil)
       expect(query.current_person).to be_nil
     end
   end
@@ -42,7 +42,7 @@ RSpec.describe TeammatesQuery, type: :query do
   describe '#call' do
     context 'without manager filter' do
       it 'returns all teammates in organization' do
-        query = TeammatesQuery.new(organization, {})
+        query = CompanyTeammatesQuery.new(organization, {})
         results = query.call
         
         expect(results).to include(direct_report1_teammate, direct_report2_teammate, other_employee_teammate)
@@ -51,7 +51,7 @@ RSpec.describe TeammatesQuery, type: :query do
 
     context 'with manager_filter: direct_reports' do
       it 'returns only direct reports when current_person is provided' do
-        query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
+        query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
         results = query.call
         
         expect(results).to include(direct_report1_teammate, direct_report2_teammate)
@@ -60,21 +60,21 @@ RSpec.describe TeammatesQuery, type: :query do
       end
 
       it 'returns all teammates when current_person is nil' do
-        query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' })
+        query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' })
         results = query.call
         
         expect(results).to include(direct_report1_teammate, direct_report2_teammate, other_employee_teammate)
       end
 
       it 'returns all teammates when manager_filter is not direct_reports' do
-        query = TeammatesQuery.new(organization, { manager_filter: 'other_filter' }, current_person: manager)
+        query = CompanyTeammatesQuery.new(organization, { manager_filter: 'other_filter' }, current_person: manager)
         results = query.call
         
         expect(results).to include(direct_report1_teammate, direct_report2_teammate, other_employee_teammate)
       end
 
       it 'handles empty manager_filter string' do
-        query = TeammatesQuery.new(organization, { manager_filter: '' }, current_person: manager)
+        query = CompanyTeammatesQuery.new(organization, { manager_filter: '' }, current_person: manager)
         results = query.call
         
         expect(results).to include(direct_report1_teammate, direct_report2_teammate, other_employee_teammate)
@@ -84,7 +84,7 @@ RSpec.describe TeammatesQuery, type: :query do
         # End the employment tenure for direct_report1
         EmploymentTenure.where(teammate: direct_report1_teammate, manager: manager).update_all(ended_at: 1.day.ago)
         
-        query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
+        query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
         results = query.call
         
         expect(results.map(&:id)).not_to include(direct_report1_teammate.id)
@@ -98,11 +98,11 @@ RSpec.describe TeammatesQuery, type: :query do
         
         # Create a new teammate in a different company
         other_company = create(:organization)
-        teammate_in_other_company = create(:teammate, person: create(:person), organization: other_company)
+        teammate_in_other_company = CompanyTeammate.find(create(:teammate, person: create(:person), organization: other_company).id)
         other_manager = create(:person)
         create(:employment_tenure, teammate: teammate_in_other_company, company: other_company, manager: other_manager, ended_at: nil)
         
-        query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
+        query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
         results = query.call
         
         expect(results).to include(direct_report1_teammate) # Still a direct report in the organization
@@ -114,7 +114,7 @@ RSpec.describe TeammatesQuery, type: :query do
         # Remove all employment tenures for direct_report1
         EmploymentTenure.where(teammate: direct_report1_teammate).destroy_all
         
-        query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
+        query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
         results = query.call
         
         expect(results.map(&:id)).not_to include(direct_report1_teammate.id)
@@ -123,7 +123,7 @@ RSpec.describe TeammatesQuery, type: :query do
 
       it 'uses distinct to avoid duplicates' do
         # Query should return each teammate only once even with multiple tenures
-        query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
+        query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
         results = query.call
         
         # Should not have duplicates
@@ -138,10 +138,10 @@ RSpec.describe TeammatesQuery, type: :query do
       let(:terminated_employee) { create(:person) }
       let(:huddle_only_participant) { create(:person) }
 
-      let!(:active_teammate) { create(:teammate, person: active_employee, organization: organization, first_employed_at: 1.month.ago) }
-      let!(:unassigned_teammate) { create(:teammate, person: unassigned_employee, organization: organization, first_employed_at: 2.months.ago) }
-      let!(:terminated_teammate) { create(:teammate, person: terminated_employee, organization: organization, first_employed_at: 6.months.ago, last_terminated_at: 1.month.ago) }
-      let!(:huddle_only_teammate) { create(:teammate, person: huddle_only_participant, organization: organization, first_employed_at: nil, last_terminated_at: nil) }
+      let!(:active_teammate) { CompanyTeammate.find(create(:teammate, person: active_employee, organization: organization, first_employed_at: 1.month.ago).id) }
+      let!(:unassigned_teammate) { CompanyTeammate.find(create(:teammate, person: unassigned_employee, organization: organization, first_employed_at: 2.months.ago).id) }
+      let!(:terminated_teammate) { CompanyTeammate.find(create(:teammate, person: terminated_employee, organization: organization, first_employed_at: 6.months.ago, last_terminated_at: 1.month.ago).id) }
+      let!(:huddle_only_teammate) { CompanyTeammate.find(create(:teammate, person: huddle_only_participant, organization: organization, first_employed_at: nil, last_terminated_at: nil).id) }
 
       before do
         # Create employment tenure for active employee
@@ -153,7 +153,7 @@ RSpec.describe TeammatesQuery, type: :query do
 
       describe 'active filter' do
         it 'returns only active employees (assigned and unassigned)' do
-          query = TeammatesQuery.new(organization, { status: 'active' })
+          query = CompanyTeammatesQuery.new(organization, { status: 'active' })
           results = query.call_with_status_filter
 
           expect(results).to include(active_teammate)
@@ -165,7 +165,7 @@ RSpec.describe TeammatesQuery, type: :query do
 
       describe 'all_employed filter' do
         it 'returns all ever-employed teammates (active, unassigned, and terminated)' do
-          query = TeammatesQuery.new(organization, { status: 'all_employed' })
+          query = CompanyTeammatesQuery.new(organization, { status: 'all_employed' })
           results = query.call_with_status_filter
 
           expect(results).to include(active_teammate)
@@ -177,7 +177,7 @@ RSpec.describe TeammatesQuery, type: :query do
 
       describe 'terminated filter' do
         it 'returns only terminated employees' do
-          query = TeammatesQuery.new(organization, { status: 'terminated' })
+          query = CompanyTeammatesQuery.new(organization, { status: 'terminated' })
           results = query.call_with_status_filter
 
           expect(results).to include(terminated_teammate)
@@ -190,14 +190,14 @@ RSpec.describe TeammatesQuery, type: :query do
       describe 'exclusion of huddle-only participants' do
         it 'excludes huddle-only participants with default active filter' do
           # Simulate default behavior - status defaults to 'active'
-          query = TeammatesQuery.new(organization, { status: 'active' })
+          query = CompanyTeammatesQuery.new(organization, { status: 'active' })
           results = query.call_with_status_filter
 
           expect(results).not_to include(huddle_only_teammate)
         end
 
         it 'excludes huddle-only participants with all_employed filter' do
-          query = TeammatesQuery.new(organization, { status: 'all_employed' })
+          query = CompanyTeammatesQuery.new(organization, { status: 'all_employed' })
           results = query.call_with_status_filter
 
           expect(results).not_to include(huddle_only_teammate)
@@ -209,13 +209,13 @@ RSpec.describe TeammatesQuery, type: :query do
       it 'returns distinct teammates even with manager filter joins' do
         # Create a teammate with multiple employment tenures reporting to the same manager
         person = create(:person)
-        teammate = create(:teammate, person: person, organization: organization)
+        teammate = CompanyTeammate.find(create(:teammate, person: person, organization: organization).id)
         
         # Create multiple employment tenures for the same teammate-manager relationship
         create(:employment_tenure, teammate: teammate, company: organization, manager: manager, started_at: 3.months.ago, ended_at: 1.month.ago)
         create(:employment_tenure, teammate: teammate, company: organization, manager: manager, started_at: 1.month.ago, ended_at: nil)
 
-        query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
+        query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
         results = query.call
 
         # Should only appear once despite multiple tenures
@@ -232,7 +232,7 @@ RSpec.describe TeammatesQuery, type: :query do
         create(:employment_tenure, teammate: teammate, company: organization, started_at: 3.months.ago, ended_at: 1.month.ago)
         create(:employment_tenure, teammate: teammate, company: organization, started_at: 1.month.ago, ended_at: nil)
 
-        query = TeammatesQuery.new(organization, {})
+        query = CompanyTeammatesQuery.new(organization, {})
         results = query.call
 
         # Should only appear once despite multiple tenures
@@ -244,22 +244,22 @@ RSpec.describe TeammatesQuery, type: :query do
 
   describe '#current_filters' do
     it 'includes manager_filter when present' do
-      query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' })
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' })
       expect(query.current_filters[:manager_filter]).to eq('direct_reports')
     end
 
     it 'does not include manager_filter when not present' do
-      query = TeammatesQuery.new(organization, {})
+      query = CompanyTeammatesQuery.new(organization, {})
       expect(query.current_filters[:manager_filter]).to be_nil
     end
 
     it 'includes manager_filter when empty string' do
-      query = TeammatesQuery.new(organization, { manager_filter: '' })
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: '' })
       expect(query.current_filters[:manager_filter]).to eq('')
     end
 
     it 'includes other existing filters' do
-      query = TeammatesQuery.new(organization, { status: 'active', permission: 'employment_mgmt', manager_filter: 'direct_reports' })
+      query = CompanyTeammatesQuery.new(organization, { status: 'active', permission: 'employment_mgmt', manager_filter: 'direct_reports' })
       filters = query.current_filters
       # Status should be expanded to granular statuses for checkbox display
       expect(filters[:status]).to include('assigned_employee', 'unassigned_employee')
@@ -268,15 +268,15 @@ RSpec.describe TeammatesQuery, type: :query do
     end
 
     it 'expands status shortcuts to granular statuses for display' do
-      query = TeammatesQuery.new(organization, { status: 'active' })
+      query = CompanyTeammatesQuery.new(organization, { status: 'active' })
       filters = query.current_filters
       expect(filters[:status]).to match_array(['assigned_employee', 'unassigned_employee'])
 
-      query = TeammatesQuery.new(organization, { status: 'all_employed' })
+      query = CompanyTeammatesQuery.new(organization, { status: 'all_employed' })
       filters = query.current_filters
       expect(filters[:status]).to match_array(['assigned_employee', 'unassigned_employee', 'terminated'])
 
-      query = TeammatesQuery.new(organization, { status: 'terminated' })
+      query = CompanyTeammatesQuery.new(organization, { status: 'terminated' })
       filters = query.current_filters
       expect(filters[:status]).to match_array(['terminated'])
     end
@@ -284,49 +284,49 @@ RSpec.describe TeammatesQuery, type: :query do
 
   describe '#current_view' do
     it 'returns display parameter when present' do
-      query = TeammatesQuery.new(organization, { display: 'check_in_status' })
+      query = CompanyTeammatesQuery.new(organization, { display: 'check_in_status' })
       expect(query.current_view).to eq('check_in_status')
     end
 
     it 'returns view parameter when display is not present' do
-      query = TeammatesQuery.new(organization, { view: 'cards' })
+      query = CompanyTeammatesQuery.new(organization, { view: 'cards' })
       expect(query.current_view).to eq('cards')
     end
 
     it 'returns list as default' do
-      query = TeammatesQuery.new(organization, {})
+      query = CompanyTeammatesQuery.new(organization, {})
       expect(query.current_view).to eq('list')
     end
 
     it 'prioritizes display over view when both present' do
-      query = TeammatesQuery.new(organization, { view: 'cards', display: 'check_in_status' })
+      query = CompanyTeammatesQuery.new(organization, { view: 'cards', display: 'check_in_status' })
       expect(query.current_view).to eq('check_in_status')
     end
 
     it 'handles empty display param' do
-      query = TeammatesQuery.new(organization, { display: '', view: 'cards' })
+      query = CompanyTeammatesQuery.new(organization, { display: '', view: 'cards' })
       expect(query.current_view).to eq('cards')
     end
 
     it 'handles empty view param' do
-      query = TeammatesQuery.new(organization, { view: '', display: 'check_in_status' })
+      query = CompanyTeammatesQuery.new(organization, { view: '', display: 'check_in_status' })
       expect(query.current_view).to eq('check_in_status')
     end
   end
 
   describe '#has_active_filters?' do
     it 'returns true when manager_filter is present' do
-      query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' })
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' })
       expect(query.has_active_filters?).to be true
     end
 
     it 'returns false when no filters are present' do
-      query = TeammatesQuery.new(organization, {})
+      query = CompanyTeammatesQuery.new(organization, {})
       expect(query.has_active_filters?).to be false
     end
 
     it 'returns true when manager_filter is empty string' do
-      query = TeammatesQuery.new(organization, { manager_filter: '' })
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: '' })
       expect(query.has_active_filters?).to be true
     end
   end
@@ -336,7 +336,7 @@ RSpec.describe TeammatesQuery, type: :query do
       # Make direct_report1 an assigned employee
       direct_report1_teammate.update!(first_employed_at: 1.month.ago)
       
-      query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports', status: 'assigned_employee' }, current_person: manager)
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports', status: 'assigned_employee' }, current_person: manager)
       results = query.call_with_status_filter
       
       expect(results.map(&:id)).to include(direct_report1_teammate.id)
@@ -346,19 +346,19 @@ RSpec.describe TeammatesQuery, type: :query do
     it 'combines manager filter with permission filter' do
       direct_report1_teammate.update!(can_manage_employment: true)
       
-      query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports', permission: 'employment_mgmt' }, current_person: manager)
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports', permission: 'employment_mgmt' }, current_person: manager)
       results = query.call
       
       expect(results).to include(direct_report1_teammate)
       expect(results).not_to include(direct_report2_teammate) # No employment management permission
     end
 
-    it 'combines manager filter with organization filter' do
+      it 'combines manager filter with organization filter' do
       child_org = create(:organization, parent: organization)
-      child_teammate = create(:teammate, person: direct_report1, organization: child_org)
+      child_teammate = CompanyTeammate.find(create(:teammate, person: direct_report1, organization: child_org).id)
       create(:employment_tenure, teammate: child_teammate, company: child_org, manager: manager, ended_at: nil)
       
-      query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports', organization_id: child_org.id }, current_person: manager)
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports', organization_id: child_org.id }, current_person: manager)
       results = query.call
       
       # Should only include direct reports in the specified organization
@@ -377,7 +377,7 @@ RSpec.describe TeammatesQuery, type: :query do
         create(:employment_tenure, teammate: teammate, company: organization, manager: manager, ended_at: nil)
       end
       
-      query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
       
       expect {
         query.call
@@ -388,19 +388,19 @@ RSpec.describe TeammatesQuery, type: :query do
   describe 'edge cases' do
     it 'handles teammates with different organization' do
       other_organization = create(:organization)
-      teammate_with_other_org = create(:teammate, person: create(:person), organization: other_organization)
+      teammate_with_other_org = CompanyTeammate.find(create(:teammate, person: create(:person), organization: other_organization).id)
       
-      query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
       results = query.call
       
       expect(results).not_to include(teammate_with_other_org)
     end
 
     it 'handles employment tenures with nil manager' do
-      teammate_with_nil_manager = create(:teammate, person: create(:person), organization: organization)
+      teammate_with_nil_manager = CompanyTeammate.find(create(:teammate, person: create(:person), organization: organization).id)
       create(:employment_tenure, teammate: teammate_with_nil_manager, company: organization, manager: nil, ended_at: nil)
       
-      query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
       results = query.call
       
       expect(results).not_to include(teammate_with_nil_manager)
@@ -408,17 +408,17 @@ RSpec.describe TeammatesQuery, type: :query do
 
     it 'handles employment tenures with different company' do
       other_company = create(:organization)
-      teammate_with_other_company = create(:teammate, person: create(:person), organization: other_company)
+      teammate_with_other_company = CompanyTeammate.find(create(:teammate, person: create(:person), organization: other_company).id)
       create(:employment_tenure, teammate: teammate_with_other_company, company: other_company, manager: manager, ended_at: nil)
       
-      query = TeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: 'direct_reports' }, current_person: manager)
       results = query.call
       
       expect(results).not_to include(teammate_with_other_company)
     end
 
     it 'handles invalid manager_filter values gracefully' do
-      query = TeammatesQuery.new(organization, { manager_filter: 'invalid_filter' }, current_person: manager)
+      query = CompanyTeammatesQuery.new(organization, { manager_filter: 'invalid_filter' }, current_person: manager)
       results = query.call
       
       expect(results).to include(direct_report1_teammate, direct_report2_teammate, other_employee_teammate)

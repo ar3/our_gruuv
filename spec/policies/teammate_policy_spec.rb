@@ -25,86 +25,88 @@ RSpec.describe TeammatePolicy, type: :policy do
       }.not_to raise_error
     end
 
-    context 'when user is admin' do
-      it 'allows access via admin bypass' do
-        expect(subject).to permit(admin_pundit_user, person_teammate)
-        expect(subject).to permit(admin_pundit_user, other_person_teammate)
-      end
-    end
-
-    context 'when viewing own teammate record' do
-      it 'allows access' do
-        expect(subject).to permit(pundit_user, person_teammate)
-      end
-    end
-
-    context 'when user has employment management permission' do
-      let(:manager) { create(:person) }
-      let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization, can_manage_employment: true) }
-      let(:manager_pundit_user) { OpenStruct.new(user: manager_teammate, impersonating_teammate: nil) }
-
-      before do
-        create(:employment_tenure, teammate: manager_teammate, company: organization)
-        create(:employment_tenure, teammate: other_person_teammate, company: organization)
+    permissions :show? do
+      context 'when user is admin' do
+        it 'allows access via admin bypass' do
+          expect(subject).to permit(admin_pundit_user, person_teammate)
+          expect(subject).to permit(admin_pundit_user, other_person_teammate)
+        end
       end
 
-      it 'allows access' do
-        expect(subject).to permit(manager_pundit_user, other_person_teammate)
-      end
-    end
-
-    context 'when user is in managerial hierarchy' do
-      let(:direct_manager) { create(:person) }
-      let(:direct_manager_teammate) { CompanyTeammate.create!(person: direct_manager, organization: organization) }
-      let(:direct_manager_pundit_user) { OpenStruct.new(user: direct_manager_teammate, impersonating_teammate: nil) }
-      let(:grand_manager) { create(:person) }
-      let(:grand_manager_teammate) { CompanyTeammate.create!(person: grand_manager, organization: organization) }
-      let(:grand_manager_pundit_user) { OpenStruct.new(user: grand_manager_teammate, impersonating_teammate: nil) }
-
-      before do
-        direct_manager_teammate
-        grand_manager_teammate
-        other_person_teammate
-        create(:employment_tenure, teammate: direct_manager_teammate, company: organization, manager: grand_manager)
-        create(:employment_tenure, teammate: grand_manager_teammate, company: organization)
-        create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: direct_manager)
-        direct_manager_teammate.reload
-        grand_manager_teammate.reload
-        other_person_teammate.reload
+      context 'when viewing own teammate record' do
+        it 'allows access' do
+          expect(subject).to permit(pundit_user, person_teammate)
+        end
       end
 
-      it 'allows direct managers in hierarchy to view their employees' do
-        expect(subject).to permit(direct_manager_pundit_user, other_person_teammate)
+      context 'when user has employment management permission' do
+        let(:manager) { create(:person) }
+        let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization, can_manage_employment: true) }
+        let(:manager_pundit_user) { OpenStruct.new(user: manager_teammate, impersonating_teammate: nil) }
+
+        before do
+          create(:employment_tenure, teammate: manager_teammate, company: organization)
+          create(:employment_tenure, teammate: other_person_teammate, company: organization)
+        end
+
+        it 'allows access' do
+          expect(subject).to permit(manager_pundit_user, other_person_teammate)
+        end
       end
 
-      it 'allows indirect managers (grand managers) in hierarchy to view their employees' do
-        expect(subject).to permit(grand_manager_pundit_user, other_person_teammate)
-      end
-    end
+      context 'when user is in managerial hierarchy' do
+        let(:direct_manager) { create(:person) }
+        let(:direct_manager_teammate) { CompanyTeammate.create!(person: direct_manager, organization: organization) }
+        let(:direct_manager_pundit_user) { OpenStruct.new(user: direct_manager_teammate, impersonating_teammate: nil) }
+        let(:grand_manager) { create(:person) }
+        let(:grand_manager_teammate) { CompanyTeammate.create!(person: grand_manager, organization: organization) }
+        let(:grand_manager_pundit_user) { OpenStruct.new(user: grand_manager_teammate, impersonating_teammate: nil) }
 
-    context 'when viewing other teammate without permission' do
-      it 'denies access' do
-        expect(subject).not_to permit(pundit_user, other_person_teammate)
-      end
-    end
+        before do
+          direct_manager_teammate
+          grand_manager_teammate
+          other_person_teammate
+          create(:employment_tenure, teammate: direct_manager_teammate, company: organization, manager: grand_manager)
+          create(:employment_tenure, teammate: grand_manager_teammate, company: organization)
+          create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: direct_manager)
+          direct_manager_teammate.reload
+          grand_manager_teammate.reload
+          other_person_teammate.reload
+        end
 
-    context 'when viewing_teammate is terminated' do
-      let(:terminated_teammate) do
-        CompanyTeammate.create!(
-          person: person,
-          organization: organization,
-          first_employed_at: 1.year.ago,
-          last_terminated_at: 1.month.ago
-        )
-      end
-      let(:terminated_pundit_user) { OpenStruct.new(user: terminated_teammate, impersonating_teammate: nil) }
+        it 'allows direct managers in hierarchy to view their employees' do
+          expect(subject).to permit(direct_manager_pundit_user, other_person_teammate)
+        end
 
-      it 'prevents terminated teammates from viewing others' do
-        expect(subject).not_to permit(terminated_pundit_user, other_person_teammate)
+        it 'allows indirect managers (grand managers) in hierarchy to view their employees' do
+          expect(subject).to permit(grand_manager_pundit_user, other_person_teammate)
+        end
       end
 
-      it 'still allows terminated teammates to view themselves' do
-        expect(subject).to permit(terminated_pundit_user, terminated_teammate)
+      context 'when viewing other teammate without permission' do
+        it 'denies access' do
+          expect(subject).not_to permit(pundit_user, other_person_teammate)
+        end
+      end
+
+      context 'when viewing_teammate is terminated' do
+        let(:terminated_teammate) do
+          CompanyTeammate.create!(
+            person: person,
+            organization: organization,
+            first_employed_at: 1.year.ago,
+            last_terminated_at: 1.month.ago
+          )
+        end
+        let(:terminated_pundit_user) { OpenStruct.new(user: terminated_teammate, impersonating_teammate: nil) }
+
+        it 'prevents terminated teammates from viewing others' do
+          expect(subject).not_to permit(terminated_pundit_user, other_person_teammate)
+        end
+
+        it 'still allows terminated teammates to view themselves' do
+          expect(subject).to permit(terminated_pundit_user, terminated_teammate)
+        end
       end
     end
 
