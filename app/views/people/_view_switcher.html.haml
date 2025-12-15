@@ -9,13 +9,13 @@
           %i.bi.bi-globe.me-2
           Public View (Active)
           %i.bi.bi-check-circle.text-success.ms-2
-      - elsif @person
-        = link_to public_person_path(@person), class: 'dropdown-item' do
+      - elsif @teammate&.person
+        = link_to public_person_path(@teammate.person), class: 'dropdown-item' do
           %i.bi.bi-globe.me-2
           Public View
       
     %li
-      - if action_name == 'teammate'
+      - if action_name == 'teammate' || action_name == 'internal'
         .dropdown-item.text-muted
           %i.bi.bi-people.me-2
           Teammate View (Active)
@@ -111,7 +111,7 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access seat history"}
       
     %li
-      - if action_name == 'show' && controller_name == 'people'
+      - if action_name == 'show' && (controller_name == 'people' || controller_name == 'company_teammates')
         .dropdown-item.text-muted
           %i.bi.bi-gear.me-2
           Manage Profile Mode (Active)

@@ -127,11 +127,6 @@ module PeopleHelper
   def people_current_view_name
     return 'Manage Profile Mode' unless action_name
     
-    # Check for assignment_tenures controller first
-    if controller_name == 'assignment_tenures' && action_name == 'show'
-      return 'Assignment Mode'
-    end
-    
     # Check for check_ins controller
     if controller_name == 'check_ins' && action_name == 'show'
       return 'Check-In'
@@ -147,10 +142,12 @@ module PeopleHelper
       return 'Seat History Mode'
     end
     
-    case action_name
+    case action_name.downcase
     when 'show'
       'Manage Profile Mode'
     when 'teammate'
+      'Teammate View'
+    when 'internal'
       'Teammate View'
     when 'public'
       'Public View'
@@ -158,12 +155,10 @@ module PeopleHelper
       'Active Job View'
     when 'audit'
       'Acknowledgement'
-    when 'growth'
-      'Growth View'
     when 'check_in'
       'Check-In'
     else
-      action_name.titleize
+      "#{action_name.titleize} - Unknown"
     end
   end
 

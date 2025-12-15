@@ -29,11 +29,6 @@ RSpec.describe PeopleHelper, type: :helper do
         allow(helper).to receive(:controller_name).and_return('position')
         expect(helper.people_current_view_name).to eq('Seat History Mode')
       end
-      
-      it 'returns Assignment Mode for assignment_tenures controller' do
-        allow(helper).to receive(:controller_name).and_return('assignment_tenures')
-        expect(helper.people_current_view_name).to eq('Assignment Mode')
-      end
     end
 
     it 'returns Public View for public action' do
@@ -58,12 +53,6 @@ RSpec.describe PeopleHelper, type: :helper do
       allow(helper).to receive(:action_name).and_return('audit')
       allow(helper).to receive(:controller_name).and_return('employees')
       expect(helper.people_current_view_name).to eq('Acknowledgement')
-    end
-
-    it 'returns Growth View for growth action' do
-      allow(helper).to receive(:action_name).and_return('growth')
-      allow(helper).to receive(:controller_name).and_return('people')
-      expect(helper.people_current_view_name).to eq('Growth View')
     end
 
     it 'returns Check-In for check_in action' do
