@@ -34,8 +34,7 @@ class CompanyTeammatesQuery
     end
     filters[:organization_id] = params[:organization_id] if params[:organization_id].present?
     filters[:permission] = params[:permission] if params[:permission].present?
-    # Include manager_filter even if it's an empty string (for UI state)
-    filters[:manager_filter] = params[:manager_filter] unless params[:manager_filter].nil?
+    filters[:manager_id] = params[:manager_id] if params[:manager_id].present?
     filters
   end
 
@@ -150,12 +149,12 @@ class CompanyTeammatesQuery
   end
 
   def filter_by_manager_relationship(teammates)
-    return teammates unless params[:manager_filter] == 'direct_reports'
-    return teammates unless current_person
+    return teammates unless params[:manager_id].present?
 
+    manager_id = params[:manager_id].to_i
     # Filter to only direct reports based on active employment tenure manager relationships
     teammates.joins(:employment_tenures)
-             .where(employment_tenures: { manager: current_person, ended_at: nil })
+             .where(employment_tenures: { manager_id: manager_id, ended_at: nil })
              .distinct
   end
 

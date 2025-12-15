@@ -67,13 +67,8 @@
               = label_tag 'filter_terminated', 'Terminated', class: 'form-check-label'
           
           .mb-3
-            %label.form-label Manager Relationship
-            .form-check
-              = radio_button_tag 'manager_filter', '', @current_filters[:manager_filter].blank?, class: 'form-check-input', id: 'manager_all'
-              = label_tag 'manager_all', 'All Teammates', class: 'form-check-label'
-            .form-check
-              = radio_button_tag 'manager_filter', 'direct_reports', @current_filters[:manager_filter] == 'direct_reports', class: 'form-check-input', id: 'manager_direct'
-              = label_tag 'manager_direct', 'My Direct Reports', class: 'form-check-label'
+            %label.form-label Manager
+            = select_tag 'manager_id', options_from_collection_for_select(@active_managers, :id, :last_first_display_name, @current_filters[:manager_id]), { include_blank: 'All Teammates', class: 'form-select' }
           
           .mb-3
             %label.form-label Organization
@@ -120,9 +115,6 @@
           .form-check
             = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
             = label_tag 'view_list', 'List View', class: 'form-check-label'
-          .form-check
-            = radio_button_tag 'view', 'vertical_hierarchy', @current_view == 'vertical_hierarchy', class: 'form-check-input', id: 'view_vertical_hierarchy'
-            = label_tag 'view_vertical_hierarchy', 'Vertical Hierarchy View', class: 'form-check-label'
           - if policy(@organization).manage_employment?
             .form-check
               = radio_button_tag 'display', 'check_ins_health', @current_view == 'check_ins_health', class: 'form-check-input', id: 'view_check_ins_health'

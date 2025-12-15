@@ -18,13 +18,6 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # This allows the UI to explicitly request other statuses
     params[:status] = 'active' if params[:status].nil?
     
-    # Additional authorization for manager filter
-    if params[:manager_filter] == 'direct_reports' && (!current_company_teammate || !current_company_teammate.has_direct_reports?)
-      redirect_to organization_employees_path(@organization), 
-                  alert: 'You do not have any direct reports in this organization.'
-      return
-    end
-    
     # Determine spotlight type
     @current_spotlight = determine_spotlight
     
@@ -91,9 +84,10 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       end
       
       # Filter by manager relationship
-      if params[:manager_filter] == 'direct_reports' && current_person
+      if params[:manager_id].present?
+        manager_id = params[:manager_id].to_i
         unassigned_base = unassigned_base.joins(:employment_tenures)
-                                         .where(employment_tenures: { manager: current_person, ended_at: nil })
+                                         .where(employment_tenures: { manager_id: manager_id, ended_at: nil })
                                          .distinct
       end
       
@@ -189,6 +183,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     @current_view = query.current_view
     @current_spotlight = determine_spotlight
     @has_active_filters = query.has_active_filters?
+    @active_managers = active_managers_for_organization
     
     # Preserve current params for return URL (excluding controller/action/page)
     return_params = params.except(:controller, :action, :page).permit!.to_h
@@ -327,6 +322,26 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   
   private
 
+  def active_managers_for_organization
+    # Get organization hierarchy for checking employment tenures
+    org_hierarchy = if @organization.company?
+      @organization.self_and_descendants
+    else
+      [@organization, @organization.parent].compact
+    end
+    
+    # Get distinct Person IDs who are managers (have active direct reports)
+    manager_ids = EmploymentTenure.active
+                                  .where(company: org_hierarchy)
+                                  .where.not(manager_id: nil)
+                                  .distinct
+                                  .pluck(:manager_id)
+    
+    # Return Person objects ordered by name
+    Person.where(id: manager_ids)
+          .order(last_name: :asc, first_name: :asc)
+  end
+
     def apply_preset_if_selected
       return unless params[:preset].present?
       
@@ -348,13 +363,13 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       when 'my_direct_reports_check_in_status_1'
         {
           display: 'check_in_status',
-          manager_filter: 'direct_reports'
+          manager_id: current_person&.id
         }
       when 'my_direct_reports_check_in_status_2'
         {
           display: 'check_ins_health',
           spotlight: 'check_ins_health',
-          manager_filter: 'direct_reports'
+          manager_id: current_person&.id
         }
       when 'all_employees_check_in_status_1'
         {
@@ -384,7 +399,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       return params[:spotlight] if params[:spotlight].present?
       
       # Auto-select manager_overview if manager filter is active
-      return 'manager_overview' if params[:manager_filter] == 'direct_reports'
+      return 'manager_overview' if params[:manager_id].present?
       
       # Default to teammates_overview (matches CompanyTeammatesQuery default)
       'teammates_overview'

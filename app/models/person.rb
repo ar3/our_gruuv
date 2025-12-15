@@ -68,6 +68,16 @@ class Person < ApplicationRecord
     end
   end
   
+  def last_first_display_name
+    return "#{last_name}, #{first_name} (#{preferred_name})" if last_name.present? && first_name.present? && preferred_name.present? && preferred_name != first_name
+    return "#{last_name}, #{first_name}" if last_name.present? && first_name.present?
+    return "#{last_name}, #{preferred_name}" if last_name.present? && preferred_name.present?
+    return "#{last_name}" if last_name.present?
+    return "#{first_name}" if first_name.present?
+    return "#{preferred_name}" if preferred_name.present?
+    return "#{email}"
+  end
+
   def google_profile_image_url
     google_identity&.profile_image_url
   end

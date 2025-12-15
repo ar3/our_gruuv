@@ -28,8 +28,8 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
     allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
   end
 
-  it 'returns only direct reports when manager_filter is direct_reports' do
-    get organization_employees_path(organization, manager_filter: 'direct_reports')
+  it 'returns only direct reports when manager_id is set' do
+    get organization_employees_path(organization, manager_id: manager.id)
     
     expect(response).to be_successful
     teammates = assigns(:filtered_and_paginated_teammates)
@@ -42,7 +42,7 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
     expect(teammates.map(&:id)).not_to include(manager_teammate.id)
   end
 
-  it 'returns all teammates when manager_filter is not set' do
+  it 'returns all teammates when manager_id is not set' do
     get organization_employees_path(organization)
     
     expect(response).to be_successful
@@ -55,7 +55,7 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
   end
 
   it 'renders the check_in_status display without errors' do
-    get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
+    get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
     
     expect(response).to be_successful
     expect(response.body).not_to include('Association named')

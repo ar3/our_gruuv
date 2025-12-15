@@ -362,40 +362,40 @@ RSpec.describe TeammateHelper, type: :helper do
   end
 
   describe '#filter_display_name' do
-    it 'returns correct display name for manager_filter' do
-      expect(helper.filter_display_name('manager_filter', 'direct_reports')).to eq('My Direct Reports')
+    it 'returns correct display name for manager_id' do
+      manager = create(:person, first_name: 'John', last_name: 'Doe')
+      expect(helper.filter_display_name('manager_id', manager.id.to_s)).to eq('John Doe')
     end
 
-    it 'returns humanized name for other filter values' do
-      expect(helper.filter_display_name('manager_filter', 'other_value')).to eq('Other value')
+    it 'returns "All Teammates" for blank manager_id' do
+      expect(helper.filter_display_name('manager_id', nil)).to eq('All Teammates')
+      expect(helper.filter_display_name('manager_id', '')).to eq('All Teammates')
     end
 
-    it 'handles nil filter_value' do
-      expect(helper.filter_display_name('manager_filter', nil)).to eq('')
-    end
-
-    it 'handles empty filter_value' do
-      expect(helper.filter_display_name('manager_filter', '')).to eq('')
+    it 'returns "Unknown Manager" for invalid manager_id' do
+      expect(helper.filter_display_name('manager_id', '999999')).to eq('Unknown Manager')
     end
   end
 
   describe '#clear_filter_url' do
     before do
-      allow(helper).to receive(:params).and_return({ controller: 'organizations/employees', action: 'index', manager_filter: 'direct_reports', status: 'active' })
+      manager = create(:person)
+      allow(helper).to receive(:params).and_return({ controller: 'organizations/employees', action: 'index', manager_id: manager.id.to_s, status: 'active' })
       allow(helper).to receive(:organization_employees_path).with(organization, { status: 'active' }).and_return('/test/path')
     end
 
-    it 'removes manager_filter from params' do
+    it 'removes manager_id from params' do
       # Stub the instance variable directly
       helper.instance_variable_set(:@organization, organization)
-      result = helper.clear_filter_url('manager_filter', 'direct_reports')
+      manager = create(:person)
+      result = helper.clear_filter_url('manager_id', manager.id.to_s)
       expect(result).to eq('/test/path')
     end
 
     it 'handles nil filter_value' do
       # Stub the instance variable directly
       helper.instance_variable_set(:@organization, organization)
-      result = helper.clear_filter_url('manager_filter', nil)
+      result = helper.clear_filter_url('manager_id', nil)
       expect(result).to eq('')
     end
   end

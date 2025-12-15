@@ -53,12 +53,12 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     end
 
     it 'renders manager direct reports view successfully' do
-      get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
+      get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
       expect(response).to be_successful
     end
 
     it 'sets manager spotlight type when manager filter is active' do
-      get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
+      get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
       expect(assigns(:current_spotlight)).to eq('manager_overview')
     end
 
@@ -67,9 +67,9 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       expect(assigns(:current_spotlight)).to eq('teammates_overview')
     end
 
-    it 'includes manager filter in current_filters' do
-      get organization_employees_path(organization, manager_filter: 'direct_reports')
-      expect(assigns(:current_filters)[:manager_filter]).to eq('direct_reports')
+    it 'includes manager_id in current_filters' do
+      get organization_employees_path(organization, manager_id: manager.id)
+      expect(assigns(:current_filters)[:manager_id]).to eq(manager.id.to_s)
     end
 
     it 'handles check_in_status display view' do
@@ -87,7 +87,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
         create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, started_at: 1.month.ago, ended_at: nil)
       end
       
-      get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
+      get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
       
       # Should have eager loaded associations
       expect(assigns(:filtered_and_paginated_teammates)).to be_present
@@ -95,7 +95,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     end
 
     it 'calculates manager-specific spotlight stats' do
-      get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
+      get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
       
       spotlight_stats = assigns(:spotlight_stats)
       expect(spotlight_stats).to include(:total_direct_reports)
@@ -109,10 +109,12 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       # Remove the direct report
       EmploymentTenure.where(manager: manager).destroy_all
       
-      get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
+      get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
       
-      # Should redirect since manager has no direct reports
-      expect(response).to redirect_to(organization_employees_path(organization))
+      # Should return empty results since manager has no direct reports
+      expect(response).to be_successful
+      teammates = assigns(:filtered_and_paginated_teammates)
+      expect(teammates).to be_empty
     end
 
     it 'maintains pagination with manager filter' do
@@ -123,7 +125,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
         create(:employment_tenure, teammate: teammate, company: organization, manager: manager, started_at: 1.month.ago, ended_at: nil)
       end
       
-      get organization_employees_path(organization, manager_filter: 'direct_reports', page: 2)
+      get organization_employees_path(organization, manager_id: manager.id, page: 2)
       
       expect(response).to be_successful
       expect(assigns(:filtered_and_paginated_teammates)).to be_present
@@ -141,12 +143,17 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(non_manager_ct)
     end
 
-    it 'redirects when non-manager tries to access direct reports view' do
-      get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
+    it 'allows non-manager to access manager filter view (shows empty if no direct reports)' do
+      # Remove any direct reports for this manager
+      EmploymentTenure.where(manager: manager).destroy_all
       
-      expect(response).to redirect_to(organization_employees_path(organization))
-      follow_redirect!
-      expect(response.body).to include('You do not have any direct reports')
+      get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
+      
+      expect(response).to be_successful
+      teammates = assigns(:filtered_and_paginated_teammates)
+      expect(teammates).to be_empty
+      # Should show a message about no direct reports
+      expect(response.body).to include("You don't have any direct reports")
     end
 
     it 'allows non-managers to access regular teammates view' do
@@ -156,17 +163,17 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
   end
 
   describe 'parameter handling' do
-    it 'handles invalid manager_filter values gracefully' do
-      get organization_employees_path(organization, manager_filter: 'invalid_filter')
+    it 'handles invalid manager_id values gracefully' do
+      get organization_employees_path(organization, manager_id: 999999)
       expect(response).to be_successful
-      expect(assigns(:current_filters)[:manager_filter]).to eq('invalid_filter')
+      expect(assigns(:current_filters)[:manager_id]).to eq('999999')
     end
 
     it 'handles missing current_person with manager filter' do
       allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(nil)
       
       # Without a current_person, the manager filter should redirect (authentication likely kicks in)
-      get organization_employees_path(organization, manager_filter: 'direct_reports')
+      get organization_employees_path(organization, manager_id: manager.id)
       # Response will be redirected (either to employees path or root due to auth)
       expect(response).to be_redirect
     end
@@ -176,10 +183,10 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       expect(assigns(:current_view)).to eq('check_in_status') # display should take precedence
     end
 
-    it 'handles empty manager_filter parameter' do
-      get organization_employees_path(organization, manager_filter: '')
+    it 'handles empty manager_id parameter' do
+      get organization_employees_path(organization, manager_id: '')
       expect(response).to be_successful
-      expect(assigns(:current_filters)[:manager_filter]).to eq('')
+      expect(assigns(:current_filters)[:manager_id]).to be_nil
     end
   end
 
@@ -201,10 +208,10 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       # Make direct report an assigned employee
       direct_report_teammate.update!(first_employed_at: 1.month.ago)
       
-      get organization_employees_path(organization, manager_filter: 'direct_reports', status: 'assigned_employee')
+      get organization_employees_path(organization, manager_id: manager.id, status: 'assigned_employee')
       
       expect(response).to be_successful
-      expect(assigns(:current_filters)[:manager_filter]).to eq('direct_reports')
+      expect(assigns(:current_filters)[:manager_id]).to eq(manager.id.to_s)
       # Status is now an array after expansion
       expect(assigns(:current_filters)[:status]).to include('assigned_employee')
     end
@@ -212,10 +219,10 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     it 'combines manager filter with permission filter' do
       direct_report_teammate.update!(can_manage_employment: true)
       
-      get organization_employees_path(organization, manager_filter: 'direct_reports', permission: 'employment_mgmt')
+      get organization_employees_path(organization, manager_id: manager.id, permission: 'employment_mgmt')
       
       expect(response).to be_successful
-      expect(assigns(:current_filters)[:manager_filter]).to eq('direct_reports')
+      expect(assigns(:current_filters)[:manager_id]).to eq(manager.id.to_s)
       expect(assigns(:current_filters)[:permission]).to eq('employment_mgmt')
     end
 
@@ -224,10 +231,10 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       child_teammate = create(:teammate, person: direct_report, organization: child_org)
       create(:employment_tenure, teammate: child_teammate, company: child_org, manager: manager, ended_at: nil)
       
-      get organization_employees_path(organization, manager_filter: 'direct_reports', organization_id: child_org.id)
+      get organization_employees_path(organization, manager_id: manager.id, organization_id: child_org.id)
       
       expect(response).to be_successful
-      expect(assigns(:current_filters)[:manager_filter]).to eq('direct_reports')
+      expect(assigns(:current_filters)[:manager_id]).to eq(manager.id.to_s)
       expect(assigns(:current_filters)[:organization_id]).to eq(child_org.id.to_s)
     end
   end
@@ -363,7 +370,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
 
       expect {
-        get organization_employees_path(company_org, view: 'vertical_hierarchy', manager_filter: 'direct_reports')
+        get organization_employees_path(company_org, view: 'vertical_hierarchy', manager_id: manager.id)
       }.not_to raise_error
       expect(response).to be_successful
       expect(assigns(:hierarchy_tree)).to be_an(Array)

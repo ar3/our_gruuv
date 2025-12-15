@@ -108,10 +108,12 @@ module TeammateHelper
       when 'maap_mgmt' then 'MAAP Management'
       else filter_value.to_s.humanize
       end
-    when 'manager_filter'
-      case filter_value.to_s
-      when 'direct_reports' then 'My Direct Reports'
-      else filter_value.to_s.humanize
+    when 'manager_id'
+      if filter_value.present?
+        manager = Person.find_by(id: filter_value.to_i)
+        manager ? manager.display_name : 'Unknown Manager'
+      else
+        'All Teammates'
       end
     else
       filter_value.to_s.humanize
@@ -133,8 +135,8 @@ module TeammateHelper
     when 'permission'
       current_params[:permission] = Array(current_params[:permission]) - [filter_value]
       current_params[:permission] = nil if current_params[:permission].empty?
-    when 'manager_filter'
-      current_params[:manager_filter] = nil
+    when 'manager_id'
+      current_params[:manager_id] = nil
     end
     
     # Get organization from instance variable

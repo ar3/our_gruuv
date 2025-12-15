@@ -34,7 +34,7 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
     manager_ct = CompanyTeammate.find(manager_teammate.id)
     expect(manager_ct.has_direct_reports?).to be true
     
-    get organization_employees_path(organization, manager_filter: 'direct_reports')
+    get organization_employees_path(organization, manager_id: manager.id)
     
     expect(response).to be_successful
     teammates = assigns(:filtered_and_paginated_teammates)
@@ -45,7 +45,7 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
     expect(teammates.map(&:id)).not_to include(manager_teammate.id)
   end
 
-  it 'redirects when manager has no direct reports' do
+  it 'returns empty results when manager has no direct reports' do
     # Remove the direct report relationship
     EmploymentTenure.where(manager: manager).destroy_all
     
@@ -53,15 +53,15 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
     manager_ct = CompanyTeammate.find(manager_teammate.id)
     expect(manager_ct.has_direct_reports?).to be false
     
-    get organization_employees_path(organization, manager_filter: 'direct_reports')
+    get organization_employees_path(organization, manager_id: manager.id)
     
-    expect(response).to be_redirect
-    follow_redirect!
-    expect(response.body).to include('You do not have any direct reports')
+    expect(response).to be_successful
+    teammates = assigns(:filtered_and_paginated_teammates)
+    expect(teammates).to be_empty
   end
 
   it 'renders check_in_status display without errors when manager filter is active' do
-    get organization_employees_path(organization, manager_filter: 'direct_reports', display: 'check_in_status')
+    get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
     
     expect(response).to be_successful
     expect(response.body).not_to include('Association named')
