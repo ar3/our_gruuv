@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_07_223538) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_15_014421) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -473,9 +473,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_07_223538) do
     t.string "privacy_level", default: "observer_only", null: false
     t.datetime "published_at"
     t.jsonb "story_extras", default: {}
+    t.string "observation_type", default: "generic", null: false
+    t.string "created_as_type"
     t.index ["company_id"], name: "index_observations_on_company_id"
+    t.index ["created_as_type"], name: "index_observations_on_created_as_type"
     t.index ["custom_slug"], name: "index_observations_on_custom_slug", unique: true
     t.index ["deleted_at"], name: "index_observations_on_deleted_at"
+    t.index ["observation_type"], name: "index_observations_on_observation_type"
     t.index ["observed_at", "id"], name: "index_observations_on_observed_at_and_id"
     t.index ["observed_at"], name: "index_observations_on_observed_at"
     t.index ["observer_id"], name: "index_observations_on_observer_id"

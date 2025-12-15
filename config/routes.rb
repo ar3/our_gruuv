@@ -257,6 +257,10 @@ get '/login', to: 'auth#login', as: :login
     # Observations management
     resources :observations, module: :organizations do
       collection do
+        get :select_type  # Type selection page
+        get :new_kudos  # Kudos-specific observation creation
+        get :new_feedback  # Feedback-specific observation creation
+        get :new_quick_note  # Quick note-specific observation creation
         get :journal  # Shortcut to apply "My Journal" workspace
         get :quick_new  # Quick observation creation from check-ins
         get :filtered_observations  # Filtered observations page (overlay) for check-ins
@@ -264,6 +268,7 @@ get '/login', to: 'auth#login', as: :login
         patch :update_view
       end
       member do
+        patch :convert_to_generic
         get :set_ratings, action: :set_ratings
         post :set_ratings, action: :set_ratings
         get :review, action: :review

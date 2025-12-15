@@ -1,0 +1,44 @@
+.row.mb-3
+  .col-12
+    = form.label :story, class: 'form-label' do
+      %h3 What happened?
+.row.mb-3
+  .col-1
+    .single-page-wizard-step 2
+  .col-11
+    = form.text_area :story, id: 'observation_story', class: 'form-control', rows: 5, placeholder: 'Tell the story of what happened... Be specific about what you observed and why it matters.'
+    .form-text Markdown is supported for formatting.
+    .form-text.mt-2
+      %small.text-muted
+        = link_to "Use the MAAP actionable feedback framework to tell the most powerful stories", "#", class: "text-muted", data: { controller: "maap-framework", action: "click->maap-framework#insertTemplate", maap_framework_target_value: "observation_story" }
+    
+    - if show_gifs != false
+      / GIF Picker
+      .mt-3{"data-controller": "gif-picker", "data-gif-picker-organization-id-value": organization.id}
+        %h6 Add GIFs
+        
+        / Hidden inputs for existing GIFs (preserved outside visual container)
+        - if observation.story_extras.present?
+          - gif_urls = observation.story_extras['gif_urls'] || observation.story_extras[:gif_urls] || []
+          - Array(gif_urls).reject(&:blank?).each do |gif_url|
+            %input{type: "hidden", name: "observation[story_extras][gif_urls][]", value: gif_url, class: "existing-gif-input", data: {gif_url: gif_url}}
+        
+        / Selected GIFs Display
+        .mb-3.border.rounded.p-2.bg-light#selected_gifs_visual
+          / Will be populated by JavaScript
+        
+        / Search Interface
+        .mb-2
+          .input-group
+            %input.form-control{type: "text", placeholder: "Search for GIFs...", "data-gif-picker-target": "searchInput", "data-action": "keydown->gif-picker#search"}
+            %button.btn.btn-outline-secondary{type: "button", "data-action": "click->gif-picker#search"}
+              %i.bi.bi-search.me-1
+              Search
+        #gifResults{"data-gif-picker-target": "results"}
+        
+        / Powered by GIPHY attribution
+        .mt-2.mb-2
+          = image_tag "/PoweredBy_200px-White_HorizText.png", alt: "Powered by GIPHY", class: "img-fluid"
+        
+        / Hidden inputs for selected GIFs will be added here by JavaScript
+

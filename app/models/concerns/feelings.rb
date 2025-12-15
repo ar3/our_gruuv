@@ -86,4 +86,19 @@ module Feelings
   def self.by_grouping(grouping)
     FEELINGS.select { |feeling| feeling[:display_grouping] == grouping.to_sym }
   end
+
+  def self.grouped_options_for_select
+    grouped_feelings = grouped
+    
+    # Define group order: positive first, then neutral, then negative
+    group_order = [:happy, :meh, :surprised, :bad, :fearful, :angry]
+    
+    group_order.map do |grouping|
+      feelings_in_group = grouped_feelings[grouping] || []
+      options = feelings_in_group.map do |feeling|
+        ["#{feeling[:display]} #{feeling[:discrete_feeling].to_s.humanize}", feeling[:discrete_feeling].to_s]
+      end
+      [grouping.to_s.humanize, options]
+    end
+  end
 end

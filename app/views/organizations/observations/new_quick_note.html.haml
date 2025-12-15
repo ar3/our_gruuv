@@ -1,0 +1,43 @@
+- content_for :header do
+  = @observation.persisted? ? 'Edit Quick Note' : 'Create Quick Note'
+
+- content_for :return_url do
+  = @return_url
+
+- content_for :return_text do
+  = @return_text
+
+.card.mb-3
+  .card-header
+    .d-flex.justify-content-between.align-items-center
+      %h5.mb-0
+        %i.bi.bi-sticky.me-2
+        Quick Note
+      - if @show_convert_link
+        = render 'organizations/observations/convert_to_generic_link', observation: @observation
+  
+  .card-body
+    - form_url = @observation.persisted? ? update_draft_organization_observation_path(organization, @observation) : update_draft_organization_observation_path(organization, :new)
+    = form_with model: @observation, url: form_url, method: :post, local: true, data: { turbo: false, turbo_method: false }, html: { id: 'observation_form' } do |form|
+      = hidden_field_tag '_method', 'patch', id: 'form_method_field'
+      = hidden_field_tag :authenticity_token, form_authenticity_token
+      = hidden_field_tag :return_url, @return_url
+      = hidden_field_tag :return_text, @return_text
+      = form.hidden_field :observation_type, value: 'quick_note'
+      
+      - @observation.observees.each do |observee|
+        = hidden_field_tag "observee_ids[]", observee.teammate_id
+      
+      .container-fluid
+        = render 'organizations/observations/form_sections/observees_section', form: form, observation: @observation
+        = render 'organizations/observations/form_sections/story_field', form: form, observation: @observation, show_gifs: @show_gifs, organization: organization
+        = render 'organizations/observations/form_sections/feelings_section', form: form, observation: @observation
+        = render 'organizations/observations/form_sections/rating_sections', form: form, observation: @observation, assignments: @assignments, abilities: @abilities, aspirations: @aspirations
+      
+      .mb-3
+        %hr/
+      
+      = render 'organizations/observations/form_sections/privacy_selector', form: form, observation: @observation, allowed_levels: @allowed_privacy_levels, disabled_levels: @disabled_levels
+      
+      = render 'organizations/observations/form_sections/form_actions', form: form, observation: @observation, return_text: @return_text, organization: organization
+

@@ -26,6 +26,15 @@ class Observation < ApplicationRecord
     public_to_world: 'public_to_world'         # 🌍 Everyone including unauthenticated (public permalinks)
   }
   
+  enum :observation_type, {
+    generic: 'generic',
+    kudos: 'kudos',
+    feedback: 'feedback',
+    quick_note: 'quick_note'
+  }, suffix: true
+  
+  # created_as_type is just a string, not an enum (never changes after creation)
+  
   validates :observer, :company, presence: true
   validates :story, presence: true, if: :published?
   validates :privacy_level, presence: true
@@ -48,6 +57,12 @@ class Observation < ApplicationRecord
   scope :by_privacy_level, ->(level) { where(privacy_level: level) }
   scope :drafts, -> { where(published_at: nil) }
   scope :published, -> { where.not(published_at: nil) }
+  scope :kudos_observations, -> { where(observation_type: 'kudos') }
+  scope :feedback_observations, -> { where(observation_type: 'feedback') }
+  scope :quick_notes, -> { where(observation_type: 'quick_note') }
+  scope :generic_observations, -> { where(observation_type: 'generic') }
+  scope :created_as_kudos, -> { where(created_as_type: 'kudos') }
+  scope :created_as_feedback, -> { where(created_as_type: 'feedback') }
   
   before_validation :set_observed_at_default
   after_update :update_channel_notifications_if_needed

@@ -116,6 +116,7 @@ RSpec.describe 'Manage Observees', type: :system do
       
       find('input[type="submit"][value="Save Changes"]', match: :first).click
       
+      # For generic observations, should redirect to generic page
       expect(page).to have_current_path(
         new_organization_observation_path(
           company,
@@ -124,6 +125,50 @@ RSpec.describe 'Manage Observees', type: :system do
           return_text: 'Back to Observations'
         )
       )
+    end
+  end
+
+  describe 'managing observees from typed observation pages' do
+    let(:kudos_draft) do
+      build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'kudos', created_as_type: 'kudos').tap do |obs|
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+      end
+    end
+
+    let(:feedback_draft) do
+      build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'feedback', created_as_type: 'feedback').tap do |obs|
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+      end
+    end
+
+    let(:quick_note_draft) do
+      build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'quick_note', created_as_type: 'quick_note').tap do |obs|
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+      end
+    end
+
+    it 'redirects back to kudos page after managing observees' do
+      visit manage_observees_organization_observation_path(company, kudos_draft)
+      find('input[type="submit"][value="Save Changes"]', match: :first).click
+      
+      expect(page).to have_current_path(new_kudos_organization_observations_path(company, draft_id: kudos_draft.id))
+    end
+
+    it 'redirects back to feedback page after managing observees' do
+      visit manage_observees_organization_observation_path(company, feedback_draft)
+      find('input[type="submit"][value="Save Changes"]', match: :first).click
+      
+      expect(page).to have_current_path(new_feedback_organization_observations_path(company, draft_id: feedback_draft.id))
+    end
+
+    it 'redirects back to quick_note page after managing observees' do
+      visit manage_observees_organization_observation_path(company, quick_note_draft)
+      find('input[type="submit"][value="Save Changes"]', match: :first).click
+      
+      expect(page).to have_current_path(new_quick_note_organization_observations_path(company, draft_id: quick_note_draft.id))
     end
   end
 end

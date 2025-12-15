@@ -1247,12 +1247,67 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
           return_url: organization_observations_path(company),
           return_text: 'Back to Observations'
         }
+        # For generic observations, should redirect to generic page
         expect(response).to redirect_to(new_organization_observation_path(
           company,
           draft_id: draft.id,
           return_url: organization_observations_path(company),
           return_text: 'Back to Observations'
         ))
+      end
+    end
+
+    context 'for kudos observation' do
+      let(:draft) do
+        build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'kudos', created_as_type: 'kudos').tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+        end
+      end
+
+      it 'redirects to kudos page' do
+        patch :manage_observees, params: {
+          organization_id: company.id,
+          id: draft.id,
+          teammate_ids: [observee_teammate.id]
+        }
+        expect(response).to redirect_to(new_kudos_organization_observations_path(company, draft_id: draft.id))
+      end
+    end
+
+    context 'for feedback observation' do
+      let(:draft) do
+        build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'feedback', created_as_type: 'feedback').tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+        end
+      end
+
+      it 'redirects to feedback page' do
+        patch :manage_observees, params: {
+          organization_id: company.id,
+          id: draft.id,
+          teammate_ids: [observee_teammate.id]
+        }
+        expect(response).to redirect_to(new_feedback_organization_observations_path(company, draft_id: draft.id))
+      end
+    end
+
+    context 'for quick_note observation' do
+      let(:draft) do
+        build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'quick_note', created_as_type: 'quick_note').tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+        end
+      end
+
+      it 'redirects to quick_note page' do
+        patch :manage_observees, params: {
+          organization_id: company.id,
+          id: draft.id,
+          teammate_ids: [observee_teammate.id]
+        }
+        expect(response).to redirect_to(new_quick_note_organization_observations_path(company, draft_id: draft.id))
       end
     end
 

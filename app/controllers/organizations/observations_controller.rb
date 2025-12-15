@@ -52,6 +52,16 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @return_text = params[:return_text]
   end
 
+  def select_type
+    authorize Observation, :create?
+    
+    # Store return context if provided
+    @return_url = params[:return_url] || organization_observations_path(organization)
+    @return_text = params[:return_text] || 'Back to Observations'
+    
+    render layout: 'overlay'
+  end
+
   def customize_view
     authorize Observation, :index?
     
@@ -239,6 +249,23 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
   end
 
+  def edit
+    @observation = Observation.find(params[:id])
+    authorize @observation, :edit?
+    
+    # Redirect to appropriate new_* action based on type
+    case @observation.observation_type
+    when 'kudos'
+      redirect_to new_kudos_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text])
+    when 'feedback'
+      redirect_to new_feedback_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text])
+    when 'quick_note'
+      redirect_to new_quick_note_organization_observations_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text])
+    else
+      redirect_to new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text])
+    end
+  end
+
   def new
     authorize Observation
     
@@ -254,7 +281,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       Rails.logger.info "Loading existing observation #{@observation.id} (draft: #{@observation.draft?}), story: #{@observation.story.inspect}"
     else
       # Create new draft
-      @observation = organization.observations.build(observer: current_person)
+      @observation = organization.observations.build(observer: current_person, observation_type: 'generic', created_as_type: 'generic')
       
       # Set observees from params
       observee_ids = params[:observee_ids] || []
@@ -313,6 +340,56 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
     
     render layout: 'overlay'
+  end
+
+  def new_kudos
+    authorize Observation, :create?
+    setup_typed_observation('kudos', 'observed_and_managers')
+    
+    @allowed_privacy_levels = [:observed_only, :observed_and_managers, :public_to_company, :public_to_world]
+    @disabled_levels = {
+      observer_only: "Kudos should be shared... if you'd like to make this a journal entry, convert to generic observation"
+    }
+    @show_gifs = true
+    @show_convert_link = @observation.persisted?
+    
+    render 'new_kudos', layout: 'overlay'
+  end
+
+  def new_feedback
+    authorize Observation, :create?
+    setup_typed_observation('feedback', 'observed_only')
+    
+    # Pre-fill with MAAP template for new observations
+    if @observation.new_record? && @observation.story.blank?
+      @observation.story = maap_framework_template
+    end
+    
+    @allowed_privacy_levels = [:observer_only, :observed_only, :managers_only, :observed_and_managers]
+    @disabled_levels = {
+      public_to_company: "Feedback should be delivered privately... if this isn't constructive and should be shared, convert to generic observation",
+      public_to_world: "Feedback should be delivered privately... if this isn't constructive and should be shared, convert to generic observation"
+    }
+    @show_gifs = false
+    @show_convert_link = @observation.persisted?
+    
+    render 'new_feedback', layout: 'overlay'
+  end
+
+  def new_quick_note
+    authorize Observation, :create?
+    setup_typed_observation('quick_note', 'observed_only')
+    
+    @allowed_privacy_levels = [:observer_only, :observed_only, :observed_and_managers]
+    @disabled_levels = {
+      managers_only: "Quick notes should be delivered privately... if this should be shared differently, convert to generic observation",
+      public_to_company: "Quick notes should be delivered privately... if this should be shared differently, convert to generic observation",
+      public_to_world: "Quick notes should be delivered privately... if this should be shared differently, convert to generic observation"
+    }
+    @show_gifs = false
+    @show_convert_link = @observation.persisted?
+    
+    render 'new_quick_note', layout: 'overlay'
   end
 
   def create
@@ -554,6 +631,20 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
                 notice: 'Notifications sent successfully'
   end
 
+  def convert_to_generic
+    @observation = Observation.find(params[:id])
+    authorize @observation, :update?
+    
+    @observation.update!(observation_type: 'generic')
+    
+    redirect_to new_organization_observation_path(
+      organization,
+      draft_id: @observation.id,
+      return_url: params[:return_url],
+      return_text: params[:return_text]
+    ), notice: 'Converted to generic observation. All features are now available.'
+  end
+
   # Quick observation creation from check-ins (backward compatibility - redirects to new)
   def quick_new
     redirect_to new_organization_observation_path(
@@ -584,18 +675,13 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       redirect_to add_assignments_organization_observation_path(
         organization, 
         @observation,
-        return_url: params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id),
+        return_url: params[:return_url] || typed_observation_path_for(@observation),
         return_text: params[:return_text] || 'Draft'
       )
     else
       # If save fails, redirect back with errors
       flash[:alert] = "Failed to save: #{@observation.errors.full_messages.join(', ')}"
-      redirect_to new_organization_observation_path(
-        organization,
-        draft_id: @observation.id,
-        return_url: params[:return_url],
-        return_text: params[:return_text]
-      )
+      redirect_to typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text])
     end
   end
 
@@ -608,7 +694,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @assignments = organization.assignments.ordered
     
     # Store return context
-    @return_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
+    @return_url = params[:return_url] || typed_observation_path_for(@observation)
     @return_text = params[:return_text] || 'Back'
     
     render layout: 'overlay'
@@ -621,7 +707,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     @aspirations = organization.aspirations
     
-    @return_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
+    @return_url = params[:return_url] || typed_observation_path_for(@observation)
     @return_text = params[:return_text] || 'Back'
     
     render layout: 'overlay'
@@ -634,7 +720,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     @abilities = organization.abilities.order(:name)
     
-    @return_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
+    @return_url = params[:return_url] || typed_observation_path_for(@observation)
     @return_text = params[:return_text] || 'Back'
     
     render layout: 'overlay'
@@ -685,14 +771,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
     
     # Preserve return_url and return_text when redirecting back
-    redirect_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
+    redirect_url = params[:return_url] || typed_observation_path_for(@observation)
     if params[:return_url].present? || params[:return_text].present?
-      redirect_url = new_organization_observation_path(
-        organization,
-        draft_id: @observation.id,
-        return_url: params[:return_url],
-        return_text: params[:return_text]
-      )
+      redirect_url = typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text])
     end
     redirect_to redirect_url, notice: "Added #{rateable_ids.count} #{rateable_type.downcase}(s)"
   end
@@ -745,14 +826,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         notice = "No changes made"
       end
       
-      redirect_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
+      redirect_url = params[:return_url] || typed_observation_path_for(@observation)
       if params[:return_url].present? || params[:return_text].present?
-        redirect_url = new_organization_observation_path(
-          organization,
-          draft_id: @observation.id,
-          return_url: params[:return_url],
-          return_text: params[:return_text]
-        )
+        redirect_url = typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text])
       end
       redirect_to redirect_url, notice: notice
     else
@@ -772,8 +848,15 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def update_draft
     # Handle new observations (id = 'new')
     if params[:id] == 'new' || params[:id].to_s == 'new'
+      # Extract observation_type from params
+      permitted_params = draft_params
+      observation_type = permitted_params[:observation_type] || 'generic'
+      
       # Create new observation - build from params and save
       @observation = organization.observations.build(observer: current_person)
+      @observation.observation_type = observation_type
+      # Set created_as_type only if it doesn't exist (preserve existing value if present)
+      @observation.created_as_type ||= observation_type
       
       # Set observees from params if provided
       observee_ids = params[:observee_ids] || []
@@ -784,7 +867,6 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       end
       
       # Use Reform to handle nested attributes properly and avoid duplicates
-      permitted_params = draft_params
       @form = ObservationForm.new(@observation)
       if @form.validate(permitted_params)
         @form.save
@@ -833,28 +915,28 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         redirect_to add_assignments_organization_observation_path(
           organization, 
           @observation,
-          return_url: params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
           return_text: params[:return_text] || 'Observation'
         )
       elsif params[:save_and_add_aspirations].present?
         redirect_to add_aspirations_organization_observation_path(
           organization,
           @observation,
-          return_url: params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
           return_text: params[:return_text] || 'Observation'
         )
       elsif params[:save_and_add_abilities].present?
         redirect_to add_abilities_organization_observation_path(
           organization,
           @observation,
-          return_url: params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
           return_text: params[:return_text] || 'Observation'
         )
       elsif params[:save_and_manage_observees].present?
         redirect_to manage_observees_organization_observation_path(
           organization,
           @observation,
-          return_url: params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text]),
+          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
           return_text: params[:return_text] || 'Observation'
         )
       elsif params[:save_draft_and_return].present?
@@ -866,12 +948,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         redirect_url = params[:return_url] || organization_observations_path(organization)
         redirect_to redirect_url, notice: 'Draft saved successfully.'
       else
-        redirect_to new_organization_observation_path(
-          organization, 
-          draft_id: @observation.id, 
-          return_url: params[:return_url], 
-          return_text: params[:return_text]
-        )
+        redirect_to typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text])
       end
     else
       Rails.logger.error "Failed to update: #{@observation.errors.full_messages.join(', ')}"
@@ -1066,6 +1143,88 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     observations = query.filter_by_privacy_levels(observations)
     observations = query.filter_by_timeframe(observations)
     observations
+  end
+
+  def setup_typed_observation(type, default_privacy)
+    # Similar to existing new action but type-specific
+    # Load existing observation (draft or published) or create new draft
+    if params[:draft_id].present? || params[:id].present?
+      observation_id = params[:draft_id].presence || params[:id]
+      @observation = Observation.find(observation_id)
+      authorize @observation, :edit?
+      
+      # Don't reload - it wipes out fresh data. Just reload associations
+      @observation.observation_ratings.reload if @observation.observation_ratings.loaded?
+    else
+      # Create new draft
+      @observation = organization.observations.build(observer: current_person, observation_type: type, created_as_type: type)
+      
+      # Set observees from params
+      observee_ids = params[:observee_ids] || []
+      observee_ids.each do |teammate_id|
+        next if teammate_id.blank?
+        @observation.observees.build(teammate_id: teammate_id)
+      end
+      
+      @observation.privacy_level = params[:privacy_level] || default_privacy
+      @observation.observed_at ||= Time.current
+      
+      # Add initial rateable if provided (build in memory, not saved)
+      if params[:rateable_type].present? && params[:rateable_id].present?
+        rateable = params[:rateable_type].constantize.find(params[:rateable_id])
+        rating = @observation.observation_ratings.build(
+          rateable_type: params[:rateable_type],
+          rateable_id: params[:rateable_id]
+        )
+        rating.rateable = rateable
+      else
+        # If no rateable is explicitly passed, automatically add all company aspirations
+        root_company = organization.root_company || organization
+        company_aspirations = root_company.aspirations.ordered
+        
+        company_aspirations.each do |aspiration|
+          rating = @observation.observation_ratings.build(
+            rateable_type: 'Aspiration',
+            rateable_id: aspiration.id
+          )
+          rating.rateable = aspiration
+        end
+      end
+    end
+    
+    # Ensure observation_ratings are loaded for associations
+    @observation.observation_ratings.load if @observation.observation_ratings.loaded?
+    
+    # Load available rateables
+    @assignments = organization.assignments.ordered
+    @aspirations = organization.aspirations
+    @abilities = organization.abilities.order(:name)
+    
+    # Store return context
+    @return_url = params[:return_url] || organization_observations_path(organization)
+    @return_text = params[:return_text] || 'Back'
+  end
+
+  def maap_framework_template
+    <<~TEMPLATE
+      1. Your intent with this feedback / story
+      --Are you expecting a response, a change, or do you just want those in the story to know your perspective--
+
+      2. Situation / Context
+      --What was happening--
+
+      3. Observation 
+      --Just the facts about what happened / observable behaviors / no editorializing or judgements here, just the facts--
+
+      4. Feelings / Impact
+      --Use the feeling dropdowns below--
+
+      5. Unmet needs
+      --Your unmet needs, or if this is a celebratory story, needs that were exceeded--
+
+      6. Request
+      --This goes back to the intent... if you have a specific request for the future, put them here... this is where a conversation will have to happen to see if those in your story agree to the requests--
+    TEMPLATE
   end
 
   def calculate_spotlight_stats(observations)
@@ -1307,6 +1466,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       params.require(:observation).permit(
         :story, :privacy_level, :primary_feeling, :secondary_feeling, 
         :observed_at, :custom_slug, :send_notifications, :publishing,
+        :observation_type, :created_as_type,
         teammate_ids: [], notify_teammate_ids: [],
         observees_attributes: [:id, :teammate_id, :_destroy],
         observation_ratings_attributes: {},
@@ -1461,6 +1621,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def draft_params
     permitted = params.require(:observation).permit(
       :story, :primary_feeling, :secondary_feeling, :privacy_level,
+      :observation_type, :created_as_type,
       observation_ratings_attributes: {},
       story_extras: { gif_urls: [] }
     )
@@ -1492,5 +1653,24 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     permitted[:primary_feeling] = nil if permitted[:primary_feeling].blank?
     
     permitted
+  end
+
+  def typed_observation_path_for(observation, options = {})
+    path_options = {
+      draft_id: observation.id,
+      return_url: options[:return_url],
+      return_text: options[:return_text]
+    }.compact
+    
+    case observation.observation_type
+    when 'kudos'
+      new_kudos_organization_observations_path(organization, path_options)
+    when 'feedback'
+      new_feedback_organization_observations_path(organization, path_options)
+    when 'quick_note'
+      new_quick_note_organization_observations_path(organization, path_options)
+    else
+      new_organization_observation_path(organization, path_options)
+    end
   end
 end
