@@ -737,5 +737,323 @@ RSpec.describe EmployeesHelper, type: :helper do
       end
     end
   end
+
+  describe '#format_snapshot_all_fields' do
+    let(:position_major_level) { create(:position_major_level) }
+    let(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'Engineer') }
+    let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
+    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:assignment) { create(:assignment, company: organization) }
+    
+    let(:previous_snapshot) do
+      create(:maap_snapshot,
+        employee: person,
+        created_by: manager,
+        company: organization,
+        change_type: 'position_tenure',
+        created_at: 2.days.ago,
+        maap_data: {
+          'position' => {
+            'position_id' => position.id,
+            'manager_id' => manager.id,
+            'seat_id' => nil,
+            'employment_type' => 'full_time',
+            'rated_position' => {
+              'position_id' => position.id,
+              'manager_id' => manager.id,
+              'seat_id' => nil,
+              'employment_type' => 'part_time',
+              'official_position_rating' => 2,
+              'started_at' => 30.days.ago.iso8601,
+              'ended_at' => 2.days.ago.iso8601
+            }
+          },
+          'assignments' => [
+            {
+              'assignment_id' => assignment.id,
+              'anticipated_energy_percentage' => 20,
+              'rated_assignment' => {
+                'anticipated_energy_percentage' => 20,
+                'official_rating' => 'meeting',
+                'started_at' => 20.days.ago.iso8601,
+                'ended_at' => 2.days.ago.iso8601
+              }
+            }
+          ],
+          'abilities' => [],
+          'aspirations' => []
+        }
+      )
+    end
+    
+    let(:snapshot) do
+      create(:maap_snapshot,
+        employee: person,
+        created_by: manager,
+        company: organization,
+        change_type: 'position_tenure',
+        created_at: 1.day.ago,
+        maap_data: {
+          'position' => {
+            'position_id' => position.id,
+            'manager_id' => manager.id,
+            'seat_id' => nil,
+            'employment_type' => 'full_time',
+            'rated_position' => {
+              'position_id' => position.id,
+              'manager_id' => manager.id,
+              'seat_id' => nil,
+              'employment_type' => 'full_time',
+              'official_position_rating' => 3,
+              'started_at' => 2.days.ago.iso8601,
+              'ended_at' => 1.day.ago.iso8601
+            }
+          },
+          'assignments' => [
+            {
+              'assignment_id' => assignment.id,
+              'anticipated_energy_percentage' => 50,
+              'rated_assignment' => {
+                'anticipated_energy_percentage' => 50,
+                'official_rating' => 'exceeding',
+                'started_at' => 10.days.ago.iso8601,
+                'ended_at' => 1.day.ago.iso8601
+              }
+            }
+          ],
+          'abilities' => [],
+          'aspirations' => []
+        }
+      )
+    end
+
+    before do
+      previous_snapshot
+    end
+
+    context 'with nil snapshot' do
+      it 'returns nil for nil snapshot' do
+        result = helper.format_snapshot_all_fields(nil, person, organization)
+        expect(result).to be_nil
+      end
+    end
+
+    context 'with valid snapshot' do
+      it 'returns hash with correct keys' do
+        result = helper.format_snapshot_all_fields(snapshot, person, organization, previous_snapshot: previous_snapshot)
+        
+        expect(result).to be_a(Hash)
+        expect(result.keys).to match_array([:employment, :assignments, :abilities, :aspirations])
+      end
+
+      it 'filters out fields starting with "Rated" from employment fields' do
+        result = helper.format_snapshot_all_fields(snapshot, person, organization, previous_snapshot: previous_snapshot)
+        
+        employment_fields = result[:employment]
+        expect(employment_fields).to be_present
+        
+        field_labels = employment_fields.map { |f| f[:label] }
+        
+        # Should include non-rated fields
+        expect(field_labels).to include('Position')
+        expect(field_labels).to include('Manager')
+        expect(field_labels).to include('Seat')
+        expect(field_labels).to include('Employment Type')
+        expect(field_labels).to include('Official Position Rating')
+        
+        # Should exclude rated fields
+        expect(field_labels).not_to include('Rated Position')
+        expect(field_labels).not_to include('Rated Manager')
+        expect(field_labels).not_to include('Rated Seat')
+        expect(field_labels).not_to include('Rated Employment Type')
+        expect(field_labels).not_to include('Rated Start Date')
+        expect(field_labels).not_to include('Rated End Date')
+      end
+
+      it 'filters out fields starting with "Rated" from assignment fields' do
+        result = helper.format_snapshot_all_fields(snapshot, person, organization, previous_snapshot: previous_snapshot)
+        
+        assignment_data = result[:assignments]
+        expect(assignment_data).to be_present
+        expect(assignment_data.length).to eq(1)
+        
+        assignment_fields = assignment_data.first[:fields]
+        field_labels = assignment_fields.map { |f| f[:label] }
+        
+        # Should include non-rated fields
+        expect(field_labels).to include('Anticipated Energy')
+        expect(field_labels).to include('Official Rating')
+        
+        # Should exclude rated fields
+        expect(field_labels).not_to include('Rated Anticipated Energy')
+        expect(field_labels).not_to include('Rated Start Date')
+        expect(field_labels).not_to include('Rated End Date')
+      end
+
+      it 'includes non-rated fields correctly' do
+        result = helper.format_snapshot_all_fields(snapshot, person, organization, previous_snapshot: previous_snapshot)
+        
+        # Check employment fields have correct values
+        employment_fields = result[:employment]
+        position_field = employment_fields.find { |f| f[:label] == 'Position' }
+        expect(position_field).to be_present
+        expect(position_field[:old]).to be_present
+        expect(position_field[:new]).to be_present
+        
+        # Check assignment fields have correct values
+        assignment_data = result[:assignments]
+        assignment_fields = assignment_data.first[:fields]
+        energy_field = assignment_fields.find { |f| f[:label] == 'Anticipated Energy' }
+        expect(energy_field).to be_present
+        expect(energy_field[:old]).to eq('20%')
+        expect(energy_field[:new]).to eq('50%')
+      end
+
+      it 'handles empty data gracefully' do
+        empty_snapshot = create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'exploration',
+          created_at: 1.day.ago,
+          maap_data: {
+            'position' => nil,
+            'assignments' => [],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+        
+        result = helper.format_snapshot_all_fields(empty_snapshot, person, organization, previous_snapshot: nil)
+        
+        expect(result).to be_a(Hash)
+        expect(result[:employment]).to be_present
+        expect(result[:assignments]).to be_an(Array)
+        expect(result[:abilities]).to be_an(Array)
+        expect(result[:aspirations]).to be_an(Array)
+      end
+
+      it 'handles nil/empty rated_position data' do
+        snapshot_no_rated = create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'position_tenure',
+          created_at: 1.day.ago,
+          maap_data: {
+            'position' => {
+              'position_id' => position.id,
+              'manager_id' => manager.id,
+              'seat_id' => nil,
+              'employment_type' => 'full_time',
+              'rated_position' => {}
+            },
+            'assignments' => [],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+        
+        result = helper.format_snapshot_all_fields(snapshot_no_rated, person, organization, previous_snapshot: nil)
+        
+        employment_fields = result[:employment]
+        field_labels = employment_fields.map { |f| f[:label] }
+        
+        # Should still filter out rated fields even when empty
+        expect(field_labels).not_to include('Rated Position')
+        expect(field_labels).not_to include('Rated Manager')
+        expect(field_labels).not_to include('Rated Start Date')
+      end
+
+      it 'handles nil/empty rated_assignment data' do
+        snapshot_no_rated_assignment = create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'assignment_management',
+          created_at: 1.day.ago,
+          maap_data: {
+            'position' => nil,
+            'assignments' => [
+              {
+                'assignment_id' => assignment.id,
+                'anticipated_energy_percentage' => 50,
+                'rated_assignment' => {}
+              }
+            ],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+        
+        result = helper.format_snapshot_all_fields(snapshot_no_rated_assignment, person, organization, previous_snapshot: nil)
+        
+        assignment_data = result[:assignments]
+        assignment_fields = assignment_data.first[:fields]
+        field_labels = assignment_fields.map { |f| f[:label] }
+        
+        # Should still filter out rated fields even when empty
+        expect(field_labels).not_to include('Rated Anticipated Energy')
+        expect(field_labels).not_to include('Rated Start Date')
+        expect(field_labels).not_to include('Rated End Date')
+      end
+
+      it 'works correctly with multiple assignments' do
+        assignment2 = create(:assignment, company: organization)
+        
+        snapshot_multiple = create(:maap_snapshot,
+          employee: person,
+          created_by: manager,
+          company: organization,
+          change_type: 'assignment_management',
+          created_at: 1.day.ago,
+          maap_data: {
+            'position' => nil,
+            'assignments' => [
+              {
+                'assignment_id' => assignment.id,
+                'anticipated_energy_percentage' => 50,
+                'rated_assignment' => {
+                  'anticipated_energy_percentage' => 50,
+                  'official_rating' => 'exceeding',
+                  'started_at' => 10.days.ago.iso8601,
+                  'ended_at' => 1.day.ago.iso8601
+                }
+              },
+              {
+                'assignment_id' => assignment2.id,
+                'anticipated_energy_percentage' => 30,
+                'rated_assignment' => {
+                  'anticipated_energy_percentage' => 30,
+                  'official_rating' => 'meeting',
+                  'started_at' => 5.days.ago.iso8601,
+                  'ended_at' => 1.day.ago.iso8601
+                }
+              }
+            ],
+            'abilities' => [],
+            'aspirations' => []
+          }
+        )
+        
+        result = helper.format_snapshot_all_fields(snapshot_multiple, person, organization, previous_snapshot: nil)
+        
+        expect(result[:assignments].length).to eq(2)
+        
+        result[:assignments].each do |assignment_data|
+          field_labels = assignment_data[:fields].map { |f| f[:label] }
+          
+          # Should exclude rated fields for all assignments
+          expect(field_labels).not_to include('Rated Anticipated Energy')
+          expect(field_labels).not_to include('Rated Start Date')
+          expect(field_labels).not_to include('Rated End Date')
+          
+          # Should include non-rated fields
+          expect(field_labels).to include('Anticipated Energy')
+          expect(field_labels).to include('Official Rating')
+        end
+      end
+    end
+  end
 end
 

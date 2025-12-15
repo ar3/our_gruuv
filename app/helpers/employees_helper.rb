@@ -546,7 +546,8 @@ module EmployeesHelper
       new: format_date_value(new_rated['ended_at'])
     }
     
-    fields
+    # Filter out fields starting with "Rated" (case-insensitive)
+    fields.reject { |field| field[:label].downcase.start_with?('rated') }
   end
 
   def format_assignments_all_fields(old_data, new_data, organization)
@@ -603,10 +604,13 @@ module EmployeesHelper
         new: format_date_value(new_rated['ended_at'])
       }
       
+      # Filter out fields starting with "Rated" (case-insensitive)
+      filtered_fields = assignment_fields.reject { |field| field[:label].downcase.start_with?('rated') }
+      
       formatted_assignments << {
         assignment_name: assignment.title,
         assignment_id: assignment_id,
-        fields: assignment_fields
+        fields: filtered_fields
       }
     end
     
