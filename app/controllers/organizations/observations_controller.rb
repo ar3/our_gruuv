@@ -757,7 +757,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       redirect_to redirect_url, notice: notice
     else
       # GET - render picker
-      @teammates = organization.teammates.joins(:person).includes(:person).order('people.preferred_name ASC NULLS LAST, people.first_name ASC, people.last_name ASC')
+      @teammates = organization.teammates
+        .joins(:person)
+        .includes(:person)
+        .to_a
+        .sort_by { |teammate| teammate.person.casual_name }
       @return_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
       @return_text = params[:return_text] || 'Back'
       render layout: 'overlay'
