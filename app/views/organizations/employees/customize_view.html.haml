@@ -77,12 +77,17 @@
           
           .mb-3
             %label.form-label Department
+            - if Rails.env.production? || params[:preview] == 'true'
+              %small.text-muted Department filtering is coming soon!
             - if @active_departments.any?
               .row.g-2
                 - @active_departments.each_with_index do |department, index|
                   .col-md-4.col-sm-6.col-12
                     .form-check
-                      = check_box_tag 'department_id[]', department.id, @current_filters[:department_id]&.include?(department.id.to_s), class: 'form-check-input', id: "department_#{department.id}"
+                      -if Rails.env.production? || params[:preview] == 'true'
+                        = check_box_tag 'department_id[]', department.id, @current_filters[:department_id]&.include?(department.id.to_s), class: 'form-check-input', id: "department_#{department.id}", disabled: true
+                      - else
+                        = check_box_tag 'department_id[]', department.id, @current_filters[:department_id]&.include?(department.id.to_s), class: 'form-check-input', id: "department_#{department.id}"
                       = label_tag "department_#{department.id}", department.name, class: 'form-check-label'
             - else
               %small.text-muted No departments available
