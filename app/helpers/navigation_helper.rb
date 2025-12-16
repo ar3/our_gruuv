@@ -18,95 +18,32 @@ module NavigationHelper
         policy_check: -> { policy(current_company_teammate).view_check_ins? }
       },
       {
-        label: 'Align',
-        icon: 'bi-compass',
-        section: 'align',
-        items: [
-          {
-            label: 'Observations',
-            icon: 'bi-eye',
-            path: organization_observations_path(current_organization),
-            policy_check: -> { policy(Observation).index? },
-            coming_soon: false
-          },
-          {
-            label: 'Milestones',
-            icon: 'bi-award',
-            path: organization_abilities_path(current_organization),
-            policy_check: -> { policy(Ability).index? },
-            coming_soon: false
-          },
-          {
-            label: 'Accountability',
-            icon: 'bi-clipboard-check',
-            path: accountability_path,
-            policy_check: -> { current_organization.present? },
-            coming_soon: false
-          },
-          {
-            label: 'Positions',
-            icon: 'bi-briefcase',
-            path: organization_positions_path(current_organization),
-            policy_check: -> { policy(Position).index? },
-            coming_soon: false
-          }
-        ]
+        label: 'Observations',
+        icon: 'bi-eye',
+        path: organization_observations_path(current_organization),
+        section: nil,
+        policy_check: -> { policy(Observation).index? }
       },
       {
-        label: 'Collab',
+        label: 'Reflect',
+        icon: 'bi-journal-text',
+        path: organization_prompts_path(current_organization),
+        section: nil,
+        policy_check: -> { policy(Prompt).index? }
+      },
+      {
+        label: 'Goals',
+        icon: 'bi-bullseye',
+        path: organization_goals_path(current_organization),
+        section: nil,
+        policy_check: -> { policy(Goal).index? }
+      },
+      {
+        label: 'My Teammates',
         icon: 'bi-people',
-        section: 'collab',
-        items: [
-          {
-            label: 'Huddles',
-            icon: 'bi-chat-dots',
-            path: huddles_path,
-            policy_check: -> { policy(Huddle).index? },
-            coming_soon: false
-          },
-          {
-            label: 'Oppties',
-            icon: 'bi-lightbulb',
-            path: good_issues_coming_soon_path,
-            policy_check: -> { true },
-            coming_soon: true
-          },
-          {
-            label: 'Diverge/Converge',
-            icon: 'bi-arrows-collapse',
-            path: diverge_converge_coming_soon_path,
-            policy_check: -> { true },
-            coming_soon: true
-          }
-        ]
-      },
-      {
-        label: 'Transform',
-        icon: 'bi-graph-up',
-        section: 'transform',
-        items: [
-          {
-            label: 'Goals',
-            icon: 'bi-bullseye',
-            path: organization_goals_path(current_organization),
-            policy_check: -> { policy(Goal).index? },
-            coming_soon: false
-          },
-          {
-            label: 'Hypotheses',
-            icon: 'bi-flask',
-            path: hypothesis_management_coming_soon_path,
-            policy_check: -> { true },
-            coming_soon: true
-          },
-          {
-            label: 'Signals',
-            icon: 'bi-activity',
-            path: team_signals_coming_soon_path,
-            policy_check: -> { true },
-            coming_soon: true
-          }
-        ]
+        path: organization_employees_path(current_organization),
+        section: nil,
+        policy_check: -> { policy(Organization).show? }
       },
       {
         label: 'Admin',
