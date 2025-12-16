@@ -79,6 +79,13 @@ module NavigationHelper
         policy_check: -> { policy(Organization).show? }
       },
       {
+        label: 'Celebrate Milestones',
+        icon: 'bi-trophy',
+        path: celebrate_milestones_organization_path(current_organization),
+        section: nil,
+        policy_check: -> { policy(current_organization).show? }
+      },
+      {
         label: 'Admin',
         icon: 'bi-gear',
         section: 'admin',
@@ -123,13 +130,6 @@ module NavigationHelper
             icon: 'bi-people',
             path: organization_employees_path(current_organization),
             policy_check: -> { policy(Organization).show? },
-            coming_soon: false
-          },
-          {
-            label: 'Organization',
-            icon: 'bi-building',
-            path: organization_path(current_organization),
-            policy_check: -> { policy(current_organization).show? },
             coming_soon: false
           },
           {
