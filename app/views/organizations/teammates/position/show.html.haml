@@ -5,8 +5,7 @@
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center
-    %h1.mb-0 Position Check-ins
-    %small.text-muted #{@teammate.person.display_name}
+    %h1.mb-0=#{@teammate.person.last_first_display_name} - Position Details
 
 - content_for :header_action do
   = render 'people/view_switcher'
