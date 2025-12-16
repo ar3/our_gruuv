@@ -98,17 +98,17 @@
       - if action_name == 'show' && controller_name == 'position'
         .dropdown-item.text-muted
           %i.bi.bi-briefcase.me-2
-          Seat History Mode (Active)
+          Seat Management Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif current_organization && @teammate && policy(@teammate).show?
         = link_to organization_teammate_position_path(current_organization, @teammate), class: 'dropdown-item' do
           %i.bi.bi-briefcase.me-2
-          Seat History Mode
+          Seat Management Mode
       - else
         .dropdown-item.text-muted.disabled
           %i.bi.bi-briefcase.me-2
-          Seat History Mode
-          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access seat history"}
+          Seat Management Mode
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access seat management"}
       
     %li
       - if action_name == 'show' && (controller_name == 'people' || controller_name == 'company_teammates')

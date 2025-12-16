@@ -139,7 +139,7 @@ module PeopleHelper
     
     # Check for position controller
     if controller_name == 'position' && action_name == 'show'
-      return 'Seat History Mode'
+      return 'Seat Management Mode'
     end
     
     case action_name.downcase
