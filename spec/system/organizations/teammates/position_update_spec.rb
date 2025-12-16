@@ -25,8 +25,8 @@ RSpec.describe 'Position Update', type: :system, js: true do
   end
   let(:current_manager) { create(:person, first_name: 'Current', last_name: 'Manager') }
   let(:new_manager) { create(:person, first_name: 'New', last_name: 'Manager') }
-  let!(:current_manager_teammate) { CompanyTeammate.create!(person: current_manager, organization: company) }
-  let!(:new_manager_teammate) { CompanyTeammate.create!(person: new_manager, organization: company) }
+  let!(:current_manager_teammate) { CompanyTeammate.create!(person: current_manager, organization: company, first_employed_at: 1.year.ago) }
+  let!(:new_manager_teammate) { CompanyTeammate.create!(person: new_manager, organization: company, first_employed_at: 1.year.ago) }
   let!(:current_manager_tenure) do
     EmploymentTenure.create!(
       teammate: current_manager_teammate,
@@ -43,6 +43,29 @@ RSpec.describe 'Position Update', type: :system, js: true do
       position: position,
       employment_type: 'full_time',
       started_at: 1.year.ago
+    )
+  end
+  # Create employees managed by these managers so they appear in the manager dropdown
+  let!(:employee_for_current_manager) do
+    emp_teammate = CompanyTeammate.create!(person: create(:person), organization: company, first_employed_at: 6.months.ago)
+    EmploymentTenure.create!(
+      teammate: emp_teammate,
+      company: company,
+      position: position,
+      manager: current_manager,
+      employment_type: 'full_time',
+      started_at: 6.months.ago
+    )
+  end
+  let!(:employee_for_new_manager) do
+    emp_teammate = CompanyTeammate.create!(person: create(:person), organization: company, first_employed_at: 5.months.ago)
+    EmploymentTenure.create!(
+      teammate: emp_teammate,
+      company: company,
+      position: position,
+      manager: new_manager,
+      employment_type: 'full_time',
+      started_at: 5.months.ago
     )
   end
   let!(:new_position) { Position.create!(position_type_id: position_type2.id, position_level_id: position_level2.id, position_summary: 'Test position 2') }
@@ -88,9 +111,11 @@ RSpec.describe 'Position Update', type: :system, js: true do
   describe 'Simple submission' do
     it 'allows manager to update manager field' do
       expect(page).to have_content('Current Position')
-      expect(page).to have_content(current_manager.display_name)
+      # The current manager is shown in the display, but after manager_employment_tenure_for_permission updates it to manager_person
+      # So we check for manager_person instead
+      expect(page).to have_content(manager_person.last_first_display_name)
       
-      select new_manager.display_name, from: 'employment_tenure_update[manager_id]'
+      select new_manager.last_first_display_name, from: 'employment_tenure_update[manager_id]'
       click_button 'Update Position'
       
       expect(page).to have_content('Position information was successfully updated')
@@ -104,7 +129,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
   describe 'Complex submission' do
 
     it 'allows manager to update all fields with multiple changes' do
-      select new_manager.display_name, from: 'employment_tenure_update[manager_id]'
+      select new_manager.last_first_display_name, from: 'employment_tenure_update[manager_id]'
       select new_position.display_name, from: 'employment_tenure_update[position_id]'
       select 'Part Time', from: 'employment_tenure_update[employment_type]'
       select seat_for_new_position.display_name, from: 'employment_tenure_update[seat_id]'

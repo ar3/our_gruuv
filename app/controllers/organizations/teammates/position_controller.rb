@@ -49,13 +49,16 @@ class Organizations::Teammates::PositionController < Organizations::Organization
                    .where(teammate: @teammate)
                    .includes(:position_check_in_ratings)
                    .order(created_at: :desc)
+    @employment_tenures = @teammate.employment_tenures
+      .includes(:position, :manager, :seat)
+      .order(started_at: :desc)
     @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
     
     # Load form data first (this sets @managers, @positions, @seats)
     company = organization.root_company || organization
     
-    # Load managers (employees)
-    @managers = company.employees.order(:last_name, :first_name)
+    # Load distinct active managers (people who are managers in active employment tenures and are active company teammates)
+    @managers = ActiveManagersQuery.new(company: company, require_active_teammate: true).call
     
     # Load positions
     @positions = company.positions.includes(:position_type, :position_level).ordered
@@ -104,8 +107,8 @@ class Organizations::Teammates::PositionController < Organizations::Organization
   def load_form_data
     company = organization.root_company || organization
     
-    # Load managers (employees)
-    @managers = company.employees.order(:last_name, :first_name)
+    # Load distinct active managers (people who are managers in active employment tenures and are active company teammates)
+    @managers = ActiveManagersQuery.new(company: company, require_active_teammate: true).call
     
     # Load positions
     @positions = company.positions.includes(:position_type, :position_level).ordered

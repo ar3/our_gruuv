@@ -107,6 +107,59 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       get organization_teammate_position_path(organization, employee_teammate)
       expect(assigns(:person)).to eq(employee_person)
     end
+
+    it 'loads only distinct active managers who are active company teammates, ordered by last_name, first_name' do
+      # Create additional managers
+      manager1 = create(:person, first_name: 'Alice', last_name: 'Zebra')
+      manager2 = create(:person, first_name: 'Bob', last_name: 'Alpha')
+      manager3 = create(:person, first_name: 'Charlie', last_name: 'Beta')
+      
+      # Create teammates for managers
+      manager1_teammate = create(:teammate, type: 'CompanyTeammate', person: manager1, organization: organization)
+      manager2_teammate = create(:teammate, type: 'CompanyTeammate', person: manager2, organization: organization)
+      manager3_teammate = create(:teammate, type: 'CompanyTeammate', person: manager3, organization: organization)
+      
+      # Create active employment tenures for managers (so they are active teammates)
+      create(:employment_tenure, teammate: manager1_teammate, company: organization, position: position, started_at: 1.year.ago)
+      create(:employment_tenure, teammate: manager2_teammate, company: organization, position: position, started_at: 1.year.ago)
+      create(:employment_tenure, teammate: manager3_teammate, company: organization, position: position, started_at: 1.year.ago)
+      
+      # Create active employment tenures where these people are managers
+      # Use different employees to avoid overlapping tenures
+      other_employee1 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
+      other_employee2 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
+      other_employee3 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
+      create(:employment_tenure, teammate: other_employee1, company: organization, position: position, manager: manager1, started_at: 6.months.ago)
+      create(:employment_tenure, teammate: other_employee2, company: organization, position: position, manager: manager2, started_at: 5.months.ago)
+      create(:employment_tenure, teammate: other_employee3, company: organization, position: position, manager: manager3, started_at: 4.months.ago)
+      
+      # Create an inactive manager (should not appear)
+      inactive_manager = create(:person, first_name: 'Inactive', last_name: 'Manager')
+      inactive_manager_teammate = create(:teammate, type: 'CompanyTeammate', person: inactive_manager, organization: organization)
+      create(:employment_tenure, teammate: inactive_manager_teammate, company: organization, position: position, started_at: 2.years.ago, ended_at: 1.year.ago)
+      other_employee4 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
+      create(:employment_tenure, teammate: other_employee4, company: organization, position: position, manager: inactive_manager, started_at: 3.months.ago, ended_at: 1.month.ago)
+      
+      # Create a manager who is not an active teammate (should not appear)
+      non_teammate_manager = create(:person, first_name: 'Non', last_name: 'Teammate')
+      other_employee5 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
+      create(:employment_tenure, teammate: other_employee5, company: organization, position: position, manager: non_teammate_manager, started_at: 2.months.ago)
+      
+      get organization_teammate_position_path(organization, employee_teammate)
+      
+      managers = assigns(:managers)
+      expect(managers).to be_present
+      # Should include active managers who are active teammates
+      expect(managers).to include(manager1, manager2, manager3)
+      # Should not include inactive manager
+      expect(managers).not_to include(inactive_manager)
+      # Should not include non-teammate manager
+      expect(managers).not_to include(non_teammate_manager)
+      # Should be ordered by last_name, first_name
+      expect(managers.map(&:last_name)).to eq(['Alpha', 'Beta', 'Zebra'])
+      # Should be distinct
+      expect(managers.uniq.size).to eq(managers.size)
+    end
   end
 
   describe 'PATCH /organizations/:id/teammates/:id/position' do

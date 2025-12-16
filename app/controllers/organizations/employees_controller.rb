@@ -336,23 +336,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   private
 
   def active_managers_for_organization
-    # Get organization hierarchy for checking employment tenures
-    org_hierarchy = if @organization.company?
-      @organization.self_and_descendants
-    else
-      [@organization, @organization.parent].compact
-    end
-    
-    # Get distinct Person IDs who are managers (have active direct reports)
-    manager_ids = EmploymentTenure.active
-                                  .where(company: org_hierarchy)
-                                  .where.not(manager_id: nil)
-                                  .distinct
-                                  .pluck(:manager_id)
-    
-    # Return Person objects ordered by name
-    Person.where(id: manager_ids)
-          .order(last_name: :asc, first_name: :asc)
+    # Get active managers (for filtering, lenient mode - don't require them to be active teammates)
+    ActiveManagersQuery.new(company: @organization, require_active_teammate: false).call
   end
 
   def active_departments_for_organization
@@ -643,20 +628,9 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       # Ensure we have an array to work with
       teammates_array = teammates.is_a?(Array) ? teammates : teammates.to_a
       
-      # Get organization hierarchy for checking employment tenures
-      org_hierarchy = if @organization.company?
-        @organization.self_and_descendants
-      else
-        [@organization, @organization.parent].compact
-      end
-      
       # Build a set of person IDs who are managers (have active direct reports)
-      manager_person_ids = EmploymentTenure.active
-                                          .where(company: org_hierarchy)
-                                          .where.not(manager_id: nil)
-                                          .distinct
-                                          .pluck(:manager_id)
-                                          .to_set
+      # Use lenient mode (don't require active teammates) for stats calculation
+      manager_person_ids = ActiveManagersQuery.new(company: @organization, require_active_teammate: false).manager_ids.to_set
       
       # Count active managers vs non-managers in the filtered teammates
       active_managers = teammates_array.count { |t| manager_person_ids.include?(t.person_id) }
