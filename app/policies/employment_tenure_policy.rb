@@ -1,8 +1,4 @@
 class EmploymentTenurePolicy < ApplicationPolicy
-  def index?
-    admin_bypass?
-  end
-
   def show?
     return false unless viewing_teammate
     person = viewing_teammate.person

@@ -25,19 +25,6 @@ RSpec.describe GoalPolicy, type: :policy do
   let(:pundit_user_other) { OpenStruct.new(user: other_teammate, impersonating_teammate: nil) }
   let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
   
-  describe 'index?' do
-    it 'allows access to any teammate in the organization' do
-      other_teammate # Ensure teammate is created
-      policy = GoalPolicy.new(pundit_user_other, Goal)
-      expect(policy.index?).to be true
-    end
-    
-    it 'allows access to admins' do
-      policy = GoalPolicy.new(pundit_user_admin, Goal)
-      expect(policy.index?).to be true
-    end
-  end
-  
   describe 'show?' do
     context 'with only_creator privacy level' do
       let(:goal) { personal_goal }

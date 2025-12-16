@@ -2,10 +2,11 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
   before_action :authenticate_person!
   before_action :set_prompt, only: [:show, :edit, :update, :close, :manage_goals]
 
-  after_action :verify_authorized, except: :index
+  after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
 
   def index
+    authorize company, :view_prompts?
     @prompts = policy_scope(Prompt)
     
     # Use PromptsQuery for filtering and sorting
@@ -47,7 +48,7 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
   end
 
   def customize_view
-    authorize Prompt, :index?
+    authorize company, :view_prompts?
     
     # Load current state from params
     query = PromptsQuery.new(@organization, params, current_person: current_person)
@@ -58,7 +59,6 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     @current_spotlight = query.current_spotlight
     
     # Get available templates and teammates for filters
-    company = @organization.root_company || @organization
     @available_templates = PromptTemplate.where(company: company).ordered
     @available_teammates = CompanyTeammate.where(organization: company).includes(:person).order('people.first_name, people.last_name')
     
@@ -71,7 +71,7 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
   end
 
   def update_view
-    authorize Prompt, :index?
+    authorize company, :view_prompts?
     
     # Build redirect URL with all view customization params
     redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h

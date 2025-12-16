@@ -1,11 +1,4 @@
 class PromptPolicy < ApplicationPolicy
-  def index?
-    # Any teammate in company can see prompts index
-    return true if admin_bypass?
-    return false unless viewing_teammate
-    true
-  end
-
   def show?
     return true if admin_bypass?
     return false unless viewing_teammate && record

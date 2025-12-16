@@ -3,7 +3,7 @@ class Organizations::SearchController < Organizations::OrganizationNamespaceBase
   after_action :verify_authorized
 
   def show
-    authorize :search, :show?
+    authorize company, :view_search?
     
     @query = params[:q].to_s.strip
     

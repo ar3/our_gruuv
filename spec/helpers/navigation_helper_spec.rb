@@ -19,21 +19,28 @@ RSpec.describe NavigationHelper, type: :helper do
     helper.define_singleton_method(:current_company_teammate) { t }
     
     # Stub policy method to return a policy double for any record
-    policy_double = double(
-      index?: true,
+    org_policy_double = double(
       show?: true,
       manage_employment?: true,
+      view_prompts?: true,
+      view_observations?: true,
+      view_seats?: true,
+      view_goals?: true,
+      view_abilities?: true,
+      view_assignments?: true,
+      view_aspirations?: true
+    )
+    
+    policy_double = double(
+      show?: true,
       view_check_ins?: true
     )
     
     helper.define_singleton_method(:policy) do |record|
       case record
-      when Class
-        # For class-level checks like policy(Observation).index?
-        policy_double
       when Organization
-        # For organization instance checks
-        double(show?: true, manage_employment?: true)
+        # For organization instance checks - now using view_*? methods
+        org_policy_double
       else
         # For other instance checks
         policy_double
@@ -57,12 +64,12 @@ RSpec.describe NavigationHelper, type: :helper do
       expect(dashboard[:path]).to be_present
     end
     
-    it 'includes Align section' do
+    it 'includes Admin section' do
       structure = helper.navigation_structure
-      align = structure.find { |s| s[:section] == 'align' }
+      admin = structure.find { |s| s[:section] == 'admin' }
       
-      expect(align).to be_present
-      expect(align[:items]).to be_an(Array)
+      expect(admin).to be_present
+      expect(admin[:items]).to be_an(Array)
     end
   end
   

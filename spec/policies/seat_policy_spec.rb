@@ -20,20 +20,6 @@ RSpec.describe SeatPolicy, type: :policy do
   let(:pundit_user_active_employee) { OpenStruct.new(user: active_employee_teammate, impersonating_teammate: nil) }
   let(:pundit_user_external_user) { OpenStruct.new(user: external_user_teammate, impersonating_teammate: nil) }
 
-  permissions :index? do
-    it "allows active employees to view seats" do
-      expect(subject).to permit(pundit_user_active_employee, Seat)
-    end
-
-    it "allows MAAP managers to view seats" do
-      expect(subject).to permit(pundit_user_maap_manager, Seat)
-    end
-
-    it "denies external users" do
-      expect(subject).not_to permit(pundit_user_external_user, Seat)
-    end
-  end
-
   permissions :show? do
     it "allows active employees to view seats" do
       expect(subject).to permit(pundit_user_active_employee, seat)

@@ -3,7 +3,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   
 
   def index
-    authorize Observation
+    authorize company, :view_observations?
     
     # Use ObservationsQuery for filtering and sorting
     query = ObservationsQuery.new(organization, params, current_person: current_person)
@@ -63,7 +63,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   end
 
   def customize_view
-    authorize Observation, :index?
+    authorize company, :view_observations?
     
     # Load current state from params
     query = ObservationsQuery.new(organization, params, current_person: current_person)
@@ -82,7 +82,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   end
 
   def update_view
-    authorize Observation, :index?
+    authorize company, :view_observations?
     
     # Build redirect URL with all view customization params
     redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h
@@ -94,7 +94,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     # Initialize observations before authorization to prevent nil errors on redirect
     @observations = Observation.none
     
-    authorize Observation, :index?
+    authorize company, :view_observations?
     
     # Extract filter parameters
     @rateable_type = params[:rateable_type]

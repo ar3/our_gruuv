@@ -2,22 +2,21 @@ class Organizations::PromptTemplatesController < Organizations::OrganizationName
   before_action :authenticate_person!
   before_action :set_prompt_template, only: [:edit, :update, :destroy]
 
-  after_action :verify_authorized, except: :index
+  after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
 
   def index
-    @prompt_templates = policy_scope(PromptTemplate).where(company: @organization.root_company || @organization)
+    authorize company, :view_prompt_templates?
+    @prompt_templates = policy_scope(PromptTemplate).where(company: company)
     @prompt_templates = @prompt_templates.ordered
   end
 
   def new
-    company = @organization.root_company || @organization
     @prompt_template = PromptTemplate.new(company: company)
     authorize @prompt_template
   end
 
   def create
-    company = @organization.root_company || @organization
     @prompt_template = PromptTemplate.new(prompt_template_params)
     @prompt_template.company = company
     authorize @prompt_template
@@ -57,7 +56,6 @@ class Organizations::PromptTemplatesController < Organizations::OrganizationName
   private
 
   def set_prompt_template
-    company = @organization.root_company || @organization
     @prompt_template = PromptTemplate.find_by(id: params[:id], company: company)
     unless @prompt_template
       redirect_to organization_prompt_templates_path(@organization), 

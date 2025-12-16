@@ -17,29 +17,6 @@ RSpec.describe AbilityPolicy, type: :policy do
   let(:pundit_user_person) { OpenStruct.new(user: person_teammate, impersonating_teammate: nil) }
   let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
 
-  describe 'index?' do
-    context 'when user has MAAP permissions' do
-      it 'allows access' do
-        policy = AbilityPolicy.new(pundit_user_maap, Ability)
-        expect(policy.index?).to be true
-      end
-    end
-
-    context 'when user lacks MAAP permissions' do
-      it 'denies access' do
-        policy = AbilityPolicy.new(pundit_user_person, Ability)
-        expect(policy.index?).to be false
-      end
-    end
-
-    context 'when user is admin' do
-      it 'allows access' do
-        policy = AbilityPolicy.new(pundit_user_admin, Ability)
-        expect(policy.index?).to be true
-      end
-    end
-  end
-
   describe 'show?' do
     context 'when user has MAAP permissions for the organization' do
       it 'allows access' do

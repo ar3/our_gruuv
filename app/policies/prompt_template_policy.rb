@@ -1,8 +1,4 @@
 class PromptTemplatePolicy < ApplicationPolicy
-  def index?
-    admin_bypass? || user_has_prompts_permission?
-  end
-
   def show?
     admin_bypass? || user_has_prompts_permission_for_record?
   end

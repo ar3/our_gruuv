@@ -3,10 +3,6 @@ class SearchPolicy < ApplicationPolicy
     viewing_teammate.present?
   end
 
-  def index?
-    viewing_teammate.present?
-  end
-
   class Scope < ApplicationPolicy::Scope
     def resolve
       scope

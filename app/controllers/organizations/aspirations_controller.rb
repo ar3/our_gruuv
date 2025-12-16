@@ -3,10 +3,9 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
   before_action :set_aspiration, only: [:show, :edit, :update, :destroy]
 
   def index
+    authorize company, :view_aspirations?
     # Show aspirations for the entire company hierarchy
-    company = @organization.root_company
     @aspirations = policy_scope(Aspiration).where(organization: company.self_and_descendants).ordered
-    authorize @aspirations
     render layout: determine_layout
   end
 

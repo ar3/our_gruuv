@@ -1,9 +1,10 @@
 class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseController
   before_action :require_login
   before_action :set_bulk_sync_event, only: [:show, :destroy, :process_sync]
-  before_action :authorize_bulk_sync_events, only: [:index, :new, :create, :process_sync]
+  before_action :authorize_bulk_sync_events, only: [:new, :create, :process_sync]
 
   def index
+    authorize company, :view_bulk_sync_events?
     @bulk_sync_events = policy_scope(BulkSyncEvent)
                      .includes(:creator, :initiator)
                      .order(created_at: :desc)

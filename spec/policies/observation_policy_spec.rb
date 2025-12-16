@@ -41,18 +41,6 @@ RSpec.describe ObservationPolicy, type: :policy do
     manager_teammate.reload
   end
 
-  describe '#index?' do
-    it 'allows any authenticated user' do
-      policy = ObservationPolicy.new(pundit_user_observer, observation)
-      expect(policy.index?).to be true
-    end
-
-    it 'denies unauthenticated users' do
-      policy = ObservationPolicy.new(nil, observation)
-      expect(policy.index?).to be false
-    end
-  end
-
   describe '#show?' do
     context 'observer_only privacy' do
       let(:observer_only_obs) do

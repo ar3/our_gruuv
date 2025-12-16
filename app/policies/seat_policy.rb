@@ -1,12 +1,4 @@
 class SeatPolicy < ApplicationPolicy
-  def index?
-    return false unless viewing_teammate
-    return false unless viewing_teammate.employed?
-    # For index, the record is the Seat class, so we can't get organization from record
-    # The scope will verify organization matching, so just check teammate is active
-    true
-  end
-
   def show?
     return false unless viewing_teammate
     return false unless viewing_teammate.employed?

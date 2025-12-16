@@ -1,8 +1,4 @@
 class AbilityPolicy < ApplicationPolicy
-  def index?
-    admin_bypass? || user_has_maap_permission?
-  end
-
   def show?
     admin_bypass? || user_has_maap_permission_for_record?
   end

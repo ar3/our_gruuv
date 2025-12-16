@@ -1,11 +1,4 @@
 class BulkSyncEventPolicy < ApplicationPolicy
-  def index?
-    return false unless viewing_teammate
-    # For class-level authorization, check if user can manage employment in their current organization
-    # The base controller ensures viewing_teammate matches the route organization
-    admin_bypass? || viewing_teammate.can_manage_employment?
-  end
-
   def show?
     return false unless viewing_teammate
     return false unless record.is_a?(BulkSyncEvent)

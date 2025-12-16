@@ -1,8 +1,4 @@
 class ObservationPolicy < ApplicationPolicy
-  def index?
-    viewing_teammate.present?
-  end
-
   def show?
     return false unless viewing_teammate
     

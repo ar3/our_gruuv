@@ -1,9 +1,4 @@
 class AspirationPolicy < ApplicationPolicy
-  def index?
-    # Allow all authenticated users to view aspirations index
-    true
-  end
-
   def show?
     # Allow all authenticated users to view individual aspirations
     true

@@ -12,6 +12,16 @@ RSpec.describe 'Vertical Navigation', type: :request do
     user_preference.update_preference(:vertical_nav_open, true)
     # Mock policy for check-ins visibility
     allow_any_instance_of(CompanyTeammatePolicy).to receive(:view_check_ins?).and_return(true)
+    # Mock OrganizationPolicy view methods for navigation and controller authorization
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_prompts?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_observations?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_seats?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_goals?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_abilities?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_assignments?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_aspirations?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:show?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(true)
   end
   
   describe 'collapsible sections' do
@@ -23,27 +33,14 @@ RSpec.describe 'Vertical Navigation', type: :request do
         expect(response.body).to include('vertical-nav')
         
         # All collapsible sections should be closed (no show class, aria-expanded="false")
-        # Check for Align section
-        expect(response.body).to include('id="navSectionAlign"')
-        # Extract the div for navSectionAlign and verify it doesn't have "show"
-        align_div = response.body[/<div[^>]*id="navSectionAlign"[^>]*>/]
-        expect(align_div).to be_present
-        expect(align_div).to include('class="collapse"')
-        expect(align_div).to_not include('class="collapse show"')
-        expect(response.body).to include('data-bs-target="#navSectionAlign"')
+        # Check for Huddles section (section name is 'huddles')
+        expect(response.body).to include('id="navSectionHuddles"')
+        huddles_div = response.body[/<div[^>]*id="navSectionHuddles"[^>]*>/]
+        expect(huddles_div).to be_present
+        expect(huddles_div).to include('class="collapse"')
+        expect(huddles_div).to_not include('class="collapse show"')
+        expect(response.body).to include('data-bs-target="#navSectionHuddles"')
         expect(response.body).to include('aria-expanded="false"')
-        
-        # Check for Collab section
-        expect(response.body).to include('id="navSectionCollab"')
-        collab_div = response.body[/<div[^>]*id="navSectionCollab"[^>]*>/]
-        expect(collab_div).to be_present
-        expect(collab_div).to_not include('class="collapse show"')
-        
-        # Check for Transform section
-        expect(response.body).to include('id="navSectionTransform"')
-        transform_div = response.body[/<div[^>]*id="navSectionTransform"[^>]*>/]
-        expect(transform_div).to be_present
-        expect(transform_div).to_not include('class="collapse show"')
         
         # Check for Admin section
         # Note: Admin section may be expanded if organization_path matches dashboard path
@@ -54,43 +51,62 @@ RSpec.describe 'Vertical Navigation', type: :request do
     
     context 'when on a page within Align section' do
       before do
-        policy_double = double(index?: true, show?: true, create?: true, manage_employment?: true, view_check_ins?: true)
-        allow_any_instance_of(ApplicationController).to receive(:policy).and_return(policy_double)
+        org_policy_double = double(
+          show?: true,
+          manage_employment?: true,
+          view_prompts?: true,
+          view_observations?: true,
+          view_seats?: true,
+          view_goals?: true,
+          view_abilities?: true,
+          view_assignments?: true,
+          view_aspirations?: true
+        )
+        policy_double = double(show?: true, create?: true, view_check_ins?: true)
+        
+        allow_any_instance_of(ApplicationController).to receive(:policy) do |controller, record|
+          case record
+          when Organization
+            org_policy_double
+          else
+            policy_double
+          end
+        end
       end
       
-      it 'expands only the Align section' do
+      it 'renders observations page successfully' do
         get organization_observations_path(organization)
         
         expect(response).to have_http_status(:success)
-        
-        # Align section should be expanded (has show class, aria-expanded="true")
-        align_div = response.body[/<div[^>]*id="navSectionAlign"[^>]*>/]
-        expect(align_div).to be_present
-        expect(align_div).to include('class="collapse show"')
-        
-        # Check button aria-expanded
-        align_button = response.body[/<button[^>]*data-bs-target="#navSectionAlign"[^>]*>/]
-        expect(align_button).to be_present
-        expect(align_button).to include('aria-expanded="true"')
-        
-        # Other sections should be closed
-        collab_div = response.body[/<div[^>]*id="navSectionCollab"[^>]*>/]
-        expect(collab_div).to be_present
-        expect(collab_div).to_not include('class="collapse show"')
-        
-        transform_div = response.body[/<div[^>]*id="navSectionTransform"[^>]*>/]
-        expect(transform_div).to be_present
-        expect(transform_div).to_not include('class="collapse show"')
-        
-        # Admin section may be expanded if organization_path matches (due to start_with? matching)
-        # This is acceptable behavior - the test verifies other sections are closed
+        # Observations is a standalone nav item (section: nil), not in a collapsible section
+        # So we just verify the page loads successfully
+        expect(response.body).to include('vertical-nav')
       end
     end
     
     context 'when on a page within Admin section' do
       before do
-        policy_double = double(index?: true, show?: true, create?: true, manage_employment?: true, view_check_ins?: true)
-        allow_any_instance_of(ApplicationController).to receive(:policy).and_return(policy_double)
+        org_policy_double = double(
+          show?: true,
+          manage_employment?: true,
+          view_prompts?: true,
+          view_observations?: true,
+          view_seats?: true,
+          view_goals?: true,
+          view_abilities?: true,
+          view_assignments?: true,
+          view_aspirations?: true
+        )
+        policy_double = double(show?: true, create?: true, view_check_ins?: true)
+        
+        allow_any_instance_of(ApplicationController).to receive(:policy) do |controller, record|
+          case record
+          when Organization
+            org_policy_double
+          else
+            policy_double
+          end
+        end
       end
       
       it 'expands only the Admin section' do
@@ -109,41 +125,58 @@ RSpec.describe 'Vertical Navigation', type: :request do
         expect(admin_button).to include('aria-expanded="true"')
         
         # Other sections should be closed
-        align_div = response.body[/<div[^>]*id="navSectionAlign"[^>]*>/]
-        expect(align_div).to be_present
-        expect(align_div).to_not include('class="collapse show"')
-        
-        collab_div = response.body[/<div[^>]*id="navSectionCollab"[^>]*>/]
-        expect(collab_div).to be_present
-        expect(collab_div).to_not include('class="collapse show"')
+        huddles_div = response.body[/<div[^>]*id="navSectionHuddles"[^>]*>/]
+        if huddles_div.present?
+          expect(huddles_div).to_not include('class="collapse show"')
+        end
       end
     end
     
     context 'when on a page within Collab section' do
       before do
-        policy_double = double(index?: true, show?: true, create?: true, manage_employment?: true, view_check_ins?: true)
-        allow_any_instance_of(ApplicationController).to receive(:policy).and_return(policy_double)
+        org_policy_double = double(
+          show?: true,
+          manage_employment?: true,
+          view_prompts?: true,
+          view_observations?: true,
+          view_seats?: true,
+          view_goals?: true,
+          view_abilities?: true,
+          view_assignments?: true,
+          view_aspirations?: true
+        )
+        policy_double = double(show?: true, create?: true, view_check_ins?: true)
+        
+        allow_any_instance_of(ApplicationController).to receive(:policy) do |controller, record|
+          case record
+          when Organization
+            org_policy_double
+          else
+            policy_double
+          end
+        end
       end
       
-      it 'expands only the Collab section' do
+      it 'expands only the Huddles section' do
         get huddles_path
         
         expect(response).to have_http_status(:success)
         
-        # Collab section should be expanded
-        collab_div = response.body[/<div[^>]*id="navSectionCollab"[^>]*>/]
-        expect(collab_div).to be_present
-        expect(collab_div).to include('class="collapse show"')
+        # Huddles section should be expanded (section name is 'huddles', which becomes 'Huddles' when capitalized)
+        huddles_div = response.body[/<div[^>]*id="navSectionHuddles"[^>]*>/]
+        expect(huddles_div).to be_present
+        expect(huddles_div).to include('class="collapse show"')
         
         # Check button aria-expanded
-        collab_button = response.body[/<button[^>]*data-bs-target="#navSectionCollab"[^>]*>/]
-        expect(collab_button).to be_present
-        expect(collab_button).to include('aria-expanded="true"')
+        huddles_button = response.body[/<button[^>]*data-bs-target="#navSectionHuddles"[^>]*>/]
+        expect(huddles_button).to be_present
+        expect(huddles_button).to include('aria-expanded="true"')
         
         # Other sections should be closed
-        align_div = response.body[/<div[^>]*id="navSectionAlign"[^>]*>/]
-        expect(align_div).to be_present
-        expect(align_div).to_not include('class="collapse show"')
+        admin_div = response.body[/<div[^>]*id="navSectionAdmin"[^>]*>/]
+        if admin_div.present?
+          expect(admin_div).to_not include('class="collapse show"')
+        end
       end
     end
   end

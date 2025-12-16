@@ -17,29 +17,6 @@ RSpec.describe AspirationPolicy, type: :policy do
   let(:pundit_user_person) { OpenStruct.new(user: person_teammate, impersonating_teammate: nil) }
   let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
 
-  describe 'index?' do
-    context 'when user is a regular teammate' do
-      it 'allows access' do
-        policy = AspirationPolicy.new(pundit_user_person, Aspiration)
-        expect(policy.index?).to be true
-      end
-    end
-
-    context 'when user has MAAP permissions' do
-      it 'allows access' do
-        policy = AspirationPolicy.new(pundit_user_maap, Aspiration)
-        expect(policy.index?).to be true
-      end
-    end
-
-    context 'when user is admin' do
-      it 'allows access' do
-        policy = AspirationPolicy.new(pundit_user_admin, Aspiration)
-        expect(policy.index?).to be true
-      end
-    end
-  end
-
   describe 'show?' do
     context 'when user is a regular teammate' do
       it 'allows access' do

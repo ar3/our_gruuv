@@ -3,6 +3,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
   def index
+    authorize company, :view_seats?
     seats = policy_scope(Seat.for_organization(organization))
             .includes(:position_type, employment_tenures: { teammate: :person })
             .ordered

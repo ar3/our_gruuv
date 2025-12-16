@@ -2,8 +2,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   before_action :require_authentication
   before_action :set_teammate
   before_action :set_employment_tenure, only: [:show, :edit, :update, :destroy, :employment_summary]
-  after_action :verify_authorized, except: :index
-  after_action :verify_policy_scoped, only: :index
+  after_action :verify_authorized
 
   def new
     # Just show company selection, will redirect to change

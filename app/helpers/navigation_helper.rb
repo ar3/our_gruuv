@@ -1,4 +1,9 @@
 module NavigationHelper
+  # Get the root company for the current organization
+  def current_company
+    @current_company ||= current_organization&.root_company || current_organization
+  end
+
   # Navigation structure definition
   def navigation_structure
     return [] unless current_organization && current_person
@@ -22,21 +27,49 @@ module NavigationHelper
         icon: 'bi-eye',
         path: organization_observations_path(current_organization),
         section: nil,
-        policy_check: -> { policy(Observation).index? }
+        policy_check: -> { policy(current_company).view_observations? }
       },
       {
         label: 'Reflect',
         icon: 'bi-journal-text',
         path: organization_prompts_path(current_organization),
         section: nil,
-        policy_check: -> { policy(Prompt).index? }
+        policy_check: -> { policy(current_company).view_prompts? }
       },
       {
         label: 'Goals',
         icon: 'bi-bullseye',
         path: organization_goals_path(current_organization),
         section: nil,
-        policy_check: -> { policy(Goal).index? }
+        policy_check: -> { policy(current_company).view_goals? }
+      },
+      {
+        label: 'Huddles',
+        icon: 'bi-chat-dots',
+        section: 'huddles',
+        items: [
+          {
+            label: 'Huddle Review',
+            icon: 'bi-graph-up',
+            path: huddles_review_organization_path(current_organization),
+            policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
+          },
+          {
+            label: 'My Huddles',
+            icon: 'bi-person',
+            path: my_huddles_path,
+            policy_check: -> { policy(Huddle).show? },
+            coming_soon: false
+          },
+          {
+            label: "Today's Huddles",
+            icon: 'bi-calendar-event',
+            path: huddles_path,
+            policy_check: -> { policy(Huddle).show? },
+            coming_soon: false
+          }
+        ]
       },
       {
         label: 'My Teammates',
@@ -54,7 +87,7 @@ module NavigationHelper
             label: 'Seats',
             icon: 'bi-briefcase',
             path: organization_seats_path(current_organization),
-            policy_check: -> { policy(Seat).index? },
+            policy_check: -> { policy(current_company).view_seats? },
             coming_soon: false
           },
           {
@@ -68,21 +101,21 @@ module NavigationHelper
             label: 'Assignments',
             icon: 'bi-list-check',
             path: organization_assignments_path(current_organization),
-            policy_check: -> { policy(Assignment).index? },
+            policy_check: -> { policy(current_company).view_assignments? },
             coming_soon: false
           },
           {
             label: 'Abilities',
             icon: 'bi-award',
             path: organization_abilities_path(current_organization),
-            policy_check: -> { policy(Ability).index? },
+            policy_check: -> { policy(current_company).view_abilities? },
             coming_soon: false
           },
           {
             label: 'Aspirations',
             icon: 'bi-star',
             path: organization_aspirations_path(current_organization),
-            policy_check: -> { policy(Aspiration).index? },
+            policy_check: -> { policy(current_company).view_aspirations? },
             coming_soon: false
           },
           {

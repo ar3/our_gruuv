@@ -15,28 +15,6 @@ RSpec.describe PromptTemplatePolicy, type: :policy do
   let(:pundit_user_person) { OpenStruct.new(user: person_teammate, impersonating_teammate: nil) }
   let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
 
-  describe 'index?' do
-    context 'when user is admin' do
-      it 'allows access' do
-        policy = PromptTemplatePolicy.new(pundit_user_admin, PromptTemplate)
-        expect(policy.index?).to be true
-      end
-    end
-
-    context 'when user has prompts permission' do
-      it 'allows access' do
-        policy = PromptTemplatePolicy.new(pundit_user_prompts, PromptTemplate)
-        expect(policy.index?).to be true
-      end
-    end
-
-    context 'when user lacks prompts permission' do
-      it 'denies access' do
-        policy = PromptTemplatePolicy.new(pundit_user_person, PromptTemplate)
-        expect(policy.index?).to be false
-      end
-    end
-  end
 
   describe 'create?' do
     context 'when user is admin' do

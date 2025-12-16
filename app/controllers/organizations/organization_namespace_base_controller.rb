@@ -66,6 +66,11 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
     @organization ||= Organization.find(params[:organization_id] || params[:id])
   end
 
+  def company
+    @company ||= organization.root_company || organization
+  end
+  helper_method :company
+
   # Override this method in child controllers to skip organization setup for certain actions
   def skip_organization_setup?
     false

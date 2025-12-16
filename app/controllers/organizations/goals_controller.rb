@@ -2,10 +2,11 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   before_action :authenticate_person!
   before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe, :done, :complete, :undelete]
   
-  after_action :verify_authorized, except: :index
+  after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
   
   def index
+    authorize company, :view_goals?
     # Parse owner_id if it's in format "Type_ID" (e.g., "Teammate_123")
     if params[:owner_id].present? && params[:owner_id].include?('_') && params[:owner_type].blank?
       owner_type, owner_id = params[:owner_id].split('_', 2)

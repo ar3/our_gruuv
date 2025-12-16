@@ -3,11 +3,13 @@ class Organizations::AssignmentsController < ApplicationController
   before_action :set_organization
   before_action :set_assignment, only: [:show, :edit, :update, :destroy]
 
-  after_action :verify_authorized, except: :index
+  after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
 
   def index
-    @assignments = policy_scope(Assignment).where(company: @organization.root_company.self_and_descendants).includes(:assignment_outcomes, :published_external_reference, :draft_external_reference, :abilities)
+    company = @organization.root_company || @organization
+    authorize company, :view_assignments?
+    @assignments = policy_scope(Assignment).where(company: company.self_and_descendants).includes(:assignment_outcomes, :published_external_reference, :draft_external_reference, :abilities)
     
     # Apply filters
     if params[:company].present?

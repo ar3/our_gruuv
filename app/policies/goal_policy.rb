@@ -1,8 +1,4 @@
 class GoalPolicy < ApplicationPolicy
-  def index?
-    admin_bypass? || user_is_teammate_of_company?
-  end
-
   def show?
     return false unless viewing_teammate
     admin_bypass? || record.can_be_viewed_by?(viewing_teammate.person)

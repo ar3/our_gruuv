@@ -2,10 +2,11 @@ class Organizations::AbilitiesController < Organizations::OrganizationNamespaceB
   before_action :authenticate_person!
   before_action :set_ability, only: [:show, :edit, :update, :destroy]
 
-  after_action :verify_authorized, except: :index
+  after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
 
   def index
+    authorize company, :view_abilities?
     @abilities = policy_scope(Ability).for_organization(@organization)
     
     # Apply filters
