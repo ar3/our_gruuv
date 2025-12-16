@@ -15,6 +15,9 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       .order(check_in_started_on: :desc)
     
     @current_employment = @teammate.employment_tenures.active.first
+    @employment_tenures = @teammate.employment_tenures
+      .includes(:position, :manager, :seat)
+      .order(started_at: :desc)
     @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
     
     # Create debug data if debug parameter is present

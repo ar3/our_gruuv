@@ -207,6 +207,66 @@
                     = form.submit "Update Position", class: "btn btn-outline-secondary", disabled: true
                   %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need employment management permission to update position information"}}
 
+    / Employment Tenures Table
+    .card.mb-4
+      .card-header
+        %h5.mb-0 Employment Tenures
+        %small.text-muted Complete history of employment tenures
+      .card-body
+        - if @employment_tenures.any?
+          .table-responsive
+            %table.table.table-hover
+              %thead.table-light
+                %tr
+                  %th Started
+                  %th Ended
+                  %th Position
+                  %th Manager
+                  %th Employment Type
+                  %th Seat
+                  %th Status
+              %tbody
+                - @employment_tenures.each do |tenure|
+                  %tr{class: tenure.active? ? 'table-success' : ''}
+                    %td
+                      %strong= tenure.started_at.strftime('%B %d, %Y')
+                      %br
+                      %small.text-muted= tenure.started_at.strftime('%I:%M %p')
+                    %td
+                      - if tenure.ended_at
+                        %strong= tenure.ended_at.strftime('%B %d, %Y')
+                        %br
+                        %small.text-muted= tenure.ended_at.strftime('%I:%M %p')
+                      - else
+                        %span.text-muted —
+                    %td= tenure.position.display_name
+                    %td
+                      - if tenure.manager
+                        = tenure.manager.display_name
+                      - else
+                        %span.text-muted —
+                    %td
+                      - if tenure.employment_type
+                        = tenure.employment_type.humanize
+                      - else
+                        %span.text-muted —
+                    %td
+                      - if tenure.seat
+                        = tenure.seat.display_name
+                      - else
+                        %span.text-muted —
+                    %td
+                      - if tenure.active?
+                        %span.badge.bg-success Active
+                      - else
+                        %span.badge.bg-secondary Inactive
+        - else
+          .alert.alert-info.text-center
+            %h6.mb-2
+              %i.bi.bi-info-circle.me-2
+              No Employment Tenures Found
+            %p.mb-0 No employment tenures have been recorded yet.
+
     / Check-in History Table
     .card.mb-4
       .card-header
