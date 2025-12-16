@@ -42,6 +42,27 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
     expect(teammates.map(&:id)).not_to include(manager_teammate.id)
   end
 
+  it 'returns direct reports for multiple managers when manager_id[] is set' do
+    manager2 = create(:person)
+    manager2_teammate = create(:teammate, person: manager2, organization: organization, first_employed_at: 1.month.ago)
+    direct_report2 = create(:person)
+    direct_report2_teammate = create(:teammate, person: direct_report2, organization: organization, first_employed_at: 1.month.ago)
+    create(:employment_tenure, teammate: direct_report2_teammate, company: organization, manager: manager2, ended_at: nil)
+    
+    get organization_employees_path(organization, manager_id: [manager.id, manager2.id])
+    
+    expect(response).to be_successful
+    teammates = assigns(:filtered_and_paginated_teammates)
+    
+    # Should include direct reports from both managers
+    expect(teammates.map(&:id)).to include(direct_report_teammate.id)
+    expect(teammates.map(&:id)).to include(direct_report2_teammate.id)
+    # Should NOT include non-direct report
+    expect(teammates.map(&:id)).not_to include(non_direct_report_teammate.id)
+    # Should NOT include managers
+    expect(teammates.map(&:id)).not_to include(manager_teammate.id)
+  end
+
   it 'returns all teammates when manager_id is not set' do
     get organization_employees_path(organization)
     

@@ -238,13 +238,31 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
   describe '#current_filters' do
     it 'includes manager_id when present' do
       query = CompanyTeammatesQuery.new(organization, { manager_id: manager.id })
-      expect(query.current_filters[:manager_id]).to eq(manager.id.to_s)
+      expect(query.current_filters[:manager_id]).to include(manager.id.to_s)
+    end
+
+    it 'includes multiple manager_ids when present' do
+      manager2 = create(:person)
+      query = CompanyTeammatesQuery.new(organization, { manager_id: [manager.id, manager2.id] })
+      expect(query.current_filters[:manager_id]).to include(manager.id.to_s, manager2.id.to_s)
     end
 
     it 'does not include manager_id when not present' do
       query = CompanyTeammatesQuery.new(organization, {})
       expect(query.current_filters[:manager_id]).to be_nil
     end
+
+    it 'includes department_id when present' do
+      department = create(:organization, type: 'Department', parent: organization)
+      query = CompanyTeammatesQuery.new(organization, { department_id: department.id })
+      expect(query.current_filters[:department_id]).to include(department.id.to_s)
+    end
+
+    it 'includes multiple department_ids when present' do
+      department = create(:organization, type: 'Department', parent: organization)
+      department2 = create(:organization, type: 'Department', parent: organization)
+      query = CompanyTeammatesQuery.new(organization, { department_id: [department.id, department2.id] })
+      expect(query.current_filters[:department_id]).to include(department.id.to_s, department2.id.to_s)
     end
 
     it 'includes other existing filters' do
@@ -253,7 +271,7 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
       # Status should be expanded to granular statuses for checkbox display
       expect(filters[:status]).to include('assigned_employee', 'unassigned_employee')
       expect(filters[:permission]).to eq('employment_mgmt')
-      expect(filters[:manager_id]).to eq(manager.id.to_s)
+      expect(filters[:manager_id]).to include(manager.id.to_s)
     end
 
     it 'expands status shortcuts to granular statuses for display' do
@@ -406,7 +424,11 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
       query = CompanyTeammatesQuery.new(organization, { manager_id: 999999 }, current_person: manager)
       results = query.call
       
-      expect(results).to include(direct_report1_teammate, direct_report2_teammate, other_employee_teammate)
+      # Should return empty results (no teammates match invalid manager_id)
+      expect(results).to be_empty
+      
+      # But should not raise an error
+      expect { query.call }.not_to raise_error
     end
   end
 end

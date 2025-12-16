@@ -69,7 +69,18 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
     it 'includes manager_id in current_filters' do
       get organization_employees_path(organization, manager_id: manager.id)
-      expect(assigns(:current_filters)[:manager_id]).to eq(manager.id.to_s)
+      expect(assigns(:current_filters)[:manager_id]).to include(manager.id.to_s)
+    end
+
+    it 'includes multiple manager_ids in current_filters' do
+      manager2 = create(:person)
+      manager2_teammate = create(:teammate, person: manager2, organization: organization, first_employed_at: 1.month.ago)
+      direct_report2 = create(:person)
+      direct_report2_teammate = create(:teammate, person: direct_report2, organization: organization, first_employed_at: 1.month.ago)
+      create(:employment_tenure, teammate: direct_report2_teammate, company: organization, manager: manager2, ended_at: nil)
+      
+      get organization_employees_path(organization, manager_id: [manager.id, manager2.id])
+      expect(assigns(:current_filters)[:manager_id]).to include(manager.id.to_s, manager2.id.to_s)
     end
 
     it 'handles check_in_status display view' do
@@ -166,7 +177,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     it 'handles invalid manager_id values gracefully' do
       get organization_employees_path(organization, manager_id: 999999)
       expect(response).to be_successful
-      expect(assigns(:current_filters)[:manager_id]).to eq('999999')
+      expect(assigns(:current_filters)[:manager_id]).to include('999999')
     end
 
     it 'handles missing current_person with manager filter' do
@@ -187,6 +198,12 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       get organization_employees_path(organization, manager_id: '')
       expect(response).to be_successful
       expect(assigns(:current_filters)[:manager_id]).to be_nil
+    end
+
+    it 'handles multiple manager_ids with empty values' do
+      get organization_employees_path(organization, manager_id: ['', manager.id, ''])
+      expect(response).to be_successful
+      expect(assigns(:current_filters)[:manager_id]).to include(manager.id.to_s)
     end
   end
 
@@ -211,7 +228,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       get organization_employees_path(organization, manager_id: manager.id, status: 'assigned_employee')
       
       expect(response).to be_successful
-      expect(assigns(:current_filters)[:manager_id]).to eq(manager.id.to_s)
+      expect(assigns(:current_filters)[:manager_id]).to include(manager.id.to_s)
       # Status is now an array after expansion
       expect(assigns(:current_filters)[:status]).to include('assigned_employee')
     end
@@ -222,7 +239,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       get organization_employees_path(organization, manager_id: manager.id, permission: 'employment_mgmt')
       
       expect(response).to be_successful
-      expect(assigns(:current_filters)[:manager_id]).to eq(manager.id.to_s)
+      expect(assigns(:current_filters)[:manager_id]).to include(manager.id.to_s)
       expect(assigns(:current_filters)[:permission]).to eq('employment_mgmt')
     end
 
@@ -234,8 +251,20 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       get organization_employees_path(organization, manager_id: manager.id, organization_id: child_org.id)
       
       expect(response).to be_successful
-      expect(assigns(:current_filters)[:manager_id]).to eq(manager.id.to_s)
+      expect(assigns(:current_filters)[:manager_id]).to include(manager.id.to_s)
       expect(assigns(:current_filters)[:organization_id]).to eq(child_org.id.to_s)
+    end
+
+    it 'combines manager filter with department filter' do
+      department = create(:organization, type: 'Department', parent: organization)
+      department_teammate = create(:teammate, person: direct_report, organization: department, first_employed_at: 1.month.ago)
+      create(:employment_tenure, teammate: department_teammate, company: organization, manager: manager, ended_at: nil)
+      
+      get organization_employees_path(organization, manager_id: manager.id, department_id: department.id)
+      
+      expect(response).to be_successful
+      expect(assigns(:current_filters)[:manager_id]).to include(manager.id.to_s)
+      expect(assigns(:current_filters)[:department_id]).to include(department.id.to_s)
     end
   end
 
@@ -374,6 +403,73 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       }.not_to raise_error
       expect(response).to be_successful
       expect(assigns(:hierarchy_tree)).to be_an(Array)
+    end
+  end
+
+  describe 'department filter functionality' do
+    let(:department) { create(:organization, type: 'Department', parent: organization) }
+    let(:department2) { create(:organization, type: 'Department', parent: organization) }
+    let(:employee_in_dept) { create(:person) }
+    let(:employee_in_dept2) { create(:person) }
+    let(:employee_no_dept) { create(:person) }
+    
+    let!(:dept_teammate) { create(:teammate, person: employee_in_dept, organization: department, first_employed_at: 1.month.ago) }
+    let!(:dept2_teammate) { create(:teammate, person: employee_in_dept2, organization: department2, first_employed_at: 1.month.ago) }
+    let!(:no_dept_teammate) { create(:teammate, person: employee_no_dept, organization: organization, first_employed_at: 1.month.ago) }
+
+    before do
+      create(:employment_tenure, teammate: dept_teammate, company: organization, started_at: 1.month.ago, ended_at: nil)
+      create(:employment_tenure, teammate: dept2_teammate, company: organization, started_at: 1.month.ago, ended_at: nil)
+      create(:employment_tenure, teammate: no_dept_teammate, company: organization, started_at: 1.month.ago, ended_at: nil)
+    end
+
+    it 'returns only teammates in selected department when department_id is set' do
+      get organization_employees_path(organization, department_id: department.id)
+      
+      expect(response).to be_successful
+      teammates = assigns(:filtered_and_paginated_teammates)
+      
+      # Should include teammate in department
+      expect(teammates.map(&:id)).to include(dept_teammate.id)
+      # Should NOT include teammates in other departments or no department
+      expect(teammates.map(&:id)).not_to include(dept2_teammate.id)
+      expect(teammates.map(&:id)).not_to include(no_dept_teammate.id)
+    end
+
+    it 'returns teammates from multiple departments when department_id[] is set' do
+      get organization_employees_path(organization, department_id: [department.id, department2.id])
+      
+      expect(response).to be_successful
+      teammates = assigns(:filtered_and_paginated_teammates)
+      
+      # Should include teammates from both departments
+      expect(teammates.map(&:id)).to include(dept_teammate.id)
+      expect(teammates.map(&:id)).to include(dept2_teammate.id)
+      # Should NOT include teammate with no department
+      expect(teammates.map(&:id)).not_to include(no_dept_teammate.id)
+    end
+
+    it 'includes department_id in current_filters' do
+      get organization_employees_path(organization, department_id: department.id)
+      expect(assigns(:current_filters)[:department_id]).to include(department.id.to_s)
+    end
+
+    it 'combines department filter with manager filter' do
+      manager = create(:person)
+      manager_teammate = create(:teammate, person: manager, organization: organization, first_employed_at: 1.month.ago)
+      # Update existing tenure to have manager
+      existing_tenure = EmploymentTenure.find_by(teammate: dept_teammate, company: organization)
+      existing_tenure.update!(manager: manager) if existing_tenure
+      
+      get organization_employees_path(organization, department_id: department.id, manager_id: manager.id)
+      
+      expect(response).to be_successful
+      teammates = assigns(:filtered_and_paginated_teammates)
+      
+      # Should only include teammate that matches both filters
+      expect(teammates.map(&:id)).to include(dept_teammate.id)
+      expect(teammates.map(&:id)).not_to include(dept2_teammate.id)
+      expect(teammates.map(&:id)).not_to include(no_dept_teammate.id)
     end
   end
 

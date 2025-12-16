@@ -85,10 +85,22 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       
       # Filter by manager relationship
       if params[:manager_id].present?
-        manager_id = params[:manager_id].to_i
-        unassigned_base = unassigned_base.joins(:employment_tenures)
-                                         .where(employment_tenures: { manager_id: manager_id, ended_at: nil })
-                                         .distinct
+        manager_ids = Array(params[:manager_id]).map(&:to_i).reject(&:zero?)
+        if manager_ids.any?
+          unassigned_base = unassigned_base.joins(:employment_tenures)
+                                           .where(employment_tenures: { manager_id: manager_ids, ended_at: nil })
+                                           .distinct
+        end
+      end
+      
+      # Filter by department
+      if params[:department_id].present?
+        department_ids = Array(params[:department_id]).map(&:to_i).reject(&:zero?)
+        if department_ids.any?
+          department_orgs = Organization.where(id: department_ids)
+          all_org_ids = department_orgs.flat_map { |dept| dept.self_and_descendants.map(&:id) }.uniq
+          unassigned_base = unassigned_base.where(organization_id: all_org_ids)
+        end
       end
       
       # Apply status filter
@@ -184,6 +196,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     @current_spotlight = determine_spotlight
     @has_active_filters = query.has_active_filters?
     @active_managers = active_managers_for_organization
+    @active_departments = active_departments_for_organization
     
     # Preserve current params for return URL (excluding controller/action/page)
     return_params = params.except(:controller, :action, :page).permit!.to_h
@@ -340,6 +353,20 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Return Person objects ordered by name
     Person.where(id: manager_ids)
           .order(last_name: :asc, first_name: :asc)
+  end
+
+  def active_departments_for_organization
+    # Get all departments within the organization hierarchy
+    org_hierarchy = if @organization.company?
+      @organization.self_and_descendants
+    else
+      [@organization, @organization.parent].compact
+    end
+    
+    # Return Department organizations ordered by name
+    Organization.where(id: org_hierarchy.map(&:id))
+                .departments
+                .order(:name)
   end
 
     def apply_preset_if_selected

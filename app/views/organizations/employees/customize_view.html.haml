@@ -68,11 +68,24 @@
           
           .mb-3
             %label.form-label Manager
-            = select_tag 'manager_id', options_from_collection_for_select(@active_managers, :id, :last_first_display_name, @current_filters[:manager_id]), { include_blank: 'All Teammates', class: 'form-select' }
+            .row.g-2
+              - @active_managers.each_with_index do |manager, index|
+                .col-md-4.col-sm-6.col-12
+                  .form-check
+                    = check_box_tag 'manager_id[]', manager.id, @current_filters[:manager_id]&.include?(manager.id.to_s), class: 'form-check-input', id: "manager_#{manager.id}"
+                    = label_tag "manager_#{manager.id}", manager.last_first_display_name, class: 'form-check-label'
           
           .mb-3
-            %label.form-label Organization
-            = select_tag 'organization_id', options_from_collection_for_select([@organization] + @organization.descendants, :id, :name, @current_filters[:organization_id]), { include_blank: 'All Organizations', class: 'form-select' }
+            %label.form-label Department
+            - if @active_departments.any?
+              .row.g-2
+                - @active_departments.each_with_index do |department, index|
+                  .col-md-4.col-sm-6.col-12
+                    .form-check
+                      = check_box_tag 'department_id[]', department.id, @current_filters[:department_id]&.include?(department.id.to_s), class: 'form-check-input', id: "department_#{department.id}"
+                      = label_tag "department_#{department.id}", department.name, class: 'form-check-label'
+            - else
+              %small.text-muted No departments available
           
           .mb-3
             %label.form-label Permissions

@@ -12,6 +12,7 @@ class CompanyTeammatesQuery
     teammates = filter_by_organization(teammates)
     teammates = filter_by_permissions(teammates)
     teammates = filter_by_manager_relationship(teammates)
+    teammates = filter_by_department(teammates)
     teammates = apply_sort(teammates)
     # Ensure distinct to avoid duplicates from joins (e.g., manager filter)
     # Note: Status filtering is complex and requires Array conversion
@@ -34,7 +35,16 @@ class CompanyTeammatesQuery
     end
     filters[:organization_id] = params[:organization_id] if params[:organization_id].present?
     filters[:permission] = params[:permission] if params[:permission].present?
-    filters[:manager_id] = params[:manager_id] if params[:manager_id].present?
+    # Handle both single manager_id and manager_id[] array
+    if params[:manager_id].present?
+      manager_ids = Array(params[:manager_id])
+      filters[:manager_id] = manager_ids.map(&:to_s)
+    end
+    # Handle department_id[] array
+    if params[:department_id].present?
+      department_ids = Array(params[:department_id])
+      filters[:department_id] = department_ids.map(&:to_s)
+    end
     filters
   end
 
@@ -151,11 +161,27 @@ class CompanyTeammatesQuery
   def filter_by_manager_relationship(teammates)
     return teammates unless params[:manager_id].present?
 
-    manager_id = params[:manager_id].to_i
+    manager_ids = Array(params[:manager_id]).map(&:to_i).reject(&:zero?)
+    return teammates if manager_ids.empty?
+
     # Filter to only direct reports based on active employment tenure manager relationships
     teammates.joins(:employment_tenures)
-             .where(employment_tenures: { manager_id: manager_id, ended_at: nil })
+             .where(employment_tenures: { manager_id: manager_ids, ended_at: nil })
              .distinct
+  end
+
+  def filter_by_department(teammates)
+    return teammates unless params[:department_id].present?
+
+    department_ids = Array(params[:department_id]).map(&:to_i).reject(&:zero?)
+    return teammates if department_ids.empty?
+
+    # Get all department organizations and their descendants
+    department_orgs = Organization.where(id: department_ids)
+    all_org_ids = department_orgs.flat_map { |dept| dept.self_and_descendants.map(&:id) }.uniq
+
+    # Filter teammates where organization is in the department hierarchy
+    teammates.where(organization_id: all_org_ids)
   end
 
   def apply_sort(teammates)

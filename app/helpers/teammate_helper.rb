@@ -110,10 +110,37 @@ module TeammateHelper
       end
     when 'manager_id'
       if filter_value.present?
-        manager = Person.find_by(id: filter_value.to_i)
-        manager ? manager.display_name : 'Unknown Manager'
+        # Handle both single value and array
+        manager_ids = Array(filter_value).map(&:to_i).reject(&:zero?)
+        if manager_ids.any?
+          managers = Person.where(id: manager_ids).order(:last_name, :first_name)
+          if managers.count == 1
+            managers.first.display_name
+          else
+            managers.map(&:display_name).join(', ')
+          end
+        else
+          'All Teammates'
+        end
       else
         'All Teammates'
+      end
+    when 'department_id'
+      if filter_value.present?
+        # Handle both single value and array
+        department_ids = Array(filter_value).map(&:to_i).reject(&:zero?)
+        if department_ids.any?
+          departments = Organization.where(id: department_ids).order(:name)
+          if departments.count == 1
+            departments.first.name
+          else
+            departments.map(&:name).join(', ')
+          end
+        else
+          'All Departments'
+        end
+      else
+        'All Departments'
       end
     else
       filter_value.to_s.humanize
@@ -136,7 +163,15 @@ module TeammateHelper
       current_params[:permission] = Array(current_params[:permission]) - [filter_value]
       current_params[:permission] = nil if current_params[:permission].empty?
     when 'manager_id'
-      current_params[:manager_id] = nil
+      # Handle both single value and array
+      manager_ids = Array(current_params[:manager_id])
+      manager_ids = manager_ids - [filter_value]
+      current_params[:manager_id] = manager_ids.empty? ? nil : (manager_ids.length == 1 ? manager_ids.first : manager_ids)
+    when 'department_id'
+      # Handle array
+      department_ids = Array(current_params[:department_id])
+      department_ids = department_ids - [filter_value]
+      current_params[:department_id] = department_ids.empty? ? nil : (department_ids.length == 1 ? department_ids.first : department_ids)
     end
     
     # Get organization from instance variable

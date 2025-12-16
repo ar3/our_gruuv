@@ -40,5 +40,50 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
     # If we get here without a NoMethodError, the bug is fixed
     expect(response.body).to be_present
   end
+
+  it 'renders manager checkboxes' do
+    get customize_view_organization_employees_path(organization)
+    
+    expect(response).to be_successful
+    expect(response.body).to include('manager_id[]')
+    expect(response.body).to include('form-check-input')
+  end
+
+  it 'renders department checkboxes when departments exist' do
+    department = create(:organization, type: 'Department', parent: organization)
+    
+    get customize_view_organization_employees_path(organization)
+    
+    expect(response).to be_successful
+    expect(response.body).to include('department_id[]')
+    expect(response.body).to include('form-check-input')
+    expect(response.body).to include(department.name)
+  end
+
+  it 'shows message when no departments exist' do
+    get customize_view_organization_employees_path(organization)
+    
+    expect(response).to be_successful
+    # Should show message if no departments
+    if assigns(:active_departments).empty?
+      expect(response.body).to include('No departments available')
+    end
+  end
+
+  it 'preserves selected manager filters' do
+    get customize_view_organization_employees_path(organization, manager_id: manager.id)
+    
+    expect(response).to be_successful
+    expect(assigns(:current_filters)[:manager_id]).to include(manager.id.to_s)
+  end
+
+  it 'preserves selected department filters' do
+    department = create(:organization, type: 'Department', parent: organization)
+    
+    get customize_view_organization_employees_path(organization, department_id: department.id)
+    
+    expect(response).to be_successful
+    expect(assigns(:current_filters)[:department_id]).to include(department.id.to_s)
+  end
 end
 
