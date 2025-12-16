@@ -404,6 +404,30 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       expect(response).to be_successful
       expect(assigns(:hierarchy_tree)).to be_an(Array)
     end
+
+    it 'handles TeamTeammate objects in organization hierarchy without error' do
+      # Create a company with a team descendant
+      company = create(:organization, :company)
+      team = create(:organization, type: 'Team', parent: company)
+      
+      # Create a person with both CompanyTeammate and TeamTeammate
+      person = create(:person)
+      company_teammate = create(:teammate, type: 'CompanyTeammate', person: person, organization: company, first_employed_at: 1.month.ago)
+      team_teammate = create(:teammate, type: 'TeamTeammate', person: person, organization: team)
+      
+      # Create employment tenure for the company teammate
+      create(:employment_tenure, teammate: company_teammate, company: company, started_at: 1.month.ago, ended_at: nil)
+      
+      allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person)
+      allow_any_instance_of(ApplicationController).to receive(:current_organization).and_return(company)
+      
+      expect {
+        get organization_employees_path(company, view: 'vertical_hierarchy')
+      }.not_to raise_error
+      expect(response).to be_successful
+      # Verify no TeamTeammatePolicy error occurred
+      expect(response.body).not_to include('TeamTeammatePolicy')
+    end
   end
 
   describe 'department filter functionality' do

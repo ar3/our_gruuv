@@ -124,7 +124,8 @@ class CompanyTeammatesQuery
   end
 
   def base_scope
-    CompanyTeammate.for_organization_hierarchy(organization)
+    CompanyTeammate.where(type: 'CompanyTeammate')
+                   .for_organization_hierarchy(organization)
                    .includes(:person, :employment_tenures, :organization)
   end
 

@@ -430,5 +430,27 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
       # But should not raise an error
       expect { query.call }.not_to raise_error
     end
+
+    it 'excludes TeamTeammate objects from results' do
+      # Create a company with a team descendant
+      company = create(:organization, :company)
+      team = create(:organization, type: 'Team', parent: company)
+      
+      # Create a CompanyTeammate in the company
+      company_person = create(:person)
+      company_teammate = CompanyTeammate.find(create(:teammate, person: company_person, organization: company).id)
+      
+      # Create a TeamTeammate in the team (same person, different teammate type)
+      team_teammate = TeamTeammate.find(create(:teammate, type: 'TeamTeammate', person: company_person, organization: team).id)
+      
+      query = CompanyTeammatesQuery.new(company, {})
+      results = query.call
+      
+      # Should include CompanyTeammate
+      expect(results).to include(company_teammate)
+      # Should NOT include TeamTeammate
+      expect(results.map(&:class).uniq).to eq([CompanyTeammate])
+      expect(results).not_to include(team_teammate)
+    end
   end
 end
