@@ -114,6 +114,8 @@ RSpec.describe 'Organizations::Search', type: :request do
           expect(response).to have_http_status(:success)
           expect(response.body).to include('John Doe')
           expect(response.body).to include('john.doe@example.com')
+          # Should link to internal teammate view
+          expect(response.body).to include(internal_organization_company_teammate_path(organization, searchable_teammate))
           # Should not have the error about undefined method
           expect(response.body).not_to include('teammate_organization_company_teammate_path')
         end

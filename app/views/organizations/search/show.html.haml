@@ -44,7 +44,6 @@
                     %tr
                       %th Name
                       %th Email
-                      %th Organization
                       %th Actions
                   %tbody
                     - @results[:people].each do |person|
@@ -52,15 +51,14 @@
                       %tr
                         %td
                           - if teammate
-                            = link_to person.display_name, organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
+                            = link_to person.last_first_display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
                           - else
-                            = person.display_name
+                            = person.last_first_display_name
                         %td= person.email
-                        %td= @organization.display_name
                         %td
                           .btn-group.btn-group-sm
                             - if teammate
-                              = link_to organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-primary" do
+                              = link_to internal_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-primary" do
                                 %i.bi.bi-eye
 
         - if @results[:organizations].any?

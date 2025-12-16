@@ -276,78 +276,160 @@
                       %i.bi.bi-check-circle.me-2
                       No issues detected!
 
-.row.justify-content-center
+/ Employment Information Section
+.row.mb-4
   .col-12
     .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-briefcase.me-2
+          Employment Information
       .card-body
-        / Current Organization Information
-        - if @current_organization
-          .row.mb-4
-            .col-12
-              %h5.text-muted Current Organization: #{@current_organization.name}
-              
-              / Current Position
-              - current_tenure = @employment_tenures.find { |t| t.company == @current_organization && t.ended_at.nil? }
-              - if current_tenure&.position&.position_type
-                .alert.alert-success
-                  %strong Current Position:
-                  = current_tenure.position.position_type.external_title
-                  - if current_tenure.started_at
+        - if @active_employment_tenure
+          .row
+            .col-md-6
+              %p.mb-2
+                %strong Active Position Type:
+                - if @active_employment_tenure.position&.position_type
+                  = @active_employment_tenure.position.position_type.external_title
+                - else
+                  %span.text-muted Not set
+              %p.mb-2
+                %strong Manager:
+                - if @active_employment_tenure.manager
+                  = link_to @active_employment_tenure.manager.display_name, internal_organization_company_teammate_path(@current_organization, @current_organization.teammates.find_by(person: @active_employment_tenure.manager)), class: "text-decoration-none"
+                - else
+                  %span.text-muted Not set
+            .col-md-6
+              %p.mb-2
+                %strong Earliest Start Date:
+                - if @earliest_start_date
+                  = @earliest_start_date.strftime("%B %d, %Y")
+                - else
+                  %span.text-muted Not available
+        - else
+          %p.text-muted No active employment tenure in this organization.
+
+/ Departments & Teams Section
+.row.mb-4
+  .col-12
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-diagram-3.me-2
+          Active Departments & Teams
+      .card-body
+        - if @active_departments_and_teams.any?
+          .list-group
+            - @active_departments_and_teams.each do |dept_team_teammate|
+              .list-group-item
+                %strong= dept_team_teammate.organization.name
+                %span.badge.bg-info.ms-2= dept_team_teammate.organization.type
+        - else
+          %p.text-muted No active departments or teams.
+
+/ Observations as Observee Section
+.row.mb-4
+  .col-12
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-chat-text.me-2
+          Recent Observations About #{@teammate.person.display_name}
+      .card-body
+        - if @observations_as_observee.any?
+          .list-group
+            - @observations_as_observee.each do |observation|
+              .list-group-item
+                .d-flex.justify-content-between.align-items-start
+                  .flex-grow-1
+                    = link_to organization_observation_path(@current_organization, observation), class: "text-decoration-none" do
+                      %strong= truncate(observation.story, length: 150)
                     %br
-                    %small Started: #{current_tenure.started_at.strftime("%B %d, %Y")}
-              
-              / Organization Access
-              - org_access = @teammates.find { |a| a.organization == @current_organization }
-              - if org_access
-                .alert.alert-info
-                  %strong Organization Access:
-                  %br
-                  - if org_access.can_manage_employment?
-                    %span.badge.bg-warning.me-2 Employment Management
-                  - if org_access.can_manage_maap?
-                    %span.badge.bg-warning.me-2 MAAP Management
-                  - if !org_access.can_manage_employment? && !org_access.can_manage_maap?
-                    %span.badge.bg-secondary Standard Access
-        
-        / Huddle Stats (Placeholder)
-        .row.mb-4
-          .col-12
-            %h5.text-muted Huddle Participation
-            .alert.alert-info
-              %i.bi.bi-info-circle.me-2
-              %strong Coming Soon:
-              Huddle participation statistics and feedback within this organization will be displayed here.
-        
-        / Other Organizations
-        .row.mb-4
-          .col-12
-            %h5.text-muted Other Organizations
-            - other_tenures = @employment_tenures.reject { |t| t.company == @current_organization }
-            - if other_tenures.any?
-              .table-responsive
-                %table.table.table-hover
-                  %thead
-                    %tr
-                      %th Organization
-                      %th Status
-                      %th Start Date
-                      %th End Date
-                  %tbody
-                    - other_tenures.each do |tenure|
-                      %tr
-                        %td= tenure.company.name
-                        %td
-                          - if tenure.ended_at.nil?
-                            %span.badge.bg-success Active
-                          - else
-                            %span.badge.bg-secondary Former
-                        %td= tenure.started_at.strftime("%B %Y")
-                        %td
-                          - if tenure.ended_at
-                            = tenure.ended_at.strftime("%B %Y")
-                          - else
-                            %span.text-muted Present
-            - else
-              %p.text-muted No other organizational affiliations.
+                    %small.text-muted
+                      By #{observation.observer.display_name} on #{observation.observed_at.strftime("%B %d, %Y")}
+                      - if observation.privacy_level == 'public_to_world'
+                        %span.badge.bg-success.ms-2 Public
+                      - else
+                        %span.badge.bg-info.ms-2 Company
+                  .ms-3
+                    = link_to organization_observation_path(@current_organization, observation), class: "btn btn-sm btn-outline-primary" do
+                      %i.bi.bi-eye
+        - else
+          %p.text-muted No recent company or public observations about this teammate.
+
+/ Observations as Observer Section
+.row.mb-4
+  .col-12
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-pencil-square.me-2
+          Recent Observations By #{@teammate.person.display_name}
+      .card-body
+        - if @observations_as_observer.any?
+          .list-group
+            - @observations_as_observer.each do |observation|
+              .list-group-item
+                .d-flex.justify-content-between.align-items-start
+                  .flex-grow-1
+                    = link_to organization_observation_path(@current_organization, observation), class: "text-decoration-none" do
+                      %strong= truncate(observation.story, length: 150)
+                    %br
+                    %small.text-muted
+                      On #{observation.observed_at.strftime("%B %d, %Y")}
+                      - if observation.privacy_level == 'public_to_world'
+                        %span.badge.bg-success.ms-2 Public
+                      - else
+                        %span.badge.bg-info.ms-2 Company
+                  .ms-3
+                    = link_to organization_observation_path(@current_organization, observation), class: "btn btn-sm btn-outline-primary" do
+                      %i.bi.bi-eye
+        - else
+          %p.text-muted No recent company or public observations by this teammate.
+
+/ Public Goals Section
+.row.mb-4
+  .col-12
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-bullseye.me-2
+          Publicly Visible Active Goals
+      .card-body
+        - if @public_goals.any?
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Goal
+                  %th Owner
+                  %th Last Check-In
+                  %th Actions
+              %tbody
+                - @public_goals.each do |goal|
+                  %tr
+                    %td
+                      = link_to goal.title, organization_goal_path(@current_organization, goal), class: "text-decoration-none"
+                    %td
+                      - if goal.owner_type == 'Teammate'
+                        = goal.owner.person.display_name
+                      - elsif goal.owner_type == 'Organization'
+                        = goal.owner.name
+                      - else
+                        %span.text-muted Unknown
+                    %td
+                      - last_check_in = goal.instance_variable_get(:@last_check_in)
+                      - if last_check_in
+                        %strong= "#{last_check_in.confidence_percentage}%"
+                        %br
+                        %small.text-muted= last_check_in.check_in_week_start.strftime("%b %d, %Y")
+                      - else
+                        %span.text-muted No check-in yet
+                    %td
+                      = link_to organization_goal_path(@current_organization, goal), class: "btn btn-sm btn-outline-primary" do
+                        %i.bi.bi-eye
+        - else
+          %p.text-muted No publicly visible active goals owned by this teammate.
 
 

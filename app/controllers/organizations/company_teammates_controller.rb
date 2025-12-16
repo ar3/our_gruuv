@@ -61,11 +61,68 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     authorize @teammate, :internal?, policy_class: CompanyTeammatePolicy
     # Internal view - organization-specific data for active employees
     @current_organization = organization
-    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, position: :position_type)
+    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :manager, position: :position_type)
                                  &.where(company: organization)
                                  &.order(started_at: :desc)
                                  &.decorate || []
     @teammates = @teammate.person.teammates.includes(:organization)
+
+    # Active employment tenure details
+    @active_employment_tenure = @employment_tenures.find { |t| t.company == organization && t.ended_at.nil? }
+    
+    # Earliest start date of employment tenure
+    @earliest_start_date = if @teammate.first_employed_at.present?
+      @teammate.first_employed_at
+    elsif @employment_tenures.any?
+      @employment_tenures.map(&:started_at).compact.min
+    else
+      nil
+    end
+
+    # Active departments/teams within this company
+    company_descendant_ids = organization.self_and_descendants.map(&:id)
+    @active_departments_and_teams = @teammate.person.teammates
+      .joins(:organization)
+      .where(organizations: { id: company_descendant_ids, type: ['Department', 'Team'] })
+      .where(last_terminated_at: nil)
+      .includes(:organization)
+      .order('organizations.name')
+
+    # Recent observations where teammate is observee (company or fully public)
+    @observations_as_observee = Observation
+      .where(id: @teammate.observees.select(:observation_id))
+      .where(company: organization)
+      .where(privacy_level: ['public_to_company', 'public_to_world'])
+      .where.not(published_at: nil)
+      .where("deleted_at IS NULL")
+      .includes(:observer, :company)
+      .order(observed_at: :desc)
+      .limit(10)
+
+    # Recent observations where teammate is observer (company or fully public)
+    @observations_as_observer = @teammate.person.observations
+      .where(company: organization)
+      .where(privacy_level: ['public_to_company', 'public_to_world'])
+      .where.not(published_at: nil)
+      .where("deleted_at IS NULL")
+      .includes(:company)
+      .order(observed_at: :desc)
+      .limit(10)
+
+    # Publicly visible active goals where teammate is the owner, with last check-in
+    @public_goals = Goal
+      .where(company: organization)
+      .where(privacy_level: 'everyone_in_company')
+      .where(owner_type: 'Teammate', owner_id: @teammate.id)
+      .active
+      .includes(:goal_check_ins, :creator, :owner)
+      .order(created_at: :desc)
+      .limit(20)
+    
+    # Load last check-in for each goal
+    @public_goals.each do |goal|
+      goal.instance_variable_set(:@last_check_in, goal.goal_check_ins.recent.first)
+    end
 
     # Debug mode - gather comprehensive authorization data
     if params[:debug] == 'true'
