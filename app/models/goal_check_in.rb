@@ -5,10 +5,11 @@ class GoalCheckIn < ApplicationRecord
   belongs_to :confidence_reporter, class_name: 'Person'
   
   # Validations
-  validates :confidence_percentage, inclusion: { in: 0..100 }
+  validates :confidence_percentage, inclusion: { in: 0..100 }, allow_nil: true
   validates :check_in_week_start, presence: true
   validates :goal_id, uniqueness: { scope: :check_in_week_start, message: "already has a check-in for this week" }
   validate :check_in_week_start_must_be_monday
+  validate :at_least_one_field_present
   
   # Scopes
   scope :for_week, ->(week_start) { where(check_in_week_start: week_start) }
@@ -31,6 +32,12 @@ class GoalCheckIn < ApplicationRecord
     
     unless check_in_week_start.monday?
       errors.add(:check_in_week_start, "must be a Monday")
+    end
+  end
+  
+  def at_least_one_field_present
+    if confidence_percentage.nil? && confidence_reason.blank?
+      errors.add(:base, "Either confidence percentage or reason must be provided")
     end
   end
 end

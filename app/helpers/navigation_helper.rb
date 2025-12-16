@@ -119,17 +119,31 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Aspirations',
+            label: 'Aspirational Values',
             icon: 'bi-star',
             path: organization_aspirations_path(current_organization),
             policy_check: -> { policy(current_company).view_aspirations? },
             coming_soon: false
           },
           {
-            label: 'Employees',
-            icon: 'bi-people',
-            path: organization_employees_path(current_organization),
-            policy_check: -> { policy(Organization).show? },
+            label: 'Bulk Events',
+            icon: 'bi-upload',
+            path: organization_bulk_sync_events_path(current_organization),
+            policy_check: -> { policy(current_company).view_bulk_sync_events? },
+            coming_soon: false
+          },
+          {
+            label: 'Slack Settings',
+            icon: 'bi-slack',
+            path: organization_slack_path(current_organization),
+            policy_check: -> { policy(current_organization).manage_employment? },
+            coming_soon: false
+          },
+          {
+            label: 'Huddle Playbooks',
+            icon: 'bi-book',
+            path: organization_huddle_playbooks_path(current_organization),
+            policy_check: -> { policy(current_organization).show? },
             coming_soon: false
           },
           {

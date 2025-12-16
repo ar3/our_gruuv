@@ -49,7 +49,7 @@ RSpec.describe 'Check-ins Goals Section', type: :system do
     expect(page).to have_content('Now Goal')
     expect(page).to have_content('85%')
     expect(page).to have_content('Up to date')
-    expect(page).to have_button('Manage Goals & Confidence Ratings')
+    expect(page).to have_link('Manage Goals & Confidence Ratings')
   end
 
   it 'shows new check-in needed when no current week check-in' do
@@ -108,23 +108,24 @@ RSpec.describe 'Check-ins Goals Section', type: :system do
     page.find('a[data-bs-target="#goalsSection"]').click
     
     expect(page).to have_content('No active goals found.')
-    expect(page).to have_button('Manage Goals & Confidence Ratings')
+    expect(page).to have_link('Manage Goals & Confidence Ratings')
   end
 
-  it 'redirects when clicking Manage Goals button' do
+  it 'redirects when clicking Manage Goals link' do
     visit organization_company_teammate_check_ins_path(organization, employee_teammate)
     
-    # Expand the goals section to see the button
+    # Expand the goals section to see the link
     page.find('a[data-bs-target="#goalsSection"]').click
     
-    # Verify button is present
-    expect(page).to have_button('Manage Goals & Confidence Ratings')
+    # Verify link is present
+    expect(page).to have_link('Manage Goals & Confidence Ratings')
     
-    # Click the button
-    click_button 'Manage Goals & Confidence Ratings'
+    # Click the link
+    click_link 'Manage Goals & Confidence Ratings'
     
-    # Should redirect to goals page
-    expect(page).to have_current_path(/goals/)
+    # Should redirect to goal check-ins overlay page
+    expect(page).to have_current_path(/goal_check_ins/)
+    expect(page).to have_content('Goal Check-ins')
   end
 end
 

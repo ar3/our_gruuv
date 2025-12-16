@@ -13,8 +13,8 @@ RSpec.describe 'User Preferences', type: :request do
     context 'with valid layout' do
       it 'updates the layout preference' do
         expect {
-          patch layout_user_preferences_path, params: { layout: 'vertical' }
-        }.to change { user_preference.reload.layout }.from('horizontal').to('vertical')
+          patch layout_user_preferences_path, params: { layout: 'horizontal' }
+        }.to change { user_preference.reload.layout }.from('vertical').to('horizontal')
       end
       
       it 'redirects back with notice' do
@@ -244,14 +244,14 @@ RSpec.describe 'User Preferences', type: :request do
       # Note: This test may need adjustment based on actual rendered content
     end
     
-    it 'defaults to horizontal layout when no preference exists' do
+    it 'defaults to vertical layout when no preference exists' do
       user_preference.destroy
       
       get dashboard_organization_path(organization)
       
       expect(response).to have_http_status(:success)
-      # Should default to horizontal - verify by checking layout helper
-      expect(controller.send(:determine_layout)).to eq('authenticated-horizontal-navigation')
+      # Should default to vertical - verify by checking layout helper
+      expect(controller.send(:determine_layout)).to eq('authenticated-vertical-navigation')
     end
   end
 end

@@ -173,11 +173,11 @@ class ApplicationController < ActionController::Base
   def determine_layout
     return 'application' unless current_company_teammate
     
-    # Check user preference for layout, default to horizontal
-    if current_user_preferences&.layout == 'vertical'
-      'authenticated-vertical-navigation'
-    else
+    # Check user preference for layout, default to vertical
+    if current_user_preferences&.layout == 'horizontal'
       'authenticated-horizontal-navigation'
+    else
+      'authenticated-vertical-navigation'
     end
   end
   

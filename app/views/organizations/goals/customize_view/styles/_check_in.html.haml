@@ -81,7 +81,7 @@
               - else
                 = select_tag "goal_check_ins[#{goal.id}][confidence_percentage]", 
                     options_for_select(confidence_percentage_options, check_in&.confidence_percentage),
-                    { include_blank: 'Select confidence...', class: 'form-select form-select-sm', required: true }
+                    { include_blank: 'Select confidence...', class: 'form-select form-select-sm' }
             %td
               - if is_completed && last_check_in
                 .completion-info

@@ -43,8 +43,36 @@ module Goals
         return add_error(goal_id, "You don't have permission to update check-ins for this goal")
       end
 
-      confidence_percentage = check_in_data[:confidence_percentage]&.to_i
-      confidence_reason = check_in_data[:confidence_reason]&.strip
+      # Parse and normalize values
+      confidence_percentage = check_in_data[:confidence_percentage].present? ? check_in_data[:confidence_percentage].to_i : nil
+      confidence_reason = check_in_data[:confidence_reason]&.strip.presence
+
+      # If both fields are empty, delete existing check-in if it exists
+      if confidence_percentage.nil? && confidence_reason.nil?
+        existing_check_in = GoalCheckIn.find_by(
+          goal: goal,
+          check_in_week_start: week_start
+        )
+        
+        if existing_check_in
+          # Set PaperTrail whodunnit for version tracking
+          PaperTrail.request.whodunnit = current_person.id.to_s
+          existing_check_in.destroy
+          @success_count += 1
+        end
+        return
+      end
+
+      # If only reason is provided without confidence, use last check-in's confidence or default to 5%
+      if confidence_percentage.nil? && confidence_reason.present?
+        # Get the most recent check-in, excluding the current week (if it exists)
+        last_check_in = goal.goal_check_ins
+          .where.not(check_in_week_start: week_start)
+          .recent
+          .first
+        # Use last check-in's confidence if it exists and is not nil, otherwise default to 5%
+        confidence_percentage = (last_check_in&.confidence_percentage || 5)
+      end
 
       # Set PaperTrail whodunnit for version tracking
       PaperTrail.request.whodunnit = current_person.id.to_s
@@ -55,15 +83,14 @@ module Goals
         check_in_week_start: week_start
       )
 
-      check_in.assign_attributes(
-        confidence_percentage: confidence_percentage,
-        confidence_reason: confidence_reason,
-        confidence_reporter: current_person
-      )
+      # Update fields
+      check_in.confidence_percentage = confidence_percentage
+      check_in.confidence_reason = confidence_reason
+      check_in.confidence_reporter = current_person
 
       if check_in.save
         # Auto-complete goal if confidence is 0% or 100%
-        if (confidence_percentage == 0 || confidence_percentage == 100) && goal.completed_at.nil?
+        if confidence_percentage.present? && (confidence_percentage == 0 || confidence_percentage == 100) && goal.completed_at.nil?
           goal.update(completed_at: Time.current)
         end
         

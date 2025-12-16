@@ -1,0 +1,114 @@
+- content_for :return_url, @return_url
+- content_for :return_text, @return_text
+- content_for :header, "Goal Check-ins for #{@teammate.person.display_name}"
+
+- current_week_start = Date.current.beginning_of_week(:monday)
+- current_week_end = current_week_start.end_of_week(:sunday)
+
+.row.justify-content-center.mb-3
+  .col-lg-12
+    .alert.alert-info
+      %h6.mb-2
+        %i.bi.bi-calendar-event.me-2
+        Current Check-in Week: #{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}
+
+- if @goals.any?
+  = form_with url: organization_company_teammate_goal_check_ins_path(@organization, @teammate), method: :patch, local: true do |f|
+    = hidden_field_tag :return_url, @return_url
+    = hidden_field_tag :return_text, @return_text
+    
+    .table-responsive
+      %table.table.table-hover
+        %thead
+          %tr
+            %th Goal Title
+            %th Started / Due Date
+            %th Last 3 Weeks
+            %th Current Week Confidence
+            %th Reason
+        %tbody
+          - @goals.each do |goal|
+            - check_in = @goal_check_ins&.[](goal.id)
+            - recent_check_ins = @recent_check_ins_by_goal&.[](goal.id) || []
+            - is_completed = goal_is_completed?(goal)
+            - last_check_in = is_completed ? goal.goal_check_ins.recent.first : nil
+            %tr
+              %td
+                = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
+              %td
+                .d-flex.gap-2
+                  - if goal.started_at.present?
+                    %span
+                      %strong Started:
+                      = goal.started_at.strftime('%b %d, %Y')
+                  - else
+                    %span.text-muted Started: Not set
+                  %span |
+                  - if goal.most_likely_target_date.present?
+                    %span
+                      %strong Due:
+                      = goal.most_likely_target_date.strftime('%b %d, %Y')
+                  - else
+                    %span.text-muted Due: Not set
+              %td
+                - if recent_check_ins.any?
+                  .d-flex.gap-2
+                    - recent_check_ins.each do |ci|
+                      - tooltip_content = goal_check_in_tooltip_content(ci)
+                      %span.badge.bg-secondary{
+                        "data-bs-toggle" => "tooltip",
+                        "data-bs-html" => "true",
+                        "data-bs-title" => tooltip_content
+                      }
+                        = "#{ci.confidence_percentage}%"
+                - else
+                  %span.text-muted No previous check-ins
+
+              %td
+                - if is_completed && last_check_in
+                  - completion_badge_text = goal_completion_badge_text(goal)
+                  - badge_class = case goal_completion_outcome(goal)
+                  -   when :hit then 'bg-success'
+                  -   when :hit_late then 'bg-warning'
+                  -   when :miss then 'bg-danger'
+                  -   else 'bg-secondary'
+                  - if completion_badge_text
+                    %span.badge{class: badge_class}
+                      = completion_badge_text
+                  - else
+                    %span.text-muted Completed
+                - else
+                  = select_tag "goal_check_ins[#{goal.id}][confidence_percentage]", 
+                      options_for_select(confidence_percentage_options, check_in&.confidence_percentage),
+                      { include_blank: 'Select confidence...', class: 'form-select form-select-sm' }
+              %td
+                - if is_completed && last_check_in
+                  .completion-info
+                    - if last_check_in.confidence_reason.present?
+                      %div.mb-2
+                        %strong Reason:
+                        = last_check_in.confidence_reason
+                    - if last_check_in.confidence_reporter
+                      %div.mb-1
+                        %small.text-muted
+                          Completed by: #{last_check_in.confidence_reporter.display_name}
+                    - if goal.completed_at.present?
+                      %div
+                        %small.text-muted
+                          Completed on: #{goal.completed_at.strftime('%b %d, %Y')}
+                - else
+                  = text_area_tag "goal_check_ins[#{goal.id}][confidence_reason]", 
+                      check_in&.confidence_reason,
+                      { class: 'form-control form-control-sm', rows: 2, placeholder: 'Optional reason...' }
+    
+    .row.mt-4
+      .col-12.text-center
+        = f.submit "Save All Goal Check-ins", class: "btn btn-primary btn-lg"
+- else
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No goals available for check-in
+    %p.mb-0
+      There are no active, check-in eligible goals for #{@teammate.person.display_name}.
+

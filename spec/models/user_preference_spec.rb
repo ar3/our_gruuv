@@ -11,13 +11,13 @@ RSpec.describe UserPreference, type: :model do
     let(:preference) { UserPreference.for_person(person) }
     
     it 'sets default preferences' do
-      expect(preference.preference(:layout)).to eq('horizontal')
+      expect(preference.preference(:layout)).to eq('vertical')
       expect(preference.preference(:vertical_nav_open)).to eq(false)
       expect(preference.preference(:vertical_nav_locked)).to eq(false)
     end
     
     it 'provides convenience methods' do
-      expect(preference.layout).to eq('horizontal')
+      expect(preference.layout).to eq('vertical')
       expect(preference.vertical_nav_open?).to eq(false)
       expect(preference.vertical_nav_locked?).to eq(false)
     end
@@ -48,8 +48,8 @@ RSpec.describe UserPreference, type: :model do
     
     it 'saves the changes' do
       expect {
-        preference.update_preference(:layout, 'vertical')
-      }.to change { preference.reload.preference(:layout) }.from('horizontal').to('vertical')
+        preference.update_preference(:layout, 'horizontal')
+      }.to change { preference.reload.preference(:layout) }.from('vertical').to('horizontal')
     end
   end
   

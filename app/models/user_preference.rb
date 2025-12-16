@@ -3,7 +3,7 @@ class UserPreference < ApplicationRecord
   
   # Default preferences structure
   DEFAULT_PREFERENCES = {
-    layout: 'horizontal',
+    layout: 'vertical',
     vertical_nav_open: false,
     vertical_nav_locked: false
   }.freeze
