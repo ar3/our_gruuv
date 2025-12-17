@@ -383,17 +383,6 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
           spotlight: 'check_ins_health',
           manager_id: current_person&.id
         }
-      when 'all_employees_check_in_status_1'
-        {
-          display: 'check_in_status',
-          status: 'active'
-        }
-      when 'all_employees_check_in_status_2'
-        {
-          display: 'check_ins_health',
-          spotlight: 'check_ins_health',
-          status: 'active'
-        }
       when 'hierarchical_accountability_chart'
         {
           view: 'vertical_hierarchy',
@@ -638,6 +627,13 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       
       # Calculate management levels
       # Build a map of person_id -> their manager's person_id for active employment tenures
+      # Get all organizations within the organization hierarchy
+      org_hierarchy = if @organization.company?
+        @organization.self_and_descendants
+      else
+        [@organization, @organization.parent].compact
+      end
+      
       person_to_manager = {}
       EmploymentTenure.active
                       .where(company: org_hierarchy)

@@ -133,10 +133,27 @@
           .form-check
             = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
             = label_tag 'view_list', 'List View', class: 'form-check-label'
-          - if policy(@organization).manage_employment?
+          - can_manage_employment = policy(@organization).manage_employment?
+          - if can_manage_employment
+            .form-check
+              = radio_button_tag 'display', 'check_in_status', @current_view == 'check_in_status', class: 'form-check-input', id: 'view_check_in_status'
+              = label_tag 'view_check_in_status', 'Check-in Status Style 1', class: 'form-check-label'
+          - else
+            .form-check
+              .d-flex.align-items-center.gap-2
+                = radio_button_tag 'display', 'check_in_status', @current_view == 'check_in_status', class: 'form-check-input', id: 'view_check_in_status', disabled: true
+                = label_tag 'view_check_in_status', 'Check-in Status Style 1', class: 'form-check-label', style: 'opacity: 0.6; cursor: not-allowed;'
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need employment management permission to use this option"}, style: "font-size: 1rem;"}
+          - if can_manage_employment
             .form-check
               = radio_button_tag 'display', 'check_ins_health', @current_view == 'check_ins_health', class: 'form-check-input', id: 'view_check_ins_health'
-              = label_tag 'view_check_ins_health', 'Check-ins Health', class: 'form-check-label'
+              = label_tag 'view_check_ins_health', 'Check-ins Health Style 2', class: 'form-check-label'
+          - else
+            .form-check
+              .d-flex.align-items-center.gap-2
+                = radio_button_tag 'display', 'check_ins_health', @current_view == 'check_ins_health', class: 'form-check-input', id: 'view_check_ins_health', disabled: true
+                = label_tag 'view_check_ins_health', 'Check-ins Health Style 2', class: 'form-check-label', style: 'opacity: 0.6; cursor: not-allowed;'
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need employment management permission to use this option"}, style: "font-size: 1rem;"}
   .row
     .col-md-4
       .mb-4
@@ -160,10 +177,27 @@
           .form-check
             = radio_button_tag 'spotlight', 'manager_distribution', @current_spotlight == 'manager_distribution', class: 'form-check-input', id: 'spotlight_manager_distribution'
             = label_tag 'spotlight_manager_distribution', 'Manager Distribution', class: 'form-check-label'
-          - if policy(@organization).manage_employment?
+          - can_manage_employment = policy(@organization).manage_employment?
+          - if can_manage_employment
             .form-check
-              = radio_button_tag 'spotlight', 'check_ins_health', @current_spotlight == 'check_ins_health', class: 'form-check-input', id: 'spotlight_check_ins_health'
-              = label_tag 'spotlight_check_ins_health', 'Check-ins Health', class: 'form-check-label'
+              = radio_button_tag 'spotlight', 'check_ins_health', @current_spotlight == 'check_ins_health', class: 'form-check-input', id: 'spotlight_check_ins_health_style_1'
+              = label_tag 'spotlight_check_ins_health_style_1', 'Check-ins Health Style 1', class: 'form-check-label'
+          - else
+            .form-check
+              .d-flex.align-items-center.gap-2
+                = radio_button_tag 'spotlight', 'check_ins_health', @current_spotlight == 'check_ins_health', class: 'form-check-input', id: 'spotlight_check_ins_health_style_1', disabled: true
+                = label_tag 'spotlight_check_ins_health_style_1', 'Check-ins Health Style 1', class: 'form-check-label', style: 'opacity: 0.6; cursor: not-allowed;'
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need employment management permission to use this option"}, style: "font-size: 1rem;"}
+          - if can_manage_employment
+            .form-check
+              = radio_button_tag 'spotlight', 'check_ins_health', @current_spotlight == 'check_ins_health', class: 'form-check-input', id: 'spotlight_check_ins_health_style_2'
+              = label_tag 'spotlight_check_ins_health_style_2', 'Check-ins Health Style 2', class: 'form-check-label'
+          - else
+            .form-check
+              .d-flex.align-items-center.gap-2
+                = radio_button_tag 'spotlight', 'check_ins_health', @current_spotlight == 'check_ins_health', class: 'form-check-input', id: 'spotlight_check_ins_health_style_2', disabled: true
+                = label_tag 'spotlight_check_ins_health_style_2', 'Check-ins Health Style 2', class: 'form-check-label', style: 'opacity: 0.6; cursor: not-allowed;'
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need employment management permission to use this option"}, style: "font-size: 1rem;"}
   .row
     .col-12
       / Form Actions

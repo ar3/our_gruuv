@@ -196,16 +196,16 @@ class Teammate < ApplicationRecord
     # og_admin users have access to all organizations
     return true if person.og_admin?
     
-    organizations_to_check = if organization.company?
-      organization.self_and_descendants
-    else
-      [organization, organization.parent].compact
-    end
-    
-    # Find the most specific access record (current org first, then parent)
-    access = nil
     if organization.company?
-      access = where(organization: organizations_to_check).find_by(person: person)
+      # Check company level first - if found, use it directly
+      company_access = find_by(person: person, organization: organization)
+      if company_access
+        return company_access.can_manage_employment?
+      end
+      
+      # Only check descendants if no company-level record exists
+      descendant_access = where(organization: organization.descendants).find_by(person: person)
+      return descendant_access&.can_manage_employment? || false
     else
       # Check current organization first, then parent
       # Return true if either has the permission
@@ -216,26 +216,25 @@ class Teammate < ApplicationRecord
         return true
       else
         access = current_access || parent_access
+        return access&.can_manage_employment? || false
       end
     end
-    
-    access&.can_manage_employment? || false
   end
   
   def self.can_manage_maap_in_hierarchy?(person, organization)
     # og_admin users have access to all organizations
     return true if person.og_admin?
     
-    organizations_to_check = if organization.company?
-      organization.self_and_descendants
-    else
-      [organization, organization.parent].compact
-    end
-    
-    # Find the most specific access record (current org first, then parent)
-    access = nil
     if organization.company?
-      access = where(organization: organizations_to_check).find_by(person: person)
+      # Check company level first - if found, use it directly
+      company_access = find_by(person: person, organization: organization)
+      if company_access
+        return company_access.can_manage_maap?
+      end
+      
+      # Only check descendants if no company-level record exists
+      descendant_access = where(organization: organization.descendants).find_by(person: person)
+      return descendant_access&.can_manage_maap? || false
     else
       # Check current organization first, then parent
       # Return true if either has the permission
@@ -246,26 +245,25 @@ class Teammate < ApplicationRecord
         return true
       else
         access = current_access || parent_access
+        return access&.can_manage_maap? || false
       end
     end
-    
-    access&.can_manage_maap? || false
   end
 
   def self.can_manage_prompts_in_hierarchy?(person, organization)
     # og_admin users have access to all organizations
     return true if person.og_admin?
 
-    organizations_to_check = if organization.company?
-      organization.self_and_descendants
-    else
-      [organization, organization.parent].compact
-    end
-
-    # Find the most specific access record (current org first, then parent)
-    access = nil
     if organization.company?
-      access = where(organization: organizations_to_check).find_by(person: person)
+      # Check company level first - if found, use it directly
+      company_access = find_by(person: person, organization: organization)
+      if company_access
+        return company_access.can_manage_prompts?
+      end
+      
+      # Only check descendants if no company-level record exists
+      descendant_access = where(organization: organization.descendants).find_by(person: person)
+      return descendant_access&.can_manage_prompts? || false
     else
       # Check current organization first, then parent
       # Return true if either has the permission
@@ -276,26 +274,25 @@ class Teammate < ApplicationRecord
         return true
       else
         access = current_access || parent_access
+        return access&.can_manage_prompts? || false
       end
     end
-
-    access&.can_manage_prompts? || false
   end
 
   def self.can_create_employment_in_hierarchy?(person, organization)
     # og_admin users have access to all organizations
     return true if person.og_admin?
     
-    organizations_to_check = if organization.company?
-      organization.self_and_descendants
-    else
-      [organization, organization.parent].compact
-    end
-    
-    # Find the most specific access record (current org first, then parent)
-    access = nil
     if organization.company?
-      access = where(organization: organizations_to_check).find_by(person: person)
+      # Check company level first - if found, use it directly
+      company_access = find_by(person: person, organization: organization)
+      if company_access
+        return company_access.can_create_employment?
+      end
+      
+      # Only check descendants if no company-level record exists
+      descendant_access = where(organization: organization.descendants).find_by(person: person)
+      return descendant_access&.can_create_employment? || false
     else
       # Check current organization first, then parent
       # Return true if either has the permission
@@ -306,9 +303,8 @@ class Teammate < ApplicationRecord
         return true
       else
         access = current_access || parent_access
+        return access&.can_create_employment? || false
       end
     end
-    
-    access&.can_create_employment? || false
   end
 end

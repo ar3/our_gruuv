@@ -85,5 +85,161 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
     expect(response).to be_successful
     expect(assigns(:current_filters)[:department_id]).to include(department.id.to_s)
   end
+
+  describe 'check-in status display options' do
+    context 'when user has manage_employment permission' do
+      before do
+        manager_teammate.update!(can_manage_employment: true)
+        # Reload the teammate to ensure the flag is set
+        manager_ct = CompanyTeammate.find(manager_teammate.id)
+        allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
+      end
+
+      it 'shows Check-in Status Style 1 option as enabled' do
+        get customize_view_organization_employees_path(organization)
+        
+        expect(response).to be_successful
+        expect(response.body).to include('Check-in Status Style 1')
+        expect(response.body).to include('id="view_check_in_status"')
+        # Check that the radio button tag doesn't contain disabled attribute
+        radio_button_match = response.body.match(/<input[^>]*id="view_check_in_status"[^>]*>/)
+        expect(radio_button_match).to be_present
+        expect(radio_button_match[0]).not_to include('disabled')
+      end
+
+      it 'shows Check-ins Health Style 2 option as enabled' do
+        get customize_view_organization_employees_path(organization)
+        
+        expect(response).to be_successful
+        expect(response.body).to include('Check-ins Health Style 2')
+        expect(response.body).to include('id="view_check_ins_health"')
+        # Check that the radio button tag doesn't contain disabled attribute
+        radio_button_match = response.body.match(/<input[^>]*id="view_check_ins_health"[^>]*>/)
+        expect(radio_button_match).to be_present
+        expect(radio_button_match[0]).not_to include('disabled')
+      end
+    end
+
+    context 'when user does not have manage_employment permission' do
+      before do
+        manager_teammate.update!(can_manage_employment: false)
+        # Reload the teammate to ensure the flag is set
+        manager_ct = CompanyTeammate.find(manager_teammate.id)
+        allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
+      end
+
+      it 'shows Check-in Status Style 1 option as disabled with warning icon' do
+        get customize_view_organization_employees_path(organization)
+        
+        expect(response).to be_successful
+        expect(response.body).to include('Check-in Status Style 1')
+        expect(response.body).to include('id="view_check_in_status"')
+        expect(response.body).to include('disabled')
+        expect(response.body).to include('bi-exclamation-triangle')
+        expect(response.body).to include('You need employment management permission to use this option')
+      end
+
+      it 'shows Check-ins Health Style 2 option as disabled with warning icon' do
+        get customize_view_organization_employees_path(organization)
+        
+        expect(response).to be_successful
+        expect(response.body).to include('Check-ins Health Style 2')
+        expect(response.body).to include('id="view_check_ins_health"')
+        expect(response.body).to include('disabled')
+        expect(response.body).to include('bi-exclamation-triangle')
+        expect(response.body).to include('You need employment management permission to use this option')
+      end
+    end
+  end
+
+  describe 'check-ins health spotlight options' do
+    context 'when user has manage_employment permission' do
+      before do
+        manager_teammate.update!(can_manage_employment: true)
+        # Reload the teammate to ensure the flag is set
+        manager_ct = CompanyTeammate.find(manager_teammate.id)
+        allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
+      end
+
+      it 'shows Check-ins Health Style 1 spotlight option as enabled' do
+        get customize_view_organization_employees_path(organization)
+        
+        expect(response).to be_successful
+        expect(response.body).to include('Check-ins Health Style 1')
+        expect(response.body).to include('id="spotlight_check_ins_health_style_1"')
+        # Check that the radio button tag doesn't contain disabled attribute
+        radio_button_match = response.body.match(/<input[^>]*id="spotlight_check_ins_health_style_1"[^>]*>/)
+        expect(radio_button_match).to be_present
+        expect(radio_button_match[0]).not_to include('disabled')
+      end
+
+      it 'shows Check-ins Health Style 2 spotlight option as enabled' do
+        get customize_view_organization_employees_path(organization)
+        
+        expect(response).to be_successful
+        expect(response.body).to include('Check-ins Health Style 2')
+        expect(response.body).to include('id="spotlight_check_ins_health_style_2"')
+        # Check that the radio button tag doesn't contain disabled attribute
+        radio_button_match = response.body.match(/<input[^>]*id="spotlight_check_ins_health_style_2"[^>]*>/)
+        expect(radio_button_match).to be_present
+        expect(radio_button_match[0]).not_to include('disabled')
+      end
+    end
+
+    context 'when user does not have manage_employment permission' do
+      before do
+        manager_teammate.update!(can_manage_employment: false)
+        # Reload the teammate to ensure the flag is set
+        manager_ct = CompanyTeammate.find(manager_teammate.id)
+        allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
+      end
+
+      it 'shows Check-ins Health Style 1 spotlight option as disabled with warning icon' do
+        get customize_view_organization_employees_path(organization)
+        
+        expect(response).to be_successful
+        expect(response.body).to include('Check-ins Health Style 1')
+        expect(response.body).to include('id="spotlight_check_ins_health_style_1"')
+        expect(response.body).to include('disabled')
+        expect(response.body).to include('bi-exclamation-triangle')
+        expect(response.body).to include('You need employment management permission to use this option')
+      end
+
+      it 'shows Check-ins Health Style 2 spotlight option as disabled with warning icon' do
+        get customize_view_organization_employees_path(organization)
+        
+        expect(response).to be_successful
+        expect(response.body).to include('Check-ins Health Style 2')
+        expect(response.body).to include('id="spotlight_check_ins_health_style_2"')
+        expect(response.body).to include('disabled')
+        expect(response.body).to include('bi-exclamation-triangle')
+        expect(response.body).to include('You need employment management permission to use this option')
+      end
+    end
+  end
+
+  describe 'presets' do
+    it 'does not include All Employees - Check-in Status Style 1 preset' do
+      get customize_view_organization_employees_path(organization)
+      
+      expect(response).to be_successful
+      expect(response.body).not_to include('All Employees - Check-in Status Style 1')
+    end
+
+    it 'does not include All Employees - Check-in Status Style 2 preset' do
+      get customize_view_organization_employees_path(organization)
+      
+      expect(response).to be_successful
+      expect(response.body).not_to include('All Employees - Check-in Status Style 2')
+    end
+
+    it 'still includes My Direct Reports presets' do
+      get customize_view_organization_employees_path(organization)
+      
+      expect(response).to be_successful
+      expect(response.body).to include('My Direct Reports - Check-in Status Style 1')
+      expect(response.body).to include('My Direct Reports - Check-in Status Style 2')
+    end
+  end
 end
 

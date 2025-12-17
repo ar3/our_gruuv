@@ -726,4 +726,82 @@ RSpec.describe TeammateHelper, type: :helper do
       end
     end
   end
+
+  describe '#available_presets_with_permissions' do
+    let(:organization) { create(:organization, :company) }
+    let(:manager) { create(:person) }
+    let(:direct_report) { create(:person) }
+    let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
+    let(:direct_report_teammate) { CompanyTeammate.create!(person: direct_report, organization: organization) }
+
+    before do
+      @organization = organization
+      # Stub policy method for permission checks
+      allow(helper).to receive(:policy).and_return(double(manage_employment?: manager_teammate.can_manage_employment?))
+    end
+
+    context 'when user has direct reports' do
+      before do
+        create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, ended_at: nil)
+      end
+
+      context 'without employment management permission' do
+        before do
+          manager_teammate.update!(can_manage_employment: false)
+        end
+
+        it 'makes My Direct Reports - Check-in Status Style 1 available' do
+          presets = helper.available_presets_with_permissions(organization, manager_teammate)
+          style_1 = presets.find { |p| p[:value] == 'my_direct_reports_check_in_status_1' }
+          expect(style_1[:available]).to be true
+        end
+
+        it 'makes My Direct Reports - Check-in Status Style 2 available' do
+          presets = helper.available_presets_with_permissions(organization, manager_teammate)
+          style_2 = presets.find { |p| p[:value] == 'my_direct_reports_check_in_status_2' }
+          expect(style_2[:available]).to be true
+        end
+      end
+
+      context 'with employment management permission' do
+        before do
+          manager_teammate.update!(can_manage_employment: true)
+        end
+
+        it 'makes My Direct Reports - Check-in Status Style 1 available' do
+          presets = helper.available_presets_with_permissions(organization, manager_teammate)
+          style_1 = presets.find { |p| p[:value] == 'my_direct_reports_check_in_status_1' }
+          expect(style_1[:available]).to be true
+        end
+
+        it 'makes My Direct Reports - Check-in Status Style 2 available' do
+          presets = helper.available_presets_with_permissions(organization, manager_teammate)
+          style_2 = presets.find { |p| p[:value] == 'my_direct_reports_check_in_status_2' }
+          expect(style_2[:available]).to be true
+        end
+      end
+    end
+
+    context 'when user does not have direct reports' do
+      before do
+        manager_teammate.update!(can_manage_employment: true)
+      end
+
+      it 'makes My Direct Reports - Check-in Status Style 1 unavailable' do
+        presets = helper.available_presets_with_permissions(organization, manager_teammate)
+        style_1 = presets.find { |p| p[:value] == 'my_direct_reports_check_in_status_1' }
+        expect(style_1[:available]).to be false
+        expect(style_1[:permission_required]).to eq('direct reports')
+        expect(style_1[:tooltip]).to eq('You need to have direct reports to use this preset')
+      end
+
+      it 'makes My Direct Reports - Check-in Status Style 2 unavailable' do
+        presets = helper.available_presets_with_permissions(organization, manager_teammate)
+        style_2 = presets.find { |p| p[:value] == 'my_direct_reports_check_in_status_2' }
+        expect(style_2[:available]).to be false
+        expect(style_2[:permission_required]).to eq('direct reports')
+        expect(style_2[:tooltip]).to eq('You need to have direct reports to use this preset')
+      end
+    end
+  end
 end
