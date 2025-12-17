@@ -104,6 +104,78 @@ RSpec.describe ObservationsQuery, type: :query do
       end
     end
 
+    context 'by last_45_days timeframe' do
+      let!(:old_observation) do
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_world, observed_at: 50.days.ago).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      let(:params) { { timeframe: 'last_45_days' } }
+
+      it 'filters to observations in last 45 days' do
+        results = query.call.to_a
+        # observation1 is 1 week ago, observation3 is 1 day ago - both within 45 days
+        # observation2 might not be visible to observer (observed_only self-observation)
+        expect(results).to include(observation1, observation3) # Both within 45 days and visible
+        expect(results).not_to include(old_observation) # 50 days ago
+      end
+    end
+
+    context 'by this_quarter timeframe' do
+      let(:params) { { timeframe: 'this_quarter' } }
+
+      it 'filters to observations in current quarter' do
+        results = query.call.to_a
+        # All test observations should be in current quarter (created recently)
+        expect(results).to include(observation1, observation3)
+      end
+    end
+
+    context 'by last_90_days timeframe' do
+      let!(:old_observation) do
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_world, observed_at: 100.days.ago).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      let(:params) { { timeframe: 'last_90_days' } }
+
+      it 'filters to observations in last 90 days' do
+        results = query.call.to_a
+        expect(results).to include(observation1, observation3)
+        expect(results).not_to include(old_observation) # 100 days ago
+      end
+    end
+
+    context 'by this_year timeframe' do
+      let(:params) { { timeframe: 'this_year' } }
+
+      it 'filters to observations in current year' do
+        results = query.call.to_a
+        # All test observations should be in current year
+        expect(results).to include(observation1, observation3)
+      end
+    end
+
+    context 'by between timeframe' do
+      let(:start_date) { 2.days.ago.to_date }
+      let(:end_date) { Time.current.to_date }
+      let(:params) { { timeframe: 'between', timeframe_start_date: start_date.to_s, timeframe_end_date: end_date.to_s } }
+
+      it 'filters to observations between dates' do
+        results = query.call.to_a
+        # observation3 is 1 day ago, which should be within range (2 days ago to today)
+        # observation1 is 1 week ago, which should NOT be within range
+        expect(results).to include(observation3) # 1 day ago, within range
+        expect(results).not_to include(observation1) # 1 week ago, outside range
+      end
+    end
+
     context 'by multiple privacy levels' do
       let(:params) { { privacy: ['observer_only', 'public_to_world'] } }
 
@@ -213,6 +285,11 @@ RSpec.describe ObservationsQuery, type: :query do
     it 'supports viewStyle parameter' do
       query = described_class.new(company, { viewStyle: 'list' }, current_person: observer)
       expect(query.current_view).to eq('list')
+    end
+
+    it 'supports wall view' do
+      query = described_class.new(company, { view: 'wall' }, current_person: observer)
+      expect(query.current_view).to eq('wall')
     end
   end
 

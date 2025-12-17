@@ -5,6 +5,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def index
     authorize company, :view_observations?
     
+    # Handle preset application (if preset is selected and no discrete options changed)
+    apply_preset_if_selected
+    
     # Use ObservationsQuery for filtering and sorting
     query = ObservationsQuery.new(organization, params, current_person: current_person)
     
@@ -84,8 +87,31 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def update_view
     authorize company, :view_observations?
     
-    # Build redirect URL with all view customization params
-    redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h
+    # Build redirect URL with view customization params
+    if params[:preset].present?
+      # When preset is selected, only include preset-defined params
+      preset_params = preset_to_params(params[:preset])
+      redirect_params = {}
+      
+      if preset_params
+        # Use preset params directly - Rails path helpers handle arrays automatically
+        redirect_params = preset_params.dup
+        
+        # Handle special case for timeframe: 'between' - preserve date params if preset includes between
+        if preset_params[:timeframe] == 'between'
+          redirect_params[:timeframe_start_date] = params[:timeframe_start_date] if params[:timeframe_start_date].present?
+          redirect_params[:timeframe_end_date] = params[:timeframe_end_date] if params[:timeframe_end_date].present?
+        end
+      end
+    else
+      # When no preset, include all params except Rails internal ones
+      redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h
+      # Permit timeframe_start_date and timeframe_end_date for between timeframe
+      if redirect_params[:timeframe] == 'between'
+        redirect_params[:timeframe_start_date] = params[:timeframe_start_date] if params[:timeframe_start_date].present?
+        redirect_params[:timeframe_end_date] = params[:timeframe_end_date] if params[:timeframe_end_date].present?
+      end
+    end
     
     redirect_to organization_observations_path(@organization, redirect_params)
   end
@@ -1264,6 +1290,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       }
     when 'feedback_health'
       calculate_feedback_health_stats
+    when 'most_observed'
+      calculate_most_observed_stats(observations_relation)
     else # 'overview' or default
       {
         total_observations: observations.count,
@@ -1378,6 +1406,101 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
     
     stats
+  end
+
+  def calculate_most_observed_stats(observations_relation)
+    # Remove any existing order clauses that might conflict with GROUP BY
+    base_relation = observations_relation.reorder(nil)
+    
+    # Find most observed assignment with count
+    assignment_results = base_relation
+      .joins(:observation_ratings)
+      .where(observation_ratings: { rateable_type: 'Assignment' })
+      .group('observation_ratings.rateable_id')
+      .order('COUNT(observations.id) DESC')
+      .limit(2)
+      .pluck('observation_ratings.rateable_id', 'COUNT(observations.id)')
+    
+    most_observed_assignment_id = assignment_results.first&.first
+    most_observed_assignment_count = assignment_results.first&.last || 0
+    runner_up_assignment_id = assignment_results.second&.first
+    assignment = most_observed_assignment_id ? Assignment.find_by(id: most_observed_assignment_id) : nil
+    runner_up_assignment = runner_up_assignment_id ? Assignment.find_by(id: runner_up_assignment_id) : nil
+    
+    # Find most observed ability with count
+    ability_results = base_relation
+      .joins(:observation_ratings)
+      .where(observation_ratings: { rateable_type: 'Ability' })
+      .group('observation_ratings.rateable_id')
+      .order('COUNT(observations.id) DESC')
+      .limit(2)
+      .pluck('observation_ratings.rateable_id', 'COUNT(observations.id)')
+    
+    most_observed_ability_id = ability_results.first&.first
+    most_observed_ability_count = ability_results.first&.last || 0
+    runner_up_ability_id = ability_results.second&.first
+    ability = most_observed_ability_id ? Ability.find_by(id: most_observed_ability_id) : nil
+    runner_up_ability = runner_up_ability_id ? Ability.find_by(id: runner_up_ability_id) : nil
+    
+    # Find most observed aspiration with count
+    aspiration_results = base_relation
+      .joins(:observation_ratings)
+      .where(observation_ratings: { rateable_type: 'Aspiration' })
+      .group('observation_ratings.rateable_id')
+      .order('COUNT(observations.id) DESC')
+      .limit(2)
+      .pluck('observation_ratings.rateable_id', 'COUNT(observations.id)')
+    
+    most_observed_aspiration_id = aspiration_results.first&.first
+    most_observed_aspiration_count = aspiration_results.first&.last || 0
+    runner_up_aspiration_id = aspiration_results.second&.first
+    aspiration = most_observed_aspiration_id ? Aspiration.find_by(id: most_observed_aspiration_id) : nil
+    runner_up_aspiration = runner_up_aspiration_id ? Aspiration.find_by(id: runner_up_aspiration_id) : nil
+    
+    # Find most observed person (observee) with count
+    person_results = base_relation
+      .joins(observees: :teammate)
+      .group('teammates.person_id')
+      .order('COUNT(observations.id) DESC')
+      .limit(2)
+      .pluck('teammates.person_id', 'COUNT(observations.id)')
+    
+    most_observed_person_id = person_results.first&.first
+    most_observed_person_count = person_results.first&.last || 0
+    runner_up_person_id = person_results.second&.first
+    most_observed_person = most_observed_person_id ? Person.find_by(id: most_observed_person_id) : nil
+    runner_up_person = runner_up_person_id ? Person.find_by(id: runner_up_person_id) : nil
+    
+    # Find most active observer with count
+    observer_results = base_relation
+      .group('observations.observer_id')
+      .order('COUNT(observations.id) DESC')
+      .limit(2)
+      .pluck('observations.observer_id', 'COUNT(observations.id)')
+    
+    most_active_observer_id = observer_results.first&.first
+    most_active_observer_count = observer_results.first&.last || 0
+    runner_up_observer_id = observer_results.second&.first
+    most_active_observer = most_active_observer_id ? Person.find_by(id: most_active_observer_id) : nil
+    runner_up_observer = runner_up_observer_id ? Person.find_by(id: runner_up_observer_id) : nil
+    
+    {
+      most_observed_assignment: assignment,
+      most_observed_assignment_count: most_observed_assignment_count,
+      runner_up_assignment: runner_up_assignment,
+      most_observed_ability: ability,
+      most_observed_ability_count: most_observed_ability_count,
+      runner_up_ability: runner_up_ability,
+      most_observed_aspiration: aspiration,
+      most_observed_aspiration_count: most_observed_aspiration_count,
+      runner_up_aspiration: runner_up_aspiration,
+      most_observed_person: most_observed_person,
+      most_observed_person_count: most_observed_person_count,
+      runner_up_person: runner_up_person,
+      most_active_observer: most_active_observer,
+      most_active_observer_count: most_active_observer_count,
+      runner_up_observer: runner_up_observer
+    }
   end
 
   def calculate_received_feedback_stats(published_observations, three_weeks_ago, three_months_ago)
@@ -1671,6 +1794,36 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       new_quick_note_organization_observations_path(organization, path_options)
     else
       new_organization_observation_path(organization, path_options)
+    end
+  end
+
+  def apply_preset_if_selected
+    return unless params[:preset].present?
+    
+    # Check if user has modified any discrete options (if so, ignore preset)
+    # For now, we'll apply preset immediately as specified
+    preset_params = preset_to_params(params[:preset])
+    
+    if preset_params
+      preset_params.each do |key, value|
+        # Only override if the param wasn't explicitly set by user
+        # For presets, we override everything
+        params[key] = value
+      end
+    end
+  end
+
+  def preset_to_params(preset_name)
+    case preset_name.to_s
+    when 'kudos'
+      {
+        view: 'wall',
+        spotlight: 'most_observed',
+        timeframe: 'last_45_days',
+        privacy: ['public_to_company', 'public_to_world']
+      }
+    else
+      nil
     end
   end
 end

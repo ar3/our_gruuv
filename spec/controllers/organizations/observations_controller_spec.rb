@@ -45,6 +45,75 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(response).to have_http_status(:success)
       expect(response.body).to include('This spotlight looks at all observations throughout the entire company')
     end
+
+    it 'applies kudos preset when preset parameter is provided' do
+      get :index, params: { organization_id: company.id, preset: 'kudos' }
+      expect(response).to have_http_status(:success)
+      # Preset should set view=wall, spotlight=most_observed, timeframe=last_45_days, privacy=[public_to_company, public_to_world]
+      # The preset modifies params before the query is created, so assigns should reflect preset values
+      query = ObservationsQuery.new(company, controller.params, current_person: observer)
+      expect(query.current_view).to eq('wall')
+      expect(query.current_spotlight).to eq('most_observed')
+      expect(query.current_filters[:timeframe]).to eq('last_45_days')
+      expect(controller.params[:privacy]).to include('public_to_company', 'public_to_world')
+    end
+
+    it 'calculates most_observed spotlight stats with counts and runners-up' do
+      assignment1 = create(:assignment, company: company)
+      assignment2 = create(:assignment, company: company)
+      ability1 = create(:ability, organization: company)
+      ability2 = create(:ability, organization: company)
+      aspiration1 = create(:aspiration, organization: company)
+      aspiration2 = create(:aspiration, organization: company)
+      
+      # Create observations with ratings - assignment1 should be most observed (2 observations)
+      obs1 = build(:observation, observer: observer, company: company, observed_at: 10.days.ago)
+      obs1.observees.build(teammate: observee_teammate)
+      obs1.save!
+      obs1.publish!
+      create(:observation_rating, observation: obs1, rateable: assignment1)
+      create(:observation_rating, observation: obs1, rateable: ability1)
+      
+      obs2 = build(:observation, observer: observer, company: company, observed_at: 5.days.ago)
+      obs2.observees.build(teammate: observee_teammate)
+      obs2.save!
+      obs2.publish!
+      create(:observation_rating, observation: obs2, rateable: assignment1)
+      create(:observation_rating, observation: obs2, rateable: assignment2)
+      create(:observation_rating, observation: obs2, rateable: aspiration1)
+      
+      get :index, params: { organization_id: company.id, spotlight: 'most_observed' }
+      expect(response).to have_http_status(:success)
+      expect(assigns(:spotlight_stats)).to be_a(Hash)
+      expect(assigns(:spotlight_stats)).to have_key(:most_observed_assignment)
+      expect(assigns(:spotlight_stats)).to have_key(:most_observed_assignment_count)
+      expect(assigns(:spotlight_stats)).to have_key(:runner_up_assignment)
+      expect(assigns(:spotlight_stats)).to have_key(:most_observed_ability)
+      expect(assigns(:spotlight_stats)).to have_key(:most_observed_ability_count)
+      expect(assigns(:spotlight_stats)).to have_key(:runner_up_ability)
+      expect(assigns(:spotlight_stats)).to have_key(:most_observed_aspiration)
+      expect(assigns(:spotlight_stats)).to have_key(:most_observed_aspiration_count)
+      expect(assigns(:spotlight_stats)).to have_key(:runner_up_aspiration)
+      expect(assigns(:spotlight_stats)).to have_key(:most_observed_person)
+      expect(assigns(:spotlight_stats)).to have_key(:most_observed_person_count)
+      expect(assigns(:spotlight_stats)).to have_key(:runner_up_person)
+      expect(assigns(:spotlight_stats)).to have_key(:most_active_observer)
+      expect(assigns(:spotlight_stats)).to have_key(:most_active_observer_count)
+      expect(assigns(:spotlight_stats)).to have_key(:runner_up_observer)
+      
+      # Verify assignment1 is most observed with count of 2
+      expect(assigns(:spotlight_stats)[:most_observed_assignment]).to eq(assignment1)
+      expect(assigns(:spotlight_stats)[:most_observed_assignment_count]).to eq(2)
+    end
+
+    it 'renders wall view when view is wall' do
+      observation # Create the observation
+      get :index, params: { organization_id: company.id, view: 'wall' }
+      expect(response).to have_http_status(:success)
+      expect(assigns(:current_view)).to eq('wall')
+      # The wall view should show observee avatars and story content
+      expect(response.body).to include('rounded-circle bg-primary') # Avatar circles
+    end
   end
 
   describe 'GET #show' do
@@ -1706,6 +1775,47 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(response).to render_template(layout: 'overlay')
     end
 
+    it 'shows preset options' do
+      get :customize_view, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Choose Preset')
+      expect(response.body).to include('Kudos')
+    end
+
+    it 'shows wall view option' do
+      get :customize_view, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Social Wall View')
+    end
+
+    it 'shows most_observed spotlight option' do
+      get :customize_view, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Most Observed')
+    end
+
+    it 'shows last_45_days timeframe option' do
+      get :customize_view, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Last 45 Days')
+    end
+
+    it 'shows new timeframe options' do
+      get :customize_view, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('This Quarter')
+      expect(response.body).to include('Last 90 Days')
+      expect(response.body).to include('This Year')
+      expect(response.body).to include('Between')
+    end
+
+    it 'shows public_to_company privacy option' do
+      get :customize_view, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Public to Company')
+      expect(response.body).to include('public_to_company')
+    end
+
     it 'assigns current filters, sort, view, and spotlight from params' do
       get :customize_view, params: {
         organization_id: company.id,
@@ -1758,39 +1868,87 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
   end
 
   describe 'PATCH #update_view' do
-    it 'redirects to index with view customization params' do
-      patch :update_view, params: {
-        organization_id: company.id,
-        privacy: ['observer_only'],
-        timeframe: 'this_week',
-        sort: 'ratings_count_desc',
-        view: 'cards',
-        spotlight: 'team_wins'
-      }
-      expect(response).to have_http_status(:redirect)
-      redirect_url = response.redirect_url
-      expect(redirect_url).to include(organization_observations_path(company))
-      expect(redirect_url).to include('privacy')
-      expect(redirect_url).to include('observer_only')
-      expect(redirect_url).to include('timeframe=this_week')
-      expect(redirect_url).to include('sort=ratings_count_desc')
-      expect(redirect_url).to include('view=cards')
-      expect(redirect_url).to include('spotlight=team_wins')
+    context 'when preset is selected' do
+      it 'only includes preset-defined params in redirect URL' do
+        patch :update_view, params: {
+          organization_id: company.id,
+          preset: 'kudos',
+          privacy: ['observer_only', 'managers_only'],
+          timeframe: 'this_week',
+          sort: 'ratings_count_desc',
+          view: 'cards',
+          spotlight: 'team_wins'
+        }
+        expect(response).to have_http_status(:redirect)
+        redirect_url = response.redirect_url
+        expect(redirect_url).to include(organization_observations_path(company))
+        # Verify preset-defined params are included
+        expect(redirect_url).to include('view=wall')
+        expect(redirect_url).to include('spotlight=most_observed')
+        expect(redirect_url).to include('timeframe=last_45_days')
+        expect(redirect_url).to include('privacy')
+        expect(redirect_url).to include('public_to_company')
+        expect(redirect_url).to include('public_to_world')
+        # Verify manual customizations are NOT included
+        expect(redirect_url).not_to include('observer_only')
+        expect(redirect_url).not_to include('managers_only')
+        expect(redirect_url).not_to include('timeframe=this_week')
+        expect(redirect_url).not_to include('sort=ratings_count_desc')
+        expect(redirect_url).not_to include('view=cards')
+        expect(redirect_url).not_to include('spotlight=team_wins')
+      end
+
+      it 'handles array params in preset correctly' do
+        patch :update_view, params: {
+          organization_id: company.id,
+          preset: 'kudos',
+          privacy: ['observer_only']
+        }
+        redirect_url = response.redirect_url
+        # Verify array params from preset are included
+        expect(redirect_url).to include('privacy')
+        expect(redirect_url).to include('public_to_company')
+        expect(redirect_url).to include('public_to_world')
+        # Verify manual privacy selection is not included
+        expect(redirect_url).not_to include('observer_only')
+      end
     end
 
-    it 'excludes Rails internal params from redirect' do
-      patch :update_view, params: {
-        organization_id: company.id,
-        authenticity_token: 'token',
-        _method: 'patch',
-        commit: 'Apply View',
-        view: 'list'
-      }
-      redirect_url = response.redirect_url
-      expect(redirect_url).not_to include('authenticity_token')
-      expect(redirect_url).not_to include('_method')
-      expect(redirect_url).not_to include('commit')
-      expect(redirect_url).to include('view=list')
+    context 'when no preset is selected' do
+      it 'redirects to index with view customization params' do
+        patch :update_view, params: {
+          organization_id: company.id,
+          privacy: ['observer_only'],
+          timeframe: 'this_week',
+          sort: 'ratings_count_desc',
+          view: 'cards',
+          spotlight: 'team_wins'
+        }
+        expect(response).to have_http_status(:redirect)
+        redirect_url = response.redirect_url
+        expect(redirect_url).to include(organization_observations_path(company))
+        expect(redirect_url).to include('privacy')
+        expect(redirect_url).to include('observer_only')
+        expect(redirect_url).to include('timeframe=this_week')
+        expect(redirect_url).to include('sort=ratings_count_desc')
+        expect(redirect_url).to include('view=cards')
+        expect(redirect_url).to include('spotlight=team_wins')
+      end
+
+      it 'excludes Rails internal params from redirect' do
+        patch :update_view, params: {
+          organization_id: company.id,
+          authenticity_token: 'token',
+          _method: 'patch',
+          commit: 'Apply View',
+          view: 'list'
+        }
+        redirect_url = response.redirect_url
+        expect(redirect_url).not_to include('authenticity_token')
+        expect(redirect_url).not_to include('_method')
+        expect(redirect_url).not_to include('commit')
+        expect(redirect_url).to include('view=list')
+      end
     end
 
     it 'requires authorization' do

@@ -241,5 +241,81 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
       expect(response.body).to include('My Direct Reports - Check-in Status Style 2')
     end
   end
+
+  describe 'PATCH #update_view' do
+    before do
+      manager_teammate.update!(can_manage_employment: true)
+      manager_ct = CompanyTeammate.find(manager_teammate.id)
+      allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
+    end
+
+    context 'when preset is selected' do
+      it 'only includes preset-defined params in redirect URL' do
+        patch update_view_organization_employees_path(organization), params: {
+          preset: 'my_direct_reports_check_in_status_1',
+          status: ['assigned_employee', 'terminated'],
+          sort: 'name_desc',
+          view: 'cards',
+          spotlight: 'teammate_tenures',
+          manager_id: [999],
+          department_id: [888]
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        redirect_url = response.redirect_url
+        expect(redirect_url).to include('/employees')
+        # Verify preset-defined params are included
+        expect(redirect_url).to include('display=check_in_status')
+        expect(redirect_url).to include("manager_id=#{manager.id}")
+        # Verify manual customizations are NOT included (check for param names, not values that might appear in other params)
+        expect(redirect_url).not_to match(/[?&]status[=\[]/)
+        expect(redirect_url).not_to include('sort=name_desc')
+        expect(redirect_url).not_to include('view=cards')
+        expect(redirect_url).not_to include('spotlight=teammate_tenures')
+        expect(redirect_url).not_to match(/[?&]department_id[=\[]/)
+      end
+
+      it 'handles array params in preset correctly' do
+        patch update_view_organization_employees_path(organization), params: {
+          preset: 'hierarchical_accountability_chart',
+          status: ['terminated'],
+          sort: 'name_asc'
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        redirect_url = response.redirect_url
+        expect(redirect_url).to include('/employees')
+        # Verify preset-defined params are included
+        expect(redirect_url).to include('view=vertical_hierarchy')
+        expect(redirect_url).to include('spotlight=manager_distribution')
+        expect(redirect_url).to include('status')
+        expect(redirect_url).to include('unassigned_employee')
+        expect(redirect_url).to include('assigned_employee')
+        # Verify manual customizations are NOT included
+        expect(redirect_url).not_to include('sort=name_asc')
+        expect(redirect_url).not_to include('terminated')
+      end
+    end
+
+    context 'when no preset is selected' do
+      it 'includes all manual customization params in redirect URL' do
+        patch update_view_organization_employees_path(organization), params: {
+          status: ['assigned_employee'],
+          sort: 'name_asc',
+          view: 'table',
+          spotlight: 'teammate_tenures'
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        redirect_url = response.redirect_url
+        expect(redirect_url).to include(organization_employees_path(organization))
+        expect(redirect_url).to include('status')
+        expect(redirect_url).to include('assigned_employee')
+        expect(redirect_url).to include('sort=name_asc')
+        expect(redirect_url).to include('view=table')
+        expect(redirect_url).to include('spotlight=teammate_tenures')
+      end
+    end
+  end
 end
 

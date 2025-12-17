@@ -1,0 +1,79 @@
+.row
+  - @observations.each do |observation|
+    .col-md-6.col-lg-4.mb-4
+      .card.h-100.shadow-sm
+        .card-body
+          / Header with observer and observees
+          .d-flex.align-items-center.mb-3
+            - if observation.observed_teammates.any?
+              - observation.observed_teammates.limit(3).each do |teammate|
+                - person = teammate.person
+                .me-2
+                  .rounded-circle.bg-primary.text-white.d-flex.align-items-center.justify-content-center{style: "width: 40px; height: 40px; font-size: 0.9rem;"}
+                    = (person.preferred_name || person.first_name || '?')[0].upcase
+            - else
+              .me-2
+                .rounded-circle.bg-secondary.text-white.d-flex.align-items-center.justify-content-center{style: "width: 40px; height: 40px; font-size: 0.9rem;"}
+                  ?
+            .flex-grow-1
+              %small.text-muted
+                - if observation.observed_teammates.any?
+                  - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }
+                  = names.join(', ')
+                - else
+                  No one observed
+              %br
+              %small.text-muted
+                by #{observation.observer.preferred_name || observation.observer.first_name}
+          
+          / Story text
+          %p.card-text.mb-3
+            = truncate(observation.story, length: 200)
+          
+          / GIF if exists
+          - if observation.story_extras.present?
+            - gif_urls = observation.story_extras['gif_urls'] || observation.story_extras[:gif_urls] || []
+            - first_gif = Array(gif_urls).reject(&:blank?).first
+            - if first_gif
+              .mb-3
+                = image_tag first_gif, alt: 'GIF', class: 'img-fluid rounded'
+          
+          / Ratings
+          - if observation.observation_ratings.any?
+            .mb-2
+              %small.text-muted
+                - assignment_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Assignment' }
+                - ability_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Ability' }
+                - aspiration_ratings = observation.observation_ratings.select { |r| r.rateable_type == 'Aspiration' }
+                - rating_texts = []
+                - assignment_ratings.each do |rating|
+                  - rating_texts << capture { render('organizations/observations/assignment_rating', observation_rating: rating, include_assignment_name: true) }
+                - ability_ratings.each do |rating|
+                  - rating_texts << capture { render('organizations/observations/ability_rating', observation_rating: rating, include_ability_name: true) }
+                - aspiration_ratings.each do |rating|
+                  - rating_texts << capture { render('organizations/observations/aspiration_rating', observation_rating: rating, include_aspiration_name: true) }
+                != rating_texts.join(', ')
+          
+          / Feelings
+          - if observation.primary_feeling.present?
+            .mb-2= observation.decorate.feelings_display_html
+          
+          / Privacy indicator
+          %p.mb-2
+            %span{title: observation.decorate.visibility_text, "data-bs-toggle" => "tooltip"}
+              = observation.decorate.privacy_rings_with_label
+          
+          / Date
+          %small.text-muted= observation.observed_at.strftime('%b %d, %Y')
+        
+        .card-footer.bg-light
+          .btn-group.btn-group-sm.w-100
+            - if observation.privacy_level == 'public_to_world'
+              = link_to observation.decorate.permalink_path, class: "btn btn-outline-primary", title: "Public permalink" do
+                %i.bi.bi-globe
+            = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary", title: "Show page" do
+              %i.bi.bi-eye
+            - if policy(observation).update?
+              = link_to edit_organization_observation_path(@organization, observation, return_url: organization_observation_path(@organization, observation), return_text: 'Back to Observation'), class: "btn btn-outline-secondary" do
+                %i.bi.bi-pencil
+

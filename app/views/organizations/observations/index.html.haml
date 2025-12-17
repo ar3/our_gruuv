@@ -35,6 +35,8 @@
       .card-body
         - if @current_spotlight == 'feedback_health'
           = render partial: 'organizations/observations/spotlights/feedback_health'
+        - elsif @current_spotlight == 'most_observed'
+          = render partial: 'organizations/observations/spotlights/most_observed'
         - else
           .row
             .col-md-8
@@ -144,6 +146,8 @@
         = render 'organizations/observations/card_view'
       - when 'list'
         = render 'organizations/observations/list_view'
+      - when 'wall'
+        = render 'organizations/observations/wall_view'
       - else
         = render 'organizations/observations/table_view'
       

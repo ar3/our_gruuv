@@ -5,7 +5,37 @@
 - content_for :return_text do
   = @return_text || 'Back to Culture of Feedback and Recognition'
 
-= form_with url: update_view_organization_observations_path(@organization), method: :patch, local: true do |form|
+= form_with url: update_view_organization_observations_path(@organization), method: :patch, local: true, data: { controller: "timeframe" } do |form|
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Choose Preset
+    .col-md-8
+      / Preset Section - Grid of Buttons
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold.mb-3 Choose Preset
+          - presets = available_observation_presets_with_permissions(@organization, current_company_teammate)
+          .row.g-3
+            - presets.each do |preset|
+              .col-md-4.col-sm-6
+                - if preset[:available]
+                  %button.btn.btn-outline-primary.w-100.h-100.d-flex.flex-column.align-items-center.justify-content-center.p-3{type: 'submit', name: 'preset', value: preset[:value], style: 'min-height: 100px;'}
+                    %i.bi.bi-check-circle.mb-2{style: "font-size: 1.5rem;"}
+                    %span.fw-bold.text-center= preset[:name]
+                - else
+                  .d-flex.align-items-center.gap-2.w-100
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.h-100.d-flex.flex-column.align-items-center.justify-content-center.p-3.disabled{type: 'button', disabled: true, style: 'min-height: 100px; opacity: 0.6; cursor: not-allowed;'}
+                        %i.bi.bi-lock.mb-2{style: "font-size: 1.5rem;"}
+                        %span.fw-bold.text-center= preset[:name]
+                    %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: preset[:tooltip]}, style: "font-size: 1.2rem;"}
+  .row
+    .col-12.text-center
+      %hr/
+      %h1.text-muted --OR--
+      %small.text-muted Customize Your View
+      %hr/
   .row
     .col-md-4
       .mb-4
@@ -32,8 +62,11 @@
               = check_box_tag 'privacy[]', 'observed_and_managers', @current_filters[:privacy]&.include?('observed_and_managers'), class: 'form-check-input', id: 'privacy_observed_and_managers'
               = label_tag 'privacy_observed_and_managers', '👥 Full Transparency', class: 'form-check-label'
             .form-check
-              = check_box_tag 'privacy[]', 'public_observation', @current_filters[:privacy]&.include?('public_observation'), class: 'form-check-input', id: 'privacy_public'
-              = label_tag 'privacy_public', '🌍 Public Recognition', class: 'form-check-label'
+              = check_box_tag 'privacy[]', 'public_to_company', @current_filters[:privacy]&.include?('public_to_company'), class: 'form-check-input', id: 'privacy_public_to_company'
+              = label_tag 'privacy_public_to_company', '🏢 Public to Company', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'privacy[]', 'public_to_world', @current_filters[:privacy]&.include?('public_to_world'), class: 'form-check-input', id: 'privacy_public_to_world'
+              = label_tag 'privacy_public_to_world', '🌍 Public to World', class: 'form-check-label'
           
           .mb-3
             %label.form-label Timeframe
@@ -43,6 +76,29 @@
             .form-check
               = radio_button_tag 'timeframe', 'this_month', @current_filters[:timeframe] == 'this_month', class: 'form-check-input', id: 'timeframe_this_month'
               = label_tag 'timeframe_this_month', 'This Month', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'timeframe', 'this_quarter', @current_filters[:timeframe] == 'this_quarter', class: 'form-check-input', id: 'timeframe_this_quarter'
+              = label_tag 'timeframe_this_quarter', 'This Quarter', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'timeframe', 'last_45_days', @current_filters[:timeframe] == 'last_45_days', class: 'form-check-input', id: 'timeframe_last_45_days'
+              = label_tag 'timeframe_last_45_days', 'Last 45 Days', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'timeframe', 'last_90_days', @current_filters[:timeframe] == 'last_90_days', class: 'form-check-input', id: 'timeframe_last_90_days'
+              = label_tag 'timeframe_last_90_days', 'Last 90 Days', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'timeframe', 'this_year', @current_filters[:timeframe] == 'this_year', class: 'form-check-input', id: 'timeframe_this_year'
+              = label_tag 'timeframe_this_year', 'This Year', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'timeframe', 'between', @current_filters[:timeframe] == 'between', class: 'form-check-input', id: 'timeframe_between', data: { action: 'change->timeframe#toggleBetweenFields' }
+              = label_tag 'timeframe_between', 'Between', class: 'form-check-label'
+            .between-fields-container.mt-2.mb-2.ms-4{style: "display: #{@current_filters[:timeframe] == 'between' ? 'block' : 'none'};"}
+              .row
+                .col-md-6
+                  = label_tag 'timeframe_start_date', 'Start Date', class: 'form-label'
+                  = date_field_tag 'timeframe_start_date', @current_filters[:timeframe_start_date], class: 'form-control', id: 'timeframe_start_date'
+                .col-md-6
+                  = label_tag 'timeframe_end_date', 'End Date', class: 'form-label'
+                  = date_field_tag 'timeframe_end_date', @current_filters[:timeframe_end_date], class: 'form-control', id: 'timeframe_end_date'
             .form-check
               = radio_button_tag 'timeframe', 'all', @current_filters[:timeframe].blank? || @current_filters[:timeframe] == 'all', class: 'form-check-input', id: 'timeframe_all'
               = label_tag 'timeframe_all', 'All Time', class: 'form-check-label'
@@ -86,6 +142,11 @@
             = label_tag 'view_list', class: 'form-check-label' do
               %i.bi.bi-list.me-2
               List View
+          .form-check
+            = radio_button_tag 'view', 'wall', @current_view == 'wall', class: 'form-check-input', id: 'view_wall'
+            = label_tag 'view_wall', class: 'form-check-label' do
+              %i.bi.bi-images.me-2
+              Social Wall View
 
   .row
     .col-md-4
@@ -112,6 +173,9 @@
           .form-check
             = radio_button_tag 'spotlight', 'feedback_health', @current_spotlight == 'feedback_health', class: 'form-check-input', id: 'spotlight_feedback_health'
             = label_tag 'spotlight_feedback_health', 'Feedback Health', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'most_observed', @current_spotlight == 'most_observed', class: 'form-check-input', id: 'spotlight_most_observed'
+            = label_tag 'spotlight_most_observed', 'Most Observed', class: 'form-check-label'
           .form-check
             = radio_button_tag 'spotlight', 'none', @current_spotlight == 'none', class: 'form-check-input', id: 'spotlight_none'
             = label_tag 'spotlight_none', 'No Spotlight', class: 'form-check-label'

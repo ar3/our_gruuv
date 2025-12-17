@@ -213,9 +213,20 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # Handle preset application if selected
     apply_preset_if_selected
     
-    # Build redirect URL with all the view customization params
-    # Preserve all params except Rails internal ones
-    redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h.compact
+    # Build redirect URL with view customization params
+    if params[:preset].present?
+      # When preset is selected, only include preset-defined params
+      preset_params = preset_to_params(params[:preset])
+      redirect_params = {}
+      
+      if preset_params
+        # Use preset params directly - Rails path helpers handle arrays automatically
+        redirect_params = preset_params.dup
+      end
+    else
+      # When no preset, include all params except Rails internal ones
+      redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h.compact
+    end
     
     redirect_to organization_employees_path(@organization, redirect_params), notice: 'View updated successfully.'
   end

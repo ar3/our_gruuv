@@ -19,6 +19,10 @@ class ObservationsQuery
     filters = {}
     filters[:privacy] = params[:privacy] if params[:privacy].present?
     filters[:timeframe] = params[:timeframe] if params[:timeframe].present? && params[:timeframe] != 'all'
+    if params[:timeframe] == 'between'
+      filters[:timeframe_start_date] = params[:timeframe_start_date] if params[:timeframe_start_date].present?
+      filters[:timeframe_end_date] = params[:timeframe_end_date] if params[:timeframe_end_date].present?
+    end
     filters
   end
 
@@ -67,6 +71,28 @@ class ObservationsQuery
       observations.where(observed_at: 1.week.ago..)
     when 'this_month'
       observations.where(observed_at: 1.month.ago..)
+    when 'this_quarter'
+      # Calculate start of current quarter
+      now = Time.current
+      quarter_start_month = ((now.month - 1) / 3) * 3 + 1
+      quarter_start = Time.zone.local(now.year, quarter_start_month, 1).beginning_of_day
+      observations.where(observed_at: quarter_start..)
+    when 'last_45_days'
+      observations.where(observed_at: 45.days.ago..)
+    when 'last_90_days'
+      observations.where(observed_at: 90.days.ago..)
+    when 'this_year'
+      observations.where(observed_at: Time.current.beginning_of_year..)
+    when 'between'
+      start_date = params[:timeframe_start_date]
+      end_date = params[:timeframe_end_date]
+      if start_date.present? && end_date.present?
+        start_time = Date.parse(start_date).beginning_of_day
+        end_time = Date.parse(end_date).end_of_day
+        observations.where(observed_at: start_time..end_time)
+      else
+        observations
+      end
     else
       observations
     end
