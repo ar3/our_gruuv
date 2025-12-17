@@ -264,6 +264,50 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
         expect(response).to have_http_status(:unprocessable_entity)
         expect(assigns(:available_parents)).to be_present
       end
+
+      it 'does not allow changing organization type' do
+        original_type = department.type
+        expect(original_type).to eq('Department')
+        
+        patch :update, params: {
+          organization_id: organization.id,
+          id: department.id,
+          organization: { name: department.name, type: 'Team' }
+        }
+        
+        department.reload
+        expect(department.type).to eq(original_type)
+        expect(department.type).not_to eq('Team')
+        expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
+      end
+
+      it 'allows changing name' do
+        patch :update, params: {
+          organization_id: organization.id,
+          id: department.id,
+          organization: { name: 'New Department Name' }
+        }
+        
+        department.reload
+        expect(department.name).to eq('New Department Name')
+        expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
+      end
+
+      it 'allows changing parent organization' do
+        department2 = create(:organization, :department, parent: organization)
+        original_parent_id = department.parent_id
+        
+        patch :update, params: {
+          organization_id: organization.id,
+          id: department.id,
+          organization: { name: department.name, parent_id: department2.id }
+        }
+        
+        department.reload
+        expect(department.parent_id).to eq(department2.id)
+        expect(department.parent_id).not_to eq(original_parent_id)
+        expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
+      end
     end
 
     context 'without permission' do

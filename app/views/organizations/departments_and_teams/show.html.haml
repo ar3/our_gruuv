@@ -33,10 +33,72 @@
           %dt.col-sm-3 Parent
           %dd.col-sm-9
             - if @department_or_team.parent
-              = link_to organization_departments_and_team_path(@organization, @department_or_team.parent), class: "text-decoration-none" do
-                = @department_or_team.parent.name
+              -# Build hierarchy path from root to parent
+              - hierarchy_path = []
+              - current_org = @department_or_team.parent
+              - while current_org
+                - hierarchy_path.unshift(current_org)
+                - current_org = current_org.parent
+              -# Display hierarchy with links
+              - hierarchy_path.each_with_index do |org, index|
+                - if org.company?
+                  -# Root company links to organization show page
+                  - if policy(org).show?
+                    = link_to organization_path(org), class: "text-decoration-none" do
+                      = org.name
+                  - else
+                    %span= org.name
+                - else
+                  -# Departments and teams link to departments_and_teams show page
+                  - if policy(org).show?
+                    = link_to organization_departments_and_team_path(@organization, org), class: "text-decoration-none" do
+                      = org.name
+                  - else
+                    %span= org.name
+                - unless index == hierarchy_path.length - 1
+                  %span.text-muted.mx-1
+                    %i.bi.bi-chevron-right
             - else
-              %span.text-muted= @organization.name
+              -# No parent, show root company
+              - if policy(@organization).show?
+                = link_to organization_path(@organization), class: "text-decoration-none" do
+                  = @organization.name
+              - else
+                %span.text-muted= @organization.name
+
+    - if @descendants.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-diagram-3.me-2
+            Departments & Teams (#{@descendants.count})
+        .card-body
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Name
+                  %th Type
+                  %th Children
+              %tbody
+                - @descendants.each do |descendant|
+                  %tr
+                    %td
+                      - if policy(descendant).show?
+                        = link_to organization_departments_and_team_path(@organization, descendant), class: "text-decoration-none" do
+                          = descendant.name
+                      - else
+                        %span= descendant.name
+                    %td
+                      %span.badge{class: descendant.department? ? "bg-primary" : "bg-info"}
+                        = descendant.type
+                    %td
+                      - child_count = descendant.children.active.count
+                      - if child_count > 0
+                        %span.text-muted
+                          = pluralize(child_count, 'department/team')
+                      - else
+                        %span.text-muted —
 
     - if @seats.any?
       .card.mb-4
@@ -91,7 +153,7 @@
                 - @position_types.each do |position_type|
                   %tr
                     %td
-                      = link_to organization_position_type_path(@organization, position_type), class: "text-decoration-none" do
+                      = link_to position_type_path(position_type), class: "text-decoration-none" do
                         = position_type.external_title
                     %td= position_type.position_major_level.description
                     %td= position_type.positions.count

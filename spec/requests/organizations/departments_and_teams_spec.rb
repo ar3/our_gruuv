@@ -7,7 +7,9 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
   let(:current_person) { create(:person) }
 
   before do
-    sign_in_as_teammate_for_request(current_person, organization)
+    signed_in_teammate = sign_in_as_teammate_for_request(current_person, organization)
+    # Grant permission to manage departments and teams for edit/update actions
+    signed_in_teammate.update!(can_manage_departments_and_teams: true)
   end
 
   describe 'GET /organizations/:id/departments_and_teams' do
@@ -113,15 +115,18 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
       position_type = create(:position_type, organization: department, position_major_level: position_major_level)
       position_level = create(:position_level, position_major_level: position_major_level, level: '1.1')
-      position = create(:position, position_type: position_type, position_level: position_level)
+      # Create seat first, then use :with_seat trait to ensure position matches
       seat = create(:seat, position_type: position_type, state: :filled)
       
-      # Create a teammate and employment tenure
-      teammate = create(:teammate, person: current_person, organization: organization)
-      employment_tenure = create(:employment_tenure, 
+      # Find or create a teammate
+      teammate = Teammate.find_or_create_by(person: current_person, organization: organization) do |t|
+        t.type = 'CompanyTeammate'
+      end
+      teammate.update_column(:type, 'CompanyTeammate') if teammate.type != 'CompanyTeammate'
+      # Use :with_seat trait to ensure position matches seat's position_type
+      employment_tenure = create(:employment_tenure, :with_seat,
         teammate: teammate, 
         company: organization, 
-        position: position, 
         seat: seat,
         started_at: 1.year.ago,
         ended_at: nil
@@ -148,16 +153,18 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
     it 'handles seats with inactive employment tenures' do
       position_major_level = create(:position_major_level, major_level: 1, set_name: 'Engineering')
       position_type = create(:position_type, organization: department, position_major_level: position_major_level)
-      position_level = create(:position_level, position_major_level: position_major_level, level: '1.1')
-      position = create(:position, position_type: position_type, position_level: position_level)
+      # Create seat first, then use :with_seat trait to ensure position matches
       seat = create(:seat, position_type: position_type, state: :open)
       
-      # Create an ended employment tenure (inactive)
-      teammate = create(:teammate, person: current_person, organization: organization)
-      employment_tenure = create(:employment_tenure, 
+      # Find or create an ended employment tenure (inactive)
+      teammate = Teammate.find_or_create_by(person: current_person, organization: organization) do |t|
+        t.type = 'CompanyTeammate'
+      end
+      teammate.update_column(:type, 'CompanyTeammate') if teammate.type != 'CompanyTeammate'
+      # Use :with_seat trait to ensure position matches seat's position_type
+      employment_tenure = create(:employment_tenure, :with_seat, :inactive,
         teammate: teammate, 
         company: organization, 
-        position: position, 
         seat: seat,
         started_at: 2.years.ago,
         ended_at: 1.year.ago
@@ -173,9 +180,8 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
     it 'excludes archived departments' do
       archived_dept = create(:organization, :department, parent: organization, deleted_at: Time.current)
       
-      expect {
-        get organization_departments_and_team_path(organization, archived_dept)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      get "/organizations/#{organization.to_param}/departments_and_teams/#{archived_dept.to_param}"
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'handles nested teams' do
@@ -186,9 +192,8 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
     end
 
     it 'returns 404 for non-existent department' do
-      expect {
-        get organization_departments_and_team_path(organization, 99999)
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      get "/organizations/#{organization.to_param}/departments_and_teams/99999-nonexistent"
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -232,8 +237,9 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
         organization: { name: 'Updated Department Name' }
       }
       
-      expect(response).to redirect_to(organization_departments_and_teams_path(organization))
-      expect(department.reload.name).to eq('Updated Department Name')
+      department.reload
+      expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
+      expect(department.name).to eq('Updated Department Name')
     end
 
     it 'updates parent organization' do
@@ -243,7 +249,7 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
         organization: { name: department.name, parent_id: department2.id }
       }
       
-      expect(response).to redirect_to(organization_departments_and_teams_path(organization))
+      expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
       expect(department.reload.parent_id).to eq(department2.id)
     end
 
@@ -254,7 +260,7 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
         organization: { name: department2.name, parent_id: organization.id }
       }
       
-      expect(response).to redirect_to(organization_departments_and_teams_path(organization))
+      expect(response).to redirect_to(organization_departments_and_team_path(organization, department2))
       expect(department2.reload.parent_id).to eq(organization.id)
     end
 

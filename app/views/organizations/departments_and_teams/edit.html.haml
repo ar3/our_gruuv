@@ -25,12 +25,6 @@
             = form.text_field :name, class: "form-control", required: true
           
           .mb-3
-            = form.label :type, "Organization Type", class: "form-label"
-            = form.select :type, options_for_select([['Department', 'Department'], ['Team', 'Team']], @department_or_team.type), {}, { class: "form-select", required: true, disabled: true }
-            = form.hidden_field :type
-            %small.form-text.text-muted Organization type cannot be changed after creation.
-          
-          .mb-3
             = form.label :parent_id, "Parent Organization", class: "form-label"
             = form.select :parent_id, options_from_collection_for_select(@available_parents, :id, :display_name, @department_or_team.parent_id || @organization.id), {}, { class: "form-select" }
             %small.form-text.text-muted Select the parent organization for this #{@department_or_team.type.downcase}.
