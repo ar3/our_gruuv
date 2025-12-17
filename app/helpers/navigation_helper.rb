@@ -126,6 +126,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Departments & Teams',
+            icon: 'bi-diagram-3',
+            path: organization_departments_and_teams_path(current_organization),
+            policy_check: -> { policy(current_organization).show? },
+            coming_soon: false
+          },
+          {
             label: 'Bulk Events',
             icon: 'bi-upload',
             path: organization_bulk_sync_events_path(current_organization),

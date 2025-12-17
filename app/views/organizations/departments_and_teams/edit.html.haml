@@ -1,0 +1,41 @@
+- content_for :go_back_link do
+  = link_to organization_departments_and_team_path(@organization, @department_or_team), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to #{@department_or_team.name}
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-pencil.me-2
+    Edit #{@department_or_team.type}
+
+.row.justify-content-center
+  .col-lg-8
+    .card
+      .card-body
+        = form_with model: [@organization, @department_or_team], url: organization_departments_and_team_path(@organization, @department_or_team), local: true, method: :patch do |form|
+          - if @department_or_team.errors.any?
+            .alert.alert-danger
+              %h5= "#{pluralize(@department_or_team.errors.count, "error")} prohibited this organization from being saved:"
+              %ul.mb-0
+                - @department_or_team.errors.full_messages.each do |message|
+                  %li= message
+          
+          .mb-3
+            = form.label :name, class: "form-label"
+            = form.text_field :name, class: "form-control", required: true
+          
+          .mb-3
+            = form.label :type, "Organization Type", class: "form-label"
+            = form.select :type, options_for_select([['Department', 'Department'], ['Team', 'Team']], @department_or_team.type), {}, { class: "form-select", required: true, disabled: true }
+            = form.hidden_field :type
+            %small.form-text.text-muted Organization type cannot be changed after creation.
+          
+          .mb-3
+            = form.label :parent_id, "Parent Organization", class: "form-label"
+            = form.select :parent_id, options_from_collection_for_select(@available_parents, :id, :display_name, @department_or_team.parent_id || @organization.id), {}, { class: "form-select" }
+            %small.form-text.text-muted Select the parent organization for this #{@department_or_team.type.downcase}.
+          
+          .d-flex.justify-content-between
+            = link_to "Cancel", organization_departments_and_team_path(@organization, @department_or_team), class: "btn btn-secondary"
+            = form.submit "Update #{@department_or_team.type}", class: "btn btn-primary"
+

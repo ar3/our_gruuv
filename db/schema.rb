@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_15_014421) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_17_122926) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -512,6 +512,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_15_014421) do
     t.bigint "parent_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
+    t.index ["deleted_at"], name: "index_organizations_on_deleted_at"
     t.index ["parent_id"], name: "index_organizations_on_parent_id"
   end
 
@@ -815,6 +817,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_15_014421) do
     t.datetime "last_terminated_at"
     t.string "type"
     t.boolean "can_manage_prompts"
+    t.boolean "can_manage_departments_and_teams"
+    t.index ["can_manage_departments_and_teams"], name: "index_teammates_on_can_manage_departments_and_teams"
     t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"
     t.index ["can_manage_maap"], name: "index_teammates_on_can_manage_maap"
     t.index ["can_manage_prompts"], name: "index_teammates_on_can_manage_prompts"

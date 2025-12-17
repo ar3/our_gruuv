@@ -58,7 +58,7 @@
           %label.form-label.fw-bold Select What Order You See Them In
           .mb-3
             %label.form-label Sort By
-            - sort_options = [['Title (A-Z)', 'title'], ['Title (Z-A)', 'title_desc'], ['Company (A-Z)', 'company'], ['Company (Z-A)', 'company_desc'], ['Most Outcomes', 'outcomes'], ['Fewest Outcomes', 'outcomes_desc'], ['Most Abilities', 'abilities'], ['Fewest Abilities', 'abilities_desc']]
+            - sort_options = [['Department and Title', 'department_and_title'], ['Title (A-Z)', 'title'], ['Title (Z-A)', 'title_desc'], ['Company (A-Z)', 'company'], ['Company (Z-A)', 'company_desc'], ['Most Outcomes', 'outcomes'], ['Fewest Outcomes', 'outcomes_desc'], ['Most Abilities', 'abilities'], ['Fewest Abilities', 'abilities_desc']]
             = select_tag 'sort', options_for_select(sort_options, @current_sort), class: 'form-select', id: 'sort_select'
           .mb-3
             %label.form-label Direction

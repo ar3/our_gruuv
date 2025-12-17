@@ -32,6 +32,8 @@ class Organization < ApplicationRecord
   scope :teams, -> { where(type: 'Team') }
   scope :departments, -> { where(type: 'Department') }
   scope :ordered, -> { order(:name) }
+  scope :active, -> { where(deleted_at: nil) }
+  scope :archived, -> { where.not(deleted_at: nil) }
 
   # Finder method that handles both id and id-name formats
   def self.find_by_param(param)
@@ -165,7 +167,7 @@ class Organization < ApplicationRecord
   end
   
   def descendants
-    children.flat_map { |child| [child] + child.descendants }
+    children.active.flat_map { |child| [child] + child.descendants }
   end
   
   def ancestry_depth
@@ -265,4 +267,17 @@ class Organization < ApplicationRecord
     }
   
   multisearchable against: [:name, :type]
+
+  # Archiving methods (soft delete - NO default_scope)
+  def soft_delete!
+    update!(deleted_at: Time.current)
+  end
+
+  def restore!
+    update!(deleted_at: nil)
+  end
+
+  def archived?
+    deleted_at.present?
+  end
 end 

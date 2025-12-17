@@ -168,7 +168,8 @@ get '/login', to: 'auth#login', as: :login
       member do
         get :complete_picture
         get :internal
-        post :update_permission
+        get :permissions
+        post :update_permissions
         get :assignment_selection
         post :update_assignments
       end
@@ -302,7 +303,11 @@ get '/login', to: 'auth#login', as: :login
     end
     
     # Departments and Teams management
-    resources :departments_and_teams, module: :organizations, only: [:index]
+    resources :departments_and_teams, module: :organizations, except: [:destroy] do
+      member do
+        patch :archive
+      end
+    end
     
     # Search functionality
     resource :search, only: [:show], module: :organizations, controller: 'search'

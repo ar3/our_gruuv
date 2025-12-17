@@ -106,6 +106,165 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
       end
     end
   end
+
+  describe 'GET #permissions' do
+    context 'when user has update_permission permissions' do
+      before do
+        allow_any_instance_of(CompanyTeammatePolicy).to receive(:update_permission?).and_return(true)
+      end
+
+      it 'renders the permissions page successfully' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        get :permissions, params: { organization_id: organization.id, id: employee_teammate.id }
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:permissions)
+        expect(response).to render_template(layout: 'overlay')
+      end
+
+      it 'assigns the correct instance variables' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        get :permissions, params: { organization_id: organization.id, id: employee_teammate.id }
+        
+        expect(assigns(:teammate)).to eq(employee_teammate)
+        expect(assigns(:return_url)).to eq(organization_company_teammate_path(organization, employee_teammate))
+        expect(assigns(:return_text)).to eq("Back to Profile")
+      end
+
+      it 'assigns who has each permission' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        manager_teammate = manager.teammates.find_by(organization: organization)
+        
+        # Create another teammate with employment management
+        other_person = create(:person)
+        other_teammate = create(:teammate, person: other_person, organization: organization, can_manage_employment: true)
+        
+        get :permissions, params: { organization_id: organization.id, id: employee_teammate.id }
+        
+        expect(assigns(:who_has_employment_management)).to include(manager_teammate)
+        expect(assigns(:who_has_employment_management)).to include(other_teammate)
+        expect(assigns(:who_has_employment_management)).not_to include(employee_teammate)
+      end
+    end
+
+  end
+
+  describe 'POST #update_permissions' do
+    context 'when user has employment management permission' do
+      before do
+        # Manager already has can_manage_employment: true from before block
+        # Ensure policy allows update
+        allow_any_instance_of(CompanyTeammatePolicy).to receive(:update_permission?).and_return(true)
+      end
+
+      it 'redirects to profile page after successful save' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        post :update_permissions, params: {
+          organization_id: organization.id,
+          id: employee_teammate.id,
+          can_manage_employment: 'true',
+          can_create_employment: 'false',
+          can_manage_maap: 'true',
+          can_manage_prompts: 'false',
+          can_manage_departments_and_teams: 'true'
+        }
+        
+        expect(response).to redirect_to(organization_company_teammate_path(organization, employee_teammate))
+        expect(flash[:notice]).to eq('Permissions updated successfully.')
+      end
+
+      it 'updates all permissions at once' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        employee_teammate.update!(
+          can_manage_employment: false,
+          can_create_employment: false,
+          can_manage_maap: false,
+          can_manage_prompts: false,
+          can_manage_departments_and_teams: false
+        )
+        
+        post :update_permissions, params: {
+          organization_id: organization.id,
+          id: employee_teammate.id,
+          can_manage_employment: 'true',
+          can_create_employment: 'true',
+          can_manage_maap: 'false',
+          can_manage_prompts: 'true',
+          can_manage_departments_and_teams: 'false'
+        }
+        
+        employee_teammate.reload
+        expect(employee_teammate.can_manage_employment).to eq(true)
+        expect(employee_teammate.can_create_employment).to eq(true)
+        expect(employee_teammate.can_manage_maap).to eq(false)
+        expect(employee_teammate.can_manage_prompts).to eq(true)
+        expect(employee_teammate.can_manage_departments_and_teams).to eq(false)
+      end
+
+      it 'handles setting permissions to false' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        employee_teammate.update!(
+          can_manage_employment: true,
+          can_create_employment: true,
+          can_manage_maap: true,
+          can_manage_prompts: true,
+          can_manage_departments_and_teams: true
+        )
+        
+        post :update_permissions, params: {
+          organization_id: organization.id,
+          id: employee_teammate.id,
+          can_manage_employment: 'false',
+          can_create_employment: 'false',
+          can_manage_maap: 'false',
+          can_manage_prompts: 'false',
+          can_manage_departments_and_teams: 'false'
+        }
+        
+        employee_teammate.reload
+        expect(employee_teammate.can_manage_employment).to eq(false)
+        expect(employee_teammate.can_create_employment).to eq(false)
+        expect(employee_teammate.can_manage_maap).to eq(false)
+        expect(employee_teammate.can_manage_prompts).to eq(false)
+        expect(employee_teammate.can_manage_departments_and_teams).to eq(false)
+      end
+    end
+
+    context 'when user does not have employment management permission' do
+      let(:non_manager) { create(:person) }
+      let(:non_manager_teammate) { create(:teammate, person: non_manager, organization: organization, can_manage_employment: false) }
+      
+      before do
+        create(:employment_tenure, teammate: non_manager_teammate, company: organization)
+        sign_in_as_teammate(non_manager, organization)
+      end
+
+      it 'redirects to permissions page with error message' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        post :update_permissions, params: {
+          organization_id: organization.id,
+          id: employee_teammate.id,
+          can_manage_employment: 'true'
+        }
+        
+        expect(response).to redirect_to(permissions_organization_company_teammate_path(organization, employee_teammate))
+        expect(flash[:alert]).to include('You do not have permission to update permissions')
+      end
+
+      it 'does not update permissions' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        original_value = employee_teammate.can_manage_employment
+        
+        post :update_permissions, params: {
+          organization_id: organization.id,
+          id: employee_teammate.id,
+          can_manage_employment: 'true'
+        }
+        
+        employee_teammate.reload
+        expect(employee_teammate.can_manage_employment).to eq(original_value)
+      end
+    end
+  end
 end
 
 

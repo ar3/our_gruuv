@@ -72,6 +72,17 @@ RSpec.describe Teammate, type: :model do
         expect(result).not_to include(access1, access2)
       end
     end
+
+    describe '.with_departments_and_teams_management' do
+      let(:person6) { create(:person) }
+      let!(:dept_teams_access) { create(:teammate, person: person6, organization: company, can_manage_departments_and_teams: true) }
+
+      it 'returns only access records with departments and teams management' do
+        result = described_class.with_departments_and_teams_management
+        expect(result).to include(dept_teams_access)
+        expect(result).not_to include(access1, access2)
+      end
+    end
   end
   
   describe 'instance methods' do
@@ -125,6 +136,23 @@ RSpec.describe Teammate, type: :model do
       it 'returns false when can_manage_prompts is nil' do
         access.update!(can_manage_prompts: nil)
         expect(access.can_manage_prompts?).to be false
+      end
+    end
+
+    describe '#can_manage_departments_and_teams?' do
+      it 'returns true when can_manage_departments_and_teams is true' do
+        access.update!(can_manage_departments_and_teams: true)
+        expect(access.can_manage_departments_and_teams?).to be true
+      end
+
+      it 'returns false when can_manage_departments_and_teams is false' do
+        access.update!(can_manage_departments_and_teams: false)
+        expect(access.can_manage_departments_and_teams?).to be false
+      end
+
+      it 'returns false when can_manage_departments_and_teams is nil' do
+        access.update!(can_manage_departments_and_teams: nil)
+        expect(access.can_manage_departments_and_teams?).to be false
       end
     end
 
@@ -421,6 +449,43 @@ RSpec.describe Teammate, type: :model do
         access.update!(can_manage_prompts: false)
         team_access.update!(can_manage_prompts: false)
         expect(described_class.can_manage_prompts_in_hierarchy?(person, team)).to be false
+      end
+    end
+
+    describe '.can_manage_departments_and_teams?' do
+      it 'returns true when person has departments and teams management access' do
+        access.update!(can_manage_departments_and_teams: true)
+        expect(described_class.can_manage_departments_and_teams?(person, company)).to be true
+      end
+
+      it 'returns false when person does not have departments and teams management access' do
+        access.update!(can_manage_departments_and_teams: false)
+        expect(described_class.can_manage_departments_and_teams?(person, company)).to be false
+      end
+
+      it 'returns false when no access record exists' do
+        access.destroy
+        expect(described_class.can_manage_departments_and_teams?(person, company)).to be false
+      end
+    end
+
+    describe '.can_manage_departments_and_teams_in_hierarchy?' do
+      let!(:team_access) { create(:teammate, person: person, organization: team) }
+
+      it 'returns true when person has departments and teams management access at organization level' do
+        team_access.update!(can_manage_departments_and_teams: true)
+        expect(described_class.can_manage_departments_and_teams_in_hierarchy?(person, team)).to be true
+      end
+
+      it 'returns true when person has departments and teams management access at ancestor level' do
+        access.update!(can_manage_departments_and_teams: true)
+        expect(described_class.can_manage_departments_and_teams_in_hierarchy?(person, team)).to be true
+      end
+
+      it 'returns false when person has no departments and teams management access in hierarchy' do
+        access.update!(can_manage_departments_and_teams: false)
+        team_access.update!(can_manage_departments_and_teams: false)
+        expect(described_class.can_manage_departments_and_teams_in_hierarchy?(person, team)).to be false
       end
     end
   end

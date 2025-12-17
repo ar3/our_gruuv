@@ -1,0 +1,161 @@
+- content_for :go_back_link do
+  = link_to organization_departments_and_teams_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Departments & Teams
+
+- content_for :header do
+  .d-flex.align-items-center.justify-content-between
+    %h1.mb-0
+      %i.bi.bi-diagram-3.me-2
+      = @department_or_team.name
+    - if policy(@department_or_team).update?
+      = link_to edit_organization_departments_and_team_path(@organization, @department_or_team), class: "btn btn-outline-primary" do
+        %i.bi.bi-pencil.me-2
+        Edit
+    - if policy(@department_or_team).archive?
+      = link_to archive_organization_departments_and_team_path(@organization, @department_or_team), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this #{@department_or_team.type.downcase}?" } do
+        %i.bi.bi-archive.me-2
+        Archive
+
+.row.justify-content-center
+  .col-lg-12
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-info-circle.me-2
+          Details
+      .card-body
+        %dl.row
+          %dt.col-sm-3 Type
+          %dd.col-sm-9
+            %span.badge{class: @department_or_team.department? ? "bg-primary" : "bg-info"}
+              = @department_or_team.type
+          %dt.col-sm-3 Parent
+          %dd.col-sm-9
+            - if @department_or_team.parent
+              = link_to organization_departments_and_team_path(@organization, @department_or_team.parent), class: "text-decoration-none" do
+                = @department_or_team.parent.name
+            - else
+              %span.text-muted= @organization.name
+
+    - if @seats.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-person-badge.me-2
+            Seats (#{@seats.count})
+        .card-body
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Seat
+                  %th Position Type
+                  %th Needed By
+                  %th State
+                  %th Filled By
+              %tbody
+                - @seats.each do |seat|
+                  - active_tenure = seat.employment_tenures.active.first
+                  %tr
+                    %td
+                      = link_to organization_seat_path(@organization, seat), class: "text-decoration-none" do
+                        = seat.display_name
+                    %td= seat.position_type.external_title
+                    %td= seat.seat_needed_by.strftime('%B %d, %Y')
+                    %td
+                      %span.badge{class: seat_state_badge_class(seat.state)}
+                        = seat.state.titleize
+                    %td
+                      - if active_tenure&.teammate&.person
+                        = link_to internal_organization_company_teammate_path(@organization, active_tenure.teammate), class: "text-decoration-none" do
+                          = active_tenure.teammate.person.display_name
+                      - else
+                        %span.text-muted —
+
+    - if @position_types.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-briefcase.me-2
+            Position Types (#{@position_types.count})
+        .card-body
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Title
+                  %th Level
+                  %th Positions
+              %tbody
+                - @position_types.each do |position_type|
+                  %tr
+                    %td
+                      = link_to organization_position_type_path(@organization, position_type), class: "text-decoration-none" do
+                        = position_type.external_title
+                    %td= position_type.position_major_level.description
+                    %td= position_type.positions.count
+
+    - if @assignments.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-list-task.me-2
+            Assignments (#{@assignments.count})
+        .card-body
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Title
+                  %th Tagline
+              %tbody
+                - @assignments.each do |assignment|
+                  %tr
+                    %td
+                      = link_to organization_assignment_path(@organization, assignment), class: "text-decoration-none" do
+                        = assignment.title
+                    %td= truncate(assignment.tagline, length: 100)
+
+    - if @abilities.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-award.me-2
+            Abilities (#{@abilities.count})
+        .card-body
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Name
+                  %th Description
+              %tbody
+                - @abilities.each do |ability|
+                  %tr
+                    %td
+                      = link_to organization_ability_path(@organization, ability), class: "text-decoration-none" do
+                        = ability.name
+                    %td= truncate(ability.description, length: 100)
+
+    - if @huddle_playbooks.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-people.me-2
+            Huddle Playbooks (#{@huddle_playbooks.count})
+        .card-body
+          - @huddle_playbooks.each do |playbook|
+            .card.mb-3
+              .card-body
+                %h6
+                  = link_to organization_huddle_playbook_path(@organization, playbook), class: "text-decoration-none" do
+                    = playbook.display_special_session_name
+                %p.text-muted.mb-0
+                  = pluralize(playbook.huddles.count, 'huddle')
+                  = " created"
+                - if playbook.slack_channel.present?
+                  %small.text-muted
+                    %i.bi.bi-slack.me-1
+                    = playbook.slack_channel
+

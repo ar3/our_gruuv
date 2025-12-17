@@ -9,13 +9,13 @@
       %i.bi.bi-diagram-3.me-2
       Departments & Teams
     .d-flex.align-items-center
-      - if policy(@organization).create?
-        = link_to new_organization_path(parent_id: @organization.id), class: "btn btn-primary ml-2" do
+      - if policy(@organization).manage_departments_and_teams?
+        = link_to new_organization_departments_and_team_path(@organization), class: "btn btn-primary ml-2" do
           %i.bi.bi-plus
       - else
         .btn.btn-primary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
           %i.bi.bi-plus
-        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need organization creation permission to perform this action"}
+        %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need departments and teams management permission to perform this action"}
 
 - content_for :header_action do
   %button.btn.btn-outline-secondary{"data-bs-toggle" => "modal", "data-bs-target" => "#departmentsTeamsFilterModal", type: "button"}
@@ -24,18 +24,10 @@
 
 .row.justify-content-center
   .col-lg-12
-    - if @departments_and_teams.any?
-      .table-responsive
-        %table.table.table-hover
-          %thead
-            %tr
-              %th Name
-              %th Type
-              %th Parent
-              %th Actions
-          %tbody
-            - @hierarchy.each do |item|
-              = render 'organizations/departments_and_teams/hierarchy_row', item: item
+    - if @hierarchy_tree.any?
+      .tree-visualization{style: "padding: 20px;"}
+        - @hierarchy_tree.each do |root_node|
+          = render 'organizations/departments_and_teams/hierarchy_node', node: root_node, depth: 0, organization: @organization
     - else
       .alert.alert-info
         %h6.mb-2
@@ -44,7 +36,41 @@
         %p.mb-2 
           This organization doesn't have any departments or teams yet. 
           Create your first department or team to get started!
-        = link_to "Create First Department", new_organization_path(parent_id: @organization.id, type: 'Department'), class: "btn btn-primary btn-sm"
+        = link_to "Create First Department", new_organization_departments_and_team_path(@organization, type: 'Department'), class: "btn btn-primary btn-sm"
+
+:javascript
+  // Handle collapse/expand icon toggle
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleButtons = document.querySelectorAll('.toggle-children');
+    
+    toggleButtons.forEach(function(button) {
+      const targetId = button.getAttribute('data-bs-target');
+      const target = document.querySelector(targetId);
+      const icon = button.querySelector('.toggle-icon');
+      
+      if (target) {
+        // Set initial icon state based on whether it's expanded
+        if (target.classList.contains('show')) {
+          icon.classList.remove('bi-chevron-up');
+          icon.classList.add('bi-chevron-down');
+        } else {
+          icon.classList.remove('bi-chevron-down');
+          icon.classList.add('bi-chevron-up');
+        }
+        
+        // Listen for Bootstrap collapse events
+        target.addEventListener('show.bs.collapse', function() {
+          icon.classList.remove('bi-chevron-up');
+          icon.classList.add('bi-chevron-down');
+        });
+        
+        target.addEventListener('hide.bs.collapse', function() {
+          icon.classList.remove('bi-chevron-down');
+          icon.classList.add('bi-chevron-up');
+        });
+      }
+    });
+  });
 
 / Modal for Filter & Sort
 #departmentsTeamsFilterModal.modal.fade{"aria-hidden" => "true", "aria-labelledby" => "departmentsTeamsFilterModalLabel", tabindex: "-1"}

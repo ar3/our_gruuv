@@ -130,45 +130,80 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     end
   end
 
-  def update_permission
-    authorize @teammate, :update_permission?, policy_class: CompanyTeammatePolicy
+  def permissions
+    skip_authorization
     
-    permission_type = params[:permission_type]
-    permission_value = params[:permission_value]
-    org = organization
+    @return_url = organization_company_teammate_path(organization, @teammate)
+    @return_text = "Back to Profile"
     
-    # Update the teammate record (already found via set_teammate)
-    access = @teammate
+    # Check if user can modify permissions (will be used in the view)
+    @can_modify = policy(@teammate).update_permission? if @teammate
     
-    # Update the specific permission
-    case permission_type
-    when 'can_manage_employment'
-      access.can_manage_employment = permission_value == 'true' ? true : (permission_value == 'false' ? false : nil)
-    when 'can_create_employment'
-      access.can_create_employment = permission_value == 'true' ? true : (permission_value == 'false' ? false : nil)
-    when 'can_manage_maap'
-      access.can_manage_maap = permission_value == 'true' ? true : (permission_value == 'false' ? false : nil)
-    when 'can_manage_prompts'
-      access.can_manage_prompts = permission_value == 'true' ? true : (permission_value == 'false' ? false : nil)
-    else
-      redirect_to organization_company_teammate_path(org, @teammate), alert: 'Invalid permission type.'
+    # Find who has each permission in this organization
+    @who_has_employment_management = organization.teammates.with_employment_management.includes(:person)
+    @who_has_employment_creation = organization.teammates.with_employment_creation.includes(:person)
+    @who_has_maap_management = organization.teammates.with_maap_management.includes(:person)
+    @who_has_prompts_management = organization.teammates.with_prompts_management.includes(:person)
+    @who_has_departments_and_teams_management = organization.teammates.with_departments_and_teams_management.includes(:person)
+    
+    render layout: 'overlay'
+  end
+
+  def update_permissions
+    skip_authorization
+    
+    # Check authorization but don't raise error - let the view handle it
+    unless policy(@teammate).update_permission?
+      redirect_to permissions_organization_company_teammate_path(organization, @teammate), alert: 'You do not have permission to update permissions.'
       return
     end
-
-    # Debug logging
-    Rails.logger.info("Updating permission: teammate_id=#{@teammate.id}, org_id=#{org.id}, permission_type=#{permission_type}, permission_value=#{permission_value}, type=#{access.type}")
-    Rails.logger.info("Teammate attributes before save: #{access.attributes.inspect}")
+    
+    org = organization
+    access = @teammate
+    
+    # Update all permissions from params
+    # Rails checkboxes with "true"/"false" values send "true" when checked, "false" when unchecked
+    # If param is missing (shouldn't happen with our form), keep current value
+    access.can_manage_employment = if params[:can_manage_employment].present?
+      params[:can_manage_employment] == 'true'
+    else
+      access.can_manage_employment
+    end
+    
+    access.can_create_employment = if params[:can_create_employment].present?
+      params[:can_create_employment] == 'true'
+    else
+      access.can_create_employment
+    end
+    
+    access.can_manage_maap = if params[:can_manage_maap].present?
+      params[:can_manage_maap] == 'true'
+    else
+      access.can_manage_maap
+    end
+    
+    access.can_manage_prompts = if params[:can_manage_prompts].present?
+      params[:can_manage_prompts] == 'true'
+    else
+      access.can_manage_prompts
+    end
+    
+    access.can_manage_departments_and_teams = if params[:can_manage_departments_and_teams].present?
+      params[:can_manage_departments_and_teams] == 'true'
+    else
+      access.can_manage_departments_and_teams
+    end
     
     # Save the access record
     if access.save
-      Rails.logger.info("Successfully saved teammate permission: #{access.id}")
-      redirect_to organization_company_teammate_path(org, @teammate), notice: 'Permission updated successfully.'
+      redirect_to organization_company_teammate_path(org, @teammate), notice: 'Permissions updated successfully.'
     else
-      error_message = "Failed to update permission: #{access.errors.full_messages.join(', ')}"
-      Rails.logger.error("Failed to save teammate permission: #{error_message}")
+      error_message = "Failed to update permissions: #{access.errors.full_messages.join(', ')}"
+      Rails.logger.error("Failed to save teammate permissions: #{error_message}")
       Rails.logger.error("Teammate errors: #{access.errors.inspect}")
       Rails.logger.error("Teammate attributes: #{access.attributes.inspect}")
-      redirect_to organization_company_teammate_path(org, @teammate), alert: error_message
+      Rails.logger.error("Params received: #{params.inspect}")
+      redirect_to permissions_organization_company_teammate_path(org, @teammate), alert: error_message
     end
   end
 

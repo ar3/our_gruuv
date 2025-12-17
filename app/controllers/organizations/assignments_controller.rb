@@ -41,6 +41,8 @@ class Organizations::AssignmentsController < ApplicationController
     
     # Apply sorting
     case params[:sort]
+    when 'department_and_title'
+      @assignments = @assignments.left_joins(:department).order(Arel.sql('COALESCE(organizations.name, \'\')'), :title)
     when 'title'
       @assignments = @assignments.order(:title)
     when 'title_desc'
@@ -58,7 +60,7 @@ class Organizations::AssignmentsController < ApplicationController
     when 'abilities_desc'
       @assignments = @assignments.left_joins(:abilities).group('assignments.id').order('COUNT(assignment_abilities.id) ASC')
     else
-      @assignments = @assignments.ordered
+      @assignments = @assignments.left_joins(:department).order(Arel.sql('COALESCE(organizations.name, \'\')'), :title)
     end
     
     render layout: determine_layout
@@ -160,7 +162,7 @@ class Organizations::AssignmentsController < ApplicationController
       has_abilities: params[:has_abilities],
       has_references: params[:has_references],
       major_version: params[:major_version],
-      sort: params[:sort] || 'title',
+      sort: params[:sort] || 'department_and_title',
       direction: params[:direction] || 'asc',
       view: params[:view] || 'table',
       spotlight: params[:spotlight] || 'none'

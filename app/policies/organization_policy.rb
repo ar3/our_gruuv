@@ -21,22 +21,54 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || viewing_teammate.can_manage_maap?
   end
 
+  def manage_departments_and_teams?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    admin_bypass? || viewing_teammate.can_manage_departments_and_teams?
+  end
+
   def create?
     return false unless viewing_teammate
-    return false unless record == viewing_teammate.organization
-    admin_bypass? || viewing_teammate.can_manage_employment?
+    return false unless organization_in_hierarchy?
+    
+    # For departments and teams, use the new permission
+    if record.department? || record.team?
+      admin_bypass? || viewing_teammate.can_manage_departments_and_teams?
+    else
+      # For companies, use employment management permission
+      admin_bypass? || viewing_teammate.can_manage_employment?
+    end
   end
 
   def update?
     return false unless viewing_teammate
-    return false unless record == viewing_teammate.organization
-    admin_bypass? || viewing_teammate.can_manage_employment?
+    return false unless organization_in_hierarchy?
+    
+    # For departments and teams, use the new permission
+    if record.department? || record.team?
+      admin_bypass? || viewing_teammate.can_manage_departments_and_teams?
+    else
+      # For companies, use employment management permission
+      admin_bypass? || viewing_teammate.can_manage_employment?
+    end
+  end
+
+  def archive?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    
+    # For departments and teams, use the new permission
+    if record.department? || record.team?
+      admin_bypass? || viewing_teammate.can_manage_departments_and_teams?
+    else
+      # For companies, use employment management permission
+      admin_bypass? || viewing_teammate.can_manage_employment?
+    end
   end
 
   def destroy?
-    return false unless viewing_teammate
-    return false unless record == viewing_teammate.organization
-    admin_bypass? || viewing_teammate.can_manage_employment?
+    # Destroy is disabled - use archive instead
+    false
   end
 
   def check_ins_health?
@@ -113,7 +145,14 @@ class OrganizationPolicy < ApplicationPolicy
     teammate_org = viewing_teammate.organization
     return false unless teammate_org
     
-    # Check if record is the teammate's organization or in its hierarchy
+    # For new records (not persisted), check if parent is in hierarchy
+    if record.new_record? && record.parent_id.present?
+      parent = Organization.find_by(id: record.parent_id)
+      return false unless parent
+      return parent == teammate_org || teammate_org.self_and_descendants.include?(parent)
+    end
+    
+    # For persisted records, check if record is the teammate's organization or in its hierarchy
     record == teammate_org || teammate_org.self_and_descendants.include?(record)
   end
 

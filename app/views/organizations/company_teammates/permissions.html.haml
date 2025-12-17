@@ -1,0 +1,255 @@
+- content_for :header do
+  Permissions for #{@teammate.person.display_name}
+
+- content_for :return_url, @return_url
+- content_for :return_text, @return_text
+
+.card.mb-4
+  .card-body
+    %p.text-muted
+      Manage permissions for #{@teammate.person.display_name} in #{organization.display_name}. Company teammates have no inheritance, so permissions are set directly.
+
+- can_modify = @can_modify || false
+
+- unless can_modify
+  .alert.alert-warning.mb-4
+    You need employment management permissions to modify permissions.
+
+- if can_modify
+  = form_with url: update_permissions_organization_company_teammate_path(organization, @teammate), method: :post, local: true do |f|
+    .row
+      .col-md-6
+        .card.mb-4
+          .card-header.d-flex.justify-content-between.align-items-center
+            %h5.mb-0 Employment Management
+            - if can_modify
+              .form-check.form-switch
+                - current_value = @teammate.can_manage_employment == true
+                = f.check_box :can_manage_employment, { checked: current_value, class: "form-check-input" }, "true", "false"
+          .card-body
+            %p.text-muted
+              Can manage employment records and assignments. This permission also allows you to give others permissions.
+              %br
+              %small
+                With this permission you can: change positions, managers, and employment types; edit profiles of others; view audit trails and observation change history; create and manage departments and teams; access seat management; and give permissions to other teammates.
+            - if @who_has_employment_management.any?
+              %p.mb-1.mt-3
+                %strong Who has this permission:
+              %ul.mb-0
+                - @who_has_employment_management.each do |teammate|
+                  %li= teammate.person.display_name
+
+      .col-md-6
+        .card.mb-4
+          .card-header.d-flex.justify-content-between.align-items-center
+            %h5.mb-0 Employment Creation
+            - if can_modify
+              .form-check.form-switch
+                - current_value = @teammate.can_create_employment == true
+                = f.check_box :can_create_employment, { checked: current_value, class: "form-check-input" }, "true", "false"
+          .card-body
+            %p.text-muted
+              Can create new employment records.
+              %br
+              %small
+                With this permission you can: add new employees to the organization; create new employment tenures; and onboard new teammates.
+            - if @who_has_employment_creation.any?
+              %p.mb-1.mt-3
+                %strong Who has this permission:
+              %ul.mb-0
+                - @who_has_employment_creation.each do |teammate|
+                  %li= teammate.person.display_name
+
+    .row
+      .col-md-6
+        .card.mb-4
+          .card-header.d-flex.justify-content-between.align-items-center
+            %h5.mb-0 MAAP Management
+            - if can_modify
+              .form-check.form-switch
+                - current_value = @teammate.can_manage_maap == true
+                = f.check_box :can_manage_maap, { checked: current_value, class: "form-check-input" }, "true", "false"
+          .card-body
+            %p.text-muted
+              Can manage MAAP (Mission, Aspirations, Assignments, Positions).
+              %br
+              %small
+                With this permission you can: manage assignments and assignment check-ins; create, update, and delete abilities and aspirations; view audit trails for people in your managerial hierarchy; and manage seats.
+            - if @who_has_maap_management.any?
+              %p.mb-1.mt-3
+                %strong Who has this permission:
+              %ul.mb-0
+                - @who_has_maap_management.each do |teammate|
+                  %li= teammate.person.display_name
+
+      .col-md-6
+        .card.mb-4
+          .card-header.d-flex.justify-content-between.align-items-center
+            %h5.mb-0 Prompts Management
+            - if can_modify
+              .form-check.form-switch
+                - current_value = @teammate.can_manage_prompts == true
+                = f.check_box :can_manage_prompts, { checked: current_value, class: "form-check-input" }, "true", "false"
+          .card-body
+            %p.text-muted
+              Can manage prompt templates.
+              %br
+              %small
+                With this permission you can: create, edit, and delete prompt templates; manage prompt questions; and view all prompts in the company.
+            - if @who_has_prompts_management.any?
+              %p.mb-1.mt-3
+                %strong Who has this permission:
+              %ul.mb-0
+                - @who_has_prompts_management.each do |teammate|
+                  %li= teammate.person.display_name
+
+    .row
+      .col-md-6
+        .card.mb-4
+          .card-header.d-flex.justify-content-between.align-items-center
+            %h5.mb-0 Departments & Teams Management
+            - if can_modify
+              .form-check.form-switch
+                - current_value = @teammate.can_manage_departments_and_teams == true
+                = f.check_box :can_manage_departments_and_teams, { checked: current_value, class: "form-check-input" }, "true", "false"
+          .card-body
+            %p.text-muted
+              Can manage departments and teams.
+              %br
+              %small
+                With this permission you can: create, update, and delete departments and teams within the organization hierarchy; organize the company structure; and manage organizational units.
+            - if @who_has_departments_and_teams_management.any?
+              %p.mb-1.mt-3
+                %strong Who has this permission:
+              %ul.mb-0
+                - @who_has_departments_and_teams_management.each do |teammate|
+                  %li= teammate.person.display_name
+
+    .d-flex.justify-content-end.gap-2.mt-4.mb-4
+      = link_to @return_url, class: "btn btn-secondary" do
+        Cancel
+      = f.submit "Save Permissions", class: "btn btn-primary"
+- else
+  .row
+    .col-md-6
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Employment Management
+        .card-body
+          %p.text-muted
+            Can manage employment records and assignments. This permission also allows you to give others permissions.
+            %br
+            %small
+              With this permission you can: change positions, managers, and employment types; edit profiles of others; view audit trails and observation change history; create and manage departments and teams; access seat management; and give permissions to other teammates.
+          .mb-3
+            .d-flex.align-items-center
+              - current_value = @teammate.can_manage_employment == true
+              - if current_value
+                %span.badge.bg-success.me-2 Enabled
+              - else
+                %span.badge.bg-secondary.me-2 Disabled
+          - if @who_has_employment_management.any?
+            %p.mb-1.mt-3
+              %strong Who has this permission:
+            %ul.mb-0
+              - @who_has_employment_management.each do |teammate|
+                %li= teammate.person.display_name
+
+    .col-md-6
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Employment Creation
+        .card-body
+          %p.text-muted
+            Can create new employment records.
+            %br
+            %small
+              With this permission you can: add new employees to the organization; create new employment tenures; and onboard new teammates.
+          .mb-3
+            .d-flex.align-items-center
+              - current_value = @teammate.can_create_employment == true
+              - if current_value
+                %span.badge.bg-success.me-2 Enabled
+              - else
+                %span.badge.bg-secondary.me-2 Disabled
+          - if @who_has_employment_creation.any?
+            %p.mb-1.mt-3
+              %strong Who has this permission:
+            %ul.mb-0
+              - @who_has_employment_creation.each do |teammate|
+                %li= teammate.person.display_name
+
+  .row
+    .col-md-6
+      .card.mb-4
+        .card-header
+          %h5.mb-0 MAAP Management
+        .card-body
+          %p.text-muted
+            Can manage MAAP (Mission, Aspirations, Assignments, Positions).
+            %br
+            %small
+              With this permission you can: manage assignments and assignment check-ins; create, update, and delete abilities and aspirations; view audit trails for people in your managerial hierarchy; and manage seats.
+          .mb-3
+            .d-flex.align-items-center
+              - current_value = @teammate.can_manage_maap == true
+              - if current_value
+                %span.badge.bg-success.me-2 Enabled
+              - else
+                %span.badge.bg-secondary.me-2 Disabled
+          - if @who_has_maap_management.any?
+            %p.mb-1.mt-3
+              %strong Who has this permission:
+            %ul.mb-0
+              - @who_has_maap_management.each do |teammate|
+                %li= teammate.person.display_name
+
+    .col-md-6
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Prompts Management
+        .card-body
+          %p.text-muted
+            Can manage prompt templates.
+            %br
+            %small
+              With this permission you can: create, edit, and delete prompt templates; manage prompt questions; and view all prompts in the company.
+          .mb-3
+            .d-flex.align-items-center
+              - current_value = @teammate.can_manage_prompts == true
+              - if current_value
+                %span.badge.bg-success.me-2 Enabled
+              - else
+                %span.badge.bg-secondary.me-2 Disabled
+          - if @who_has_prompts_management.any?
+            %p.mb-1.mt-3
+              %strong Who has this permission:
+            %ul.mb-0
+              - @who_has_prompts_management.each do |teammate|
+                %li= teammate.person.display_name
+
+  .row
+    .col-md-6
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Departments & Teams Management
+        .card-body
+          %p.text-muted
+            Can manage departments and teams.
+            %br
+            %small
+              With this permission you can: create, update, and delete departments and teams within the organization hierarchy; organize the company structure; and manage organizational units.
+          .mb-3
+            .d-flex.align-items-center
+              - current_value = @teammate.can_manage_departments_and_teams == true
+              - if current_value
+                %span.badge.bg-success.me-2 Enabled
+              - else
+                %span.badge.bg-secondary.me-2 Disabled
+          - if @who_has_departments_and_teams_management.any?
+            %p.mb-1.mt-3
+              %strong Who has this permission:
+            %ul.mb-0
+              - @who_has_departments_and_teams_management.each do |teammate|
+                %li= teammate.person.display_name
+

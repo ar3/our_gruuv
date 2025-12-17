@@ -37,6 +37,7 @@ class Teammate < ApplicationRecord
   scope :with_employment_creation, -> { where(can_create_employment: true) }
   scope :with_maap_management, -> { where(can_manage_maap: true) }
   scope :with_prompts_management, -> { where(can_manage_prompts: true) }
+  scope :with_departments_and_teams_management, -> { where(can_manage_departments_and_teams: true) }
   
   # Employment state scopes
   scope :followers, -> { where(first_employed_at: nil, last_terminated_at: nil) }
@@ -60,6 +61,10 @@ class Teammate < ApplicationRecord
 
   def can_manage_prompts?
     self[:can_manage_prompts] == true
+  end
+
+  def can_manage_departments_and_teams?
+    self[:can_manage_departments_and_teams] == true
   end
   
   # Employment state methods
@@ -191,6 +196,12 @@ class Teammate < ApplicationRecord
     access&.can_manage_maap? || false
   end
 
+  def self.can_manage_departments_and_teams?(person, organization)
+    return true if person.og_admin?
+    access = find_by(person: person, organization: organization)
+    access&.can_manage_departments_and_teams? || false
+  end
+
   # Class methods for permission checking (hierarchy-aware)
   def self.can_manage_employment_in_hierarchy?(person, organization)
     # og_admin users have access to all organizations
@@ -304,6 +315,35 @@ class Teammate < ApplicationRecord
       else
         access = current_access || parent_access
         return access&.can_create_employment? || false
+      end
+    end
+  end
+
+  def self.can_manage_departments_and_teams_in_hierarchy?(person, organization)
+    # og_admin users have access to all organizations
+    return true if person.og_admin?
+
+    if organization.company?
+      # Check company level first - if found, use it directly
+      company_access = find_by(person: person, organization: organization)
+      if company_access
+        return company_access.can_manage_departments_and_teams?
+      end
+      
+      # Only check descendants if no company-level record exists
+      descendant_access = where(organization: organization.descendants).find_by(person: person)
+      return descendant_access&.can_manage_departments_and_teams? || false
+    else
+      # Check current organization first, then parent
+      # Return true if either has the permission
+      current_access = find_by(person: person, organization: organization)
+      parent_access = find_by(person: person, organization: organization.parent) if organization.parent
+
+      if current_access&.can_manage_departments_and_teams? || parent_access&.can_manage_departments_and_teams?
+        return true
+      else
+        access = current_access || parent_access
+        return access&.can_manage_departments_and_teams? || false
       end
     end
   end

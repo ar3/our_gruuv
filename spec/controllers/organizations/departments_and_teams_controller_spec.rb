@@ -4,17 +4,21 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
   let(:organization) { create(:organization, :company) }
   let(:department) { create(:organization, :department, parent: organization) }
   let(:team) { create(:organization, :team, parent: department) }
-  let(:current_person) { create(:person) }
+  let(:current_person) { create(:person, og_admin: false) }
+  let(:teammate) do
+    existing = Teammate.find_by(person: current_person, organization: organization)
+    existing || create(:teammate, person: current_person, organization: organization)
+  end
 
   before do
-    create(:teammate, person: current_person, organization: organization)
+    teammate # Ensure teammate exists
     sign_in_as_teammate(current_person, organization)
     allow(controller).to receive(:set_organization).and_return(true)
     controller.instance_variable_set(:@organization, organization)
   end
 
   describe 'GET #index' do
-    it 'loads descendants with proper includes' do
+    it 'loads active descendants with proper includes' do
       # Create the hierarchy
       department
       team
@@ -23,29 +27,17 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
       
       expect(response).to be_successful
       expect(assigns(:departments_and_teams)).to be_present
-      expect(assigns(:hierarchy)).to be_present
+      expect(assigns(:hierarchy_tree)).to be_present
     end
 
-    it 'builds hierarchy correctly with nested organizations' do
-      # Create nested structure: Company -> Department -> Team
+    it 'excludes archived organizations' do
+      archived_dept = create(:organization, :department, parent: organization, deleted_at: Time.current)
       department
-      team
       
       get :index, params: { organization_id: organization.id }
       
-      hierarchy = assigns(:hierarchy)
-      expect(hierarchy.length).to eq(1)
-      
-      department_item = hierarchy.first
-      expect(department_item[:organization].id).to eq(department.id)
-      expect(department_item[:organization].type).to eq('Department')
-      expect(department_item[:level]).to eq(0)
-      expect(department_item[:children].length).to eq(1)
-      
-      team_item = department_item[:children].first
-      expect(team_item[:organization].id).to eq(team.id)
-      expect(team_item[:organization].type).to eq('Team')
-      expect(team_item[:level]).to eq(1)
+      expect(assigns(:departments_and_teams).map(&:id)).to include(department.id)
+      expect(assigns(:departments_and_teams).map(&:id)).not_to include(archived_dept.id)
     end
 
     it 'handles empty descendants gracefully' do
@@ -53,7 +45,278 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
       
       expect(response).to be_successful
       expect(assigns(:departments_and_teams)).to be_empty
-      expect(assigns(:hierarchy)).to be_empty
+      expect(assigns(:hierarchy_tree)).to be_empty
+    end
+  end
+
+  describe 'GET #show' do
+    before do
+      teammate.update!(can_manage_departments_and_teams: true)
+    end
+
+    it 'loads seats, position types, assignments, abilities, and playbooks' do
+      position_type = create(:position_type, organization: department)
+      seat = create(:seat, position_type: position_type)
+      assignment = create(:assignment, company: organization, department: department)
+      ability = create(:ability, organization: department)
+      playbook = create(:huddle_playbook, organization: department)
+      
+      get :show, params: { organization_id: organization.id, id: department.id }
+      
+      expect(response).to be_successful
+      expect(assigns(:seats)).to include(seat)
+      expect(assigns(:position_types)).to include(position_type)
+      expect(assigns(:assignments)).to include(assignment)
+      expect(assigns(:abilities)).to include(ability)
+      expect(assigns(:huddle_playbooks)).to include(playbook)
+    end
+  end
+
+  describe 'GET #new' do
+    context 'with permission' do
+      before do
+        teammate.update!(can_manage_departments_and_teams: true)
+      end
+
+      it 'renders new form' do
+        get :new, params: { organization_id: organization.id, type: 'Department' }
+        expect(response).to be_successful
+      end
+    end
+
+    context 'without permission' do
+      before do
+        teammate.update!(
+          can_manage_departments_and_teams: false,
+          can_manage_employment: false
+        )
+        teammate.reload
+      end
+
+      it 'raises authorization error when type is set' do
+        expect {
+          get :new, params: { organization_id: organization.id, type: 'Department' }
+        }.to raise_error(Pundit::NotAuthorizedError)
+      end
+    end
+  end
+
+  describe 'POST #create' do
+    context 'with permission' do
+      before do
+        teammate.update!(can_manage_departments_and_teams: true)
+      end
+
+      it 'creates a new department' do
+        expect {
+          post :create, params: {
+            organization_id: organization.id,
+            organization: { name: 'New Department', type: 'Department', parent_id: organization.id }
+          }
+        }.to change { Organization.departments.active.count }.by(1)
+        
+        expect(response).to redirect_to(organization_departments_and_teams_path(organization))
+      end
+    end
+
+    context 'without permission' do
+      before do
+        teammate.update!(
+          can_manage_departments_and_teams: false,
+          can_manage_employment: false
+        )
+        teammate.reload
+      end
+
+      it 'raises authorization error' do
+        expect {
+          post :create, params: {
+            organization_id: organization.id,
+            organization: { name: 'New Department', type: 'Department', parent_id: organization.id }
+          }
+        }.to raise_error(Pundit::NotAuthorizedError)
+      end
+    end
+  end
+
+  describe 'GET #edit' do
+    context 'with permission' do
+      before do
+        teammate.update!(can_manage_departments_and_teams: true)
+      end
+
+      it 'renders edit form' do
+        get :edit, params: { organization_id: organization.id, id: department.id }
+        expect(response).to be_successful
+      end
+
+      it 'sets available parents ordered by type and name' do
+        dept_a = create(:organization, :department, parent: organization, name: 'A Department')
+        dept_z = create(:organization, :department, parent: organization, name: 'Z Department')
+        team_a = create(:organization, :team, parent: organization, name: 'A Team')
+        team_z = create(:organization, :team, parent: organization, name: 'Z Team')
+        
+        get :edit, params: { organization_id: organization.id, id: team.id }
+        
+        available_parents = assigns(:available_parents)
+        expect(available_parents).to be_present
+        # Should be ordered: Company, Departments (A-Z), Teams (A-Z)
+        # Company should be first
+        expect(available_parents.first.id).to eq(organization.id)
+        # Departments should come before teams
+        dept_indices = available_parents.each_with_index.select { |org, _| org.department? }.map(&:last)
+        team_indices = available_parents.each_with_index.select { |org, _| org.team? }.map(&:last)
+        expect(dept_indices.max).to be < team_indices.min if dept_indices.any? && team_indices.any?
+        # Within departments, should be alphabetical
+        depts = available_parents.select(&:department?)
+        expect(depts.map(&:name)).to eq(depts.map(&:name).sort)
+        # Within teams, should be alphabetical
+        teams = available_parents.select(&:team?)
+        expect(teams.map(&:name)).to eq(teams.map(&:name).sort)
+      end
+
+      it 'excludes self and descendants from available parents' do
+        department2 = create(:organization, :department, parent: department)
+        
+        get :edit, params: { organization_id: organization.id, id: department.id }
+        
+        available_parents = assigns(:available_parents)
+        expect(available_parents.map(&:id)).not_to include(department.id)
+        expect(available_parents.map(&:id)).not_to include(department2.id)
+      end
+    end
+
+    context 'without permission' do
+      before do
+        teammate.update!(
+          can_manage_departments_and_teams: false,
+          can_manage_employment: false
+        )
+        teammate.reload
+      end
+
+      it 'raises authorization error' do
+        expect {
+          get :edit, params: { organization_id: organization.id, id: department.id }
+        }.to raise_error(Pundit::NotAuthorizedError)
+      end
+    end
+  end
+
+  describe 'PATCH #update' do
+    context 'with permission' do
+      before do
+        teammate.update!(can_manage_departments_and_teams: true)
+      end
+
+      it 'updates department name' do
+        patch :update, params: {
+          organization_id: organization.id,
+          id: department.id,
+          organization: { name: 'Updated Department Name' }
+        }
+        
+        department.reload
+        expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
+        expect(department.name).to eq('Updated Department Name')
+      end
+
+      it 'updates parent organization and persists the change' do
+        department2 = create(:organization, :department, parent: organization)
+        original_parent_id = department.parent_id
+        
+        expect {
+          patch :update, params: {
+            organization_id: organization.id,
+            id: department.id,
+            organization: { name: department.name, parent_id: department2.id }
+          }
+        }.to change { department.reload.parent_id }.from(original_parent_id).to(department2.id)
+        
+        expect(response).to redirect_to(organization_departments_and_team_path(organization, department))
+        expect(department.reload.parent_id).to eq(department2.id)
+      end
+
+      it 'allows changing parent to root company' do
+        department2 = create(:organization, :department, parent: department)
+        original_parent_id = department2.parent_id
+        
+        expect {
+          patch :update, params: {
+            organization_id: organization.id,
+            id: department2.id,
+            organization: { name: department2.name, parent_id: organization.id }
+          }
+        }.to change { department2.reload.parent_id }.from(original_parent_id).to(organization.id)
+        
+        department2.reload
+        expect(response).to redirect_to(organization_departments_and_team_path(organization, department2))
+        expect(department2.parent_id).to eq(organization.id)
+      end
+
+      it 'handles validation errors and re-renders form with available parents' do
+        patch :update, params: {
+          organization_id: organization.id,
+          id: department.id,
+          organization: { name: '' }
+        }
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(assigns(:available_parents)).to be_present
+      end
+    end
+
+    context 'without permission' do
+      before do
+        teammate.update!(
+          can_manage_departments_and_teams: false,
+          can_manage_employment: false
+        )
+        teammate.reload
+      end
+
+      it 'raises authorization error' do
+        expect {
+          patch :update, params: {
+            organization_id: organization.id,
+            id: department.id,
+            organization: { name: 'Updated Name' }
+          }
+        }.to raise_error(Pundit::NotAuthorizedError)
+      end
+    end
+  end
+
+  describe 'PATCH #archive' do
+    context 'with permission' do
+      before do
+        teammate.update!(can_manage_departments_and_teams: true)
+      end
+
+      it 'archives the department' do
+        expect(department.deleted_at).to be_nil
+        
+        patch :archive, params: { organization_id: organization.id, id: department.id }
+        
+        expect(department.reload.deleted_at).to be_present
+        expect(response).to redirect_to(organization_departments_and_teams_path(organization))
+      end
+    end
+
+    context 'without permission' do
+      before do
+        teammate.update!(
+          can_manage_departments_and_teams: false,
+          can_manage_employment: false
+        )
+        teammate.reload
+      end
+
+      it 'raises authorization error' do
+        expect {
+          patch :archive, params: { organization_id: organization.id, id: department.id }
+        }.to raise_error(Pundit::NotAuthorizedError)
+      end
     end
   end
 end

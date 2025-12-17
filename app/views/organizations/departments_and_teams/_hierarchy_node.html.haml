@@ -1,0 +1,57 @@
+- org = node[:organization]
+- children = node[:children]
+- departments_count = node[:departments_count] || 0
+- teams_count = node[:teams_count] || 0
+- has_children = children.any?
+- node_id = "dept-team-node-#{org.id}"
+- children_id = "dept-team-children-#{org.id}"
+- total_below = departments_count + teams_count
+
+.tree-node{id: node_id, style: "margin-left: #{depth * 40}px; margin-bottom: 10px;"}
+  .d-flex.align-items-center
+    - if depth > 0
+      %i.bi.bi-arrow-return-right.me-2{style: "color: #999;"}
+    .card{style: "width: 600px; position: relative;"}
+      .card-body.p-2
+        .d-flex.align-items-start
+          .flex-grow-1
+            - if has_children
+              .d-flex.align-items-center.mb-2
+                %button.btn.btn-sm.btn-link.p-0.me-2.toggle-children{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 20px;"}
+                  %i.bi.bi-chevron-down.toggle-icon
+                %span.badge.bg-light.text-dark.small
+                  - if departments_count > 0 && teams_count > 0
+                    #{pluralize(departments_count, 'department')} & #{pluralize(teams_count, 'team')} below
+                  - elsif departments_count > 0
+                    #{pluralize(departments_count, 'department')} below
+                  - elsif teams_count > 0
+                    #{pluralize(teams_count, 'team')} below
+                  - else
+                    No children
+            - if policy(org).show?
+              = link_to organization_departments_and_team_path(@organization, org), class: "text-decoration-none fw-bold" do
+                = org.name
+            - else
+              %span.fw-bold= org.name
+            %br
+            %span.badge{class: org.department? ? "bg-primary" : "bg-info", style: "font-size: 0.75rem;"}
+              = org.type
+            - if org.archived?
+              %span.badge.bg-secondary.ms-1{style: "font-size: 0.75rem;"}
+                Archived
+          .flex-shrink-0.ms-2
+            .btn-group.btn-group-sm
+              = link_to organization_departments_and_team_path(@organization, org), class: "btn btn-outline-primary" do
+                %i.bi.bi-eye
+              - if policy(org).update?
+                = link_to edit_organization_departments_and_team_path(@organization, org), class: "btn btn-outline-secondary" do
+                  %i.bi.bi-pencil
+              - if policy(org).archive?
+                = link_to archive_organization_departments_and_team_path(@organization, org), method: :patch, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to archive this #{org.type.downcase}?" } do
+                  %i.bi.bi-archive
+
+- if has_children
+  .collapse.show{id: children_id}
+    - children.each do |child_node|
+      = render 'organizations/departments_and_teams/hierarchy_node', node: child_node, depth: depth + 1, organization: @organization
+
