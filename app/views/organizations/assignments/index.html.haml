@@ -26,22 +26,23 @@
             %tr
               %th Assignment
               %th Version
-              %th Company
               %th Outcomes
               %th Abilities
               %th External References
-              %th Actions
           %tbody
             - @assignments.each do |assignment|
               %tr
                 %td
-                  %strong= assignment.title
+                  - if assignment.department&.display_name || assignment.company_name
+                    %small.text-muted
+                      %i.bi.bi-building.me-1
+                      = assignment.department&.display_name || assignment.company_name
+                    %br
+                  %strong
+                    = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none"
                   %br
                   %small.text-muted= assignment.tagline
                 %td= assignment.semantic_version
-                %td
-                  %i.bi.bi-building.me-1
-                  = assignment.company_name
                 %td
                   - if assignment.assignment_outcomes.any?
                     %span.badge.bg-info.me-1
@@ -76,14 +77,6 @@
                     %span.text-muted
                       %i.bi.bi-dash.me-1
                       None
-                %td
-                  .btn-group.btn-group-sm
-                    = link_to organization_assignment_path(@organization, assignment), class: "btn btn-outline-primary", title: "View" do
-                      %i.bi.bi-eye
-                    = link_to edit_organization_assignment_path(@organization, assignment), class: "btn btn-outline-secondary", title: "Edit" do
-                      %i.bi.bi-pencil
-                    = link_to organization_assignment_path(@organization, assignment), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure?" } do
-                      %i.bi.bi-trash
     - else
       .alert.alert-info
         %h6.mb-2
