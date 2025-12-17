@@ -1,12 +1,16 @@
-%h1.mb-4= @assignment.title
+- content_for :header do
+  %h1.mb-0= @assignment.title
 
-.mb-3
+- content_for :header_action do
+  - if current_person
+    = link_to organization_assignment_path(@organization, @assignment), class: "btn btn-outline-primary btn-sm" do
+      %i.bi.bi-lock.me-2
+      View Authenticated Version
+
+- content_for :go_back_link do
   = link_to organization_public_maap_assignments_path(@organization), class: "text-muted text-decoration-none" do
     %i.bi.bi-arrow-left.me-2
     Back to Assignments
-  - if current_person
-    %span.text-muted.mx-2 |
-    = link_to "View Authenticated Version", organization_assignment_path(@organization, @assignment), class: "text-muted text-decoration-none"
 
 .row
   .col-md-8
@@ -61,13 +65,5 @@
                       - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }
                       = names.join(', ')
                   = link_to "View Observation", organization_kudo_path(observation.company, date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id), class: "btn btn-sm btn-outline-primary"
-
-  .col-md-4
-    - if current_person
-      .card.mb-4
-        .card-header
-          %h6.mb-0 Quick Actions
-        .card-body
-          = link_to "View Authenticated Version", organization_assignment_path(@organization, @assignment), class: "btn btn-outline-primary btn-sm w-100"
 
 

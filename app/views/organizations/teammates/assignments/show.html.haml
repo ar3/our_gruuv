@@ -7,6 +7,9 @@
   .d-flex.justify-content-between.align-items-center
     %h1.mb-0 #{@teammate.person.display_name} - #{@assignment.title}
 
+- content_for :header_action do
+  = render 'assignments/view_switcher'
+
 .row.justify-content-center
   .col-lg-12
     / Assignment Details Section

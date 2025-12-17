@@ -61,6 +61,18 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include(assignment.title)
       end
+
+      it 'renders view switcher' do
+        get organization_assignment_path(organization, assignment)
+        expect(response.body).to include('Organization View')
+        expect(response.body).to include('Public View')
+      end
+
+      it 'shows disabled edit and delete options for non-admin users' do
+        get organization_assignment_path(organization, assignment)
+        expect(response.body).to include('Edit Assignment')
+        expect(response.body).to include('Delete Assignment')
+      end
     end
 
     context 'when user is admin' do
@@ -73,6 +85,28 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         get organization_assignment_path(organization, assignment)
         expect(response).to have_http_status(:success)
         expect(response.body).to include(assignment.title)
+      end
+
+      it 'renders view switcher with all options enabled' do
+        get organization_assignment_path(organization, assignment)
+        expect(response.body).to include('Organization View')
+        expect(response.body).to include('Public View')
+        expect(response.body).to include('Manage Ability Milestones')
+        expect(response.body).to include('Edit Assignment')
+        expect(response.body).to include('Delete Assignment')
+      end
+    end
+
+    context 'when user is manager with employment permissions' do
+      before do
+        manager_teammate
+        sign_in_as_teammate_for_request(manager, organization)
+      end
+
+      it 'shows enabled edit option but disabled delete option' do
+        get organization_assignment_path(organization, assignment)
+        expect(response.body).to include('Edit Assignment')
+        expect(response.body).to include('Manage Ability Milestones')
       end
     end
   end

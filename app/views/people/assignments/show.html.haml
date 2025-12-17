@@ -8,7 +8,7 @@
     %h1.mb-0 #{@person.display_name} - #{@assignment.title}
 
 - content_for :header_action do
-  .btn.btn-outline-primary What should go here?
+  = render 'assignments/view_switcher'
 
 
 

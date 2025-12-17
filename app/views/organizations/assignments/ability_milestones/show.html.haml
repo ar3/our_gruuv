@@ -1,12 +1,10 @@
 - content_for :header do
-  .d-flex.justify-content-between.align-items-center
-    %h1.mb-0
-      %i.bi.bi-link-45deg.me-2
-      #{@assignment.title} - Ability Milestones
-    - if policy(@assignment).update?
-      = link_to organization_assignment_path(@organization, @assignment), class: "btn btn-outline-primary" do
-        %i.bi.bi-arrow-left.me-2
-        Back to Assignment
+  %h1.mb-0
+    %i.bi.bi-link-45deg.me-2
+    #{@assignment.title} - Ability Milestones
+
+- content_for :header_action do
+  = render 'assignments/view_switcher'
 
 - content_for :go_back_link do
   = link_to organization_assignment_path(@organization, @assignment), class: "text-muted text-decoration-none" do
