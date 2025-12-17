@@ -116,6 +116,47 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
         }.to change { Organization.departments.active.count }.by(1)
         
         expect(response).to redirect_to(organization_departments_and_teams_path(organization))
+        created_dept = Organization.departments.active.find_by(name: 'New Department')
+        expect(created_dept).to be_present
+        expect(created_dept.type).to eq('Department')
+      end
+
+      it 'creates a new team' do
+        expect {
+          post :create, params: {
+            organization_id: organization.id,
+            organization: { name: 'New Team', type: 'Team', parent_id: organization.id }
+          }
+        }.to change { Organization.teams.active.count }.by(1)
+        
+        expect(response).to redirect_to(organization_departments_and_teams_path(organization))
+        created_team = Organization.teams.active.find_by(name: 'New Team')
+        expect(created_team).to be_present
+        expect(created_team.type).to eq('Team')
+      end
+
+      it 'fails validation when type is missing' do
+        expect {
+          post :create, params: {
+            organization_id: organization.id,
+            organization: { name: 'New Department', parent_id: organization.id }
+          }
+        }.not_to change { Organization.count }
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(assigns(:department_or_team).errors[:type]).to include("can't be blank")
+      end
+
+      it 'fails validation when type is blank' do
+        expect {
+          post :create, params: {
+            organization_id: organization.id,
+            organization: { name: 'New Department', type: '', parent_id: organization.id }
+          }
+        }.not_to change { Organization.count }
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(assigns(:department_or_team).errors[:type]).to include("can't be blank")
       end
     end
 

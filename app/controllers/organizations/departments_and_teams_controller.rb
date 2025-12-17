@@ -163,7 +163,7 @@ class Organizations::DepartmentsAndTeamsController < Organizations::Organization
   end
 
   def department_or_team_params
-    # Type is not permitted - it cannot be changed after creation
+    # Type is permitted for creation but cannot be changed after creation (see update action)
     # The form submits params using the model's param_key (e.g., :department or :team)
     # We need to handle both the model-specific key and :organization for backwards compatibility
     param_key = if params.key?(:department)
@@ -174,7 +174,7 @@ class Organizations::DepartmentsAndTeamsController < Organizations::Organization
                   :organization
                 end
     
-    params.require(param_key).permit(:name, :parent_id)
+    params.require(param_key).permit(:name, :type, :parent_id)
   end
 
   def set_available_parents

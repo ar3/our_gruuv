@@ -197,6 +197,67 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
     end
   end
 
+  describe 'GET /organizations/:id/departments_and_teams/new' do
+    it 'renders the new page successfully' do
+      get new_organization_departments_and_team_path(organization)
+      
+      expect(response).to be_successful
+      expect(response.body).to include('New Department or Team')
+    end
+  end
+
+  describe 'POST /organizations/:id/departments_and_teams' do
+    it 'creates a new department with correct type' do
+      expect {
+        post organization_departments_and_teams_path(organization), params: {
+          organization: { name: 'New Department', type: 'Department', parent_id: organization.id }
+        }
+      }.to change { Organization.departments.active.count }.by(1)
+      
+      expect(response).to redirect_to(organization_departments_and_teams_path(organization))
+      created_dept = Organization.departments.active.find_by(name: 'New Department')
+      expect(created_dept).to be_present
+      expect(created_dept.type).to eq('Department')
+      expect(created_dept.parent_id).to eq(organization.id)
+    end
+
+    it 'creates a new team with correct type' do
+      expect {
+        post organization_departments_and_teams_path(organization), params: {
+          organization: { name: 'New Team', type: 'Team', parent_id: organization.id }
+        }
+      }.to change { Organization.teams.active.count }.by(1)
+      
+      expect(response).to redirect_to(organization_departments_and_teams_path(organization))
+      created_team = Organization.teams.active.find_by(name: 'New Team')
+      expect(created_team).to be_present
+      expect(created_team.type).to eq('Team')
+      expect(created_team.parent_id).to eq(organization.id)
+    end
+
+    it 'fails validation when type is missing' do
+      expect {
+        post organization_departments_and_teams_path(organization), params: {
+          organization: { name: 'New Department', parent_id: organization.id }
+        }
+      }.not_to change { Organization.count }
+      
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("Type can't be blank")
+    end
+
+    it 'fails validation when type is blank' do
+      expect {
+        post organization_departments_and_teams_path(organization), params: {
+          organization: { name: 'New Department', type: '', parent_id: organization.id }
+        }
+      }.not_to change { Organization.count }
+      
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("Type can't be blank")
+    end
+  end
+
   describe 'GET /organizations/:id/departments_and_teams/:id/edit' do
     it 'renders the edit page successfully' do
       get edit_organization_departments_and_team_path(organization, department)
