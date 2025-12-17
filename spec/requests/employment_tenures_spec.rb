@@ -92,8 +92,29 @@ RSpec.describe "EmploymentTenures", type: :request do
           }
         }
         
-        expect(response).to redirect_to(organization_company_teammate_path(organization, person_teammate))
+        expect(response).to redirect_to(organization_company_teammate_path(company, person_teammate))
         expect(flash[:notice]).to eq('No changes were made to your employment.')
+      end
+    end
+
+    context "when creating employment for a different company" do
+      let(:other_company) { create(:organization, :company) }
+      let(:other_company_teammate) do
+        person.teammates.find_by(organization: other_company) ||
+          create(:teammate, person: person, organization: other_company)
+      end
+
+      it "redirects to the teammate profile for the target company" do
+        post organization_company_teammate_employment_tenures_path(organization, teammate), params: {
+          employment_tenure: {
+            company_id: other_company.id,
+            position_id: position.id,
+            started_at: 1.month.ago
+          }
+        }
+
+        expect(response).to redirect_to(organization_company_teammate_path(other_company, other_company_teammate))
+        expect(flash[:notice]).to eq('Employment tenure was successfully created.')
       end
     end
   end
@@ -117,12 +138,29 @@ RSpec.describe "EmploymentTenures", type: :request do
       patch organization_company_teammate_employment_tenure_path(organization, teammate, employment_tenure), params: { employment_tenure: { started_at: 2.months.ago } }
       expect(response).to have_http_status(:redirect)
     end
+
+    it "redirects to the teammate profile for the employment tenure's company" do
+      patch organization_company_teammate_employment_tenure_path(organization, teammate, employment_tenure), params: { employment_tenure: { started_at: 2.months.ago } }
+      
+      expect(response).to redirect_to(organization_company_teammate_path(employment_tenure.company, employment_tenure.teammate))
+      expect(flash[:notice]).to eq('Employment tenure was successfully updated.')
+    end
   end
 
   describe "DELETE /people/:id/employment_tenures/:id" do
     it "returns http success" do
       delete organization_company_teammate_employment_tenure_path(organization, teammate, employment_tenure)
       expect(response).to have_http_status(:redirect)
+    end
+
+    it "redirects to the teammate profile for the employment tenure's company" do
+      company = employment_tenure.company
+      tenure_teammate = employment_tenure.teammate
+      
+      delete organization_company_teammate_employment_tenure_path(organization, teammate, employment_tenure)
+      
+      expect(response).to redirect_to(organization_company_teammate_path(company, tenure_teammate))
+      expect(flash[:notice]).to eq('Employment tenure was successfully deleted.')
     end
   end
 

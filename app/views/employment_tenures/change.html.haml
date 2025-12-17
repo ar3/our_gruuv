@@ -73,5 +73,6 @@
 
             .d-flex.justify-content-between
               - company = @company || current_organization
-              = link_to "Back to Profile", organization_company_teammate_path(company, @person), class: "btn btn-outline-secondary"
+              - teammate_for_company = @teammate.person.teammates.find_by(organization: company) if company && @teammate
+              = link_to "Back to Profile", organization_company_teammate_path(company, teammate_for_company || @teammate), class: "btn btn-outline-secondary"
               = f.submit "Save Employment", class: "btn btn-primary"

@@ -22,7 +22,7 @@
                   .col-md-3
                     .d-flex.flex-column
                       %h5.mb-2
-                        = link_to teammate.person.display_name, organization_company_teammate_path(@organization, teammate.person), class: "text-decoration-none"
+                        = link_to teammate.person.display_name, organization_company_teammate_path(@organization, teammate), class: "text-decoration-none"
                       = overall_status_badge(overall_employee_status(teammate.person, @organization))
                       %small.text-muted.mt-1
                         = teammate_current_position(teammate)
@@ -78,7 +78,7 @@
                           .d-flex.justify-content-between.align-items-center.mb-1
                             %strong.small Aspirations
                             %span.badge.bg-warning= finalization_summary[:aspirations]
-                      = link_to "Finalize (#{finalization_summary[:total]})", organization_company_teammate_check_ins_path(@organization, teammate.person), class: "btn btn-sm btn-outline-warning"
+                      = link_to "Finalize (#{finalization_summary[:total]})", organization_company_teammate_check_ins_path(@organization, teammate), class: "btn btn-sm btn-outline-warning"
                     - else
                       %small.text-muted None ready
                   
@@ -109,7 +109,7 @@
                           .d-flex.justify-content-between.align-items-center.mb-1
                             %strong.small Bulk Updates
                             %span.badge.bg-danger= ack_summary[:bulk]
-                      = link_to "View Audit (#{ack_summary[:total]})", audit_organization_employee_path(@organization, teammate.person), class: "btn btn-sm btn-outline-danger"
+                      = link_to "View Audit (#{ack_summary[:total]})", audit_organization_employee_path(@organization, teammate), class: "btn btn-sm btn-outline-danger"
                     - else
                       %small.text-muted None pending
     - else

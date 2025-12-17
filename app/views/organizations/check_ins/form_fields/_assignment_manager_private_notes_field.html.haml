@@ -5,7 +5,7 @@
 
 .mt-2
   - since_date = check_in.previous_finalized_check_in&.official_check_in_completed_at || 1.year.ago
-  - teammate = @person.teammates.find_by(organization: @organization)
+  - teammate = @teammate || @person.teammates.find_by(organization: @organization)
   - if teammate
     - observations = visible_observations_for_person(current_person, @organization)
     - observations = observations.joins(:observed_teammates).where(teammates: { id: teammate.id })
@@ -20,7 +20,7 @@
           #{pluralize(observation_count, 'observation')} on this since #{time_ago} ago
         - else
           No notes to show since #{time_ago} ago
-      = link_to new_quick_note_organization_observations_path(@organization, return_url: organization_company_teammate_check_ins_path(@organization, @person, show_observations_for: "assignment_#{check_in.assignment_id}"), return_text: "Check-ins", observee_ids: [teammate.id], rateable_type: 'Assignment', rateable_id: check_in.assignment_id), class: "text-muted text-decoration-none small" do
+      = link_to new_quick_note_organization_observations_path(@organization, return_url: organization_company_teammate_check_ins_path(@organization, teammate, show_observations_for: "assignment_#{check_in.assignment_id}"), return_text: "Check-ins", observee_ids: [teammate.id], rateable_type: 'Assignment', rateable_id: check_in.assignment_id), class: "text-muted text-decoration-none small" do
         %i.bi.bi-plus-circle.me-1
         Add Win / Challenge
 

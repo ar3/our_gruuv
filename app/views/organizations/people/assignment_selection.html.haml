@@ -2,7 +2,7 @@
   %h1.mb-0 Select Assignments for #{@person.display_name}
 
 - content_for :go_back_link do
-  = link_to organization_company_teammate_check_ins_path(@organization, @person), class: "go-back-link" do
+  = link_to organization_company_teammate_check_ins_path(@organization, @teammate), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     Back to Check-Ins
 
@@ -18,7 +18,7 @@
             Select assignments for #{@person.display_name}. Required assignments for their position are automatically selected and cannot be removed.
         
         .card-body
-          = form_with url: update_assignments_organization_company_teammate_path(@organization, @person), method: :post do |f|
+          = form_with url: update_assignments_organization_company_teammate_path(@organization, @teammate), method: :post do |f|
             - if @assignments.any?
               .table-responsive
                 %table.table.table-hover
@@ -60,7 +60,7 @@
               
               .row.mt-4
                 .col-6
-                  = link_to 'Cancel', organization_company_teammate_check_ins_path(@organization, @person), class: 'btn btn-outline-secondary'
+                  = link_to 'Cancel', organization_company_teammate_check_ins_path(@organization, @teammate), class: 'btn btn-outline-secondary'
                 .col-6.text-end
                   = f.submit 'Save Assignments', class: 'btn btn-primary'
             - else
@@ -81,5 +81,5 @@
             %p.mb-0
               Please create an employment record first, then return to select assignments.
           
-          = link_to 'Back to Check-Ins', organization_company_teammate_check_ins_path(@organization, @person), class: 'btn btn-outline-secondary'
+          = link_to 'Back to Check-Ins', organization_company_teammate_check_ins_path(@organization, @teammate), class: 'btn btn-outline-secondary'
 

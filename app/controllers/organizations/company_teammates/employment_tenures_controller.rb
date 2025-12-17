@@ -58,7 +58,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     if active_tenure
       # This is a job change - check if anything actually changed
       if job_change_has_no_changes?(active_tenure, @employment_tenure)
-        redirect_to organization_company_teammate_path(@employment_tenure.company, @teammate), notice: 'No changes were made to your employment.'
+        redirect_to organization_company_teammate_path(@employment_tenure.company, target_teammate), notice: 'No changes were made to your employment.'
         return
       end
       
@@ -76,12 +76,12 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
         # Save the new tenure
         @employment_tenure.save!
         
-        redirect_to organization_company_teammate_path(@employment_tenure.company, @teammate), notice: 'Employment tenure was successfully created.'
+        redirect_to organization_company_teammate_path(@employment_tenure.company, target_teammate), notice: 'Employment tenure was successfully created.'
       end
     else
       # Simple new employment creation
       if @employment_tenure.save
-        redirect_to organization_company_teammate_path(@employment_tenure.company, @teammate), notice: 'Employment tenure was successfully created.'
+        redirect_to organization_company_teammate_path(@employment_tenure.company, target_teammate), notice: 'Employment tenure was successfully created.'
       else
         @company = @employment_tenure.company
         @managers = @company ? @company.employees : []
@@ -116,7 +116,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   def update
     authorize @employment_tenure
     if @employment_tenure.update(employment_tenure_params)
-      redirect_to organization_company_teammate_path(@employment_tenure.company, @teammate), notice: 'Employment tenure was successfully updated.'
+      redirect_to organization_company_teammate_path(@employment_tenure.company, @employment_tenure.teammate), notice: 'Employment tenure was successfully updated.'
     else
       @company = @employment_tenure.company
       @managers = @company.employees
@@ -129,8 +129,9 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   def destroy
     authorize @employment_tenure
     company = @employment_tenure.company
+    teammate = @employment_tenure.teammate
     @employment_tenure.destroy
-    redirect_to organization_company_teammate_path(company, @teammate), notice: 'Employment tenure was successfully deleted.'
+    redirect_to organization_company_teammate_path(company, teammate), notice: 'Employment tenure was successfully deleted.'
   end
 
   def add_history

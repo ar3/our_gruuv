@@ -1123,9 +1123,13 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       # Otherwise, redirect to show page (publish from show page)
       redirect_url = params[:return_url] || organization_observation_path(organization, @observation)
       
-      # Add show_observations_for param if provided (only for index redirects)
+      # Add show_observations_for param if provided (only if not already in return_url)
       if params[:return_url].present? && params[:show_observations_for].present?
-        redirect_url += "?show_observations_for=#{params[:show_observations_for]}"
+        # Only add if not already in the return_url
+        unless redirect_url.include?('show_observations_for=')
+          redirect_url += redirect_url.include?('?') ? '&' : '?'
+          redirect_url += "show_observations_for=#{params[:show_observations_for]}"
+        end
       end
       
       redirect_to redirect_url, notice: 'Observation was successfully published.'

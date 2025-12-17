@@ -64,8 +64,8 @@
       
       .d-grid.mt-3
         = link_to "Manage Goals & Confidence Ratings", 
-                  organization_company_teammate_goal_check_ins_path(@organization, @person, 
-                    return_url: organization_company_teammate_check_ins_path(@organization, @person),
+                  organization_company_teammate_goal_check_ins_path(@organization, @teammate, 
+                    return_url: organization_company_teammate_check_ins_path(@organization, @teammate),
                     return_text: "Back to Check-ins"),
                   class: "btn btn-outline-primary"
 
