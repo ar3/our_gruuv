@@ -17,6 +17,9 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
 
   before do
     # Set up real management hierarchy
+    observer_teammate = create(:teammate, person: observer, organization: company)
+    create(:employment_tenure, teammate: observer_teammate, company: company)
+    
     manager_teammate = create(:teammate, person: manager_person, organization: company)
     create(:employment_tenure, teammate: manager_teammate, company: company)
     create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
@@ -25,6 +28,10 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
     admin_teammate = create(:teammate, person: admin_person, organization: company)
     admin_teammate.update!(can_manage_employment: true)
     create(:employment_tenure, teammate: admin_teammate, company: company)
+    
+    # Random person also has a teammate for testing
+    random_teammate = create(:teammate, person: random_person, organization: company)
+    create(:employment_tenure, teammate: random_teammate, company: company)
   end
 
   describe '#visible_observations' do
@@ -138,10 +145,12 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         admin_teammate # Ensure admin has a teammate record
       end
 
-      it 'returns all observations in company EXCEPT observed_only' do
+      it 'returns all observations in company EXCEPT observed_only and observer_only' do
         # Admins should NOT see observed_only observations (observer + observees only)
+        # Admins should NOT see observer_only observations (journal entries - observer only)
         results = query.visible_observations
-        expect(results).to include(observation1, observation3, observation4, observation5)
+        expect(results).to include(observation3, observation4, observation5)
+        expect(results).not_to include(observation1) # observer_only (journal)
         expect(results).not_to include(observation2) # observed_only
       end
 
@@ -416,10 +425,11 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         expect(query.can_view_negative_ratings?(observation4)).to be true  # observed_and_managers
       end
 
-      it 'allows those with can_manage_employment to view negative ratings' do
+      it 'allows those with can_manage_employment to view negative ratings EXCEPT observer_only' do
+        # Admins cannot see observer_only (journal) observations, so they cannot view negative ratings
         query = described_class.new(admin_person, company)
-        expect(query.can_view_negative_ratings?(observation1)).to be true
-        expect(query.can_view_negative_ratings?(observation4)).to be true
+        expect(query.can_view_negative_ratings?(observation1)).to be false  # observer_only (journal)
+        expect(query.can_view_negative_ratings?(observation4)).to be true  # observed_and_managers
       end
     end
 

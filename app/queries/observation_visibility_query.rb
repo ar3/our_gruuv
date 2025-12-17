@@ -20,8 +20,9 @@ class ObservationVisibilityQuery
     params << @person.id
 
     # observed_only: Observer + all observees
-    if @person.teammates.exists?(organization: @company)
-      teammate_ids = @person.teammates.where(organization: @company).pluck(:id)
+    # Only check active teammates (not terminated)
+    if @person.active_teammates.exists?(organization: @company)
+      teammate_ids = @person.active_teammates.where(organization: @company).pluck(:id)
       conditions << "(privacy_level = ? AND (observer_id = ? OR observations.id IN (SELECT observation_id FROM observees WHERE teammate_id IN (?))))"
       params << 'observed_only'
       params << @person.id
@@ -46,8 +47,9 @@ class ObservationVisibilityQuery
     end
 
     # observed_and_managers: Observer + all observees + management hierarchy + can_manage_employment
-    if @person.teammates.exists?(organization: @company)
-      teammate_ids = @person.teammates.where(organization: @company).pluck(:id)
+    # Only check active teammates (not terminated)
+    if @person.active_teammates.exists?(organization: @company)
+      teammate_ids = @person.active_teammates.where(organization: @company).pluck(:id)
       managed_teammate_ids = managed_teammate_ids_for_person
       
       if managed_teammate_ids.any?
@@ -76,23 +78,30 @@ class ObservationVisibilityQuery
       end
     end
 
-    # Add can_manage_employment access to all privacy levels EXCEPT observed_only
+    # Add can_manage_employment access to all privacy levels EXCEPT observed_only and observer_only
     # For observed_only, we want to respect the "observer + observees only" restriction
-    teammate = @person.teammates.find_by(organization: @company)
+    # For observer_only (journal), we want to respect the "observer only" restriction
+    teammate = @person.active_teammates.find_by(organization: @company)
     if teammate&.can_manage_employment?
-      conditions << "(company_id = ? AND privacy_level != ?)"
+      conditions << "(company_id = ? AND privacy_level != ? AND privacy_level != ?)"
       params << @company.id
       params << 'observed_only'
+      params << 'observer_only'
     end
 
-    # public_to_company: All authenticated company members can view
-    conditions << "(privacy_level = ? AND company_id = ?)"
-    params << 'public_to_company'
-    params << @company.id
-
-    # public_to_world: Anyone can view (including unauthenticated)
-    conditions << "privacy_level = ?"
-    params << 'public_to_world'
+    # public_to_company: All active authenticated company members can view
+    # Only add this condition if person has an active teammate (not terminated)
+    if @person.active_teammates.exists?(organization: @company)
+      conditions << "(privacy_level = ? AND company_id = ?)"
+      params << 'public_to_company'
+      params << @company.id
+      
+      # public_to_world: Visible to all active authenticated company members
+      # (Unauthenticated access via permalinks is handled separately)
+      conditions << "(privacy_level = ? AND company_id = ?)"
+      params << 'public_to_world'
+      params << @company.id
+    end
 
     # Combine all conditions with OR
     where_clause = conditions.join(' OR ')
@@ -113,7 +122,8 @@ class ObservationVisibilityQuery
 
     case observation.privacy_level
     when 'observer_only'
-      observation.observer == @person || user_can_manage_employment?
+      # Journal entries: only observer can see, even with can_manage_employment
+      observation.observer == @person
     when 'observed_only'
       observation.observer == @person || user_in_observees?(observation)
     when 'managers_only'
@@ -164,7 +174,8 @@ class ObservationVisibilityQuery
   end
 
   def user_can_manage_employment?
-    teammate = @person.teammates.find_by(organization: @company)
+    # Only check active teammates (not terminated)
+    teammate = @person.active_teammates.find_by(organization: @company)
     teammate&.can_manage_employment? || false
   end
 
@@ -177,7 +188,7 @@ class ObservationVisibilityQuery
     # Extract person IDs from the returned hashes
     managed_person_ids = reports.map { |r| r[:person_id] }
     
-    # Find teammates for those person IDs in the organization
-    Teammate.where(organization: @company, person_id: managed_person_ids).pluck(:id)
+    # Find active teammates for those person IDs in the organization (not terminated)
+    Teammate.where(organization: @company, person_id: managed_person_ids, last_terminated_at: nil).pluck(:id)
   end
 end

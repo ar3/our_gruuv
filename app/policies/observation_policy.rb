@@ -151,12 +151,25 @@ class ObservationPolicy < ApplicationPolicy
     def resolve
       return scope.none unless viewing_teammate
       person = viewing_teammate.person
+      
       if person.og_admin?
         scope.all
       else
+        # Get company from viewing_teammate's organization
+        company = viewing_teammate.organization
+        return scope.none unless company
+        
         # Use ObservationVisibilityQuery for complex visibility logic
-        # We need to get the company from the context - this will be handled by the controller
-        scope.none
+        # This handles:
+        # - Drafts: Only visible to observer
+        # - Journal (observer_only): Only visible to observer
+        # - Published: Follow privacy policy rules
+        visibility_query = ObservationVisibilityQuery.new(person, company)
+        visible_observations = visibility_query.visible_observations
+        
+        # Intersect with the incoming scope to preserve any existing filters
+        # (e.g., if scope was already filtered by company or other conditions)
+        scope.merge(visible_observations)
       end
     end
   end

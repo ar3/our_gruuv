@@ -623,6 +623,330 @@ RSpec.describe ObservationPolicy, type: :policy do
       end
     end
   end
+
+  describe '#Scope' do
+    let(:pundit_user_observer) { OpenStruct.new(user: observer_teammate, impersonating_teammate: nil) }
+    let(:pundit_user_observee) { OpenStruct.new(user: observee_teammate, impersonating_teammate: nil) }
+    let(:pundit_user_manager) { OpenStruct.new(user: manager_teammate, impersonating_teammate: nil) }
+    let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
+    let(:pundit_user_random) { OpenStruct.new(user: random_teammate, impersonating_teammate: nil) }
+
+    context 'with draft observations' do
+      let!(:draft_observation) do
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+        end
+      end
+
+      let!(:other_draft) do
+        build(:observation, observer: observee_person, company: company, privacy_level: :public_to_company, published_at: nil).tap do |obs|
+          obs.observees.build(teammate: observer_teammate)
+          obs.save!
+        end
+      end
+
+      it 'allows observer to see their own drafts' do
+        policy_scope = ObservationPolicy::Scope.new(pundit_user_observer, Observation.all).resolve
+        expect(policy_scope).to include(draft_observation)
+      end
+
+      it 'does not allow observer to see other people\'s drafts' do
+        policy_scope = ObservationPolicy::Scope.new(pundit_user_observer, Observation.all).resolve
+        expect(policy_scope).not_to include(other_draft)
+      end
+
+      it 'does not allow non-observers to see drafts' do
+        policy_scope = ObservationPolicy::Scope.new(pundit_user_observee, Observation.all).resolve
+        expect(policy_scope).not_to include(draft_observation)
+        expect(policy_scope).to include(other_draft) # They can see their own draft
+      end
+    end
+
+    context 'with journal observations (observer_only)' do
+      let!(:journal_observation) do
+        build(:observation, observer: observer, company: company, privacy_level: :observer_only).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      let!(:other_journal) do
+        build(:observation, observer: observee_person, company: company, privacy_level: :observer_only).tap do |obs|
+          obs.observees.build(teammate: observer_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      it 'allows observer to see their own journal entries' do
+        policy_scope = ObservationPolicy::Scope.new(pundit_user_observer, Observation.all).resolve
+        expect(policy_scope).to include(journal_observation)
+      end
+
+      it 'does not allow observer to see other people\'s journal entries' do
+        policy_scope = ObservationPolicy::Scope.new(pundit_user_observer, Observation.all).resolve
+        expect(policy_scope).not_to include(other_journal)
+      end
+
+      it 'does not allow non-observers to see journal entries' do
+        policy_scope = ObservationPolicy::Scope.new(pundit_user_observee, Observation.all).resolve
+        expect(policy_scope).not_to include(journal_observation)
+        expect(policy_scope).to include(other_journal) # They can see their own journal
+      end
+
+      it 'does not allow managers to see journal entries even if they manage the observee' do
+        policy_scope = ObservationPolicy::Scope.new(pundit_user_manager, Observation.all).resolve
+        expect(policy_scope).not_to include(journal_observation)
+      end
+
+      it 'does not allow admins with can_manage_employment to see journal entries' do
+        policy_scope = ObservationPolicy::Scope.new(pundit_user_admin, Observation.all).resolve
+        expect(policy_scope).not_to include(journal_observation)
+      end
+    end
+
+    context 'with published observations' do
+      context 'observed_only privacy' do
+        let!(:observed_only_obs) do
+          build(:observation, observer: observer, company: company, privacy_level: :observed_only).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+
+        it 'allows observer and observee to see' do
+          observer_scope = ObservationPolicy::Scope.new(pundit_user_observer, Observation.all).resolve
+          observee_scope = ObservationPolicy::Scope.new(pundit_user_observee, Observation.all).resolve
+
+          expect(observer_scope).to include(observed_only_obs)
+          expect(observee_scope).to include(observed_only_obs)
+        end
+
+        it 'does not allow manager to see even if they manage the observee' do
+          manager_scope = ObservationPolicy::Scope.new(pundit_user_manager, Observation.all).resolve
+          expect(manager_scope).not_to include(observed_only_obs)
+        end
+
+        it 'does not allow random person to see' do
+          random_scope = ObservationPolicy::Scope.new(pundit_user_random, Observation.all).resolve
+          expect(random_scope).not_to include(observed_only_obs)
+        end
+      end
+
+      context 'managers_only privacy' do
+        let!(:managers_only_obs) do
+          build(:observation, observer: observer, company: company, privacy_level: :managers_only).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+
+        it 'allows observer and manager to see' do
+          manager_teammate.reload
+          managers_only_obs.reload
+
+          observer_scope = ObservationPolicy::Scope.new(pundit_user_observer, Observation.all).resolve
+          manager_scope = ObservationPolicy::Scope.new(pundit_user_manager, Observation.all).resolve
+
+          expect(observer_scope).to include(managers_only_obs)
+          expect(manager_scope).to include(managers_only_obs)
+        end
+
+        it 'does not allow observee to see' do
+          observee_scope = ObservationPolicy::Scope.new(pundit_user_observee, Observation.all).resolve
+          expect(observee_scope).not_to include(managers_only_obs)
+        end
+
+        it 'does not allow random person to see' do
+          random_scope = ObservationPolicy::Scope.new(pundit_user_random, Observation.all).resolve
+          expect(random_scope).not_to include(managers_only_obs)
+        end
+      end
+
+      context 'observed_and_managers privacy' do
+        let!(:observed_and_managers_obs) do
+          build(:observation, observer: observer, company: company, privacy_level: :observed_and_managers).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+
+        it 'allows observer, observee, and manager to see' do
+          manager_teammate.reload
+          observed_and_managers_obs.reload
+
+          observer_scope = ObservationPolicy::Scope.new(pundit_user_observer, Observation.all).resolve
+          observee_scope = ObservationPolicy::Scope.new(pundit_user_observee, Observation.all).resolve
+          manager_scope = ObservationPolicy::Scope.new(pundit_user_manager, Observation.all).resolve
+
+          expect(observer_scope).to include(observed_and_managers_obs)
+          expect(observee_scope).to include(observed_and_managers_obs)
+          expect(manager_scope).to include(observed_and_managers_obs)
+        end
+
+        it 'does not allow random person to see' do
+          random_scope = ObservationPolicy::Scope.new(pundit_user_random, Observation.all).resolve
+          expect(random_scope).not_to include(observed_and_managers_obs)
+        end
+      end
+
+      context 'public_to_company privacy' do
+        let!(:company_public_obs) do
+          build(:observation, observer: observer, company: company, privacy_level: :public_to_company).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+
+        it 'allows all active company teammates to see' do
+          observer_scope = ObservationPolicy::Scope.new(pundit_user_observer, Observation.all).resolve
+          observee_scope = ObservationPolicy::Scope.new(pundit_user_observee, Observation.all).resolve
+          manager_scope = ObservationPolicy::Scope.new(pundit_user_manager, Observation.all).resolve
+          random_scope = ObservationPolicy::Scope.new(pundit_user_random, Observation.all).resolve
+
+          expect(observer_scope).to include(company_public_obs)
+          expect(observee_scope).to include(company_public_obs)
+          expect(manager_scope).to include(company_public_obs)
+          expect(random_scope).to include(company_public_obs)
+        end
+
+        it 'does not allow terminated teammates to see' do
+          terminated_person = create(:person)
+          terminated_teammate = CompanyTeammate.create!(person: terminated_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: 1.day.ago)
+          terminated_pundit_user = OpenStruct.new(user: terminated_teammate, impersonating_teammate: nil)
+
+          terminated_scope = ObservationPolicy::Scope.new(terminated_pundit_user, Observation.all).resolve
+          expect(terminated_scope).not_to include(company_public_obs)
+        end
+
+        it 'does not allow people from other companies to see' do
+          other_company = create(:organization, :company)
+          other_person = create(:person)
+          other_teammate = CompanyTeammate.create!(person: other_person, organization: other_company)
+          other_pundit_user = OpenStruct.new(user: other_teammate, impersonating_teammate: nil)
+
+          other_scope = ObservationPolicy::Scope.new(other_pundit_user, Observation.all).resolve
+          expect(other_scope).not_to include(company_public_obs)
+        end
+      end
+
+      context 'public_to_world privacy' do
+        let!(:public_obs) do
+          build(:observation, observer: observer, company: company, privacy_level: :public_to_world).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+
+        it 'allows all active company teammates to see' do
+          observer_scope = ObservationPolicy::Scope.new(pundit_user_observer, Observation.all).resolve
+          observee_scope = ObservationPolicy::Scope.new(pundit_user_observee, Observation.all).resolve
+          manager_scope = ObservationPolicy::Scope.new(pundit_user_manager, Observation.all).resolve
+          random_scope = ObservationPolicy::Scope.new(pundit_user_random, Observation.all).resolve
+
+          expect(observer_scope).to include(public_obs)
+          expect(observee_scope).to include(public_obs)
+          expect(manager_scope).to include(public_obs)
+          expect(random_scope).to include(public_obs)
+        end
+
+        it 'does not allow terminated teammates to see' do
+          terminated_person = create(:person)
+          terminated_teammate = CompanyTeammate.create!(person: terminated_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: 1.day.ago)
+          terminated_pundit_user = OpenStruct.new(user: terminated_teammate, impersonating_teammate: nil)
+
+          terminated_scope = ObservationPolicy::Scope.new(terminated_pundit_user, Observation.all).resolve
+          expect(terminated_scope).not_to include(public_obs)
+        end
+
+        it 'does not allow people from other companies to see' do
+          other_company = create(:organization, :company)
+          other_person = create(:person)
+          other_teammate = CompanyTeammate.create!(person: other_person, organization: other_company)
+          other_pundit_user = OpenStruct.new(user: other_teammate, impersonating_teammate: nil)
+
+          other_scope = ObservationPolicy::Scope.new(other_pundit_user, Observation.all).resolve
+          expect(other_scope).not_to include(public_obs)
+        end
+      end
+    end
+
+    context 'with admin users' do
+      let!(:draft_obs) do
+        build(:observation, observer: observer, company: company, privacy_level: :observer_only, published_at: nil).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+        end
+      end
+
+      let!(:journal_obs) do
+        build(:observation, observer: observer, company: company, privacy_level: :observer_only).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      let!(:private_obs) do
+        build(:observation, observer: observer, company: company, privacy_level: :observed_only).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      let(:admin_person) { create(:person, og_admin: true) }
+      let(:admin_teammate) { CompanyTeammate.create!(person: admin_person, organization: company) }
+      let(:admin_pundit_user) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
+
+      it 'allows og_admin to see all observations' do
+        admin_scope = ObservationPolicy::Scope.new(admin_pundit_user, Observation.all).resolve
+        expect(admin_scope).to include(draft_obs, journal_obs, private_obs)
+      end
+    end
+
+    context 'when viewing_teammate is nil' do
+      it 'returns empty scope' do
+        policy_scope = ObservationPolicy::Scope.new(nil, Observation.all).resolve
+        expect(policy_scope).to be_empty
+      end
+    end
+
+    context 'with scope filtering' do
+      let!(:observation_in_company) do
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_company).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      let(:other_company) { create(:organization, :company) }
+      let!(:observation_in_other_company) do
+        build(:observation, observer: observer, company: other_company, privacy_level: :public_to_company).tap do |obs|
+          obs.observees.build(teammate: create(:teammate, organization: other_company))
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      it 'respects existing scope filters' do
+        # Filter scope to only company observations
+        filtered_scope = Observation.where(company: company)
+        policy_scope = ObservationPolicy::Scope.new(pundit_user_observer, filtered_scope).resolve
+
+        expect(policy_scope).to include(observation_in_company)
+        expect(policy_scope).not_to include(observation_in_other_company)
+      end
+    end
+  end
 end
 
 
