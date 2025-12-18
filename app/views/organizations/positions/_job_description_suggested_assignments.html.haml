@@ -1,0 +1,28 @@
+-# Job Description Suggested Assignments Section
+-# Usage: = render 'job_description_suggested_assignments', position: @position, organization: organization, public_view: false (optional)
+
+- public_view = defined?(public_view) ? public_view : (params[:controller].to_s.include?('public_maap') rescue false)
+
+- if position.suggested_assignments.any?
+  %hr.mb-4.mt-4/
+
+  %h3.mb-1.mt-4
+    %strong Optional / Elective / Uniquely-You Assignments
+    %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "#suggestedAssignments", "aria-expanded" => "false", "aria-controls" => "suggestedAssignments"}
+      %span#suggestedExpandIcon.not-collapsed
+        %i.bi.bi-chevron-up
+        %small.text-muted (Hide suggested Assignments)
+      %span#suggestedCollapseText.collapsed
+        %i.bi.bi-chevron-down
+        %small.text-muted="(Show the #{pluralize(position.suggested_assignments.count, 'assignment')})"
+  
+  .collapse#suggestedAssignments
+    %p.text-muted.mb-3
+      %em We are all about growth… as such, we do our best to make it possible to successfully complete required Assignments and have room for special/elective/unique-to-you Assignments. These should only be taken on if the required Assignments are being completed and we are meeting expectations across them.
+    
+    - position.suggested_assignments.each_with_index do |pa, index|
+      - if index > 0
+        %hr.my-4
+      
+      = render 'assignment_job_description', pa: pa, assignment_type: 'suggested', organization: organization, public_view: public_view
+

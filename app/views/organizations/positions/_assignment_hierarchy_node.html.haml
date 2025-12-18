@@ -1,0 +1,57 @@
+- org = node[:organization]
+- assignments = node[:assignments] || []
+- children = node[:children] || []
+- level = node[:level] || 0
+- indent = indent_level * 30
+
+.mb-4{style: "margin-left: #{indent}px;"}
+  - if org
+    %h6.mb-3{class: level == 0 ? 'fw-bold' : ''}
+      - if level > 0
+        %i.bi.bi-arrow-return-right.me-2.text-muted
+      = org.name
+  
+  - if assignments.any?
+    .table-responsive
+      %table.table.table-sm.table-hover
+        %thead.table-light
+          %tr
+            %th Assignment
+            %th Min Energy
+            %th Max Energy
+            %th Anticipated Energy
+            %th Type
+        %tbody
+          - assignments.each do |assignment|
+            - existing_pa = existing_position_assignments[assignment.id]
+            %tr
+              %td
+                %strong= assignment.title
+                - if assignment.department
+                  %br
+                  %small.text-muted= department_hierarchy_display(assignment.department)
+              %td
+                = form.select "position_assignments[#{assignment.id}][min_estimated_energy]",
+                  energy_percentage_options(existing_pa&.min_estimated_energy),
+                  { include_blank: '0%' },
+                  { class: "form-select form-select-sm" }
+              %td
+                = form.select "position_assignments[#{assignment.id}][max_estimated_energy]",
+                  energy_percentage_options(existing_pa&.max_estimated_energy),
+                  { include_blank: '0%' },
+                  { class: "form-select form-select-sm", required: false }
+              %td
+                = form.select "position_assignments[#{assignment.id}][anticipated_energy_percentage]",
+                  energy_percentage_options(existing_pa&.anticipated_energy_percentage),
+                  { include_blank: '0%' },
+                  { class: "form-select form-select-sm" }
+              %td
+                = form.select "position_assignments[#{assignment.id}][assignment_type]",
+                  options_for_select([['Required', 'required'], ['Suggested', 'suggested']], existing_pa&.assignment_type || 'required'),
+                  {},
+                  { class: "form-select form-select-sm" }
+  
+  - if children.any?
+    - children.each do |child_node|
+      = render 'assignment_hierarchy_node', node: child_node, form: form, existing_position_assignments: existing_position_assignments, indent_level: indent_level + 1
+

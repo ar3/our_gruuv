@@ -29,6 +29,30 @@
       %hr.dropdown-divider
     
     %li
+      - if action_name == 'manage_assignments'
+        .dropdown-item.text-muted
+          %i.bi.bi-list-check.me-2
+          Manage Assignments (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif policy(@position).update?
+        = link_to manage_assignments_organization_position_path(@organization, @position), class: 'dropdown-item' do
+          %i.bi.bi-list-check.me-2
+          Manage Assignments
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-list-check.me-2
+          Manage Assignments
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need position management permissions to manage assignments"}
+    
+    %li
+      = link_to organization_public_maap_position_path(@organization, @position), class: 'dropdown-item', target: '_blank' do
+        %i.bi.bi-globe.me-2
+        Public View
+    
+    %li
+      %hr.dropdown-divider
+    
+    %li
       = link_to edit_organization_position_path(@organization, @position), class: 'dropdown-item' do
         %i.bi.bi-pencil.me-2
         Edit Position

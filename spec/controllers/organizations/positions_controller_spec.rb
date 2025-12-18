@@ -71,5 +71,149 @@ RSpec.describe Organizations::PositionsController, type: :controller do
       expect(positions.length).to eq(2)
     end
   end
+
+  describe 'GET #manage_assignments' do
+    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:assignment) { create(:assignment, company: organization) }
+
+    before do
+      # Update existing teammate to have permission
+      teammate = Teammate.find_by(person: person, organization: organization)
+      teammate.update(can_manage_employment: true)
+    end
+
+    it 'loads assignments grouped by hierarchy' do
+      assignment # Create the assignment
+      get :manage_assignments, params: { organization_id: organization.id, id: position.id }
+      
+      expect(response).to have_http_status(:success)
+      expect(assigns(:assignments)).to be_present
+      expect(assigns(:assignments_by_org)).to be_a(Hash)
+      expect(response).to render_template(:manage_assignments)
+      expect(response).to render_template(layout: 'overlay')
+    end
+
+    it 'requires update permission' do
+      teammate = Teammate.find_by(person: person, organization: organization)
+      teammate.update(can_manage_employment: false)
+      
+      get :manage_assignments, params: { organization_id: organization.id, id: position.id }
+      
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(root_path)
+    end
+
+    it 'pre-populates existing position assignments' do
+      assignment # Create the assignment
+      existing_pa = create(:position_assignment, position: position, assignment: assignment, max_estimated_energy: 50)
+      
+      get :manage_assignments, params: { organization_id: organization.id, id: position.id }
+      
+      expect(assigns(:existing_position_assignments)).to be_present
+      expect(assigns(:existing_position_assignments)[assignment.id]).to eq(existing_pa)
+    end
+  end
+
+  describe 'PATCH #update_assignments' do
+    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:assignment) { create(:assignment, company: organization) }
+
+    before do
+      # Update existing teammate to have permission
+      teammate = Teammate.find_by(person: person, organization: organization)
+      teammate.update(can_manage_employment: true)
+    end
+
+    it 'creates new PositionAssignments when max_estimated_energy > 0' do
+      assignment # Create the assignment
+      patch :update_assignments, params: {
+        organization_id: organization.id,
+        id: position.id,
+        position_assignments: {
+          assignment.id.to_s => {
+            min_estimated_energy: '20',
+            max_estimated_energy: '40',
+            anticipated_energy_percentage: '30',
+            assignment_type: 'required'
+          }
+        }
+      }
+      
+      expect(response).to redirect_to(manage_assignments_organization_position_path(organization, position))
+      
+      pa = PositionAssignment.find_by(position: position, assignment: assignment)
+      expect(pa).to be_present
+      expect(pa.max_estimated_energy).to eq(40)
+    end
+
+    it 'updates existing PositionAssignments' do
+      assignment # Create the assignment
+      existing_pa = create(:position_assignment, position: position, assignment: assignment, max_estimated_energy: 20)
+      
+      patch :update_assignments, params: {
+        organization_id: organization.id,
+        id: position.id,
+        position_assignments: {
+          assignment.id.to_s => {
+            max_estimated_energy: '50',
+            assignment_type: 'suggested'
+          }
+        }
+      }
+      
+      existing_pa.reload
+      expect(existing_pa.max_estimated_energy).to eq(50)
+      expect(existing_pa.assignment_type).to eq('suggested')
+    end
+
+    it 'destroys PositionAssignments when max_estimated_energy is 0' do
+      assignment # Create the assignment
+      existing_pa = create(:position_assignment, position: position, assignment: assignment, max_estimated_energy: 30)
+      
+      patch :update_assignments, params: {
+        organization_id: organization.id,
+        id: position.id,
+        position_assignments: {
+          assignment.id.to_s => {
+            max_estimated_energy: '0'
+          }
+        }
+      }
+      
+      expect(PositionAssignment.find_by(id: existing_pa.id)).to be_nil
+    end
+
+    it 'destroys PositionAssignments not in params' do
+      assignment # Create the assignment
+      existing_pa = create(:position_assignment, position: position, assignment: assignment, max_estimated_energy: 30)
+      other_assignment = create(:assignment, company: organization)
+      
+      patch :update_assignments, params: {
+        organization_id: organization.id,
+        id: position.id,
+        position_assignments: {
+          other_assignment.id.to_s => {
+            max_estimated_energy: '50'
+          }
+        }
+      }
+      
+      expect(PositionAssignment.find_by(id: existing_pa.id)).to be_nil
+    end
+
+    it 'requires update permission' do
+      teammate = Teammate.find_by(person: person, organization: organization)
+      teammate.update(can_manage_employment: false)
+      
+      patch :update_assignments, params: {
+        organization_id: organization.id,
+        id: position.id,
+        position_assignments: {}
+      }
+      
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(root_path)
+    end
+  end
 end
 

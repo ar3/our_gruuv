@@ -1,0 +1,15 @@
+-# Job Description Required Assignments Section
+-# Usage: = render 'job_description_required_assignments', position: @position, organization: organization, public_view: false (optional)
+
+- public_view = defined?(public_view) ? public_view : (params[:controller].to_s.include?('public_maap') rescue false)
+
+- if position.required_assignments.any?
+  %h3.mb-3
+    %strong Required Assignments:
+  
+  - position.required_assignments.each_with_index do |pa, index|
+    - if index > 0
+      %hr.my-4
+    
+    = render 'assignment_job_description', pa: pa, assignment_type: 'required', organization: organization, public_view: public_view
+

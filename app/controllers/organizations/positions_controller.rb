@@ -1,6 +1,6 @@
 class Organizations::PositionsController < ApplicationController
   before_action :set_organization
-  before_action :set_position, only: [:show, :job_description, :edit, :update, :destroy]
+  before_action :set_position, only: [:show, :job_description, :edit, :update, :destroy, :manage_assignments, :update_assignments]
   before_action :set_related_data, only: [:new, :edit, :create, :update]
 
   def index
@@ -187,6 +187,92 @@ class Organizations::PositionsController < ApplicationController
     # Build redirect URL with all view customization params
     redirect_params = params.except(:controller, :action, :utf8, :_method, :commit).permit!.to_h
     redirect_to organization_positions_path(@organization, redirect_params)
+  end
+
+  def manage_assignments
+    authorize @position, :update?
+    
+    # Get position's company and all descendants
+    company = @position.position_type.organization.root_company
+    company_and_descendants = company.self_and_descendants
+    
+    # Load all assignments in company hierarchy
+    @assignments = Assignment.where(company: company_and_descendants)
+                            .includes(:department)
+                            .ordered
+    
+    # Build nested structure: company > department > assignments
+    @assignments_by_org = @assignments.group_by(&:department)
+    
+    # Get existing position assignments for pre-population
+    @existing_position_assignments = @position.position_assignments.index_by(&:assignment_id)
+    
+    # Calculate totals for required and suggested assignments
+    required_pas = @position.position_assignments.required
+    suggested_pas = @position.position_assignments.suggested
+    
+    @required_totals = {
+      min: required_pas.sum { |pa| pa.min_estimated_energy || 0 },
+      max: required_pas.sum { |pa| pa.max_estimated_energy || 0 },
+      anticipated: required_pas.sum { |pa| pa.anticipated_energy_percentage || 0 }
+    }
+    
+    @suggested_totals = {
+      min: suggested_pas.sum { |pa| pa.min_estimated_energy || 0 },
+      max: suggested_pas.sum { |pa| pa.max_estimated_energy || 0 },
+      anticipated: suggested_pas.sum { |pa| pa.anticipated_energy_percentage || 0 }
+    }
+    
+    # Set return URL
+    @return_url = organization_position_path(@organization, @position)
+    @return_text = "Back to Position"
+    
+    render layout: 'overlay'
+  end
+
+  def update_assignments
+    authorize @position, :update?
+    
+    position_assignments_params = params[:position_assignments] || {}
+    assignment_ids_to_keep = []
+    errors = []
+    
+    # Process each assignment in params
+    position_assignments_params.each do |assignment_id_str, assignment_data|
+      assignment_id = assignment_id_str.to_i
+      max_energy = assignment_data[:max_estimated_energy].present? ? assignment_data[:max_estimated_energy].to_i : 0
+      
+      # Skip if max_estimated_energy is 0 or not set
+      next if max_energy <= 0
+      
+      assignment_ids_to_keep << assignment_id
+      
+      # Find or initialize PositionAssignment
+      position_assignment = @position.position_assignments.find_or_initialize_by(assignment_id: assignment_id)
+      
+      # Update attributes
+      min_energy = assignment_data[:min_estimated_energy].present? ? assignment_data[:min_estimated_energy].to_i : nil
+      anticipated_energy = assignment_data[:anticipated_energy_percentage].present? ? assignment_data[:anticipated_energy_percentage].to_i : nil
+      
+      position_assignment.min_estimated_energy = min_energy
+      position_assignment.max_estimated_energy = max_energy
+      position_assignment.anticipated_energy_percentage = anticipated_energy
+      position_assignment.assignment_type = assignment_data[:assignment_type] || 'required'
+      
+      unless position_assignment.save
+        errors << "Failed to save assignment #{assignment_id}: #{position_assignment.errors.full_messages.join(', ')}"
+      end
+    end
+    
+    # Destroy position assignments that are no longer in params or have max_energy = 0
+    assignments_to_destroy = @position.position_assignments.where.not(assignment_id: assignment_ids_to_keep)
+    assignments_to_destroy.destroy_all
+    
+    if errors.any?
+      redirect_to manage_assignments_organization_position_path(@organization, @position), alert: "Some assignments could not be saved: #{errors.join('; ')}"
+    else
+      redirect_to manage_assignments_organization_position_path(@organization, @position), notice: 'Assignments updated successfully.'
+    end
   end
 
   private

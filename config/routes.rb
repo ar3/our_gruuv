@@ -220,12 +220,12 @@ get '/login', to: 'auth#login', as: :login
       collection do
         get :customize_view
         patch :update_view
+        get :position_levels
       end
       member do
         get :job_description
-      end
-      collection do
-        get :position_levels
+        get :manage_assignments
+        patch :update_assignments
       end
     end
     

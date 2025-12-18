@@ -6,10 +6,11 @@
 .row.justify-content-center
   .col-12
     .card
-      .card-header
+      .card-header.d-flex.justify-content-between.align-items-center
         %h4.mb-0
           %i.bi.bi-briefcase.me-2
           Edit Position: #{@position.display_name}
+        = link_to "Manage Assignments", manage_assignments_organization_position_path(@organization, @position), class: "btn btn-primary btn-sm"
       
       .card-body
         = form_with model: [@organization, @form], url: organization_position_path(@organization, @position), local: true do |form|

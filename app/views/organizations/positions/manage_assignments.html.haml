@@ -1,0 +1,67 @@
+- content_for :title, "Manage Assignments for #{@position.position_type.external_title}"
+- content_for :header, "Manage Assignments for #{@position.position_type.external_title}"
+- content_for :return_url, @return_url
+- content_for :return_text, @return_text
+
+.card
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-list-check.me-2
+      Position Assignments
+    %p.mb-0.text-muted
+      Set energy percentages and assignment types for each assignment. Assignments with max energy > 0% will be associated with this position.
+  
+  .card-body
+    .row.mb-4
+      .col-md-6
+        .card.border-primary
+          .card-header.bg-primary.text-white
+            %h6.mb-0 Required Assignments Totals
+          .card-body
+            .row.text-center
+              .col-4
+                %div
+                  %strong.text-muted.small Min Energy
+                  %div.h5.mb-0= "#{@required_totals[:min]}%"
+              .col-4
+                %div
+                  %strong.text-muted.small Max Energy
+                  %div.h5.mb-0= "#{@required_totals[:max]}%"
+              .col-4
+                %div
+                  %strong.text-muted.small Anticipated
+                  %div.h5.mb-0= "#{@required_totals[:anticipated]}%"
+      .col-md-6
+        .card.border-info
+          .card-header.bg-info.text-white
+            %h6.mb-0 Suggested Assignments Totals
+          .card-body
+            .row.text-center
+              .col-4
+                %div
+                  %strong.text-muted.small Min Energy
+                  %div.h5.mb-0= "#{@suggested_totals[:min]}%"
+              .col-4
+                %div
+                  %strong.text-muted.small Max Energy
+                  %div.h5.mb-0= "#{@suggested_totals[:max]}%"
+              .col-4
+                %div
+                  %strong.text-muted.small Anticipated
+                  %div.h5.mb-0= "#{@suggested_totals[:anticipated]}%"
+    
+    = form_with url: update_assignments_organization_position_path(@organization, @position), method: :patch, local: true do |form|
+      - company = @position.position_type.organization.root_company
+      - hierarchy_tree = build_assignment_hierarchy_tree(@assignments_by_org, company)
+      
+      - if hierarchy_tree.any?
+        - hierarchy_tree.each do |node|
+          = render 'assignment_hierarchy_node', node: node, form: form, existing_position_assignments: @existing_position_assignments, indent_level: 0
+      - else
+        .alert.alert-info
+          %p.mb-0 No assignments found in this organization's hierarchy.
+      
+      .mt-4.d-flex.justify-content-between
+        = link_to "Cancel", @return_url, class: "btn btn-secondary"
+        = form.submit "Save Assignments", class: "btn btn-primary"
+

@@ -1,9 +1,13 @@
 -# Assignment Job Description Partial
--# Usage: = render 'assignment_job_description', pa: pa, assignment_type: 'required' or 'suggested', organization: organization
+-# Usage: = render 'assignment_job_description', pa: pa, assignment_type: 'required' or 'suggested', organization: organization, public_view: false (optional)
+-# If public_view is true, uses public MAAP paths; otherwise uses authenticated paths
+
+- public_view = defined?(public_view) ? public_view : (params[:controller].to_s.include?('public_maap') rescue false)
+- assignment_path = public_view ? organization_public_maap_assignment_path(organization, pa.assignment) : organization_assignment_path(organization, pa.assignment)
 
 %h5.mb-0
   %strong= pa.assignment.title
-  = link_to organization_assignment_path(organization, pa.assignment), target: "_blank", class: "ms-2 text-muted" do
+  = link_to assignment_path, target: "_blank", class: "ms-2 text-muted" do
     %i.bi.bi-link-45deg
 
 %p.mb-2
@@ -35,10 +39,11 @@
     %span='… needing Abilities such as –'
     - if pa.assignment.abilities.any?
       - pa.assignment.assignment_abilities.each do |aa|
+        - ability_path = public_view ? organization_public_maap_ability_path(aa.ability.organization, aa.ability) : organization_ability_path(aa.ability.organization, aa.ability)
         %span.badge{class: assignment_type == 'required' ? 'bg-primary' : 'bg-info', class: 'me-1'}
           = aa.ability.name
           %small.ms-1 (#{milestone_level_display(aa.milestone_level)})
-          = link_to organization_ability_path(aa.ability.organization, aa.ability), target: "_blank", class: "ms-1 text-white" do
+          = link_to ability_path, target: "_blank", class: "ms-1 text-white" do
             %i.bi.bi-link-45deg
     - else
       %span.text-muted ability milestones to be determined

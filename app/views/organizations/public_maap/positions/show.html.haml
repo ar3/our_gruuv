@@ -8,29 +8,14 @@
     %span.text-muted.mx-2 |
     = link_to "View Authenticated Version", organization_position_path(@organization, @position), class: "text-muted text-decoration-none"
 
-.row
-  .col-md-8
-    .card.mb-4
-      .card-header
-        %h5.mb-0 Position Details
-      .card-body
-        %dl.row
-          %dt.col-sm-3 Position Type:
-          %dd.col-sm-9= @position.position_type.external_title
-          %dt.col-sm-3 Level:
-          %dd.col-sm-9= @position.position_level.level
-          %dt.col-sm-3 Organization:
-          %dd.col-sm-9= @position.company.display_name
-          - if @position.eligibility_requirements_summary.present?
-            %dt.col-sm-3 Eligibility Requirements:
-            %dd.col-sm-9= @position.eligibility_requirements_summary
+= render 'organizations/positions/job_description_summary', position: @position
 
-  .col-md-4
-    - if current_person
-      .card.mb-4
-        .card-header
-          %h6.mb-0 Quick Actions
-        .card-body
-          = link_to "View Authenticated Version", organization_position_path(@organization, @position), class: "btn btn-outline-primary btn-sm w-100"
+= render 'organizations/positions/job_description_required_assignments', position: @position, organization: @position.company, public_view: true
+
+= render 'organizations/positions/job_description_suggested_assignments', position: @position, organization: @position.company, public_view: true
+
+= render 'organizations/positions/job_description_no_assignments', position: @position
+
+= render 'organizations/positions/job_description_footer'
 
 

@@ -1,0 +1,12 @@
+-# Job Description No Assignments Warning
+-# Usage: = render 'job_description_no_assignments', position: @position, organization: organization (optional, for authenticated view)
+
+- if position.required_assignments.empty? && position.suggested_assignments.empty?
+  .alert.alert-warning
+    %h6.mb-2
+      %i.bi.bi-exclamation-triangle.me-2
+      No Assignments Defined
+    %p.mb-2 This position has no required or suggested assignments.
+    - if defined?(organization) && organization
+      = link_to "Add Assignments", edit_organization_position_path(organization, position), class: "btn btn-warning btn-sm"
+
