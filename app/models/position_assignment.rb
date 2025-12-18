@@ -8,7 +8,7 @@ class PositionAssignment < ApplicationRecord
   validates :assignment, presence: true
   validates :assignment_type, presence: true, inclusion: { in: %w[required suggested] }
   validates :assignment, uniqueness: { scope: :position }
-  validates :min_estimated_energy, numericality: { greater_than: 0, less_than_or_equal_to: 100, allow_nil: true }
+  validates :min_estimated_energy, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100, allow_nil: true }
   validates :max_estimated_energy, numericality: { greater_than: 0, less_than_or_equal_to: 100, allow_nil: true }
   validate :max_energy_greater_than_min_energy, if: -> { min_estimated_energy.present? && max_estimated_energy.present? }
   

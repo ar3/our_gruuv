@@ -50,6 +50,11 @@ RSpec.describe PositionAssignment, type: :model do
         expect(position_assignment).to be_valid
       end
 
+      it 'accepts min_estimated_energy of 0' do
+        position_assignment.min_estimated_energy = 0
+        expect(position_assignment).to be_valid
+      end
+
       it 'accepts valid max_estimated_energy' do
         position_assignment.max_estimated_energy = 75
         expect(position_assignment).to be_valid
@@ -70,7 +75,7 @@ RSpec.describe PositionAssignment, type: :model do
       it 'rejects negative min_estimated_energy' do
         position_assignment.min_estimated_energy = -1
         expect(position_assignment).not_to be_valid
-        expect(position_assignment.errors[:min_estimated_energy]).to include('must be greater than 0')
+        expect(position_assignment.errors[:min_estimated_energy]).to include('must be greater than or equal to 0')
       end
 
       it 'rejects negative max_estimated_energy' do
