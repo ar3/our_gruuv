@@ -66,16 +66,6 @@ class Organizations::KudosController < ApplicationController
   end
 
   def authorize_view_permalink
-    # Only public_to_world observations are accessible via permalink without authentication
-    # public_to_company observations are not accessible via permalink
-    return if @observation.privacy_level == 'public_to_world'
-    
-    # For other privacy levels, require authentication
-    unless current_person
-      authenticate_person!
-      return
-    end
-    
     # Check authorization and raise error before Pundit's rescue_from catches it
     # This allows tests to catch the error directly
     unless policy(@observation).view_permalink?

@@ -55,6 +55,8 @@ class Organizations::DepartmentsAndTeamsController < Organizations::Organization
   def create
     @department_or_team = Organization.new(department_or_team_params)
     @department_or_team.parent_id ||= @organization.id
+    # Ensure parent_id is set for authorization check
+    @department_or_team.parent_id = @organization.id if @department_or_team.parent_id.nil?
     authorize @department_or_team, :create?
     
     if @department_or_team.save

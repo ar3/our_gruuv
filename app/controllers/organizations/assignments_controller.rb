@@ -142,7 +142,26 @@ class Organizations::AssignmentsController < ApplicationController
       
       redirect_to organization_assignment_path(@organization, @assignment), notice: 'Assignment was successfully updated.'
     else
-      render :edit, status: :unprocessable_entity
+      # Preserve outcomes_textarea for re-render
+      @form.outcomes_textarea = params[:assignment][:outcomes_textarea] if params[:assignment][:outcomes_textarea].present?
+      
+      # Log validation errors for debugging
+      Rails.logger.error "❌❌ Assignment update validation failed"
+      Rails.logger.error "❌❌ Form errors: #{@form.errors.full_messages.inspect}"
+      Rails.logger.error "❌❌ Form valid?: #{@form.valid?.inspect}"
+      Rails.logger.error "❌❌ Assignment params: #{assignment_params.inspect}"
+      Rails.logger.error "❌❌ Assignment ID: #{@assignment.id}"
+      Rails.logger.error "❌❌ Assignment title: #{@assignment.title}"
+      if @form.errors.any?
+        Rails.logger.error "❌❌ Form error details: #{@form.errors.details.inspect}"
+      end
+      if @assignment.errors.any?
+        Rails.logger.error "❌❌ Assignment model errors: #{@assignment.errors.full_messages.inspect}"
+      end
+      
+      error_message = @form.errors.full_messages.any? ? @form.errors.full_messages.join(', ') : 'Unknown validation error'
+      flash[:alert] = "Failed to update assignment: #{error_message}"
+      redirect_to edit_organization_assignment_path(@organization, @assignment)
     end
   end
 
@@ -199,7 +218,7 @@ class Organizations::AssignmentsController < ApplicationController
   end
 
   def assignment_params
-    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook, :department_id, :version_type)
+    params.require(:assignment).permit(:title, :tagline, :required_activities, :handbook, :department_id, :version_type, :outcomes_textarea, :published_source_url, :draft_source_url)
   end
 
   def create_external_references(assignment, params)

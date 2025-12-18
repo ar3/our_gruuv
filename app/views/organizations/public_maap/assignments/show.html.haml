@@ -14,56 +14,76 @@
 
 .row
   .col-md-8
-    .card.mb-4
-      .card-header
-        %h5.mb-0 Assignment Details
-      .card-body
-        - if @assignment.tagline.present?
+    - if @assignment.department.present?
+      .mb-4
+        %h3.mb-3 Department
+        - hierarchy_path = []
+        - current_org = @assignment.department
+        - while current_org
+          - hierarchy_path.unshift(current_org)
+          - current_org = current_org.parent
+        - hierarchy_path.each_with_index do |org, index|
+          - if org.company?
+            - if policy(org).show?
+              = link_to org.name, organization_path(org), class: "text-decoration-none"
+            - else
+              %span= org.name
+          - else
+            - if policy(org).show?
+              = link_to org.name, organization_departments_and_team_path(@organization, org), class: "text-decoration-none"
+            - else
+              %span= org.name
+          - unless index == hierarchy_path.length - 1
+            %span.text-muted.mx-1
+              %i.bi.bi-chevron-right
+    
+    - if @assignment.tagline.present?
+      .mb-4
+        %h3.mb-3 Tagline
+        .markdown-content.markdown-content--bordered
+          %p.mb-0= @assignment.tagline
+    
+    - if @assignment.assignment_outcomes.any?
+      .mb-4
+        %h3.mb-3 Outcomes
+        - @assignment.assignment_outcomes.ordered.each do |outcome|
           .mb-3
-            %h6.text-muted Tagline
-            %p.mb-0= @assignment.tagline
-        
-        .mb-3
-          %h6.text-muted Company
-          %p.mb-0= @assignment.company_name
-        
-        - if @assignment.assignment_outcomes.any?
-          .mb-3
-            %h6.text-muted Outcomes
-            - @assignment.assignment_outcomes.ordered.each do |outcome|
-              .card.mb-2
-                .card-body.py-2
-                  .d-flex.justify-content-between.align-items-start
-                    .flex-grow-1
-                      .markdown-content
-                        = render_markdown(outcome.description)
-                    %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
-                      = outcome.outcome_type.titleize
-        
-        - if @assignment.handbook.present?
-          .mb-3
-            %h6.text-muted Handbook
             .markdown-content.markdown-content--bordered
-              = render_markdown(@assignment.handbook)
+              .d-flex.justify-content-between.align-items-start
+                .flex-grow-1
+                  .markdown-content
+                    = render_markdown(outcome.description)
+                %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
+                  = outcome.outcome_type.titleize
+    
+    - if @assignment.required_activities.present?
+      .mb-4
+        %h3.mb-3 Required Activities
+        .markdown-content.markdown-content--bordered
+          = render_markdown(@assignment.required_activities)
+    
+    - if @assignment.handbook.present?
+      .mb-4
+        %h3.mb-3 Handbook
+        .markdown-content.markdown-content--bordered
+          = render_markdown(@assignment.handbook)
 
     - if @observations.any?
-      .card.mb-4
-        .card-header
-          %h5.mb-0
-            %i.bi.bi-star.me-2
-            Public Observations
-        .card-body
-          - @observations.each do |observation|
-            .card.mb-3
-              .card-body
-                %p.mb-2= observation.decorate.story_html.html_safe
-                .d-flex.justify-content-between.align-items-center
-                  .small.text-muted
-                    From: #{observation.observer.preferred_name || observation.observer.first_name}
-                    - if observation.observed_teammates.any?
-                      |  • Recognizing: 
-                      - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }
-                      = names.join(', ')
-                  = link_to "View Observation", organization_kudo_path(observation.company, date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id), class: "btn btn-sm btn-outline-primary"
+      .mb-4
+        %h3.mb-3
+          %i.bi.bi-star.me-2
+          Public Observations
+        - @observations.each do |observation|
+          .mb-3
+            .markdown-content.markdown-content--bordered
+              %p.mb-2= observation.decorate.story_html.html_safe
+              .d-flex.justify-content-between.align-items-center
+                .small.text-muted
+                  From: #{observation.observer.preferred_name || observation.observer.first_name}
+                  - if observation.observed_teammates.any?
+                    |  • Recognizing: 
+                    - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }
+                    = names.join(', ')
+                = link_to "View Observation", organization_kudo_path(observation.company, date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id), class: "btn btn-sm btn-outline-primary"
 
 

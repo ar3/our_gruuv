@@ -4,8 +4,22 @@ class ObservationPolicy < ApplicationPolicy
     
     person = viewing_teammate.person
     
-    # Observer is always allowed
+    # Check if observer has an active teammate in the observation's company
+    observer_has_active_teammate = person.active_teammates.exists?(organization: record.company)
+    
+    # If observer doesn't have an active teammate, only allow public_to_world published observations
+    unless observer_has_active_teammate
+      return record.published? && record.privacy_level == 'public_to_world'
+    end
+    
+    # Draft observations: only the observer can see them (if they have active teammate)
+    return false if record.draft? && person != record.observer
+    
+    # Observer is always allowed (for published observations, if they have active teammate)
     return true if person == record.observer
+    
+    # Journal (observer_only): only the observer can see them, even when published
+    return false if record.privacy_level == 'observer_only'
     
     # Check privacy level and apply appropriate rules
     case record.privacy_level
@@ -52,33 +66,10 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def view_permalink?
-    # Draft observations are only visible to their creator
-    return false if record.draft? && viewing_teammate && viewing_teammate.person != record.observer
-    
-    # Only public_to_world observations have permalink access (no auth required)
+    # Only published public_to_world observations have permalink access (no auth required)
     # public_to_company observations are visible through authenticated pages only
-    return true if record.privacy_level == 'public_to_world'
-    
-    # For other privacy levels, require authentication and check permissions
-    return false unless viewing_teammate
-    person = viewing_teammate.person
-    
-    # Permalink page respects privacy settings for internal levels
-    case record.privacy_level
-    when 'observer_only'
-      person == record.observer
-    when 'observed_only'
-      person == record.observer || user_in_observees?
-    when 'managers_only'
-      person == record.observer || user_in_management_hierarchy?
-    when 'observed_and_managers'
-      person == record.observer || user_in_observees? || user_in_management_hierarchy? || user_can_manage_employment?
-    when 'public_to_company'
-      # public_to_company is visible to authenticated company members, but not via permalink
-      false
-    else
-      false
-    end
+    return true if record.privacy_level == 'public_to_world' && record.published?
+    false
   end
 
   def view_negative_ratings?

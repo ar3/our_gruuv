@@ -24,10 +24,15 @@
             = form.label :name, class: "form-label"
             = form.text_field :name, class: "form-control", required: true
           
-          .mb-3
-            = form.label :parent_id, "Parent Organization", class: "form-label"
-            = form.select :parent_id, options_from_collection_for_select(@available_parents, :id, :display_name, @department_or_team.parent_id || @organization.id), {}, { class: "form-select" }
-            %small.form-text.text-muted Select the parent organization for this #{@department_or_team.type.downcase}.
+          = render 'shared/department_dropdown', 
+            form: form, 
+            organization: @organization, 
+            field_name: :parent_id, 
+            label_text: "Parent Organization", 
+            selected_department_id: @department_or_team.parent_id,
+            include_blank: false,
+            exclude_ids: [@department_or_team.id] + @department_or_team.descendants.map(&:id),
+            help_text: "Select the parent organization for this #{@department_or_team.type.downcase}."
           
           .d-flex.justify-content-between
             = link_to "Cancel", organization_departments_and_team_path(@organization, @department_or_team), class: "btn btn-secondary"

@@ -28,6 +28,9 @@ RSpec.describe ObservationPolicy, type: :policy do
   end
 
   before do
+    # Skip this setup for the comprehensive visibility matrix spec
+    next if RSpec.current_example&.metadata[:isolated]
+    
     # Set up real employment tenures to create managerial hierarchy
     # Manager is direct manager of observee
     create(:employment_tenure, teammate: manager_teammate, company: company)
@@ -342,16 +345,13 @@ RSpec.describe ObservationPolicy, type: :policy do
         end
       end
 
-      it 'allows observer' do
-        policy = ObservationPolicy.new(pundit_user_observer, draft_observation)
-        expect(policy.view_permalink?).to be true
-      end
-
-      it 'denies everyone else even if privacy level would allow' do
+      it 'denies everyone including observer (drafts cannot be viewed via permalink)' do
+        observer_policy = ObservationPolicy.new(pundit_user_observer, draft_observation)
         observee_policy = ObservationPolicy.new(pundit_user_observee, draft_observation)
         manager_policy = ObservationPolicy.new(pundit_user_manager, draft_observation)
         random_policy = ObservationPolicy.new(pundit_user_random, draft_observation)
 
+        expect(observer_policy.view_permalink?).to be false
         expect(observee_policy.view_permalink?).to be false
         expect(manager_policy.view_permalink?).to be false
         expect(random_policy.view_permalink?).to be false
@@ -368,16 +368,13 @@ RSpec.describe ObservationPolicy, type: :policy do
           end
         end
 
-        it 'allows observer' do
-          policy = ObservationPolicy.new(pundit_user_observer, observer_only_obs)
-          expect(policy.view_permalink?).to be true
-        end
-
-        it 'denies everyone else' do
+        it 'denies everyone including observer (only public_to_world can be viewed via permalink)' do
+          observer_policy = ObservationPolicy.new(pundit_user_observer, observer_only_obs)
           observee_policy = ObservationPolicy.new(pundit_user_observee, observer_only_obs)
           manager_policy = ObservationPolicy.new(pundit_user_manager, observer_only_obs)
           random_policy = ObservationPolicy.new(pundit_user_random, observer_only_obs)
 
+          expect(observer_policy.view_permalink?).to be false
           expect(observee_policy.view_permalink?).to be false
           expect(manager_policy.view_permalink?).to be false
           expect(random_policy.view_permalink?).to be false
@@ -385,26 +382,17 @@ RSpec.describe ObservationPolicy, type: :policy do
       end
 
       context 'observed_only privacy' do
-        it 'allows observer and observee' do
+        it 'denies everyone (only public_to_world can be viewed via permalink)' do
           observer_policy = ObservationPolicy.new(pundit_user_observer, observation)
           observee_policy = ObservationPolicy.new(pundit_user_observee, observation)
-
-          expect(observer_policy.view_permalink?).to be true
-          expect(observee_policy.view_permalink?).to be true
-        end
-
-        it 'denies manager even if they manage the observee' do
           manager_policy = ObservationPolicy.new(pundit_user_manager, observation)
-          expect(manager_policy.view_permalink?).to be false
-        end
-
-        it 'denies random person' do
           random_policy = ObservationPolicy.new(pundit_user_random, observation)
-          expect(random_policy.view_permalink?).to be false
-        end
-
-        it 'denies admin even with can_manage_employment' do
           admin_policy = ObservationPolicy.new(pundit_user_admin, observation)
+
+          expect(observer_policy.view_permalink?).to be false
+          expect(observee_policy.view_permalink?).to be false
+          expect(manager_policy.view_permalink?).to be false
+          expect(random_policy.view_permalink?).to be false
           expect(admin_policy.view_permalink?).to be false
         end
 
@@ -417,13 +405,11 @@ RSpec.describe ObservationPolicy, type: :policy do
             end
           end
 
-          it 'allows employee to see their own self-observation' do
-            policy = ObservationPolicy.new(pundit_user_observee, self_observation)
-            expect(policy.view_permalink?).to be true
-          end
-
-          it 'denies manager from seeing employee self-observation' do
+          it 'denies everyone including employee (only public_to_world can be viewed via permalink)' do
+            observee_policy = ObservationPolicy.new(pundit_user_observee, self_observation)
             manager_policy = ObservationPolicy.new(pundit_user_manager, self_observation)
+
+            expect(observee_policy.view_permalink?).to be false
             expect(manager_policy.view_permalink?).to be false
           end
         end
@@ -438,7 +424,7 @@ RSpec.describe ObservationPolicy, type: :policy do
           end
         end
 
-        it 'allows observer and direct manager' do
+        it 'denies everyone (only public_to_world can be viewed via permalink)' do
           # Reload manager_teammate to ensure fresh data
           manager_teammate.reload
           # Reload the observation to ensure all associations are fresh
@@ -446,12 +432,14 @@ RSpec.describe ObservationPolicy, type: :policy do
           
           observer_policy = ObservationPolicy.new(pundit_user_observer, managers_only_obs)
           manager_policy = ObservationPolicy.new(pundit_user_manager, managers_only_obs)
+          observee_policy = ObservationPolicy.new(pundit_user_observee, managers_only_obs)
 
-          expect(observer_policy.view_permalink?).to be true
-          expect(manager_policy.view_permalink?).to be true
+          expect(observer_policy.view_permalink?).to be false
+          expect(manager_policy.view_permalink?).to be false
+          expect(observee_policy.view_permalink?).to be false
         end
 
-        it 'allows indirect manager (grand manager)' do
+        it 'denies indirect manager (grand manager) (only public_to_world can be viewed via permalink)' do
           grand_manager = create(:person)
           grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
           grand_manager_pundit_user = OpenStruct.new(user: grand_manager_teammate, impersonating_teammate: nil)
@@ -469,12 +457,7 @@ RSpec.describe ObservationPolicy, type: :policy do
           managers_only_obs.reload
           
           grand_manager_policy = ObservationPolicy.new(grand_manager_pundit_user, managers_only_obs)
-          expect(grand_manager_policy.view_permalink?).to be true
-        end
-
-        it 'denies observee' do
-          observee_policy = ObservationPolicy.new(pundit_user_observee, managers_only_obs)
-          expect(observee_policy.view_permalink?).to be false
+          expect(grand_manager_policy.view_permalink?).to be false
         end
       end
 
@@ -487,7 +470,7 @@ RSpec.describe ObservationPolicy, type: :policy do
           end
         end
 
-        it 'allows observer, observee, and direct manager' do
+        it 'denies everyone (only public_to_world can be viewed via permalink)' do
           # Reload manager_teammate to ensure fresh data
           manager_teammate.reload
           # Reload the observation to ensure all associations are fresh
@@ -497,12 +480,12 @@ RSpec.describe ObservationPolicy, type: :policy do
           observee_policy = ObservationPolicy.new(pundit_user_observee, observed_and_managers_obs)
           manager_policy = ObservationPolicy.new(pundit_user_manager, observed_and_managers_obs)
 
-          expect(observer_policy.view_permalink?).to be true
-          expect(observee_policy.view_permalink?).to be true
-          expect(manager_policy.view_permalink?).to be true
+          expect(observer_policy.view_permalink?).to be false
+          expect(observee_policy.view_permalink?).to be false
+          expect(manager_policy.view_permalink?).to be false
         end
 
-        it 'allows indirect manager (grand manager)' do
+        it 'denies indirect manager (grand manager) (only public_to_world can be viewed via permalink)' do
           grand_manager = create(:person)
           grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
           grand_manager_pundit_user = OpenStruct.new(user: grand_manager_teammate, impersonating_teammate: nil)
@@ -520,7 +503,7 @@ RSpec.describe ObservationPolicy, type: :policy do
           observed_and_managers_obs.reload
           
           grand_manager_policy = ObservationPolicy.new(grand_manager_pundit_user, observed_and_managers_obs)
-          expect(grand_manager_policy.view_permalink?).to be true
+          expect(grand_manager_policy.view_permalink?).to be false
         end
       end
 
@@ -636,8 +619,8 @@ RSpec.describe ObservationPolicy, type: :policy do
         build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil).tap do |obs|
           obs.observees.build(teammate: observee_teammate)
           obs.save!
-        end
-      end
+  end
+end
 
       let!(:other_draft) do
         build(:observation, observer: observee_person, company: company, privacy_level: :public_to_company, published_at: nil).tap do |obs|
@@ -944,6 +927,449 @@ RSpec.describe ObservationPolicy, type: :policy do
 
         expect(policy_scope).to include(observation_in_company)
         expect(policy_scope).not_to include(observation_in_other_company)
+      end
+    end
+  end
+
+  describe 'Comprehensive visibility matrix', :isolated do
+    # Set up all the people and relationships
+    # Use a unique company to avoid conflicts with outer spec
+    let!(:test_company) { create(:organization, :company) }
+    let(:observer_person) { create(:person) }
+    let(:observee_person) { create(:person) }
+    let(:manager_person) { create(:person) }
+    let(:unrelated_person) { create(:person) }
+    
+    # Create teammates in before block to ensure they use the same test_company instance
+    let(:observer_teammate) { @observer_teammate }
+    let(:observee_teammate) { @observee_teammate }
+    let(:manager_teammate) { @manager_teammate }
+    let(:unrelated_teammate) { @unrelated_teammate }
+
+    before do
+      # Ensure test_company exists first
+      company = test_company
+      
+      # Create all teammates with the same test_company instance, ensuring they're in the same company
+      @observer_teammate = CompanyTeammate.find_or_create_by!(person: observer_person, organization: company) do |t|
+        t.organization = company
+      end
+      @observee_teammate = CompanyTeammate.find_or_create_by!(person: observee_person, organization: company) do |t|
+        t.organization = company
+      end
+      @manager_teammate = CompanyTeammate.find_or_create_by!(person: manager_person, organization: company) do |t|
+        t.organization = company
+      end
+      @unrelated_teammate = CompanyTeammate.find_or_create_by!(person: unrelated_person, organization: company) do |t|
+        t.organization = company
+      end
+      
+      # Verify they're in the correct company
+      [@observer_teammate, @observee_teammate, @manager_teammate, @unrelated_teammate].each do |t|
+        t.reload
+        unless t.organization_id == company.id
+          raise "Teammate #{t.id} not in company #{company.id}, is in #{t.organization_id}"
+        end
+      end
+      
+      # Set up management hierarchy: observee reports to manager
+      create(:employment_tenure, teammate: @manager_teammate, company: company)
+      create(:employment_tenure, teammate: @observee_teammate, company: company, manager: manager_person)
+      create(:employment_tenure, teammate: @observer_teammate, company: company)
+      create(:employment_tenure, teammate: @unrelated_teammate, company: company)
+      
+      # Reload to clear caches
+      @manager_teammate.reload
+      @observee_teammate.reload
+      @observer_teammate.reload
+      @unrelated_teammate.reload
+    end
+
+    let(:pundit_user_observer) { OpenStruct.new(user: observer_teammate, impersonating_teammate: nil) }
+    let(:pundit_user_observee) { OpenStruct.new(user: observee_teammate, impersonating_teammate: nil) }
+    let(:pundit_user_manager) { OpenStruct.new(user: manager_teammate, impersonating_teammate: nil) }
+    let(:pundit_user_unrelated) { OpenStruct.new(user: unrelated_teammate, impersonating_teammate: nil) }
+
+    # Create all combinations of observations in before block to ensure teammates exist
+    # 2 states (draft, published) × 6 privacy levels = 12 observations
+    let(:draft_observer_only) do
+      # Ensure we have the same company instance - reload to avoid caching issues
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      
+      # Verify they're in the same company
+      unless teammate.organization_id == company.id
+        raise "Teammate #{teammate.id} org #{teammate.organization_id} != company #{company.id}"
+      end
+      
+      # Use create instead of build to avoid validation issues
+      obs = Observation.create!(
+        observer: observer_person,
+        company: company,
+        privacy_level: :observer_only,
+        published_at: nil,
+        story: 'Draft observer only',
+        observed_at: Time.current
+      )
+      # Reload observation to ensure company is set
+      obs.reload
+      
+      # Create observee separately - reload teammate to ensure fresh association
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs
+    end
+
+    let(:draft_observed_only) do
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      obs = Observation.create!(observer: observer_person, company: company, privacy_level: :observed_only, published_at: nil, story: 'Draft observed only', observed_at: Time.current)
+      obs.reload
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs
+    end
+
+    let(:draft_managers_only) do
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      obs = Observation.create!(observer: observer_person, company: company, privacy_level: :managers_only, published_at: nil, story: 'Draft managers only', observed_at: Time.current)
+      obs.reload
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs
+    end
+
+    let(:draft_observed_and_managers) do
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      obs = Observation.create!(observer: observer_person, company: company, privacy_level: :observed_and_managers, published_at: nil, story: 'Draft observed and managers', observed_at: Time.current)
+      obs.reload
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs
+    end
+
+    let(:draft_public_to_company) do
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      obs = Observation.create!(observer: observer_person, company: company, privacy_level: :public_to_company, published_at: nil, story: 'Draft public to company', observed_at: Time.current)
+      obs.reload
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs
+    end
+
+    let(:draft_public_to_world) do
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      obs = Observation.create!(observer: observer_person, company: company, privacy_level: :public_to_world, published_at: nil, story: 'Draft public to world', observed_at: Time.current)
+      obs.reload
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs
+    end
+
+    let(:published_observer_only) do
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      obs = Observation.create!(observer: observer_person, company: company, privacy_level: :observer_only, story: 'Published observer only', observed_at: Time.current)
+      obs.reload
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs.publish!
+      obs
+    end
+
+    let(:published_observed_only) do
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      obs = Observation.create!(observer: observer_person, company: company, privacy_level: :observed_only, story: 'Published observed only', observed_at: Time.current)
+      obs.reload
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs.publish!
+      obs
+    end
+
+    let(:published_managers_only) do
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      obs = Observation.create!(observer: observer_person, company: company, privacy_level: :managers_only, story: 'Published managers only', observed_at: Time.current)
+      obs.reload
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs.publish!
+      obs
+    end
+
+    let(:published_observed_and_managers) do
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      obs = Observation.create!(observer: observer_person, company: company, privacy_level: :observed_and_managers, story: 'Published observed and managers', observed_at: Time.current)
+      obs.reload
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs.publish!
+      obs
+    end
+
+    let(:published_public_to_company) do
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      obs = Observation.create!(observer: observer_person, company: company, privacy_level: :public_to_company, story: 'Published public to company', observed_at: Time.current)
+      obs.reload
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs.publish!
+      obs
+    end
+
+    let(:published_public_to_world) do
+      company = Organization.find(test_company.id)
+      teammate = CompanyTeammate.find(observee_teammate.id)
+      obs = Observation.create!(observer: observer_person, company: company, privacy_level: :public_to_world, story: 'Published public to world', observed_at: Time.current)
+      obs.reload
+      teammate.reload
+      Observee.create!(observation: obs, teammate: teammate)
+      obs.reload
+      obs.publish!
+      obs
+    end
+
+    let(:all_observations) do
+      [
+        draft_observer_only,
+        draft_observed_only,
+        draft_managers_only,
+        draft_observed_and_managers,
+        draft_public_to_company,
+        draft_public_to_world,
+        published_observer_only,
+        published_observed_only,
+        published_managers_only,
+        published_observed_and_managers,
+        published_public_to_company,
+        published_public_to_world
+      ]
+    end
+
+    describe 'Scope visibility' do
+      context 'when viewer is the observer' do
+        it 'returns all observations they created (drafts and published)' do
+          scope = ObservationPolicy::Scope.new(pundit_user_observer, Observation.all).resolve
+          expect(scope.to_a).to match_array(all_observations)
+        end
+      end
+
+      context 'when viewer is one of the observed' do
+        it 'returns only published observations they should see based on privacy level' do
+          scope = ObservationPolicy::Scope.new(pundit_user_observee, Observation.all).resolve
+          expected = [
+            published_observed_only,           # observed_only: observer + observees
+            published_observed_and_managers,   # observed_and_managers: observer + observees + managers
+            published_public_to_company,      # public_to_company: all active teammates
+            published_public_to_world          # public_to_world: all active teammates
+          ]
+          expect(scope.to_a).to match_array(expected)
+        end
+      end
+
+      context 'when viewer is the manager of one of the observed' do
+        it 'returns only published observations they should see based on privacy level' do
+          manager_teammate.reload
+          scope = ObservationPolicy::Scope.new(pundit_user_manager, Observation.all).resolve
+          expected = [
+            published_managers_only,           # managers_only: observer + managers
+            published_observed_and_managers,    # observed_and_managers: observer + observees + managers
+            published_public_to_company,       # public_to_company: all active teammates
+            published_public_to_world          # public_to_world: all active teammates
+          ]
+          expect(scope.to_a).to match_array(expected)
+        end
+      end
+
+      context 'when viewer is unrelated (not observer, not observed, not manager)' do
+        it 'returns only published public observations' do
+          scope = ObservationPolicy::Scope.new(pundit_user_unrelated, Observation.all).resolve
+          expected = [
+            published_public_to_company,       # public_to_company: all active teammates
+            published_public_to_world          # public_to_world: all active teammates
+          ]
+          expect(scope.to_a).to match_array(expected)
+        end
+      end
+    end
+
+    describe 'show? permission' do
+      context 'when viewer is the observer' do
+        it 'allows access to all their observations (drafts and published)' do
+          all_observations.each do |obs|
+            policy = ObservationPolicy.new(pundit_user_observer, obs)
+            expect(policy.show?).to be(true), "Observer should see #{obs.privacy_level} #{obs.draft? ? 'draft' : 'published'}"
+          end
+        end
+      end
+
+      context 'when viewer is one of the observed' do
+        it 'allows access only to published observations they should see' do
+          # Drafts: should NOT see
+          [draft_observer_only, draft_observed_only, draft_managers_only, 
+           draft_observed_and_managers, draft_public_to_company, draft_public_to_world].each do |obs|
+            policy = ObservationPolicy.new(pundit_user_observee, obs)
+            expect(policy.show?).to be(false), "Observee should NOT see draft #{obs.privacy_level}"
+          end
+
+          # Published: should see based on privacy level
+          expect(ObservationPolicy.new(pundit_user_observee, published_observer_only).show?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observee, published_observed_only).show?).to be(true)
+          expect(ObservationPolicy.new(pundit_user_observee, published_managers_only).show?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observee, published_observed_and_managers).show?).to be(true)
+          expect(ObservationPolicy.new(pundit_user_observee, published_public_to_company).show?).to be(true)
+          expect(ObservationPolicy.new(pundit_user_observee, published_public_to_world).show?).to be(true)
+        end
+      end
+
+      context 'when viewer is the manager of one of the observed' do
+        it 'allows access only to published observations they should see' do
+          manager_teammate.reload
+          
+          # Drafts: should NOT see
+          [draft_observer_only, draft_observed_only, draft_managers_only, 
+           draft_observed_and_managers, draft_public_to_company, draft_public_to_world].each do |obs|
+            policy = ObservationPolicy.new(pundit_user_manager, obs)
+            expect(policy.show?).to be(false), "Manager should NOT see draft #{obs.privacy_level}"
+          end
+
+          # Published: should see based on privacy level
+          expect(ObservationPolicy.new(pundit_user_manager, published_observer_only).show?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_manager, published_observed_only).show?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_manager, published_managers_only).show?).to be(true)
+          expect(ObservationPolicy.new(pundit_user_manager, published_observed_and_managers).show?).to be(true)
+          expect(ObservationPolicy.new(pundit_user_manager, published_public_to_company).show?).to be(true)
+          expect(ObservationPolicy.new(pundit_user_manager, published_public_to_world).show?).to be(true)
+        end
+      end
+
+      context 'when viewer is unrelated' do
+        it 'allows access only to published public observations' do
+          # Drafts: should NOT see
+          [draft_observer_only, draft_observed_only, draft_managers_only, 
+           draft_observed_and_managers, draft_public_to_company, draft_public_to_world].each do |obs|
+            policy = ObservationPolicy.new(pundit_user_unrelated, obs)
+            expect(policy.show?).to be(false), "Unrelated should NOT see draft #{obs.privacy_level}"
+          end
+
+          # Published: should see only public
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_observer_only).show?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_observed_only).show?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_managers_only).show?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_observed_and_managers).show?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_public_to_company).show?).to be(true)
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_public_to_world).show?).to be(true)
+        end
+      end
+    end
+
+    describe 'edit? permission' do
+      it 'allows only the observer to edit any observation' do
+        all_observations.each do |obs|
+          expect(ObservationPolicy.new(pundit_user_observer, obs).edit?).to be(true)
+          expect(ObservationPolicy.new(pundit_user_observee, obs).edit?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_manager, obs).edit?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_unrelated, obs).edit?).to be(false)
+        end
+      end
+    end
+
+    describe 'view_permalink? permission' do
+      context 'when viewer is the observer' do
+        it 'allows access only to published public_to_world observations' do
+          # Drafts: should NOT see (even public_to_world drafts)
+          [draft_observer_only, draft_observed_only, draft_managers_only, 
+           draft_observed_and_managers, draft_public_to_company, draft_public_to_world].each do |obs|
+            policy = ObservationPolicy.new(pundit_user_observer, obs)
+            expect(policy.view_permalink?).to be(false), "Observer should NOT see draft permalink #{obs.privacy_level}"
+          end
+
+          # Published: should see only public_to_world
+          expect(ObservationPolicy.new(pundit_user_observer, published_observer_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observer, published_observed_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observer, published_managers_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observer, published_observed_and_managers).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observer, published_public_to_company).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observer, published_public_to_world).view_permalink?).to be(true)
+        end
+      end
+
+      context 'when viewer is one of the observed' do
+        it 'allows access only to published public_to_world observations' do
+          # Drafts: should NOT see
+          [draft_observer_only, draft_observed_only, draft_managers_only, 
+           draft_observed_and_managers, draft_public_to_company, draft_public_to_world].each do |obs|
+            policy = ObservationPolicy.new(pundit_user_observee, obs)
+            expect(policy.view_permalink?).to be(false), "Observee should NOT see draft permalink #{obs.privacy_level}"
+          end
+
+          # Published: should see only public_to_world
+          expect(ObservationPolicy.new(pundit_user_observee, published_observer_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observee, published_observed_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observee, published_managers_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observee, published_observed_and_managers).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observee, published_public_to_company).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_observee, published_public_to_world).view_permalink?).to be(true)
+        end
+      end
+
+      context 'when viewer is the manager of one of the observed' do
+        it 'allows access only to published public_to_world observations' do
+          manager_teammate.reload
+          
+          # Drafts: should NOT see
+          [draft_observer_only, draft_observed_only, draft_managers_only, 
+           draft_observed_and_managers, draft_public_to_company, draft_public_to_world].each do |obs|
+            policy = ObservationPolicy.new(pundit_user_manager, obs)
+            expect(policy.view_permalink?).to be(false), "Manager should NOT see draft permalink #{obs.privacy_level}"
+          end
+
+          # Published: should see only public_to_world
+          expect(ObservationPolicy.new(pundit_user_manager, published_observer_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_manager, published_observed_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_manager, published_managers_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_manager, published_observed_and_managers).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_manager, published_public_to_company).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_manager, published_public_to_world).view_permalink?).to be(true)
+        end
+      end
+
+      context 'when viewer is unrelated' do
+        it 'allows access only to published public_to_world observations' do
+          # Drafts: should NOT see
+          [draft_observer_only, draft_observed_only, draft_managers_only, 
+           draft_observed_and_managers, draft_public_to_company, draft_public_to_world].each do |obs|
+            policy = ObservationPolicy.new(pundit_user_unrelated, obs)
+            expect(policy.view_permalink?).to be(false), "Unrelated should NOT see draft permalink #{obs.privacy_level}"
+          end
+
+          # Published: should see only public_to_world
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_observer_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_observed_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_managers_only).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_observed_and_managers).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_public_to_company).view_permalink?).to be(false)
+          expect(ObservationPolicy.new(pundit_user_unrelated, published_public_to_world).view_permalink?).to be(true)
+        end
       end
     end
   end

@@ -290,7 +290,27 @@ RSpec.describe 'Organizations::Assignments', type: :request do
       it 'allows access and updates assignment' do
         patch organization_assignment_path(organization, assignment), params: update_params
         expect(response).to have_http_status(:redirect)
-        expect(assignment.reload.title).to eq('Updated Assignment')
+        assignment.reload
+        expect(response).to redirect_to(organization_assignment_path(organization, assignment))
+        expect(flash[:notice]).to eq('Assignment was successfully updated.')
+        expect(assignment.title).to eq('Updated Assignment')
+      end
+
+      it 'redirects to edit page with flash alert on validation failure' do
+        invalid_params = {
+          assignment: {
+            title: '', # Invalid: title is required
+            tagline: assignment.tagline,
+            version_type: 'clarifying'
+          }
+        }
+        
+        patch organization_assignment_path(organization, assignment), params: invalid_params
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(edit_organization_assignment_path(organization, assignment))
+        expect(flash[:alert]).to be_present
+        expect(flash[:alert]).to include('Failed to update assignment')
+        expect(assignment.reload.title).not_to eq('')
       end
     end
 
@@ -303,7 +323,27 @@ RSpec.describe 'Organizations::Assignments', type: :request do
       it 'allows access and updates assignment' do
         patch organization_assignment_path(organization, assignment), params: update_params
         expect(response).to have_http_status(:redirect)
-        expect(assignment.reload.title).to eq('Updated Assignment')
+        assignment.reload
+        expect(response).to redirect_to(organization_assignment_path(organization, assignment))
+        expect(flash[:notice]).to eq('Assignment was successfully updated.')
+        expect(assignment.title).to eq('Updated Assignment')
+      end
+
+      it 'redirects to edit page with flash alert on validation failure' do
+        invalid_params = {
+          assignment: {
+            title: '', # Invalid: title is required
+            tagline: assignment.tagline,
+            version_type: 'clarifying'
+          }
+        }
+        
+        patch organization_assignment_path(organization, assignment), params: invalid_params
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(edit_organization_assignment_path(organization, assignment))
+        expect(flash[:alert]).to be_present
+        expect(flash[:alert]).to include('Failed to update assignment')
+        expect(assignment.reload.title).not_to eq('')
       end
     end
   end

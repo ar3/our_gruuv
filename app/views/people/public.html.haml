@@ -37,8 +37,9 @@
                         %span.mx-1 •
                         = observation.observed_at.strftime('%B %d, %Y')
                   .ms-3
-                    = link_to observation.decorate.permalink_path, class: "btn btn-sm btn-outline-primary", title: "View permalink" do
-                      %i.bi.bi-link-45deg
+                    - if policy(observation).view_permalink?
+                      = link_to observation.decorate.permalink_path, class: "btn btn-sm btn-outline-primary", title: "View permalink" do
+                        %i.bi.bi-link-45deg
             - if @public_observations.count > 10
               %p.text-muted.mt-3
                 %small Showing all #{@public_observations.count} public observations

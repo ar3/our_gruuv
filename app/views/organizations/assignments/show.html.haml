@@ -19,14 +19,33 @@
       .card-body
         .row
           .col-md-8
+            - if @assignment.department.present?
+              .mb-3
+                %h6.text-muted Department
+                - hierarchy_path = []
+                - current_org = @assignment.department
+                - while current_org
+                  - hierarchy_path.unshift(current_org)
+                  - current_org = current_org.parent
+                - hierarchy_path.each_with_index do |org, index|
+                  - if org.company?
+                    - if policy(org).show?
+                      = link_to org.name, organization_path(org), class: "text-decoration-none"
+                    - else
+                      %span= org.name
+                  - else
+                    - if policy(org).show?
+                      = link_to org.name, organization_departments_and_team_path(@organization, org), class: "text-decoration-none"
+                    - else
+                      %span= org.name
+                  - unless index == hierarchy_path.length - 1
+                    %span.text-muted.mx-1
+                      %i.bi.bi-chevron-right
+            
             - if @assignment.tagline.present?
               .mb-3
                 %h6.text-muted Tagline
                 %p.mb-0= @assignment.tagline
-            
-            .mb-3
-              %h6.text-muted Company
-              %p.mb-0= link_to @assignment.company_name, organization_path(@organization), class: "text-decoration-none"
             
             - if @assignment.assignment_outcomes.any?
               .mb-3

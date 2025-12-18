@@ -39,8 +39,14 @@
             = names.join(', ')
           - else
             |  • Observed: No one
+      - if params[:debug] == 'true'
+        %p.mb-1
+          %small.text-info
+            %i.bi.bi-bug.me-1
+            %strong Debug:
+            = observation_visibility_reason(observation, current_person, @organization)
       .btn-group.btn-group-sm
-        - if observation.privacy_level == 'public_to_world'
+        - if policy(observation).view_permalink?
           = link_to observation.decorate.permalink_path, class: "btn btn-outline-primary btn-sm", title: "Public permalink" do
             %i.bi.bi-globe
         = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary btn-sm", title: "Show page" do

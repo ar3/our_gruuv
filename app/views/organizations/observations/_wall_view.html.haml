@@ -68,7 +68,7 @@
         
         .card-footer.bg-light
           .btn-group.btn-group-sm.w-100
-            - if observation.privacy_level == 'public_to_world'
+            - if policy(observation).view_permalink?
               = link_to observation.decorate.permalink_path, class: "btn btn-outline-primary", title: "Public permalink" do
                 %i.bi.bi-globe
             = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary", title: "Show page" do

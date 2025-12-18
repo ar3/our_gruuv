@@ -18,7 +18,7 @@
             Creating a child organization under 
             %strong= @department_or_team.parent.display_name
         
-        = form_with model: [@organization, @department_or_team], url: organization_departments_and_teams_path(@organization), local: true do |form|
+        = form_with model: @department_or_team, url: organization_departments_and_teams_path(@organization), local: true, scope: :organization do |form|
           - if @department_or_team.errors.any?
             .alert.alert-danger
               %h5= "#{pluralize(@department_or_team.errors.count, "error")} prohibited this organization from being saved:"

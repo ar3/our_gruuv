@@ -73,10 +73,11 @@
               %p
                 %strong Feelings: 
                 = @observation.decorate.feelings_display_html.html_safe
-            %p
-              %strong Permalink: 
-              = link_to @observation.decorate.permalink_url, @observation.decorate.permalink_url, target: '_blank', class: 'text-decoration-none'
-              %i.bi.bi-box-arrow-up-right.ms-1
+            - if policy(@observation).view_permalink?
+              %p
+                %strong Permalink: 
+                = link_to @observation.decorate.permalink_url, @observation.decorate.permalink_url, target: '_blank', class: 'text-decoration-none'
+                %i.bi.bi-box-arrow-up-right.ms-1
 
     - if @observation.observed_teammates.any?
       .card.mb-4{ role: "region", "aria-labelledby": "observation-observees" }

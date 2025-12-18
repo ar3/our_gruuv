@@ -14,16 +14,14 @@
 
 .row
   .col-md-12
-    .mb-3
-      = form.label :department_id, "Department (Optional)", class: "form-label"
-      - company = @organization.root_company
-      - departments = company ? company.descendants.select { |org| org.type == 'Department' } : []
-      - department_options = [['No Department', '']] + departments.map { |dept| [dept.name, dept.id] }
-      = form.select :department_id, 
-                    department_options,
-                    { selected: @assignment.department_id },
-                    { class: 'form-select' }
-      %small.form-text.text-muted Leave blank for company-level assignment
+    = render 'shared/department_dropdown', 
+      form: form, 
+      organization: @organization, 
+      field_name: :department_id, 
+      label_text: "Department (Optional)", 
+      selected_department_id: @assignment.department_id,
+      include_blank: true,
+      help_text: "Leave blank for company-level assignment"
 
 .row
   .col-md-12

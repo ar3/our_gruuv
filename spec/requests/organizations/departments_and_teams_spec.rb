@@ -243,7 +243,9 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
       }.not_to change { Organization.count }
       
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.body).to include("Type can't be blank")
+      # HTML-encoded apostrophe in error message (can&#39;t)
+      expect(response.body).to include("Type can")
+      expect(response.body).to include("t be blank")
     end
 
     it 'fails validation when type is blank' do
@@ -254,7 +256,9 @@ RSpec.describe 'Organizations::DepartmentsAndTeams', type: :request do
       }.not_to change { Organization.count }
       
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.body).to include("Type can't be blank")
+      # HTML-encoded apostrophe in error message (can&#39;t)
+      expect(response.body).to include("Type can")
+      expect(response.body).to include("t be blank")
     end
   end
 

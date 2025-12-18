@@ -7,6 +7,18 @@ class ObservationVisibilityQuery
   def visible_observations
     return Observation.none unless @person.present? && @company.present?
 
+    # Check if person has an active teammate in the company
+    has_active_teammate = @person.active_teammates.exists?(organization: @company)
+    
+    # If observer doesn't have an active teammate, only return published public_to_world observations
+    unless has_active_teammate
+      return Observation.where(
+        company: @company,
+        deleted_at: nil,
+        privacy_level: 'public_to_world'
+      ).where.not(published_at: nil)
+    end
+
     # Start with observations in the company
     base_scope = Observation.where(company: @company, deleted_at: nil)
 
@@ -108,8 +120,17 @@ class ObservationVisibilityQuery
     
     # Filter results to only include published observations OR drafts where user is observer
     # Draft observations (published_at is nil) should only be visible to their creator, regardless of privacy level
+    # BUT: If observer doesn't have active teammate, they can't see drafts even if they're the observer
     result_scope = base_scope.where(where_clause, *params)
-    result_scope = result_scope.where("published_at IS NOT NULL OR observer_id = ?", @person.id)
+    
+    # Check if person has an active teammate - if not, only show published public_to_world
+    has_active_teammate = @person.active_teammates.exists?(organization: @company)
+    if has_active_teammate
+      result_scope = result_scope.where("published_at IS NOT NULL OR observer_id = ?", @person.id)
+    else
+      # No active teammate: only published public_to_world
+      result_scope = result_scope.where("privacy_level = ? AND published_at IS NOT NULL", 'public_to_world')
+    end
     
     result_scope
   end
@@ -117,7 +138,15 @@ class ObservationVisibilityQuery
   def visible_to?(observation)
     return false unless @person.present? && @company.present?
 
-    # Draft observations are only visible to their creator
+    # Check if person has an active teammate in the observation's company
+    has_active_teammate = @person.active_teammates.exists?(organization: observation.company)
+    
+    # If observer doesn't have an active teammate, only allow published public_to_world observations
+    unless has_active_teammate
+      return observation.published? && observation.privacy_level == 'public_to_world'
+    end
+
+    # Draft observations are only visible to their creator (if they have active teammate)
     return false if observation.draft? && observation.observer != @person
 
     case observation.privacy_level

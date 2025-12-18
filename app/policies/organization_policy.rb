@@ -31,8 +31,12 @@ class OrganizationPolicy < ApplicationPolicy
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?
     
+    # Check type from record (for new records, type should be set from params)
+    record_type = record.type.presence
+    
+    # For new records without a type, check if parent is a company (likely creating department/team)
     # For departments and teams, use the new permission
-    if record.department? || record.team?
+    if record_type == 'Department' || record_type == 'Team' || (record.new_record? && record.parent_id.present? && Organization.find_by(id: record.parent_id)&.company?)
       admin_bypass? || viewing_teammate.can_manage_departments_and_teams?
     else
       # For companies, use employment management permission
@@ -146,14 +150,19 @@ class OrganizationPolicy < ApplicationPolicy
     return false unless teammate_org
     
     # For new records (not persisted), check if parent is in hierarchy
-    if record.new_record? && record.parent_id.present?
-      parent = Organization.find_by(id: record.parent_id)
-      return false unless parent
-      return parent == teammate_org || teammate_org.self_and_descendants.include?(parent)
+    if record.new_record?
+      if record.parent_id.present?
+        parent = Organization.find_by(id: record.parent_id)
+        return false unless parent
+        # Use ID comparison for reliability
+        return parent.id == teammate_org.id || teammate_org.self_and_descendants.map(&:id).include?(parent.id)
+      end
+      # If no parent_id for new record, it's being created at root level - allow
+      return true
     end
     
     # For persisted records, check if record is the teammate's organization or in its hierarchy
-    record == teammate_org || teammate_org.self_and_descendants.include?(record)
+    record.id == teammate_org.id || teammate_org.self_and_descendants.map(&:id).include?(record.id)
   end
 
   class Scope < ApplicationPolicy::Scope

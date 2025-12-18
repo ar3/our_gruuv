@@ -1,0 +1,30 @@
+- company = organization.root_company || organization
+- departments = company ? company.descendants.select { |org| org.type == 'Department' } : []
+- # Exclude specified IDs (for parent selection, exclude self and descendants)
+- exclude_ids = exclude_ids || []
+- departments = departments.reject { |dept| exclude_ids.include?(dept.id) }
+- # Sort departments so that children appear immediately after their parent
+- # display_name includes full hierarchy (e.g., "Company > c > 1"), so string sorting
+- # naturally groups children right after their parent: a, b, c, c > 1, c > 2, d
+- sorted_departments = departments.sort_by { |dept| dept.display_name }
+- # Build options: company first, then departments
+- # Exclude company if it's in exclude_ids
+- company_included = !exclude_ids.include?(company&.id)
+- # Default to company if no selection provided and company is included
+- default_selected_id = selected_department_id || (company_included ? company&.id : nil)
+- department_options = []
+- if company_included
+  - department_options << [company&.name || 'Company', company&.id]
+- department_options += sorted_departments.map { |dept| [dept.display_name, dept.id] }
+- # Add "No Department" option if include_blank is true (for assignments where department is optional)
+- if include_blank
+  - department_options = [['No Department', '']] + department_options
+.mb-3
+  = form.label field_name, label_text, class: "form-label"
+  = form.select field_name, 
+                department_options,
+                { selected: default_selected_id },
+                { class: 'form-select' }
+  - if help_text.present?
+    %small.form-text.text-muted= help_text
+

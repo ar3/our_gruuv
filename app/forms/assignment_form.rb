@@ -39,7 +39,15 @@ class AssignmentForm < Reform::Form
     end
     
     # Save the model
-    model.save
+    if model.save
+      true
+    else
+      # Copy model errors to form errors so they're displayed
+      model.errors.each do |error|
+        errors.add(error.attribute, error.message)
+      end
+      false
+    end
   end
 
   # Helper method to get current person (passed from controller)

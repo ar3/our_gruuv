@@ -136,7 +136,17 @@ class Assignment < ApplicationRecord
   def department_must_belong_to_company
     return unless department && company
     
-    unless department.parent == company
+    # Check if department's root company matches the assignment's company
+    # or if department is in the company's descendants
+    department_root = department.root_company
+    company_descendants = company.self_and_descendants.map(&:id)
+    
+    unless department_root == company || company_descendants.include?(department.id)
+      Rails.logger.error "❌❌ Department validation failed"
+      Rails.logger.error "❌❌ Department ID: #{department.id}, Department name: #{department.name}"
+      Rails.logger.error "❌❌ Department root company: #{department_root&.id} (#{department_root&.name})"
+      Rails.logger.error "❌❌ Assignment company ID: #{company.id}, Company name: #{company.name}"
+      Rails.logger.error "❌❌ Company descendants IDs: #{company_descendants.inspect}"
       errors.add(:department, 'must belong to the same company')
     end
   end
