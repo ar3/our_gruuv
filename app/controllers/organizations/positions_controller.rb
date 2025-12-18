@@ -56,13 +56,24 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def new
-    @position = Position.new
-    if params[:position_type_id]
-      @position.position_type_id = params[:position_type_id]
-      # Pre-populate position levels based on the selected position type
-      position_type = PositionType.find(params[:position_type_id])
-      @position_levels = position_type.position_major_level.position_levels
+    unless params[:position_type_id].present?
+      redirect_to organization_positions_path(@organization), alert: 'Position type is required to create a position.'
+      return
     end
+    
+    @position = Position.new
+    @position.position_type_id = params[:position_type_id]
+    @position_type = PositionType.find(params[:position_type_id])
+    
+    # Ensure the position type belongs to the organization
+    unless @position_type.organization == @organization
+      redirect_to organization_positions_path(@organization), alert: 'Invalid position type for this organization.'
+      return
+    end
+    
+    # Pre-populate position levels based on the selected position type
+    @position_levels = @position_type.position_major_level.position_levels
+    
     @position_decorator = PositionDecorator.new(@position)
     @form = PositionForm.new(@position)
     @form.current_person = current_person
@@ -71,7 +82,24 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def create
+    # Get position_type_id from params or from position_params
+    position_type_id = params[:position_type_id] || position_params[:position_type_id]
+    
+    unless position_type_id.present?
+      redirect_to organization_positions_path(@organization), alert: 'Position type is required to create a position.'
+      return
+    end
+    
     @position = Position.new
+    @position.position_type_id = position_type_id
+    @position_type = PositionType.find(position_type_id)
+    
+    # Ensure the position type belongs to the organization
+    unless @position_type.organization == @organization
+      redirect_to organization_positions_path(@organization), alert: 'Invalid position type for this organization.'
+      return
+    end
+    
     @position_decorator = PositionDecorator.new(@position)
     @form = PositionForm.new(@position)
     @form.current_person = current_person
@@ -83,7 +111,7 @@ class Organizations::PositionsController < ApplicationController
     if @form.validate(position_params) && @form.save
       redirect_to organization_position_path(@organization, @position), notice: 'Position was successfully created.'
     else
-      set_related_data
+      @position_levels = @position_type.position_major_level.position_levels
       render :new, status: :unprocessable_entity
     end
   end
@@ -120,7 +148,7 @@ class Organizations::PositionsController < ApplicationController
     if params[:position_type_id].present?
       position_type = PositionType.find(params[:position_type_id])
       @position_levels = position_type.position_major_level.position_levels
-      render json: @position_levels.map { |level| { id: level.id, level: level.level } }
+      render json: @position_levels.map { |level| { id: level.id, level: level.level, level_name: level.level_name } }
     else
       render json: []
     end
@@ -172,11 +200,17 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def set_related_data
-    @position_types = PositionType.joins(:organization).where(organizations: { id: @organization.id })
+    @position_types = PositionType.joins(:organization, :position_major_level)
+                                  .where(organizations: { id: @organization.id })
+                                  .order('position_major_levels.major_level, position_types.external_title')
     
-    # Set position levels based on current position's type, or empty if no position
+    # Set position levels based on current position's type, or from position_type_id param
     if @position&.position_type
       @position_levels = @position.position_type.position_major_level.position_levels
+      @position_type = @position.position_type
+    elsif params[:position_type_id].present?
+      @position_type = PositionType.find_by(id: params[:position_type_id], organization: @organization)
+      @position_levels = @position_type&.position_major_level&.position_levels || []
     else
       @position_levels = []
     end
@@ -185,6 +219,6 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def position_params
-    params.require(:position).permit(:position_type_id, :position_level_id, :external_title, :position_summary, :eligibility_requirements_summary, :version_type)
+    params.require(:position).permit(:position_level_id, :external_title, :position_summary, :eligibility_requirements_summary, :version_type)
   end
 end

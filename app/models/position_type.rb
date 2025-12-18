@@ -24,6 +24,10 @@ class PositionType < ApplicationRecord
     external_title
   end
 
+  def display_name_with_major_level
+    "#{position_major_level.major_level} #{external_title}"
+  end
+
   # MAAP Maturity methods
   def maap_maturity_phase
     PositionTypeMaturityService.calculate_phase(self)

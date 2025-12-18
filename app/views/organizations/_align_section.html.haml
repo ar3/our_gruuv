@@ -27,9 +27,6 @@
           = link_to organization_positions_path(organization), class: "btn btn-outline-primary" do
             %i.bi.bi-list.me-2
             View All Positions
-          = link_to new_organization_position_path(organization), class: "btn btn-outline-primary" do
-            %i.bi.bi-plus-circle.me-2
-            Add New Position
           
           - if current_person&.active_employment_tenure_in?(organization) || policy(organization).manage_maap?
             = link_to organization_seats_path(organization), class: "btn btn-outline-primary" do

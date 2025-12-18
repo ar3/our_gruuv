@@ -6,21 +6,18 @@
         %li= message
 
 .row
-  .col-md-12
-    = render 'shared/organization_dropdown', form: form, selected_organization: @position.position_type&.organization, current_organization: @organization
-
-.row
   .col-md-6
     .mb-3
       = form.label :position_type_id, "Position Type", class: "form-label"
-      .d-flex
-        = form.select :position_type_id, 
-          options_from_collection_for_select(@position_types, :id, :external_title, @position.position_type_id), 
-          { prompt: 'Select a position type' }, 
-          { class: "form-select", required: true, id: "position_type_select" }
-        = link_to new_position_type_path, class: "btn btn-outline-secondary ms-2", target: "_blank" do
-          %i.bi.bi-plus
-      %small.form-text.text-muted Choose the type of position or create a new one
+      - position_type = @position_type || @position.position_type
+      - if position_type
+        = form.hidden_field :position_type_id, value: position_type.id
+        %input.form-control{type: "text", value: position_type.display_name_with_major_level, readonly: true, disabled: true}
+        %small.form-text.text-muted Position type cannot be changed
+      - else
+        = form.hidden_field :position_type_id, value: (@position.position_type_id || params[:position_type_id])
+        %input.form-control{type: "text", value: "Unknown", readonly: true, disabled: true}
+        %small.form-text.text-muted Position type is required
   
   .col-md-6
     .mb-3
@@ -33,11 +30,18 @@
 
 .row
   .col-md-12
+    - position_type = @position_type || @position.position_type
+    - if position_type&.position_summary.present?
+      .mb-3
+        .markdown-content--bordered
+          = simple_format(position_type.position_summary)
+        %small.form-text.text-muted.mt-2 This is the base summary from the position type. Your position-specific summary below will be appended to this.
+    
     .mb-3
       = form.label :position_summary, "Position Summary", class: "form-label"
       = form.text_area :position_summary, class: "form-control", rows: 4,
         placeholder: "Optional description of this position's responsibilities and expectations..."
-      %small.form-text.text-muted A brief description of what this position entails
+      %small.form-text.text-muted A brief description of what this position entails. This will be appended to the position type summary above.
 
 - level_1_template = "• Living Values. Above the bar on all Values for 2+ quarters in the last 4 quarters \n\n• Meeting Required Assignments: Has met expectations of 80% of Required Assignments for 2 quarters in a row\n\n• Demonstrated Abilities: \n\nManager says, \"I want to entrust this person with more responsibility, because they have demonstrated the Abilities needed for the Assignments they are taking on\"\n\n• Achievement\n\nWTWT. If your team is meeting expectations for 2+ quarters in a row that directly contributes to every member of that team "
 - level_2_template = "• Living Values. Above the bar on all Values for 2+ quarters in a row\n\n• Meeting Required Assignments: Has met expectations of 100% of Required Assignments for 2 quarters in a row\n\n• Demonstrated Abilities: \n\nManager says, \"I want to entrust this person with more responsibility, because they have demonstrated the Abilities needed for the Assignments they are taking on, and are above the expected milestone for 33% of the Abilities.\" \n\n• Achievement\n\nWTWT. If your team is exceeding expectations for 2+ quarters in a row that directly contributes to every member of that team "
@@ -141,30 +145,6 @@
 
 :javascript
   document.addEventListener('DOMContentLoaded', function() {
-    const positionTypeSelect = document.getElementById('position_type_select');
-    const positionLevelSelect = document.getElementById('position_level_select');
-    
-    if (positionTypeSelect && positionLevelSelect) {
-      positionTypeSelect.addEventListener('change', function() {
-        const positionTypeId = this.value;
-        if (positionTypeId) {
-          fetch(`/organizations/#{@organization.id}/positions/position_levels?position_type_id=${positionTypeId}`)
-            .then(response => response.json())
-            .then(data => {
-              positionLevelSelect.innerHTML = '<option value="">Select a position level</option>';
-              data.forEach(level => {
-                const option = document.createElement('option');
-                option.value = level.id;
-                option.textContent = level.level_name;
-                positionLevelSelect.appendChild(option);
-              });
-            });
-        } else {
-          positionLevelSelect.innerHTML = '<option value="">Select a position level</option>';
-        }
-      });
-    }
-    
     const useTemplateBtn = document.getElementById('use_template_btn');
     const eligibilityTextarea = document.getElementById('eligibility_requirements_summary_textarea');
     

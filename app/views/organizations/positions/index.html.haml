@@ -8,14 +8,16 @@
     %h1.mb-0 
       %i.bi.bi-briefcase.me-2
       Positions
-      = link_to new_organization_position_path(@organization), class: "btn btn-primary" do
-        %i.bi.bi-plus
 
 - content_for :header_action do
-  - customize_params = params.except(:controller, :action, :page).permit!.to_h
-  = link_to customize_view_organization_positions_path(@organization, customize_params), class: "btn btn-outline-secondary" do
-    %i.bi.bi-sliders.me-2
-    Customize View
+  .d-flex.gap-2
+    = link_to new_position_type_path, class: "btn btn-primary" do
+      %i.bi.bi-plus.me-2
+      New Position Type
+    - customize_params = params.except(:controller, :action, :page).permit!.to_h
+    = link_to customize_view_organization_positions_path(@organization, customize_params), class: "btn btn-outline-secondary" do
+      %i.bi.bi-sliders.me-2
+      Customize View
 .row.justify-content-center
   .col-lg-12
     - if @position_types.any?
@@ -30,8 +32,11 @@
                   %i.bi.bi-chevron-right.me-2
                 = position_type.external_title
               %span.badge.bg-secondary.ms-2= "#{position_type.positions.count} position#{'s' if position_type.positions.count != 1}"
-            .text-muted
-              %small= position_type.position_major_level.set_name
+            .d-flex.align-items-center.gap-2
+              = link_to position_type_path(position_type), class: "btn btn-sm btn-outline-secondary", title: "View Position Type" do
+                %i.bi.bi-eye
+              .text-muted
+                %small= position_type.position_major_level.set_name
           
           .collapse{"id" => "positionType#{position_type.id}"}
             .card-body.p-0
@@ -92,5 +97,4 @@
           No Position Types Created
         %p.mb-2 
           Create your first position type to define roles and responsibilities for your team.
-        = link_to "Create First Position", new_organization_position_path(@organization), class: "btn btn-primary btn-sm"
 

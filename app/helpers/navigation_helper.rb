@@ -98,9 +98,9 @@ module NavigationHelper
             coming_soon: false
           },
           {
-            label: 'Position Types',
-            icon: 'bi-tag',
-            path: position_types_path,
+            label: 'Positions',
+            icon: 'bi-briefcase-fill',
+            path: organization_positions_path(current_organization),
             policy_check: -> { current_organization.present? && policy(current_organization).show? },
             coming_soon: false
           },

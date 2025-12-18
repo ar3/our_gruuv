@@ -1,6 +1,7 @@
 class PositionTypesController < ApplicationController
   before_action :set_position_type, only: [:show, :edit, :update, :destroy, :clone_positions]
   before_action :set_organization
+  after_action :verify_authorized, except: [:index]
 
   def index
     @position_types = PositionType.where(organization: @organization).ordered
@@ -11,18 +12,22 @@ class PositionTypesController < ApplicationController
   end
 
   def show
+    authorize @position_type
   end
 
   def new
     @position_type = PositionType.new(organization: @organization)
+    authorize @position_type
   end
 
   def edit
+    authorize @position_type
   end
 
   def create
     @position_type = PositionType.new(position_type_params)
     @position_type.organization = @organization
+    authorize @position_type
 
     if @position_type.save
       redirect_to @position_type, notice: 'Position type was successfully created.'
@@ -32,6 +37,7 @@ class PositionTypesController < ApplicationController
   end
 
   def update
+    authorize @position_type
     if @position_type.update(position_type_params)
       redirect_to @position_type, notice: 'Position type was successfully updated.'
     else
@@ -40,11 +46,13 @@ class PositionTypesController < ApplicationController
   end
 
   def destroy
+    authorize @position_type
     @position_type.destroy
     redirect_to position_types_path, notice: 'Position type was successfully deleted.'
   end
 
   def clone_positions
+    authorize @position_type
     Rails.logger.info "Clone positions called with params: #{params.inspect}"
     
     source_position = Position.find(params[:source_position_id])
