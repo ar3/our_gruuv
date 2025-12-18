@@ -8,6 +8,29 @@ module Organizations::PublicMaapHelper
     build_hierarchy_recursive(company, 0)
   end
   
+  # Build full hierarchy path for an organization
+  # Returns array of organizations from root company down to the organization
+  def department_hierarchy_path(department)
+    return [] unless department
+    
+    path = []
+    current = department
+    
+    # Build path from department up to root
+    while current
+      path.unshift(current)
+      current = current.parent
+    end
+    
+    path
+  end
+  
+  # Format hierarchy path as a string with > separators
+  def department_hierarchy_display(department)
+    path = department_hierarchy_path(department)
+    path.map(&:name).join(' > ')
+  end
+  
   private
   
   def build_hierarchy_recursive(org, level)

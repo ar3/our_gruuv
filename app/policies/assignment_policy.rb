@@ -17,41 +17,54 @@ class AssignmentPolicy < ApplicationPolicy
     return true if admin_bypass?
     return false unless viewing_teammate
     
-    # Only admins or managers can create assignments
-    viewing_teammate.person.admin? || can_manage_assignments?
+    # Only admins or users with MAAP permissions can create assignments
+    viewing_teammate.person.admin? || user_has_maap_permission?
   end
 
   def update?
     return true if admin_bypass?
     return false unless viewing_teammate
     
-    # Only admins or managers can update assignments
-    viewing_teammate.person.admin? || can_manage_assignments?
+    # Only admins or users with MAAP permissions can update assignments
+    viewing_teammate.person.admin? || user_has_maap_permission_for_record?
   end
 
   def destroy?
     return true if admin_bypass?
     return false unless viewing_teammate
     
-    # Only admins can destroy assignments
-    viewing_teammate.person.admin?
+    # Only admins or users with MAAP permissions can destroy assignments
+    viewing_teammate.person.admin? || user_has_maap_permission_for_record?
   end
 
   private
 
-  def can_manage_assignments?
+  def user_has_maap_permission?
     return false unless viewing_teammate
-    return false unless actual_organization
     
-    # Get the organization from the record (for new records, this is set by the controller)
-    record_org = record.company || actual_organization
+    # For new records, get organization from record.company or actual_organization
+    # For existing records, use record.company
+    organization = record.company || actual_organization
+    return false unless organization
+    
+    # Check if organization is in user's hierarchy
     user_org = viewing_teammate.organization
+    return false unless user_org.self_and_descendants.include?(organization)
     
-    # Check if record's organization is in user's organization hierarchy
-    return false unless user_org.self_and_descendants.include?(record_org)
+    viewing_teammate.can_manage_maap?
+  end
+
+  def user_has_maap_permission_for_record?
+    return false unless viewing_teammate
+    return false unless record&.company
+    viewing_teammate_org = viewing_teammate.organization
+    return false unless viewing_teammate_org
     
-    # Check if user can manage employment in the organization
-    Teammate.can_manage_employment_in_hierarchy?(viewing_teammate.person, record_org)
+    # Check if record's organization is in viewing_teammate's organization hierarchy
+    orgs = viewing_teammate_org.self_and_descendants
+    return false unless orgs.include?(record.company)
+    
+    viewing_teammate.can_manage_maap?
   end
 
   class Scope < ApplicationPolicy::Scope

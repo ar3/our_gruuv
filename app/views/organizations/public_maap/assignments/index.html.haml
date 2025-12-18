@@ -13,24 +13,30 @@
 
 - if @assignments.any?
   - company = @organization.root_company || @organization
-  - hierarchy = build_organization_hierarchy(company)
+  - departments_with_assignments = @assignments_by_department.keys.compact.sort_by { |dept| department_hierarchy_display(dept) }
+  - assignments_without_department = @assignments_by_department[nil] || []
   
   .card.mb-4
     .card-header
-      %h5.mb-0 Assignments by Organization
+      %h5.mb-0 Assignments by Department
     .card-body
-      / Show company-level assignments
-      - company_assignments = @assignments_by_org[company] || []
-      - if company_assignments.any?
-        %h6.mb-3= company.name
+      - if departments_with_assignments.any?
+        - departments_with_assignments.each do |department|
+          - department_assignments = @assignments_by_department[department] || []
+          - if department_assignments.any?
+            %h6.mb-3
+              = link_to department_hierarchy_display(department), organization_public_maap_department_path(@organization, department), class: "text-decoration-none"
+            %ul.list-unstyled.ms-3
+              - department_assignments.each do |assignment|
+                %li.mb-2
+                  = link_to assignment.title, organization_public_maap_assignment_path(@organization, assignment), class: "text-decoration-none"
+      
+      - if assignments_without_department.any?
+        %h6.mb-3 No Department
         %ul.list-unstyled.ms-3
-          - company_assignments.each do |assignment|
+          - assignments_without_department.each do |assignment|
             %li.mb-2
               = link_to assignment.title, organization_public_maap_assignment_path(@organization, assignment), class: "text-decoration-none"
-      
-      / Show department-level assignments with indentation
-      - hierarchy.each do |item|
-        = render 'organization_hierarchy_item', item: item, assignments_by_org: @assignments_by_org, organization: @organization
 - else
   .alert.alert-info
     %h6.mb-2

@@ -1,0 +1,83 @@
+.mb-3
+  = link_to organization_public_maap_assignments_path(@organization), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Assignments
+
+%h1.mb-4= department_hierarchy_display(@department)
+
+- if current_person
+  .mb-3
+    = link_to organization_departments_and_team_path(@organization, @department), class: "text-muted text-decoration-none" do
+      %i.bi.bi-lock.me-2
+      View Authenticated Version
+
+.row
+  .col-md-8
+    - has_positions = @positions_direct.any? || @positions_indirect.any?
+    - if has_positions
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Positions
+        .card-body
+          - if @positions_direct.any?
+            %ul.list-unstyled.mb-0
+              - @positions_direct.each do |position|
+                %li.mb-2
+                  = link_to position.display_name, organization_public_maap_position_path(@organization, position), class: "text-decoration-none"
+          
+          - if @positions_indirect.any?
+            - if @positions_direct.any?
+              %hr.my-3
+            %ul.list-unstyled.mb-0
+              - @positions_indirect.each do |position|
+                %li.mb-2
+                  = link_to position.display_name, organization_public_maap_position_path(@organization, position), class: "text-decoration-none"
+    
+    - has_assignments = @assignments_direct.any? || @assignments_indirect.any?
+    - if has_assignments
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Assignments
+        .card-body
+          - if @assignments_direct.any?
+            %ul.list-unstyled.mb-0
+              - @assignments_direct.each do |assignment|
+                %li.mb-2
+                  = link_to assignment.title, organization_public_maap_assignment_path(@organization, assignment), class: "text-decoration-none"
+          
+          - if @assignments_indirect.any?
+            - if @assignments_direct.any?
+              %hr.my-3
+            %ul.list-unstyled.mb-0
+              - @assignments_indirect.each do |assignment|
+                %li.mb-2
+                  = link_to assignment.title, organization_public_maap_assignment_path(@organization, assignment), class: "text-decoration-none"
+    
+    - has_abilities = @abilities_direct.any? || @abilities_indirect.any?
+    - if has_abilities
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Abilities
+        .card-body
+          - if @abilities_direct.any?
+            %ul.list-unstyled.mb-0
+              - @abilities_direct.each do |ability|
+                %li.mb-2
+                  = link_to ability.name, organization_public_maap_ability_path(@organization, ability), class: "text-decoration-none"
+          
+          - if @abilities_indirect.any?
+            - if @abilities_direct.any?
+              %hr.my-3
+            %ul.list-unstyled.mb-0
+              - @abilities_indirect.each do |ability|
+                %li.mb-2
+                  = link_to ability.name, organization_public_maap_ability_path(@organization, ability), class: "text-decoration-none"
+    
+    - unless has_positions || has_assignments || has_abilities
+      .alert.alert-info
+        %h6.mb-2
+          %i.bi.bi-info-circle.me-2
+          No Resources Available
+        %p.mb-0
+          There are currently no positions, assignments, or abilities available for this department.
+

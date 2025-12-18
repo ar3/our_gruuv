@@ -9,8 +9,8 @@ class Organizations::PublicMaap::AssignmentsController < Organizations::PublicMa
       .includes(:company, :department)
       .ordered
     
-    # Group by organization for display
-    @assignments_by_org = @assignments.group_by(&:company)
+    # Group by department for display
+    @assignments_by_department = @assignments.group_by(&:department)
   end
   
   def show

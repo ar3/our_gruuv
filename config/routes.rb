@@ -460,6 +460,7 @@ end
       resources :assignments, only: [:index, :show], controller: 'assignments'
       resources :abilities, only: [:index, :show], controller: 'abilities'
       resources :aspirations, only: [:index, :show], controller: 'aspirations'
+      resources :departments, only: [:show], controller: 'departments'
     end
     
     # Kudos (public observation links)
