@@ -70,3 +70,4 @@ RSpec.describe PromptGoalPolicy, type: :policy do
   end
 end
 
+

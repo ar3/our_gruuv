@@ -23,3 +23,4 @@ class PromptGoalPolicy < ApplicationPolicy
   end
 end
 
+

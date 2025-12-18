@@ -28,3 +28,4 @@ class PromptQuestionPolicy < ApplicationPolicy
   end
 end
 
+

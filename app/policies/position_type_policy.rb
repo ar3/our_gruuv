@@ -61,3 +61,4 @@ class PositionTypePolicy < ApplicationPolicy
   end
 end
 
+

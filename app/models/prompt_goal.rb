@@ -9,3 +9,4 @@ class PromptGoal < ApplicationRecord
   validates :goal_id, uniqueness: { scope: :prompt_id }
 end
 
+
