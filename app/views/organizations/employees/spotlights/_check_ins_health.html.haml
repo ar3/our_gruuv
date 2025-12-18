@@ -22,7 +22,7 @@
           
           .col-md-4
             / Action alerts or status messages
-            - if @spotlight_stats[:needing_attention] > 0
+            - if @spotlight_stats[:needing_attention].present? && @spotlight_stats[:needing_attention] > 0
               .alert.alert-warning.small
                 %i.bi.bi-exclamation-triangle.me-2
                 %strong #{@spotlight_stats[:needing_attention]} employee#{'s' if @spotlight_stats[:needing_attention] != 1} need#{'s' if @spotlight_stats[:needing_attention] == 1} attention

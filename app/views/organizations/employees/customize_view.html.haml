@@ -136,22 +136,22 @@
           - can_manage_employment = policy(@organization).manage_employment?
           - if can_manage_employment
             .form-check
-              = radio_button_tag 'display', 'check_in_status', @current_view == 'check_in_status', class: 'form-check-input', id: 'view_check_in_status'
+              = radio_button_tag 'view', 'check_in_status', @current_view == 'check_in_status', class: 'form-check-input', id: 'view_check_in_status'
               = label_tag 'view_check_in_status', 'Check-in Status Style 1', class: 'form-check-label'
           - else
             .form-check
               .d-flex.align-items-center.gap-2
-                = radio_button_tag 'display', 'check_in_status', @current_view == 'check_in_status', class: 'form-check-input', id: 'view_check_in_status', disabled: true
+                = radio_button_tag 'view', 'check_in_status', @current_view == 'check_in_status', class: 'form-check-input', id: 'view_check_in_status', disabled: true
                 = label_tag 'view_check_in_status', 'Check-in Status Style 1', class: 'form-check-label', style: 'opacity: 0.6; cursor: not-allowed;'
                 %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need employment management permission to use this option"}, style: "font-size: 1rem;"}
           - if can_manage_employment
             .form-check
-              = radio_button_tag 'display', 'check_ins_health', @current_view == 'check_ins_health', class: 'form-check-input', id: 'view_check_ins_health'
+              = radio_button_tag 'view', 'check_ins_health', @current_view == 'check_ins_health', class: 'form-check-input', id: 'view_check_ins_health'
               = label_tag 'view_check_ins_health', 'Check-ins Health Style 2', class: 'form-check-label'
           - else
             .form-check
               .d-flex.align-items-center.gap-2
-                = radio_button_tag 'display', 'check_ins_health', @current_view == 'check_ins_health', class: 'form-check-input', id: 'view_check_ins_health', disabled: true
+                = radio_button_tag 'view', 'check_ins_health', @current_view == 'check_ins_health', class: 'form-check-input', id: 'view_check_ins_health', disabled: true
                 = label_tag 'view_check_ins_health', 'Check-ins Health Style 2', class: 'form-check-label', style: 'opacity: 0.6; cursor: not-allowed;'
                 %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need employment management permission to use this option"}, style: "font-size: 1rem;"}
   .row

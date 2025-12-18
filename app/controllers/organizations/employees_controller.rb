@@ -172,8 +172,32 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       end
       
       # Calculate spotlight statistics from filtered_teammates (honors filters, not pagination)
-      # Pass both filtered array and original relation for proper join calculations
-      @spotlight_stats = calculate_spotlight_stats(@filtered_teammates, @current_spotlight, filtered_teammates_for_joins)
+      # Handle check_ins_health spotlight separately since it requires health data calculation
+      if @current_spotlight == 'check_ins_health'
+        # Filter to active employees only for check-ins health spotlight
+        active_teammates = status_filtered_teammates.is_a?(Array) ? 
+          status_filtered_teammates.select { |t| t.first_employed_at.present? && t.last_terminated_at.nil? } :
+          status_filtered_teammates.where.not(first_employed_at: nil).where(last_terminated_at: nil)
+        
+        # Convert to array if needed for consistent processing
+        active_teammates_array = active_teammates.is_a?(Array) ? active_teammates : active_teammates.to_a
+        
+        # Calculate health data for all active employees
+        all_employee_health_data = active_teammates_array.map do |teammate|
+          health_data = CheckInHealthService.call(teammate, @organization)
+          {
+            teammate: teammate,
+            person: teammate.person,
+            health: health_data
+          }
+        end
+        
+        # Calculate spotlight statistics from all data
+        @spotlight_stats = calculate_check_ins_health_stats(all_employee_health_data)
+      else
+        # Pass both filtered array and original relation for proper join calculations
+        @spotlight_stats = calculate_spotlight_stats(@filtered_teammates, @current_spotlight, filtered_teammates_for_joins)
+      end
     end
     
     # Store current filter/sort state for view

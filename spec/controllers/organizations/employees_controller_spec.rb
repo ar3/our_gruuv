@@ -96,6 +96,57 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       expect(assigns(:filtered_and_paginated_teammates)).to be_empty
       expect(assigns(:spotlight_stats)[:assigned_employees]).to eq(0)
     end
+
+    describe 'check_ins_health spotlight' do
+      context 'when spotlight is check_ins_health but view is not check_ins_health' do
+        it 'calculates check_ins_health stats correctly' do
+          get :index, params: { organization_id: company.id, spotlight: 'check_ins_health', view: 'list' }
+          
+          expect(response).to have_http_status(:success)
+          expect(assigns(:spotlight_stats)).to be_present
+          expect(assigns(:spotlight_stats)).to have_key(:total_employees)
+          expect(assigns(:spotlight_stats)).to have_key(:all_healthy)
+          expect(assigns(:spotlight_stats)).to have_key(:needing_attention)
+          expect(assigns(:spotlight_stats)).to have_key(:completion_rate)
+        end
+
+        it 'sets needing_attention to a number, not nil' do
+          get :index, params: { organization_id: company.id, spotlight: 'check_ins_health', view: 'list' }
+          
+          expect(assigns(:spotlight_stats)[:needing_attention]).not_to be_nil
+          expect(assigns(:spotlight_stats)[:needing_attention]).to be_a(Integer)
+        end
+
+        it 'renders without error when needing_attention is 0' do
+          # Create a finalized check-in within 90 days to make employee healthy
+          finalized_check_in = create(:position_check_in, 
+            :closed,
+            teammate: employee1_teammate,
+            employment_tenure: employment_tenure1,
+            official_check_in_completed_at: 30.days.ago
+          )
+          
+          get :index, params: { organization_id: company.id, spotlight: 'check_ins_health', view: 'list' }
+          
+          expect(response).to have_http_status(:success)
+          expect(assigns(:spotlight_stats)[:needing_attention]).to be >= 0
+        end
+      end
+
+      context 'when spotlight is check_ins_health and view is check_ins_health' do
+        it 'calculates check_ins_health stats correctly' do
+          get :index, params: { organization_id: company.id, spotlight: 'check_ins_health', view: 'check_ins_health' }
+          
+          expect(response).to have_http_status(:success)
+          expect(assigns(:spotlight_stats)).to be_present
+          expect(assigns(:spotlight_stats)).to have_key(:total_employees)
+          expect(assigns(:spotlight_stats)).to have_key(:all_healthy)
+          expect(assigns(:spotlight_stats)).to have_key(:needing_attention)
+          expect(assigns(:spotlight_stats)).to have_key(:completion_rate)
+          expect(assigns(:spotlight_stats)[:needing_attention]).not_to be_nil
+        end
+      end
+    end
   end
 
   describe 'GET #audit' do
