@@ -190,7 +190,7 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def manage_assignments
-    authorize @position, :update?
+    authorize @position, :manage_assignments?
     
     # Get position's company and all descendants
     company = @position.position_type.organization.root_company
@@ -231,7 +231,7 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def update_assignments
-    authorize @position, :update?
+    authorize @position, :manage_assignments?
     
     position_assignments_params = params[:position_assignments] || {}
     assignment_ids_to_keep = []

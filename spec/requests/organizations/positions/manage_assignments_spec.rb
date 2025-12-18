@@ -4,7 +4,7 @@ RSpec.describe 'Position Assignments Management', type: :request do
   let(:company) { create(:organization, :company) }
   let(:department) { create(:organization, :department, parent: company) }
   let(:person) { create(:person) }
-  let!(:teammate) { create(:teammate, person: person, organization: company, can_manage_employment: true) }
+  let!(:teammate) { create(:teammate, person: person, organization: company, can_manage_maap: true) }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
   let(:position_level) { create(:position_level, position_major_level: position_major_level) }
@@ -30,13 +30,21 @@ RSpec.describe 'Position Assignments Management', type: :request do
       expect(assigns(:assignments_by_org)).to be_a(Hash)
     end
 
-    it 'requires update permission' do
-      teammate.update(can_manage_employment: false)
+    it 'requires MAAP permission' do
+      teammate.update(can_manage_maap: false)
       
       get manage_assignments_organization_position_path(company, position)
       
       expect(response).to have_http_status(:redirect)
       expect(response).to redirect_to(root_path)
+    end
+
+    it 'allows access with MAAP permission even without employment management permission' do
+      teammate.update(can_manage_maap: true, can_manage_employment: false)
+      
+      get manage_assignments_organization_position_path(company, position)
+      
+      expect(response).to have_http_status(:success)
     end
 
     it 'pre-populates existing position assignments' do
@@ -195,8 +203,8 @@ RSpec.describe 'Position Assignments Management', type: :request do
       expect(flash[:alert]).to include('minimum energy')
     end
 
-    it 'requires update permission' do
-      teammate.update(can_manage_employment: false)
+    it 'requires MAAP permission' do
+      teammate.update(can_manage_maap: false)
       
       patch update_assignments_organization_position_path(company, position), params: {
         position_assignments: {}
@@ -204,6 +212,20 @@ RSpec.describe 'Position Assignments Management', type: :request do
       
       expect(response).to have_http_status(:redirect)
       expect(response).to redirect_to(root_path)
+    end
+
+    it 'allows access with MAAP permission even without employment management permission' do
+      teammate.update(can_manage_maap: true, can_manage_employment: false)
+      
+      patch update_assignments_organization_position_path(company, position), params: {
+        position_assignments: {
+          company_assignment.id => {
+            max_estimated_energy: '50'
+          }
+        }
+      }
+      
+      expect(response).to redirect_to(manage_assignments_organization_position_path(company, position))
     end
 
     it 'handles nil values for optional fields' do
@@ -224,6 +246,46 @@ RSpec.describe 'Position Assignments Management', type: :request do
       expect(pa.min_estimated_energy).to be_nil
       expect(pa.max_estimated_energy).to eq(50)
       expect(pa.anticipated_energy_percentage).to be_nil
+    end
+  end
+
+  describe 'hierarchy permission checking' do
+    let(:team) { create(:organization, :team, parent: department) }
+    let(:person_with_multiple_teammates) { create(:person) }
+    let!(:company_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: company, can_manage_maap: true, can_manage_employment: false) }
+    let!(:department_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: department, can_manage_maap: false, can_manage_employment: false) }
+    let!(:team_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: team, can_manage_maap: false, can_manage_employment: false) }
+
+    before do
+      sign_in_as_teammate_for_request(person_with_multiple_teammates, company)
+    end
+
+    it 'allows access when only company teammate has MAAP permission' do
+      get manage_assignments_organization_position_path(company, position)
+      
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'allows updating assignments when only company teammate has MAAP permission' do
+      patch update_assignments_organization_position_path(company, position), params: {
+        position_assignments: {
+          company_assignment.id => {
+            max_estimated_energy: '50'
+          }
+        }
+      }
+      
+      expect(response).to redirect_to(manage_assignments_organization_position_path(company, position))
+      expect(flash[:notice]).to be_present
+    end
+
+    it 'denies access when company teammate does not have MAAP permission' do
+      company_teammate.update(can_manage_maap: false)
+      
+      get manage_assignments_organization_position_path(company, position)
+      
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(root_path)
     end
   end
 end

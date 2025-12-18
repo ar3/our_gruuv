@@ -34,6 +34,14 @@ class PositionPolicy < ApplicationPolicy
     viewing_teammate.person.admin?
   end
 
+  def manage_assignments?
+    return true if admin_bypass?
+    return false unless viewing_teammate
+    
+    # Only admins or users with MAAP permissions can manage assignments
+    viewing_teammate.person.admin? || can_manage_assignments?
+  end
+
   private
 
   def can_manage_positions?
@@ -44,6 +52,16 @@ class PositionPolicy < ApplicationPolicy
     
     # Check if user can manage employment in the organization
     Teammate.can_manage_employment_in_hierarchy?(viewing_teammate.person, actual_organization)
+  end
+
+  def can_manage_assignments?
+    return false unless viewing_teammate
+    return false unless actual_organization
+    return false unless record.position_type.organization == actual_organization ||
+                        actual_organization.self_and_descendants.include?(record.position_type.organization)
+    
+    # Check if user can manage MAAP in the organization
+    Teammate.can_manage_maap_in_hierarchy?(viewing_teammate.person, actual_organization)
   end
 
   class Scope < ApplicationPolicy::Scope

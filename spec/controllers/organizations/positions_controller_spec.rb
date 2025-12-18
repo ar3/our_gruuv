@@ -79,7 +79,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
     before do
       # Update existing teammate to have permission
       teammate = Teammate.find_by(person: person, organization: organization)
-      teammate.update(can_manage_employment: true)
+      teammate.update(can_manage_maap: true)
     end
 
     it 'loads assignments grouped by hierarchy' do
@@ -93,14 +93,23 @@ RSpec.describe Organizations::PositionsController, type: :controller do
       expect(response).to render_template(layout: 'overlay')
     end
 
-    it 'requires update permission' do
+    it 'requires MAAP permission' do
       teammate = Teammate.find_by(person: person, organization: organization)
-      teammate.update(can_manage_employment: false)
+      teammate.update(can_manage_maap: false)
       
       get :manage_assignments, params: { organization_id: organization.id, id: position.id }
       
       expect(response).to have_http_status(:redirect)
       expect(response).to redirect_to(root_path)
+    end
+
+    it 'allows access with MAAP permission even without employment management permission' do
+      teammate = Teammate.find_by(person: person, organization: organization)
+      teammate.update(can_manage_maap: true, can_manage_employment: false)
+      
+      get :manage_assignments, params: { organization_id: organization.id, id: position.id }
+      
+      expect(response).to have_http_status(:success)
     end
 
     it 'pre-populates existing position assignments' do
