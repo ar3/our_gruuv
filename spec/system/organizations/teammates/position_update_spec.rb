@@ -108,6 +108,73 @@ RSpec.describe 'Position Update', type: :system, js: true do
     manager_teammate.reload
   end
 
+  describe 'Manager dropdown structure' do
+    let(:non_manager_employee) { create(:person, first_name: 'NonManager', last_name: 'Employee') }
+    let!(:non_manager_employee_teammate) do
+      teammate = CompanyTeammate.create!(person: non_manager_employee, organization: company)
+      teammate.update!(first_employed_at: 3.months.ago)
+      teammate
+    end
+    let!(:non_manager_employee_tenure) do
+      EmploymentTenure.create!(
+        teammate: non_manager_employee_teammate,
+        company: company,
+        position: position,
+        employment_type: 'full_time',
+        started_at: 3.months.ago
+      )
+    end
+
+    before do
+      # Ensure non_manager_employee data is created and revisit the page
+      non_manager_employee_tenure
+      visit organization_teammate_position_path(company, employee_teammate)
+    end
+
+    it 'shows managers in Active Managers optgroup' do
+      expect(page).to have_content('Current Position')
+      
+      # Check that managers appear in the dropdown
+      expect(page).to have_select('employment_tenure_update[manager_id]', with_options: [current_manager.last_first_display_name])
+      expect(page).to have_select('employment_tenure_update[manager_id]', with_options: [new_manager.last_first_display_name])
+      
+      # Check for optgroup labels (using HTML structure)
+      select_element = page.find('select[name="employment_tenure_update[manager_id]"]')
+      expect(select_element).to have_selector('optgroup[label="Active Managers"]', visible: false)
+    end
+
+    it 'shows non-manager employees in Other Employees optgroup' do
+      expect(page).to have_content('Current Position')
+      
+      # Check that non-manager employees appear in the dropdown
+      expect(page).to have_select('employment_tenure_update[manager_id]', with_options: [non_manager_employee.last_first_display_name])
+      
+      # Check for optgroup labels
+      select_element = page.find('select[name="employment_tenure_update[manager_id]"]')
+      expect(select_element).to have_selector('optgroup[label="Other Employees"]', visible: false)
+    end
+
+    it 'allows selecting a non-manager employee as manager' do
+      expect(page).to have_content('Current Position')
+      
+      select non_manager_employee.last_first_display_name, from: 'employment_tenure_update[manager_id]'
+      click_button 'Update Position'
+      
+      expect(page).to have_content('Position information was successfully updated')
+      expect(current_tenure.reload.ended_at).to be_within(5.seconds).of(Time.current)
+      
+      new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: company).order(:created_at).last
+      expect(new_tenure.manager).to eq(non_manager_employee)
+    end
+
+    it 'excludes the current person being edited from the dropdown' do
+      expect(page).to have_content('Current Position')
+      
+      # The employee_person should not appear in the dropdown (to prevent self-management)
+      expect(page).not_to have_select('employment_tenure_update[manager_id]', with_options: [employee_person.last_first_display_name])
+    end
+  end
+
   describe 'Simple submission' do
     it 'allows manager to update manager field' do
       expect(page).to have_content('Current Position')

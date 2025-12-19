@@ -54,34 +54,10 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       .order(started_at: :desc)
     @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
     
-    # Load form data first (this sets @managers, @positions, @seats)
-    company = organization.root_company || organization
+    # Load form data (this sets @managers, @all_employees, @positions, @seats)
+    load_form_data
     
-    # Load distinct active managers (people who are managers in active employment tenures and are active company teammates)
-    @managers = ActiveManagersQuery.new(company: company, require_active_teammate: true).call
-    
-    # Load positions
-    @positions = company.positions.includes(:position_type, :position_level).ordered
-    
-    # Load seats: only seats NOT associated with active employment tenures, but include current tenure's seat
-    active_seat_ids = EmploymentTenure.active
-                                      .where(company: company)
-                                      .where.not(seat_id: nil)
-                                      .pluck(:seat_id)
-    
-    available_seats = company.seats
-                             .includes(:position_type)
-                             .where.not(id: active_seat_ids)
-                             .where(state: [:open, :filled])
-    
-    # Always include current tenure's seat if it exists
-    if @current_employment&.seat
-      @seats = (available_seats + [@current_employment.seat]).uniq
-    else
-      @seats = available_seats
-    end
-    
-    # Now create and validate the form
+    # Create and validate the form
     @form = EmploymentTenureUpdateForm.new(@current_employment)
     @form.current_person = current_person
     @form.teammate = @teammate
@@ -110,6 +86,25 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     # Load distinct active managers (people who are managers in active employment tenures and are active company teammates)
     @managers = ActiveManagersQuery.new(company: company, require_active_teammate: true).call
     
+    # Load all active employees (for manager selection)
+    org_hierarchy = company.company? ? company.self_and_descendants : [company, company.parent].compact
+    manager_ids = @managers.pluck(:id)
+    
+    # Get all active employees (people with active employment tenures in the organization hierarchy)
+    all_active_employee_ids = EmploymentTenure.active
+                                              .joins(:teammate)
+                                              .where(company: org_hierarchy, teammates: { organization: org_hierarchy })
+                                              .distinct
+                                              .pluck('teammates.person_id')
+    
+    # Exclude managers and the current person being edited (to prevent self-management)
+    person_ids_to_exclude = (manager_ids + [@teammate.person_id]).compact
+    non_manager_employee_ids = all_active_employee_ids - person_ids_to_exclude
+    
+    # Get Person objects for non-manager employees, ordered by last_name, first_name
+    @all_employees = Person.where(id: non_manager_employee_ids)
+                           .order(:last_name, :first_name)
+    
     # Load positions
     @positions = company.positions.includes(:position_type, :position_level).ordered
     
@@ -131,10 +126,12 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @seats = available_seats
     end
     
-    # Initialize form for display
-    @form = EmploymentTenureUpdateForm.new(@current_employment || EmploymentTenure.new)
-    @form.current_person = current_person
-    @form.teammate = @teammate
+    # Initialize form for display (only if not already set in update action)
+    unless @form
+      @form = EmploymentTenureUpdateForm.new(@current_employment || EmploymentTenure.new)
+      @form.current_person = current_person
+      @form.teammate = @teammate
+    end
   end
 
 end

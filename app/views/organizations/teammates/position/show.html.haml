@@ -172,7 +172,7 @@
             
             .row.mt-3
               .col-md-6
-                = render 'shared/forms/manager_field', form: form, managers: @managers, disabled: !can_manage
+                = render 'shared/forms/manager_field', form: form, managers: @managers, all_employees: @all_employees, disabled: !can_manage
               
               .col-md-6
                 = render 'shared/forms/position_field', form: form, positions: @positions, disabled: !can_manage

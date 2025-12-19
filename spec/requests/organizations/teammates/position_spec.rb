@@ -160,6 +160,33 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       # Should be distinct
       expect(managers.uniq.size).to eq(managers.size)
     end
+
+    it 'loads all active employees excluding managers and current person' do
+      # Create a non-manager employee
+      non_manager_person = create(:person, first_name: 'NonManager', last_name: 'Employee')
+      non_manager_teammate = create(:teammate, type: 'CompanyTeammate', person: non_manager_person, organization: organization)
+      create(:employment_tenure, teammate: non_manager_teammate, company: organization, position: position, started_at: 3.months.ago)
+      
+      # Create another manager (already tested above, but needed for this test)
+      manager1 = create(:person, first_name: 'Alice', last_name: 'Zebra')
+      manager1_teammate = create(:teammate, type: 'CompanyTeammate', person: manager1, organization: organization)
+      create(:employment_tenure, teammate: manager1_teammate, company: organization, position: position, started_at: 1.year.ago)
+      other_employee = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
+      create(:employment_tenure, teammate: other_employee, company: organization, position: position, manager: manager1, started_at: 6.months.ago)
+      
+      get organization_teammate_position_path(organization, employee_teammate)
+      
+      all_employees = assigns(:all_employees)
+      expect(all_employees).to be_present
+      # Should include non-manager employees
+      expect(all_employees).to include(non_manager_person)
+      # Should not include managers
+      expect(all_employees).not_to include(manager1)
+      # Should not include the current person being edited
+      expect(all_employees).not_to include(employee_person)
+      # Should be ordered by last_name, first_name
+      expect(all_employees.map(&:last_name)).to eq(all_employees.map(&:last_name).sort)
+    end
   end
 
   describe 'PATCH /organizations/:id/teammates/:id/position' do

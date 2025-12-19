@@ -1,6 +1,17 @@
 .mb-3
   = form.label :manager_id, "Manager (Optional)", class: "form-label"
-  = form.collection_select :manager_id, managers, :id, :last_first_display_name,
-    { prompt: 'Select a manager (optional)', include_blank: 'No Manager', selected: form.object.manager_id },
-    { class: "form-select", disabled: disabled }
+  - managers ||= []
+  - all_employees ||= []
+  - grouped_options = []
+  - if managers.any?
+    - grouped_options << ['Active Managers', managers.map { |m| [m.last_first_display_name, m.id] }]
+  - if all_employees.any?
+    - grouped_options << ['Other Employees', all_employees.map { |e| [e.last_first_display_name, e.id] }]
+  - if grouped_options.any?
+    = form.select :manager_id, grouped_options_for_select(grouped_options, form.object.manager_id),
+      { prompt: 'Select a manager (optional)', include_blank: 'No Manager' },
+      { class: "form-select", disabled: disabled }
+  - else
+    = form.select :manager_id, [], { prompt: 'No employees available', include_blank: 'No Manager' },
+      { class: "form-select", disabled: disabled }
 
