@@ -58,6 +58,9 @@
               = link_to "OurGruuv", root_path, class: "text-decoration-none"
           .col-md-6.text-end
             %p.mb-0.text-muted
-              %small Public MAAP - Browse #{@organization.name}'s Milestones, Abilities, Assignments, Aspirational Values, and Positions
+              - if @organization
+                %small Public MAAP - Browse #{@organization.name}'s Milestones, Abilities, Assignments, Aspirational Values, and Positions
+              - else
+                %small Public MAAP - Browse Milestones, Abilities, Assignments, Aspirational Values, and Positions
 
 
