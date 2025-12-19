@@ -19,7 +19,6 @@
             %th Assignment
             %th Min Energy
             %th Max Energy
-            %th Anticipated Energy
             %th Type
         %tbody
           - assignments.each do |assignment|
@@ -40,11 +39,6 @@
                   energy_percentage_options(existing_pa&.max_estimated_energy),
                   { include_blank: '0%' },
                   { class: "form-select form-select-sm", required: false }
-              %td
-                = form.select "position_assignments[#{assignment.id}][anticipated_energy_percentage]",
-                  energy_percentage_options(existing_pa&.anticipated_energy_percentage),
-                  { include_blank: '0%' },
-                  { class: "form-select form-select-sm" }
               %td
                 = form.select "position_assignments[#{assignment.id}][assignment_type]",
                   options_for_select([['Required', 'required'], ['Suggested', 'suggested']], existing_pa&.assignment_type || 'required'),

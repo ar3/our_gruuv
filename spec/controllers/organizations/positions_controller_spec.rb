@@ -130,7 +130,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
     before do
       # Update existing teammate to have permission
       teammate = Teammate.find_by(person: person, organization: organization)
-      teammate.update(can_manage_employment: true)
+      teammate.update(can_manage_maap: true)
     end
 
     it 'creates new PositionAssignments when max_estimated_energy > 0' do
@@ -142,7 +142,6 @@ RSpec.describe Organizations::PositionsController, type: :controller do
           assignment.id.to_s => {
             min_estimated_energy: '20',
             max_estimated_energy: '40',
-            anticipated_energy_percentage: '30',
             assignment_type: 'required'
           }
         }
@@ -212,7 +211,7 @@ RSpec.describe Organizations::PositionsController, type: :controller do
 
     it 'requires update permission' do
       teammate = Teammate.find_by(person: person, organization: organization)
-      teammate.update(can_manage_employment: false)
+      teammate.update(can_manage_maap: false)
       
       patch :update_assignments, params: {
         organization_id: organization.id,

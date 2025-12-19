@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_17_122926) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_19_121203) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -583,12 +583,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_17_122926) do
     t.datetime "updated_at", null: false
     t.integer "min_estimated_energy"
     t.integer "max_estimated_energy"
-    t.integer "anticipated_energy_percentage"
     t.index ["assignment_id"], name: "index_position_assignments_on_assignment_id"
     t.index ["assignment_type"], name: "index_position_assignments_on_assignment_type"
     t.index ["position_id", "assignment_id"], name: "index_position_assignments_on_position_and_assignment_unique", unique: true
     t.index ["position_id"], name: "index_position_assignments_on_position_id"
-    t.check_constraint "anticipated_energy_percentage IS NULL OR anticipated_energy_percentage >= 0 AND anticipated_energy_percentage <= 100", name: "check_anticipated_energy_percentage_range"
   end
 
   create_table "position_check_ins", force: :cascade do |t|

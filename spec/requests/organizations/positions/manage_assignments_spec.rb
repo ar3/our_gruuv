@@ -53,7 +53,6 @@ RSpec.describe 'Position Assignments Management', type: :request do
         assignment: company_assignment,
         min_estimated_energy: 20,
         max_estimated_energy: 40,
-        anticipated_energy_percentage: 30,
         assignment_type: 'required'
       )
       
@@ -77,7 +76,6 @@ RSpec.describe 'Position Assignments Management', type: :request do
           company_assignment.id => {
             min_estimated_energy: '20',
             max_estimated_energy: '40',
-            anticipated_energy_percentage: '30',
             assignment_type: 'required'
           }
         }
@@ -108,7 +106,6 @@ RSpec.describe 'Position Assignments Management', type: :request do
           company_assignment.id => {
             min_estimated_energy: '25',
             max_estimated_energy: '50',
-            anticipated_energy_percentage: '35',
             assignment_type: 'required'
           }
         }
@@ -119,7 +116,7 @@ RSpec.describe 'Position Assignments Management', type: :request do
       existing_pa.reload
       expect(existing_pa.min_estimated_energy).to eq(25)
       expect(existing_pa.max_estimated_energy).to eq(50)
-      expect(existing_pa.anticipated_energy_percentage).to eq(35)
+      expect(existing_pa.anticipated_energy_percentage).to eq(38)
       expect(existing_pa.assignment_type).to eq('required')
     end
 
@@ -164,13 +161,11 @@ RSpec.describe 'Position Assignments Management', type: :request do
           company_assignment.id => {
             min_estimated_energy: '10',
             max_estimated_energy: '30',
-            anticipated_energy_percentage: '20',
             assignment_type: 'required'
           },
           department_assignment.id => {
             min_estimated_energy: '20',
             max_estimated_energy: '40',
-            anticipated_energy_percentage: '30',
             assignment_type: 'suggested'
           }
         }
@@ -234,7 +229,6 @@ RSpec.describe 'Position Assignments Management', type: :request do
           company_assignment.id => {
             min_estimated_energy: '',
             max_estimated_energy: '50',
-            anticipated_energy_percentage: '',
             assignment_type: 'required'
           }
         }
@@ -245,7 +239,7 @@ RSpec.describe 'Position Assignments Management', type: :request do
       pa = PositionAssignment.find_by(position: position, assignment: company_assignment)
       expect(pa.min_estimated_energy).to be_nil
       expect(pa.max_estimated_energy).to eq(50)
-      expect(pa.anticipated_energy_percentage).to be_nil
+      expect(pa.anticipated_energy_percentage).to eq(50)
     end
   end
 

@@ -252,11 +252,9 @@ class Organizations::PositionsController < ApplicationController
       
       # Update attributes
       min_energy = assignment_data[:min_estimated_energy].present? ? assignment_data[:min_estimated_energy].to_i : nil
-      anticipated_energy = assignment_data[:anticipated_energy_percentage].present? ? assignment_data[:anticipated_energy_percentage].to_i : nil
       
       position_assignment.min_estimated_energy = min_energy
       position_assignment.max_estimated_energy = max_energy
-      position_assignment.anticipated_energy_percentage = anticipated_energy
       position_assignment.assignment_type = assignment_data[:assignment_type] || 'required'
       
       unless position_assignment.save

@@ -196,5 +196,43 @@ RSpec.describe PositionAssignment, type: :model do
         expect(position_assignment.energy_range_display).to eq('No effort estimate')
       end
     end
+
+    describe 'anticipated_energy_percentage' do
+      it 'returns average when both min and max are present' do
+        position_assignment.min_estimated_energy = 20
+        position_assignment.max_estimated_energy = 40
+        expect(position_assignment.anticipated_energy_percentage).to eq(30)
+      end
+
+      it 'rounds the average correctly' do
+        position_assignment.min_estimated_energy = 25
+        position_assignment.max_estimated_energy = 50
+        expect(position_assignment.anticipated_energy_percentage).to eq(38)
+      end
+
+      it 'returns min when only min is present' do
+        position_assignment.min_estimated_energy = 30
+        position_assignment.max_estimated_energy = nil
+        expect(position_assignment.anticipated_energy_percentage).to eq(30)
+      end
+
+      it 'returns max when only max is present' do
+        position_assignment.min_estimated_energy = nil
+        position_assignment.max_estimated_energy = 50
+        expect(position_assignment.anticipated_energy_percentage).to eq(50)
+      end
+
+      it 'returns nil when both are nil' do
+        position_assignment.min_estimated_energy = nil
+        position_assignment.max_estimated_energy = nil
+        expect(position_assignment.anticipated_energy_percentage).to be_nil
+      end
+
+      it 'handles equal min and max values' do
+        position_assignment.min_estimated_energy = 50
+        position_assignment.max_estimated_energy = 50
+        expect(position_assignment.anticipated_energy_percentage).to eq(50)
+      end
+    end
   end
 end 
