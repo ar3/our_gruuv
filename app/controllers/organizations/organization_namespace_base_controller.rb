@@ -2,6 +2,7 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
   before_action :ensure_teammate_matches_organization, unless: :skip_organization_setup?
   before_action :set_organization, unless: :skip_organization_setup?
   helper_method :organization
+  helper_method :company
 
   # Override Pundit's default user method to use current_company_teammate
   def pundit_user

@@ -138,4 +138,8 @@ class Seat < ApplicationRecord
   def travel_with_default
     travel || self.class.column_defaults['travel']
   end
+
+  def has_direct_reports?
+    reporting_seats.exists?
+  end
 end

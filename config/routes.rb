@@ -296,6 +296,8 @@ get '/login', to: 'auth#login', as: :login
       collection do
         post :create_missing_employee_seats
         post :create_missing_position_type_seats
+        get :customize_view
+        patch :update_view
       end
       member do
         patch :reconcile

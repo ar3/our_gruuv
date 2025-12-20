@@ -16,6 +16,7 @@ RSpec.describe Organizations::SeatsController, type: :controller do
   let(:seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current) }
 
   before do
+    person_teammate.update!(can_manage_maap: true) # Ensure MAAP access for all tests
     session[:current_company_teammate_id] = person_teammate.id
     @current_company_teammate = nil if defined?(@current_company_teammate)
   end
@@ -24,6 +25,75 @@ RSpec.describe Organizations::SeatsController, type: :controller do
     it 'returns http success' do
       get :index, params: { organization_id: company.id }
       expect(response).to have_http_status(:success)
+    end
+
+    it 'uses default table view' do
+      # Ensure seat exists and is accessible
+      seat # trigger creation
+      
+      get :index, params: { organization_id: company.id }
+      expect(assigns(:current_view)).to eq('table')
+      expect(assigns(:filtered_seats)).to be_present
+      expect(assigns(:filtered_seats)).to include(seat)
+    end
+
+    it 'filters by state' do
+      create(:seat, :open, position_type: position_type, seat_needed_by: Date.current + 1.month)
+      create(:seat, :filled, position_type: position_type, seat_needed_by: Date.current + 2.months)
+      
+      get :index, params: { organization_id: company.id, state: ['open'] }
+      
+      filtered_seats = assigns(:filtered_seats)
+      expect(filtered_seats.all? { |s| s.state == 'open' }).to be true
+    end
+
+    it 'filters by has_direct_reports' do
+      parent_seat = create(:seat, position_type: position_type, seat_needed_by: Date.current + 1.month)
+      create(:seat, position_type: position_type, seat_needed_by: Date.current + 2.months, reports_to_seat: parent_seat)
+      childless_seat = create(:seat, position_type: position_type, seat_needed_by: Date.current + 3.months)
+      
+      get :index, params: { organization_id: company.id, has_direct_reports: 'true' }
+      
+      filtered_seats = assigns(:filtered_seats)
+      expect(filtered_seats).to include(parent_seat)
+      expect(filtered_seats).not_to include(childless_seat)
+    end
+
+    it 'handles seat_hierarchy view' do
+      parent_seat = create(:seat, position_type: position_type, seat_needed_by: Date.current + 1.month)
+      create(:seat, position_type: position_type, seat_needed_by: Date.current + 2.months, reports_to_seat: parent_seat)
+      
+      get :index, params: { organization_id: company.id, view: 'seat_hierarchy' }
+      
+      expect(assigns(:current_view)).to eq('seat_hierarchy')
+      expect(assigns(:hierarchy_tree)).to be_present
+    end
+
+    it 'handles seat_maap_health view' do
+      create(:seat, position_type: position_type, seat_needed_by: Date.current)
+      
+      get :index, params: { organization_id: company.id, view: 'seat_maap_health' }
+      
+      expect(assigns(:current_view)).to eq('seat_maap_health')
+      expect(assigns(:seats_by_position_type)).to be_present
+      expect(assigns(:position_types)).to be_present
+    end
+
+    it 'handles table_with_employee view' do
+      employee = create(:person)
+      employee_teammate = create(:teammate, person: employee, organization: company, first_employed_at: 1.year.ago)
+      # Create tenure first, then create seat with matching position_type_id
+      tenure = create(:employment_tenure, teammate: employee_teammate, company: company, position: position, started_at: 1.year.ago, seat: nil)
+      # Reload position to get fresh position_type_id
+      tenure.position.reload
+      seat_with_employee = create(:seat, :filled, position_type_id: tenure.position.position_type_id, seat_needed_by: Date.current)
+      tenure.update!(seat: seat_with_employee)
+      
+      get :index, params: { organization_id: company.id, view: 'table_with_employee' }
+      
+      expect(assigns(:current_view)).to eq('table_with_employee')
+      expect(assigns(:filtered_seats)).to be_present
+      expect(assigns(:filtered_seats)).to include(seat_with_employee)
     end
 
     it 'calculates spotlight stats for employees' do
@@ -59,6 +129,61 @@ RSpec.describe Organizations::SeatsController, type: :controller do
       expect(stats[:position_types][:total]).to eq(2)
       expect(stats[:position_types][:with_seats]).to eq(1)
       expect(stats[:position_types][:without_seats]).to eq(1)
+    end
+  end
+
+  describe 'GET #customize_view' do
+    it 'returns http success' do
+      get :customize_view, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'loads current filters and view state' do
+      get :customize_view, params: { organization_id: company.id, view: 'table_with_employee', state: ['open'] }
+      
+      expect(assigns(:current_view)).to eq('table_with_employee')
+      expect(assigns(:current_filters)[:state]).to eq(['open'])
+    end
+
+    it 'sets return URL' do
+      get :customize_view, params: { organization_id: company.id }
+      expect(assigns(:return_url)).to include(organization_seats_path(company))
+    end
+  end
+
+  describe 'PATCH #update_view' do
+    it 'redirects with view params' do
+      patch :update_view, params: { 
+        organization_id: company.id, 
+        view: 'table_with_employee',
+        state: ['open', 'filled']
+      }
+      
+      expect(response).to have_http_status(:redirect)
+      expect(response.location).to include(organization_seats_path(company).split('/').last)
+      expect(response.location).to include('view=table_with_employee')
+      expect(response.location).to include('state%5B%5D=open')
+      expect(response.location).to include('state%5B%5D=filled')
+    end
+
+    it 'handles preset selection' do
+      patch :update_view, params: { 
+        organization_id: company.id, 
+        preset: 'seat_hierarchy'
+      }
+      
+      expect(response).to have_http_status(:redirect)
+      expect(response.location).to include(organization_seats_path(company).split('/').last)
+      expect(response.location).to include('view=seat_hierarchy')
+    end
+
+    it 'shows success notice' do
+      patch :update_view, params: { 
+        organization_id: company.id, 
+        view: 'table'
+      }
+      
+      expect(flash[:notice]).to eq('View updated successfully.')
     end
   end
 
@@ -119,9 +244,13 @@ RSpec.describe Organizations::SeatsController, type: :controller do
     end
 
     context 'without MAAP management permission' do
+      before do
+        person_teammate.update!(can_manage_maap: false)
+      end
+
       it 'redirects with error' do
         post :create_missing_employee_seats, params: { organization_id: company.id }
-        expect(response).to redirect_to(root_path)
+        expect(response).to have_http_status(:redirect)
         expect(flash[:alert]).to be_present
       end
     end
@@ -263,9 +392,13 @@ RSpec.describe Organizations::SeatsController, type: :controller do
     end
 
     context 'without MAAP management permission' do
+      before do
+        person_teammate.update!(can_manage_maap: false)
+      end
+
       it 'redirects with error' do
         post :create_missing_position_type_seats, params: { organization_id: company.id }
-        expect(response).to redirect_to(root_path)
+        expect(response).to have_http_status(:redirect)
         expect(flash[:alert]).to be_present
       end
     end

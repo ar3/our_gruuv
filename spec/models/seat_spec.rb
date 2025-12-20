@@ -253,4 +253,20 @@ RSpec.describe Seat, type: :model do
       end
     end
   end
+
+  describe '#has_direct_reports?' do
+    context 'when seat has reporting seats' do
+      let!(:reporting_seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current + 1.month, reports_to_seat: seat) }
+
+      it 'returns true' do
+        expect(seat.has_direct_reports?).to be true
+      end
+    end
+
+    context 'when seat has no reporting seats' do
+      it 'returns false' do
+        expect(seat.has_direct_reports?).to be false
+      end
+    end
+  end
 end

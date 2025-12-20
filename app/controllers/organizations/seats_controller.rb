@@ -4,21 +4,51 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
 
   def index
     authorize company, :view_seats?
-    seats = policy_scope(Seat.for_organization(organization))
-            .includes(:position_type, employment_tenures: { teammate: :person })
-            .ordered
     
-    # Group seats by position type
-    @seats_by_position_type = seats.group_by(&:position_type)
+    # Handle preset application (if preset is selected and no discrete options changed)
+    apply_preset_if_selected
     
-    # Get all position types that have seats, ordered
-    @position_types = @seats_by_position_type.keys.sort_by(&:external_title)
+    # Use SeatsQuery for filtering and sorting
+    query = SeatsQuery.new(organization, params)
     
-    # Preload maturity data for all position types
-    @position_types.each do |position_type|
-      # Trigger calculation to warm up any caches
-      position_type.maap_maturity_phase
+    # Get filtered seats
+    filtered_seats = policy_scope(query.call)
+    
+    # Handle hierarchy view
+    if query.current_view == 'seat_hierarchy'
+      # Build hierarchy tree
+      hierarchy_query = SeatHierarchyQuery.new(organization: organization)
+      full_hierarchy_tree = hierarchy_query.call
+      
+      # Apply filters to hierarchy tree
+      filtered_seat_ids = filtered_seats.map(&:id).to_set
+      @hierarchy_tree = filter_hierarchy_tree(full_hierarchy_tree, filtered_seat_ids)
+      
+      # Find unassigned seats (seats with no parent) matching filters
+      @unassigned_seats = filtered_seats.select { |seat| seat.reports_to_seat_id.nil? }
+      
+      @filtered_seats = filtered_seats.to_a
+    else
+      # For other views, use filtered seats directly
+      @filtered_seats = filtered_seats.to_a
+      
+      # For seat_maap_health view, group by position type
+      if query.current_view == 'seat_maap_health'
+        @seats_by_position_type = @filtered_seats.group_by(&:position_type)
+        @position_types = @seats_by_position_type.keys.sort_by(&:external_title)
+        
+        # Preload maturity data for all position types
+        @position_types.each do |position_type|
+          position_type.maap_maturity_phase
+        end
+      end
     end
+    
+    # Store current filter/sort state for view
+    @current_filters = query.current_filters
+    @current_sort = query.current_sort
+    @current_view = query.current_view
+    @has_active_filters = query.has_active_filters?
     
     @spotlight_stats = calculate_spotlight_stats
     
@@ -107,6 +137,51 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     else
       redirect_to organization_seats_path(organization), alert: "Failed to create seats: #{result[:errors].join(', ')}"
     end
+  end
+
+  def customize_view
+    # Authorization: require ability to view seats
+    authorize company, :view_seats?
+    
+    # Load current state from params or defaults
+    query = SeatsQuery.new(organization, params)
+    
+    @current_filters = query.current_filters
+    @current_sort = query.current_sort
+    @current_view = query.current_view
+    @has_active_filters = query.has_active_filters?
+    
+    # Preserve current params for return URL (excluding controller/action/page)
+    return_params = params.except(:controller, :action, :page).permit!.to_h
+    @return_url = organization_seats_path(organization, return_params)
+    @return_text = "Back to Seats"
+    
+    render layout: 'overlay'
+  end
+
+  def update_view
+    # Authorization: require ability to view seats
+    authorize company, :view_seats?
+    
+    # Handle preset application if selected
+    apply_preset_if_selected
+    
+    # Build redirect URL with view customization params
+    if params[:preset].present?
+      # When preset is selected, only include preset-defined params
+      preset_params = preset_to_params(params[:preset])
+      redirect_params = {}
+      
+      if preset_params
+        # Use preset params directly - Rails path helpers handle arrays automatically
+        redirect_params = preset_params.dup
+      end
+    else
+      # When no preset, include all params except Rails internal ones
+      redirect_params = params.except(:controller, :action, :authenticity_token, :_method, :commit).permit!.to_h.compact
+    end
+    
+    redirect_to organization_seats_path(organization, redirect_params), notice: 'View updated successfully.'
   end
 
   private
@@ -209,5 +284,50 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
         without_seats: position_types_without_seats
       }
     }
+  end
+
+  def apply_preset_if_selected
+    return unless params[:preset].present?
+    
+    preset_params = preset_to_params(params[:preset])
+    
+    if preset_params
+      preset_params.each do |key, value|
+        params[key] = value
+      end
+    end
+  end
+
+  def preset_to_params(preset_name)
+    case preset_name.to_s
+    when 'seat_hierarchy'
+      {
+        view: 'seat_hierarchy'
+      }
+    else
+      nil
+    end
+  end
+
+  def filter_hierarchy_tree(hierarchy_tree, filtered_seat_ids)
+    # Recursively filter the hierarchy tree to only include nodes matching filters
+    hierarchy_tree.map do |node|
+      seat_id = node[:seat]&.id
+      next nil unless seat_id && filtered_seat_ids.include?(seat_id)
+      
+      # Recursively filter children
+      filtered_children = filter_hierarchy_tree(node[:children] || [], filtered_seat_ids).compact
+      
+      # Recalculate counts based on filtered children
+      direct_reports_count = filtered_children.length
+      total_reports_count = direct_reports_count + filtered_children.sum { |child| child[:total_reports_count] || 0 }
+      
+      {
+        seat: node[:seat],
+        children: filtered_children,
+        direct_reports_count: direct_reports_count,
+        total_reports_count: total_reports_count
+      }
+    end.compact
   end
 end

@@ -1,0 +1,45 @@
+- if @filtered_seats.any?
+  .table-responsive
+    %table.table.table-hover.mb-0
+      %thead.table-light
+        %tr
+          %th Position Type
+          %th Needed By
+          %th State
+          %th Actions
+      %tbody
+        - @filtered_seats.each do |seat|
+          %tr
+            %td= seat.position_type.external_title
+            %td= seat.seat_needed_by.strftime('%B %d, %Y')
+            %td
+              %span.badge{class: seat_state_badge_class(seat.state)}
+                = seat.state.titleize
+                - if seat.needs_reconciliation?
+                  %span.badge.bg-warning.ms-1
+                    %i.bi.bi-exclamation-triangle
+            %td
+              .btn-group.btn-group-sm
+                = link_to organization_seat_path(organization, seat), class: "btn btn-outline-primary" do
+                  %i.bi.bi-eye
+                = link_to edit_organization_seat_path(organization, seat), class: "btn btn-outline-secondary" do
+                  %i.bi.bi-pencil
+                - if seat.needs_reconciliation?
+                  = link_to reconcile_organization_seat_path(organization, seat), method: :patch, class: "btn btn-outline-warning", data: { confirm: "Reconcile seat state?" } do
+                    %i.bi.bi-arrow-clockwise
+                = link_to organization_seat_path(organization, seat), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure?" } do
+                  %i.bi.bi-trash
+- else
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No Seats Found
+    %p.mb-2
+      - if @has_active_filters
+        No seats match your current filters. Try adjusting your filter settings.
+      - else
+        This organization doesn't have any seats yet.
+    - unless @has_active_filters
+      - if policy(Seat).create?
+        = link_to "Create First Seat", new_organization_seat_path(organization), class: "btn btn-primary btn-sm"
+

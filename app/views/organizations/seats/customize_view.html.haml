@@ -1,0 +1,129 @@
+- content_for :header do
+  Customize Seats View
+- content_for :return_url do
+  = @return_url || organization_seats_path(@organization)
+- content_for :return_text do
+  = @return_text || 'Back to Seats'
+
+= form_with url: update_view_organization_seats_path(@organization), method: :patch, local: true do |form|
+  .row
+    / Left column (4 cols) - Section titles
+    .col-md-4
+      .mb-4
+        %h2 Choose Preset
+    .col-md-8
+      / Preset Section - Grid of Buttons
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold.mb-3 Choose Preset
+          - presets = [{ name: 'Seat hierarchy', value: 'seat_hierarchy', available: true }]
+          .row.g-3
+            - presets.each do |preset|
+              .col-md-4.col-sm-6
+                - if preset[:available]
+                  %button.btn.btn-outline-primary.w-100.h-100.d-flex.flex-column.align-items-center.justify-content-center.p-3{type: 'submit', name: 'preset', value: preset[:value], style: 'min-height: 100px;'}
+                    %i.bi.bi-check-circle.mb-2{style: "font-size: 1.5rem;"}
+                    %span.fw-bold.text-center= preset[:name]
+                - else
+                  .d-flex.align-items-center.gap-2.w-100
+                    .flex-grow-1
+                      %button.btn.btn-outline-secondary.w-100.h-100.d-flex.flex-column.align-items-center.justify-content-center.p-3.disabled{type: 'button', disabled: true, style: 'min-height: 100px; opacity: 0.6; cursor: not-allowed;'}
+                        %i.bi.bi-lock.mb-2{style: "font-size: 1.5rem;"}
+                        %span.fw-bold.text-center= preset[:name]
+                    %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: preset[:tooltip]}, style: "font-size: 1.2rem;"}
+  .row
+    .col-12.text-center
+      %hr/
+      %h1.text-muted --OR--
+      %small.text-muted Customize Your View
+      %hr/
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Seats You See
+    
+    .col-md-8
+      / Filters Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Seats You See
+          
+          .mb-3
+            %label.form-label Seat Status
+            .form-check
+              = check_box_tag 'state[]', 'draft', @current_filters[:state]&.include?('draft'), class: 'form-check-input', id: 'filter_draft'
+              = label_tag 'filter_draft', 'Draft', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'state[]', 'open', @current_filters[:state]&.include?('open'), class: 'form-check-input', id: 'filter_open'
+              = label_tag 'filter_open', 'Open', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'state[]', 'filled', @current_filters[:state]&.include?('filled'), class: 'form-check-input', id: 'filter_filled'
+              = label_tag 'filter_filled', 'Filled', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'state[]', 'archived', @current_filters[:state]&.include?('archived'), class: 'form-check-input', id: 'filter_archived'
+              = label_tag 'filter_archived', 'Archived', class: 'form-check-label'
+          
+          .mb-3
+            %label.form-label Has Direct Reports
+            .form-check
+              = radio_button_tag 'has_direct_reports', 'true', @current_filters[:has_direct_reports] == 'true', class: 'form-check-input', id: 'has_direct_reports_true'
+              = label_tag 'has_direct_reports_true', 'Yes', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'has_direct_reports', 'false', @current_filters[:has_direct_reports] == 'false', class: 'form-check-input', id: 'has_direct_reports_false'
+              = label_tag 'has_direct_reports_false', 'No', class: 'form-check-label'
+            .form-check
+              = radio_button_tag 'has_direct_reports', '', @current_filters[:has_direct_reports].blank?, class: 'form-check-input', id: 'has_direct_reports_all'
+              = label_tag 'has_direct_reports_all', 'All', class: 'form-check-label'
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Order You See Them In
+    
+    .col-md-8
+      / Sort Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Order You See Them In
+          - sort_options = [['Seat Needed By (Earliest)', 'seat_needed_by'], ['Seat Needed By (Latest)', 'seat_needed_by_desc'], ['Position Type (A-Z)', 'position_type'], ['Position Type (Z-A)', 'position_type_desc'], ['State', 'state'], ['Created Date (Newest)', 'created_at'], ['Created Date (Oldest)', 'created_at_asc']]
+          = select_tag 'sort', options_for_select(sort_options, @current_sort), class: 'form-select', id: 'sort_select'
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select How They Appear
+    
+    .col-md-8
+      / View Style Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select How They Appear
+          .form-check
+            = radio_button_tag 'view', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
+            = label_tag 'view_table', class: 'form-check-label' do
+              %i.bi.bi-table.me-2
+              Table
+          .form-check
+            = radio_button_tag 'view', 'table_with_employee', @current_view == 'table_with_employee', class: 'form-check-input', id: 'view_table_with_employee'
+            = label_tag 'view_table_with_employee', class: 'form-check-label' do
+              %i.bi.bi-table.me-2
+              Table with Employee
+          .form-check
+            = radio_button_tag 'view', 'seat_maap_health', @current_view == 'seat_maap_health', class: 'form-check-input', id: 'view_seat_maap_health'
+            = label_tag 'view_seat_maap_health', class: 'form-check-label' do
+              %i.bi.bi-heart-pulse.me-2
+              Seat - MAAP Health
+  .row
+    .col-12
+      / Form Actions
+      .d-flex.gap-2.mt-4.mb-4
+        = form.submit 'Apply View', class: 'btn btn-primary'
+        = link_to 'Cancel', @return_url || organization_seats_path(@organization), class: 'btn btn-outline-secondary'
+
+:javascript
+  // Initialize Bootstrap tooltips for disabled preset buttons
+  document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  });
+

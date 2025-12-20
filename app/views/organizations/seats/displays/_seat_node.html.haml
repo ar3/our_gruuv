@@ -1,0 +1,53 @@
+- seat = node[:seat]
+- children = node[:children]
+- direct_reports_count = node[:direct_reports_count] || 0
+- total_reports_count = node[:total_reports_count] || 0
+- has_subordinates = children.any?
+- node_id = "seat-node-#{seat.id}"
+- children_id = "seat-children-#{seat.id}"
+- active_tenure = seat.employment_tenures.active.first
+- active_employee = active_tenure&.teammate&.person
+
+.tree-node{id: node_id, style: "margin-left: #{depth * 40}px; margin-bottom: 10px;"}
+  .d-flex.align-items-center
+    - if depth > 0
+      %i.bi.bi-arrow-return-right.me-2{style: "color: #999;"}
+    .card{style: "width: 500px; position: relative;"}
+      .card-body.p-2
+        .d-flex.align-items-start
+          .flex-shrink-0.me-3
+            - if active_employee
+              = content_tag :div, class: "bg-primary rounded-circle d-flex align-items-center justify-content-center text-white", style: "width: 48px; height: 48px;" do
+                = content_tag :span, active_employee.first_name&.first&.upcase || active_employee.email.first.upcase, class: "fw-bold", style: "font-size: 19px;"
+            - else
+              = content_tag :div, class: "bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white", style: "width: 48px; height: 48px;" do
+                = content_tag :span, "S", class: "fw-bold", style: "font-size: 19px;"
+          .flex-grow-1
+            - if has_subordinates
+              .d-flex.align-items-center.mb-2
+                %button.btn.btn-sm.btn-link.p-0.me-2.toggle-children{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "##{children_id}", "aria-expanded": "true", "aria-controls": children_id, style: "text-decoration: none; color: #666; min-width: 20px;"}
+                  %i.bi.bi-chevron-down.toggle-icon
+                %span.badge.bg-light.text-dark.small
+                  - if direct_reports_count == total_reports_count
+                    #{pluralize(direct_reports_count, 'direct report')}
+                  - else
+                    #{pluralize(direct_reports_count, 'direct report')} & #{total_reports_count} total
+            - if policy(seat).show?
+              = link_to seat.display_name, organization_seat_path(organization, seat), class: "text-decoration-none fw-bold"
+            - else
+              %span.fw-bold= seat.display_name
+            %br
+            %span.text-muted.small= seat.position_type.external_title
+            %br
+            %span.badge{class: seat_state_badge_class(seat.state)}
+              = seat.state.titleize
+            - if active_employee
+              %br
+              %span.text-muted.small
+                Filled by #{active_employee.display_name}
+
+- if has_subordinates
+  .collapse.show{id: children_id}
+    - children.each do |child_node|
+      = render 'organizations/seats/displays/seat_node', node: child_node, depth: depth + 1, organization: organization
+
