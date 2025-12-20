@@ -8,6 +8,10 @@ class CompanyTeammate < Teammate
   # Company-specific validations
   validate :company_level_permissions
   
+  def to_s
+    "(#{id}) #{person.display_name} @ #{organization.name}"
+  end
+
   # Company-specific methods
   def can_manage_anything?
     can_manage_employment? && can_manage_maap?

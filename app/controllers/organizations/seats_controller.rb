@@ -52,6 +52,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
     if @seat.save
       redirect_to organization_seat_path(organization, @seat), notice: 'Seat was successfully created.'
     else
+      set_related_data
       render :new, status: :unprocessable_entity
     end
   end
@@ -63,9 +64,11 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
 
   def update
     authorize @seat
+    
     if @seat.update(seat_params)
       redirect_to organization_seat_path(organization, @seat), notice: 'Seat was successfully updated.'
     else
+      set_related_data
       render :edit, status: :unprocessable_entity
     end
   end
@@ -109,7 +112,7 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
   private
 
   def set_seat
-    @seat = Seat.includes(:position_type, :employment_tenures).find(params[:id])
+    @seat = Seat.includes(:position_type, :reports_to_seat, :reporting_seats, employment_tenures: { teammate: :person }).find(params[:id])
   rescue ActiveRecord::RecordNotFound
     flash[:error] = "Seat not found"
     redirect_to organization_seats_path(organization)
@@ -117,9 +120,39 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
 
   def set_related_data
     @position_types = organization.position_types.ordered
+    
     @departments = organization.descendants.select { |o| o.type == 'Department' }.sort_by(&:display_name)
     @teams = organization.descendants.select { |o| o.type == 'Team' }.sort_by(&:display_name)
-    @available_seats = Seat.for_organization(organization).ordered
+    
+    # Load seats with their active employment tenures and teammates
+    all_seats = Seat.for_organization(organization)
+                    .includes(:position_type, employment_tenures: { teammate: :person })
+                    .order('position_types.external_title ASC, seats.seat_needed_by ASC')
+    
+    # Exclude current seat if editing (can't report to itself)
+    current_seat_id = @seat&.id || params[:id]
+    all_seats = all_seats.where.not(id: current_seat_id) if current_seat_id.present?
+    
+    # Separate into filled and unfilled
+    @filled_seats = []
+    @unfilled_seats = []
+    
+    all_seats.each do |seat|
+      active_tenure = seat.employment_tenures.active.first
+      if active_tenure && active_tenure.teammate
+        @filled_seats << {
+          seat: seat,
+          tenure: active_tenure,
+          teammate: active_tenure.teammate,
+          person: active_tenure.teammate.person
+        }
+      else
+        @unfilled_seats << seat
+      end
+    end
+    
+    # Sort filled seats by person's last_name, first_name
+    @filled_seats.sort_by! { |item| [item[:person].last_name || '', item[:person].first_name || ''] }
   end
 
   def seat_params
@@ -127,7 +160,6 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
       :position_type_id,
       :seat_needed_by,
       :job_classification,
-      :reports_to,
       :team,
       :department_id,
       :team_id,

@@ -1,27 +1,29 @@
 - content_for :header do
   .d-flex.justify-content-between.align-items-center
     %h1.mb-0= @seat.display_name
-    .d-flex.align-items-center.gap-2
-      - if policy(@seat).update?
-        = link_to edit_organization_seat_path(organization, @seat), class: "btn btn-outline-primary" do
+
+- content_for :header_action do
+  .text-right
+    - if policy(@seat).update?
+      = link_to edit_organization_seat_path(organization, @seat), class: "btn btn-outline-primary" do
+        %i.bi.bi-pencil.me-2
+        Edit
+    - else
+      .d-flex.align-items-center.gap-2
+        = link_to edit_organization_seat_path(organization, @seat), class: "btn btn-outline-secondary", disabled: true do
           %i.bi.bi-pencil.me-2
           Edit
-      - else
-        .d-flex.align-items-center.gap-2
-          = link_to edit_organization_seat_path(organization, @seat), class: "btn btn-outline-secondary", disabled: true do
-            %i.bi.bi-pencil.me-2
-            Edit
-          %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
-      - if policy(@seat).destroy?
-        = link_to organization_seat_path(organization, @seat), method: :delete, data: { confirm: "Are you sure you want to delete this seat?" }, class: "btn btn-outline-danger" do
+        %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
+    - if policy(@seat).destroy?
+      = link_to organization_seat_path(organization, @seat), method: :delete, data: { confirm: "Are you sure you want to delete this seat?" }, class: "btn btn-outline-danger" do
+        %i.bi.bi-trash.me-2
+        Delete
+    - else
+      .d-flex.align-items-center.gap-2
+        = link_to organization_seat_path(organization, @seat), method: :delete, data: { confirm: "Are you sure you want to delete this seat?" }, class: "btn btn-outline-secondary", disabled: true do
           %i.bi.bi-trash.me-2
           Delete
-      - else
-        .d-flex.align-items-center.gap-2
-          = link_to organization_seat_path(organization, @seat), method: :delete, data: { confirm: "Are you sure you want to delete this seat?" }, class: "btn btn-outline-secondary", disabled: true do
-            %i.bi.bi-trash.me-2
-            Delete
-          %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
+        %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
 
 - content_for :go_back_link do
   = link_to organization_seats_path(organization), class: "text-muted text-decoration-none" do
@@ -29,85 +31,98 @@
     Back to Seats
 
 .row.justify-content-center
+  .col-12
+    %p
+      %strong Department:
+      = @seat.department&.display_name || '--Not selected--'
+
+    %p
+      %strong Team:
+      = @seat.team&.display_name || '--Not selected--'
+
+    %p
+      %strong Reports To:
+      - if @seat.reports_to_seat
+        = link_to @seat.reports_to_seat.display_name, organization_seat_path(organization, @seat.reports_to_seat), class: "text-decoration-none"
+      - else
+        = '--Not selected--'
+
+    
+    %p
+      %strong Direct Reports:
+      = @seat.reports.presence || '--Not answered yet--'
+      - if @seat.reporting_seats.any?
+        %ul.mt-2.mb-0
+          - @seat.reporting_seats.each do |reporting_seat|
+            %li
+              = link_to reporting_seat.display_name, organization_seat_path(organization, reporting_seat), class: "text-decoration-none"
+
+    %p
+      %strong Job Classification:
+      = @seat.job_classification
+
+
+.row.justify-content-center
   .col-lg-10
-    / Seat Defense (if any) - Moved to first
-    .card.mb-4
-      .card-body
+    %hr.mb-4.mt-4/
 
-        %p
-          %strong Reports to (Legacy):
-          = @seat.reports_to.presence || '--Not answered yet--'
+.row.justify-content-center
+  .col-12
+    %h4.mb-3
+      %strong Seat Defense
 
-        %p
-          %strong Department:
-          = @seat.department&.display_name || '--Not selected--'
+    %p
+      %strong State:
+      %span.badge{class: seat_state_badge_class(@seat.state)}= @seat.state.humanize
+      - active_tenure = @seat.employment_tenures.active.first
+      - if active_tenure
+        - earliest_tenure = @seat.employment_tenures.order(started_at: :asc).first
+        - if earliest_tenure && earliest_tenure.started_at
+          = " - Filled by "
+          = link_to active_tenure.teammate.person.display_name, internal_organization_company_teammate_path(organization, active_tenure.teammate), class: "text-decoration-none"
+          = " (#{time_ago_in_words(earliest_tenure.started_at)} ago)"
 
-        %p
-          %strong Team:
-          = @seat.team&.display_name || '--Not selected--'
+    %p
+      %strong Needed By:
+      = @seat.seat_needed_by.strftime("%B %d, %Y")
 
-        %p
-          %strong Reports To Seat:
-          = @seat.reports_to_seat&.display_name || '--Not selected--'
-
-        
-        %p
-          %strong Reports:
-          = @seat.reports.presence || '--Not answered yet--'
-
-        %p
-          %strong Job Classification:
-          = @seat.job_classification
-
-
-        %h4.mb-3
-          %strong Seat Defense
-
-        %p
-          %strong State:
-          %span.badge{class: seat_state_badge_class(@seat.state)}= @seat.state.humanize
-
-        %p
-          %strong Needed By:
-          = @seat.seat_needed_by.strftime("%B %d, %Y")
-
-        .mb-3
-          %h6
-            %strong Why do we need this role?
-          %p= @seat.why_needed.presence || '--Not answered yet--'
-        
-        .mb-3
-          %h6
-            %strong Why is now the time to hire for this role?
-          %p= @seat.why_now.presence || '--Not answered yet--'
-        
-        .mb-3
-          %h6
-            %strong What are the costs/risks if we choose not to hire for this role now?
-          %p= @seat.costs_risks.presence || '--Not answered yet--'
+    %p
+      %strong Why do we need this role?
+      %p.markdown-content--bordered
+        = render_markdown(@seat.why_needed.presence || '--Not answered yet--')
+    
+    %p
+      %strong Why is now the time to hire for this role?
+      %p.markdown-content--bordered
+        = render_markdown(@seat.why_now.presence || '--Not answered yet--')
+    
+    %p
+      %strong What are the costs/risks if we choose not to hire for this role now?
+      %p.markdown-content--bordered
+        = render_markdown(@seat.costs_risks.presence || '--Not answered yet--')
 
 
-        / State Reconciliation Warning
-        - if @seat.needs_reconciliation?
-          .card.mb-4.border-warning
-            .card-header.bg-warning.text-dark
-              %h5.mb-0
-                %i.bi.bi-exclamation-triangle.me-2
-                State Reconciliation Needed
-            .card-body
-              %p.mb-3
-                This seat's state appears to be inconsistent with its current employment tenures. 
-                Click the button below to automatically reconcile the state.
-              - if policy(@seat).reconcile?
-                = link_to reconcile_organization_seat_path(organization, @seat), method: :patch, class: "btn btn-warning" do
-                  %i.bi.bi-arrow-clockwise.me-2
-                  Reconcile State
-              - else
-                .d-flex.align-items-center.gap-2
-                  = link_to reconcile_organization_seat_path(organization, @seat), method: :patch, class: "btn btn-outline-secondary", disabled: true do
-                    %i.bi.bi-arrow-clockwise.me-2
-                    Reconcile State
-                  %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
+    / State Reconciliation Warning
+    - if @seat.needs_reconciliation?
+      .card.mb-4.border-warning
+        .card-header.bg-warning.text-dark
+          %h5.mb-0
+            %i.bi.bi-exclamation-triangle.me-2
+            State Reconciliation Needed
+        .card-body
+          %p.mb-3
+            This seat's state appears to be inconsistent with its current employment tenures. 
+            Click the button below to automatically reconcile the state.
+          - if policy(@seat).reconcile?
+            = link_to reconcile_organization_seat_path(organization, @seat), method: :patch, class: "btn btn-warning" do
+              %i.bi.bi-arrow-clockwise.me-2
+              Reconcile State
+          - else
+            .d-flex.align-items-center.gap-2
+              = link_to reconcile_organization_seat_path(organization, @seat), method: :patch, class: "btn btn-outline-secondary", disabled: true do
+                %i.bi.bi-arrow-clockwise.me-2
+                Reconcile State
+              %i.bi.bi-exclamation-triangle.text-warning{ data: { bs_toggle: "tooltip", bs_title: "Requires MAAP management permission" } }
 
 .row.justify-content-center
   .col-lg-10

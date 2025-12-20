@@ -182,7 +182,7 @@ class ApplicationController < ActionController::Base
   end
   
   def current_company_teammate
-    # Rails.logger.info "🔍🔍🔍🔍🔍 START_current_company_teammate: Does it exist already? #{@current_company_teammate.present?}: #{@current_company_teammate&.id} (#{@current_company_teammate&.person&.display_name})"
+    Rails.logger.info "🔍🔍🔍🔍🔍 current_company_teammate: #{@current_company_teammate}" if @current_company_teammate.present?
     return @current_company_teammate if @current_company_teammate.present?
     
     # In test environment, allow RSpec mocks to override
@@ -211,7 +211,7 @@ class ApplicationController < ActionController::Base
     else
       @current_company_teammate = nil
     end
-    
+    Rails.logger.info "🔍🔍🔍🔍🔍 current_company_teammate: #{@current_company_teammate.present? ? @current_company_teammate : 'unauthenticated'}"
     @current_company_teammate
   end
 

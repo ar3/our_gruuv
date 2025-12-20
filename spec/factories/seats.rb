@@ -18,7 +18,6 @@ FactoryBot.define do
     end
     
     trait :with_hr_content do
-      reports_to { "Engineering Manager" }
       team { "Platform Engineering" }
       reports { "Junior Developers" }
       measurable_outcomes { "Deliver 3 major features per quarter" }

@@ -13,49 +13,24 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
 
   protected
 
-  def ensure_teammate_matches_organization
-    return unless current_company_teammate
-    
-    route_org = Organization.find(params[:organization_id] || params[:id])
-    user_company = current_company_teammate.organization
-    
-    # Since only CompanyTeammates log in and companies are top-level,
-    # check for exact company match
-    return if user_company == route_org
-    
-    # Allow access if route_org is a descendant of user's company
-    # This allows accessing departments/teams within the user's company
-    if user_company.self_and_descendants.include?(route_org)
-      return
-    end
-    
-    # Find CompanyTeammate for the route company
-    # Since only CompanyTeammates log in, filter for CompanyTeammate type
-    company_teammate = current_company_teammate.person.active_teammates
-                                                 .where(type: 'CompanyTeammate')
-                                                 .where(organization_id: route_org.id)
-                                                 .first
-    
-    if company_teammate
-      # Switch to the teammate for this company
-      session[:current_company_teammate_id] = company_teammate.id
-      # Clear cached teammate so it reloads
-      @current_company_teammate = nil
+  def organization_param
+    # Only use params[:id] if we're in the OrganizationsController itself
+    # In nested routes, params[:id] refers to the nested resource (e.g., seat, goal)
+    if controller_name == 'organizations'
+      params[:id]
     else
-      # For observation show actions, redirect to kudos page instead of organizations
-      if controller_name == 'observations' && action_name == 'show' && params[:id].present?
-        observation = Observation.find_by(id: params[:id])
-        if observation.present?
-          date_part = observation.observed_at.strftime('%Y-%m-%d')
-          redirect_to organization_kudo_path(route_org, date: date_part, id: observation.id)
-          return
-        end
-      end
-      
-      # User doesn't have access to this company
-      flash[:alert] = "You don't have access to that organization."
-      redirect_to organizations_path
+      params[:organization_id]
     end
+  end
+
+  def ensure_teammate_matches_organization
+    raise "Organization Not Found: #{organization_param}" if organization.nil?
+    raise "Teammate not found: #{session[:current_company_teammate_id]}" if current_company_teammate.nil?
+    return if organization.id == current_company_teammate.organization.id
+      
+    # User doesn't have access to this company
+    flash[:alert] = "You don't have access to that organization."
+    redirect_to dashboard_organization_path(current_company_teammate.organization)
   end
 
   def set_organization
@@ -63,7 +38,10 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
   end
 
   def organization
-    @organization ||= Organization.find(params[:organization_id] || params[:id])
+    org_param = organization_param
+    return nil unless org_param.present?
+    
+    @organization ||= Organization.find_by_param(org_param)
   end
 
   def company

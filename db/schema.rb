@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_19_123627) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_20_034529) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -734,7 +734,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_19_123627) do
     t.bigint "position_type_id", null: false
     t.date "seat_needed_by", null: false
     t.string "job_classification", default: "Salaried Exempt"
-    t.string "reports_to"
     t.string "team"
     t.text "reports"
     t.text "measurable_outcomes"

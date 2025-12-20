@@ -7,18 +7,14 @@
 - # display_name includes full hierarchy (e.g., "Company > c > 1"), so string sorting
 - # naturally groups children right after their parent: a, b, c, c > 1, c > 2, d
 - sorted_departments = departments.sort_by { |dept| dept.display_name }
-- # Build options: company first, then departments
-- # Exclude company if it's in exclude_ids
-- company_included = !exclude_ids.include?(company&.id)
-- # Default to company if no selection provided and company is included
-- default_selected_id = selected_department_id || (company_included ? company&.id : nil)
-- department_options = []
-- if company_included
-  - department_options << [company&.name || 'Company', company&.id]
-- department_options += sorted_departments.map { |dept| [dept.display_name, dept.id] }
-- # Add "No Department" option if include_blank is true (for assignments where department is optional)
+- # Build options: only departments (no company)
+- department_options = sorted_departments.map { |dept| [dept.display_name, dept.id] }
+- # Add "No Department" option if include_blank is true (for seats where department is optional)
+- # "No Department" should be first and the default when no selection is provided
 - if include_blank
   - department_options = [['No Department', '']] + department_options
+- # Default to "No Department" (empty string) if no selection provided
+- default_selected_id = selected_department_id || ''
 .mb-3
   = form.label field_name, label_text, class: "form-label"
   = form.select field_name, 
