@@ -127,6 +127,110 @@ RSpec.describe Organizations::SeatsController, type: :controller do
     end
   end
 
+  describe 'POST #create' do
+    context 'with MAAP management permission' do
+      before do
+        person_teammate.update!(can_manage_maap: true)
+      end
+
+      let(:department) { create(:organization, :department, parent: company) }
+      let(:team) { create(:organization, :team, parent: company) }
+
+      it 'creates a seat with department, team, and reports_to_seat associations' do
+        # Ensure department and team have company as parent
+        expect(department.parent).to eq(company)
+        expect(team.parent).to eq(company)
+
+        # Create reports_to_seat inside the test to avoid counting it in the expectation
+        reports_to_seat = create(:seat, position_type: position_type, seat_needed_by: Date.current + 6.months)
+
+        expect {
+          post :create, params: {
+            organization_id: company.id,
+            seat: {
+              position_type_id: position_type.id,
+              seat_needed_by: Date.current + 3.months,
+              department_id: department.id,
+              team_id: team.id,
+              reports_to_seat_id: reports_to_seat.id
+            }
+          }
+        }.to change { Seat.count }.by(1)
+
+        created_seat = Seat.last
+        expect(created_seat.department_id).to eq(department.id)
+        expect(created_seat.team_id).to eq(team.id)
+        expect(created_seat.reports_to_seat_id).to eq(reports_to_seat.id)
+      end
+
+      it 'creates a seat without associations' do
+        expect {
+          post :create, params: {
+            organization_id: company.id,
+            seat: {
+              position_type_id: position_type.id,
+              seat_needed_by: Date.current + 3.months
+            }
+          }
+        }.to change { Seat.count }.by(1)
+
+        created_seat = Seat.last
+        expect(created_seat.department).to be_nil
+        expect(created_seat.team).to be_nil
+        expect(created_seat.reports_to_seat).to be_nil
+      end
+    end
+  end
+
+  describe 'PATCH #update' do
+    context 'with MAAP management permission' do
+      before do
+        person_teammate.update!(can_manage_maap: true)
+      end
+
+      let(:department) { create(:organization, :department, parent: company) }
+      let(:team) { create(:organization, :team, parent: company) }
+
+      it 'updates a seat with department, team, and reports_to_seat associations' do
+        reports_to_seat = create(:seat, position_type: position_type, seat_needed_by: Date.current + 6.months)
+        patch :update, params: {
+          organization_id: company.id,
+          id: seat.id,
+          seat: {
+            department_id: department.id,
+            team_id: team.id,
+            reports_to_seat_id: reports_to_seat.id
+          }
+        }
+
+        seat.reload
+        expect(seat.department_id).to eq(department.id)
+        expect(seat.team_id).to eq(team.id)
+        expect(seat.reports_to_seat_id).to eq(reports_to_seat.id)
+      end
+
+      it 'clears associations when set to empty string' do
+        reports_to_seat = create(:seat, position_type: position_type, seat_needed_by: Date.current + 6.months)
+        seat.update!(department: department, team: team, reports_to_seat: reports_to_seat)
+
+        patch :update, params: {
+          organization_id: company.id,
+          id: seat.id,
+          seat: {
+            department_id: '',
+            team_id: '',
+            reports_to_seat_id: ''
+          }
+        }
+
+        seat.reload
+        expect(seat.department).to be_nil
+        expect(seat.team).to be_nil
+        expect(seat.reports_to_seat).to be_nil
+      end
+    end
+  end
+
   describe 'POST #create_missing_position_type_seats' do
     context 'with MAAP management permission' do
       before do

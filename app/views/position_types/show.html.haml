@@ -68,6 +68,18 @@
                       %i.bi.bi-file-earmark-text.me-1
                       Draft Version
 
+              - active_seats = @position_type.seats.active.ordered
+              %h5.mb-2.mt-3
+                %i.bi.bi-person-badge.me-2
+                Seats
+              - if active_seats.any?
+                - active_seats.each do |seat|
+                  .mb-2
+                    = link_to seat.display_name, organization_seat_path(@position_type.organization, seat), class: "text-decoration-none"
+              - else
+                .alert.alert-info
+                  %p.mb-0= "#{@position_type.external_title} is not currently available at #{@position_type.organization.display_name}"
+
       - if @position_type.positions.any?
         - available_levels = @position_type.position_major_level.position_levels
         - existing_level_ids = @position_type.positions.map(&:position_level_id)

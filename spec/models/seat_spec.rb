@@ -8,6 +8,42 @@ RSpec.describe Seat, type: :model do
   describe 'associations' do
     it { should belong_to(:position_type) }
     it { should have_many(:employment_tenures).dependent(:nullify) }
+    it { should belong_to(:department).optional }
+    it { should belong_to(:team).optional }
+    it { should belong_to(:reports_to_seat).optional }
+    it { should have_many(:reporting_seats).dependent(:nullify) }
+  end
+
+  describe 'department, team, and reports_to_seat associations' do
+    let(:department) { create(:organization, :department, parent: organization) }
+    let(:team) { create(:organization, :team, parent: organization) }
+    let(:reports_to_seat) { create(:seat, position_type: position_type, seat_needed_by: Date.current + 6.months) }
+
+    it 'can belong to a department' do
+      seat.department = department
+      seat.save!
+      expect(seat.reload.department_id).to eq(department.id)
+      expect(seat.reload.department).to be_a(Department)
+    end
+
+    it 'can belong to a team' do
+      seat.team = team
+      seat.save!
+      expect(seat.reload.team_id).to eq(team.id)
+      expect(seat.reload.team).to be_a(Team)
+    end
+
+    it 'can belong to a reports_to_seat' do
+      seat.reports_to_seat = reports_to_seat
+      seat.save!
+      expect(seat.reload.reports_to_seat_id).to eq(reports_to_seat.id)
+      expect(seat.reload.reports_to_seat).to eq(reports_to_seat)
+    end
+
+    it 'has many reporting_seats' do
+      reporting_seat = create(:seat, position_type: position_type, seat_needed_by: Date.current + 9.months, reports_to_seat: seat)
+      expect(seat.reporting_seats).to include(reporting_seat)
+    end
   end
 
   describe 'validations' do

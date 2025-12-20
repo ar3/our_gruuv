@@ -30,5 +30,17 @@ FactoryBot.define do
       why_now { "Q4 planning shows we need additional capacity" }
       costs_risks { "Risk of missing delivery deadlines without additional headcount" }
     end
+
+    trait :with_department do
+      association :department, factory: [:organization, :department]
+    end
+
+    trait :with_team do
+      association :team, factory: [:organization, :team]
+    end
+
+    trait :with_reports_to_seat do
+      association :reports_to_seat, factory: :seat
+    end
   end
 end

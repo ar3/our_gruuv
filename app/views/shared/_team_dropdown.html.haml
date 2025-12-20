@@ -1,0 +1,31 @@
+- company = organization.root_company || organization
+- teams = company ? company.descendants.select { |org| org.type == 'Team' } : []
+- # Exclude specified IDs (for parent selection, exclude self and descendants)
+- exclude_ids = exclude_ids || []
+- teams = teams.reject { |team| exclude_ids.include?(team.id) }
+- # Sort teams so that children appear immediately after their parent
+- # display_name includes full hierarchy (e.g., "Company > c > 1"), so string sorting
+- # naturally groups children right after their parent: a, b, c, c > 1, c > 2, d
+- sorted_teams = teams.sort_by { |team| team.display_name }
+- # Build options: company first, then teams
+- # Exclude company if it's in exclude_ids
+- company_included = !exclude_ids.include?(company&.id)
+- # Default to company if no selection provided and company is included
+- default_selected_id = selected_team_id || (company_included ? company&.id : nil)
+- team_options = []
+- if company_included
+  - team_options << [company&.name || 'Company', company&.id]
+- team_options += sorted_teams.map { |team| [team.display_name, team.id] }
+- # Add "No Team" option if include_blank is true (for seats where team is optional)
+- if include_blank
+  - team_options = [['No Team', '']] + team_options
+.mb-3
+  = form.label field_name, label_text, class: "form-label"
+  = form.select field_name, 
+                team_options,
+                { selected: default_selected_id },
+                { class: 'form-select' }
+  - if help_text.present?
+    %small.form-text.text-muted= help_text
+
+

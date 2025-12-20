@@ -117,6 +117,9 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
 
   def set_related_data
     @position_types = organization.position_types.ordered
+    @departments = organization.descendants.select { |o| o.type == 'Department' }.sort_by(&:display_name)
+    @teams = organization.descendants.select { |o| o.type == 'Team' }.sort_by(&:display_name)
+    @available_seats = Seat.for_organization(organization).ordered
   end
 
   def seat_params
@@ -126,6 +129,9 @@ class Organizations::SeatsController < Organizations::OrganizationNamespaceBaseC
       :job_classification,
       :reports_to,
       :team,
+      :department_id,
+      :team_id,
+      :reports_to_seat_id,
       :reports,
       :measurable_outcomes,
       :seat_disclaimer,

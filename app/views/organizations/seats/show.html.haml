@@ -35,13 +35,20 @@
       .card-body
 
         %p
-          %strong Reports to:
+          %strong Reports to (Legacy):
           = @seat.reports_to.presence || '--Not answered yet--'
 
-        
+        %p
+          %strong Department:
+          = @seat.department&.display_name || '--Not selected--'
+
         %p
           %strong Team:
-          = @seat.team.presence || '--Not answered yet--'
+          = @seat.team&.display_name || '--Not selected--'
+
+        %p
+          %strong Reports To Seat:
+          = @seat.reports_to_seat&.display_name || '--Not selected--'
 
         
         %p

@@ -2,6 +2,10 @@ class Seat < ApplicationRecord
   # Associations
   belongs_to :position_type
   has_many :employment_tenures, dependent: :nullify
+  belongs_to :department, class_name: 'Organization', optional: true
+  belongs_to :team, class_name: 'Organization', optional: true
+  belongs_to :reports_to_seat, class_name: 'Seat', optional: true
+  has_many :reporting_seats, class_name: 'Seat', foreign_key: 'reports_to_seat_id', dependent: :nullify
 
   # Validations
   validates :seat_needed_by, presence: true

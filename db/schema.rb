@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_19_121203) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_19_123627) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -748,8 +748,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_19_121203) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "seat_disclaimer", default: "This job description is not designed to cover or contain a comprehensive list of duties or responsibilities. Duties may change or new ones may be assigned at any time."
+    t.bigint "department_id"
+    t.bigint "team_id"
+    t.bigint "reports_to_seat_id"
+    t.index ["department_id"], name: "index_seats_on_department_id"
     t.index ["position_type_id", "seat_needed_by"], name: "index_seats_on_position_type_and_needed_by", unique: true
     t.index ["position_type_id"], name: "index_seats_on_position_type_id"
+    t.index ["reports_to_seat_id"], name: "index_seats_on_reports_to_seat_id"
+    t.index ["team_id"], name: "index_seats_on_team_id"
   end
 
   create_table "slack_configurations", force: :cascade do |t|
@@ -953,7 +959,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_19_121203) do
   add_foreign_key "prompt_templates", "organizations", column: "company_id"
   add_foreign_key "prompts", "prompt_templates"
   add_foreign_key "prompts", "teammates", column: "company_teammate_id"
+  add_foreign_key "seats", "organizations", column: "department_id"
+  add_foreign_key "seats", "organizations", column: "team_id"
   add_foreign_key "seats", "position_types"
+  add_foreign_key "seats", "seats", column: "reports_to_seat_id"
   add_foreign_key "slack_configurations", "organizations"
   add_foreign_key "slack_configurations", "people", column: "created_by_id"
   add_foreign_key "teammate_identities", "teammates"
