@@ -145,34 +145,47 @@
     <main>
       <div class="illustration">
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <!-- 20-sided dice (d20) that rolled a 1 -->
+          <!-- Confused robot illustration -->
           
-          <!-- D20 shape (icosahedron viewed from angle) -->
-          <g transform="translate(100, 100) rotate(-15)">
-            <!-- Top face (showing the 1) -->
-            <path d="M 0 -40 L -25 -15 L 25 -15 Z" fill="#1e40af" stroke="#1d4ed8" stroke-width="2"/>
-            <!-- Number 1 on top face -->
-            <text x="0" y="-20" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">1</text>
-            
-            <!-- Side faces -->
-            <path d="M -25 -15 L -35 10 L 0 20 L 25 -15 Z" fill="#2563eb" stroke="#1d4ed8" stroke-width="2"/>
-            <path d="M 25 -15 L 0 20 L 35 10 Z" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2"/>
-            <path d="M -35 10 L 0 20 L 0 45 L -20 35 Z" fill="#2563eb" stroke="#1d4ed8" stroke-width="2"/>
-            <path d="M 35 10 L 0 20 L 0 45 L 20 35 Z" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2"/>
-            <path d="M -20 35 L 0 45 L 20 35 L 0 55 Z" fill="#1e40af" stroke="#1d4ed8" stroke-width="2"/>
-            
-            <!-- Shadow/highlight for 3D effect -->
-            <path d="M 0 -40 L -25 -15 L 25 -15 Z" fill="none" stroke="#dbeafe" stroke-width="1" opacity="0.3"/>
-          </g>
+          <!-- Robot head -->
+          <rect x="60" y="40" width="80" height="70" rx="8" fill="#dbeafe" stroke="#1e40af" stroke-width="3"/>
           
-          <!-- "ohh no..." text -->
-          <text x="100" y="170" font-family="'Source Sans Pro', Arial, sans-serif" font-size="18" font-weight="600" fill="#1e293b" text-anchor="middle" font-style="italic">ohh no...</text>
+          <!-- Antenna -->
+          <line x1="100" y1="40" x2="100" y2="25" stroke="#1e40af" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="100" cy="25" r="4" fill="#dc3545"/>
           
-          <!-- Motion lines showing it just rolled -->
-          <path d="M 30 50 L 40 45" stroke="#78716c" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
-          <path d="M 35 60 L 45 55" stroke="#78716c" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
-          <path d="M 165 50 L 155 45" stroke="#78716c" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
-          <path d="M 160 60 L 150 55" stroke="#78716c" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+          <!-- Confused eyes (one up, one down) -->
+          <circle cx="80" cy="70" r="8" fill="#1e293b"/>
+          <circle cx="80" cy="70" r="4" fill="#ffffff"/>
+          <circle cx="120" cy="70" r="8" fill="#1e293b"/>
+          <circle cx="120" cy="70" r="4" fill="#ffffff"/>
+          <!-- Confused eyebrow lines -->
+          <path d="M 70 60 Q 75 55 80 60" stroke="#1e293b" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M 120 60 Q 125 65 130 60" stroke="#1e293b" stroke-width="2" fill="none" stroke-linecap="round"/>
+          
+          <!-- Mouth (confused/uneasy) -->
+          <path d="M 85 90 Q 100 95 115 90" stroke="#1e293b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          
+          <!-- Robot body -->
+          <rect x="70" y="110" width="60" height="50" rx="6" fill="#dbeafe" stroke="#1e40af" stroke-width="3"/>
+          
+          <!-- Control panel/buttons -->
+          <circle cx="85" cy="125" r="4" fill="#166534"/>
+          <circle cx="100" cy="125" r="4" fill="#fd7e14"/>
+          <circle cx="115" cy="125" r="4" fill="#dc3545"/>
+          
+          <!-- Screen with error symbol -->
+          <rect x="80" y="135" width="40" height="20" rx="2" fill="#1e293b"/>
+          <text x="100" y="148" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#dc3545" text-anchor="middle" dominant-baseline="middle">!</text>
+          
+          <!-- Arms (one up in confusion) -->
+          <rect x="50" y="115" width="15" height="30" rx="4" fill="#78716c" transform="rotate(-20 57.5 130)"/>
+          <rect x="135" y="115" width="15" height="30" rx="4" fill="#78716c" transform="rotate(20 142.5 130)"/>
+          
+          <!-- Question marks floating around (confusion) -->
+          <text x="45" y="50" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#78716c" opacity="0.6">?</text>
+          <text x="155" y="55" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#78716c" opacity="0.6">?</text>
+          <text x="50" y="100" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#78716c" opacity="0.5">?</text>
         </svg>
       </div>
 
