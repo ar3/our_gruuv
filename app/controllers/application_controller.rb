@@ -32,6 +32,13 @@ class ApplicationController < ActionController::Base
   private
   
   def handle_unexpected_error(exception)
+    # Always capture exception in Sentry - never swallow it
+    capture_error_in_sentry(exception, {
+      method: 'handle_unexpected_error',
+      controller: controller_name,
+      action: action_name
+    })
+    
     Rails.logger.error "ApplicationController: Unexpected error in #{controller_name}##{action_name}: #{exception.class.name}: #{exception.message}"
     Rails.logger.error exception.backtrace.join("\n")
     
