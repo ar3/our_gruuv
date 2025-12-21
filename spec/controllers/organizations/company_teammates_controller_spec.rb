@@ -105,6 +105,84 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         expect(last_check_in).to eq(check_in)
       end
     end
+
+    context 'when viewing inactive teammate (no active employment)' do
+      let(:inactive_employee) { create(:person) }
+      let(:inactive_employee_teammate) { create(:teammate, person: inactive_employee, organization: organization) }
+
+      before do
+        # Create past employment (ended)
+        create(:employment_tenure, teammate: inactive_employee_teammate, company: organization, started_at: 2.years.ago, ended_at: 1.year.ago)
+        inactive_employee_teammate.update!(first_employed_at: 2.years.ago, last_terminated_at: 1.year.ago)
+        # Allow policy to permit viewing
+        allow_any_instance_of(CompanyTeammatePolicy).to receive(:internal?).and_return(true)
+      end
+
+      it 'renders the internal page successfully' do
+        get :internal, params: { organization_id: organization.id, id: inactive_employee_teammate.id }
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:internal)
+      end
+
+      it 'assigns the correct instance variables' do
+        get :internal, params: { organization_id: organization.id, id: inactive_employee_teammate.id }
+        
+        expect(assigns(:teammate).id).to eq(inactive_employee_teammate.id)
+        expect(assigns(:current_organization)).to be_a(Organization).and have_attributes(id: organization.id)
+        expect(assigns(:employment_tenures)).to be_present
+        expect(assigns(:teammates)).to be_present
+      end
+
+      it 'does not assign active employment tenure (none exists)' do
+        get :internal, params: { organization_id: organization.id, id: inactive_employee_teammate.id }
+        
+        expect(assigns(:active_employment_tenure)).to be_nil
+      end
+
+      it 'assigns earliest start date from past employment' do
+        get :internal, params: { organization_id: organization.id, id: inactive_employee_teammate.id }
+        
+        expect(assigns(:earliest_start_date)).to be_present
+        expect(assigns(:earliest_start_date)).to eq(inactive_employee_teammate.first_employed_at)
+      end
+    end
+
+    context 'when viewing teammate with no employment tenure' do
+      let(:teammate_without_employment) { create(:person) }
+      let(:teammate_without_employment_record) { create(:teammate, person: teammate_without_employment, organization: organization) }
+
+      before do
+        # Allow policy to permit viewing
+        allow_any_instance_of(CompanyTeammatePolicy).to receive(:internal?).and_return(true)
+      end
+
+      it 'renders the internal page successfully' do
+        get :internal, params: { organization_id: organization.id, id: teammate_without_employment_record.id }
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:internal)
+      end
+
+      it 'assigns the correct instance variables' do
+        get :internal, params: { organization_id: organization.id, id: teammate_without_employment_record.id }
+        
+        expect(assigns(:teammate).id).to eq(teammate_without_employment_record.id)
+        expect(assigns(:current_organization)).to be_a(Organization).and have_attributes(id: organization.id)
+        expect(assigns(:employment_tenures)).to eq([])
+        expect(assigns(:teammates)).to be_present
+      end
+
+      it 'does not assign active employment tenure' do
+        get :internal, params: { organization_id: organization.id, id: teammate_without_employment_record.id }
+        
+        expect(assigns(:active_employment_tenure)).to be_nil
+      end
+
+      it 'does not assign earliest start date' do
+        get :internal, params: { organization_id: organization.id, id: teammate_without_employment_record.id }
+        
+        expect(assigns(:earliest_start_date)).to be_nil
+      end
+    end
   end
 
   describe 'GET #permissions' do

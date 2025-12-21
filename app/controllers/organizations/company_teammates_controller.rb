@@ -59,7 +59,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def internal
     authorize @teammate, :internal?, policy_class: CompanyTeammatePolicy
-    # Internal view - organization-specific data for active employees
+    # Internal view - organization-specific data for teammates (active, inactive, or not yet active)
     @current_organization = organization
     @employment_tenures = @teammate&.employment_tenures&.includes(:company, :manager, position: :position_type)
                                  &.where(company: organization)

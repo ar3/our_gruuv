@@ -26,13 +26,15 @@ class CompanyTeammatePolicy < ApplicationPolicy
   end
 
   def internal?
-    # Internal teammate view - same as teammate? from PersonPolicy
+    # Internal teammate view - allows viewing any teammate record that exists
+    # regardless of employment status (not yet active, inactive, or active)
     return true if admin_bypass?
     return false unless viewing_teammate && record
     return true if viewing_teammate == record
+    # When viewing others, viewing teammate must be employed
     return false unless viewing_teammate.employed?
-    # Record must have employment in the organization
-    record.employment_tenures.active.where(company: viewing_teammate.organization).exists?
+    # Record must exist in the same organization (but doesn't need active employment)
+    record.organization == viewing_teammate.organization
   end
 
   def view_check_ins?
