@@ -1,0 +1,40 @@
+- content_for :title, "Page Not Found"
+
+.container.mt-4
+  .row
+    .col-12
+      .card
+        .card-body.text-center
+          %h1.text-warning.mb-4
+            %i.bi.bi-exclamation-triangle.me-2
+            Page Not Found
+          %p.lead
+            We couldn't find the page you're looking for:
+            %code= @path
+          %p.text-muted.mb-4
+            We're rebuilding our app, and some pages may have moved. Let us help you find what you're looking for.
+
+          - if @suggestions.any?
+            .row.mt-4
+              .col-12
+                %h4.mb-3
+                  %i.bi.bi-lightbulb.me-2
+                  You might be looking for:
+                .row
+                  - @suggestions.each do |suggestion|
+                    .col-md-6.mb-3
+                      .card.h-100
+                        .card-body
+                          %h5.card-title
+                            = link_to suggestion[:title], suggestion[:path], class: 'text-decoration-none'
+                          %p.card-text.text-muted.small
+                            = suggestion[:description]
+                          = link_to "Go to #{suggestion[:title]}", suggestion[:path], class: 'btn btn-outline-primary btn-sm'
+
+          .row.mt-4
+            .col-12
+              %hr
+              %p.text-muted.small
+                If you believe this is an error, please contact support. We're tracking these requests to improve the app.
+              = link_to 'Return to Home', root_path, class: 'btn btn-primary'
+

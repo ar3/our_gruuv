@@ -65,12 +65,9 @@ Sentry.init do |config|
   end
   
   # Configure which exceptions to ignore
-#   config.excluded_exceptions += [
-#     'ActionController::RoutingError',
-#     'ActionController::UnknownFormat',
-#     'ActionController::BadRequest',
-#     'ActionController::ParameterMissing'
-#   ]
+  config.excluded_exceptions += [
+    'ActionController::RoutingError'
+  ]
   
   # Configure performance monitoring
   config.enable_tracing = true

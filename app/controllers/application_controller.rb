@@ -56,6 +56,7 @@ class ApplicationController < ActionController::Base
   
   
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
+  rescue_from ActionController::RoutingError, with: :handle_routing_error
   
   # Set up PaperTrail controller info for request tracking
   before_action :set_paper_trail_controller_info
@@ -163,6 +164,13 @@ class ApplicationController < ActionController::Base
     # Default: redirect to homepage to prevent redirect loops
     flash[:alert] = "You don't have permission to access that resource. Please contact your administrator if you believe this is an error."
     redirect_to root_path
+  end
+
+  def handle_routing_error(exception)
+    # Don't send RoutingError to Sentry - we handle it ourselves
+    # Redirect to missing resources page with the path
+    path = request.path
+    redirect_to missing_resource_path(path: path), status: :not_found
   end
   
 

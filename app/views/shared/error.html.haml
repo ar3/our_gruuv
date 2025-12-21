@@ -1,11 +1,45 @@
-.container.mt-4
-  .row
-    .col-12
-      .card
-        .card-body.text-center
-          %h1.text-danger
-            %i.bi.bi-exclamation-triangle.me-2
-            Something went wrong
-          %p.lead We're sorry, but an unexpected error occurred.
-          %p Please try again, or contact support if the problem persists.
-          = link_to 'Go Back', :back, class: 'btn btn-primary'
+.container.mt-5.mb-5
+  .row.justify-content-center
+    .col-12.col-md-10.col-lg-8
+      .card.border-0.shadow-sm
+        .card-body.text-center.py-5.px-4
+          .mb-4
+            %svg{viewBox: "0 0 200 200", xmlns: "http://www.w3.org/2000/svg", style: "width: 12rem; max-width: 100%; height: auto;"}
+              -# 20-sided dice (d20) that rolled a 1
+              -# D20 shape (icosahedron viewed from angle)
+              %g{transform: "translate(100, 100) rotate(-15)"}
+                -# Top face (showing the 1)
+                %path{d: "M 0 -40 L -25 -15 L 25 -15 Z", fill: "#1e40af", stroke: "#1d4ed8", "stroke-width": "2"}
+                -# Number 1 on top face
+                %text{x: "0", y: "-20", "font-family": "Arial, sans-serif", "font-size": "24", "font-weight": "bold", fill: "#ffffff", "text-anchor": "middle", "dominant-baseline": "middle"} 1
+                -# Side faces
+                %path{d: "M -25 -15 L -35 10 L 0 20 L 25 -15 Z", fill: "#2563eb", stroke: "#1d4ed8", "stroke-width": "2"}
+                %path{d: "M 25 -15 L 0 20 L 35 10 Z", fill: "#3b82f6", stroke: "#1d4ed8", "stroke-width": "2"}
+                %path{d: "M -35 10 L 0 20 L 0 45 L -20 35 Z", fill: "#2563eb", stroke: "#1d4ed8", "stroke-width": "2"}
+                %path{d: "M 35 10 L 0 20 L 0 45 L 20 35 Z", fill: "#3b82f6", stroke: "#1d4ed8", "stroke-width": "2"}
+                %path{d: "M -20 35 L 0 45 L 20 35 L 0 55 Z", fill: "#1e40af", stroke: "#1d4ed8", "stroke-width": "2"}
+                -# Shadow/highlight for 3D effect
+                %path{d: "M 0 -40 L -25 -15 L 25 -15 Z", fill: "none", stroke: "#dbeafe", "stroke-width": "1", opacity: "0.3"}
+              -# "ohh no..." text
+              %text{x: "100", y: "170", "font-family": "'Source Sans Pro', Arial, sans-serif", "font-size": "18", "font-weight": "600", fill: "#1e293b", "text-anchor": "middle", "font-style": "italic"} ohh no...
+              -# Motion lines showing it just rolled
+              %path{d: "M 30 50 L 40 45", stroke: "#78716c", "stroke-width": "2", "stroke-linecap": "round", opacity: "0.5"}
+              %path{d: "M 35 60 L 45 55", stroke: "#78716c", "stroke-width": "2", "stroke-linecap": "round", opacity: "0.5"}
+              %path{d: "M 165 50 L 155 45", stroke: "#78716c", "stroke-width": "2", "stroke-linecap": "round", opacity: "0.5"}
+              %path{d: "M 160 60 L 150 55", stroke: "#78716c", "stroke-width": "2", "stroke-linecap": "round", opacity: "0.5"}
+
+          %h1.mb-3{style: "color: #1e293b; font-weight: 700;"}
+            Oops! Something went wrong
+
+          %p.lead.mb-3{style: "color: #475569; font-size: 1.125rem;"}
+            %strong{style: "color: #1e293b;"}
+              Sorry, but we've found an issue... let's get this fixed together.
+
+          %p.mb-4{style: "color: #475569; font-size: 1rem; line-height: 1.6;"}
+            Send an email to
+            = link_to "ar3@ar3.me", "mailto:ar3@ar3.me?subject=Error Report&body=Hi! I encountered an error. Here's what I was trying to do:%0D%0A%0D%0A", class: "fw-semibold", style: "color: #1e40af; text-decoration: underline; font-size: 1.125rem;"
+            with what you were trying to do. There is logging so I may have already identified the issue, but just in case, let's work together to ensure this experience has as few of these pot holes as possible!
+
+          .mt-4
+            = link_to "Go Back", :back, class: "btn btn-primary me-2"
+            = link_to "Go Home", root_path, class: "btn btn-outline-primary"
