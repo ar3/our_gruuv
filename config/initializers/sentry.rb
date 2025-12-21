@@ -70,7 +70,7 @@ Sentry.init do |config|
   ]
   
   # Configure performance monitoring
-  config.enable_tracing = true
+  # Note: enable_tracing is deprecated, using traces_sample_rate instead (set above)
   
   # Configure the logger to capture Rails.logger.error messages
   config.sdk_logger = Rails.logger

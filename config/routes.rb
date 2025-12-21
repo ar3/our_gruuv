@@ -492,7 +492,7 @@ end
 
   # Catch-all route for unmatched paths (must be last)
   # This handles all 404s and sends them to the missing resources controller
-  get '*path', to: 'missing_resources#show', as: :missing_resource, constraints: { path: /(?!/rails\/active_storage)/ }
+  get '*path', to: 'missing_resources#show', as: :missing_resource, constraints: lambda { |req| !req.path.start_with?('/rails/active_storage') }
 
   # Defines the root path route ("/")
   # root "posts#index"
