@@ -3,12 +3,6 @@ Rails.application.routes.draw do
   get "auth/google_oauth2_callback"
   # Assignments routes - moved to organization namespace
   
-  resources :position_types do
-    member do
-      post :clone_positions
-    end
-  end
-  
 
   root "pages#home"
   get "healthcheck/index"
@@ -226,6 +220,13 @@ get '/login', to: 'auth#login', as: :login
         get :job_description
         get :manage_assignments
         patch :update_assignments
+      end
+    end
+    
+    # Position types management
+    resources :position_types, module: :organizations do
+      member do
+        post :clone_positions
       end
     end
     

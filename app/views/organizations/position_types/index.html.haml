@@ -5,9 +5,10 @@
         %h2.mb-0
           %i.bi.bi-tag.me-2
           Position Types
-        = link_to new_position_type_path, class: "btn btn-primary" do
-          %i.bi.bi-plus.me-1
-          New Position Type
+        - if policy(@organization).manage_maap?
+          = link_to new_organization_position_type_path(@organization), class: "btn btn-primary" do
+            %i.bi.bi-plus.me-1
+            New Position Type
       
       - if @position_types.any?
         .row
@@ -24,15 +25,15 @@
                       = position_type.position_major_level.set_name
                 .card-footer.bg-transparent
                   .d-flex.justify-content-between
-                    = link_to "View", position_type_path(position_type), class: "btn btn-outline-primary btn-sm"
+                    = link_to "View", organization_position_type_path(@organization, position_type), class: "btn btn-outline-primary btn-sm"
                     .dropdown
                       %button.btn.btn-outline-secondary.btn-sm.dropdown-toggle{"data-bs-toggle" => "dropdown", :type => "button"}
                         %i.bi.bi-three-dots
                       %ul.dropdown-menu
                         %li
-                          = link_to "Edit", edit_position_type_path(position_type), class: "dropdown-item"
+                          = link_to "Edit", edit_organization_position_type_path(@organization, position_type), class: "dropdown-item"
                         %li
-                          = link_to "Delete", position_type_path(position_type), 
+                          = link_to "Delete", organization_position_type_path(@organization, position_type), 
                             method: :delete, 
                             data: { confirm: "Are you sure?" }, 
                             class: "dropdown-item text-danger"
@@ -40,6 +41,8 @@
         .text-center.py-5
           %h4.text-muted No position types yet
           %p.mb-4 Create your first position type to define roles and responsibilities.
-          = link_to new_position_type_path, class: "btn btn-primary btn-lg" do
-            %i.bi.bi-plus.me-2
-            Create Your First Position Type 
+          - if policy(@organization).manage_maap?
+            = link_to new_organization_position_type_path(@organization), class: "btn btn-primary btn-lg" do
+              %i.bi.bi-plus.me-2
+              Create Your First Position Type
+

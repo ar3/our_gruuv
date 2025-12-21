@@ -1,10 +1,10 @@
-class PositionTypesController < ApplicationController
+class Organizations::PositionTypesController < Organizations::OrganizationNamespaceBaseController
   before_action :set_position_type, only: [:show, :edit, :update, :destroy, :clone_positions]
-  before_action :set_organization
-  after_action :verify_authorized, except: [:index]
+  after_action :verify_authorized
 
   def index
-    @position_types = PositionType.where(organization: @organization).ordered
+    authorize @organization, :view_position_types?
+    @position_types = @organization.position_types.ordered
     respond_to do |format|
       format.html
       format.json { render json: @position_types }
@@ -17,7 +17,7 @@ class PositionTypesController < ApplicationController
 
   def new
     @position_type = PositionType.new(organization: @organization)
-    authorize @position_type
+    authorize @organization, :manage_maap?
   end
 
   def edit
@@ -25,12 +25,12 @@ class PositionTypesController < ApplicationController
   end
 
   def create
+    authorize @organization, :manage_maap?
     @position_type = PositionType.new(position_type_params)
     @position_type.organization = @organization
-    authorize @position_type
 
     if @position_type.save
-      redirect_to @position_type, notice: 'Position type was successfully created.'
+      redirect_to organization_position_type_path(@organization, @position_type), notice: 'Position type was successfully created.'
     else
       render :new, status: :unprocessable_entity
     end
@@ -39,7 +39,7 @@ class PositionTypesController < ApplicationController
   def update
     authorize @position_type
     if @position_type.update(position_type_params)
-      redirect_to @position_type, notice: 'Position type was successfully updated.'
+      redirect_to organization_position_type_path(@organization, @position_type), notice: 'Position type was successfully updated.'
     else
       render :edit, status: :unprocessable_entity
     end
@@ -48,7 +48,7 @@ class PositionTypesController < ApplicationController
   def destroy
     authorize @position_type
     @position_type.destroy
-    redirect_to position_types_path, notice: 'Position type was successfully deleted.'
+    redirect_to organization_position_types_path(@organization), notice: 'Position type was successfully deleted.'
   end
 
   def clone_positions
@@ -64,13 +64,13 @@ class PositionTypesController < ApplicationController
     
     if target_level_ids.empty?
       Rails.logger.warn "No target level IDs provided"
-      redirect_to @position_type, alert: 'Please select at least one target level.'
+      redirect_to organization_position_type_path(@organization, @position_type), alert: 'Please select at least one target level.'
       return
     end
     
     if source_position.position_type != @position_type
       Rails.logger.warn "Source position type mismatch: #{source_position.position_type_id} vs #{@position_type.id}"
-      redirect_to @position_type, alert: 'Source position must belong to this position type.'
+      redirect_to organization_position_type_path(@organization, @position_type), alert: 'Source position must belong to this position type.'
       return
     end
     
@@ -148,25 +148,22 @@ class PositionTypesController < ApplicationController
     if created_count > 0
       notice_msg = "Successfully created #{created_count} new position(s)."
       notice_msg += " Errors: #{errors.join('; ')}" if errors.any?
-      redirect_to @position_type, notice: notice_msg
+      redirect_to organization_position_type_path(@organization, @position_type), notice: notice_msg
     else
       alert_msg = 'No new positions were created. They may already exist.'
       alert_msg += " Errors: #{errors.join('; ')}" if errors.any?
-      redirect_to @position_type, alert: alert_msg
+      redirect_to organization_position_type_path(@organization, @position_type), alert: alert_msg
     end
   end
 
   private
 
   def set_position_type
-    @position_type = PositionType.find(params[:id])
-  end
-
-  def set_organization
-    @organization = current_organization
+    @position_type = @organization.position_types.find(params[:id])
   end
 
   def position_type_params
     params.require(:position_type).permit(:position_major_level_id, :external_title, :alternative_titles, :position_summary)
   end
 end
+

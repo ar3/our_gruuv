@@ -2,16 +2,18 @@
   .row.justify-content-center
     .col-lg-8
       .d-flex.justify-content-between.align-items-center.mb-4
-        = link_to position_type_path(@position_type), class: "btn btn-outline-secondary" do
+        = link_to "javascript:history.back()", class: "btn btn-outline-secondary" do
           %i.bi.bi-arrow-left.me-1
-          Back to #{@position_type.external_title}
-        = render 'mode_switcher'
+          Back
+        %h2.mb-0
+          %i.bi.bi-plus-circle.me-2
+          New Position Type
       
       .card
         .card-header
-          %h5.mb-0 Edit Position Type
+          %h5.mb-0 Create New Position Type
         .card-body
-          = form_with model: @position_type, local: true do |form|
+          = form_with model: [@organization, @position_type], url: organization_position_types_path(@organization), local: true do |form|
             - if @position_type.errors.any?
               .alert.alert-danger
                 %h5= "#{pluralize(@position_type.errors.count, "error")} prohibited this position type from being saved:"
@@ -55,5 +57,6 @@
             .row
               .col-md-12
                 .d-flex.justify-content-between
-                  = link_to "Cancel", position_type_path(@position_type), class: "btn btn-outline-secondary"
-                  = form.submit "Update Position Type", class: "btn btn-primary"
+                  = link_to "Cancel", "javascript:history.back()", class: "btn btn-outline-secondary"
+                  = form.submit "Create Position Type", class: "btn btn-primary"
+

@@ -124,6 +124,12 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || true
   end
 
+  def view_position_types?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    admin_bypass? || true
+  end
+
   def view_prompt_templates?
     return false unless viewing_teammate
     return false unless organization_in_hierarchy?

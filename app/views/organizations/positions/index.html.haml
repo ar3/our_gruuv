@@ -9,7 +9,7 @@
       %i.bi.bi-briefcase.me-2
       Positions
     .d-flex.align-items-center
-      - if policy(PositionType).create?
+      - if policy(@organization).manage_maap?
         = link_to new_organization_position_type_path(@organization), class: "btn btn-primary ml-2" do
           %i.bi.bi-plus
       - else
@@ -38,7 +38,7 @@
                 = position_type.external_title
               %span.badge.bg-secondary.ms-2= "#{position_type.positions.count} position#{'s' if position_type.positions.count != 1}"
             .d-flex.align-items-center.gap-2
-              = link_to position_type_path(position_type), class: "btn btn-sm btn-outline-secondary", title: "View Position Type" do
+              = link_to organization_position_type_path(@organization, position_type), class: "btn btn-sm btn-outline-secondary", title: "View Position Type" do
                 %i.bi.bi-eye
               .text-muted
                 %small= position_type.position_major_level.set_name

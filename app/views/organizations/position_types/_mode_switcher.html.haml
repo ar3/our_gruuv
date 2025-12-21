@@ -10,7 +10,7 @@
           View Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - else
-        = link_to position_type_path(@position_type), class: 'dropdown-item' do
+        = link_to organization_position_type_path(@organization, @position_type), class: 'dropdown-item' do
           %i.bi.bi-eye.me-2
           View Mode
       
@@ -21,7 +21,7 @@
           Edit Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(@position_type).update?
-        = link_to edit_position_type_path(@position_type), class: 'dropdown-item' do
+        = link_to edit_organization_position_type_path(@organization, @position_type), class: 'dropdown-item' do
           %i.bi.bi-pencil.me-2
           Edit Mode
       - else

@@ -153,7 +153,7 @@
                 - @position_types.each do |position_type|
                   %tr
                     %td
-                      = link_to position_type_path(position_type), class: "text-decoration-none" do
+                      = link_to organization_position_type_path(@organization, position_type), class: "text-decoration-none" do
                         = position_type.external_title
                     %td= position_type.position_major_level.description
                     %td= position_type.positions.count
