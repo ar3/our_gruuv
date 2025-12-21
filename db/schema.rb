@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_20_034529) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_21_173256) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -426,6 +426,40 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_20_034529) do
     t.index ["employee_id"], name: "index_maap_snapshots_on_employee_id"
     t.index ["maap_data"], name: "index_maap_snapshots_on_maap_data", using: :gin
     t.index ["manager_request_info"], name: "index_maap_snapshots_on_manager_request_info", using: :gin
+  end
+
+  create_table "missing_resource_requests", force: :cascade do |t|
+    t.bigint "missing_resource_id", null: false
+    t.bigint "person_id"
+    t.string "ip_address", null: false
+    t.integer "request_count", default: 1, null: false
+    t.text "user_agent"
+    t.text "referrer"
+    t.string "request_method"
+    t.text "query_string"
+    t.datetime "first_seen_at"
+    t.datetime "last_seen_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ip_address"], name: "index_missing_resource_requests_on_ip_address"
+    t.index ["last_seen_at"], name: "index_missing_resource_requests_on_last_seen_at"
+    t.index ["missing_resource_id", "person_id", "ip_address"], name: "index_missing_resource_requests_unique", unique: true
+    t.index ["missing_resource_id"], name: "index_missing_resource_requests_on_missing_resource_id"
+    t.index ["person_id"], name: "index_missing_resource_requests_on_person_id"
+  end
+
+  create_table "missing_resources", force: :cascade do |t|
+    t.string "path", null: false
+    t.integer "request_count", default: 0, null: false
+    t.datetime "first_seen_at"
+    t.datetime "last_seen_at"
+    t.string "suggested_redirect_path"
+    t.integer "suggestion_confidence"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["last_seen_at"], name: "index_missing_resources_on_last_seen_at"
+    t.index ["path"], name: "index_missing_resources_on_path", unique: true
+    t.index ["request_count"], name: "index_missing_resources_on_request_count"
   end
 
   create_table "notifications", force: :cascade do |t|
@@ -926,6 +960,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_20_034529) do
   add_foreign_key "maap_snapshots", "organizations", column: "company_id"
   add_foreign_key "maap_snapshots", "people", column: "created_by_id"
   add_foreign_key "maap_snapshots", "people", column: "employee_id"
+  add_foreign_key "missing_resource_requests", "missing_resources"
+  add_foreign_key "missing_resource_requests", "people"
   add_foreign_key "notifications", "notifications", column: "main_thread_id"
   add_foreign_key "notifications", "notifications", column: "original_message_id"
   add_foreign_key "observation_ratings", "observations"

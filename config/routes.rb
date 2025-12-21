@@ -490,6 +490,10 @@ end
     end
   end
 
+  # Missing resources index pages (public, no authentication)
+  get '/missing_resources', to: 'missing_resources#index', as: :missing_resources
+  get '/missing_resource_requests', to: 'missing_resources#requests_index', as: :missing_resource_requests
+
   # Catch-all route for unmatched paths (must be last)
   # This handles all 404s and sends them to the missing resources controller
   get '*path', to: 'missing_resources#show', as: :missing_resource, constraints: lambda { |req| !req.path.start_with?('/rails/active_storage') }

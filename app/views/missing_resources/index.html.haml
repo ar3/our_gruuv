@@ -1,0 +1,53 @@
+- content_for :title, "Missing Resources"
+
+.container.mt-4
+  .row
+    .col-12
+      .card
+        .card-header
+          %h3.mb-0
+            %i.bi.bi-exclamation-triangle.me-2
+            Missing Resources
+          %p.text-muted.mb-0 Tracked 404 requests - paths that users tried to access but don't exist
+        .card-body
+          - if @missing_resources.any?
+            .table-responsive
+              %table.table.table-hover
+                %thead
+                  %tr
+                    %th Path
+                    %th.text-end Request Count
+                    %th First Seen
+                    %th Last Seen
+                    %th Suggested Redirect
+                %tbody
+                  - @missing_resources.each do |resource|
+                    %tr
+                      %td
+                        %code= resource.path
+                      %td.text-end
+                        %span.badge.bg-primary= number_with_delimiter(resource.request_count)
+                      %td
+                        %small.text-muted
+                          = resource.first_seen_at&.strftime('%Y-%m-%d %H:%M') || 'N/A'
+                      %td
+                        %small.text-muted
+                          = resource.last_seen_at&.strftime('%Y-%m-%d %H:%M') || 'N/A'
+                      %td
+                        - if resource.suggested_redirect_path.present?
+                          %code.small= resource.suggested_redirect_path
+                        - else
+                          %span.text-muted.small None
+          - else
+            .alert.alert-info
+              %i.bi.bi-info-circle.me-2
+              No missing resources tracked yet.
+
+          - if defined?(@pagy) && @pagy.pages > 1
+            .mt-3
+              = raw pagy_nav(@pagy)
+
+          .mt-3
+            = link_to 'View Missing Resource Requests', missing_resource_requests_path, class: 'btn btn-outline-secondary'
+            = link_to 'Home', root_path, class: 'btn btn-outline-primary ms-2'
+

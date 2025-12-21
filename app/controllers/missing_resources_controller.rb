@@ -1,4 +1,15 @@
 class MissingResourcesController < ApplicationController
+  def index
+    @pagy, @missing_resources = pagy(MissingResource.most_requested, items: 50)
+  end
+
+  def requests_index
+    @pagy, @missing_resource_requests = pagy(
+      MissingResourceRequest.includes(:missing_resource, :person).recent,
+      items: 50
+    )
+  end
+
   def show
     @path = params[:path] || request.path
     @suggestions = generate_suggestions(@path)
@@ -22,8 +33,8 @@ class MissingResourcesController < ApplicationController
     request_method = request.method
     query_string = request.query_string.presence
 
-    # Call job synchronously with perform_now
-    TrackMissingResourceJob.perform_now(
+    # Call job synchronously with perform_and_get_result
+    TrackMissingResourceJob.perform_and_get_result(
       @path,
       person_id,
       ip_address,

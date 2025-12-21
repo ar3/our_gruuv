@@ -1,0 +1,59 @@
+- content_for :title, "Missing Resource Requests"
+
+.container.mt-4
+  .row
+    .col-12
+      .card
+        .card-header
+          %h3.mb-0
+            %i.bi.bi-list-ul.me-2
+            Missing Resource Requests
+          %p.text-muted.mb-0 Individual requests for missing resources, grouped by IP address and person
+        .card-body
+          - if @missing_resource_requests.any?
+            .table-responsive
+              %table.table.table-hover.table-sm
+                %thead
+                  %tr
+                    %th Path
+                    %th Person ID
+                    %th IP Address
+                    %th.text-end Request Count
+                    %th First Seen
+                    %th Last Seen
+                    %th Method
+                %tbody
+                  - @missing_resource_requests.each do |request|
+                    %tr
+                      %td
+                        %code.small= request.missing_resource.path
+                      %td
+                        - if request.person_id.present?
+                          %span.badge.bg-info= request.person_id
+                        - else
+                          %span.text-muted Anonymous
+                      %td
+                        %code.small= request.ip_address
+                      %td.text-end
+                        %span.badge.bg-primary= number_with_delimiter(request.request_count)
+                      %td
+                        %small.text-muted
+                          = request.first_seen_at&.strftime('%Y-%m-%d %H:%M') || 'N/A'
+                      %td
+                        %small.text-muted
+                          = request.last_seen_at&.strftime('%Y-%m-%d %H:%M') || 'N/A'
+                      %td
+                        %span.badge.bg-secondary= request.request_method || 'N/A'
+          - else
+            .alert.alert-info
+              %i.bi.bi-info-circle.me-2
+              No missing resource requests tracked yet.
+
+          - if defined?(@pagy) && @pagy.pages > 1
+            .mt-3
+              = raw pagy_nav(@pagy)
+
+          .mt-3
+            = link_to 'View Missing Resources', missing_resources_path, class: 'btn btn-outline-secondary'
+            = link_to 'Home', root_path, class: 'btn btn-outline-primary ms-2'
+
