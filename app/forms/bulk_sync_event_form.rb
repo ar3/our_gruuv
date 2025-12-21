@@ -12,6 +12,7 @@ class BulkSyncEventForm
   VALID_TYPES = %w[
     BulkSyncEvent::UploadAssignmentCheckins
     BulkSyncEvent::UploadEmployees
+    BulkSyncEvent::UploadAssignmentsAndAbilities
     BulkSyncEvent::RefreshNamesSync
     BulkSyncEvent::RefreshSlackSync
   ].freeze
@@ -104,7 +105,7 @@ class BulkSyncEventForm
   end
 
   def is_upload_type?
-    type.in?(['BulkSyncEvent::UploadAssignmentCheckins', 'BulkSyncEvent::UploadEmployees'])
+    type.in?(['BulkSyncEvent::UploadAssignmentCheckins', 'BulkSyncEvent::UploadEmployees', 'BulkSyncEvent::UploadAssignmentsAndAbilities'])
   end
 
   def is_sync_type?
@@ -154,33 +155,50 @@ class BulkSyncEventForm
   end
 
   def process_for_preview
-    return false unless @bulk_sync_event&.persisted?
+    unless @bulk_sync_event&.persisted?
+      Rails.logger.error "❌❌❌ BulkSyncEventForm: Cannot process preview - bulk_sync_event not persisted"
+      return false
+    end
+    
+    Rails.logger.info "❌❌❌ BulkSyncEventForm: Processing preview for bulk_sync_event #{@bulk_sync_event.id} (type: #{@bulk_sync_event.type})"
     
     begin
       if @bulk_sync_event.process_file_for_preview
         # Check if preview_actions were actually set (even if empty)
         if @bulk_sync_event.preview_actions.is_a?(Hash)
+          Rails.logger.info "❌❌❌ BulkSyncEventForm: Preview processed successfully. Preview actions keys: #{@bulk_sync_event.preview_actions.keys.inspect}"
           true
         else
           @bulk_sync_event.destroy
-          errors.add(:base, 'No preview actions generated')
-          false
+          error_msg = 'No preview actions generated'
+          Rails.logger.error "❌❌❌ BulkSyncEventForm: #{error_msg}. Preview actions type: #{@bulk_sync_event.preview_actions.class.name}"
+          errors.add(:base, error_msg)
+          raise RuntimeError, error_msg
         end
       else
         @bulk_sync_event.destroy
         # Add parsing errors to form errors
         parser = determine_parser
         if parser&.errors&.any?
-          errors.add(:base, parser.errors.join(', '))
+          error_msg = parser.errors.join(', ')
+          Rails.logger.error "❌❌❌ BulkSyncEventForm: CSV parsing failed. Errors: #{error_msg}"
+          errors.add(:base, error_msg)
+          raise RuntimeError, "CSV parsing failed: #{error_msg}"
         else
-          errors.add(:base, 'Failed to process preview')
+          error_msg = 'Failed to process preview'
+          Rails.logger.error "❌❌❌ BulkSyncEventForm: #{error_msg} (no parser errors available)"
+          errors.add(:base, error_msg)
+          raise RuntimeError, error_msg
         end
-        false
       end
     rescue => e
+      Rails.logger.error "❌❌❌ BulkSyncEventForm: Exception during preview processing: #{e.class.name} - #{e.message}"
+      Rails.logger.error "❌❌❌ BulkSyncEventForm: Backtrace: #{e.backtrace.first(15).join("\n")}" if e.backtrace
       @bulk_sync_event.destroy if @bulk_sync_event.persisted?
-      errors.add(:base, "Error processing preview: #{e.message}")
-      false
+      error_msg = "Error processing preview: #{e.message}"
+      errors.add(:base, error_msg)
+      # Re-raise the exception so it's visible
+      raise e
     end
   end
 
@@ -193,6 +211,8 @@ class BulkSyncEventForm
         EmploymentDataUploadParser.new(@bulk_sync_event.source_contents) if @bulk_sync_event.source_contents.present?
       when BulkSyncEvent::UploadEmployees
         UnassignedEmployeeUploadParser.new(@bulk_sync_event.source_contents) if @bulk_sync_event.source_contents.present?
+      when BulkSyncEvent::UploadAssignmentsAndAbilities
+        AssignmentsAndAbilitiesUploadParser.new(@bulk_sync_event.source_contents) if @bulk_sync_event.source_contents.present?
       when BulkSyncEvent::RefreshNamesSync
         RefreshNamesSyncParser.new(@bulk_sync_event.organization)
       when BulkSyncEvent::RefreshSlackSync

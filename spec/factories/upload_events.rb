@@ -23,6 +23,13 @@ FactoryBot.define do
       source_contents { "test csv content" }
       source_data { { type: 'file_upload', filename: "test_upload.csv", file_size: 100, uploaded_at: Time.current } }
     end
+
+    factory :upload_assignments_and_abilities, class: 'BulkSyncEvent::UploadAssignmentsAndAbilities' do
+      type { 'BulkSyncEvent::UploadAssignmentsAndAbilities' }
+      filename { "test_upload.csv" }
+      source_contents { "test csv content" }
+      source_data { { type: 'file_upload', filename: "test_upload.csv", file_size: 100, uploaded_at: Time.current } }
+    end
     
     trait :processing do
       status { 'processing' }

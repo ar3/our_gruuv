@@ -1,7 +1,7 @@
 class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseController
   before_action :require_login
   before_action :set_bulk_sync_event, only: [:show, :destroy, :process_sync]
-  before_action :authorize_bulk_sync_events, only: [:new, :create, :process_sync]
+  before_action :authorize_bulk_sync_events, only: [:new, :create]
 
   def index
     authorize company, :view_bulk_sync_events?
@@ -19,12 +19,14 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
       recent_syncs: @bulk_sync_events.where('created_at > ?', 7.days.ago).count,
       assignment_checkins: @bulk_sync_events.where(type: ['UploadAssignmentCheckins', 'BulkSyncEvent::UploadAssignmentCheckins']).count,
       employee_uploads: @bulk_sync_events.where(type: ['UploadEmployees', 'BulkSyncEvent::UploadEmployees']).count,
+      assignments_and_abilities: @bulk_sync_events.where(type: 'BulkSyncEvent::UploadAssignmentsAndAbilities').count,
       refresh_names: @bulk_sync_events.where(type: 'BulkSyncEvent::RefreshNamesSync').count,
       refresh_slack: @bulk_sync_events.where(type: 'BulkSyncEvent::RefreshSlackSync').count
     }
   end
 
   def show
+    authorize @bulk_sync_event, :show?
     # Show page displays sync details, preview actions, and results
   end
 
@@ -53,15 +55,23 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
       initiator_id: current_person.id
     )
 
-    if form.save
-      redirect_to organization_bulk_sync_event_path(current_organization, form.bulk_sync_event), notice: 'Sync created successfully. Please review the preview before processing.'
-    else
-      @bulk_sync_event = form.bulk_sync_event || form.type&.constantize&.new
-      @errors = form.errors
-      if form.parse_error_message.present?
-        flash.now[:alert] = form.parse_error_message
+    begin
+      if form.save
+        redirect_to organization_bulk_sync_event_path(current_organization, form.bulk_sync_event), notice: 'Sync created successfully. Please review the preview before processing.'
+      else
+        @bulk_sync_event = form.bulk_sync_event || form.type&.constantize&.new
+        @errors = form.errors
+        if form.parse_error_message.present?
+          flash.now[:alert] = form.parse_error_message
+        end
+        render :new, status: :unprocessable_entity
       end
-      render :new, status: :unprocessable_entity
+    rescue => e
+      # Log the error and always re-raise so it's visible and not swallowed
+      Rails.logger.error "❌❌❌ BulkSyncEventsController: Exception creating bulk sync event: #{e.class.name} - #{e.message}"
+      Rails.logger.error "❌❌❌ BulkSyncEventsController: Backtrace: #{e.backtrace.first(20).join("\n")}" if e.backtrace
+      # Always re-raise the exception so it's visible
+      raise e
     end
   end
 
@@ -75,6 +85,8 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
   end
 
   def process_sync
+    authorize @bulk_sync_event, :process_sync?
+    
     unless @bulk_sync_event.can_process?
       redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event), alert: 'This sync cannot be processed.'
       return
@@ -87,23 +99,42 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
     @bulk_sync_event.update!(preview_actions: filtered_preview_actions)
 
     # Process the sync inline and get the result
-    result = case @bulk_sync_event.type
-    when 'BulkSyncEvent::UploadEmployees', 'UploadEvent::UploadEmployees'
-      UnassignedEmployeeUploadProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
-    when 'BulkSyncEvent::UploadAssignmentCheckins', 'UploadEvent::UploadAssignmentCheckins'
-      EmploymentDataUploadProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
-    when 'BulkSyncEvent::RefreshNamesSync'
-      RefreshNamesSyncProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
-    when 'BulkSyncEvent::RefreshSlackSync'
-      RefreshSlackSyncProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
-    else
-      EmploymentDataUploadProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
-    end
+    Rails.logger.info "❌❌❌ BulkSyncEventsController: Processing sync for bulk_sync_event #{@bulk_sync_event.id} (type: #{@bulk_sync_event.type})"
     
-    if result
-      redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event), notice: 'Sync processed successfully!'
-    else
-      redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event), alert: 'Sync processing failed. Please check the logs for details.'
+    begin
+      result = case @bulk_sync_event.type
+      when 'BulkSyncEvent::UploadEmployees', 'UploadEvent::UploadEmployees'
+        Rails.logger.debug "❌❌❌ BulkSyncEventsController: Using UnassignedEmployeeUploadProcessorJob"
+        UnassignedEmployeeUploadProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
+      when 'BulkSyncEvent::UploadAssignmentCheckins', 'UploadEvent::UploadAssignmentCheckins'
+        Rails.logger.debug "❌❌❌ BulkSyncEventsController: Using EmploymentDataUploadProcessorJob"
+        EmploymentDataUploadProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
+      when 'BulkSyncEvent::UploadAssignmentsAndAbilities'
+        Rails.logger.debug "❌❌❌ BulkSyncEventsController: Using AssignmentsAndAbilitiesUploadProcessorJob"
+        AssignmentsAndAbilitiesUploadProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
+      when 'BulkSyncEvent::RefreshNamesSync'
+        Rails.logger.debug "❌❌❌ BulkSyncEventsController: Using RefreshNamesSyncProcessorJob"
+        RefreshNamesSyncProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
+      when 'BulkSyncEvent::RefreshSlackSync'
+        Rails.logger.debug "❌❌❌ BulkSyncEventsController: Using RefreshSlackSyncProcessorJob"
+        RefreshSlackSyncProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
+      else
+        Rails.logger.warn "❌❌❌ BulkSyncEventsController: Unknown type #{@bulk_sync_event.type}, using EmploymentDataUploadProcessorJob"
+        EmploymentDataUploadProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
+      end
+      
+      if result
+        Rails.logger.info "❌❌❌ BulkSyncEventsController: Sync processed successfully for bulk_sync_event #{@bulk_sync_event.id}"
+        redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event), notice: 'Sync processed successfully!'
+      else
+        Rails.logger.error "❌❌❌ BulkSyncEventsController: Sync processing returned false for bulk_sync_event #{@bulk_sync_event.id}"
+        redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event), alert: 'Sync processing failed. Please check the logs for details.'
+      end
+    rescue => e
+      # Re-raise the exception so Rails can handle it and show it to the user
+      Rails.logger.error "❌❌❌ BulkSyncEventsController: Exception processing bulk sync event #{@bulk_sync_event.id}: #{e.class.name} - #{e.message}"
+      Rails.logger.error "❌❌❌ BulkSyncEventsController: Backtrace: #{e.backtrace.first(20).join("\n")}" if e.backtrace
+      raise e
     end
   end
 
@@ -212,6 +243,22 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
     if preview_actions['suggest_terminations'].present?
       selected_termination_rows = Array(params[:selected_suggest_terminations]).map(&:to_i)
       filtered['suggest_terminations'] = preview_actions['suggest_terminations'].select { |t| selected_termination_rows.include?(t['row']) }
+    end
+
+    # Filter assignments and abilities upload fields
+    if preview_actions['abilities'].present?
+      selected_ability_rows = Array(params[:selected_abilities]).map(&:to_i)
+      filtered['abilities'] = preview_actions['abilities'].select { |a| selected_ability_rows.include?(a['row']) }
+    end
+
+    if preview_actions['assignment_abilities'].present?
+      selected_assignment_ability_rows = Array(params[:selected_assignment_abilities]).map(&:to_i)
+      filtered['assignment_abilities'] = preview_actions['assignment_abilities'].select { |aa| selected_assignment_ability_rows.include?(aa['row']) }
+    end
+
+    if preview_actions['position_assignments'].present?
+      selected_position_assignment_rows = Array(params[:selected_position_assignments]).map(&:to_i)
+      filtered['position_assignments'] = preview_actions['position_assignments'].select { |pa| selected_position_assignment_rows.include?(pa['row']) }
     end
     
     filtered

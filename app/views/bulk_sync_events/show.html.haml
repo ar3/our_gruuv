@@ -37,6 +37,12 @@
   - create_slack_associations_data = Array(preview_actions&.dig('create_slack_associations'))
   - suggest_terminations_data = Array(preview_actions&.dig('suggest_terminations'))
   
+  -# UploadAssignmentsAndAbilities data
+  - assignments_upload_data = Array(preview_actions&.dig('assignments'))
+  - abilities_upload_data = Array(preview_actions&.dig('abilities'))
+  - assignment_abilities_data = Array(preview_actions&.dig('assignment_abilities'))
+  - position_assignments_data = Array(preview_actions&.dig('position_assignments'))
+  
   - successes_data = Array(results&.dig('successes'))
   - failures_data = Array(results&.dig('failures'))
   
@@ -71,6 +77,10 @@
   - employment_tenures_data = employment_tenures_data.is_a?(Array) ? employment_tenures_data : []
   - successes_data = successes_data.is_a?(Array) ? successes_data : []
   - failures_data = failures_data.is_a?(Array) ? failures_data : []
+  - assignments_upload_data = assignments_upload_data.is_a?(Array) ? assignments_upload_data : []
+  - abilities_upload_data = abilities_upload_data.is_a?(Array) ? abilities_upload_data : []
+  - assignment_abilities_data = assignment_abilities_data.is_a?(Array) ? assignment_abilities_data : []
+  - position_assignments_data = position_assignments_data.is_a?(Array) ? position_assignments_data : []
   
   .row
     .col-12
@@ -163,7 +173,7 @@
                               %span.text-muted None
                           %td= person['row']
               
-              - if assignments_data.present?
+              - if assignments_data.present? && @bulk_sync_event.type != 'BulkSyncEvent::UploadAssignmentsAndAbilities'
                 %h6 Assignments (#{assignments_data.length})
                 .table-responsive.mb-3
                   %table.table.table-sm
@@ -699,6 +709,129 @@
                             %span.badge.bg-warning= termination['termination_reason']
                           %td= termination['suggested_termination_date']
                           %td= termination['row']
+              
+              -# UploadAssignmentsAndAbilities preview sections
+              - if assignments_upload_data.present?
+                %h6 Assignments (#{assignments_upload_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_assignments_upload', '1', true, class: 'form-check-input', data: { target: 'assignments-upload-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Title
+                        %th Tagline
+                        %th Outcomes Count
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - assignments_upload_data.each do |assignment|
+                        - next if assignment['title'].blank?
+                        %tr
+                          %td
+                            = check_box_tag "selected_assignments[]", assignment['row'], true, class: 'form-check-input assignments-upload-checkbox'
+                          %td= assignment['title']
+                          %td= assignment['tagline']
+                          %td= assignment['outcomes_count'] || 0
+                          %td
+                            - if assignment['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if assignment['existing_id'].present?
+                              - link_text = assignment['existing_title'].presence || assignment['title'].presence || "Assignment ##{assignment['existing_id']}"
+                              = link_to link_text, organization_assignment_path(current_organization, assignment['existing_id']), class: 'text-decoration-none'
+                            - else
+                              %span.text-muted None
+                          %td= assignment['row']
+              
+              - if abilities_upload_data.present?
+                %h6 Abilities (#{abilities_upload_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_abilities', '1', true, class: 'form-check-input', data: { target: 'abilities-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Name
+                        %th Action
+                        %th Existing Record
+                        %th Row
+                    %tbody
+                      - abilities_upload_data.each do |ability|
+                        - next if ability['name'].blank?
+                        %tr
+                          %td
+                            = check_box_tag "selected_abilities[]", ability['row'], true, class: 'form-check-input abilities-checkbox'
+                          %td= ability['name']
+                          %td
+                            - if ability['will_create']
+                              %span.badge.bg-success New
+                            - else
+                              %span.badge.bg-warning Update
+                          %td
+                            - if ability['existing_id'].present?
+                              - link_text = ability['existing_name'].presence || ability['name'].presence || "Ability ##{ability['existing_id']}"
+                              = link_to link_text, organization_ability_path(current_organization, ability['existing_id']), class: 'text-decoration-none'
+                            - else
+                              %span.text-muted None
+                          %td= ability['row']
+              
+              - if assignment_abilities_data.present?
+                %h6 Assignment-Ability Links (#{assignment_abilities_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_assignment_abilities', '1', true, class: 'form-check-input', data: { target: 'assignment-abilities-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Assignment
+                        %th Ability
+                        %th Milestone Level
+                        %th Action
+                        %th Row
+                    %tbody
+                      - assignment_abilities_data.each do |aa|
+                        %tr
+                          %td
+                            = check_box_tag "selected_assignment_abilities[]", aa['row'], true, class: 'form-check-input assignment-abilities-checkbox'
+                          %td= aa['assignment_title']
+                          %td= aa['ability_name']
+                          %td= aa['milestone_level'] || 1
+                          %td
+                            %span.badge.bg-success= aa['action'] || 'create'
+                          %td= aa['row']
+              
+              - if position_assignments_data.present?
+                %h6 Position-Assignment Links (#{position_assignments_data.length})
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_position_assignments', '1', true, class: 'form-check-input', data: { target: 'position-assignments-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Assignment
+                        %th Position
+                        %th Departments
+                        %th Action
+                        %th Row
+                    %tbody
+                      - position_assignments_data.each do |pa|
+                        %tr
+                          %td
+                            = check_box_tag "selected_position_assignments[]", pa['row'], true, class: 'form-check-input position-assignments-checkbox'
+                          %td= pa['assignment_title']
+                          %td= pa['position_title']
+                          %td= Array(pa['department_names']).join(', ')
+                          %td
+                            %span.badge.bg-success= pa['action'] || 'create'
+                          %td= pa['row']
               
               .d-flex.gap-2.mt-4
                 = form.submit 'Process Selected Items', class: 'btn btn-success btn-lg', data: { confirm: 'Are you sure you want to process the selected items? This action cannot be undone.' }

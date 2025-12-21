@@ -3,6 +3,11 @@ class BulkSyncEvent < ApplicationRecord
   belongs_to :initiator, class_name: 'Person'
   belongs_to :organization
 
+  # Tell Pundit to use BulkSyncEventPolicy for all STI subclasses
+  def self.policy_class
+    BulkSyncEventPolicy
+  end
+
   # Handle STI type mapping for backward compatibility
   def self.find_sti_class(type_name)
     case type_name
@@ -10,6 +15,8 @@ class BulkSyncEvent < ApplicationRecord
       BulkSyncEvent::UploadAssignmentCheckins
     when 'UploadEmployees', 'BulkSyncEvent::UploadEmployees'
       BulkSyncEvent::UploadEmployees
+    when 'UploadAssignmentsAndAbilities', 'BulkSyncEvent::UploadAssignmentsAndAbilities'
+      BulkSyncEvent::UploadAssignmentsAndAbilities
     when 'UploadEvent::UploadAssignmentCheckins'
       BulkSyncEvent::UploadAssignmentCheckins
     when 'UploadEvent::UploadEmployees'
@@ -178,6 +185,9 @@ class BulkSyncEvent < ApplicationRecord
   def success_details_for(success_record)
     return 'Unknown record' unless success_record.is_a?(Hash)
     
+    routes = Rails.application.routes.url_helpers
+    org = organization
+    
     case success_record['type']
     when 'person', 'unassigned_employee'
       name = success_record['name'] || 'Unknown person'
@@ -189,10 +199,45 @@ class BulkSyncEvent < ApplicationRecord
     when 'assignment'
       title = success_record['title'] || 'Unknown assignment'
       if success_record['id']
-        "<a href='/assignments/#{success_record['id']}'>#{title}</a>"
+        "<a href='#{routes.organization_assignment_path(org, success_record['id'])}' class='text-decoration-none'>#{title}</a>"
       else
         title
       end
+    when 'ability'
+      name = success_record['name'] || 'Unknown ability'
+      if success_record['id']
+        "<a href='#{routes.organization_ability_path(org, success_record['id'])}' class='text-decoration-none'>#{name}</a>"
+      else
+        name
+      end
+    when 'assignment_ability'
+      assignment_title = success_record['assignment_title'] || 'Unknown assignment'
+      ability_name = success_record['ability_name'] || 'Unknown ability'
+      assignment_link = if success_record['assignment_id']
+        "<a href='#{routes.organization_assignment_path(org, success_record['assignment_id'])}' class='text-decoration-none'>#{assignment_title}</a>"
+      else
+        assignment_title
+      end
+      ability_link = if success_record['ability_id']
+        "<a href='#{routes.organization_ability_path(org, success_record['ability_id'])}' class='text-decoration-none'>#{ability_name}</a>"
+      else
+        ability_name
+      end
+      "#{assignment_link} - #{ability_link}"
+    when 'position_assignment'
+      assignment_title = success_record['assignment_title'] || 'Unknown assignment'
+      position_title = success_record['position_title'] || 'Unknown position'
+      position_link = if success_record['position_id']
+        "<a href='#{routes.organization_position_path(org, success_record['position_id'])}' class='text-decoration-none'>#{position_title}</a>"
+      else
+        position_title
+      end
+      assignment_link = if success_record['assignment_id']
+        "<a href='#{routes.organization_assignment_path(org, success_record['assignment_id'])}' class='text-decoration-none'>#{assignment_title}</a>"
+      else
+        assignment_title
+      end
+      "#{position_link} - #{assignment_link}"
     when 'department'
       name = success_record['name'] || 'Unknown department'
       name
