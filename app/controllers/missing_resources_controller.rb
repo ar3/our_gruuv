@@ -20,6 +20,7 @@ class MissingResourcesController < ApplicationController
     respond_to do |format|
       format.html { render status: :not_found }
       format.json { render json: { error: 'Not found', path: @path, suggestions: @suggestions }, status: :not_found }
+      format.any { render json: { error: 'Not found', path: @path, suggestions: @suggestions }, status: :not_found }
     end
   end
 
