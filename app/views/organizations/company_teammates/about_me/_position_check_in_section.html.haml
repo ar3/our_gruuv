@@ -1,0 +1,78 @@
+- position_indicator = position_check_in_status_indicator(@teammate)
+= render 'shared/section_header', 
+         title: 'Position/Overall', 
+         icon: 'bi-briefcase', 
+         description: 'Assess role performance and growth',
+         collapsible: true,
+         collapse_target: 'positionCheckInSection',
+         status_indicator: position_indicator
+
+-# Summary view (shown when collapsed)
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(position_indicator)}"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(position_indicator)} #{status_indicator_badge_class(position_indicator)} me-2"}
+    - if @latest_finalized_position_check_in
+      Last finalized: #{@latest_finalized_position_check_in.official_check_in_completed_at.strftime('%B %d, %Y')}
+    - else
+      No finalized check-ins
+
+-# Collapsible content
+.collapse#positionCheckInSection
+  .card.mb-4
+    .card-body
+      - if @current_position
+        .mb-3
+          %h5.mb-2
+            Position:
+            = link_to @current_position.display_name, organization_position_path(organization, @current_position), class: "text-decoration-none"
+          
+          - if @latest_finalized_position_check_in
+            %p.mb-2
+              %strong Last finalized check-in:
+              = @latest_finalized_position_check_in.official_check_in_completed_at.strftime('%B %d, %Y')
+          - else
+            %p.mb-2.text-muted No finalized check-ins
+          
+          - if @position_check_in
+            .mb-3
+              %h6.mb-2 Currently Active Check-In Status:
+              .row
+                .col-md-6
+                  %p.mb-1
+                    %strong Employee Side:
+                    - if @position_check_in.employee_completed?
+                      %span.badge.bg-success Ready
+                      %small.text-muted.ms-2
+                        (#{@position_check_in.employee_completed_at.strftime('%B %d, %Y at %l:%M %p')})
+                    - else
+                      %span.badge.bg-warning Not ready
+                .col-md-6
+                  %p.mb-1
+                    %strong Manager Side:
+                    - if @position_check_in.manager_completed?
+                      %span.badge.bg-success Ready
+                      %small.text-muted.ms-2
+                        (#{@position_check_in.manager_completed_at.strftime('%B %d, %Y at %l:%M %p')})
+                    - else
+                      %span.badge.bg-warning Not ready
+          - else
+            %p.mb-2.text-muted Check-in not started
+      - else
+        .mb-3
+          %p.mb-2.text-muted No position assigned
+          - if policy(@teammate).show?
+            = link_to organization_teammate_position_path(organization, @teammate), class: "btn btn-outline-primary" do
+              %i.bi.bi-briefcase.me-2
+              Go to Seat Management Mode
+          - else
+            .d-inline-block
+              = button_tag type: "button", class: "btn btn-outline-primary disabled", disabled: true do
+                %i.bi.bi-briefcase.me-2
+                Go to Seat Management Mode
+              %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access seat management"}
+      
+      .d-grid.mt-3
+        = link_to "Go to Check-In Mode", 
+                  organization_company_teammate_check_ins_path(organization, @teammate),
+                  class: "btn btn-outline-primary"
+

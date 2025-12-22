@@ -168,6 +168,7 @@ get '/login', to: 'auth#login', as: :login
     # Company teammates management
     resources :company_teammates, module: :organizations, only: [:show, :update] do
       member do
+        get :about_me
         get :complete_picture
         get :internal
         get :permissions

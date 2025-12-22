@@ -1,0 +1,89 @@
+- stories_indicator = shareable_observations_status_indicator(@teammate, organization)
+= render 'shared/section_header', 
+         title: "#{@teammate.person.casual_name} stories", 
+         icon: 'bi-book', 
+         description: 'Recent observations and feedback',
+         collapsible: true,
+         collapse_target: 'storiesSection',
+         status_indicator: stories_indicator
+
+-# Summary view (shown when collapsed)
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(stories_indicator)}"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(stories_indicator)} #{status_indicator_badge_class(stories_indicator)} me-2"}
+    %strong= pluralize(@observations_given_count + @observations_received_count, 'shareable observation')
+    in the last 30 days
+
+-# Collapsible content
+.collapse#storiesSection
+  .card.mb-4
+    .card-body
+      .row
+        -# Left side: Observations given
+        .col-md-6
+          %h5.mb-3 Observations Given
+          %p.mb-2
+            %strong= pluralize(@observations_given_count, 'shareable observation')
+            given in the last 30 days
+          
+          - if @recent_observations_given.any?
+            .list-group.mb-3
+              - @recent_observations_given.each do |observation|
+                .list-group-item
+                  .d-flex.justify-content-between.align-items-start
+                    .flex-grow-1
+                      %h6.mb-1
+                        = observation.observed_at.strftime('%B %d, %Y')
+                      %p.mb-1.text-muted
+                        = truncate(observation.story, length: 100)
+                      %small
+                        %span.badge.bg-secondary= observation.privacy_level.humanize
+                    - if policy(observation).show?
+                      = link_to organization_observation_path(organization, observation), 
+                                class: "btn btn-sm btn-outline-primary ms-2",
+                                target: "_blank" do
+                        %i.bi.bi-eye.me-1
+                        View
+          - else
+            %p.text-muted.mb-3 No observations given in the last 30 days.
+          
+          .d-grid
+            = link_to "View All Observations Given", 
+                      @observations_given_url,
+                      class: "btn btn-outline-primary"
+        
+        -# Right side: Observations received
+        .col-md-6
+          %h5.mb-3 Observations Received
+          %p.mb-2
+            %strong= pluralize(@observations_received_count, 'shareable observation')
+            received in the last 30 days
+          
+          - if @recent_observations_received.any?
+            .list-group.mb-3
+              - @recent_observations_received.each do |observation|
+                .list-group-item
+                  .d-flex.justify-content-between.align-items-start
+                    .flex-grow-1
+                      %h6.mb-1
+                        = observation.observer.display_name
+                        %small.text-muted
+                          = observation.observed_at.strftime('%B %d, %Y')
+                      %p.mb-1.text-muted
+                        = truncate(observation.story, length: 100)
+                      %small
+                        %span.badge.bg-secondary= observation.privacy_level.humanize
+                    - if policy(observation).show?
+                      = link_to organization_observation_path(organization, observation), 
+                                class: "btn btn-sm btn-outline-primary ms-2",
+                                target: "_blank" do
+                        %i.bi.bi-eye.me-1
+                        View
+          - else
+            %p.text-muted.mb-3 No observations received in the last 30 days.
+          
+          .d-grid
+            = link_to "View All Observations Received", 
+                      @observations_received_url,
+                      class: "btn btn-outline-primary"
+

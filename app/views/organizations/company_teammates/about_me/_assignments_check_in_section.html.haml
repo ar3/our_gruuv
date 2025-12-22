@@ -1,0 +1,72 @@
+- assignments_indicator = assignments_check_in_status_indicator(@teammate, organization)
+= render 'shared/section_header', 
+         title: 'Assignments/Outcomes', 
+         icon: 'bi-clipboard-check', 
+         description: 'Evaluate project contributions and energy',
+         collapsible: true,
+         collapse_target: 'assignmentsCheckInSection',
+         status_indicator: assignments_indicator
+
+-# Summary view (shown when collapsed)
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(assignments_indicator)}"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(assignments_indicator)} #{status_indicator_badge_class(assignments_indicator)} me-2"}
+    - if @required_assignments.any?
+      #{@required_assignments.count} required #{'assignment'.pluralize(@required_assignments.count)}
+    - else
+      No required assignments
+
+-# Collapsible content
+.collapse#assignmentsCheckInSection
+  .card.mb-4
+    .card-body
+      - if @assignment_check_ins_data.any?
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Assignment
+                %th Last Finalized
+                %th Employee Status
+                %th Manager Status
+            %tbody
+              - @assignment_check_ins_data.each do |data|
+                - assignment = data[:assignment]
+                - check_in = data[:check_in]
+                - latest_finalized = data[:latest_finalized]
+                %tr
+                  %td
+                    = link_to assignment.title, organization_assignment_path(organization, assignment), class: "text-decoration-none"
+                  %td
+                    - if latest_finalized
+                      = latest_finalized.official_check_in_completed_at.strftime('%B %d, %Y')
+                    - else
+                      %span.text-muted Check-in not started
+                  %td
+                    - if check_in
+                      - if check_in.employee_completed?
+                        %span.badge.bg-success Ready
+                        %br
+                        %small.text-muted= check_in.employee_completed_at.strftime('%b %d, %Y')
+                      - else
+                        %span.badge.bg-warning Not ready
+                    - else
+                      %span.text-muted Check-in not started
+                  %td
+                    - if check_in
+                      - if check_in.manager_completed?
+                        %span.badge.bg-success Ready
+                        %br
+                        %small.text-muted= check_in.manager_completed_at.strftime('%b %d, %Y')
+                      - else
+                        %span.badge.bg-warning Not ready
+                    - else
+                      %span.text-muted Check-in not started
+      - else
+        %p.text-muted.mb-3 No required assignments found.
+      
+      .d-grid.mt-3
+        = link_to "Go to Check-In Mode", 
+                  organization_company_teammate_check_ins_path(organization, @teammate),
+                  class: "btn btn-outline-primary"
+

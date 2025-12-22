@@ -57,6 +57,23 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
                                 &.includes(:ability) || []
   end
 
+  def about_me
+    authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
+    @person = @teammate.person
+    
+    # Load data for sections moved from check-ins
+    load_goals_for_about_me
+    load_stories_for_about_me
+    load_prompts_for_about_me
+    load_one_on_one_for_about_me
+    
+    # Load data for read-only check-in sections
+    load_position_check_in_data
+    load_assignment_check_in_data
+    load_aspiration_check_in_data
+    load_abilities_data
+  end
+
   def internal
     authorize @teammate, :internal?, policy_class: CompanyTeammatePolicy
     # Internal view - organization-specific data for teammates (active, inactive, or not yet active)
@@ -524,6 +541,288 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     params.require(:person).permit(:first_name, :last_name, :middle_name, :suffix, 
                                   :unique_textable_phone_number, :timezone,
                                   :preferred_name, :gender_identity, :pronouns)
+  end
+
+  # Data loading methods for about_me page
+  def load_goals_for_about_me
+    if @teammate
+      base_goals = Goal.for_teammate(@teammate).active.includes(:goal_check_ins)
+      @now_goals = base_goals.timeframe_now
+      @next_goals = base_goals.timeframe_next
+      @later_goals = base_goals.timeframe_later
+      
+      all_active_goals = @now_goals + @next_goals + @later_goals
+      
+      goal_ids = all_active_goals.map(&:id)
+      current_week_start = Date.current.beginning_of_week(:monday)
+      
+      all_check_ins = GoalCheckIn
+        .where(goal_id: goal_ids)
+        .includes(:confidence_reporter)
+        .order(check_in_week_start: :desc)
+      
+      latest_check_ins = {}
+      all_check_ins.each do |check_in|
+        latest_check_ins[check_in.goal_id] ||= check_in
+      end
+      
+      current_week_check_ins = GoalCheckIn
+        .where(goal_id: goal_ids, check_in_week_start: current_week_start)
+        .index_by(&:goal_id)
+      
+      all_active_goals.each do |goal|
+        goal.instance_variable_set(:@latest_check_in, latest_check_ins[goal.id])
+        goal.instance_variable_set(:@needs_check_in, current_week_check_ins[goal.id].nil?)
+      end
+      
+      @goals_check_in_url = organization_goals_path(
+        organization,
+        owner_type: 'Teammate',
+        owner_id: @teammate.id,
+        view: 'check-in'
+      )
+    else
+      @now_goals = []
+      @next_goals = []
+      @later_goals = []
+      @goals_check_in_url = organization_goals_path(organization)
+    end
+  end
+
+  def load_stories_for_about_me
+    if @teammate
+      # Get shareable observations (published, not observer_only) in last 30 days
+      since_date = 30.days.ago
+      
+      # Observations given (where teammate is observer)
+      given_observations = Observation
+        .where(observer_id: @teammate.person.id, company: organization)
+        .where.not(published_at: nil)
+        .where.not(privacy_level: 'observer_only')
+        .where('observed_at >= ?', since_date)
+        .where(deleted_at: nil)
+        .order(observed_at: :desc)
+      
+      @observations_given_count = given_observations.count
+      @recent_observations_given = given_observations.limit(3).includes(:observees)
+      
+      # Observations received (where teammate is observee)
+      teammate_ids = @teammate.person.teammates.where(organization: organization).pluck(:id)
+      received_observations = Observation
+        .joins(:observees)
+        .where(observees: { teammate_id: teammate_ids })
+        .where(company: organization)
+        .where.not(published_at: nil)
+        .where.not(privacy_level: 'observer_only')
+        .where('observed_at >= ?', since_date)
+        .where(deleted_at: nil)
+        .distinct
+        .order(observed_at: :desc)
+      
+      @observations_received_count = received_observations.count
+      @recent_observations_received = received_observations.limit(3).includes(:observer, :observees)
+      
+      # Build filter URLs
+      casual_name = @teammate.person.casual_name
+      @observations_given_url = filtered_observations_organization_observations_path(
+        organization,
+        observer_id: @teammate.person.id,
+        start_date: since_date.iso8601,
+        return_url: about_me_organization_company_teammate_path(organization, @teammate),
+        return_text: "Back to About #{casual_name}"
+      )
+      
+      @observations_received_url = filtered_observations_organization_observations_path(
+        organization,
+        observee_ids: teammate_ids,
+        start_date: since_date.iso8601,
+        return_url: about_me_organization_company_teammate_path(organization, @teammate),
+        return_text: "Back to About #{casual_name}"
+      )
+    else
+      @observations_given_count = 0
+      @recent_observations_given = []
+      @observations_received_count = 0
+      @recent_observations_received = []
+      @observations_given_url = organization_observations_path(organization)
+      @observations_received_url = organization_observations_path(organization)
+    end
+  end
+
+  def load_prompts_for_about_me
+    if @teammate
+      company = organization.root_company || organization
+      
+      company_teammate = if @teammate.is_a?(CompanyTeammate) && @teammate.organization == company
+        @teammate
+      else
+        CompanyTeammate.find_by(organization: company, person: @teammate.person)
+      end
+      
+      if company_teammate && current_company_teammate
+        pundit_user = OpenStruct.new(user: current_company_teammate, impersonating_teammate: nil)
+        policy = PromptPolicy::Scope.new(pundit_user, Prompt)
+        accessible_prompts = policy.resolve
+        
+        prompts_for_teammate = accessible_prompts.where(company_teammate: company_teammate)
+        
+        @recent_prompts = prompts_for_teammate
+          .includes(:prompt_template, :prompt_answers)
+          .order(created_at: :desc)
+          .limit(3)
+        
+        @open_prompts_count = prompts_for_teammate.open.count
+        
+        @prompts_url = organization_prompts_path(organization, teammate: company_teammate.id)
+      else
+        @recent_prompts = []
+        @open_prompts_count = 0
+        @prompts_url = organization_prompts_path(organization)
+      end
+    else
+      @recent_prompts = []
+      @open_prompts_count = 0
+      @prompts_url = organization_prompts_path(organization)
+    end
+  end
+
+  def load_one_on_one_for_about_me
+    if @teammate
+      @one_on_one_link = @teammate.one_on_one_link
+      @one_on_one_url = organization_company_teammate_one_on_one_link_path(organization, @teammate)
+      
+      if @one_on_one_link&.is_asana_link? && @one_on_one_link.has_deep_integration? && @teammate.has_asana_identity?
+        asana_service = AsanaService.new(@teammate)
+        project_id = @one_on_one_link.asana_project_id
+        
+        if project_id && asana_service.authenticated?
+          @asana_sections = asana_service.fetch_project_sections(project_id)
+          
+          @asana_section_tasks = {}
+          @asana_sections.each do |section|
+            tasks = asana_service.fetch_section_tasks(section['gid'])
+            @asana_section_tasks[section['gid']] = tasks.reject { |task| task['completed'] == true }
+          end
+        else
+          @asana_sections = []
+          @asana_section_tasks = {}
+        end
+      else
+        @asana_sections = []
+        @asana_section_tasks = {}
+      end
+    else
+      @one_on_one_link = nil
+      @one_on_one_url = organization_company_teammate_one_on_one_link_path(organization, @teammate)
+      @asana_sections = []
+      @asana_section_tasks = {}
+    end
+  end
+
+  def load_position_check_in_data
+    @position_check_in = PositionCheckIn.find_or_create_open_for(@teammate)
+    @latest_finalized_position_check_in = PositionCheckIn.latest_finalized_for(@teammate)
+    
+    # Get current position from active employment tenure
+    active_tenure = ActiveEmploymentTenureQuery.new(
+      person: @teammate.person,
+      organization: organization
+    ).first
+    @current_position = active_tenure&.position
+  end
+
+  def load_assignment_check_in_data
+    # Get required assignments for current position
+    active_tenure = ActiveEmploymentTenureQuery.new(
+      person: @teammate.person,
+      organization: organization
+    ).first
+    
+    if active_tenure&.position
+      @required_assignments = active_tenure.position.required_assignments.includes(:assignment)
+      
+      @assignment_check_ins_data = @required_assignments.map do |position_assignment|
+        assignment = position_assignment.assignment
+        check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
+        latest_finalized = AssignmentCheckIn
+          .where(teammate: @teammate, assignment: assignment)
+          .closed
+          .order(official_check_in_completed_at: :desc)
+          .first
+        
+        {
+          assignment: assignment,
+          position_assignment: position_assignment,
+          check_in: check_in,
+          latest_finalized: latest_finalized
+        }
+      end
+    else
+      @required_assignments = []
+      @assignment_check_ins_data = []
+    end
+  end
+
+  def load_aspiration_check_in_data
+    # Get all company aspirational values
+    @company_aspirations = Aspiration.within_hierarchy(organization).ordered
+    
+    @aspiration_check_ins_data = @company_aspirations.map do |aspiration|
+      check_in = AspirationCheckIn.find_or_create_open_for(@teammate, aspiration)
+      latest_finalized = AspirationCheckIn
+        .where(teammate: @teammate, aspiration: aspiration)
+        .closed
+        .order(official_check_in_completed_at: :desc)
+        .first
+      
+      {
+        aspiration: aspiration,
+        check_in: check_in,
+        latest_finalized: latest_finalized
+      }
+    end
+  end
+
+  def load_abilities_data
+    # Get required assignments and their ability requirements
+    active_tenure = ActiveEmploymentTenureQuery.new(
+      person: @teammate.person,
+      organization: organization
+    ).first
+    
+    if active_tenure&.position
+      @required_assignments = active_tenure.position.required_assignments.includes(assignment: :assignment_abilities)
+      
+      @abilities_data = @required_assignments.map do |position_assignment|
+        assignment = position_assignment.assignment
+        assignment_abilities = assignment.assignment_abilities.includes(:ability)
+        
+        abilities_info = assignment_abilities.map do |assignment_ability|
+          ability = assignment_ability.ability
+          teammate_milestone = @teammate.teammate_milestones.find_by(ability: ability)
+          
+          {
+            ability: ability,
+            required_milestone: assignment_ability.milestone_level,
+            current_milestone: teammate_milestone&.milestone_level || 0
+          }
+        end
+        
+        # Check if all milestones are met
+        all_milestones_met = abilities_info.all? do |info|
+          info[:current_milestone] >= info[:required_milestone]
+        end
+        
+        {
+          assignment: assignment,
+          abilities: abilities_info,
+          fully_qualified: all_milestones_met
+        }
+      end
+    else
+      @required_assignments = []
+      @abilities_data = []
+    end
   end
 
 end

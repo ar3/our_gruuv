@@ -1,0 +1,63 @@
+- abilities_indicator = abilities_status_indicator(@teammate, organization)
+= render 'shared/section_header', 
+         title: 'Abilities/Skills/Knowledge', 
+         icon: 'bi-award', 
+         description: 'Track milestone progress',
+         collapsible: true,
+         collapse_target: 'abilitiesSection',
+         status_indicator: abilities_indicator
+
+-# Summary view (shown when collapsed)
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(abilities_indicator)}"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(abilities_indicator)} #{status_indicator_badge_class(abilities_indicator)} me-2"}
+    - if @required_assignments.any?
+      #{@required_assignments.count} required #{'assignment'.pluralize(@required_assignments.count)} with ability requirements
+    - else
+      No required assignments
+
+-# Collapsible content
+.collapse#abilitiesSection
+  .card.mb-4
+    .card-body
+      - if @abilities_data.any?
+        - @abilities_data.each do |assignment_data|
+          .mb-4
+            %h5.mb-2
+              = link_to assignment_data[:assignment].title, organization_assignment_path(organization, assignment_data[:assignment]), class: "text-decoration-none"
+              - if assignment_data[:fully_qualified]
+                %span.badge.bg-success.ms-2 Fully Qualified
+              - else
+                %span.badge.bg-warning.text-dark.ms-2 Apprentice
+            
+            - if assignment_data[:abilities].any?
+              .ms-4
+                .table-responsive
+                  %table.table.table-sm.table-hover
+                    %thead
+                      %tr
+                        %th Ability
+                        %th Required Milestone
+                        %th Current Milestone
+                    %tbody
+                      - assignment_data[:abilities].each do |ability_info|
+                        %tr
+                          %td= ability_info[:ability].name
+                          %td
+                            %span.badge.bg-secondary Milestone #{ability_info[:required_milestone]}
+                          %td
+                            - if ability_info[:current_milestone] >= ability_info[:required_milestone]
+                              %span.badge.bg-success Milestone #{ability_info[:current_milestone]}
+                            - else
+                              %span.badge.bg-warning.text-dark Milestone #{ability_info[:current_milestone]}
+            - else
+              .ms-4
+                %p.text-muted.mb-0 No ability requirements for this assignment
+      - else
+        %p.text-muted.mb-3 No required assignments with ability requirements found.
+      
+      .d-grid.mt-3
+        = link_to "Go to Check-In Mode", 
+                  organization_company_teammate_check_ins_path(organization, @teammate),
+                  class: "btn btn-outline-primary"
+

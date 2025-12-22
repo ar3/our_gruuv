@@ -1,11 +1,14 @@
 -include_top_header_margin = local_assigns[:include_top_header_margin].nil? ? true : local_assigns[:include_top_header_margin]
 -collapsible = local_assigns[:collapsible] || false
 -collapse_target = local_assigns[:collapse_target]
+-status_indicator = local_assigns[:status_indicator]
 -# Section Header (Dashboard Style)
 .row.mb-4{class: include_top_header_margin ? 'mt-5' : ''}
   .col-12{class: include_top_header_margin ? 'mt-5' : ''}
     .d-flex.align-items-center.mb-3
       %h3.text-primary.mb-0.me-3
+        - if status_indicator && collapsible
+          %i{class: "#{status_indicator_icon(status_indicator)} #{status_indicator_badge_class(status_indicator)} me-2"}
         %i{class: "#{icon} me-2"}
         = title.upcase
       - if local_assigns[:action_link]

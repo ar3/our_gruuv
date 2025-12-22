@@ -1,0 +1,99 @@
+- one_on_one_indicator = one_on_one_status_indicator(@one_on_one_link)
+= render 'shared/section_header', 
+         title: '1:1 Area', 
+         icon: 'bi-link-45deg', 
+         description: 'Headlines, todos, and topics to discuss',
+         collapsible: true,
+         collapse_target: 'oneOnOneSection',
+         status_indicator: one_on_one_indicator
+
+-# Summary view (shown when collapsed)
+- total_incomplete_tasks = 0
+- if @one_on_one_link&.is_asana_link? && @one_on_one_link.has_deep_integration? && @teammate&.has_asana_identity? && @asana_section_tasks
+  - total_incomplete_tasks = @asana_section_tasks.values.flatten.count
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(one_on_one_indicator)}"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(one_on_one_indicator)} #{status_indicator_badge_class(one_on_one_indicator)} me-2"}
+    - if @one_on_one_link&.url.present?
+      - if @one_on_one_link.has_deep_integration? && total_incomplete_tasks > 0
+        1:1 link configured, #{pluralize(total_incomplete_tasks, 'incomplete task')}
+      - elsif @one_on_one_link.has_deep_integration?
+        1:1 link configured and integrated
+      - else
+        1:1 link configured
+    - else
+      No 1:1 link configured yet.
+
+-# Collapsible content
+.collapse#oneOnOneSection
+  .card.mb-4
+    .card-body
+      - if @one_on_one_link&.url.present?
+        .mb-3
+          %p.mb-2
+            %strong 1:1 Source:
+            = link_to @one_on_one_link.url, @one_on_one_link.url, target: '_blank', rel: 'noopener noreferrer'
+          - if @one_on_one_link.is_asana_link?
+            %span.badge.bg-info Asana Project
+          - if @one_on_one_link.has_deep_integration?
+            %span.badge.bg-success.ms-2 Integrated
+            - if @one_on_one_link.asana_project_id
+              %small.text-muted.ms-2
+                Project ID: #{@one_on_one_link.asana_project_id}
+        
+        -# Display Asana project data if integrated
+        - if @one_on_one_link.is_asana_link? && @one_on_one_link.has_deep_integration? && @teammate&.has_asana_identity? && @asana_sections.any?
+          .mt-3
+            %h5.mb-3 Project Sections & Tasks
+            - @asana_sections.each do |section|
+              .card.mb-3
+                .card-header
+                  %strong= section['name'] || 'Unnamed Section'
+                .card-body
+                  - section_tasks = @asana_section_tasks[section['gid']] || []
+                  - if section_tasks.any?
+                    %ul.list-unstyled.mb-0
+                      - section_tasks.each do |task|
+                        %li.mb-2
+                          %i.bi.bi-circle.me-2
+                          - task_url = AsanaService.task_url(task['gid'], @one_on_one_link.asana_project_id)
+                          = link_to task['name'], task_url, target: '_blank', rel: 'noopener noreferrer', class: 'text-decoration-none'
+                          - if task['due_on']
+                            %small.text-muted.ms-2
+                              Due: #{Date.parse(task['due_on']).strftime('%b %d, %Y')}
+                  - else
+                    %p.text-muted.mb-0 No incomplete tasks in this section.
+        - elsif @one_on_one_link.has_deep_integration?
+          .alert.alert-info
+            %strong Deep Integration Active
+            %p.mb-0.mt-2
+              This 1:1 is connected to an external system. 
+              %br
+              Headlines, todos, and discussion topics will be displayed here once fully integrated.
+        - elsif @one_on_one_link.is_asana_link?
+          .alert.alert-warning
+            %strong Asana Project Detected
+            %p.mb-0.mt-2
+              This is an Asana project link. 
+              %br
+              - if @teammate && !@teammate.has_asana_identity?
+                Connect your Asana account to enable automatic syncing of sections and tasks.
+              - else
+                Integration will be enabled after connecting your account.
+        - else
+          .alert.alert-warning
+            %strong No Deep Integration
+            %p.mb-0.mt-2
+              This 1:1 link is not yet integrated. 
+              %br
+              Connect your account to enable automatic syncing of headlines, todos, and discussion topics.
+      - else
+        %p.text-muted.mb-3 No 1:1 link configured yet.
+        %p.text-muted.mb-3
+          Add a link to your 1:1 document, project, or system to get started.
+      
+      .d-grid
+        = link_to "Manage 1:1 Area", 
+                  @one_on_one_url,
+                  class: "btn btn-outline-primary"
+

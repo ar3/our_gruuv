@@ -1,0 +1,35 @@
+- content_for :header do
+  %h1.mb-0 About #{@teammate.person.casual_name}
+        
+- content_for :header_action do
+  = render 'people/view_switcher'
+
+- content_for :go_back_link do
+  = link_to organization_company_teammate_path(organization, @teammate), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Profile
+
+-# Stories Section
+= render 'stories_section'
+
+-# Active Goals Section
+= render 'goals_section'
+
+-# Prompts/Reflections Section
+= render 'prompts_section'
+
+-# 1:1 Area Section
+= render 'one_on_one_section'
+
+-# Position/Overall Check-In Section (Read-Only)
+= render 'position_check_in_section'
+
+-# Assignments/Outcomes Check-In Section (Read-Only)
+= render 'assignments_check_in_section'
+
+-# Aspirations/Values Check-In Section (Read-Only)
+= render 'aspirations_check_in_section'
+
+-# Abilities/Skills/Knowledge Section (Read-Only)
+= render 'abilities_section'
+

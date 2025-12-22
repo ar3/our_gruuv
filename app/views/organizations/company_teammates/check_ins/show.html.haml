@@ -197,18 +197,6 @@
         %i.bi.bi-x-circle-fill.me-1
         #{@debug_data[:policy_action]} = FALSE (Access Denied)
 
--# Stories Section (Read-Only)
-= render 'stories_section'
-
--# Active Goals Section (Read-Only)
-= render 'goals_section'
-
--# Prompts/Reflections Section (Read-Only)
-= render 'prompts_section'
-
--# 1:1 Area Section (Read-Only)
-= render 'one_on_one_section'
-
 = form_with url: organization_company_teammate_check_ins_path(organization, @teammate), method: :patch, scope: :check_ins do |f|
   
   -# Position Section

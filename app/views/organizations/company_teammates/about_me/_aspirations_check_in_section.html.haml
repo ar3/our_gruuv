@@ -1,0 +1,72 @@
+- aspirations_indicator = aspirations_check_in_status_indicator(@teammate, organization)
+= render 'shared/section_header', 
+         title: 'Aspirations/Values', 
+         icon: 'bi-star', 
+         description: 'Track progress toward personal goals',
+         collapsible: true,
+         collapse_target: 'aspirationsCheckInSection',
+         status_indicator: aspirations_indicator
+
+-# Summary view (shown when collapsed)
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(aspirations_indicator)}"}
+  %p.mb-0
+    %i{class: "#{status_indicator_icon(aspirations_indicator)} #{status_indicator_badge_class(aspirations_indicator)} me-2"}
+    - if @company_aspirations.any?
+      #{@company_aspirations.count} company aspirational #{'value'.pluralize(@company_aspirations.count)}
+    - else
+      No company aspirational values
+
+-# Collapsible content
+.collapse#aspirationsCheckInSection
+  .card.mb-4
+    .card-body
+      - if @aspiration_check_ins_data.any?
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Aspiration
+                %th Last Finalized
+                %th Employee Status
+                %th Manager Status
+            %tbody
+              - @aspiration_check_ins_data.each do |data|
+                - aspiration = data[:aspiration]
+                - check_in = data[:check_in]
+                - latest_finalized = data[:latest_finalized]
+                %tr
+                  %td
+                    = link_to aspiration.name, organization_aspiration_path(organization, aspiration), class: "text-decoration-none"
+                  %td
+                    - if latest_finalized
+                      = latest_finalized.official_check_in_completed_at.strftime('%B %d, %Y')
+                    - else
+                      %span.text-muted Check-in not started
+                  %td
+                    - if check_in
+                      - if check_in.employee_completed?
+                        %span.badge.bg-success Ready
+                        %br
+                        %small.text-muted= check_in.employee_completed_at.strftime('%b %d, %Y')
+                      - else
+                        %span.badge.bg-warning Not ready
+                    - else
+                      %span.text-muted Check-in not started
+                  %td
+                    - if check_in
+                      - if check_in.manager_completed?
+                        %span.badge.bg-success Ready
+                        %br
+                        %small.text-muted= check_in.manager_completed_at.strftime('%b %d, %Y')
+                      - else
+                        %span.badge.bg-warning Not ready
+                    - else
+                      %span.text-muted Check-in not started
+      - else
+        %p.text-muted.mb-3 No company aspirational values found.
+      
+      .d-grid.mt-3
+        = link_to "Go to Check-In Mode", 
+                  organization_company_teammate_check_ins_path(organization, @teammate),
+                  class: "btn btn-outline-primary"
+

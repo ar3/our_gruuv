@@ -10,6 +10,13 @@ module NavigationHelper
     
     [
       {
+        label: "About #{current_company_teammate&.person&.casual_name || 'Me'}",
+        icon: 'bi-person',
+        path: about_me_organization_company_teammate_path(current_organization, current_company_teammate),
+        section: nil,
+        policy_check: -> { current_company_teammate && policy(current_company_teammate).view_check_ins? }
+      },
+      {
         label: 'Dashboard',
         icon: 'bi-house',
         path: dashboard_organization_path(current_organization),

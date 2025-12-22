@@ -47,6 +47,22 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access complete picture features"}
       
     %li
+      - if action_name == 'about_me' && controller_name == 'company_teammates'
+        .dropdown-item.text-muted
+          %i.bi.bi-person.me-2
+          About Me View (Active)
+          %i.bi.bi-check-circle.text-success.ms-2
+      - elsif @teammate && policy(@teammate).view_check_ins?
+        = link_to about_me_organization_company_teammate_path(current_organization, @teammate), class: 'dropdown-item' do
+          %i.bi.bi-person.me-2
+          About Me View
+      - else
+        .dropdown-item.text-muted.disabled
+          %i.bi.bi-person.me-2
+          About Me View
+          %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or to be in the managerial hierarchy to access check-in features"}
+      
+    %li
       - if action_name == 'show' && controller_name == 'check_ins'
         .dropdown-item.text-muted
           %i.bi.bi-chat-square-text.me-2
