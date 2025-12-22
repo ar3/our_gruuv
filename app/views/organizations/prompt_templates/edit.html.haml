@@ -85,7 +85,7 @@
                 .btn-group.btn-group-sm
                   = link_to edit_organization_prompt_template_prompt_question_path(@organization, @prompt_template, question, return_url: request.url, return_text: 'Edit Template'), class: "btn btn-outline-secondary", title: "Edit" do
                     %i.bi.bi-pencil
-                  = link_to organization_prompt_template_prompt_question_path(@organization, @prompt_template, question), method: :delete, class: "btn btn-outline-danger", title: "Delete", data: { confirm: "Are you sure you want to delete this question?" } do
+                  = button_to archive_organization_prompt_template_prompt_question_path(@organization, @prompt_template, question), method: :patch, class: "btn btn-outline-danger", title: "Archive", data: { turbo_confirm: "Are you sure you want to archive this question? Archived questions cannot be edited but can still be viewed on existing prompts." } do
                     %i.bi.bi-trash
     - else
       .alert.alert-info
@@ -119,6 +119,6 @@
                 .btn-group.btn-group-sm
                   = link_to edit_organization_prompt_template_prompt_question_path(@organization, @prompt_template, question, return_url: request.url, return_text: 'Edit Template'), class: "btn btn-outline-secondary disabled", title: "View (read-only)" do
                     %i.bi.bi-eye
-                  = link_to unarchive_organization_prompt_template_prompt_question_path(@organization, @prompt_template, question), method: :patch, class: "btn btn-outline-primary", title: "Unarchive", data: { confirm: "Are you sure you want to unarchive this question?" } do
+                  = button_to unarchive_organization_prompt_template_prompt_question_path(@organization, @prompt_template, question), method: :patch, class: "btn btn-outline-primary", title: "Unarchive", data: { turbo_confirm: "Are you sure you want to unarchive this question?" } do
                     %i.bi.bi-archive
 

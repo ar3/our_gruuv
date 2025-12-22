@@ -44,12 +44,12 @@
         .d-flex.gap-2
           - if @prompt_question.archived?
             .btn.btn-primary.disabled Update Question (Archived)
-            = link_to unarchive_organization_prompt_template_prompt_question_path(@organization, @prompt_template, @prompt_question), method: :patch, class: 'btn btn-outline-primary', data: { confirm: "Are you sure you want to unarchive this question?" } do
+            = button_to unarchive_organization_prompt_template_prompt_question_path(@organization, @prompt_template, @prompt_question), method: :patch, class: 'btn btn-outline-primary', data: { turbo_confirm: "Are you sure you want to unarchive this question?" } do
               %i.bi.bi-archive.me-1
               Unarchive Question
           - else
             = form.submit 'Update Question', class: 'btn btn-primary'
-            = link_to archive_organization_prompt_template_prompt_question_path(@organization, @prompt_template, @prompt_question), method: :patch, class: 'btn btn-outline-warning', data: { confirm: "Are you sure you want to archive this question? Archived questions cannot be edited but can still be viewed on existing prompts." } do
+            = button_to archive_organization_prompt_template_prompt_question_path(@organization, @prompt_template, @prompt_question), method: :patch, class: 'btn btn-outline-warning', data: { turbo_confirm: "Are you sure you want to archive this question? Archived questions cannot be edited but can still be viewed on existing prompts." } do
               %i.bi.bi-archive.me-1
               Archive Question
 
