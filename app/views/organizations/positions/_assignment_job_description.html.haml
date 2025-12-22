@@ -36,14 +36,8 @@
       %span.text-muted outcomes to be determined
   
   %p.mb-2.text-muted
-    %span='… needing Abilities such as –'
-    - if pa.assignment.abilities.any?
-      - pa.assignment.assignment_abilities.each do |aa|
-        - ability_path = public_view ? organization_public_maap_ability_path(aa.ability.organization, aa.ability) : organization_ability_path(aa.ability.organization, aa.ability)
-        %span.badge{class: assignment_type == 'required' ? 'bg-primary' : 'bg-info', class: 'me-1'}
-          = aa.ability.name
-          %small.ms-1 (#{milestone_level_display(aa.milestone_level)})
-          = link_to ability_path, target: "_blank", class: "ms-1 text-white" do
-            %i.bi.bi-link-45deg
-    - else
-      %span.text-muted ability milestones to be determined
+    = render 'shared/abilities_sentence', 
+             assignment_abilities: pa.assignment.assignment_abilities.by_milestone_level,
+             public_view: public_view,
+             show_milestone_parentheticals: false,
+             include_prefix: true

@@ -59,6 +59,22 @@
         - if (1..5).all? { |level| @ability.send("milestone_#{level}_description").blank? }
           %em.text-muted No milestone descriptions provided
 
+    - if @ability.is_required_by_assignments?
+      .card.mb-4{ role: "region", "aria-labelledby": "assignments" }
+        .card-header
+          %h5.mb-0{ id: "assignments" }
+            %i.bi.bi-clipboard-check.me-2
+            Assignments Requiring This Ability
+        .card-body
+          - @ability.required_by_assignments.each_with_index do |assignment_ability, index|
+            - if index > 0
+              %hr
+            .mb-3
+              = link_to organization_assignment_path(assignment_ability.assignment.company, assignment_ability.assignment), class: "text-decoration-none" do
+                %h6.mb-1= assignment_ability.assignment.title
+              %p.mb-0.text-muted.small
+                Required milestone level: #{milestone_level_display(assignment_ability.milestone_level)} (M#{assignment_ability.milestone_level})
+
   .col-md-4
     .card.mb-4
       .card-header

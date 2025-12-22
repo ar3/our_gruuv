@@ -99,4 +99,18 @@
         .card-body
           .markdown-content.markdown-content--bordered
             = render_markdown(@assignment.handbook)
+
+    - if @assignment.has_ability_requirements?
+      .card.mb-4{ role: "region", "aria-labelledby": "abilities" }
+        .card-header
+          %h5.mb-0{ id: "abilities" }
+            %i.bi.bi-lightning.me-2
+            Abilities Required for This Assignment
+        .card-body
+          %p.mb-0.text-muted
+            = render 'shared/abilities_sentence', 
+                     assignment_abilities: @assignment.required_abilities,
+                     public_view: false,
+                     show_milestone_parentheticals: true,
+                     include_prefix: true
               

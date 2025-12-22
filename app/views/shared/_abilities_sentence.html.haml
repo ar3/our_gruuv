@@ -1,0 +1,40 @@
+-# Abilities Sentence Partial
+-# Usage: = render 'shared/abilities_sentence', assignment_abilities: collection, public_view: false, show_milestone_parentheticals: false, include_prefix: true
+-#
+-# Parameters:
+-#   assignment_abilities: Collection of AssignmentAbility objects
+-#   public_view: Boolean - if true, links to public MAAP pages; if false, links to authenticated pages
+-#   show_milestone_parentheticals: Boolean - if true, shows (M2), (M3), etc. after each ability
+-#   include_prefix: Boolean - if true, includes "… needing Abilities such as –" prefix
+-#
+-# Example output without parentheticals:
+-#   "… needing Abilities such as – advanced Communication skills, advanced Mentorship skills, and expert Manager Development skills"
+-#
+-# Example output with parentheticals:
+-#   "… needing Abilities such as – advanced Communication skills (M2), advanced Mentorship skills (M2), and expert Manager Development skills (M3)"
+
+- public_view = defined?(public_view) ? public_view : false
+- show_milestone_parentheticals = defined?(show_milestone_parentheticals) ? show_milestone_parentheticals : false
+- include_prefix = defined?(include_prefix) ? include_prefix : true
+
+- if assignment_abilities.any?
+  - if include_prefix
+    %span='… needing Abilities such as – '
+  
+  - assignment_abilities.each_with_index do |aa, index|
+    - ability_path = public_view ? organization_public_maap_ability_path(aa.ability.organization, aa.ability) : organization_ability_path(aa.ability.organization, aa.ability)
+    - milestone_text = milestone_level_display(aa.milestone_level).downcase
+    - ability_name = aa.ability.name
+    - parenthetical = show_milestone_parentheticals ? " (M#{aa.milestone_level})" : ""
+    - if index > 0
+      - if index == assignment_abilities.length - 1
+        = ' and '
+      - else
+        = ', '
+    = link_to ability_path, class: "text-decoration-none" do
+      = "#{milestone_text} #{ability_name}#{parenthetical}"
+- else
+  - if include_prefix
+    %span='… needing Abilities such as – '
+  %span.text-muted ability milestones to be determined
+
