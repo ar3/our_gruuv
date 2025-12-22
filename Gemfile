@@ -115,6 +115,9 @@ gem "slack-ruby-client", "~> 2.0"
 # HTTP client for API requests
 gem "http", "~> 5.0"
 
+# AWS SDK for S3 storage
+gem "aws-sdk-s3", "~> 1.0"
+
 # Environment variables
 gem "dotenv-rails", "~> 3.1"
 

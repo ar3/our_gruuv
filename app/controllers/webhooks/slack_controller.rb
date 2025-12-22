@@ -44,6 +44,51 @@ class Webhooks::SlackController < ApplicationController
     Rails.logger.error e.backtrace.first(10).join("\n")
     head :internal_server_error
   end
+
+  def event
+    # Handle Slack Events API challenge/verification
+    if params[:type] == 'url_verification'
+      return render json: { challenge: params[:challenge] }
+    end
+
+    # Extract event type
+    event_name = params.dig(:event, :type) || 'unknown-event'
+    
+    # Resolve organization from team_id
+    team_id = params[:team_id]
+    organization = Organization.find_by_slack_workspace_id(team_id) if team_id.present?
+    
+    # Only save if organization exists and has Slack configured
+    if organization&.slack_configured?
+      begin
+        # Generate org_slug from organization name
+        org_slug = organization.name.parameterize
+        
+        # Generate file path
+        file_name = Time.zone.now.strftime('T%l:%M:%S%z').parameterize.underscore
+        date_path = Time.zone.now.strftime('%Y/%m/%d/')
+        path = "slack-events/#{Rails.env}/#{org_slug}/#{event_name}/#{date_path}"
+        full_file_path_and_name = "#{path}#{file_name}.json"
+        
+        # Save to S3
+        s3_client = S3::Client.new
+        s3_client.save_json_to_s3(
+          full_file_path_and_name: full_file_path_and_name,
+          hash_object: params.to_unsafe_h
+        )
+      rescue => e
+        Rails.logger.error "Slack Events API: Failed to save event to S3 - #{e.message}"
+        Rails.logger.error e.backtrace.first(10).join("\n")
+      end
+    end
+    
+    # Always return challenge response (even if saving failed or was skipped)
+    render json: { challenge: params[:challenge] }
+  rescue => e
+    Rails.logger.error "Slack Events API: Error processing event - #{e.message}"
+    Rails.logger.error e.backtrace.first(10).join("\n")
+    render json: { challenge: params[:challenge] }
+  end
   
   private
   

@@ -58,6 +58,7 @@ get '/login', to: 'auth#login', as: :login
   post 'slack/interactions', to: 'webhooks/slack#create'
   namespace :webhooks do
     post 'slack/interactions', to: 'slack#create'
+    post 'slack/events', to: 'slack#event'
   end
 
   # Organizations routes
