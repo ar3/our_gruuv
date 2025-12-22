@@ -59,7 +59,7 @@
   .card-header.d-flex.justify-content-between.align-items-center
     %h5.mb-0
       %i.bi.bi-question-circle.me-2
-      Prompt Questions
+      Active Questions
     - if policy(@prompt_template).update?
       = link_to new_organization_prompt_template_prompt_question_path(@organization, @prompt_template, return_url: request.url, return_text: 'Edit Template'), class: "btn btn-sm btn-primary" do
         %i.bi.bi-plus.me-1
@@ -91,5 +91,34 @@
       .alert.alert-info
         %p.mb-0
           %i.bi.bi-info-circle.me-2
-          No questions yet. Add your first question to get started.
+          No active questions yet. Add your first question to get started.
+
+- if @archived_questions.any?
+  .card.mt-4
+    .card-header
+      %h5.mb-0
+        %i.bi.bi-archive.me-2
+        Archived Questions
+    .card-body
+      %table.table.table-hover
+        %thead
+          %tr
+            %th Position
+            %th Label
+            %th Placeholder
+            %th Helper Text
+            %th Actions
+        %tbody
+          - @archived_questions.each do |question|
+            %tr.text-muted
+              %td= question.position
+              %td= question.label
+              %td= truncate(question.placeholder_text, length: 50) if question.placeholder_text.present?
+              %td= truncate(question.helper_text, length: 50) if question.helper_text.present?
+              %td
+                .btn-group.btn-group-sm
+                  = link_to edit_organization_prompt_template_prompt_question_path(@organization, @prompt_template, question, return_url: request.url, return_text: 'Edit Template'), class: "btn btn-outline-secondary disabled", title: "View (read-only)" do
+                    %i.bi.bi-eye
+                  = link_to unarchive_organization_prompt_template_prompt_question_path(@organization, @prompt_template, question), method: :patch, class: "btn btn-outline-primary", title: "Unarchive", data: { confirm: "Are you sure you want to unarchive this question?" } do
+                    %i.bi.bi-archive
 

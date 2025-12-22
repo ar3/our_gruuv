@@ -9,6 +9,13 @@ class Organizations::PromptTemplatesController < Organizations::OrganizationName
     authorize company, :view_prompt_templates?
     @prompt_templates = policy_scope(PromptTemplate).where(company: company)
     @prompt_templates = @prompt_templates.ordered
+    
+    # Calculate analytics for each template
+    @template_analytics = {}
+    @prompt_templates.each do |template|
+      analytics_service = PromptTemplateAnalyticsService.new(template)
+      @template_analytics[template.id] = analytics_service.call
+    end
   end
 
   def new
@@ -31,7 +38,8 @@ class Organizations::PromptTemplatesController < Organizations::OrganizationName
 
   def edit
     authorize @prompt_template
-    @prompt_questions = @prompt_template.prompt_questions.ordered
+    @prompt_questions = @prompt_template.prompt_questions.active.ordered
+    @archived_questions = @prompt_template.prompt_questions.archived.ordered
   end
 
   def update
@@ -41,7 +49,8 @@ class Organizations::PromptTemplatesController < Organizations::OrganizationName
       redirect_to organization_prompt_templates_path(@organization), 
                   notice: 'Prompt template was successfully updated.'
     else
-      @prompt_questions = @prompt_template.prompt_questions.ordered
+      @prompt_questions = @prompt_template.prompt_questions.active.ordered
+      @archived_questions = @prompt_template.prompt_questions.archived.ordered
       render :edit, status: :unprocessable_entity
     end
   end

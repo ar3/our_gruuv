@@ -23,7 +23,7 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
     current_teammate = current_person.teammates.find_by(organization: company)
     
     unless current_teammate.is_a?(CompanyTeammate)
-      redirect_to organization_prompt_path(@organization, @prompt),
+      redirect_to edit_organization_prompt_path(@organization, @prompt),
                   alert: 'You must be a company teammate to associate goals.'
       return
     end
@@ -72,10 +72,10 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
     end
 
     if success_count > 0 && errors.empty?
-      redirect_to organization_prompt_path(@organization, @prompt),
+      redirect_to edit_organization_prompt_path(@organization, @prompt),
                   notice: "#{success_count} #{'goal'.pluralize(success_count)} #{success_count == 1 ? 'was' : 'were'} successfully associated."
     elsif success_count > 0 && errors.any?
-      redirect_to organization_prompt_path(@organization, @prompt),
+      redirect_to edit_organization_prompt_path(@organization, @prompt),
                   alert: "Some goals were associated, but there were errors: #{errors.join(', ')}"
     else
       redirect_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: params[:return_url], return_text: params[:return_text]),
@@ -87,10 +87,10 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
     authorize @prompt_goal
     
     if @prompt_goal.destroy
-      redirect_to organization_prompt_path(@organization, @prompt),
+      redirect_to edit_organization_prompt_path(@organization, @prompt),
                   notice: 'Goal association was successfully removed.'
     else
-      redirect_to organization_prompt_path(@organization, @prompt),
+      redirect_to edit_organization_prompt_path(@organization, @prompt),
                   alert: 'Failed to remove goal association.'
     end
   end

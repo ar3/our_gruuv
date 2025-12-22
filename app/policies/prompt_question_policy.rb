@@ -11,6 +11,14 @@ class PromptQuestionPolicy < ApplicationPolicy
     admin_bypass? || user_has_prompts_permission_for_template?
   end
 
+  def archive?
+    update?
+  end
+
+  def unarchive?
+    update?
+  end
+
   private
 
   def user_has_prompts_permission_for_template?

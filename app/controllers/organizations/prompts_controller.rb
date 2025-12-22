@@ -1,50 +1,37 @@
 class Organizations::PromptsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_prompt, only: [:show, :edit, :update, :close, :manage_goals]
+  before_action :set_prompt, only: [:edit, :update, :close, :close_and_start_new, :manage_goals]
 
   after_action :verify_authorized
-  after_action :verify_policy_scoped, only: :index
 
   def index
     authorize company, :view_prompts?
-    @prompts = policy_scope(Prompt)
     
-    # Use PromptsQuery for filtering and sorting
-    query = PromptsQuery.new(@organization, params, current_person: current_person)
-    
-    # Get filtered prompts (before sorting)
-    filtered_prompts = query.base_scope
-    filtered_prompts = query.filter_by_template(filtered_prompts)
-    filtered_prompts = query.filter_by_status(filtered_prompts)
-    filtered_prompts = query.filter_by_teammate(filtered_prompts)
-    
-    # Count before applying complex sorts
-    total_count = filtered_prompts.count
-    
-    # Apply sorting
-    sorted_prompts = query.call
-    
-    # Eager load associations
-    sorted_prompts = sorted_prompts.includes(
-      :prompt_template,
-      { company_teammate: :person },
-      { prompt_answers: :prompt_question }
-    )
-    
-    # Paginate using Pagy (25 items per page)
-    @pagy = Pagy.new(count: total_count, page: params[:page] || 1, items: 25)
-    @prompts = sorted_prompts.limit(@pagy.items).offset(@pagy.offset)
-    
-    # Store current filter/sort/view/spotlight state for view
-    @current_filters = query.current_filters
-    @current_sort = query.current_sort
-    @current_view = query.current_view
-    @current_spotlight = query.current_spotlight
-    
-    # Get available templates and teammates for filters
+    # Get all active/available templates for the company
     company = @organization.root_company || @organization
-    @available_templates = PromptTemplate.where(company: company).ordered
-    @available_teammates = CompanyTeammate.where(organization: company).includes(:person).order('people.first_name, people.last_name')
+    @active_templates = PromptTemplate.where(company: company).available.ordered
+    
+    # Get current teammate
+    current_teammate = current_person.teammates.find_by(organization: company)
+    
+    # For each template, find active and previous prompts for current user
+    @template_prompts = {}
+    @active_templates.each do |template|
+      if current_teammate
+        active_prompt = Prompt.where(company_teammate: current_teammate, prompt_template: template).open.first
+        previous_prompts = Prompt.where(company_teammate: current_teammate, prompt_template: template).closed.ordered.limit(10)
+        
+        @template_prompts[template.id] = {
+          active: active_prompt,
+          previous: previous_prompts
+        }
+      else
+        @template_prompts[template.id] = {
+          active: nil,
+          previous: []
+        }
+      end
+    end
   end
 
   def customize_view
@@ -79,41 +66,18 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     redirect_to organization_prompts_path(@organization, redirect_params)
   end
 
-  def show
-    authorize @prompt
-    @prompt_answers = @prompt.prompt_answers
-      .includes(:prompt_question)
-      .joins(:prompt_question)
-      .order('prompt_questions.position')
-      .to_a
-    @prompt_goals = @prompt.prompt_goals.includes(:goal).to_a
-  end
-
-  def new
-    authorize Prompt, :create?
-    
-    company = @organization.root_company || @organization
-    teammate = current_person.teammates.find_by(organization: company)
-    unless teammate.is_a?(CompanyTeammate)
-      redirect_to organization_prompts_path(@organization), alert: 'You must be a company teammate to start a prompt.'
-      return
-    end
-    
-    @available_templates = PromptTemplate.where(company: company).available.ordered
-    @existing_open_prompts = Prompt.where(company_teammate: teammate).open.includes(:prompt_template).index_by(&:prompt_template_id)
-  end
 
   def create
     authorize Prompt, :create?
     
     template = PromptTemplate.find_by(id: params[:template_id], company: @organization.root_company || @organization)
     unless template
-      redirect_to new_organization_prompt_path(@organization), alert: 'Prompt template not found.'
+      redirect_to organization_prompts_path(@organization), alert: 'Prompt template not found.'
       return
     end
     
     unless template.available?
-      redirect_to new_organization_prompt_path(@organization), alert: 'This prompt template is not available.'
+      redirect_to organization_prompts_path(@organization), alert: 'This prompt template is not available.'
       return
     end
     
@@ -139,22 +103,52 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     redirect_to edit_organization_prompt_path(@organization, @prompt), 
                 notice: 'Prompt started successfully.'
   rescue ActiveRecord::RecordInvalid => e
-    redirect_to new_organization_prompt_path(@organization), alert: "Error starting prompt: #{e.message}"
+    redirect_to organization_prompts_path(@organization), alert: "Error starting prompt: #{e.message}"
+  end
+
+  def close_and_start_new
+    authorize @prompt, :update?
+    
+    unless @prompt.open?
+      redirect_to edit_organization_prompt_path(@organization, @prompt), 
+                  alert: 'This prompt is already closed.'
+      return
+    end
+    
+    template = @prompt.prompt_template
+    company = @organization.root_company || @organization
+    teammate = current_person.teammates.find_by(organization: company)
+    
+    # Close the current prompt
+    @prompt.close!
+    
+    # Create a new prompt for the same template
+    new_prompt = Prompt.create!(
+      company_teammate: teammate,
+      prompt_template: template
+    )
+    
+    redirect_to edit_organization_prompt_path(@organization, new_prompt), 
+                notice: 'Previous reflection closed. New reflection started successfully.'
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to edit_organization_prompt_path(@organization, @prompt), 
+                alert: "Error starting new prompt: #{e.message}"
   end
 
   def edit
     authorize @prompt, :show?
     
+    @can_edit = policy(@prompt).update?
+    
+    # If closed, still allow viewing but not editing
     unless @prompt.open?
-      redirect_to organization_prompt_path(@organization, @prompt), 
-                  alert: 'This prompt is closed and cannot be edited.'
-      return
+      @can_edit = false
     end
     
-    authorize @prompt, :update?
-    
     @prompt_template = @prompt.prompt_template
-    @prompt_questions = @prompt_template.prompt_questions.ordered.to_a
+    # Get active questions for editing, archived for display
+    @prompt_questions = @prompt_template.prompt_questions.active.ordered.to_a
+    @archived_questions = @prompt_template.prompt_questions.archived.ordered.to_a
     
     # Build prompt_answers hash for form
     @prompt_answers = {}
@@ -162,24 +156,36 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
       @prompt_answers[answer.prompt_question_id] = answer
     end
     
-    # Create empty answers for questions that don't have answers yet
+    # Create empty answers for active questions that don't have answers yet
     @prompt_questions.each do |question|
       unless @prompt_answers[question.id]
         @prompt_answers[question.id] = @prompt.prompt_answers.build(prompt_question: question)
       end
     end
     
-    # Determine view style (vertical or split)
-    @view_style = params[:view] || 'split'
-    @view_style = 'split' unless ['vertical', 'split'].include?(@view_style)
+    # Also build answers for archived questions (read-only)
+    @archived_answers = {}
+    @archived_questions.each do |question|
+      if @prompt_answers[question.id]
+        @archived_answers[question.id] = @prompt_answers[question.id]
+      end
+    end
+    
     @prompt_goals = @prompt.prompt_goals.includes(:goal).to_a
+    
+    # Calculate next prompt for navigation
+    if @can_edit
+      company = @organization.root_company || @organization
+      current_teammate = current_person.teammates.find_by(organization: company)
+      @next_prompt = @prompt.next_prompt_for_teammate(current_teammate) if current_teammate
+    end
   end
 
   def update
     authorize @prompt, :show?
     
     unless @prompt.open?
-      redirect_to organization_prompt_path(@organization, @prompt), 
+      redirect_to edit_organization_prompt_path(@organization, @prompt), 
                   alert: 'This prompt is closed and cannot be edited.'
       return
     end
@@ -207,23 +213,38 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
       end
     end
     
-    # Check if this is a view switch request
-    target_view = params[:switch_to_view]
-    if target_view.present? && ['vertical', 'split'].include?(target_view)
-      redirect_to edit_organization_prompt_path(@organization, @prompt, view: target_view), 
-                  notice: 'Prompt updated successfully.'
+    # Determine redirect based on button clicked
+    if params[:save_and_next].present?
+      # Save and go to next prompt
+      next_prompt = @prompt.next_prompt_for_teammate(current_teammate)
+      if next_prompt
+        redirect_to edit_organization_prompt_path(@organization, next_prompt), 
+                    notice: 'Prompt updated successfully.'
+      else
+        redirect_to organization_prompts_path(@organization), 
+                    notice: 'Prompt updated successfully.'
+      end
     else
-      redirect_to organization_prompt_path(@organization, @prompt), 
+      # Save and continue editing (default)
+      redirect_to edit_organization_prompt_path(@organization, @prompt), 
                   notice: 'Prompt updated successfully.'
     end
   rescue ActiveRecord::RecordInvalid => e
+    @can_edit = policy(@prompt).update?
     @prompt_template = @prompt.prompt_template
-    @prompt_questions = @prompt_template.prompt_questions.ordered
+    @prompt_questions = @prompt_template.prompt_questions.active.ordered.to_a
+    @archived_questions = @prompt_template.prompt_questions.archived.ordered.to_a
     @prompt_answers = {}
     @prompt.prompt_answers.each do |answer|
       @prompt_answers[answer.prompt_question_id] = answer
     end
-    @view_style = params[:view] || 'split'
+    @archived_answers = {}
+    @archived_questions.each do |question|
+      if @prompt_answers[question.id]
+        @archived_answers[question.id] = @prompt_answers[question.id]
+      end
+    end
+    @prompt_goals = @prompt.prompt_goals.includes(:goal).to_a
     flash.now[:alert] = "Error updating prompt: #{e.message}"
     render :edit, status: :unprocessable_entity
   end
@@ -232,13 +253,13 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     authorize @prompt
     
     unless @prompt.open?
-      redirect_to organization_prompt_path(@organization, @prompt), 
+      redirect_to edit_organization_prompt_path(@organization, @prompt), 
                   alert: 'This prompt is already closed.'
       return
     end
     
     @prompt.close!
-    redirect_to organization_prompt_path(@organization, @prompt), 
+    redirect_to edit_organization_prompt_path(@organization, @prompt), 
                 notice: 'Prompt closed successfully.'
   end
 
@@ -261,7 +282,7 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
       }
     end
     
-    @return_url = params[:return_url] || organization_prompt_path(@organization, @prompt)
+    @return_url = params[:return_url] || edit_organization_prompt_path(@organization, @prompt)
     @return_text = params[:return_text] || 'Back to Prompt'
     
     render layout: 'overlay'

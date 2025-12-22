@@ -3,6 +3,40 @@
     %i.bi.bi-arrow-left.me-2
     Back to Dashboard
 
+- if @prompt_templates.any?
+  .card.mb-4
+    .card-header
+      %h5.mb-0
+        %i.bi.bi-graph-up.me-2
+        Prompt Template Analytics
+    .card-body
+      .table-responsive
+        %table.table.table-hover
+          %thead
+            %tr
+              %th Template Name
+              %th Closed Prompts
+              %th Open Prompts
+          %tbody
+            - @prompt_templates.each do |template|
+              - analytics = @template_analytics[template.id] || { closed_prompts: { employee_count: 0, prompt_count: 0, avg_completed_questions: "0/0" }, open_prompts: { employee_count: 0, prompt_count: 0, avg_completed_questions: "0/0" } }
+              - closed = analytics[:closed_prompts]
+              - open = analytics[:open_prompts]
+              %tr
+                %td
+                  = link_to edit_organization_prompt_template_path(@organization, template), class: "text-decoration-none" do
+                    %strong= template.title
+                %td
+                  - if closed[:prompt_count] > 0
+                    = "#{closed[:employee_count]} employees, #{closed[:prompt_count]} prompts closed, Avg: #{closed[:avg_completed_questions]} questions completed"
+                  - else
+                    %em.text-muted No closed prompts
+                %td
+                  - if open[:prompt_count] > 0
+                    = "#{open[:employee_count]} employees, #{open[:prompt_count]} prompts open, Avg: #{open[:avg_completed_questions]} questions completed"
+                  - else
+                    %em.text-muted No open prompts
+
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2.mr-2

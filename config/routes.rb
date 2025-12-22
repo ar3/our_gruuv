@@ -133,17 +133,24 @@ get '/login', to: 'auth#login', as: :login
     
     # Prompt Templates management
     resources :prompt_templates, module: :organizations, except: [:show] do
-      resources :prompt_questions, module: :prompt_templates
+      resources :prompt_questions, module: :prompt_templates do
+        member do
+          patch :archive
+          patch :unarchive
+        end
+      end
     end
     
     # Prompts management
-    resources :prompts, module: :organizations, constraints: { id: /[0-9]+/ } do
+    resources :prompts, module: :organizations, constraints: { id: /[0-9]+/ }, except: [:show, :new] do
       collection do
         get :customize_view
         patch :update_view
+        post :create
       end
       member do
         patch :close
+        post :close_and_start_new
         get :manage_goals
       end
       resources :prompt_goals, module: :prompts, only: [:create, :destroy]

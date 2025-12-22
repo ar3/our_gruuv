@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_21_173256) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_22_195239) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -731,6 +731,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_21_173256) do
     t.integer "position", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "archived_at"
+    t.index ["archived_at"], name: "index_prompt_questions_on_archived_at"
     t.index ["prompt_template_id", "position"], name: "index_prompt_questions_on_prompt_template_id_and_position", unique: true
     t.index ["prompt_template_id"], name: "index_prompt_questions_on_prompt_template_id"
   end

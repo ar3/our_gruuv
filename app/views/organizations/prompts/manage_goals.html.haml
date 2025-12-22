@@ -2,7 +2,7 @@
   Associate Goals with "#{@prompt.prompt_template.title}"
 
 - content_for :return_url do
-  = @return_url || organization_prompt_path(@organization, @prompt)
+  = @return_url || edit_organization_prompt_path(@organization, @prompt)
 
 - content_for :return_text do
   = @return_text || "Back to Prompt"

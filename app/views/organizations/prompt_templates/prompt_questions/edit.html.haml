@@ -24,24 +24,34 @@
         = form.label :label, class: 'form-label' do
           Label
           %span.text-danger *
-        = form.text_field :label, class: 'form-control', required: true
+        = form.text_field :label, class: 'form-control', required: true, disabled: @prompt_question.archived?
       
       .mb-3
         = form.label :placeholder_text, class: 'form-label'
-        = form.text_area :placeholder_text, class: 'form-control', rows: 3
+        = form.text_area :placeholder_text, class: 'form-control', rows: 3, disabled: @prompt_question.archived?
       
       .mb-3
         = form.label :helper_text, class: 'form-label'
-        = form.text_area :helper_text, class: 'form-control', rows: 2
+        = form.text_area :helper_text, class: 'form-control', rows: 2, disabled: @prompt_question.archived?
       
       .mb-3
         = form.label :position, class: 'form-label'
         %small.text-muted.d-block Order of this question (lower numbers appear first)
-        = form.number_field :position, class: 'form-control', min: 1
+        = form.number_field :position, class: 'form-control', min: 1, disabled: @prompt_question.archived?
       
       .d-flex.justify-content-between
         = link_to 'Cancel', @return_url, class: 'btn btn-secondary'
-        = form.submit 'Update Question', class: 'btn btn-primary'
+        .d-flex.gap-2
+          - if @prompt_question.archived?
+            .btn.btn-primary.disabled Update Question (Archived)
+            = link_to unarchive_organization_prompt_template_prompt_question_path(@organization, @prompt_template, @prompt_question), method: :patch, class: 'btn btn-outline-primary', data: { confirm: "Are you sure you want to unarchive this question?" } do
+              %i.bi.bi-archive.me-1
+              Unarchive Question
+          - else
+            = form.submit 'Update Question', class: 'btn btn-primary'
+            = link_to archive_organization_prompt_template_prompt_question_path(@organization, @prompt_template, @prompt_question), method: :patch, class: 'btn btn-outline-warning', data: { confirm: "Are you sure you want to archive this question? Archived questions cannot be edited but can still be viewed on existing prompts." } do
+              %i.bi.bi-archive.me-1
+              Archive Question
 
 - if @versions.any?
   .card

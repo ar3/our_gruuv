@@ -36,7 +36,7 @@ class PromptTemplate < ApplicationRecord
   end
 
   def only_one_primary_per_company
-    return unless is_primary?
+    return unless is_primary
     return unless company_id.present?
 
     existing = PromptTemplate.where(company_id: company_id, is_primary: true)
@@ -48,7 +48,7 @@ class PromptTemplate < ApplicationRecord
   end
 
   def only_one_secondary_per_company
-    return unless is_secondary?
+    return unless is_secondary
     return unless company_id.present?
 
     existing = PromptTemplate.where(company_id: company_id, is_secondary: true)
@@ -60,7 +60,7 @@ class PromptTemplate < ApplicationRecord
   end
 
   def only_one_tertiary_per_company
-    return unless is_tertiary?
+    return unless is_tertiary
     return unless company_id.present?
 
     existing = PromptTemplate.where(company_id: company_id, is_tertiary: true)

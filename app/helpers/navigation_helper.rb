@@ -126,6 +126,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Prompt Templates',
+            icon: 'bi-file-text',
+            path: organization_prompt_templates_path(current_organization),
+            policy_check: -> { policy(current_company).view_prompt_templates? },
+            coming_soon: false
+          },
+          {
             label: 'Departments & Teams',
             icon: 'bi-diagram-3',
             path: organization_departments_and_teams_path(current_organization),

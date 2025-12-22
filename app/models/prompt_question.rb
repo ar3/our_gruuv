@@ -11,13 +11,20 @@ class PromptQuestion < ApplicationRecord
 
   # Scopes
   scope :ordered, -> { order(:position) }
+  scope :active, -> { where(archived_at: nil) }
+  scope :archived, -> { where.not(archived_at: nil) }
 
   # Callbacks
-  before_validation :set_position, on: :create
+  before_validation :auto_assign_position, on: :create
+
+  # Instance methods
+  def archived?
+    archived_at.present?
+  end
 
   private
 
-  def set_position
+  def auto_assign_position
     return if position.present?
     return unless prompt_template.present?
     

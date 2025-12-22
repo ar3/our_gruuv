@@ -31,6 +31,40 @@ class Prompt < ApplicationRecord
     update!(closed_at: Time.current)
   end
 
+  def next_prompt_for_teammate(teammate)
+    company = teammate.organization.root_company || teammate.organization
+    
+    # Get the current template
+    current_template = prompt_template
+    
+    # Determine next template based on hierarchy
+    next_template = nil
+    
+    if current_template.is_primary
+      # Primary → Secondary
+      next_template = PromptTemplate.where(company: company).available.secondary.first
+    elsif current_template.is_secondary
+      # Secondary → Tertiary
+      next_template = PromptTemplate.where(company: company).available.tertiary.first
+    end
+    
+    # If no next template found, return nil (will redirect to index)
+    return nil unless next_template
+    
+    # Find open prompt for the next template
+    next_prompt = Prompt.where(company_teammate: teammate, prompt_template: next_template).open.first
+    
+    # If no open prompt exists, create one so the button can show
+    unless next_prompt
+      next_prompt = Prompt.create!(
+        company_teammate: teammate,
+        prompt_template: next_template
+      )
+    end
+    
+    next_prompt
+  end
+
   private
 
   def only_one_open_prompt_per_teammate_per_template

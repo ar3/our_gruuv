@@ -1,38 +1,29 @@
 - content_for :go_back_link do
-  = link_to organization_prompt_path(@organization, @prompt), class: "go-back-link" do
+  = link_to organization_prompts_path(@organization), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
-    Back to Prompt
+    Back to My Reflections
 
 - content_for :header do
   .d-flex.align-items-center.justify-content-between
     %h1.mb-0.me-2
       %i.bi.bi-file-text.me-2
       Edit Prompt: #{@prompt_template.title}
-    .dropdown
-      %button.btn.btn-outline-secondary.btn-sm.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button", id: "view-toggle-dropdown"}
-        %i.bi.bi-layout-text-window-reverse.me-2
-        = @view_style == 'split' ? 'Split View' : 'Vertical View'
-      %ul.dropdown-menu
-        %li
-          - if @view_style == 'vertical'
-            .dropdown-item.text-muted
-              %i.bi.bi-list-ul.me-2
-              Vertical View (Active)
-              %i.bi.bi-check-circle.text-success.ms-2
-          - else
-            %a.dropdown-item.view-switch-link{"data-view" => "vertical", href: "#"}
-              %i.bi.bi-list-ul.me-2
-              Vertical View
-        %li
-          - if @view_style == 'split'
-            .dropdown-item.text-muted
-              %i.bi.bi-columns.me-2
-              Split View (Active)
-              %i.bi.bi-check-circle.text-success.ms-2
-          - else
-            %a.dropdown-item.view-switch-link{"data-view" => "split", href: "#"}
-              %i.bi.bi-columns.me-2
-              Split View
+
+.card.mb-4
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-clock-history.me-2
+      Reflection Details
+  .card-body
+    .row
+      .col-md-6
+        %p.mb-2
+          %strong Created:
+          = @prompt.created_at.strftime("%B %d, %Y at %I:%M %p")
+      .col-md-6
+        %p.mb-2
+          %strong Last Updated:
+          = @prompt.updated_at.strftime("%B %d, %Y at %I:%M %p")
 
 .card
   .card-header
@@ -48,50 +39,61 @@
             - @prompt.errors.full_messages.each do |message|
               %li= message
       
-      - if @view_style == 'split'
-        / Split View: 3x9 column layout
-        - @prompt_questions.each do |question|
-          .row.mb-4
-            .col-sm-3.col-12.mb-3.mb-sm-0
-              = form.label "prompt_answers[#{question.id}][text]", question.label, class: 'form-label fw-bold'
-              - if question.helper_text.present?
-                %small.text-muted.d-block.mt-1= question.helper_text
-            .col-sm-9.col-12
-              = form.text_area "prompt_answers[#{question.id}][text]", 
-                              value: @prompt_answers[question.id]&.text,
-                              class: 'form-control', 
-                              rows: 4,
-                              placeholder: question.placeholder_text.presence || 'Enter your answer...'
-      - else
-        / Vertical View: fully vertical form (original)
-        - @prompt_questions.each do |question|
-          .mb-4
-            = form.label "prompt_answers[#{question.id}][text]", question.label, class: 'form-label fw-bold' do
-              = question.label
-              - if question.helper_text.present?
-                %small.text-muted.d-block.mt-1= question.helper_text
+      / Split View: 3x9 column layout
+      - @prompt_questions.each do |question|
+        .row.mb-4
+          .col-sm-3.col-12.mb-3.mb-sm-0
+            = form.label "prompt_answers[#{question.id}][text]", question.label, class: 'form-label fw-bold'
+            - if question.helper_text.present?
+              %small.text-muted.d-block.mt-1= question.helper_text
+          .col-sm-9.col-12
             = form.text_area "prompt_answers[#{question.id}][text]", 
                             value: @prompt_answers[question.id]&.text,
                             class: 'form-control', 
                             rows: 4,
-                            placeholder: question.placeholder_text.presence || 'Enter your answer...'
+                            placeholder: question.placeholder_text.presence || 'Enter your answer...',
+                            disabled: !@can_edit
+      
+      - if @archived_questions.any?
+        .mt-4.pt-4.border-top
+          %h6.mb-3
+            %i.bi.bi-archive.me-2
+            Archived Questions (Read-Only)
+          - @archived_questions.each do |question|
+            .row.mb-4
+              .col-sm-3.col-12.mb-3.mb-sm-0
+                %label.form-label.fw-bold.text-muted= question.label
+                - if question.helper_text.present?
+                  %small.text-muted.d-block.mt-1= question.helper_text
+              .col-sm-9.col-12
+                - answer = @archived_answers[question.id]
+                - if answer && answer.text.present?
+                  .p-3.bg-light.rounded
+                    = simple_format(answer.text)
+                - else
+                  %p.text-muted No answer provided
       
       .d-flex.justify-content-between.mt-4
-        = link_to 'Cancel', organization_prompt_path(@organization, @prompt), class: 'btn btn-secondary'
+        = link_to 'Cancel', organization_prompts_path(@organization), class: 'btn btn-secondary'
         .d-flex.gap-2
-          = form.submit 'Save Answers', class: 'btn btn-primary'
-          - if policy(@prompt).close?
-            = link_to close_organization_prompt_path(@organization, @prompt), method: :patch, class: 'btn btn-outline-secondary', data: { confirm: "Are you sure you want to close this prompt? You won't be able to edit it after closing." } do
-              Close Prompt
+          - if @can_edit
+            = form.submit 'Save and continue editing', class: 'btn btn-primary', name: 'save_and_continue'
+            - if @next_prompt
+              = form.submit "Save and go to #{@next_prompt.prompt_template.title}", class: 'btn btn-outline-primary', name: 'save_and_next'
+          - else
+            .btn.btn-primary.disabled Save and continue editing
+            - if @next_prompt
+              .btn.btn-outline-primary.disabled Save and go to #{@next_prompt.prompt_template.title}
 
 .card.mb-4
   .card-header.d-flex.justify-content-between.align-items-center
     %h5.mb-0
       %i.bi.bi-bullseye.me-2
       Associated Goals
-    = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: request.url, return_text: 'Edit Prompt'), class: "btn btn-sm btn-primary" do
-      %i.bi.bi-plus.me-1
-      Manage Goals
+    - if @can_edit
+      = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: request.url, return_text: 'Edit Prompt'), class: "btn btn-sm btn-primary" do
+        %i.bi.bi-plus.me-1
+        Manage Goals
   .card-body
     - if @prompt.goals.any?
       %ul.list-unstyled
@@ -111,40 +113,13 @@
                   | 
                   %span{title: goal_privacy_tooltip_text(goal), "data-bs-toggle" => "tooltip"}
                     = goal_privacy_rings_with_label(goal)
-              - prompt_goal = @prompt.prompt_goals.find_by(goal: goal)
-              - if prompt_goal
-                = button_to organization_prompt_prompt_goal_path(@organization, @prompt, prompt_goal), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this goal association?" } do
-                  %i.bi.bi-trash
+              - if @can_edit
+                - prompt_goal = @prompt.prompt_goals.find_by(goal: goal)
+                - if prompt_goal
+                  = button_to organization_prompt_prompt_goal_path(@organization, @prompt, prompt_goal), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this goal association?" } do
+                    %i.bi.bi-trash
     - else
       %em.text-muted No goals associated with this prompt.
-      = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: request.url, return_text: 'Edit Prompt'), class: "text-decoration-none" do
-        Associate goals
-
-:javascript
-  document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('prompt-edit-form');
-    const viewSwitchLinks = document.querySelectorAll('.view-switch-link');
-    
-    viewSwitchLinks.forEach(function(link) {
-      link.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        const targetView = this.getAttribute('data-view');
-        
-        // Add hidden field for target view
-        let hiddenField = document.getElementById('switch_to_view');
-        if (!hiddenField) {
-          hiddenField = document.createElement('input');
-          hiddenField.type = 'hidden';
-          hiddenField.name = 'switch_to_view';
-          hiddenField.id = 'switch_to_view';
-          form.appendChild(hiddenField);
-        }
-        hiddenField.value = targetView;
-        
-        // Submit the form
-        form.submit();
-      });
-    });
-  });
-
+      - if @can_edit
+        = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: request.url, return_text: 'Edit Prompt'), class: "text-decoration-none" do
+          Associate goals
