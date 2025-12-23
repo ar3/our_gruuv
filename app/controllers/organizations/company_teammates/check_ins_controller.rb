@@ -106,16 +106,58 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   end
 
   def load_or_build_assignment_check_ins
+    check_ins = []
+    
     # Get all active assignment tenures for this teammate
     active_tenures = AssignmentTenure.joins(:assignment)
                                     .where(teammate: @teammate)
                                     .where(ended_at: nil)
                                     .includes(:assignment)
     
-    # Find or create check-ins for each active assignment
-    active_tenures.map do |tenure|
-      AssignmentCheckIn.find_or_create_open_for(@teammate, tenure.assignment)
-    end.compact
+    # Find or create check-ins for each active assignment tenure
+    active_tenures.each do |tenure|
+      check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, tenure.assignment)
+      check_ins << check_in if check_in
+    end
+    
+    # Get required assignments from the teammate's current position
+    active_employment = @teammate.employment_tenures.active.where(company: organization).first
+    if active_employment&.position
+      position = active_employment.position
+      required_assignments = position.required_assignments.map(&:assignment)
+      
+      # For each required assignment, ensure we have a check-in
+      required_assignments.each do |assignment|
+        # Check if we already have a check-in for this assignment (from active tenure above)
+        existing_check_in = check_ins.find { |ci| ci.assignment_id == assignment.id }
+        next if existing_check_in
+        
+        # Check if there's an active tenure for this assignment
+        active_tenure = active_tenures.find { |t| t.assignment_id == assignment.id }
+        
+        if active_tenure
+          # Use existing method if tenure exists
+          check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
+          check_ins << check_in if check_in
+        else
+          # No active tenure - create blank check-in if one doesn't exist
+          open_check_in = AssignmentCheckIn.where(teammate: @teammate, assignment: assignment).open.first
+          if open_check_in.nil?
+            check_in = AssignmentCheckIn.create!(
+              teammate: @teammate,
+              assignment: assignment,
+              check_in_started_on: Date.current,
+              actual_energy_percentage: nil
+            )
+            check_ins << check_in
+          else
+            check_ins << open_check_in
+          end
+        end
+      end
+    end
+    
+    check_ins.compact
   end
 
   def load_or_build_aspiration_check_ins
