@@ -53,6 +53,19 @@ module ObservationRatingFormatter
     formatted_sentences
   end
 
+  def verb_for_type(rateable_type)
+    case rateable_type
+    when 'Ability'
+      'demonstration'
+    when 'Assignment'
+      'execution'
+    when 'Aspiration'
+      'example'
+    else
+      'display'
+    end
+  end
+
   private
 
   def rating_to_word(rating_value)
@@ -67,19 +80,6 @@ module ObservationRatingFormatter
       'Concerning'
     else
       rating_value.to_s.humanize
-    end
-  end
-
-  def verb_for_type(rateable_type)
-    case rateable_type
-    when 'Ability'
-      'demonstration'
-    when 'Assignment'
-      'execution'
-    when 'Aspiration'
-      'example'
-    else
-      'display'
     end
   end
 

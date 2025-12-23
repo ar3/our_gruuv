@@ -7,7 +7,7 @@
     .single-page-wizard-step 4
   .col-11
     = render 'shared/section_header', 
-        title: 'Assignments/Outcomes', 
+        title: 'Assignments/Outcomeskkkkk', 
         icon: 'bi-clipboard-check', 
         include_top_header_margin: false,
         description: 'Does this story include any noteworthy demonstrations of Assignments?'
@@ -26,7 +26,6 @@
               .card-body
                 .d-flex.justify-content-between.align-items-center
                   %div
-                    %strong= assignment.title
                     .mt-2
                     - current_rating = rating_obj.rating&.to_s || ''
                     = render 'organizations/observations/rating_button_group', 
@@ -42,6 +41,8 @@
                       = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][id]", rating_obj.id
                       = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
                       = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
+                    %span="... #{Observation.new.verb_for_type('Assignment')}"
+                    %span.rateable-title="#{assignment.title}"
         = form.submit 'Add Assignments', 
                       class: 'btn btn-sm btn-outline-primary',
                       name: 'save_and_add_assignments',

@@ -26,7 +26,7 @@
               .card-body
                 .d-flex.justify-content-between.align-items-center
                   %div
-                    %strong= assignment.title
+                    .text-muted="This story is a..."
                     .mt-2
                     - current_rating = rating_obj.rating&.to_s || ''
                     = render 'organizations/observations/rating_button_group', 
@@ -42,6 +42,11 @@
                       = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][id]", rating_obj.id
                       = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_type]", 'Assignment'
                       = hidden_field_tag "observation[observation_ratings_attributes][assignment_#{assignment.id}][rateable_id]", assignment.id
+                    %div
+                      ="... #{observation.verb_for_type('Assignment')} of being #{indefinite_article(assignment.title)} "
+                      %span.rateable-title="#{assignment.title}"
+                      = link_to organization_assignment_path(observation.company, assignment), class: "ms-2", target: "_blank", title: "View assignment" do
+                        %i.bi.bi-box-arrow-up-right
         = form.submit 'Add Assignments', 
                       class: 'btn btn-sm btn-outline-primary',
                       name: 'save_and_add_assignments',
@@ -49,7 +54,7 @@
                       onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
 
     = render 'shared/section_header', 
-        title: 'Abilities/Skills/Knowledge', 
+        title: 'Abilities; Skills, Knowledge, Behaviors', 
         icon: 'bi-clipboard-check', 
         description: 'Does this story include any noteworthy demonstrations of Abilities?'
 
@@ -64,7 +69,7 @@
             .card-body
               .d-flex.justify-content-between.align-items-center
                 %div
-                  %strong= ability.name
+                  .text-muted="This story is a..."
                   .mt-2
                     - current_rating = rating_obj.rating&.to_s || ''
                     = render 'organizations/observations/rating_button_group', 
@@ -79,6 +84,13 @@
                       = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][id]", rating_obj.id
                       = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_type]", 'Ability'
                       = hidden_field_tag "observation[observation_ratings_attributes][ability_#{ability.id}][rateable_id]", ability.id
+                    %div
+                      ="... #{observation.verb_for_type('Ability')} of "
+                      %span.rateable-title="#{ability.name}"
+                      = link_to organization_ability_path(observation.company, ability), class: "ms-2", target: "_blank", title: "View ability" do
+                        %i.bi.bi-box-arrow-up-right
+                      
+
       = form.submit 'Add Abilities',
                     class: 'btn btn-sm btn-outline-primary',
                     name: 'save_and_add_abilities',
@@ -87,9 +99,9 @@
 
 
     = render 'shared/section_header', 
-        title: 'Aspirations/Values', 
+        title: 'Aspirational Values', 
         icon: 'bi-clipboard-check', 
-        description: 'Does this story include any noteworthy demonstrations of Aspirations?'
+        description: 'Does this story include any noteworthy demonstrations of Values?'
 
     .mb-3
       - aspiration_ratings = observation.observation_ratings.select { |or_obj| or_obj.rateable_type == 'Aspiration' }
@@ -101,7 +113,7 @@
             .card-body
               .d-flex.justify-content-between.align-items-center
                 %div
-                  %strong= aspiration.name
+                  .text-muted="This story is a..."
                   .mt-2
                     - current_rating = rating_obj.rating&.to_s || ''
                     = render 'organizations/observations/rating_button_group', 
@@ -116,6 +128,12 @@
                       = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][id]", rating_obj.id
                       = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_type]", 'Aspiration'
                       = hidden_field_tag "observation[observation_ratings_attributes][aspiration_#{aspiration.id}][rateable_id]", aspiration.id
+                    %div
+                      ="... #{observation.verb_for_type('Aspiration')} of "
+                      %span.rateable-title="#{aspiration.name}"
+                      = link_to organization_aspiration_path(observation.company, aspiration), class: "ms-2", target: "_blank", title: "View aspirational value" do
+                        %i.bi.bi-box-arrow-up-right
+
       = form.submit 'Add Aspirations',
                     class: 'btn btn-sm btn-outline-primary',
                     name: 'save_and_add_aspirations',

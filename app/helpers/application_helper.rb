@@ -210,4 +210,20 @@ module ApplicationHelper
       'text-muted'
     end
   end
+
+  # Returns "a" or "an" based on whether the word starts with a vowel sound
+  def indefinite_article(word)
+    return 'a' if word.blank?
+    
+    # Get the first letter (case-insensitive)
+    first_char = word.to_s.strip[0]&.downcase
+    
+    # Words that start with vowel sounds use "an"
+    # This handles most common cases, though not perfect (e.g., "hour", "honor")
+    if %w[a e i o u].include?(first_char)
+      'an'
+    else
+      'a'
+    end
+  end
 end
