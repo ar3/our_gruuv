@@ -75,7 +75,7 @@ module ObservationRatingFormatter
     when 'agree'
       'Solid'
     when 'disagree'
-      'Weak'
+      'Mis-aligned'
     when 'strongly_disagree'
       'Concerning'
     else

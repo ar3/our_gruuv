@@ -10,7 +10,7 @@ class ObservationRatingDecorator < Draper::Decorator
     when 'na'
       'N/A'
     when 'disagree'
-      'Weak'
+      'Mis-aligned'
     when 'strongly_disagree'
       'Concerning'
     end

@@ -21,7 +21,7 @@ RSpec.describe ObservationRatingDecorator, type: :decorator do
       expect(decorated_rating.rating_to_words).to eq('N/A')
       
       observation_rating.rating = :disagree
-      expect(decorated_rating.rating_to_words).to eq('Weak')
+      expect(decorated_rating.rating_to_words).to eq('Mis-aligned')
       
       observation_rating.rating = :strongly_disagree
       expect(decorated_rating.rating_to_words).to eq('Concerning')
