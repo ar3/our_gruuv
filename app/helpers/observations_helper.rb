@@ -100,5 +100,31 @@ module ObservationsHelper
       "Cannot view: Unknown privacy level"
     end
   end
+
+  def observation_type_icon(observation_type)
+    case observation_type.to_s
+    when 'kudos'
+      'bi-trophy'
+    when 'feedback'
+      'bi-chat-left-text'
+    when 'quick_note'
+      'bi-sticky'
+    else # 'generic'
+      'bi-eye'
+    end
+  end
+
+  def observation_type_name(observation_type)
+    case observation_type.to_s
+    when 'kudos'
+      'Kudos'
+    when 'feedback'
+      'Feedback'
+    when 'quick_note'
+      'Quick Note'
+    else # 'generic'
+      'Observation'
+    end
+  end
 end
 

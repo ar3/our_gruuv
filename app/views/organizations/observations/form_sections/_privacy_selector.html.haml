@@ -1,28 +1,105 @@
 - allowed_levels ||= Observation.privacy_levels.keys
 - disabled_levels ||= {}
+- observation_type ||= @observation_type || @observation&.observation_type || 'generic'
+- observee_names ||= @observee_names || []
+- manager_names ||= @manager_names || []
+- only_observee_is_observer ||= @only_observee_is_observer || false
+- organization ||= local_assigns[:organization] || @organization
+- company_name = @observation&.company&.name || organization&.name || 'company'
+- is_non_generic = ['quick_note', 'feedback', 'kudos'].include?(observation_type.to_s)
 
-= form.label :privacy_level, "Privacy Level", class: 'form-label'
-- Observation.privacy_levels.keys.each do |key|
-  - is_allowed = allowed_levels.nil? || allowed_levels.include?(key.to_sym)
-  - disabled_message = disabled_levels[key.to_sym]
-  
-  .form-check
-    = form.radio_button :privacy_level, key, class: 'form-check-input', disabled: !is_allowed
-    = form.label :"privacy_level_#{key}", class: "form-check-label #{'text-muted' unless is_allowed}" do
-      - case key
-      - when 'observer_only'
-        🔒 Just for me (Journal)
-      - when 'observed_only'
-        👤 Just for their eyes only
-      - when 'managers_only'
-        👔 Just for their manager's eyes only
-      - when 'observed_and_managers'
-        👥 For them and their managers
-      - when 'public_to_company'
-        🏢 Public to company
-      - when 'public_to_world'
-        🌍 Public to world
+- if is_non_generic
+  .row.mb-3
+    .col-md-6
+      = form.label :privacy_level, "Privacy Level", class: 'form-label'
+      - Observation.privacy_levels.keys.each do |key|
+        - is_allowed = allowed_levels.nil? || allowed_levels.include?(key.to_sym)
+        - disabled_message = disabled_levels[key.to_sym]
+        - should_disable_observed_only = (key == 'observed_only' && only_observee_is_observer)
+        - is_disabled = !is_allowed || should_disable_observed_only
+        
+        .form-check
+          = form.radio_button :privacy_level, key, class: 'form-check-input', disabled: is_disabled
+          = form.label :"privacy_level_#{key}", class: "form-check-label #{'text-muted' unless is_allowed}" do
+            - case key
+            - when 'observer_only'
+              🔒 Just for me (Journal)
+            - when 'observed_only'
+              - if observee_names.any?
+                👤 Just Observees: #{observee_names.join(', ')}
+              - else
+                👤 Just for their eyes only
+            - when 'managers_only'
+              - if manager_names.any?
+                👔 Just Managers: #{manager_names.join(', ')}
+              - else
+                👔 Just for their manager's eyes only
+            - when 'observed_and_managers'
+              - observee_text = observee_names.any? ? "Observees: #{observee_names.join(', ')}" : "Observees"
+              - manager_text = manager_names.any? ? "Managers: #{manager_names.join(', ')}" : "Managers"
+              👥 #{observee_text} AND #{manager_text}
+            - when 'public_to_company'
+              🏢 Public to #{company_name}
+            - when 'public_to_world'
+              🌍 Public to world
+          
+          - if should_disable_observed_only
+            %small.text-muted.d-block.ms-4 There is no difference between this and a journal when you are the only observee.
+          - elsif disabled_message
+            %small.text-muted.d-block.ms-4= disabled_message
     
-    - if disabled_message
-      %small.text-muted.d-block.ms-4= disabled_message
-
+    .col-md-6
+      .card.bg-light
+        .card-body
+          %h6.mb-2 Convert to Generic
+          - case observation_type.to_s
+          - when 'quick_note'
+            %p.small.mb-2 If you want to share this publicly or with managers only, you can convert to generic and nothing will be lost.
+          - when 'feedback'
+            %p.small.mb-2 If you want to share this publicly, you can convert to generic and nothing will be lost.
+          - when 'kudos'
+            %p.small.mb-2 If you want to make this a journal entry, you can convert to generic and nothing will be lost.
+          - if @observation&.persisted? && organization
+            = link_to convert_to_generic_organization_observation_path(organization, @observation), 
+                    method: :patch,
+                    data: { confirm: "This will enable all privacy levels and features. Continue?" },
+                    class: "btn btn-sm btn-outline-secondary" do
+              %i.bi.bi-arrow-right-circle.me-1
+              Convert to Generic
+- else
+  = form.label :privacy_level, "Privacy Level", class: 'form-label'
+  - Observation.privacy_levels.keys.each do |key|
+    - is_allowed = allowed_levels.nil? || allowed_levels.include?(key.to_sym)
+    - disabled_message = disabled_levels[key.to_sym]
+    - should_disable_observed_only = (key == 'observed_only' && only_observee_is_observer)
+    - is_disabled = !is_allowed || should_disable_observed_only
+    
+    .form-check
+      = form.radio_button :privacy_level, key, class: 'form-check-input', disabled: is_disabled
+      = form.label :"privacy_level_#{key}", class: "form-check-label #{'text-muted' unless is_allowed}" do
+        - case key
+        - when 'observer_only'
+          🔒 Just for me (Journal)
+        - when 'observed_only'
+          - if observee_names.any?
+            👤 Just Observees: #{observee_names.join(', ')}
+          - else
+            👤 Just for their eyes only
+        - when 'managers_only'
+          - if manager_names.any?
+            👔 Just Managers: #{manager_names.join(', ')}
+          - else
+            👔 Just for their manager's eyes only
+        - when 'observed_and_managers'
+          - observee_text = observee_names.any? ? "Observees: #{observee_names.join(', ')}" : "Observees"
+          - manager_text = manager_names.any? ? "Managers: #{manager_names.join(', ')}" : "Managers"
+          👥 #{observee_text} AND #{manager_text}
+        - when 'public_to_company'
+          🏢 Public to #{company_name}
+        - when 'public_to_world'
+          🌍 Public to world
+      
+      - if should_disable_observed_only
+        %small.text-muted.d-block.ms-4 There is no difference between this and a journal when you are the only observee.
+      - elsif disabled_message
+        %small.text-muted.d-block.ms-4= disabled_message

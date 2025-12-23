@@ -148,6 +148,8 @@
         = render 'organizations/observations/list_view'
       - when 'wall'
         = render 'organizations/observations/wall_view'
+      - when 'large_list'
+        = render 'organizations/observations/large_list_view'
       - else
         = render 'organizations/observations/table_view'
       

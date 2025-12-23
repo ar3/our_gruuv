@@ -1,0 +1,122 @@
+.list-group
+  - @observations.each do |observation|
+    .list-group-item.py-4
+      .row
+        / Who/When section
+        .col-md-2.mb-3.mb-md-0
+          .d-flex.flex-column.align-items-center
+            / Observer
+            .mb-2
+              .rounded-circle.bg-primary.text-white.d-flex.align-items-center.justify-content-center.mx-auto{style: "width: 50px; height: 50px; font-size: 1.1rem;"}
+                = (observation.observer.preferred_name || observation.observer.first_name || '?')[0].upcase
+              %small.text-center.d-block.mt-1
+                = observation.observer.casual_name
+            / Observed
+            - if observation.observed_teammates.any?
+              - observation.observed_teammates.limit(3).each do |teammate|
+                .mb-2
+                  .rounded-circle.bg-info.text-white.d-flex.align-items-center.justify-content-center.mx-auto{style: "width: 50px; height: 50px; font-size: 1.1rem;"}
+                    = (teammate.person.preferred_name || teammate.person.first_name || '?')[0].upcase
+                  %small.text-center.d-block.mt-1
+                    = teammate.person.casual_name
+            - else
+              .mb-2
+                .rounded-circle.bg-secondary.text-white.d-flex.align-items-center.justify-content-center.mx-auto{style: "width: 50px; height: 50px; font-size: 1.1rem;"}
+                  ?
+                %small.text-center.d-block.mt-1.text-muted No one
+            / Date
+            %small.text-muted.text-center.mt-2
+              = observation.observed_at.strftime('%b %d, %Y')
+        
+        / Type section
+        .col-md-1.mb-3.mb-md-0
+          .d-flex.flex-column.align-items-center
+            %i.bi{class: observation_type_icon(observation.observation_type), style: "font-size: 2.5rem; color: var(--bs-primary);"}
+            %small.text-center.mt-1
+              = observation_type_name(observation.observation_type)
+        
+        / Main content section
+        .col-md-9
+          / Story snippet (horizontal thin layer)
+          .mb-2
+            %p.text-muted.small.mb-0
+              = truncate(observation.story, length: 200)
+          
+          / Ratings section
+          - rating_sentences = observation.format_ratings_by_type_and_level(format: :html)
+          - if rating_sentences.any?
+            .mb-2
+              - rating_sentences.each do |sentence|
+                %p.mb-1.small
+                  != sentence.html_safe
+          - else
+            .mb-2
+              .alert.alert-warning.small.py-1.px-2.d-inline-block.mb-0
+                %i.bi.bi-exclamation-triangle.me-1
+                nothing rated
+          
+          / Distribution section
+          .mb-2
+            - if observation.draft?
+              .badge.bg-warning.text-dark.fs-6
+                %i.bi.bi-file-earmark-text.me-1
+                DRAFT - Publish this observation
+            - else
+              - case observation.privacy_level
+              - when 'observer_only'
+                .badge.bg-secondary
+                  🔒 Journal Entry
+              - when 'observed_only'
+                - observee_names = observation.observed_teammates.map { |t| t.person.casual_name }
+                .badge.bg-info
+                  👤 Just Observees: #{observee_names.join(', ')}
+              - when 'managers_only'
+                - managers = []
+                - observation.observed_teammates.each do |teammate|
+                  - manager_query = ManagerialHierarchyQuery.new(person: teammate.person, organization: observation.company)
+                  - managers.concat(manager_query.call.map { |m| m[:name] })
+                - manager_names = managers.uniq
+                .badge.bg-primary
+                  👔 Just Managers: #{manager_names.any? ? manager_names.join(', ') : 'Managers'}
+              - when 'observed_and_managers'
+                - observee_names = observation.observed_teammates.map { |t| t.person.casual_name }
+                - managers = []
+                - observation.observed_teammates.each do |teammate|
+                  - manager_query = ManagerialHierarchyQuery.new(person: teammate.person, organization: observation.company)
+                  - managers.concat(manager_query.call.map { |m| m[:name] })
+                - manager_names = managers.uniq
+                .badge.bg-success
+                  👥 Observees: #{observee_names.join(', ')} AND Managers: #{manager_names.any? ? manager_names.join(', ') : 'Managers'}
+              - when 'public_to_company'
+                .badge.bg-primary
+                  🏢 Public to #{observation.company.name}
+              - when 'public_to_world'
+                .badge.bg-primary
+                  🌍 Public to world
+          
+          / Notification section
+          - if observation.published? && observation.privacy_level != 'observer_only'
+            - latest_notification = observation.last_successful_notification
+            - if latest_notification&.slack_url.present?
+              .mb-2
+                = link_to latest_notification.slack_url, target: "_blank", class: "btn btn-sm btn-outline-primary" do
+                  %i.bi.bi-slack.me-1
+                  View in Slack
+            - else
+              .mb-2
+                .alert.alert-info.small.py-1.px-2.d-inline-block.mb-0
+                  %i.bi.bi-bell.me-1
+                  You have something to do here - post this observation to notify people
+          
+          / Actions
+          .mt-2
+            .btn-group.btn-group-sm
+              - if policy(observation).view_permalink?
+                = link_to observation.decorate.permalink_path, class: "btn btn-outline-primary", title: "Public permalink" do
+                  %i.bi.bi-globe
+              = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary", title: "Show page" do
+                %i.bi.bi-eye
+              - if policy(observation).update?
+                = link_to edit_organization_observation_path(@organization, observation, return_url: organization_observation_path(@organization, observation), return_text: 'Back to Observation'), class: "btn btn-outline-secondary" do
+                  %i.bi.bi-pencil
+

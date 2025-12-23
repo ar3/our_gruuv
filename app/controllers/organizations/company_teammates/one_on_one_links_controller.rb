@@ -53,16 +53,16 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     if @one_on_one_link.persisted?
       @one_on_one_link.assign_attributes(one_on_one_link_params)
       if @one_on_one_link.save
-        redirect_to organization_company_teammate_one_on_one_link_path(organization, @teammate), 
-                    notice: '1:1 link updated successfully.'
+        redirect_url = params[:return_url].presence || organization_company_teammate_one_on_one_link_path(organization, @teammate)
+        redirect_to redirect_url, notice: '1:1 link updated successfully.'
       else
         render :show, status: :unprocessable_entity
       end
     else
       @one_on_one_link.assign_attributes(one_on_one_link_params)
       if @one_on_one_link.save
-        redirect_to organization_company_teammate_one_on_one_link_path(organization, @teammate), 
-                    notice: '1:1 link created successfully.'
+        redirect_url = params[:return_url].presence || organization_company_teammate_one_on_one_link_path(organization, @teammate)
+        redirect_to redirect_url, notice: '1:1 link created successfully.'
       else
         render :show, status: :unprocessable_entity
       end

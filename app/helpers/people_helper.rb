@@ -153,6 +153,8 @@ module PeopleHelper
       'Public View'
     when 'complete_picture'
       'Active Job View'
+    when 'about_me'
+      'About Me'
     when 'audit'
       'Acknowledgement'
     when 'check_in'

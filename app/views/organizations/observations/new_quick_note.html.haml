@@ -32,13 +32,12 @@
       .container-fluid
         = render 'organizations/observations/form_sections/observees_section', form: form, observation: @observation
         = render 'organizations/observations/form_sections/story_field', form: form, observation: @observation, show_gifs: @show_gifs, organization: organization
-        = render 'organizations/observations/form_sections/feelings_section', form: form, observation: @observation
         = render 'organizations/observations/form_sections/rating_sections', form: form, observation: @observation, assignments: @assignments, abilities: @abilities, aspirations: @aspirations
       
       .mb-3
         %hr/
       
-      = render 'organizations/observations/form_sections/privacy_selector', form: form, observation: @observation, allowed_levels: @allowed_privacy_levels, disabled_levels: @disabled_levels
+      = render 'organizations/observations/form_sections/privacy_selector', form: form, observation: @observation, allowed_levels: @allowed_privacy_levels, disabled_levels: @disabled_levels, organization: organization
       
       = render 'organizations/observations/form_sections/form_actions', form: form, observation: @observation, return_text: @return_text, organization: organization
 

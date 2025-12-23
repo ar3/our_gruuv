@@ -33,7 +33,7 @@ class ObservationsQuery
   def current_view
     return params[:view] unless params[:view].blank?
     return params[:viewStyle] unless params[:viewStyle].blank?
-    'table'
+    'large_list'
   end
 
   def current_spotlight

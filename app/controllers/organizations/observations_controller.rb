@@ -365,7 +365,31 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       @return_text = params[:return_text] || 'Back'
     end
     
+    prepare_privacy_selector_data
+    
     render layout: 'overlay'
+  end
+
+  def prepare_privacy_selector_data
+    # Get observee casual names
+    @observee_names = @observation.observed_teammates.map { |teammate| teammate.person.casual_name }
+    
+    # Get manager names for all observees (deduplicated)
+    @manager_names = []
+    @observation.observed_teammates.each do |teammate|
+      managers = ManagerialHierarchyQuery.new(person: teammate.person, organization: @observation.company).call
+      managers.each do |manager_info|
+        manager_name = manager_info[:name]
+        @manager_names << manager_name unless @manager_names.include?(manager_name)
+      end
+    end
+    
+    # Check if only observee is the observer
+    @only_observee_is_observer = @observation.observed_teammates.any? && 
+                                  @observation.observed_teammates.all? { |teammate| teammate.person == @observation.observer }
+    
+    # Pass observation type
+    @observation_type = @observation.observation_type
   end
 
   def new_kudos
@@ -378,6 +402,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     }
     @show_gifs = true
     @show_convert_link = @observation.persisted?
+    
+    prepare_privacy_selector_data
     
     render 'new_kudos', layout: 'overlay'
   end
@@ -399,6 +425,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @show_gifs = false
     @show_convert_link = @observation.persisted?
     
+    prepare_privacy_selector_data
+    
     render 'new_feedback', layout: 'overlay'
   end
 
@@ -414,6 +442,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     }
     @show_gifs = false
     @show_convert_link = @observation.persisted?
+    
+    prepare_privacy_selector_data
     
     render 'new_quick_note', layout: 'overlay'
   end

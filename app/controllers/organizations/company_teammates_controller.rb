@@ -604,7 +604,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         .order(observed_at: :desc)
       
       @observations_given_count = given_observations.count
-      @recent_observations_given = given_observations.limit(3).includes(:observees)
+      @recent_observations_given = given_observations.limit(3).includes(observees: { teammate: :person })
       
       # Observations received (where teammate is observee)
       teammate_ids = @teammate.person.teammates.where(organization: organization).pluck(:id)
@@ -620,7 +620,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         .order(observed_at: :desc)
       
       @observations_received_count = received_observations.count
-      @recent_observations_received = received_observations.limit(3).includes(:observer, :observees)
+      @recent_observations_received = received_observations.limit(3).includes(:observer, observees: { teammate: :person })
       
       # Build filter URLs
       casual_name = @teammate.person.casual_name
@@ -689,7 +689,13 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   def load_one_on_one_for_about_me
     if @teammate
       @one_on_one_link = @teammate.one_on_one_link
-      @one_on_one_url = organization_company_teammate_one_on_one_link_path(organization, @teammate)
+      casual_name = @teammate.person.casual_name
+      @one_on_one_url = organization_company_teammate_one_on_one_link_path(
+        organization, 
+        @teammate,
+        return_url: about_me_organization_company_teammate_path(organization, @teammate),
+        return_text: "Back to About #{casual_name}"
+      )
       
       if @one_on_one_link&.is_asana_link? && @one_on_one_link.has_deep_integration? && @teammate.has_asana_identity?
         asana_service = AsanaService.new(@teammate)
@@ -713,7 +719,13 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       end
     else
       @one_on_one_link = nil
-      @one_on_one_url = organization_company_teammate_one_on_one_link_path(organization, @teammate)
+      casual_name = @teammate&.person&.casual_name || 'Teammate'
+      @one_on_one_url = organization_company_teammate_one_on_one_link_path(
+        organization, 
+        @teammate,
+        return_url: about_me_organization_company_teammate_path(organization, @teammate),
+        return_text: "Back to About #{casual_name}"
+      )
       @asana_sections = []
       @asana_section_tasks = {}
     end

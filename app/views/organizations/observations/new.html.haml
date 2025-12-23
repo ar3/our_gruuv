@@ -57,6 +57,6 @@
       .mb-3
         %hr/
       
-      = render 'organizations/observations/form_sections/privacy_selector', form: form, observation: @observation, allowed_levels: nil
+      = render 'organizations/observations/form_sections/privacy_selector', form: form, observation: @observation, allowed_levels: nil, organization: organization
       
       = render 'organizations/observations/form_sections/form_actions', form: form, observation: @observation, return_text: @return_text, organization: organization

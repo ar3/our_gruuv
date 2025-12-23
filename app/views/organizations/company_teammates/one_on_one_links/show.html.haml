@@ -3,13 +3,17 @@
   %p.text-muted.mb-0 Manage your 1:1 link and integration
 
 - content_for :go_back_link do
-  = link_to organization_company_teammate_check_ins_path(organization, @teammate), class: "go-back-link" do
+  - return_url = params[:return_url].presence || organization_company_teammate_check_ins_path(organization, @teammate)
+  - return_text = params[:return_text].presence || 'Back to Check-Ins'
+  = link_to return_url, class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
-    Back to Check-Ins
+    = return_text
 
 .card
   .card-body
     = form_with model: [@organization, @person, @one_on_one_link], url: organization_company_teammate_one_on_one_link_path(organization, @teammate), method: :patch, local: true do |f|
+      - if params[:return_url].present?
+        = hidden_field_tag :return_url, params[:return_url]
       .mb-3
         = f.label :url, "1:1 Link URL", class: "form-label"
         = f.url_field :url, class: "form-control", placeholder: "https://app.asana.com/0/123456/789 or https://docs.google.com/..."
@@ -85,5 +89,6 @@
       
       .d-flex.gap-2
         = f.submit "Save 1:1 Link", class: "btn btn-primary"
-        = link_to "Cancel", organization_company_teammate_check_ins_path(organization, @teammate), class: "btn btn-outline-secondary"
+        - cancel_url = params[:return_url].presence || organization_company_teammate_check_ins_path(organization, @teammate)
+        = link_to "Cancel", cancel_url, class: "btn btn-outline-secondary"
 

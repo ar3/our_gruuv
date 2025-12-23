@@ -38,6 +38,9 @@
                         = truncate(observation.story, length: 100)
                       %small
                         %span.badge.bg-secondary= observation.privacy_level.humanize
+                        - if observation.observed_teammates.any?
+                          %span.text-muted.ms-2
+                            = observation.observed_teammates.map { |t| t.person.casual_name }.join(', ')
                     - if policy(observation).show?
                       = link_to organization_observation_path(organization, observation), 
                                 class: "btn btn-sm btn-outline-primary ms-2",
@@ -66,13 +69,13 @@
                   .d-flex.justify-content-between.align-items-start
                     .flex-grow-1
                       %h6.mb-1
-                        = observation.observer.display_name
-                        %small.text-muted
-                          = observation.observed_at.strftime('%B %d, %Y')
+                        = observation.observed_at.strftime('%B %d, %Y')
                       %p.mb-1.text-muted
                         = truncate(observation.story, length: 100)
                       %small
                         %span.badge.bg-secondary= observation.privacy_level.humanize
+                        %span.text-muted.ms-2
+                          by #{observation.observer.casual_name}
                     - if policy(observation).show?
                       = link_to organization_observation_path(organization, observation), 
                                 class: "btn btn-sm btn-outline-primary ms-2",
