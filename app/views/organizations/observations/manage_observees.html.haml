@@ -1,7 +1,10 @@
 - content_for :header do
   Manage Observees
 - content_for :return_url do
-  = new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text])
+  - if @observation&.id
+    = new_organization_observation_path(organization, draft_id: @observation.id, return_url: params[:return_url], return_text: params[:return_text])
+  - else
+    = new_organization_observation_path(organization, return_url: params[:return_url], return_text: params[:return_text])
 - content_for :return_text do
   = params[:return_text] || 'Draft'
 
@@ -11,7 +14,7 @@
       %i.bi.bi-people.me-2
       Select Observees
   .card-body
-    = form_with url: manage_observees_organization_observation_path(organization, @observation), method: :patch, local: true do |form|
+    = form_with url: manage_observees_organization_observation_path(organization, @observation || 'new'), method: :patch, local: true do |form|
       = hidden_field_tag :authenticity_token, form_authenticity_token
       = hidden_field_tag :return_url, params[:return_url]
       = hidden_field_tag :return_text, params[:return_text]
@@ -29,7 +32,7 @@
               .col-12.col-md-6.col-lg-4.mb-3
                 .list-group
                   - column_teammates.each do |teammate|
-                    - checked = @observation.observees.exists?(teammate_id: teammate.id)
+                    - checked = @observation&.observees&.exists?(teammate_id: teammate.id) || false
                     - person = teammate.person
                     - tooltip_text = "#{person.full_name.presence || 'No name'} - #{person.email}"
                     .list-group-item

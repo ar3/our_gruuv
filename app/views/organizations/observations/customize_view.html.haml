@@ -143,6 +143,11 @@
               %i.bi.bi-list.me-2
               List View
           .form-check
+            = radio_button_tag 'view', 'large_list', @current_view == 'large_list', class: 'form-check-input', id: 'view_large_list'
+            = label_tag 'view_large_list', class: 'form-check-label' do
+              %i.bi.bi-list-ul.me-2
+              Large List View
+          .form-check
             = radio_button_tag 'view', 'wall', @current_view == 'wall', class: 'form-check-input', id: 'view_wall'
             = label_tag 'view_wall', class: 'form-check-label' do
               %i.bi.bi-images.me-2

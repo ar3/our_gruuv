@@ -287,6 +287,8 @@ get '/login', to: 'auth#login', as: :login
         post :set_ratings, action: :set_ratings
         get :review, action: :review
         post :create_observation, action: :create_observation
+        get :share_publicly
+        get :share_privately
         post :post_to_slack, action: :post_to_slack
         get :add_assignments  # Add assignments to draft observation
         get :add_aspirations  # Add aspirations to draft observation
@@ -295,9 +297,11 @@ get '/login', to: 'auth#login', as: :login
         patch :save_and_add_assignments  # Save draft and navigate to add assignments
         post :add_rateables  # Add rateables to draft observation
         patch :manage_observees   # Manage observees for draft observation
-        patch :update_draft, constraints: { id: /[0-9]+|new/ }  # Update draft observation (supports 'new' for new records)
-        post :cancel, constraints: { id: /[0-9]+|new/ }  # Cancel and optionally save draft if story has content (supports 'new' for new records)
-        post :publish, constraints: { id: /[0-9]+|new/ }  # Publish draft observation (supports 'new' for new records)
+        # Support both PATCH and POST (forms submit POST with _method='patch')
+        patch :update_draft, constraints: { id: /(\d+|new)/ }  # Update draft observation (supports 'new' for new records)
+        post :update_draft, constraints: { id: /(\d+|new)/ }, to: 'observations#update_draft'  # POST with _method override
+        post :cancel, constraints: { id: /(\d+|new)/ }  # Cancel and optionally save draft if story has content (supports 'new' for new records)
+        post :publish, constraints: { id: /(\d+|new)/ }  # Publish draft observation (supports 'new' for new records)
       end
     end
     

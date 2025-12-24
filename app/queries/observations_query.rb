@@ -37,7 +37,7 @@ class ObservationsQuery
   end
 
   def current_spotlight
-    params[:spotlight] || 'overview'
+    params[:spotlight] || 'most_observed'
   end
 
   def has_active_filters?

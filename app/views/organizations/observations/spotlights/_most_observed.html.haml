@@ -22,7 +22,7 @@
         .col-md-2.col-6.mb-3
           .h5.text-success= @spotlight_stats[:most_observed_aspiration].name
           .h6.text-success= "#{@spotlight_stats[:most_observed_aspiration_count]} observations"
-          %small.text-muted Most Observed Aspiration
+          %small.text-muted Most Observed Value
           - if @spotlight_stats[:runner_up_aspiration]
             %small.text-muted.d-block.mt-1
               Runner-up: #{@spotlight_stats[:runner_up_aspiration].name}

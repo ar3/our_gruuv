@@ -181,7 +181,13 @@ RSpec.describe 'Organizations::Observations', type: :request do
 
     context 'for new kudos observation' do
       it 'preserves observation_type and sets created_as_type' do
-        patch update_draft_organization_observation_path(organization, 'new'), params: {
+        initial_count = Observation.count
+        path = update_draft_organization_observation_path(organization, 'new')
+        puts "Testing path: #{path}"
+        puts "Organization param: #{organization.to_param}"
+        # Forms submit as POST with _method='patch', so test that way
+        post path, params: {
+          _method: 'patch',
           observation: {
             observation_type: 'kudos',
             privacy_level: 'observed_and_managers'
@@ -189,6 +195,19 @@ RSpec.describe 'Organizations::Observations', type: :request do
           observee_ids: [observee_teammate.id]
         }
         
+        puts "Response status: #{response.status}"
+        puts "Response location: #{response.location}" if response.location
+        
+        if response.status == 404
+          puts "404 Error - Path: #{path}"
+          # Try to extract exception from HTML
+          if response.body =~ /<div[^>]*class="message"[^>]*>(.*?)<\/div>/m
+            puts "Exception message: #{$1.strip[0..200]}"
+          end
+        end
+        
+        expect(response).to have_http_status(:redirect)
+        expect(Observation.count).to eq(initial_count + 1)
         observation = Observation.last
         expect(observation.observation_type).to eq('kudos')
         expect(observation.created_as_type).to eq('kudos')

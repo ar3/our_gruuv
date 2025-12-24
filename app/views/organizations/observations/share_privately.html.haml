@@ -1,0 +1,55 @@
+- content_for :header do
+  Share Observation Privately
+- content_for :return_url do
+  = @return_url
+- content_for :return_text do
+  = @return_text
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-envelope.me-2
+      Select Teammates to Notify
+  .card-body
+    = form_with url: post_to_slack_organization_observation_path(@organization, @observation), method: :post, local: true do |form|
+      - if @available_teammates.any?
+        .mb-3
+          - @available_teammates.each do |teammate_info|
+            - teammate = teammate_info[:teammate]
+            - person = teammate_info[:person]
+            - disabled = teammate_info[:disabled]
+            - disabled_reason = teammate_info[:disabled_reason]
+            .form-check.mb-2
+              = check_box_tag 'notify_teammate_ids[]', teammate_info[:teammate].id, false,
+                            class: 'form-check-input',
+                            id: "teammate_#{teammate_info[:teammate].id}",
+                            disabled: disabled
+              = label_tag "teammate_#{teammate_info[:teammate].id}", class: 'form-check-label' do
+                .d-flex.align-items-center
+                  %span
+                    %strong= person.preferred_name || person.first_name
+                    %small.text-muted.ms-2= teammate_info[:role]
+                  - if disabled && disabled_reason
+                    %i.bi.bi-exclamation-triangle.text-warning.ms-2{
+                      "data-bs-toggle" => "tooltip",
+                      "data-bs-title" => disabled_reason,
+                      "data-bs-placement" => "right"
+                    }
+      - else
+        .alert.alert-info
+          %i.bi.bi-info-circle.me-2
+          No teammates available for notification.
+      
+      .d-flex.gap-2.mt-4
+        = form.submit 'Send Now', class: 'btn btn-primary', disabled: @available_teammates.empty?
+        = link_to 'Cancel', @return_url, class: 'btn btn-outline-secondary'
+
+:javascript
+  // Initialize Bootstrap tooltips
+  document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+  })
+

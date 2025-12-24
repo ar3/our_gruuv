@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe ObservationsQuery, type: :query do
   let(:company) { create(:organization, :company) }
   let(:observer) { create(:person) }
-  let(:observer_teammate) { create(:teammate, person: observer, organization: company) }
+  let!(:observer_teammate) { create(:teammate, person: observer, organization: company) }
   let(:observee_person) { create(:person) }
   let(:observee_teammate) { create(:teammate, person: observee_person, organization: company) }
   let(:manager_person) { create(:person) }
@@ -274,7 +274,7 @@ RSpec.describe ObservationsQuery, type: :query do
   describe 'current_view' do
     it 'returns default view when none specified' do
       query = described_class.new(company, {}, current_person: observer)
-      expect(query.current_view).to eq('table')
+      expect(query.current_view).to eq('large_list')
     end
 
     it 'returns specified view' do
@@ -290,6 +290,18 @@ RSpec.describe ObservationsQuery, type: :query do
     it 'supports wall view' do
       query = described_class.new(company, { view: 'wall' }, current_person: observer)
       expect(query.current_view).to eq('wall')
+    end
+  end
+
+  describe 'current_spotlight' do
+    it 'returns default spotlight when none specified' do
+      query = described_class.new(company, {}, current_person: observer)
+      expect(query.current_spotlight).to eq('most_observed')
+    end
+
+    it 'returns specified spotlight' do
+      query = described_class.new(company, { spotlight: 'feedback_health' }, current_person: observer)
+      expect(query.current_spotlight).to eq('feedback_health')
     end
   end
 

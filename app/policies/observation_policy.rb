@@ -4,13 +4,13 @@ class ObservationPolicy < ApplicationPolicy
     
     person = viewing_teammate.person
     
-    # Check if observer has an active teammate in the observation's company
-    observer_has_active_teammate = person.active_teammates.exists?(organization: record.company)
+    # Check if viewing teammate is in the same company as the observation
+    # This must be checked first to deny terminated teammates and people from other companies
+    return false unless viewing_teammate.organization_id == record.company_id
     
-    # If observer doesn't have an active teammate, only allow public_to_world published observations
-    unless observer_has_active_teammate
-      return record.published? && record.privacy_level == 'public_to_world'
-    end
+    # Check if viewing teammate is terminated
+    return false if viewing_teammate.respond_to?(:terminated?) && viewing_teammate.terminated?
+    return false if viewing_teammate.respond_to?(:last_terminated_at) && viewing_teammate.last_terminated_at.present?
     
     # Draft observations: only the observer can see them (if they have active teammate)
     return false if record.draft? && person != record.observer
@@ -146,6 +146,10 @@ class ObservationPolicy < ApplicationPolicy
       if person.og_admin?
         scope.all
       else
+        # Check if viewing teammate is active (not terminated)
+        return scope.none if viewing_teammate.respond_to?(:terminated?) && viewing_teammate.terminated?
+        return scope.none if viewing_teammate.respond_to?(:last_terminated_at) && viewing_teammate.last_terminated_at.present?
+        
         # Get company from viewing_teammate's organization
         company = viewing_teammate.organization
         return scope.none unless company
@@ -209,6 +213,15 @@ class ObservationPolicy < ApplicationPolicy
     return false unless viewing_teammate
     return false unless record.company
     
-    viewing_teammate.person.active_teammates.exists?(organization: record.company)
+    # Check if viewing teammate is in the same company
+    return false unless viewing_teammate.organization_id == record.company_id
+    
+    # Check if viewing teammate is terminated
+    return false if viewing_teammate.respond_to?(:terminated?) && viewing_teammate.terminated?
+    return false if viewing_teammate.respond_to?(:last_terminated_at) && viewing_teammate.last_terminated_at.present?
+    
+    # The early check in show? already verified the viewing teammate is in the same company and not terminated
+    # So if we get here, the viewing teammate is active
+    true
   end
 end

@@ -1,0 +1,37 @@
+- content_for :header do
+  Share Observation Publicly
+- content_for :return_url do
+  = @return_url
+- content_for :return_text do
+  = @return_text
+
+.card.mb-3
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-hash.me-2
+      Select Kudos Channel
+  .card-body
+    = form_with url: post_to_slack_organization_observation_path(@organization, @observation), method: :post, local: true do |form|
+      - if @kudos_channel_organizations.any?
+        .mb-3
+          - @kudos_channel_organizations.each do |org_info|
+            .form-check.mb-2
+              = radio_button_tag :kudos_channel_organization_id, org_info[:organization].id, false,
+                                class: 'form-check-input',
+                                id: "org_#{org_info[:organization].id}",
+                                disabled: org_info[:already_sent],
+                                required: true
+              = label_tag "org_#{org_info[:organization].id}", class: 'form-check-label' do
+                = org_info[:display_name]
+                - if org_info[:already_sent]
+                  %span.badge.bg-secondary.ms-2 Already sent
+      - else
+        .alert.alert-info
+          %i.bi.bi-info-circle.me-2
+          No kudos channels configured.
+          = link_to "Configure kudos channels", channels_organization_slack_path(@organization), class: "alert-link"
+      
+      .d-flex.gap-2.mt-4
+        = form.submit 'Send Now', class: 'btn btn-primary', disabled: @kudos_channel_organizations.empty?
+        = link_to 'Cancel', @return_url, class: 'btn btn-outline-secondary'
+

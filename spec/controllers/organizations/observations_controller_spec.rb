@@ -31,6 +31,11 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       expect(assigns(:observations)).to include(observation)
     end
 
+    it 'defaults to most_observed spotlight when no spotlight parameter is provided' do
+      get :index, params: { organization_id: company.id }
+      expect(assigns(:current_spotlight)).to eq('most_observed')
+    end
+
     it 'calculates spotlight stats with feedback_health spotlight' do
       get :index, params: { organization_id: company.id, spotlight: 'feedback_health' }
       expect(response).to have_http_status(:success)
@@ -1835,8 +1840,8 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     it 'sets default values when params are not provided' do
       get :customize_view, params: { organization_id: company.id }
       expect(assigns(:current_sort)).to eq('observed_at_desc')
-      expect(assigns(:current_view)).to eq('table')
-      expect(assigns(:current_spotlight)).to eq('overview')
+      expect(assigns(:current_view)).to eq('large_list')
+      expect(assigns(:current_spotlight)).to eq('most_observed')
     end
 
     it 'sets return_url and return_text' do
@@ -2045,6 +2050,328 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       
       # Should include the hidden observation in counts
       expect(stats[:matrix]['observer_only']['three_weeks'][:created]).to be >= 2
+    end
+  end
+
+  describe 'GET #share_publicly' do
+    let(:public_observation) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    context 'when user is the observer' do
+      it 'renders the share_publicly page with overlay layout' do
+        get :share_publicly, params: { organization_id: company.id, id: public_observation.id }
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:share_publicly)
+        expect(response).to render_template(layout: 'overlay')
+      end
+
+      it 'assigns kudos channel organizations' do
+        kudos_channel = create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C123456')
+        company.kudos_channel_id = kudos_channel.third_party_id
+        company.save!
+
+        get :share_publicly, params: { organization_id: company.id, id: public_observation.id }
+        expect(assigns(:kudos_channel_organizations)).to be_present
+        expect(assigns(:kudos_channel_organizations).first[:organization].id).to eq(company.id)
+        expect(assigns(:kudos_channel_organizations).first[:channel]).to eq(kudos_channel)
+      end
+
+      it 'marks organizations as already_sent if notification exists' do
+        kudos_channel = create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C123456')
+        company.kudos_channel_id = kudos_channel.third_party_id
+        company.save!
+
+        # Create existing notification
+        Notification.create!(
+          notifiable: public_observation,
+          notification_type: 'observation_channel',
+          status: 'sent_successfully',
+          metadata: {
+            'channel' => kudos_channel.third_party_id,
+            'organization_id' => company.id.to_s,
+            'is_main_message' => 'true'
+          },
+          message_id: '1234567890.123456'
+        )
+
+        get :share_publicly, params: { organization_id: company.id, id: public_observation.id }
+        expect(assigns(:kudos_channel_organizations).first[:already_sent]).to be true
+      end
+
+      it 'redirects if observation is not public' do
+        observation.update!(privacy_level: :observed_only)
+        observation.publish! # Must be published to test the public check
+        get :share_publicly, params: { organization_id: company.id, id: observation.id }
+        expect(response).to redirect_to(organization_observation_path(company, observation))
+        expect(flash[:alert]).to include('Only public observations can be shared publicly')
+      end
+
+      it 'redirects if observation is a draft' do
+        draft_obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil)
+        draft_obs.observees.build(teammate: observee_teammate)
+        draft_obs.save!
+
+        get :share_publicly, params: { organization_id: company.id, id: draft_obs.id }
+        expect(response).to redirect_to(organization_observation_path(company, draft_obs))
+        expect(flash[:alert]).to include('Draft observations cannot be shared')
+      end
+    end
+
+    context 'when user is not the observer' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+
+      before do
+        sign_in_as_teammate(other_person, company)
+      end
+
+      it 'redirects with authorization error' do
+        get :share_publicly, params: { organization_id: company.id, id: public_observation.id }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
+      end
+    end
+  end
+
+  describe 'GET #share_privately' do
+    let(:public_observation) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    context 'when user is the observer' do
+      it 'renders the share_privately page with overlay layout' do
+        get :share_privately, params: { organization_id: company.id, id: public_observation.id }
+        expect(response).to have_http_status(:success)
+        expect(response).to render_template(:share_privately)
+        expect(response).to render_template(layout: 'overlay')
+      end
+
+      it 'assigns available teammates for public observations' do
+        get :share_privately, params: { organization_id: company.id, id: public_observation.id }
+        expect(assigns(:available_teammates)).to be_present
+        # Should include observees
+        teammate_ids = assigns(:available_teammates).map { |t| t[:teammate].id }
+        expect(teammate_ids).to include(observee_teammate.id)
+      end
+
+      it 'marks teammates without Slack identity as disabled' do
+        observee_teammate.teammate_identities.destroy_all
+        get :share_privately, params: { organization_id: company.id, id: public_observation.id }
+        teammate_info = assigns(:available_teammates).find { |t| t[:teammate].id == observee_teammate.id }
+        expect(teammate_info[:disabled]).to be true
+        expect(teammate_info[:disabled_reason]).to eq('Slack not configured for them')
+      end
+
+      it 'marks teammates already notified as disabled' do
+        # Create Slack identity
+        create(:teammate_identity, teammate: observee_teammate, provider: 'slack', uid: 'U789012')
+        
+        # Create existing notification
+        Notification.create!(
+          notifiable: public_observation,
+          notification_type: 'observation_dm',
+          status: 'sent_successfully',
+          metadata: { 'channel' => 'U789012' },
+          message_id: '1234567890.123456'
+        )
+
+        get :share_privately, params: { organization_id: company.id, id: public_observation.id }
+        teammate_info = assigns(:available_teammates).find { |t| t[:teammate].id == observee_teammate.id }
+        expect(teammate_info[:disabled]).to be true
+        expect(teammate_info[:disabled_reason]).to eq('Already notified in a prior notification')
+      end
+
+      it 'redirects if observation is journal (observer_only)' do
+        journal_obs = build(:observation, observer: observer, company: company, privacy_level: :observer_only)
+        journal_obs.observees.build(teammate: observee_teammate)
+        journal_obs.save!
+        journal_obs.publish!
+
+        get :share_privately, params: { organization_id: company.id, id: journal_obs.id }
+        expect(response).to redirect_to(organization_observation_path(company, journal_obs))
+        expect(flash[:alert]).to include('Journal entries cannot be shared privately')
+      end
+
+      it 'redirects if observation is a draft' do
+        draft_obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil)
+        draft_obs.observees.build(teammate: observee_teammate)
+        draft_obs.save!
+
+        get :share_privately, params: { organization_id: company.id, id: draft_obs.id }
+        expect(response).to redirect_to(organization_observation_path(company, draft_obs))
+        expect(flash[:alert]).to include('Draft observations cannot be shared')
+      end
+
+      context 'with different privacy levels' do
+        let(:manager_person) { create(:person) }
+        let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
+
+        before do
+          # Set up managerial hierarchy: observee -> manager
+          create(:employment_tenure, teammate: manager_teammate, company: company)
+          create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+        end
+
+        it 'shows only observees for observed_only' do
+          observation.update!(privacy_level: :observed_only)
+          get :share_privately, params: { organization_id: company.id, id: observation.id }
+          teammate_ids = assigns(:available_teammates).map { |t| t[:teammate].id }
+          expect(teammate_ids).to include(observee_teammate.id)
+          # Should not include managers
+          expect(teammate_ids).not_to include(manager_teammate.id)
+        end
+
+        it 'shows managers for managers_only' do
+          managers_only_obs = build(:observation, observer: observer, company: company, privacy_level: :managers_only)
+          managers_only_obs.observees.build(teammate: observee_teammate)
+          managers_only_obs.save!
+          managers_only_obs.publish!
+
+          get :share_privately, params: { organization_id: company.id, id: managers_only_obs.id }
+          teammate_ids = assigns(:available_teammates).map { |t| t[:teammate].id }
+          expect(teammate_ids).to include(manager_teammate.id)
+          # Should not include observees
+          expect(teammate_ids).not_to include(observee_teammate.id)
+        end
+      end
+    end
+
+    context 'when user is not the observer' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+
+      before do
+        sign_in_as_teammate(other_person, company)
+      end
+
+      it 'redirects with authorization error' do
+        get :share_privately, params: { organization_id: company.id, id: public_observation.id }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
+      end
+    end
+  end
+
+  describe 'POST #post_to_slack' do
+    let(:public_observation) do
+      obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      obs
+    end
+
+    let(:slack_service) { double('SlackService') }
+    let(:signed_in_teammate) { sign_in_as_teammate(observer, company) }
+
+    before do
+      signed_in_teammate # Ensure teammate is created via sign_in
+      allow(SlackService).to receive(:new).and_return(slack_service)
+      allow(slack_service).to receive(:post_message) do |notification_id|
+        notification = Notification.find(notification_id)
+        notification.update!(status: 'sent_successfully', message_id: '1234567890.123456')
+        { success: true, message_id: '1234567890.123456' }
+      end
+      allow(slack_service).to receive(:update_message) do |notification_id|
+        notification = Notification.find(notification_id)
+        notification.update!(status: 'sent_successfully', message_id: '9876543210.987654')
+        { success: true, message_id: '9876543210.987654' }
+      end
+    end
+
+    context 'when sending to channel' do
+      let(:kudos_channel) { create(:third_party_object, :slack_channel, organization: company, third_party_id: 'C999999') }
+
+      before do
+        company.kudos_channel_id = kudos_channel.third_party_id
+        company.save!
+        # Find or create Slack identity using the signed-in teammate
+        identity = signed_in_teammate.teammate_identities.find_or_initialize_by(provider: 'slack')
+        identity.uid = 'U123456'
+        identity.save!
+      end
+
+      it 'sends notification to selected channel' do
+        post :post_to_slack, params: {
+          organization_id: company.id,
+          id: public_observation.id,
+          kudos_channel_organization_id: company.id
+        }
+        expect(response).to redirect_to(organization_observation_path(company, public_observation))
+        expect(flash[:notice]).to eq('Notifications sent successfully')
+      end
+    end
+
+    context 'when sending DMs' do
+      before do
+        create(:teammate_identity, teammate: observee_teammate, provider: 'slack', uid: 'U789012')
+      end
+
+      it 'sends DMs to selected teammates' do
+        post :post_to_slack, params: {
+          organization_id: company.id,
+          id: public_observation.id,
+          notify_teammate_ids: [observee_teammate.id]
+        }
+        expect(response).to redirect_to(organization_observation_path(company, public_observation))
+        expect(flash[:notice]).to eq('Notifications sent successfully')
+      end
+    end
+
+    context 'when observation is a draft' do
+      let(:draft_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'redirects with error message' do
+        post :post_to_slack, params: {
+          organization_id: company.id,
+          id: draft_observation.id,
+          notify_teammate_ids: [observee_teammate.id]
+        }
+        expect(response).to redirect_to(organization_observation_path(company, draft_observation))
+        expect(flash[:alert]).to include('Draft observations cannot be shared')
+      end
+
+      it 'does not send notifications' do
+        expect(Observations::PostNotificationJob).not_to receive(:perform_and_get_result)
+        post :post_to_slack, params: {
+          organization_id: company.id,
+          id: draft_observation.id,
+          notify_teammate_ids: [observee_teammate.id]
+        }
+      end
+    end
+
+    context 'when user is not the observer' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+
+      before do
+        sign_in_as_teammate(other_person, company)
+      end
+
+      it 'redirects with authorization error' do
+        post :post_to_slack, params: {
+          organization_id: company.id,
+          id: public_observation.id,
+          notify_teammate_ids: []
+        }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
+      end
     end
   end
 

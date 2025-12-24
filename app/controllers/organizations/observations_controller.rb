@@ -1,5 +1,5 @@
 class Organizations::ObservationsController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_observation, only: [:show, :destroy, :post_to_slack]
+  before_action :set_observation, only: [:show, :destroy, :post_to_slack, :share_publicly, :share_privately]
   
 
   def index
@@ -226,53 +226,6 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       @debug_data = debug_service.call
     end
 
-    # Load organizations with kudos channels for channel selection
-    if (@observation.privacy_level == 'public_to_company' || @observation.privacy_level == 'public_to_world') && policy(@observation).post_to_slack?
-      company = @observation.company
-      organizations_with_channels = ([company] + company.descendants.to_a).select { |org| org.kudos_channel_id.present? }
-      @kudos_channel_options = organizations_with_channels.map do |org|
-        channel = org.kudos_channel
-        display_text = channel ? "#{org.display_name} - #{channel.display_name}" : org.display_name
-        [display_text, org.id]
-      end
-    end
-
-    # Load managers for DM notifications (Phase 5)
-    if @observation.privacy_level != 'observer_only' && policy(@observation).post_to_slack?
-      @dm_recipients = []
-      
-      # Add observer
-      @dm_recipients << {
-        name: @observation.observer.preferred_name || @observation.observer.first_name,
-        role: "Observer",
-        type: "observer"
-      }
-      
-      # Add observees
-      @observation.observed_teammates.each do |teammate|
-        @dm_recipients << {
-          name: teammate.person.preferred_name || teammate.person.first_name,
-          role: "Observed",
-          type: "observee"
-        }
-      end
-      
-      # Add managers of observees
-      @observation.observed_teammates.each do |teammate|
-        person = teammate.person
-        managers = ManagerialHierarchyQuery.new(person: person, organization: @observation.company).call
-        managers.each do |manager_info|
-          # Avoid duplicates
-          unless @dm_recipients.any? { |r| r[:name] == manager_info[:name] && r[:type] == "manager" }
-            @dm_recipients << {
-              name: manager_info[:name],
-              role: "Manager of #{teammate.person.preferred_name || teammate.person.first_name}",
-              type: "manager"
-            }
-          end
-        end
-      end
-    end
   end
 
   def edit
@@ -513,7 +466,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   end
 
   def journal
-    authorize Observation
+    authorize company, :view_observations?
     # Use ObservationVisibilityQuery for complex visibility logic
     visibility_query = ObservationVisibilityQuery.new(current_person, organization)
     @observations = visibility_query.visible_observations.journal.includes(:observer, :observed_teammates, :observation_ratings)
@@ -668,10 +621,127 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
   end
 
+  def share_publicly
+    authorize @observation, :post_to_slack?
+    # Disallow if draft
+    if @observation.draft?
+      redirect_to organization_observation_path(organization, @observation), 
+                  alert: 'Draft observations cannot be shared.'
+      return
+    end
+    # Only allow if observation is public
+    unless @observation.can_post_to_slack_channel?
+      redirect_to organization_observation_path(organization, @observation), 
+                  alert: 'Only public observations can be shared publicly.'
+      return
+    end
+    
+    # Load organizations with kudos channels (company + descendants)
+    company = @observation.company
+    organizations_with_channels = ([company] + company.descendants.to_a)
+                                  .select { |org| org.kudos_channel_id.present? }
+    
+    # Build list of organizations with channel info
+    @kudos_channel_organizations = organizations_with_channels.map do |org|
+      channel = org.kudos_channel
+      {
+        organization: org,
+        channel: channel,
+        display_name: channel ? "#{org.display_name} - #{channel.display_name}" : org.display_name,
+        already_sent: notification_already_sent_to_organization?(org.id)
+      }
+    end
+    
+    # Set return URL for overlay
+    @return_url = organization_observation_path(organization, @observation)
+    @return_text = 'Back to Observation'
+    
+    render layout: 'overlay'
+  end
+
+  def share_privately
+    authorize @observation, :post_to_slack?
+    # Disallow if draft
+    if @observation.draft?
+      redirect_to organization_observation_path(organization, @observation), 
+                  alert: 'Draft observations cannot be shared.'
+      return
+    end
+    # Disallow if journal (observer_only)
+    if @observation.privacy_level == 'observer_only'
+      redirect_to organization_observation_path(organization, @observation), 
+                  alert: 'Journal entries cannot be shared privately.'
+      return
+    end
+    
+    # Determine which teammates should be available for notification
+    @available_teammates = if @observation.privacy_level == 'public_to_company' || 
+                               @observation.privacy_level == 'public_to_world'
+      # Public: show all observees and their managers
+      build_public_observation_teammates_list
+    else
+      # Not public: show only those who should have access
+      build_private_observation_teammates_list
+    end
+    
+    # Mark teammates with disabled status and reason
+    @available_teammates.each do |teammate_info|
+      teammate = teammate_info[:teammate]
+      
+      # Check if already notified
+      # Check both individual DMs and group DMs that include this teammate
+      already_notified = if teammate.slack_user_id.present?
+        # Check for individual DM (channel is the teammate's slack_user_id and not a group DM)
+        individual_dm = @observation.notifications
+                                   .where(notification_type: 'observation_dm')
+                                   .where("metadata->>'channel' = ?", teammate.slack_user_id.to_s)
+                                   .where("(metadata->>'is_group_dm' != 'true' OR metadata->>'is_group_dm' IS NULL)")
+                                   .successful
+                                   .exists?
+        
+        # Check for group DM that includes this teammate
+        # teammate_ids is stored as an array in JSON, check if it contains this teammate's ID
+        # Use JSONB containment operator: @> checks if left JSON contains right JSON
+        group_dm = @observation.notifications
+                              .where(notification_type: 'observation_dm')
+                              .where("metadata->>'is_group_dm' = 'true'")
+                              .where("metadata->'teammate_ids' @> ?", [teammate.id].to_json)
+                              .successful
+                              .exists?
+        
+        individual_dm || group_dm
+      else
+        false
+      end
+      
+      teammate_info[:disabled] = !teammate.has_slack_identity? || already_notified
+      teammate_info[:disabled_reason] = if !teammate.has_slack_identity?
+        'Slack not configured for them'
+      elsif already_notified
+        'Already notified in a prior notification'
+      else
+        nil
+      end
+    end
+    
+    # Set return URL for overlay
+    @return_url = organization_observation_path(organization, @observation)
+    @return_text = 'Back to Observation'
+    
+    render layout: 'overlay'
+  end
+
   # Slack posting from show page
   def post_to_slack
     Rails.logger.info "🔍🔍🔍🔍🔍 ObservationController::post_to_slack: About to authorize Observation"
     authorize @observation, :post_to_slack?
+    
+    # Disallow if draft
+    if @observation.draft?
+      redirect_to organization_observation_path(organization, @observation), 
+                  alert: 'Draft observations cannot be shared.'
+      return
+    end
     
     notify_teammate_ids = params[:notify_teammate_ids] || []
     kudos_channel_organization_id = params[:kudos_channel_organization_id]
@@ -685,6 +755,266 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     redirect_to organization_observation_path(organization, @observation), 
                 notice: 'Notifications sent successfully'
+  end
+
+  # Public action methods (must be before private keyword)
+  # Update draft observation
+  def update_draft
+    # Handle new observations (id = 'new' or coming from collection route)
+    if params[:id].nil? || params[:id] == 'new' || params[:id].to_s == 'new'
+      # Extract observation_type from params
+      permitted_params = draft_params
+      observation_type = permitted_params[:observation_type] || 'generic'
+      
+      # Create new observation - build from params and save
+      @observation = organization.observations.build(observer: current_person)
+      @observation.observation_type = observation_type
+      # Set created_as_type only if it doesn't exist (preserve existing value if present)
+      @observation.created_as_type ||= observation_type
+      
+      # Set observees from params if provided
+      observee_ids = params[:observee_ids] || []
+      observee_ids = [observee_ids] unless observee_ids.is_a?(Array)
+      observee_ids.each do |teammate_id|
+        next if teammate_id.blank?
+        @observation.observees.build(teammate_id: teammate_id)
+      end
+      
+      # Use Reform to handle nested attributes properly and avoid duplicates
+      @form = ObservationForm.new(@observation)
+      if @form.validate(permitted_params)
+        @form.save
+        @observation.observed_at ||= Time.current
+        @observation.save! if @observation.changed? || @observation.new_record?
+        authorize @observation, :update?
+        
+        # Enforce privacy level if public observation has negative ratings
+        if Observations::PrivacyLevelEnforcementService.call(@observation)
+          flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+        end
+      else
+        flash[:alert] = "Failed to save: #{@form.errors.full_messages.join(', ')}"
+        @return_url = params[:return_url] || organization_observations_path(organization)
+        @return_text = params[:return_text] || 'Back'
+        @assignments = organization.assignments.ordered
+        @aspirations = organization.aspirations
+        @abilities = organization.abilities.order(:name)
+        render :new, layout: 'overlay', status: :unprocessable_entity
+        return
+      end
+    else
+      @observation = Observation.find(params[:id])
+      authorize @observation, :update?
+    end
+    
+    permitted_params = draft_params
+    # Note: We no longer strip out observation_ratings_attributes for save-and-add flows.
+    # ObservationForm#save handles duplicate prevention correctly by checking for existing
+    # ratings before creating new ones, so ratings will be preserved when adding observees,
+    # abilities, or aspirations.
+    
+    # Use Reform in draft mode (no story requirement)
+    @form = ObservationForm.new(@observation)
+    @form.publishing = false
+    saved = @form.validate(permitted_params) && @form.save
+    
+    if saved
+      # Enforce privacy level if public observation has negative ratings
+      if Observations::PrivacyLevelEnforcementService.call(@observation)
+        flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+      end
+      
+      # Check if we should save and navigate to an add-* picker
+      if params[:save_and_add_assignments].present?
+        redirect_to add_assignments_organization_observation_path(
+          organization, 
+          @observation,
+          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
+          return_text: params[:return_text] || 'Observation'
+        )
+      elsif params[:save_and_add_aspirations].present?
+        redirect_to add_aspirations_organization_observation_path(
+          organization,
+          @observation,
+          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
+          return_text: params[:return_text] || 'Observation'
+        )
+      elsif params[:save_and_add_abilities].present?
+        redirect_to add_abilities_organization_observation_path(
+          organization,
+          @observation,
+          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
+          return_text: params[:return_text] || 'Observation'
+        )
+      elsif params[:save_and_manage_observees].present?
+        redirect_to manage_observees_organization_observation_path(
+          organization,
+          @observation,
+          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
+          return_text: params[:return_text] || 'Observation'
+        )
+      elsif params[:save_draft_and_return].present?
+        # Convert published observation to draft if it was published
+        if @observation.published_at.present?
+          @observation.update_column(:published_at, nil)
+        end
+        # Save draft and return to the specified return_url
+        redirect_url = params[:return_url] || organization_observations_path(organization)
+        redirect_to redirect_url, notice: 'Draft saved successfully.'
+      else
+        redirect_to typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text])
+      end
+    else
+      Rails.logger.error "Failed to update: #{@observation.errors.full_messages.join(', ')}"
+      Rails.logger.error "Attempted params: #{permitted_params.inspect}"
+      flash[:alert] = "Failed to update: #{@observation.errors.full_messages.join(', ')}"
+      @return_url = params[:return_url] || organization_observations_path(organization)
+      @return_text = params[:return_text] || 'Back'
+      @assignments = organization.assignments.ordered
+      @aspirations = organization.aspirations
+      @abilities = organization.abilities.order(:name)
+      render :new, layout: 'overlay', status: :unprocessable_entity
+    end
+  end
+
+  # Cancel and optionally save draft if story has content
+  def cancel
+    # Handle both persisted and new observations
+    if params[:id] == 'new' || params[:id].to_s == 'new'
+      # New observation - check if story has content
+      story = params[:observation] && params[:observation][:story] ? params[:observation][:story] : params[:story]
+      
+      if story.present? && story.strip.present?
+        # Story has content - save as draft before canceling
+        @observation = organization.observations.build(observer: current_person)
+        
+        # Set observees from params if provided
+        observee_ids = params[:observee_ids] || []
+        observee_ids = [observee_ids] unless observee_ids.is_a?(Array)
+        observee_ids.each do |teammate_id|
+          next if teammate_id.blank?
+          @observation.observees.build(teammate_id: teammate_id)
+        end
+        
+        @observation.assign_attributes(draft_params)
+        @observation.observed_at ||= Time.current
+        @observation.save!
+        
+        # Enforce privacy level if public observation has negative ratings
+        if Observations::PrivacyLevelEnforcementService.call(@observation)
+          flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+        end
+      end
+    else
+      # Existing observation - update with any form data if story has content
+      @observation = Observation.find(params[:id])
+      authorize @observation, :update?
+      
+      story = params[:observation] && params[:observation][:story] ? params[:observation][:story] : @observation.story
+      
+      if story.present? && story.strip.present?
+        # Update observation with form data
+        @observation.update(draft_params)
+        
+        # Enforce privacy level if public observation has negative ratings
+        if Observations::PrivacyLevelEnforcementService.call(@observation)
+          flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
+        end
+      end
+    end
+    
+    # Always redirect to return_url (even if no draft was saved)
+    redirect_url = params[:return_url] || organization_observations_path(organization)
+    redirect_to redirect_url
+  end
+
+  def notification_already_sent_to_organization?(organization_id)
+    @observation.notifications
+                .where(notification_type: 'observation_channel')
+                .where("metadata->>'is_main_message' = 'true'")
+                .where("metadata->>'organization_id' = ?", organization_id.to_s)
+                .successful
+                .exists?
+  end
+
+  def build_public_observation_teammates_list
+    teammates = []
+    
+    # Add observees
+    @observation.observed_teammates.each do |teammate|
+      teammates << {
+        teammate: teammate,
+        role: "Observed",
+        person: teammate.person
+      }
+    end
+    
+    # Add managers of observees
+    @observation.observed_teammates.each do |teammate|
+      managers = ManagerialHierarchyQuery.new(
+        person: teammate.person, 
+        organization: @observation.company
+      ).call
+      
+      managers.each do |manager_info|
+        manager_teammate = @observation.company.teammates.find_by(person_id: manager_info[:person_id])
+        next unless manager_teammate
+        
+        # Avoid duplicates
+        unless teammates.any? { |t| t[:teammate].id == manager_teammate.id }
+          teammates << {
+            teammate: manager_teammate,
+            role: "Manager of #{teammate.person.display_name}",
+            person: manager_teammate.person
+          }
+        end
+      end
+    end
+    
+    teammates
+  end
+
+  def build_private_observation_teammates_list
+    teammates = []
+    company = @observation.company
+    
+    case @observation.privacy_level
+    when 'observed_only'
+      # Observer + observees only
+      @observation.observed_teammates.each do |teammate|
+        teammates << {
+          teammate: teammate,
+          role: "Observed",
+          person: teammate.person
+        }
+      end
+    when 'managers_only'
+      # Observer + managers only
+      @observation.observed_teammates.each do |teammate|
+        managers = ManagerialHierarchyQuery.new(
+          person: teammate.person, 
+          organization: company
+        ).call
+        
+        managers.each do |manager_info|
+          manager_teammate = company.teammates.find_by(person_id: manager_info[:person_id])
+          next unless manager_teammate
+          
+          unless teammates.any? { |t| t[:teammate].id == manager_teammate.id }
+            teammates << {
+              teammate: manager_teammate,
+              role: "Manager of #{teammate.person.display_name}",
+              person: manager_teammate.person
+            }
+          end
+        end
+      end
+    when 'observed_and_managers'
+      # Observer + observees + managers
+      teammates = build_public_observation_teammates_list
+    end
+    
+    teammates
   end
 
   def convert_to_generic
@@ -898,176 +1228,6 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       @return_text = params[:return_text] || 'Back'
       render layout: 'overlay'
     end
-  end
-
-  # Update draft observation
-  def update_draft
-    # Handle new observations (id = 'new')
-    if params[:id] == 'new' || params[:id].to_s == 'new'
-      # Extract observation_type from params
-      permitted_params = draft_params
-      observation_type = permitted_params[:observation_type] || 'generic'
-      
-      # Create new observation - build from params and save
-      @observation = organization.observations.build(observer: current_person)
-      @observation.observation_type = observation_type
-      # Set created_as_type only if it doesn't exist (preserve existing value if present)
-      @observation.created_as_type ||= observation_type
-      
-      # Set observees from params if provided
-      observee_ids = params[:observee_ids] || []
-      observee_ids = [observee_ids] unless observee_ids.is_a?(Array)
-      observee_ids.each do |teammate_id|
-        next if teammate_id.blank?
-        @observation.observees.build(teammate_id: teammate_id)
-      end
-      
-      # Use Reform to handle nested attributes properly and avoid duplicates
-      @form = ObservationForm.new(@observation)
-      if @form.validate(permitted_params)
-        @form.save
-        @observation.observed_at ||= Time.current
-        @observation.save! if @observation.changed? || @observation.new_record?
-        authorize @observation, :update?
-        
-        # Enforce privacy level if public observation has negative ratings
-        if Observations::PrivacyLevelEnforcementService.call(@observation)
-          flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
-        end
-      else
-        flash[:alert] = "Failed to save: #{@form.errors.full_messages.join(', ')}"
-        @return_url = params[:return_url] || organization_observations_path(organization)
-        @return_text = params[:return_text] || 'Back'
-        @assignments = organization.assignments.ordered
-        @aspirations = organization.aspirations
-        @abilities = organization.abilities.order(:name)
-        render :new, layout: 'overlay', status: :unprocessable_entity
-        return
-      end
-    else
-      @observation = Observation.find(params[:id])
-      authorize @observation, :update?
-    end
-    
-    permitted_params = draft_params
-    # Note: We no longer strip out observation_ratings_attributes for save-and-add flows.
-    # ObservationForm#save handles duplicate prevention correctly by checking for existing
-    # ratings before creating new ones, so ratings will be preserved when adding observees,
-    # abilities, or aspirations.
-    
-    # Use Reform in draft mode (no story requirement)
-    @form = ObservationForm.new(@observation)
-    @form.publishing = false
-    saved = @form.validate(permitted_params) && @form.save
-    
-    if saved
-      # Enforce privacy level if public observation has negative ratings
-      if Observations::PrivacyLevelEnforcementService.call(@observation)
-        flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
-      end
-      
-      # Check if we should save and navigate to an add-* picker
-      if params[:save_and_add_assignments].present?
-        redirect_to add_assignments_organization_observation_path(
-          organization, 
-          @observation,
-          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: params[:return_text] || 'Observation'
-        )
-      elsif params[:save_and_add_aspirations].present?
-        redirect_to add_aspirations_organization_observation_path(
-          organization,
-          @observation,
-          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: params[:return_text] || 'Observation'
-        )
-      elsif params[:save_and_add_abilities].present?
-        redirect_to add_abilities_organization_observation_path(
-          organization,
-          @observation,
-          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: params[:return_text] || 'Observation'
-        )
-      elsif params[:save_and_manage_observees].present?
-        redirect_to manage_observees_organization_observation_path(
-          organization,
-          @observation,
-          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: params[:return_text] || 'Observation'
-        )
-      elsif params[:save_draft_and_return].present?
-        # Convert published observation to draft if it was published
-        if @observation.published_at.present?
-          @observation.update_column(:published_at, nil)
-        end
-        # Save draft and return to the specified return_url
-        redirect_url = params[:return_url] || organization_observations_path(organization)
-        redirect_to redirect_url, notice: 'Draft saved successfully.'
-      else
-        redirect_to typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text])
-      end
-    else
-      Rails.logger.error "Failed to update: #{@observation.errors.full_messages.join(', ')}"
-      Rails.logger.error "Attempted params: #{permitted_params.inspect}"
-      flash[:alert] = "Failed to update: #{@observation.errors.full_messages.join(', ')}"
-      @return_url = params[:return_url] || organization_observations_path(organization)
-      @return_text = params[:return_text] || 'Back'
-      @assignments = organization.assignments.ordered
-      @aspirations = organization.aspirations
-      @abilities = organization.abilities.order(:name)
-      render :new, layout: 'overlay', status: :unprocessable_entity
-    end
-  end
-
-  # Cancel and optionally save draft if story has content
-  def cancel
-    # Handle both persisted and new observations
-    if params[:id] == 'new' || params[:id].to_s == 'new'
-      # New observation - check if story has content
-      story = params[:observation] && params[:observation][:story] ? params[:observation][:story] : params[:story]
-      
-      if story.present? && story.strip.present?
-        # Story has content - save as draft before canceling
-        @observation = organization.observations.build(observer: current_person)
-        
-        # Set observees from params if provided
-        observee_ids = params[:observee_ids] || []
-        observee_ids = [observee_ids] unless observee_ids.is_a?(Array)
-        observee_ids.each do |teammate_id|
-          next if teammate_id.blank?
-          @observation.observees.build(teammate_id: teammate_id)
-        end
-        
-        @observation.assign_attributes(draft_params)
-        @observation.observed_at ||= Time.current
-        @observation.save!
-        
-        # Enforce privacy level if public observation has negative ratings
-        if Observations::PrivacyLevelEnforcementService.call(@observation)
-          flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
-        end
-      end
-    else
-      # Existing observation - update with any form data if story has content
-      @observation = Observation.find(params[:id])
-      authorize @observation, :update?
-      
-      story = params[:observation] && params[:observation][:story] ? params[:observation][:story] : @observation.story
-      
-      if story.present? && story.strip.present?
-        # Update observation with form data
-        @observation.update(draft_params)
-        
-        # Enforce privacy level if public observation has negative ratings
-        if Observations::PrivacyLevelEnforcementService.call(@observation)
-          flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
-        end
-      end
-    end
-    
-    # Always redirect to return_url (even if no draft was saved)
-    redirect_url = params[:return_url] || organization_observations_path(organization)
-    redirect_to redirect_url
   end
 
   # Publish draft observation

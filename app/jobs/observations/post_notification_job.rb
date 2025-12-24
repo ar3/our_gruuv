@@ -5,10 +5,9 @@ class Observations::PostNotificationJob < ApplicationJob
     Rails.logger.info "🔍🔍🔍🔍🔍 PostNotificationJob: perform: observation_id: #{observation_id}, notify_teammate_ids: #{notify_teammate_ids}, kudos_channel_organization_id: #{kudos_channel_organization_id}"
     observation = Observation.find(observation_id)
     
-    # Send DMs to selected teammates
-    notify_teammate_ids.each do |teammate_id|
-      teammate = Teammate.find(teammate_id)
-      send_dm_to_teammate(observation, teammate)
+    # Send group DM to selected teammates
+    if notify_teammate_ids.present?
+      send_group_dm(observation, notify_teammate_ids)
     end
     
     # Post to kudos channel if requested
@@ -19,6 +18,60 @@ class Observations::PostNotificationJob < ApplicationJob
 
   private
 
+  def send_group_dm(observation, teammate_ids)
+    # Get all teammates with Slack identities
+    teammates = Teammate.where(id: teammate_ids).select { |t| t.slack_user_id.present? }
+    return if teammates.empty?
+    
+    slack_user_ids = teammates.map(&:slack_user_id).compact
+    
+    # If only one teammate, send regular DM
+    if slack_user_ids.length == 1
+      send_dm_to_teammate(observation, teammates.first)
+      return
+    end
+    
+    # For multiple teammates, create group DM
+    slack_service = SlackService.new(observation.company)
+    
+    # Open or create group DM
+    group_dm_result = slack_service.open_or_create_group_dm(user_ids: slack_user_ids)
+    
+    unless group_dm_result[:success]
+      Rails.logger.error "Failed to open group DM: #{group_dm_result[:error]}"
+      # Fallback to individual DMs if group DM fails
+      teammates.each do |teammate|
+        send_dm_to_teammate(observation, teammate)
+      end
+      return
+    end
+    
+    group_channel_id = group_dm_result[:channel_id]
+    
+    # Create notification record for group DM
+    notification = Notification.create!(
+      notifiable_type: 'Observation',
+      notifiable_id: observation.id,
+      notification_type: 'observation_dm',
+      status: 'preparing_to_send',
+      metadata: { 
+        'channel' => group_channel_id,
+        'is_group_dm' => true,
+        'teammate_ids' => teammate_ids
+      },
+      fallback_text: build_dm_message(observation)[:fallback_text],
+      rich_message: build_dm_message(observation)[:blocks].to_json
+    )
+    
+    # Send message to group DM using post_message (which supports blocks)
+    begin
+      slack_service.post_message(notification.id)
+    rescue => e
+      Rails.logger.error "Failed to send group DM notification: #{e.message}"
+      notification.update!(status: 'send_failed')
+    end
+  end
+
   def send_dm_to_teammate(observation, teammate)
     return unless teammate.slack_user_id.present?
     
@@ -28,7 +81,10 @@ class Observations::PostNotificationJob < ApplicationJob
       notifiable_id: observation.id,
       notification_type: 'observation_dm',
       status: 'preparing_to_send',
-      metadata: { 'channel' => teammate.slack_user_id },
+      metadata: { 
+        'channel' => teammate.slack_user_id,
+        'is_group_dm' => false
+      },
       fallback_text: build_dm_message(observation)[:fallback_text],
       rich_message: build_dm_message(observation)[:blocks].to_json
     )

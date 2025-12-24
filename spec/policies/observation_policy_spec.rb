@@ -3,15 +3,15 @@ require 'rails_helper'
 RSpec.describe ObservationPolicy, type: :policy do
   let(:company) { create(:organization, :company) }
   let(:observer) { create(:person) }
-  let(:observer_teammate) { CompanyTeammate.create!(person: observer, organization: company) }
+  let!(:observer_teammate) { CompanyTeammate.create!(person: observer, organization: company) }
   let(:observee_person) { create(:person) }
-  let(:observee_teammate) { CompanyTeammate.create!(person: observee_person, organization: company) }
+  let!(:observee_teammate) { CompanyTeammate.create!(person: observee_person, organization: company) }
   let(:manager_person) { create(:person) }
-  let(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: company) }
+  let!(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: company) }
   let(:admin_person) { create(:person) }
-  let(:admin_teammate) { CompanyTeammate.create!(person: admin_person, organization: company) }
+  let!(:admin_teammate) { CompanyTeammate.create!(person: admin_person, organization: company) }
   let(:random_person) { create(:person) }
-  let(:random_teammate) { CompanyTeammate.create!(person: random_person, organization: company) }
+  let!(:random_teammate) { CompanyTeammate.create!(person: random_person, organization: company) }
 
   let(:pundit_user_observer) { OpenStruct.new(user: observer_teammate, impersonating_teammate: nil) }
   let(:pundit_user_observee) { OpenStruct.new(user: observee_teammate, impersonating_teammate: nil) }
@@ -940,32 +940,38 @@ end
     let(:manager_person) { create(:person) }
     let(:unrelated_person) { create(:person) }
     
-    # Create teammates in before block to ensure they use the same test_company instance
-    let(:observer_teammate) { @observer_teammate }
-    let(:observee_teammate) { @observee_teammate }
-    let(:manager_teammate) { @manager_teammate }
-    let(:unrelated_teammate) { @unrelated_teammate }
+    # Create teammates with let! to ensure they're created before observations try to use them
+    let!(:observer_teammate) do
+      CompanyTeammate.find_or_create_by!(person: observer_person, organization: test_company) do |t|
+        t.organization = test_company
+        t.last_terminated_at = nil  # Ensure they're active
+      end.tap { |t| t.update_column(:last_terminated_at, nil) if t.last_terminated_at.present? }
+    end
+    let!(:observee_teammate) do
+      CompanyTeammate.find_or_create_by!(person: observee_person, organization: test_company) do |t|
+        t.organization = test_company
+        t.last_terminated_at = nil  # Ensure they're active
+      end.tap { |t| t.update_column(:last_terminated_at, nil) if t.last_terminated_at.present? }
+    end
+    let!(:manager_teammate) do
+      CompanyTeammate.find_or_create_by!(person: manager_person, organization: test_company) do |t|
+        t.organization = test_company
+        t.last_terminated_at = nil  # Ensure they're active
+      end.tap { |t| t.update_column(:last_terminated_at, nil) if t.last_terminated_at.present? }
+    end
+    let!(:unrelated_teammate) do
+      CompanyTeammate.find_or_create_by!(person: unrelated_person, organization: test_company) do |t|
+        t.organization = test_company
+        t.last_terminated_at = nil  # Ensure they're active
+      end.tap { |t| t.update_column(:last_terminated_at, nil) if t.last_terminated_at.present? }
+    end
 
     before do
       # Ensure test_company exists first
       company = test_company
       
-      # Create all teammates with the same test_company instance, ensuring they're in the same company
-      @observer_teammate = CompanyTeammate.find_or_create_by!(person: observer_person, organization: company) do |t|
-        t.organization = company
-      end
-      @observee_teammate = CompanyTeammate.find_or_create_by!(person: observee_person, organization: company) do |t|
-        t.organization = company
-      end
-      @manager_teammate = CompanyTeammate.find_or_create_by!(person: manager_person, organization: company) do |t|
-        t.organization = company
-      end
-      @unrelated_teammate = CompanyTeammate.find_or_create_by!(person: unrelated_person, organization: company) do |t|
-        t.organization = company
-      end
-      
       # Verify they're in the correct company
-      [@observer_teammate, @observee_teammate, @manager_teammate, @unrelated_teammate].each do |t|
+      [observer_teammate, observee_teammate, manager_teammate, unrelated_teammate].each do |t|
         t.reload
         unless t.organization_id == company.id
           raise "Teammate #{t.id} not in company #{company.id}, is in #{t.organization_id}"
@@ -973,16 +979,16 @@ end
       end
       
       # Set up management hierarchy: observee reports to manager
-      create(:employment_tenure, teammate: @manager_teammate, company: company)
-      create(:employment_tenure, teammate: @observee_teammate, company: company, manager: manager_person)
-      create(:employment_tenure, teammate: @observer_teammate, company: company)
-      create(:employment_tenure, teammate: @unrelated_teammate, company: company)
+      create(:employment_tenure, teammate: manager_teammate, company: company)
+      create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+      create(:employment_tenure, teammate: observer_teammate, company: company)
+      create(:employment_tenure, teammate: unrelated_teammate, company: company)
       
       # Reload to clear caches
-      @manager_teammate.reload
-      @observee_teammate.reload
-      @observer_teammate.reload
-      @unrelated_teammate.reload
+      manager_teammate.reload
+      observee_teammate.reload
+      observer_teammate.reload
+      unrelated_teammate.reload
     end
 
     let(:pundit_user_observer) { OpenStruct.new(user: observer_teammate, impersonating_teammate: nil) }
@@ -1148,7 +1154,7 @@ end
       obs
     end
 
-    let(:all_observations) do
+    let!(:all_observations) do
       [
         draft_observer_only,
         draft_observed_only,

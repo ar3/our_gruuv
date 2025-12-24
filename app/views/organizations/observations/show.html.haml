@@ -108,87 +108,103 @@
           - else
             %p.text-muted No ratings 
 
-    - if @observation.notifications.successful.any?
-      .card.mb-4{ role: "region", "aria-labelledby": "notification-history" }
-        .card-header
-          %h5.mb-0{ id: "notification-history" }
-            %i.bi.bi-bell.me-2
-            Notification History
-        .card-body
-          - @observation.notifications.successful.each do |notification|
-            .d-flex.align-items-center.mb-2
-              %i.bi.bi-check-circle.text-success.me-2
-              %span
-                Sent to 
-                %strong= notification.notification_type.humanize
-                - if notification.metadata['channel'].present?
-                  %span.text-muted
-                    (#{notification.metadata['channel']})
-              %small.text-muted.ms-auto
-                = notification.created_at.strftime('%m/%d/%y %l:%M %p')
-
-    / Slack posting section
-    - if policy(@observation).post_to_slack?
-      .card.mb-4{ role: "region", "aria-labelledby": "slack-posting" }
-        .card-header
-          %h5.mb-0{ id: "slack-posting" }
-            %i.bi.bi-slack.me-2
-            Send Notifications
-        .card-body
-          - if @observation.privacy_level == 'public_observation'
-            / Post to Kudos Channel section
-            .mb-4
-              %h6.mb-3
-                %i.bi.bi-hash.me-2
-                Post to Kudos Channel
-              - if @organization.slack_configured?
-                - if defined?(@kudos_channel_options) && @kudos_channel_options.any?
-                  = form_with url: post_to_slack_organization_observation_path(@organization, @observation), method: :post, local: true do |form|
-                    .mb-3
-                      = form.label :kudos_channel_organization_id, "Select Kudos Channel", class: "form-label"
-                      = form.select :kudos_channel_organization_id, options_for_select(@kudos_channel_options), { prompt: 'Select channel...' }, { class: 'form-select', id: 'kudos_channel_org_select', required: true }
-                    .d-grid
-                      = form.submit 'Send Notification', class: 'btn btn-primary'
-                - else
-                  .alert.alert-info
-                    %i.bi.bi-info-circle.me-2
-                    No kudos channels configured.
-                    = link_to "Configure kudos channels", channels_organization_slack_path(@organization), class: "alert-link"
-              - else
-                .alert.alert-warning
-                  %i.bi.bi-exclamation-triangle.me-2
-                  Slack is not configured.
-                  = link_to "Configure Slack", organization_slack_path(@organization), class: "alert-link"
+    / Notifications section
+    .card.mb-4{ role: "region", "aria-labelledby": "notifications" }
+      .card-header
+        %h5.mb-0{ id: "notifications" }
+          %i.bi.bi-bell.me-2
+          Notifications
+      .card-body
+        / Action buttons
+        - can_send_public = !@observation.draft? && policy(@observation).post_to_slack? && @observation.privacy_level != 'observer_only' && (@observation.privacy_level == 'public_to_company' || @observation.privacy_level == 'public_to_world')
+        - can_send_private = !@observation.draft? && policy(@observation).post_to_slack? && @observation.privacy_level != 'observer_only'
+        - send_public_disabled = !can_send_public
+        - send_private_disabled = !can_send_private
+        
+        / Determine tooltip messages
+        - public_tooltip = ''
+        - if @observation.draft?
+          - public_tooltip = 'Draft observations cannot be shared'
+        - elsif @observation.privacy_level == 'observer_only'
+          - public_tooltip = 'Journal entries cannot be shared publicly'
+        - elsif @observation.privacy_level != 'public_to_company' && @observation.privacy_level != 'public_to_world'
+          - public_tooltip = 'Only public observations can be shared publicly'
+        - elsif !policy(@observation).post_to_slack?
+          - public_tooltip = 'Only the observer can send notifications'
+        
+        - private_tooltip = ''
+        - if @observation.draft?
+          - private_tooltip = 'Draft observations cannot be shared'
+        - elsif @observation.privacy_level == 'observer_only'
+          - private_tooltip = 'Journal entries cannot be shared privately'
+        - elsif !policy(@observation).post_to_slack?
+          - private_tooltip = 'Only the observer can send notifications'
+        
+        .d-flex.gap-2.mb-4
+          - if send_public_disabled
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                %button.btn.btn-outline-secondary.w-100.disabled{disabled: true}
+                  Send Public
+              - if public_tooltip.present?
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => public_tooltip}
+          - else
+            = link_to 'Send Public', share_publicly_organization_observation_path(@organization, @observation), class: 'btn btn-primary'
           
-          / DM Notifications section (Phase 5 - Mocked)
-          - if @observation.privacy_level != 'observer_only'
-            .mb-4
-              %h6.mb-3
-                %i.bi.bi-envelope.me-2
-                Send DM Notifications
-              %p.text-muted.mb-3
-                DM notifications will be available in a future release.
-              - if defined?(@dm_recipients) && @dm_recipients.any?
-                - @dm_recipients.each do |recipient|
-                  .form-check.mb-2
-                    = check_box_tag 'dm_recipients[]', recipient[:name], false, class: 'form-check-input', id: "dm_#{recipient[:name].parameterize}", disabled: true
-                    = label_tag "dm_#{recipient[:name].parameterize}", "#{recipient[:name]} - #{recipient[:role]}", class: 'form-check-label'
-                    %span.badge.bg-secondary.ms-2 Coming Soon
-              .d-grid.mt-3
-                %button.btn.btn-primary.disabled{disabled: true, "data-bs-toggle" => "tooltip", "data-bs-title" => "Coming soon"}
-                  Send DM Notifications
-    - else
-      .card.mb-4{ role: "region", "aria-labelledby": "slack-posting" }
-        .card-header
-          %h5.mb-0{ id: "slack-posting" }
-            %i.bi.bi-slack.me-2
-            Send Notifications
-        .card-body
-          .d-flex.align-items-center.gap-2
-            %button.btn.btn-primary.disabled{disabled: true, "data-bs-toggle" => "tooltip", "data-bs-title" => "Only the observer can send notifications"}
-              Send Notification
-            %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Only the observer can send notifications"}
-            %span.text-muted.ms-2 Only the observer can send notifications
+          - if send_private_disabled
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                %button.btn.btn-outline-secondary.w-100.disabled{disabled: true}
+                  Send Private
+              - if private_tooltip.present?
+                %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => private_tooltip}
+          - else
+            = link_to 'Send Private', share_privately_organization_observation_path(@organization, @observation), class: 'btn btn-outline-primary'
+        
+        / Public notifications list
+        - public_notifications = @observation.notifications.where(notification_type: 'observation_channel', status: 'sent_successfully')
+        - if public_notifications.any?
+          .mb-4
+            %h6.mb-3
+              %i.bi.bi-hash.me-2
+              Public Notifications
+            - public_notifications.each do |notification|
+              .d-flex.align-items-center.mb-2
+                %i.bi.bi-check-circle.text-success.me-2
+                %span
+                  - org_id = notification.metadata['organization_id']
+                  - if org_id.present?
+                    - org = Organization.find_by(id: org_id)
+                    - if org
+                      = org.display_name
+                      - if notification.metadata['channel'].present?
+                        %span.text-muted
+                          - # Channel ID is stored in metadata, need to get channel name
+                          - channel_id = notification.metadata['channel']
+                          - channel = org.third_party_objects.slack_channels.find_by(third_party_id: channel_id)
+                          - if channel
+                            = " - #{channel.display_name}"
+                  - if notification.slack_url.present?
+                    = link_to 'View Message', notification.slack_url, target: '_blank', class: 'ms-2 text-decoration-none'
+                    %i.bi.bi-box-arrow-up-right.ms-1
+                %small.text-muted.ms-auto
+                  = notification.created_at.strftime('%m/%d/%y %l:%M %p')
+        
+        / Private notifications list
+        - private_notifications = @observation.notifications.where(notification_type: 'observation_dm', status: 'sent_successfully').order(created_at: :desc)
+        - if private_notifications.any?
+          .mb-4
+            %h6.mb-3
+              %i.bi.bi-envelope.me-2
+              Private Notifications
+            - private_notifications.group_by { |n| n.created_at.to_date }.each do |date, notifications|
+              .mb-2
+                %small.text-muted
+                  Shared privately on #{date.strftime('%B %d, %Y')}
+                - notifications.each do |notification|
+                  - if notification.slack_url.present?
+                    = link_to 'View Message', notification.slack_url, target: '_blank', class: 'ms-2 text-decoration-none'
+                    %i.bi.bi-box-arrow-up-right.ms-1
 
     / Debug Section
     - if params[:debug] == 'true' && @debug_data
