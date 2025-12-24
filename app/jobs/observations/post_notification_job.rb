@@ -19,13 +19,25 @@ class Observations::PostNotificationJob < ApplicationJob
   private
 
   def send_group_dm(observation, teammate_ids)
-    # Get all teammates with Slack identities
+    # Get all teammates with Slack identities from the provided list
     teammates = Teammate.where(id: teammate_ids).select { |t| t.slack_user_id.present? }
+    
+    # Always include the observer if they have Slack configured
+    observer_teammate = observation.company.teammates.find_by(person: observation.observer)
+    if observer_teammate&.slack_user_id.present?
+      # Add observer to the list if not already included
+      unless teammates.any? { |t| t.id == observer_teammate.id }
+        teammates << observer_teammate
+        teammate_ids = teammate_ids + [observer_teammate.id]
+      end
+    end
+    
+    # If no teammates with Slack (including observer), return early
     return if teammates.empty?
     
     slack_user_ids = teammates.map(&:slack_user_id).compact
     
-    # If only one teammate, send regular DM
+    # If only one teammate (could be just observer or just one selected), send regular DM
     if slack_user_ids.length == 1
       send_dm_to_teammate(observation, teammates.first)
       return
@@ -48,159 +60,80 @@ class Observations::PostNotificationJob < ApplicationJob
     
     group_channel_id = group_dm_result[:channel_id]
     
-    # Create notification record for group DM
-    notification = Notification.create!(
-      notifiable_type: 'Observation',
-      notifiable_id: observation.id,
-      notification_type: 'observation_dm',
-      status: 'preparing_to_send',
-      metadata: { 
-        'channel' => group_channel_id,
-        'is_group_dm' => true,
-        'teammate_ids' => teammate_ids
-      },
-      fallback_text: build_dm_message(observation)[:fallback_text],
-      rich_message: build_dm_message(observation)[:blocks].to_json
-    )
-    
-    # Send message to group DM using post_message (which supports blocks)
-    begin
-      slack_service.post_message(notification.id)
-    rescue => e
-      Rails.logger.error "Failed to send group DM notification: #{e.message}"
-      notification.update!(status: 'send_failed')
-    end
+    # Use same template as public channel posts (main message + thread reply)
+    post_to_dm_channel(observation, group_channel_id, teammate_ids, is_group_dm: true)
   end
 
   def send_dm_to_teammate(observation, teammate)
     return unless teammate.slack_user_id.present?
     
-    # Create notification record first
-    notification = Notification.create!(
-      notifiable_type: 'Observation',
-      notifiable_id: observation.id,
+    # Use same template as public channel posts (main message + thread reply)
+    post_to_dm_channel(observation, teammate.slack_user_id, [teammate.id], is_group_dm: false)
+  end
+
+  def post_to_dm_channel(observation, channel_id, teammate_ids, is_group_dm: false)
+    # Build main message and thread reply using same template as channel posts
+    # Use observation.company as the organization for building messages
+    main_blocks = build_channel_main_message(observation, observation.company)
+    thread_blocks = build_channel_thread_reply(observation, observation.company)
+    
+    # Get observer's casual name and Slack identity for username/icon override
+    observer_teammate = observation.company.teammates.includes(:teammate_identities).find_by(person: observation.observer)
+    observer_slack_identity = observer_teammate&.teammate_identities&.find { |ti| ti.provider == 'slack' }
+    observer_casual_name = observation.observer.casual_name
+    username_override = "#{observer_casual_name} via OG"
+    
+    # Get icon URL from observer's Slack profile image, fallback to favicon
+    icon_url = if observer_slack_identity.present? && observer_slack_identity.profile_image_url.present?
+      observer_slack_identity.profile_image_url
+    else
+      "#{Rails.application.routes.url_helpers.root_url.chomp('/')}/favicon-32x32.png"
+    end
+    
+    # Create main message notification
+    main_notification = observation.notifications.create!(
       notification_type: 'observation_dm',
       status: 'preparing_to_send',
-      metadata: { 
-        'channel' => teammate.slack_user_id,
-        'is_group_dm' => false
+      metadata: {
+        channel: channel_id,
+        is_group_dm: is_group_dm,
+        teammate_ids: teammate_ids,
+        username: username_override,
+        icon_url: icon_url
       },
-      fallback_text: build_dm_message(observation)[:fallback_text],
-      rich_message: build_dm_message(observation)[:blocks].to_json
+      rich_message: main_blocks,
+      fallback_text: build_channel_fallback_text(observation, observation.company)
     )
     
-    # Use existing SlackService
-    begin
-      SlackService.new(observation.company).post_message(notification.id)
-    rescue => e
-      # Log the error but don't re-raise it
-      Rails.logger.error "Failed to send Slack notification: #{e.message}"
+    result = SlackService.new(observation.company).post_message(main_notification.id)
+    
+    # Create thread reply if main message was successful
+    if result[:success] && main_notification.reload.message_id.present?
+      thread_notification = observation.notifications.create!(
+        notification_type: 'observation_dm',
+        main_thread: main_notification,
+        status: 'preparing_to_send',
+        metadata: {
+          channel: channel_id,
+          is_group_dm: is_group_dm,
+          teammate_ids: teammate_ids,
+          is_thread_reply: true,
+          username: username_override,
+          icon_url: icon_url
+        },
+        rich_message: thread_blocks,
+        fallback_text: build_thread_fallback_text(observation, observation.company)
+      )
+      SlackService.new(observation.company).post_message(thread_notification.id)
     end
+    
+    result
+  rescue => e
+    Rails.logger.error "Failed to post observation to DM: #{e.message}"
+    Rails.logger.error e.backtrace.first(10).join("\n")
+    { success: false, error: e.message }
   end
 
-  def build_dm_message(observation)
-    observer_name = observation.observer.preferred_name || observation.observer.first_name
-    feelings_text = build_feelings_text(observation)
-    privacy_text = build_privacy_text(observation)
-    ratings_text = build_ratings_text(observation)
-    
-    fallback_text = "🎯 New Observation from #{observer_name}\n\n#{feelings_text}\n\n#{observation.story[0..200]}...\n\n#{privacy_text}\n#{ratings_text}"
-    
-    blocks = [
-      {
-        type: "header",
-        text: {
-          type: "plain_text",
-          text: "🎯 New Observation from #{observer_name}"
-        }
-      },
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: feelings_text
-        }
-      },
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: observation.story
-        }
-      },
-      {
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: "#{privacy_text} | #{ratings_text}"
-          }
-        ]
-      },
-    ]
-    
-    # Add GIF URLs for unfurling in Slack
-    if observation.story_extras.present? && observation.story_extras['gif_urls'].present?
-      gif_urls = Array(observation.story_extras['gif_urls']).reject(&:blank?)
-      gif_urls.each do |gif_url|
-        blocks << {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: gif_url
-          }
-        }
-      end
-    end
-    
-    {
-      fallback_text: fallback_text,
-      blocks: blocks
-    }
-  end
-
-  def build_feelings_text(observation)
-    feelings = []
-    feelings << observation.primary_feeling&.humanize if observation.primary_feeling.present?
-    feelings << observation.secondary_feeling&.humanize if observation.secondary_feeling.present?
-    
-    if feelings.any?
-      "Feeling: #{feelings.join(' + ')}"
-    else
-      ""
-    end
-  end
-
-  def build_privacy_text(observation)
-    case observation.privacy_level
-    when 'observer_only'
-      "Privacy: 🔒 Just for me (Journal)"
-    when 'observed_only'
-      "Privacy: 👤 Just for you"
-    when 'managers_only'
-      "Privacy: 👔 For your managers"
-    when 'observed_and_managers'
-      "Privacy: 👥 For you and your managers"
-    when 'public_to_company'
-      "Privacy: 🏢 Visible to company"
-    when 'public_to_world'
-      "Privacy: 🌍 Public to world"
-    else
-      "Privacy: #{observation.privacy_level.humanize}"
-    end
-  end
-
-  def build_ratings_text(observation)
-    positive_ratings = observation.observation_ratings.positive
-    if positive_ratings.any?
-      rating_texts = positive_ratings.map do |rating|
-        "#{rating.rating.humanize} on #{rating.rateable.name}"
-      end
-      "Ratings: #{rating_texts.join(', ')}"
-    else
-      ""
-    end
-  end
 
   def post_to_channel(observation, organization_id)
     return unless observation.can_post_to_slack_channel? && observation.published?

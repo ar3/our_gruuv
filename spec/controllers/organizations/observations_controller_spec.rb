@@ -2155,12 +2155,21 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(response).to render_template(layout: 'overlay')
       end
 
-      it 'assigns available teammates for public observations' do
+      it 'assigns available teammates for public observations including observer' do
+        # Get the observer teammate (already created by before block) and create Slack identity
+        signed_in_teammate = company.teammates.find_by(person: observer)
+        create(:teammate_identity, teammate: signed_in_teammate, provider: 'slack', uid: 'U123456')
+        
         get :share_privately, params: { organization_id: company.id, id: public_observation.id }
         expect(assigns(:available_teammates)).to be_present
-        # Should include observees
+        # Should include observees and observer
         teammate_ids = assigns(:available_teammates).map { |t| t[:teammate].id }
         expect(teammate_ids).to include(observee_teammate.id)
+        expect(teammate_ids).to include(signed_in_teammate.id)
+        
+        # Check observer role
+        observer_info = assigns(:available_teammates).find { |t| t[:teammate].id == signed_in_teammate.id }
+        expect(observer_info[:role]).to eq('Observer')
       end
 
       it 'marks teammates without Slack identity as disabled' do
@@ -2221,16 +2230,27 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
           create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
         end
 
-        it 'shows only observees for observed_only' do
+        it 'shows observer and observees for observed_only' do
+          # Get the observer teammate (already created by before block) and create Slack identity
+          signed_in_teammate = company.teammates.find_by(person: observer)
+          create(:teammate_identity, teammate: signed_in_teammate, provider: 'slack', uid: 'U123456')
+          
           observation.update!(privacy_level: :observed_only)
+          observation.publish! # Ensure observation is published
           get :share_privately, params: { organization_id: company.id, id: observation.id }
+          expect(assigns(:available_teammates)).to be_present
           teammate_ids = assigns(:available_teammates).map { |t| t[:teammate].id }
           expect(teammate_ids).to include(observee_teammate.id)
+          expect(teammate_ids).to include(signed_in_teammate.id)
           # Should not include managers
           expect(teammate_ids).not_to include(manager_teammate.id)
         end
 
-        it 'shows managers for managers_only' do
+        it 'shows observer and managers for managers_only' do
+          # Get the observer teammate (already created by before block) and create Slack identity
+          signed_in_teammate = company.teammates.find_by(person: observer)
+          create(:teammate_identity, teammate: signed_in_teammate, provider: 'slack', uid: 'U123456')
+          
           managers_only_obs = build(:observation, observer: observer, company: company, privacy_level: :managers_only)
           managers_only_obs.observees.build(teammate: observee_teammate)
           managers_only_obs.save!
@@ -2239,6 +2259,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
           get :share_privately, params: { organization_id: company.id, id: managers_only_obs.id }
           teammate_ids = assigns(:available_teammates).map { |t| t[:teammate].id }
           expect(teammate_ids).to include(manager_teammate.id)
+          expect(teammate_ids).to include(signed_in_teammate.id)
           # Should not include observees
           expect(teammate_ids).not_to include(observee_teammate.id)
         end

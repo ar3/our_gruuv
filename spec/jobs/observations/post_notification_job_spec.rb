@@ -29,49 +29,119 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
       notification.update!(status: 'sent_successfully', message_id: '1234567890.123456')
       { success: true, message_id: '1234567890.123456' }
     end
+    allow(slack_service).to receive(:open_or_create_group_dm) do |user_ids:|
+      { success: true, channel_id: 'D1234567890' }
+    end
   end
 
   describe '#perform' do
     context 'when sending DMs' do
       let(:notify_teammate_ids) { [observee_teammate.id.to_s] }
 
-      it 'creates notifications for each observee' do
+      it 'creates main message and thread reply notifications' do
         expect {
           job = Observations::PostNotificationJob.new
           job.perform(observation.id, notify_teammate_ids)
-        }.to change(Notification, :count).by(1)
+        }.to change(Notification, :count).by(2) # Main message + thread reply
       end
 
-      it 'sends DM to observee with Slack user ID' do
+      it 'includes observer in group DM when observer has Slack configured' do
         job = Observations::PostNotificationJob.new
         job.perform(observation.id, notify_teammate_ids)
 
-        notification = Notification.last
-        expect(notification.notification_type).to eq('observation_dm')
-        expect(notification.status).to eq('sent_successfully')
-        expect(notification.message_id).to eq('1234567890.123456')
-        expect(notification.metadata['channel']).to eq('U789012')
+        main_notification = Notification.where(notification_type: 'observation_dm')
+                                       .where("metadata->>'is_thread_reply' != 'true' OR metadata->>'is_thread_reply' IS NULL")
+                                       .first
+        expect(main_notification).to be_present
+        expect(main_notification.notification_type).to eq('observation_dm')
+        expect(main_notification.status).to eq('sent_successfully')
+        # Should be a group DM since observer is included
+        expect(main_notification.metadata['is_group_dm']).to eq(true)
+        # Should include both observee and observer IDs (stored as array, may be strings or integers)
+        teammate_ids = main_notification.metadata['teammate_ids']
+        expect(teammate_ids.map(&:to_i)).to include(observee_teammate.id)
+        expect(teammate_ids.map(&:to_i)).to include(observer_teammate.id)
       end
 
-      it 'skips observees without Slack user ID' do
+      it 'sends individual DM to observer when only observer has Slack configured' do
+        # Remove observee's Slack identity
+        observee_teammate.teammate_identities.destroy_all
+
+        expect {
+          job = Observations::PostNotificationJob.new
+          job.perform(observation.id, notify_teammate_ids)
+        }.to change(Notification, :count).by(2) # Main message + thread reply to observer
+
+        main_notification = Notification.where(notification_type: 'observation_dm')
+                                       .where("metadata->>'is_thread_reply' != 'true' OR metadata->>'is_thread_reply' IS NULL")
+                                       .first
+        expect(main_notification).to be_present
+        expect(main_notification.metadata['channel']).to eq(observer_teammate.slack_user_id)
+        expect(main_notification.metadata['is_group_dm']).to eq(false)
+        # Should only include observer ID (stored as array, may be strings or integers)
+        teammate_ids = main_notification.metadata['teammate_ids']
+        expect(teammate_ids.map(&:to_i)).to eq([observer_teammate.id])
+      end
+
+      it 'sends group DM when observer is already in the list without duplicating' do
+        # Include observer in the teammate_ids
+        notify_teammate_ids_with_observer = [observee_teammate.id.to_s, observer_teammate.id.to_s]
+
+        job = Observations::PostNotificationJob.new
+        job.perform(observation.id, notify_teammate_ids_with_observer)
+
+        main_notification = Notification.where(notification_type: 'observation_dm')
+                                       .where("metadata->>'is_thread_reply' != 'true' OR metadata->>'is_thread_reply' IS NULL")
+                                       .first
+        expect(main_notification).to be_present
+        expect(main_notification.metadata['is_group_dm']).to eq(true)
+        # Should not duplicate observer ID (stored as array, may be strings or integers)
+        teammate_ids = main_notification.metadata['teammate_ids']
+        teammate_ids_as_ints = teammate_ids.map(&:to_i)
+        expect(teammate_ids_as_ints).to include(observer_teammate.id)
+        expect(teammate_ids_as_ints).to include(observee_teammate.id)
+        expect(teammate_ids_as_ints.count(observer_teammate.id)).to eq(1)
+      end
+
+      it 'creates thread reply notification' do
+        job = Observations::PostNotificationJob.new
+        job.perform(observation.id, notify_teammate_ids)
+
+        thread_notification = Notification.where(notification_type: 'observation_dm')
+                                          .where("metadata->>'is_thread_reply' = 'true'")
+                                          .first
+        expect(thread_notification).to be_present
+        expect(thread_notification.main_thread).to be_present
+        expect(thread_notification.status).to eq('sent_successfully')
+      end
+
+      it 'skips observees without Slack user ID but still includes observer if they have Slack' do
         observee_teammate.teammate_identities.destroy_all # Remove Slack identity
 
+        # Observer still has Slack, so should send individual DM to observer
         expect {
           job = Observations::PostNotificationJob.new
           job.perform(observation.id, notify_teammate_ids)
-        }.not_to change(Notification, :count)
+        }.to change(Notification, :count).by(2) # Main message + thread reply to observer
+
+        main_notification = Notification.where(notification_type: 'observation_dm')
+                                       .where("metadata->>'is_thread_reply' != 'true' OR metadata->>'is_thread_reply' IS NULL")
+                                       .first
+        expect(main_notification.metadata['channel']).to eq(observer_teammate.slack_user_id)
+        expect(main_notification.metadata['is_group_dm']).to eq(false)
       end
 
-      it 'handles Slack API errors gracefully' do
-        allow(slack_service).to receive(:post_message).and_raise(StandardError.new('Slack API error'))
+      it 'handles Slack API errors gracefully by falling back to individual DMs' do
+        allow(slack_service).to receive(:open_or_create_group_dm).and_return({ success: false, error: 'Slack API error' })
 
         expect {
           job = Observations::PostNotificationJob.new
           job.perform(observation.id, notify_teammate_ids)
-        }.to change(Notification, :count).by(1)
+        }.to change(Notification, :count).by(4) # Falls back to individual DMs: 2 for observee (main + thread) + 2 for observer (main + thread)
 
-        notification = Notification.last
-        expect(notification.status).to eq('preparing_to_send') # Status remains unchanged on error
+        # Should have created notifications for both observee and observer (fallback to individual DMs)
+        notifications = Notification.where(notification_type: 'observation_dm')
+        expect(notifications.count).to eq(4) # 2 for observee, 2 for observer
       end
     end
 
@@ -177,7 +247,7 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
         expect {
           job = Observations::PostNotificationJob.new
           job.perform(observation.id, notify_teammate_ids, company.id)
-        }.to change(Notification, :count).by(3) # 1 DM + 2 channel notifications (main + thread)
+        }.to change(Notification, :count).by(4) # 2 DM notifications (main + thread, includes observer) + 2 channel notifications (main + thread)
       end
     end
 
@@ -198,15 +268,23 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
     context 'message content' do
       let(:notify_teammate_ids) { [observee_teammate.id.to_s] }
 
-      it 'includes observation details in DM message' do
+      it 'includes observation details in DM message using channel template' do
         job = Observations::PostNotificationJob.new
         job.perform(observation.id, notify_teammate_ids)
 
-        notification = Notification.last
-        expect(notification.rich_message).to include('New Observation from')
-        expect(notification.rich_message).to include(observer.preferred_name || observer.first_name)
-        expect(notification.rich_message).to include(observation.story.truncate(200))
-        expect(notification.rich_message).to include('New Observation from')
+        main_notification = Notification.where(notification_type: 'observation_dm')
+                                       .where("metadata->>'is_thread_reply' != 'true' OR metadata->>'is_thread_reply' IS NULL")
+                                       .first
+        expect(main_notification).to be_present
+        # rich_message is stored as JSON string, parse it
+        rich_message = main_notification.rich_message.is_a?(String) ? JSON.parse(main_notification.rich_message) : main_notification.rich_message
+        # DM messages now use same template as channel messages (context block for intro, not header)
+        intro_block = rich_message.find { |block| block['type'] == 'context' }
+        expect(intro_block).to be_present
+        intro_text = intro_block.dig('elements', 0, 'text')
+        expect(intro_text).to include('New awesome story')
+        story_text = rich_message.find { |block| block['type'] == 'section' && block.dig('text', 'text')&.include?(observation.story) }&.dig('text', 'text')
+        expect(story_text).to include(observation.story)
       end
 
       it 'includes observation details in channel message' do
@@ -233,13 +311,23 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
         expect(story_text).to include(observation.story)
       end
 
-      it 'includes ratings summary' do
+      it 'includes ratings summary in thread reply' do
         job = Observations::PostNotificationJob.new
         job.perform(observation.id, notify_teammate_ids)
 
-        notification = Notification.last
-        expect(notification.rich_message).to include('Ratings:')
-        expect(notification.rich_message).to include('Strongly agree')
+        thread_notification = Notification.where(notification_type: 'observation_dm')
+                                         .where("metadata->>'is_thread_reply' = 'true'")
+                                         .first
+        expect(thread_notification).to be_present
+        rich_message = thread_notification.rich_message.is_a?(String) ? JSON.parse(thread_notification.rich_message) : thread_notification.rich_message
+        # Ratings are in the thread reply, not the main message
+        # The format_ratings_by_type_and_level method formats ratings as "An Exceptional demonstration of <links>"
+        ratings_blocks = rich_message.select { |block| block['type'] == 'section' }
+        expect(ratings_blocks).to be_present
+        # Check that at least one section block contains rating-related text
+        # The format uses "Exceptional" for strongly_agree, "demonstration" for Ability
+        ratings_text = ratings_blocks.map { |b| b.dig('text', 'text') }.join(' ')
+        expect(ratings_text).to match(/Exceptional|demonstration|execution|example/i)
       end
     end
 

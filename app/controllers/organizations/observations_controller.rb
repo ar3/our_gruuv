@@ -940,6 +940,16 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def build_public_observation_teammates_list
     teammates = []
     
+    # Always include the observer if they have Slack configured
+    observer_teammate = @observation.company.teammates.find_by(person: @observation.observer)
+    if observer_teammate&.has_slack_identity?
+      teammates << {
+        teammate: observer_teammate,
+        role: "Observer",
+        person: observer_teammate.person
+      }
+    end
+    
     # Add observees
     @observation.observed_teammates.each do |teammate|
       teammates << {
@@ -978,6 +988,16 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     teammates = []
     company = @observation.company
     
+    # Always include the observer if they have Slack configured
+    observer_teammate = company.teammates.find_by(person: @observation.observer)
+    if observer_teammate&.has_slack_identity?
+      teammates << {
+        teammate: observer_teammate,
+        role: "Observer",
+        person: observer_teammate.person
+      }
+    end
+    
     case @observation.privacy_level
     when 'observed_only'
       # Observer + observees only
@@ -1011,7 +1031,14 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       end
     when 'observed_and_managers'
       # Observer + observees + managers
-      teammates = build_public_observation_teammates_list
+      # Note: build_public_observation_teammates_list already includes observer
+      public_teammates = build_public_observation_teammates_list
+      # Merge with existing teammates (avoid duplicates)
+      public_teammates.each do |public_teammate|
+        unless teammates.any? { |t| t[:teammate].id == public_teammate[:teammate].id }
+          teammates << public_teammate
+        end
+      end
     end
     
     teammates
