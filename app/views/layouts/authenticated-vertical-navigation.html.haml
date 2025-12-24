@@ -13,8 +13,12 @@
           / Space for floating toggle button when nav is closed
           .vertical-nav-toggle-spacer
           - if current_person && current_organization
-            = link_to dashboard_organization_path(current_organization), class: "navbar-brand fw-bold text-decoration-none" do
-              = "#{current_organization.display_name}'s Gruuv"
+            - if current_company_teammate
+              = link_to about_me_organization_company_teammate_path(current_organization, current_company_teammate), class: "navbar-brand fw-bold text-decoration-none" do
+                = "#{current_organization.display_name}'s Gruuv"
+            - else
+              = link_to dashboard_organization_path(current_organization), class: "navbar-brand fw-bold text-decoration-none" do
+                = "#{current_organization.display_name}'s Gruuv"
           - else
             = link_to "OurGruuv", root_path, class: "navbar-brand fw-bold text-decoration-none"
         

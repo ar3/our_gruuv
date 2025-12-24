@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Vertical Navigation', type: :system, js: true do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:teammate) { CompanyTeammate.find_or_create_by!(person: person, organization: organization) }
   let(:user_preference) { UserPreference.for_person(person) }
   
   before do
@@ -136,6 +136,28 @@ RSpec.describe 'Vertical Navigation', type: :system, js: true do
       # Verify preference updated
       user_preference.reload
       expect(user_preference.layout).to eq('vertical')
+    end
+  end
+  
+  describe 'header links' do
+    before do
+      user_preference.update_preference(:vertical_nav_open, true)
+      visit dashboard_organization_path(organization)
+    end
+    
+    it 'links top bar header to about me page' do
+      about_me_path = about_me_organization_company_teammate_path(organization, teammate)
+      top_bar_header = page.find('.vertical-nav-top-bar .navbar-brand')
+      
+      expect(top_bar_header['href']).to include(about_me_path)
+    end
+    
+    it 'links vertical nav sidebar header to about me page' do
+      about_me_path = about_me_organization_company_teammate_path(organization, teammate)
+      nav_header = page.find('.vertical-nav-header h5')
+      nav_header_link = nav_header.find(:xpath, '..')
+      
+      expect(nav_header_link['href']).to include(about_me_path)
     end
   end
 end

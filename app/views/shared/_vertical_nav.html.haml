@@ -8,7 +8,11 @@
 
 .vertical-nav{data: { controller: "vertical-nav", open: is_open.to_s, locked: is_locked.to_s }, class: "#{'open' if is_open} #{'locked' if is_locked}"}
   .vertical-nav-header
-    %h5.mb-0 Navigation
+    - if current_company_teammate && current_organization
+      = link_to about_me_organization_company_teammate_path(current_organization, current_company_teammate), class: "text-decoration-none text-dark" do
+        %h5.mb-0 Navigation
+    - else
+      %h5.mb-0 Navigation
     .vertical-nav-controls
       = button_to vertical_nav_user_preferences_path, method: :patch, params: { locked: !is_locked, open: true }, class: "btn btn-sm btn-link vertical-nav-lock-btn", title: is_locked ? "Unlock navigation" : "Lock navigation open", form: { style: "display: inline;" } do
         - if is_locked

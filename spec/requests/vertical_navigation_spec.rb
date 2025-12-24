@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Vertical Navigation', type: :request do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:teammate) { CompanyTeammate.find_or_create_by!(person: person, organization: organization) }
   let(:user_preference) { UserPreference.for_person(person) }
   
   before do
@@ -14,12 +14,14 @@ RSpec.describe 'Vertical Navigation', type: :request do
     allow_any_instance_of(CompanyTeammatePolicy).to receive(:view_check_ins?).and_return(true)
     # Mock OrganizationPolicy view methods for navigation and controller authorization
     allow_any_instance_of(OrganizationPolicy).to receive(:view_prompts?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_prompt_templates?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:view_observations?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:view_seats?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:view_goals?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:view_abilities?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:view_assignments?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:view_aspirations?).and_return(true)
+    allow_any_instance_of(OrganizationPolicy).to receive(:view_bulk_sync_events?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:show?).and_return(true)
     allow_any_instance_of(OrganizationPolicy).to receive(:manage_employment?).and_return(true)
   end
@@ -55,12 +57,14 @@ RSpec.describe 'Vertical Navigation', type: :request do
           show?: true,
           manage_employment?: true,
           view_prompts?: true,
+          view_prompt_templates?: true,
           view_observations?: true,
           view_seats?: true,
           view_goals?: true,
           view_abilities?: true,
           view_assignments?: true,
-          view_aspirations?: true
+          view_aspirations?: true,
+          view_bulk_sync_events?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true)
         
@@ -90,12 +94,14 @@ RSpec.describe 'Vertical Navigation', type: :request do
           show?: true,
           manage_employment?: true,
           view_prompts?: true,
+          view_prompt_templates?: true,
           view_observations?: true,
           view_seats?: true,
           view_goals?: true,
           view_abilities?: true,
           view_assignments?: true,
-          view_aspirations?: true
+          view_aspirations?: true,
+          view_bulk_sync_events?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true)
         
@@ -138,12 +144,14 @@ RSpec.describe 'Vertical Navigation', type: :request do
           show?: true,
           manage_employment?: true,
           view_prompts?: true,
+          view_prompt_templates?: true,
           view_observations?: true,
           view_seats?: true,
           view_goals?: true,
           view_abilities?: true,
           view_assignments?: true,
-          view_aspirations?: true
+          view_aspirations?: true,
+          view_bulk_sync_events?: true
         )
         policy_double = double(show?: true, create?: true, view_check_ins?: true)
         
@@ -222,6 +230,31 @@ RSpec.describe 'Vertical Navigation', type: :request do
         expect(recent_button).to be_present
         expect(recent_button).to include('aria-expanded="true"')
       end
+    end
+  end
+  
+  describe 'header links' do
+    it 'links top bar header to about me page' do
+      get dashboard_organization_path(organization)
+      
+      expect(response).to have_http_status(:success)
+      about_me_path = about_me_organization_company_teammate_path(organization, teammate)
+      expect(response.body).to include("href=\"#{about_me_path}\"")
+      
+      # Check that the navbar-brand in top bar links to about me
+      navbar_brand = response.body[/<a[^>]*class="[^"]*navbar-brand[^"]*"[^>]*href="#{Regexp.escape(about_me_path)}"[^>]*>/]
+      expect(navbar_brand).to be_present
+    end
+    
+    it 'links vertical nav sidebar header to about me page' do
+      get dashboard_organization_path(organization)
+      
+      expect(response).to have_http_status(:success)
+      about_me_path = about_me_organization_company_teammate_path(organization, teammate)
+      
+      # Check that the vertical nav header contains a link to about me
+      # The header should have an h5 wrapped in a link
+      expect(response.body).to match(/<a[^>]*href="#{Regexp.escape(about_me_path)}"[^>]*>.*<h5[^>]*>Navigation<\/h5>/m)
     end
   end
 end
