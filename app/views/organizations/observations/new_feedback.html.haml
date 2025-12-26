@@ -1,3 +1,5 @@
+- content_for :title, @observation.persisted? ? 'Edit Feedback' : 'Create Feedback'
+
 - content_for :header do
   = @observation.persisted? ? 'Edit Feedback' : 'Create Feedback'
 

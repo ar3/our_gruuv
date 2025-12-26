@@ -1,3 +1,5 @@
+- content_for :title, @person == @current_person ? "My Profile" : @person.display_name
+
 - content_for :header do
   %h1.mb-0{id: "person-title"}
   - if @person == @current_person

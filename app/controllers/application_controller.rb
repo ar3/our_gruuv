@@ -429,18 +429,23 @@ class ApplicationController < ActionController::Base
     # Skip tracking for API endpoints (if path starts with /api)
     return if request.path.start_with?('/api')
     
-    # Get page title - try to get from content_for, fallback to controller/action
-    # Note: In after_action, content_for may not be directly accessible
-    # We'll use the fallback for now and can improve title extraction later
+    # Get page title from rendered HTML response
+    # Extract from <title> tag in the response body
     page_title = begin
-      # Try to access content_for if available
-      if respond_to?(:content_for) && content_for?(:title)
-        content_for(:title)
+      if response.body.present?
+        # Extract title from HTML response
+        title_match = response.body.match(/<title[^>]*>([^<]+)<\/title>/i)
+        if title_match && title_match[1].present?
+          title_match[1].strip
+        else
+          "#{controller_name.humanize} #{action_name.humanize}"
+        end
       else
         "#{controller_name.humanize} #{action_name.humanize}"
       end
     rescue => e
       # Fallback to controller/action name
+      Rails.logger.warn "PageVisit: Could not extract title: #{e.message}"
       "#{controller_name.humanize} #{action_name.humanize}"
     end
     
@@ -449,7 +454,7 @@ class ApplicationController < ActionController::Base
     
     # Get user agent
     user_agent = request.user_agent
-    Rails.logger.info "🔍 PageVisit: About to call PageVisitJob.perform_now"
+    Rails.logger.info "🔍 PageVisit: About to call PageVisitJob.perform_now - url: #{url}, title: #{page_title}"
     # Call perform directly on an instance to bypass ActiveJob queue adapter issues
     PageVisitJob.new.perform(current_person.id, url, page_title, user_agent)
   rescue => e

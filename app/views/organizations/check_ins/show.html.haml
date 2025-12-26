@@ -1,3 +1,5 @@
+- content_for :title, "Check-Ins - #{@person.display_name}"
+
 - content_for :header do
   %h1.mb-0 Check-Ins for #{@person.display_name}
   %p.text-muted.mb-0= "View Mode: #{@view_mode.to_s.titleize}"

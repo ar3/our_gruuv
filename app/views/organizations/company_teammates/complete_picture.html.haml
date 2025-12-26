@@ -1,3 +1,5 @@
+- content_for :title, "Complete Picture - #{@teammate.person.display_name}"
+
 - content_for :header do
   %h1.mb-0= @teammate.person.display_name
   %small.text-muted Complete Picture View
