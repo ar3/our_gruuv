@@ -6,6 +6,8 @@ RSpec.describe MissingResource, type: :model do
   end
 
   describe 'validations' do
+    subject { build(:missing_resource) }
+    
     it { should validate_presence_of(:path) }
     it { should validate_uniqueness_of(:path) }
     it { should validate_presence_of(:request_count) }
@@ -16,7 +18,7 @@ RSpec.describe MissingResource, type: :model do
     let!(:resource1) { create(:missing_resource, path: '/path1', request_count: 10, last_seen_at: 3.days.ago) }
     let!(:resource2) { create(:missing_resource, path: '/path2', request_count: 5, last_seen_at: 1.day.ago) }
     let!(:resource3) { create(:missing_resource, path: '/path3', request_count: 15, last_seen_at: 2.days.ago) }
-    let!(:resource_with_suggestion) { create(:missing_resource, path: '/path4', suggested_redirect_path: '/redirect') }
+    let!(:resource_with_suggestion) { create(:missing_resource, path: '/path4', suggested_redirect_path: '/redirect', last_seen_at: 4.days.ago) }
 
     describe '.most_requested' do
       it 'orders by request_count descending, then last_seen_at descending' do

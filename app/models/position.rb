@@ -37,7 +37,7 @@ class Position < ApplicationRecord
   
   # Instance methods
   def display_name_with_version
-    "#{base_name} v#{semantic_version}"
+    "#{display_name} v#{semantic_version}"
   end
 
   def display_name
