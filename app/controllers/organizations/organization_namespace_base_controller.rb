@@ -26,7 +26,13 @@ class Organizations::OrganizationNamespaceBaseController < ApplicationController
 
   def ensure_teammate_matches_organization
     raise "Organization Not Found: #{organization_param}" if organization.nil?
-    raise "Teammate not found: #{session[:current_company_teammate_id]}" if current_company_teammate.nil?
+    
+    if current_company_teammate.nil?
+      flash[:alert] = "Your session has expired. Please log in again."
+      redirect_to root_path
+      return
+    end
+    
     return if organization.id == current_company_teammate.organization.id
       
     # User doesn't have access to this company

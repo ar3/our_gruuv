@@ -222,18 +222,18 @@ RSpec.describe Organizations::PromptTemplatesController, type: :controller do
   describe 'root_company handling' do
     let(:root_company) { create(:organization, :company) }
     let(:team) { create(:organization, :team, parent: root_company) }
-    let!(:team_teammate) { create(:teammate, person: person, organization: team, type: 'CompanyTeammate', can_manage_prompts: true) }
+    let!(:root_company_teammate) { create(:teammate, person: person, organization: root_company, type: 'CompanyTeammate', can_manage_prompts: true) }
     let!(:root_template) { create(:prompt_template, company: root_company) }
 
     before do
-      sign_in_as_teammate(person, team)
+      sign_in_as_teammate(person, root_company)
       # Clear controller cache to ensure fresh teammate load
       controller.instance_variable_set(:@current_company_teammate, nil)
       CompanyTeammate.connection.clear_query_cache
     end
 
     it 'shows templates from root company in index' do
-      get :index, params: { organization_id: team.id }
+      get :index, params: { organization_id: root_company.id }
       expect(response).to have_http_status(:success)
       # The scope should return templates from root_company
       expect(assigns(:prompt_templates)).to include(root_template)
@@ -242,7 +242,7 @@ RSpec.describe Organizations::PromptTemplatesController, type: :controller do
     it 'creates templates for root company' do
       expect {
         post :create, params: {
-          organization_id: team.id,
+          organization_id: root_company.id,
           prompt_template: {
             title: 'New Template',
             description: 'A new template'

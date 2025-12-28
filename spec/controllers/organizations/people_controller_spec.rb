@@ -95,11 +95,11 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           session[:current_company_teammate_id] = nil
         end
 
-        it 'raises teammate not found error' do
-          expect {
-            get :show, params: { organization_id: organization.id, id: person_teammate.id }
-          }.to raise_error(RuntimeError, /Teammate not found/)
-        end
+      it 'redirects to root with session expired message' do
+        get :show, params: { organization_id: organization.id, id: person_teammate.id }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
+      end
       end
 
       context 'when user is an admin' do
@@ -366,10 +366,10 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           sign_in_as_teammate(unauthorized_user, organization)
         end
 
-        it 'raises teammate not found error (terminated teammate has no current session)' do
-          expect {
-            get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
-          }.to raise_error(RuntimeError, /Teammate not found/)
+        it 'redirects to root (terminated teammate has no current session)' do
+          get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
         end
       end
 
@@ -427,10 +427,10 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         session[:current_company_teammate_id] = nil
       end
 
-      it 'raises teammate not found error' do
-        expect {
-          get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
-        }.to raise_error(RuntimeError, /Teammate not found/)
+      it 'redirects to root with session expired message' do
+        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
       end
     end
   end
@@ -645,10 +645,10 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
     context 'when not logged in' do
       before { session[:current_company_teammate_id] = nil }
 
-      it 'raises teammate not found error' do
-        expect {
-          patch :update, params: { organization_id: organization.id, id: person_teammate.id, person: { first_name: 'Jane' } }
-        }.to raise_error(RuntimeError, /Teammate not found/)
+      it 'redirects to root with session expired message' do
+        patch :update, params: { organization_id: organization.id, id: person_teammate.id, person: { first_name: 'Jane' } }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
       end
     end
 

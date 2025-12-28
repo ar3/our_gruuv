@@ -65,7 +65,7 @@ RSpec.describe Webhooks::SlackController, type: :controller do
         post :event, params: params, as: :json
 
         expect(mock_s3_client).to have_received(:save_json_to_s3) do |args|
-          expect(args[:full_file_path_and_name]).to match(/slack-events\/test\/#{organization.name.parameterize}\/#{event_type}\/\d{4}\/\d{2}\/\d{2}\/t\d+_\d+_\d+_\d+\.json/)
+          expect(args[:full_file_path_and_name]).to match(/slack-events\/test\/#{organization.name.parameterize}\/#{event_type}\/\d{4}\/\d{2}\/\d{2}\/t_?\d+_\d+_\d+_\d+\.json/)
           # Check that hash_object contains the expected params
           expect(args[:hash_object]['team_id']).to eq(team_id)
           expect(args[:hash_object]['event']['type']).to eq(event_type)

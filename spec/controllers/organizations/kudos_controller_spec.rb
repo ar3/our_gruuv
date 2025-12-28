@@ -143,9 +143,10 @@ RSpec.describe Organizations::KudosController, type: :controller do
           sign_in_as_teammate(observer, company)
         end
 
-        it 'renders the kudos page' do
+        it 'redirects with authorization error (permalink is public-only)' do
           get :show, params: { organization_id: company.id, date: '2025-10-05', id: observation.id }
-          expect(response).to have_http_status(:success)
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq("You are not authorized to view this observation")
         end
       end
 
@@ -182,9 +183,10 @@ RSpec.describe Organizations::KudosController, type: :controller do
           sign_in_as_teammate(observer, company)
         end
 
-        it 'renders the kudos page' do
+        it 'redirects with authorization error (permalink is public-only)' do
           get :show, params: { organization_id: company.id, date: '2025-10-05', id: observation.id }
-          expect(response).to have_http_status(:success)
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq("You are not authorized to view this observation")
         end
       end
 
@@ -193,9 +195,10 @@ RSpec.describe Organizations::KudosController, type: :controller do
           sign_in_as_teammate(observee_person, company)
         end
 
-        it 'renders the kudos page' do
+        it 'redirects with authorization error (permalink is public-only)' do
           get :show, params: { organization_id: company.id, date: '2025-10-05', id: observation.id }
-          expect(response).to have_http_status(:success)
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq("You are not authorized to view this observation")
         end
       end
 

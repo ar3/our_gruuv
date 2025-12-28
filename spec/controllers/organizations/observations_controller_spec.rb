@@ -170,29 +170,37 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
 
     context 'observed_only privacy' do
+      let(:observed_only_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
       it 'allows observer to view' do
-        get :show, params: { organization_id: company.id, id: observation.id }
+        get :show, params: { organization_id: company.id, id: observed_only_observation.id }
         expect(response).to have_http_status(:success)
       end
 
       it 'allows observee to view' do
         sign_in_as_teammate(observee_person, company)
-        get :show, params: { organization_id: company.id, id: observation.id }
+        get :show, params: { organization_id: company.id, id: observed_only_observation.id }
         expect(response).to have_http_status(:success)
       end
 
       it 'redirects manager to kudos page' do
         sign_in_as_teammate(manager_person, company)
-        get :show, params: { organization_id: company.id, id: observation.id }
-        date_part = observation.observed_at.strftime('%Y-%m-%d')
-        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observation.id))
+        get :show, params: { organization_id: company.id, id: observed_only_observation.id }
+        date_part = observed_only_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observed_only_observation.id))
       end
 
       it 'redirects random person to kudos page' do
         sign_in_as_teammate(random_person, company)
-        get :show, params: { organization_id: company.id, id: observation.id }
-        date_part = observation.observed_at.strftime('%Y-%m-%d')
-        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observation.id))
+        get :show, params: { organization_id: company.id, id: observed_only_observation.id }
+        date_part = observed_only_observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observed_only_observation.id))
       end
     end
 
@@ -297,23 +305,23 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(response).to have_http_status(:success)
       end
 
-      it 'redirects terminated teammate to kudos page' do
+      it 'redirects terminated teammate to root (expired session)' do
         terminated_person = create(:person)
         terminated_teammate = create(:teammate, person: terminated_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: 1.day.ago)
         sign_in_as_teammate(terminated_person, company)
         get :show, params: { organization_id: company.id, id: public_company_observation.id }
-        date_part = public_company_observation.observed_at.strftime('%Y-%m-%d')
-        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: public_company_observation.id))
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
       end
 
-      it 'redirects person from other company to kudos page' do
+      it 'redirects person from other company to their own dashboard' do
         other_company = create(:organization, :company)
         other_person = create(:person)
         create(:teammate, person: other_person, organization: other_company)
         sign_in_as_teammate(other_person, other_company)
         get :show, params: { organization_id: company.id, id: public_company_observation.id }
-        date_part = public_company_observation.observed_at.strftime('%Y-%m-%d')
-        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: public_company_observation.id))
+        expect(response).to redirect_to(dashboard_organization_path(other_company))
+        expect(flash[:alert]).to eq("You don't have access to that organization.")
       end
     end
 
@@ -349,23 +357,23 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(response).to have_http_status(:success)
       end
 
-      it 'redirects terminated teammate to kudos page' do
+      it 'redirects terminated teammate to root (expired session)' do
         terminated_person = create(:person)
         terminated_teammate = create(:teammate, person: terminated_person, organization: company, first_employed_at: 1.month.ago, last_terminated_at: 1.day.ago)
         sign_in_as_teammate(terminated_person, company)
         get :show, params: { organization_id: company.id, id: public_world_observation.id }
-        date_part = public_world_observation.observed_at.strftime('%Y-%m-%d')
-        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: public_world_observation.id))
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
       end
 
-      it 'redirects person from other company to kudos page' do
+      it 'redirects person from other company to their own dashboard' do
         other_company = create(:organization, :company)
         other_person = create(:person)
         create(:teammate, person: other_person, organization: other_company)
         sign_in_as_teammate(other_person, other_company)
         get :show, params: { organization_id: company.id, id: public_world_observation.id }
-        date_part = public_world_observation.observed_at.strftime('%Y-%m-%d')
-        expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: public_world_observation.id))
+        expect(response).to redirect_to(dashboard_organization_path(other_company))
+        expect(flash[:alert]).to eq("You don't have access to that organization.")
       end
     end
   end
@@ -562,6 +570,7 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
         before do
           department_teammate
+          sign_in_as_teammate(observer, department)
         end
 
         it 'uses root company aspirations even when accessed from a department' do
@@ -1737,7 +1746,8 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         get :filtered_observations, params: { organization_id: company.id }
         # Authorization prevents access when user doesn't have a teammate in the target organization
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organizations_path)
+        expect(response).to redirect_to(dashboard_organization_path(other_company))
+        expect(flash[:alert]).to eq("You don't have access to that organization.")
       end
     end
     

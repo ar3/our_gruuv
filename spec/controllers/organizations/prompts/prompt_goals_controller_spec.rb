@@ -31,7 +31,7 @@ RSpec.describe Organizations::Prompts::PromptGoalsController, type: :controller 
           prompt_id: prompt.id,
           goal_ids: [goal1.id]
         }
-        expect(response).to redirect_to(organization_prompt_path(organization, prompt))
+        expect(response).to redirect_to(edit_organization_prompt_path(organization, prompt))
         expect(flash[:notice]).to include('successfully associated')
       end
     end
@@ -60,7 +60,7 @@ RSpec.describe Organizations::Prompts::PromptGoalsController, type: :controller 
           goal_ids: [goal1.id, goal2.id]
         }
         # Should still create goal2, but show error for goal1
-        expect(response).to redirect_to(organization_prompt_path(organization, prompt))
+        expect(response).to redirect_to(edit_organization_prompt_path(organization, prompt))
         expect(flash[:alert]).to be_present
       end
     end
@@ -179,7 +179,7 @@ RSpec.describe Organizations::Prompts::PromptGoalsController, type: :controller 
         # Blank lines are filtered out, so only valid goal is created
         expect(Goal.count).to eq(1)
         expect(Goal.last.title).to eq('Valid Goal')
-        expect(response).to redirect_to(organization_prompt_path(organization, prompt))
+        expect(response).to redirect_to(edit_organization_prompt_path(organization, prompt))
         expect(flash[:notice]).to be_present
       end
     end
@@ -204,7 +204,7 @@ RSpec.describe Organizations::Prompts::PromptGoalsController, type: :controller 
         prompt_id: prompt.id,
         id: prompt_goal.id
       }
-      expect(response).to redirect_to(organization_prompt_path(organization, prompt))
+      expect(response).to redirect_to(edit_organization_prompt_path(organization, prompt))
       expect(flash[:notice]).to include('successfully removed')
     end
 

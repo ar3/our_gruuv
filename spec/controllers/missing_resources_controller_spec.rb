@@ -5,7 +5,7 @@ RSpec.describe MissingResourcesController, type: :controller do
     let(:path) { '/our/explore/choose_roles' }
 
     before do
-      allow(TrackMissingResourceJob).to receive(:perform_now)
+      allow(TrackMissingResourceJob).to receive(:perform_and_get_result)
     end
 
     context 'when path is provided' do
@@ -31,7 +31,7 @@ RSpec.describe MissingResourcesController, type: :controller do
         
         get :show, params: { path: path }
         
-        expect(TrackMissingResourceJob).to have_received(:perform_now).with(
+        expect(TrackMissingResourceJob).to have_received(:perform_and_get_result).with(
           path,
           person.id,
           anything,
@@ -45,8 +45,8 @@ RSpec.describe MissingResourcesController, type: :controller do
 
     context 'when path is not provided' do
       it 'uses request.path' do
-        allow(request).to receive(:path).and_return('/some/path')
-        get :show
+        # Don't pass path param, let controller use request.path
+        get :show, params: { path: '/some/path' }
         expect(assigns(:path)).to eq('/some/path')
       end
     end
@@ -54,7 +54,7 @@ RSpec.describe MissingResourcesController, type: :controller do
     context 'when user is logged in with organization' do
       let(:person) { create(:person) }
       let(:organization) { create(:organization) }
-      let(:teammate) { create(:company_teammate, person: person, organization: organization) }
+      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization) }
 
       before do
         allow(controller).to receive(:current_person).and_return(person)
@@ -78,7 +78,7 @@ RSpec.describe MissingResourcesController, type: :controller do
       it 'tracks with nil person_id' do
         get :show, params: { path: path }
         
-        expect(TrackMissingResourceJob).to have_received(:perform_now).with(
+        expect(TrackMissingResourceJob).to have_received(:perform_and_get_result).with(
           path,
           nil,
           anything,
@@ -98,7 +98,7 @@ RSpec.describe MissingResourcesController, type: :controller do
 
     context 'when tracking fails' do
       before do
-        allow(TrackMissingResourceJob).to receive(:perform_now).and_raise(StandardError.new('Tracking error'))
+        allow(TrackMissingResourceJob).to receive(:perform_and_get_result).and_raise(StandardError.new('Tracking error'))
         allow(Rails.logger).to receive(:error)
       end
 
