@@ -174,10 +174,11 @@ RSpec.describe Organizations::PromptTemplatesController, type: :controller do
       sign_in_as_teammate(unauthorized_person, organization)
     end
 
-    it 'shows empty list in index when unauthorized' do
+    it 'redirects with alert when unauthorized' do
       get :index, params: { organization_id: organization.id }
-      expect(response).to have_http_status(:success)
-      expect(assigns(:prompt_templates)).to be_empty
+      expect(response).to have_http_status(:redirect)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to be_present
     end
 
     it 'prevents access to new' do
@@ -221,11 +222,14 @@ RSpec.describe Organizations::PromptTemplatesController, type: :controller do
   describe 'root_company handling' do
     let(:root_company) { create(:organization, :company) }
     let(:team) { create(:organization, :team, parent: root_company) }
-    let!(:team_teammate) { create(:teammate, person: person, organization: team, can_manage_prompts: true) }
+    let!(:team_teammate) { create(:teammate, person: person, organization: team, type: 'CompanyTeammate', can_manage_prompts: true) }
     let!(:root_template) { create(:prompt_template, company: root_company) }
 
     before do
       sign_in_as_teammate(person, team)
+      # Clear controller cache to ensure fresh teammate load
+      controller.instance_variable_set(:@current_company_teammate, nil)
+      CompanyTeammate.connection.clear_query_cache
     end
 
     it 'shows templates from root company in index' do

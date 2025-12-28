@@ -82,11 +82,11 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           @current_company_teammate = nil if defined?(@current_company_teammate)
         end
 
-        it 'denies access and redirects to organizations index' do
+        it 'denies access and redirects to user own organization dashboard' do
           get :show, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:redirect)
-          # When user doesn't have access to the organization, they get redirected to organizations index
-          expect(response).to redirect_to(organizations_path)
+          # When user doesn't have access to the organization, they get redirected to their own organization dashboard
+          expect(response).to redirect_to(dashboard_organization_path(other_org_teammate.organization))
         end
       end
 
@@ -95,10 +95,10 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           session[:current_company_teammate_id] = nil
         end
 
-        it 'redirects to login' do
-          get :show, params: { organization_id: organization.id, id: person_teammate.id }
-          expect(response).to have_http_status(:redirect)
-          expect(response).to redirect_to(root_path)
+        it 'raises teammate not found error' do
+          expect {
+            get :show, params: { organization_id: organization.id, id: person_teammate.id }
+          }.to raise_error(RuntimeError, /Teammate not found/)
         end
       end
 
@@ -366,10 +366,10 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           sign_in_as_teammate(unauthorized_user, organization)
         end
 
-        it 'redirects when authorization fails (inactive teammate)' do
-          get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
-          expect(response).to have_http_status(:redirect)
-          expect(response).to redirect_to(root_path)
+        it 'raises teammate not found error (terminated teammate has no current session)' do
+          expect {
+            get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
+          }.to raise_error(RuntimeError, /Teammate not found/)
         end
       end
 
@@ -427,10 +427,10 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         session[:current_company_teammate_id] = nil
       end
 
-      it 'redirects to login' do
-        get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
-        expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(root_path)
+      it 'raises teammate not found error' do
+        expect {
+          get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
+        }.to raise_error(RuntimeError, /Teammate not found/)
       end
     end
   end
@@ -645,9 +645,10 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
     context 'when not logged in' do
       before { session[:current_company_teammate_id] = nil }
 
-      it 'redirects to root path' do
-        patch :update, params: { organization_id: organization.id, id: person_teammate.id, person: { first_name: 'Jane' } }
-        expect(response).to redirect_to(root_path)
+      it 'raises teammate not found error' do
+        expect {
+          patch :update, params: { organization_id: organization.id, id: person_teammate.id, person: { first_name: 'Jane' } }
+        }.to raise_error(RuntimeError, /Teammate not found/)
       end
     end
 

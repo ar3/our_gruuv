@@ -91,12 +91,15 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
           can_manage_employment: false
         )
         teammate.reload
+        # Clear all caches
+        controller.instance_variable_set(:@current_company_teammate, nil)
+        CompanyTeammate.connection.clear_query_cache
       end
 
-      it 'raises authorization error when type is set' do
-        expect {
-          get :new, params: { organization_id: organization.id, type: 'Department' }
-        }.to raise_error(Pundit::NotAuthorizedError)
+      it 'redirects to root with alert when type is set' do
+        get :new, params: { organization_id: organization.id, type: 'Department' }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
   end
@@ -167,15 +170,18 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
           can_manage_employment: false
         )
         teammate.reload
+        # Clear controller cache
+        controller.instance_variable_set(:@current_company_teammate, nil)
+        CompanyTeammate.connection.clear_query_cache
       end
 
-      it 'raises authorization error' do
-        expect {
-          post :create, params: {
-            organization_id: organization.id,
-            organization: { name: 'New Department', type: 'Department', parent_id: organization.id }
-          }
-        }.to raise_error(Pundit::NotAuthorizedError)
+      it 'redirects to root with alert' do
+        post :create, params: {
+          organization_id: organization.id,
+          organization: { name: 'New Department', type: 'Department', parent_id: organization.id }
+        }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
   end
@@ -234,12 +240,15 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
           can_manage_employment: false
         )
         teammate.reload
+        # Clear controller cache
+        controller.instance_variable_set(:@current_company_teammate, nil)
+        CompanyTeammate.connection.clear_query_cache
       end
 
-      it 'raises authorization error' do
-        expect {
-          get :edit, params: { organization_id: organization.id, id: department.id }
-        }.to raise_error(Pundit::NotAuthorizedError)
+      it 'redirects to root with alert' do
+        get :edit, params: { organization_id: organization.id, id: department.id }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
   end
@@ -358,16 +367,19 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
           can_manage_employment: false
         )
         teammate.reload
+        # Clear controller cache
+        controller.instance_variable_set(:@current_company_teammate, nil)
+        CompanyTeammate.connection.clear_query_cache
       end
 
-      it 'raises authorization error' do
-        expect {
-          patch :update, params: {
-            organization_id: organization.id,
-            id: department.id,
-            organization: { name: 'Updated Name' }
-          }
-        }.to raise_error(Pundit::NotAuthorizedError)
+      it 'redirects to root with alert' do
+        patch :update, params: {
+          organization_id: organization.id,
+          id: department.id,
+          organization: { name: 'Updated Name' }
+        }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
   end
@@ -395,12 +407,15 @@ RSpec.describe Organizations::DepartmentsAndTeamsController, type: :controller d
           can_manage_employment: false
         )
         teammate.reload
+        # Clear controller cache
+        controller.instance_variable_set(:@current_company_teammate, nil)
+        CompanyTeammate.connection.clear_query_cache
       end
 
-      it 'raises authorization error' do
-        expect {
-          patch :archive, params: { organization_id: organization.id, id: department.id }
-        }.to raise_error(Pundit::NotAuthorizedError)
+      it 'redirects to root with alert' do
+        patch :archive, params: { organization_id: organization.id, id: department.id }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
       end
     end
   end
