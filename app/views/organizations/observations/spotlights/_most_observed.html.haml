@@ -4,62 +4,87 @@
     .row.text-center
       - if @spotlight_stats[:most_observed_assignment]
         .col-md-2.col-6.mb-3
-          .h5.text-primary= @spotlight_stats[:most_observed_assignment].name
-          .h6.text-primary= "#{@spotlight_stats[:most_observed_assignment_count]} observations"
-          %small.text-muted Most Observed Assignment
+          %small.text-muted ... Assignment
+          .h5.text-spice-1
+            = link_to @spotlight_stats[:most_observed_assignment].name, organization_assignment_path(@organization, @spotlight_stats[:most_observed_assignment]), class: 'text-spice-1 text-decoration-none'
+          .h6.text-spice-1= "#{@spotlight_stats[:most_observed_assignment_count]} observations"
           - if @spotlight_stats[:runner_up_assignment]
             %small.text-muted.d-block.mt-1
-              Runner-up: #{@spotlight_stats[:runner_up_assignment].name}#{@spotlight_stats[:runner_up_assignment_count] ? " (#{@spotlight_stats[:runner_up_assignment_count]})" : ''}
+              Runner-up:
+              = link_to @spotlight_stats[:runner_up_assignment].name, organization_assignment_path(@organization, @spotlight_stats[:runner_up_assignment]), class: 'text-muted text-decoration-none'
+              = @spotlight_stats[:runner_up_assignment_count] ? " (#{@spotlight_stats[:runner_up_assignment_count]})" : ''
       - else
         .col-md-2.col-6.mb-3
-          .h5.text-primary.text-muted No data
+          .h5.text-spice-1.text-muted No data
           %small.text-muted Most Observed Assignment
+
+
+
       - if @spotlight_stats[:most_observed_ability]
         .col-md-2.col-6.mb-3
-          .h5.text-info= @spotlight_stats[:most_observed_ability].name
-          .h6.text-info= "#{@spotlight_stats[:most_observed_ability_count]} observations"
-          %small.text-muted Most Observed Ability
+          %small.text-muted ... Ability
+          .h5.text-spice-2
+            = link_to @spotlight_stats[:most_observed_ability].name, organization_ability_path(@organization, @spotlight_stats[:most_observed_ability]), class: 'text-spice-2 text-decoration-none'
+          .h6.text-spice-2= "#{@spotlight_stats[:most_observed_ability_count]} observations"
           - if @spotlight_stats[:runner_up_ability]
             %small.text-muted.d-block.mt-1
-              Runner-up: #{@spotlight_stats[:runner_up_ability].name}#{@spotlight_stats[:runner_up_ability_count] ? " (#{@spotlight_stats[:runner_up_ability_count]})" : ''}
+              Runner-up:
+              = link_to @spotlight_stats[:runner_up_ability].name, organization_ability_path(@organization, @spotlight_stats[:runner_up_ability]), class: 'text-muted text-decoration-none'
+              = @spotlight_stats[:runner_up_ability_count] ? " (#{@spotlight_stats[:runner_up_ability_count]})" : ''
       - else
         .col-md-2.col-6.mb-3
-          .h5.text-info.text-muted No data
+          .h5.text-spice-2.text-muted No data
           %small.text-muted Most Observed Ability
+
+
       - if @spotlight_stats[:most_observed_aspiration]
         .col-md-2.col-6.mb-3
-          .h5.text-success= @spotlight_stats[:most_observed_aspiration].name
-          .h6.text-success= "#{@spotlight_stats[:most_observed_aspiration_count]} observations"
-          %small.text-muted Most Observed Value
+          %small.text-muted ... Aspirational Value
+          .h5.text-spice-3
+            = link_to @spotlight_stats[:most_observed_aspiration].name, organization_aspiration_path(@organization, @spotlight_stats[:most_observed_aspiration]), class: 'text-spice-3 text-decoration-none'
+          .h6.text-spice-3= "#{@spotlight_stats[:most_observed_aspiration_count]} observations"
           - if @spotlight_stats[:runner_up_aspiration]
             %small.text-muted.d-block.mt-1
-              Runner-up: #{@spotlight_stats[:runner_up_aspiration].name}#{@spotlight_stats[:runner_up_aspiration_count] ? " (#{@spotlight_stats[:runner_up_aspiration_count]})" : ''}
+              Runner-up:
+              = link_to @spotlight_stats[:runner_up_aspiration].name, organization_aspiration_path(@organization, @spotlight_stats[:runner_up_aspiration]), class: 'text-muted text-decoration-none'
+              = @spotlight_stats[:runner_up_aspiration_count] ? " (#{@spotlight_stats[:runner_up_aspiration_count]})" : ''
       - else
         .col-md-2.col-6.mb-3
-          .h5.text-success.text-muted No data
+          .h5.text-spice-3.text-muted No data
           %small.text-muted Most Observed Value
+
+
       - if @spotlight_stats[:most_observed_person]
         .col-md-3.col-6.mb-3
-          .h5.text-warning= (@spotlight_stats[:most_observed_person].casual_name.presence || @spotlight_stats[:most_observed_person].email || 'Unknown Person')
-          .h6.text-warning= "#{@spotlight_stats[:most_observed_person_count]} observations"
-          %small.text-muted Most Observed Person
+          %small.text-muted ... Person
+          .h5.text-spice-4
+            = link_to (@spotlight_stats[:most_observed_person].casual_name.presence || @spotlight_stats[:most_observed_person].email || 'Unknown Person'), organization_company_teammate_path(@organization, @spotlight_stats[:most_observed_person]), class: 'text-spice-4 text-decoration-none'
+          .h6.text-spice-4= "#{@spotlight_stats[:most_observed_person_count]} observations"
           - if @spotlight_stats[:runner_up_person]
             %small.text-muted.d-block.mt-1
-              Runner-up: #{(@spotlight_stats[:runner_up_person].casual_name.presence || @spotlight_stats[:runner_up_person].email || 'Unknown Person')}#{@spotlight_stats[:runner_up_person_count] ? " (#{@spotlight_stats[:runner_up_person_count]})" : ''}
+              Runner-up:
+              = link_to (@spotlight_stats[:runner_up_person].casual_name.presence || @spotlight_stats[:runner_up_person].email || 'Unknown Person'), organization_company_teammate_path(@organization, @spotlight_stats[:runner_up_person]), class: 'text-muted text-decoration-none'
+              = @spotlight_stats[:runner_up_person_count] ? " (#{@spotlight_stats[:runner_up_person_count]})" : ''
       - else
         .col-md-3.col-6.mb-3
-          .h5.text-warning.text-muted No data
+          .h5.text-spice-4.text-muted No data
           %small.text-muted Most Observed Person
+
+
+
       - if @spotlight_stats[:most_active_observer]
         .col-md-3.col-6.mb-3
-          .h5.text-danger= (@spotlight_stats[:most_active_observer].casual_name.presence || @spotlight_stats[:most_active_observer].email || 'Unknown Person')
-          .h6.text-danger= "#{@spotlight_stats[:most_active_observer_count]} observations"
           %small.text-muted Most Active Observer
+          .h5.text-spice-5
+            = link_to (@spotlight_stats[:most_active_observer].casual_name.presence || @spotlight_stats[:most_active_observer].email || 'Unknown Person'), organization_company_teammate_path(@organization, @spotlight_stats[:most_active_observer]), class: 'text-spice-5 text-decoration-none'
+          .h6.text-spice-5= "#{@spotlight_stats[:most_active_observer_count]} observations"
           - if @spotlight_stats[:runner_up_observer]
             %small.text-muted.d-block.mt-1
-              Runner-up: #{(@spotlight_stats[:runner_up_observer].casual_name.presence || @spotlight_stats[:runner_up_observer].email || 'Unknown Person')}#{@spotlight_stats[:runner_up_observer_count] ? " (#{@spotlight_stats[:runner_up_observer_count]})" : ''}
+              Runner-up:
+              = link_to (@spotlight_stats[:runner_up_observer].casual_name.presence || @spotlight_stats[:runner_up_observer].email || 'Unknown Person'), organization_company_teammate_path(@organization, @spotlight_stats[:runner_up_observer]), class: 'text-muted text-decoration-none'
+              = @spotlight_stats[:runner_up_observer_count] ? " (#{@spotlight_stats[:runner_up_observer_count]})" : ''
       - else
         .col-md-3.col-6.mb-3
-          .h5.text-danger.text-muted No data
+          .h5.text-spice-5.text-muted No data
           %small.text-muted Most Active Observer
 
