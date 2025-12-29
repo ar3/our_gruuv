@@ -6,9 +6,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
   def show
     # Initialize assigns before authorization to prevent nil errors on redirect
     @relevant_abilities = []
-    @now_goals = []
-    @next_goals = []
-    @later_goals = []
     
     authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
     @person = @teammate.person
@@ -31,10 +28,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     @assignment_check_ins = load_or_build_assignment_check_ins
     @aspiration_check_ins = load_or_build_aspiration_check_ins
     @relevant_abilities = load_relevant_abilities || []
-    load_goals
-    load_stories
-    load_prompts
-    load_one_on_one
   end
   
   def update
@@ -172,179 +165,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
 
   def load_relevant_abilities
     RelevantAbilitiesQuery.new(teammate: @teammate, organization: organization).call
-  end
-
-  def load_goals
-    # Load active goals for the teammate, filtered by timeframe
-    if @teammate
-      base_goals = Goal.for_teammate(@teammate).active.includes(:goal_check_ins)
-      @now_goals = base_goals.timeframe_now
-      @next_goals = base_goals.timeframe_next
-      @later_goals = base_goals.timeframe_later
-      
-      # Get all active goals for check-in loading
-      all_active_goals = @now_goals + @next_goals + @later_goals
-      
-      # Load latest check-in for each goal
-      goal_ids = all_active_goals.map(&:id)
-      current_week_start = Date.current.beginning_of_week(:monday)
-      
-      # Get all check-ins for these goals, ordered by week start desc
-      all_check_ins = GoalCheckIn
-        .where(goal_id: goal_ids)
-        .includes(:confidence_reporter)
-        .order(check_in_week_start: :desc)
-      
-      # Group by goal_id and take the first (latest) for each goal
-      latest_check_ins = {}
-      all_check_ins.each do |check_in|
-        latest_check_ins[check_in.goal_id] ||= check_in
-      end
-      
-      # Get current week check-ins to determine if new check-in is needed
-      current_week_check_ins = GoalCheckIn
-        .where(goal_id: goal_ids, check_in_week_start: current_week_start)
-        .index_by(&:goal_id)
-      
-      # Attach latest check-in to each goal
-      all_active_goals.each do |goal|
-        goal.instance_variable_set(:@latest_check_in, latest_check_ins[goal.id])
-        goal.instance_variable_set(:@needs_check_in, current_week_check_ins[goal.id].nil?)
-      end
-      
-      # Build goals check-in URL
-      @goals_check_in_url = organization_goals_path(
-        organization,
-        owner_type: 'Teammate',
-        owner_id: @teammate.id,
-        view: 'check-in'
-      )
-    else
-      @now_goals = []
-      @next_goals = []
-      @later_goals = []
-      @goals_check_in_url = organization_goals_path(organization)
-    end
-  end
-
-  def load_stories
-    # Load observations from past 45 days visible to current user about @teammate.person
-    if @teammate
-      visibility_query = ObservationVisibilityQuery.new(current_person, organization)
-      visible_observations = visibility_query.visible_observations
-      
-      # Filter to observations about @teammate.person (where person is an observee)
-      teammate_ids = @teammate.person.teammates.where(organization: organization).pluck(:id)
-      observations_about_person = visible_observations
-        .joins(:observees)
-        .where(observees: { teammate_id: teammate_ids })
-        .distinct
-      
-      # Filter to past 45 days
-      since_date = 45.days.ago
-      recent_observations = observations_about_person
-        .where('observed_at >= ?', since_date)
-        .order(observed_at: :desc)
-      
-      @stories_count = recent_observations.count
-      @recent_stories = recent_observations.limit(3).includes(:observer, :observees)
-      
-      # Build filter URL for observations page with return parameters
-      check_ins_path = organization_company_teammate_check_ins_path(organization, @teammate)
-      casual_name = @teammate.person.casual_name
-      @stories_filter_url = filtered_observations_organization_observations_path(
-        organization,
-        observee_ids: teammate_ids,
-        start_date: since_date.iso8601,
-        return_url: check_ins_path,
-        return_text: "Back to #{casual_name}'s check-in"
-      )
-    else
-      @stories_count = 0
-      @recent_stories = []
-      @stories_filter_url = organization_observations_path(organization)
-    end
-  end
-
-  def load_prompts
-    # Load prompts visible to current user for the teammate
-    if @teammate
-      company = organization.root_company || organization
-      
-      # Find CompanyTeammate for this person in the company
-      company_teammate = if @teammate.is_a?(CompanyTeammate) && @teammate.organization == company
-        @teammate
-      else
-        CompanyTeammate.find_by(organization: company, person: @teammate.person)
-      end
-      
-      if company_teammate && current_company_teammate
-        # Use policy scope to get accessible prompts
-        pundit_user = OpenStruct.new(user: current_company_teammate, impersonating_teammate: nil)
-        policy = PromptPolicy::Scope.new(pundit_user, Prompt)
-        accessible_prompts = policy.resolve
-        
-        # Filter to prompts for this teammate
-        prompts_for_teammate = accessible_prompts.where(company_teammate: company_teammate)
-        
-        # Get recent prompts (last 3, ordered by created_at desc)
-        @recent_prompts = prompts_for_teammate
-          .includes(:prompt_template, :prompt_answers)
-          .order(created_at: :desc)
-          .limit(3)
-        
-        # Get open prompts count
-        @open_prompts_count = prompts_for_teammate.open.count
-        
-        # Build prompts URL
-        @prompts_url = organization_prompts_path(organization, teammate: company_teammate.id)
-      else
-        @recent_prompts = []
-        @open_prompts_count = 0
-        @prompts_url = organization_prompts_path(organization)
-      end
-    else
-      @recent_prompts = []
-      @open_prompts_count = 0
-      @prompts_url = organization_prompts_path(organization)
-    end
-  end
-
-  def load_one_on_one
-    # Load one-on-one link for the teammate
-    if @teammate
-      @one_on_one_link = @teammate.one_on_one_link
-      @one_on_one_url = organization_company_teammate_one_on_one_link_path(organization, @teammate)
-      
-      # If Asana integration is active, fetch project data
-      if @one_on_one_link&.is_asana_link? && @one_on_one_link.has_deep_integration? && @teammate.has_asana_identity?
-        asana_service = AsanaService.new(@teammate)
-        project_id = @one_on_one_link.asana_project_id
-        
-        if project_id && asana_service.authenticated?
-          # Fetch project sections
-          @asana_sections = asana_service.fetch_project_sections(project_id)
-          
-          # Fetch incomplete tasks for each section
-          @asana_section_tasks = {}
-          @asana_sections.each do |section|
-            tasks = asana_service.fetch_section_tasks(section['gid'])
-            @asana_section_tasks[section['gid']] = tasks.reject { |task| task['completed'] == true }
-          end
-        else
-          @asana_sections = []
-          @asana_section_tasks = {}
-        end
-      else
-        @asana_sections = []
-        @asana_section_tasks = {}
-      end
-    else
-      @one_on_one_link = nil
-      @one_on_one_url = organization_company_teammate_one_on_one_link_path(organization, @teammate)
-      @asana_sections = []
-      @asana_section_tasks = {}
-    end
   end
 
   def update_assignment_check_ins(check_ins_params = params)

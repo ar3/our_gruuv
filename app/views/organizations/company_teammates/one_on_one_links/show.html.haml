@@ -5,8 +5,8 @@
   %p.text-muted.mb-0 Manage your 1:1 link and integration
 
 - content_for :go_back_link do
-  - return_url = params[:return_url].presence || organization_company_teammate_check_ins_path(organization, @teammate)
-  - return_text = params[:return_text].presence || 'Back to Check-Ins'
+  - return_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, @teammate)
+  - return_text = params[:return_text].presence || "Back to About #{@teammate.person.casual_name}"
   = link_to return_url, class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     = return_text
@@ -87,7 +87,7 @@
         
         .d-flex.gap-2
           = f.submit "Save 1:1 Link", class: "btn btn-primary"
-          - cancel_url = params[:return_url].presence || organization_company_teammate_check_ins_path(organization, @teammate)
+          - cancel_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, @teammate)
           = link_to "Cancel", cancel_url, class: "btn btn-outline-secondary"
 
 - else
@@ -114,5 +114,5 @@
         
         .d-flex.gap-2
           = f.submit "Save 1:1 Link", class: "btn btn-primary"
-          - cancel_url = params[:return_url].presence || organization_company_teammate_check_ins_path(organization, @teammate)
+          - cancel_url = params[:return_url].presence || about_me_organization_company_teammate_path(organization, @teammate)
           = link_to "Cancel", cancel_url, class: "btn btn-outline-secondary"

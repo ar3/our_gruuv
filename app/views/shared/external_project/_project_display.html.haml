@@ -68,7 +68,7 @@
                           %span.badge{style: "background-color: ##{tag['color'] || '6c757d'};"}
                             = tag['name'] || 'Tag'
             - else
-              %p.text-muted.mb-0 No #{pluralize(2, item_term(source))} in this #{section_term(source)}.
+              %p.text-muted.mb-0 No #{item_term(source).pluralize} in this #{section_term(source)}.
     - else
-      %p.text-muted.mb-0 No #{pluralize(2, section_term(source))} found in this project.
+      %p.text-muted.mb-0 No #{section_term(source).pluralize} found in this project.
 
