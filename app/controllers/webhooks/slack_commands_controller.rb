@@ -105,12 +105,27 @@ class Webhooks::SlackCommandsController < ApplicationController
       return { text: "Slack is not configured for this organization. Please configure Slack integration first." }
     end
     
+    # Extract command information for trigger
+    command_info = {
+      command: params[:command],
+      text: text,
+      user_id: user_id,
+      channel_id: channel_id,
+      team_id: params[:team_id],
+      team_domain: params[:team_domain],
+      channel_name: params[:channel_name],
+      user_name: params[:user_name],
+      response_url: params[:response_url],
+      trigger_id: params[:trigger_id]
+    }
+    
     # Process the feedback command
     result = Slack::ProcessFeedbackCommandService.call(
       organization: organization,
       user_id: user_id,
       channel_id: channel_id,
-      text: text
+      text: text,
+      command_info: command_info
     )
     
     if result.ok?

@@ -18,6 +18,11 @@
 .collapse#storiesSection
   .card.mb-4
     .card-body
+      - if @draft_observation_count.to_i > 0
+        .d-grid.mb-4
+          = link_to @draft_observations_url,
+                    class: "btn btn-primary" do
+            Review your #{pluralize(@draft_observation_count, "draft observation")}
       .row
         -# Left side: Observations given
         .col-md-6

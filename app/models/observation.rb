@@ -6,6 +6,7 @@ class Observation < ApplicationRecord
   
   belongs_to :observer, class_name: 'Person'
   belongs_to :company, class_name: 'Organization'
+  belongs_to :observation_trigger, optional: true
   has_many :observees, dependent: :destroy
   has_many :observed_teammates, through: :observees, source: :teammate
   has_many :observation_ratings, dependent: :destroy

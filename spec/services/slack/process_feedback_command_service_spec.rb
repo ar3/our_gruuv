@@ -11,12 +11,28 @@ RSpec.describe Slack::ProcessFeedbackCommandService, type: :service do
   let(:channel_id) { 'C123456' }
   let(:text) { 'Great work @user1 on the project!' }
   
+  let(:command_info) do
+    {
+      command: '/og',
+      text: text,
+      user_id: observer_slack_id,
+      channel_id: channel_id,
+      team_id: 'T123456',
+      team_domain: 'test-workspace',
+      channel_name: 'general',
+      user_name: 'testuser',
+      response_url: 'https://hooks.slack.com/commands/123/456',
+      trigger_id: '123.456.789'
+    }
+  end
+
   let(:service) do
     described_class.new(
       organization: organization,
       user_id: observer_slack_id,
       channel_id: channel_id,
-      text: text
+      text: text,
+      command_info: command_info
     )
   end
 
@@ -48,6 +64,26 @@ RSpec.describe Slack::ProcessFeedbackCommandService, type: :service do
           expect(observation.observer).to eq(observer_person)
           expect(observation.published_at).to be_nil
           expect(observation.privacy_level).to eq('observed_and_managers')
+        end
+
+        it 'creates an observation trigger' do
+          result = service.call
+          observation = result.value
+          
+          expect(observation.observation_trigger).to be_present
+          expect(observation.observation_trigger.trigger_source).to eq('slack')
+          expect(observation.observation_trigger.trigger_type).to eq('slack_command')
+        end
+
+        it 'stores command information in trigger data' do
+          result = service.call
+          observation = result.value
+          
+          trigger_data = observation.observation_trigger.trigger_data
+          expect(trigger_data['command']).to eq('/og')
+          expect(trigger_data['text']).to eq("Great work <@#{observee_slack_id}> on the project!")
+          expect(trigger_data['user_id']).to eq(observer_slack_id)
+          expect(trigger_data['channel_id']).to eq(channel_id)
         end
 
         it 'adds observee to the observation' do

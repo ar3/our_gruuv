@@ -1,14 +1,15 @@
 module Slack
   class ProcessFeedbackCommandService
-    def self.call(organization:, user_id:, channel_id:, text:)
-      new(organization: organization, user_id: user_id, channel_id: channel_id, text: text).call
+    def self.call(organization:, user_id:, channel_id:, text:, command_info: {})
+      new(organization: organization, user_id: user_id, channel_id: channel_id, text: text, command_info: command_info).call
     end
     
-    def initialize(organization:, user_id:, channel_id:, text:)
+    def initialize(organization:, user_id:, channel_id:, text:, command_info: {})
       @organization = organization
       @user_id = user_id
       @channel_id = channel_id
       @text = text || ''
+      @command_info = command_info
       @slack_service = SlackService.new(@organization)
     end
     
@@ -30,13 +31,21 @@ module Slack
       # 4. Resolve observees from @mentions
       observee_teammates = resolve_observees(mentioned_user_ids)
       
-      # 5. Create draft observation
+      # 5. Create observation trigger
+      trigger = ObservationTrigger.create!(
+        trigger_source: 'slack',
+        trigger_type: 'slack_command',
+        trigger_data: @command_info
+      )
+      
+      # 6. Create draft observation
       observation = @organization.observations.build(
         observer: observer_teammate.person,
         story: story_text,
         privacy_level: :observed_and_managers, # Default to a safe internal level
         observed_at: Time.current,
-        published_at: nil # Ensure it's a draft
+        published_at: nil, # Ensure it's a draft
+        observation_trigger: trigger
       )
       
       unless observation.save
@@ -44,7 +53,7 @@ module Slack
         return Result.err(error_message)
       end
       
-      # 6. Add observees from @mentions
+      # 7. Add observees from @mentions
       observee_teammates.each do |observee_teammate|
         Observations::AddObserveeService.new(observation: observation, teammate_id: observee_teammate.id).call
       end

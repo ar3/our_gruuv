@@ -1389,6 +1389,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     observations = query.base_scope
     observations = query.filter_by_privacy_levels(observations)
     observations = query.filter_by_timeframe(observations)
+    observations = query.filter_by_draft_status(observations)
+    observations = query.filter_by_observer(observations)
     observations
   end
 

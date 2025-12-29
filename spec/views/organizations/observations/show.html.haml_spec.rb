@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe 'organizations/observations/show', type: :view do
+RSpec.  describe 'organizations/observations/show', type: :view do
   let(:company) { create(:organization, :company) }
   let(:observer) { create(:person, first_name: 'Observer', last_name: 'Person') }
   let(:observer_teammate) { create(:teammate, person: observer, organization: company) }
@@ -12,6 +12,104 @@ RSpec.describe 'organizations/observations/show', type: :view do
     obs.save!
     obs.publish!
     obs
+  end
+
+  describe 'observation trigger display' do
+    context 'when observation has a trigger' do
+      let(:trigger) { create(:observation_trigger, trigger_source: 'slack', trigger_type: 'slack_command') }
+      let(:observation_with_trigger) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, observation_trigger: trigger)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      before do
+        assign(:organization, company)
+        assign(:observation, observation_with_trigger)
+        
+        allow(view).to receive(:policy) do |obj|
+          if obj == observation_with_trigger
+            double(
+              post_to_slack?: true,
+              publish?: false,
+              view_permalink?: false,
+              update?: false
+            )
+          else
+            double(post_to_slack?: false, update?: false, view_permalink?: false)
+          end
+        end
+        
+        allow(view).to receive(:organization_observations_path).and_return("/organizations/#{company.id}/observations")
+        allow(view).to receive(:share_publicly_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation_with_trigger.id}/share_publicly")
+        allow(view).to receive(:share_privately_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation_with_trigger.id}/share_privately")
+        allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation_with_trigger.id}")
+        
+        allow_any_instance_of(Observation).to receive(:decorate).and_return(
+          double(
+            story_html: '<p>Test story</p>',
+            gifs_html: '',
+            visibility_text: 'Public to Company',
+            visibility_text_style: 'text-primary',
+            visibility_icon: '<i class="bi bi-people"></i>',
+            feelings_display_html: '',
+            permalink_url: "https://example.com/observations/#{observation_with_trigger.id}"
+          )
+        )
+        
+        allow(view).to receive(:render_markdown).and_return('<p>Formatted markdown</p>')
+      end
+
+      it 'displays trigger information' do
+        render
+        expect(rendered).to have_content('Story was triggered from Slack\'s Slack command')
+        expect(rendered).to have_css('i.bi-info-circle')
+      end
+    end
+
+    context 'when observation has no trigger' do
+      before do
+        assign(:organization, company)
+        assign(:observation, observation)
+        
+        allow(view).to receive(:policy) do |obj|
+          if obj == observation
+            double(
+              post_to_slack?: true,
+              publish?: false,
+              view_permalink?: false,
+              update?: false
+            )
+          else
+            double(post_to_slack?: false, update?: false, view_permalink?: false)
+          end
+        end
+        
+        allow(view).to receive(:organization_observations_path).and_return("/organizations/#{company.id}/observations")
+        allow(view).to receive(:share_publicly_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}/share_publicly")
+        allow(view).to receive(:share_privately_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}/share_privately")
+        allow(view).to receive(:organization_observation_path).and_return("/organizations/#{company.id}/observations/#{observation.id}")
+        
+        allow_any_instance_of(Observation).to receive(:decorate).and_return(
+          double(
+            story_html: '<p>Test story</p>',
+            gifs_html: '',
+            visibility_text: 'Public to Company',
+            visibility_text_style: 'text-primary',
+            visibility_icon: '<i class="bi bi-people"></i>',
+            feelings_display_html: '',
+            permalink_url: "https://example.com/observations/#{observation.id}"
+          )
+        )
+      end
+
+      it 'does not display trigger information' do
+        render
+        expect(rendered).not_to have_content('Story was triggered from')
+      end
+    end
   end
 
   before do

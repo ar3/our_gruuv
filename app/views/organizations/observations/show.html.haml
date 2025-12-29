@@ -28,6 +28,15 @@
 .row
   .col-md-8
     / Main content sections
+    - if @observation.observation_trigger.present?
+      .card.mb-4{ role: "region", "aria-labelledby": "observation-trigger" }
+        .card-body
+          .d-flex.align-items-center
+            %i.bi.bi-info-circle.text-info.me-2
+            %span.me-2
+              Story was triggered from #{@observation.observation_trigger.display_text}
+            %i.bi.bi-question-circle.text-muted{"data-bs-toggle" => "tooltip", "data-bs-html" => "true", "data-bs-title" => render_markdown(@observation.observation_trigger.formatted_trigger_data)}
+    
     .card.mb-4{ role: "region", "aria-labelledby": "observation-story" }
       .card-header
         %h5.mb-0{ id: "observation-story" }

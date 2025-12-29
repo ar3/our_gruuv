@@ -639,6 +639,21 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         return_url: about_me_organization_company_teammate_path(organization, @teammate),
         return_text: "Back to About #{casual_name}"
       )
+      
+      # Draft observations (where teammate is observer)
+      draft_observations = Observation
+        .where(observer_id: @teammate.person.id, company: organization)
+        .where(published_at: nil)
+        .where(deleted_at: nil)
+      
+      @draft_observation_count = draft_observations.count
+      @draft_observations_url = organization_observations_path(
+        organization,
+        observer_id: @teammate.person.id,
+        draft: true,
+        return_url: about_me_organization_company_teammate_path(organization, @teammate),
+        return_text: "Back to About #{casual_name}"
+      )
     else
       @observations_given_count = 0
       @recent_observations_given = []
@@ -646,6 +661,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       @recent_observations_received = []
       @observations_given_url = organization_observations_path(organization)
       @observations_received_url = organization_observations_path(organization)
+      @draft_observation_count = 0
+      @draft_observations_url = organization_observations_path(organization)
     end
   end
 

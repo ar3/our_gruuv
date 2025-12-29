@@ -28,6 +28,7 @@ RSpec.describe Observation, type: :model do
   describe 'associations' do
     it { should belong_to(:observer).class_name('Person') }
     it { should belong_to(:company).class_name('Organization') }
+    it { should belong_to(:observation_trigger).optional }
     it { should have_many(:observees).dependent(:destroy) }
     it { should have_many(:observed_teammates).through(:observees).source(:teammate) }
     it { should have_many(:observation_ratings).dependent(:destroy) }

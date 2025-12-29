@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_29_080815) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_29_171248) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -514,6 +514,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_29_080815) do
     t.index ["rateable_type", "rateable_id"], name: "index_observation_ratings_on_rateable_type_and_rateable_id"
   end
 
+  create_table "observation_triggers", force: :cascade do |t|
+    t.string "trigger_source", null: false
+    t.string "trigger_type", null: false
+    t.jsonb "trigger_data", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["trigger_data"], name: "index_observation_triggers_on_trigger_data", using: :gin
+    t.index ["trigger_source", "trigger_type"], name: "index_observation_triggers_on_trigger_source_and_trigger_type"
+  end
+
   create_table "observations", force: :cascade do |t|
     t.bigint "observer_id", null: false
     t.bigint "company_id", null: false
@@ -530,10 +540,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_29_080815) do
     t.jsonb "story_extras", default: {}
     t.string "observation_type", default: "generic", null: false
     t.string "created_as_type"
+    t.bigint "observation_trigger_id"
     t.index ["company_id"], name: "index_observations_on_company_id"
     t.index ["created_as_type"], name: "index_observations_on_created_as_type"
     t.index ["custom_slug"], name: "index_observations_on_custom_slug", unique: true
     t.index ["deleted_at"], name: "index_observations_on_deleted_at"
+    t.index ["observation_trigger_id"], name: "index_observations_on_observation_trigger_id"
     t.index ["observation_type"], name: "index_observations_on_observation_type"
     t.index ["observed_at", "id"], name: "index_observations_on_observed_at_and_id"
     t.index ["observed_at"], name: "index_observations_on_observed_at"
@@ -989,6 +1001,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_29_080815) do
   add_foreign_key "notifications", "notifications", column: "main_thread_id"
   add_foreign_key "notifications", "notifications", column: "original_message_id"
   add_foreign_key "observation_ratings", "observations"
+  add_foreign_key "observations", "observation_triggers"
   add_foreign_key "observations", "organizations", column: "company_id"
   add_foreign_key "observations", "people", column: "observer_id"
   add_foreign_key "observees", "observations"

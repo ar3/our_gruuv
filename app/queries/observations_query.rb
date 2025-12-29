@@ -11,6 +11,8 @@ class ObservationsQuery
     observations = base_scope
     observations = filter_by_privacy_levels(observations)
     observations = filter_by_timeframe(observations)
+    observations = filter_by_draft_status(observations)
+    observations = filter_by_observer(observations)
     observations = apply_sort(observations)
     observations
   end
@@ -96,6 +98,25 @@ class ObservationsQuery
     else
       observations
     end
+  end
+
+  def filter_by_draft_status(observations)
+    return observations unless params[:draft].present?
+    
+    case params[:draft]
+    when 'true', true
+      observations.where(published_at: nil)
+    when 'false', false
+      observations.where.not(published_at: nil)
+    else
+      observations
+    end
+  end
+
+  def filter_by_observer(observations)
+    return observations unless params[:observer_id].present?
+    
+    observations.where(observer_id: params[:observer_id])
   end
 
   private
