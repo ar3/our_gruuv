@@ -56,6 +56,8 @@ get '/login', to: 'auth#login', as: :login
   
   # Slack webhooks (support both /slack/interactions and /webhooks/slack/interactions)
   post 'slack/interactions', to: 'webhooks/slack#create'
+  # Slack slash commands
+  post 'slack/commands', to: 'webhooks/slack_commands#create'
   namespace :webhooks do
     post 'slack/interactions', to: 'slack#create'
     post 'slack/events', to: 'slack#event'
