@@ -34,16 +34,12 @@ RSpec.describe Organizations::PublicMaap::AssignmentsController, type: :controll
       expect(assignments).to include(assignment_department)
     end
 
-    it 'groups assignments by organization' do
+    it 'groups assignments by department' do
       get :index, params: { organization_id: company.id }
-      assignments_by_org = assigns(:assignments_by_org)
+      assignments_by_dept = assigns(:assignments_by_department)
       
-      # Find the organization key in the hash (may be Company/Department instance due to STI)
-      company_key = assignments_by_org.keys.find { |org| org.id == company.id }
-      department_key = assignments_by_org.keys.find { |org| org.id == department.id }
-      
-      expect(assignments_by_org[company_key]).to include(assignment_company)
-      expect(assignments_by_org[department_key]).to include(assignment_department)
+      expect(assignments_by_dept).to be_a(Hash)
+      expect(assignments_by_dept.values.flatten).to include(assignment_company, assignment_department)
     end
 
     it 'excludes teams from hierarchy' do

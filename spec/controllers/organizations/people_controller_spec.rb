@@ -82,11 +82,11 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           @current_company_teammate = nil if defined?(@current_company_teammate)
         end
 
-        it 'denies access and redirects to organizations index' do
+        it 'denies access and redirects to user own organization dashboard' do
           get :show, params: { organization_id: organization.id, id: person_teammate.id }
           expect(response).to have_http_status(:redirect)
-          # When user doesn't have access to the organization, they get redirected to organizations index
-          expect(response).to redirect_to(organizations_path)
+          # When user doesn't have access to the organization, they get redirected to their own organization dashboard
+          expect(response).to redirect_to(dashboard_organization_path(other_org_teammate.organization))
         end
       end
 
@@ -95,11 +95,11 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           session[:current_company_teammate_id] = nil
         end
 
-        it 'redirects to login' do
-          get :show, params: { organization_id: organization.id, id: person_teammate.id }
-          expect(response).to have_http_status(:redirect)
-          expect(response).to redirect_to(root_path)
-        end
+      it 'redirects to root with session expired message' do
+        get :show, params: { organization_id: organization.id, id: person_teammate.id }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
+      end
       end
 
       context 'when user is an admin' do
@@ -366,10 +366,10 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           sign_in_as_teammate(unauthorized_user, organization)
         end
 
-        it 'redirects when authorization fails (inactive teammate)' do
+        it 'redirects to root (terminated teammate has no current session)' do
           get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
-          expect(response).to have_http_status(:redirect)
           expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
         end
       end
 
@@ -427,10 +427,10 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         session[:current_company_teammate_id] = nil
       end
 
-      it 'redirects to login' do
+      it 'redirects to root with session expired message' do
         get :complete_picture, params: { organization_id: organization.id, id: person_teammate.id }
-        expect(response).to have_http_status(:redirect)
         expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
       end
     end
   end
@@ -645,9 +645,10 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
     context 'when not logged in' do
       before { session[:current_company_teammate_id] = nil }
 
-      it 'redirects to root path' do
+      it 'redirects to root with session expired message' do
         patch :update, params: { organization_id: organization.id, id: person_teammate.id, person: { first_name: 'Jane' } }
         expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("Your session has expired. Please log in again.")
       end
     end
 

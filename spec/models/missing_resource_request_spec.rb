@@ -16,9 +16,9 @@ RSpec.describe MissingResourceRequest, type: :model do
   describe 'scopes' do
     let(:person) { create(:person) }
     let(:missing_resource) { create(:missing_resource) }
-    let!(:request1) { create(:missing_resource_request, person: person, missing_resource: missing_resource) }
+    let!(:request1) { create(:missing_resource_request, person: person, ip_address: '10.0.0.1', missing_resource: missing_resource) }
     let!(:request2) { create(:missing_resource_request, person: nil, ip_address: '192.168.1.1', missing_resource: missing_resource) }
-    let!(:request3) { create(:missing_resource_request, person: person, missing_resource: create(:missing_resource)) }
+    let!(:request3) { create(:missing_resource_request, person: person, ip_address: '10.0.0.2', missing_resource: create(:missing_resource)) }
 
     describe '.for_person' do
       it 'returns only requests for the specified person' do
