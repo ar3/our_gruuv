@@ -418,7 +418,7 @@ class Observations::PostNotificationJob < ApplicationJob
     company_name = observer_company.name
     new_observation_url = Rails.application.routes.url_helpers.new_organization_observation_url(observer_company)
     
-    ending_text = "Adding stories like this to the *#{company_name}* novel will help shape us, because they are specific about the best examples of us executing assignments, demonstrating abilities, and exemplifying the aspirations/values we focus on.\n\nThis one was great, who's next to add to <#{new_observation_url}|OUR Story>?"
+    ending_text = "Adding stories like this to the *#{company_name}* novel will help shape us, because they are specific about the best examples of us executing assignments, demonstrating abilities, and exemplifying the aspirational values we focus on.\n\nThis one was great, who's next to add to <#{new_observation_url}|OUR Story>?"
     
     blocks << {
       type: "context",

@@ -218,6 +218,38 @@ RSpec.describe "Organizations::CheckIns", type: :request do
     let!(:assignment_check_in) { AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment) }
     let!(:aspiration_check_in) { AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration) }
 
+    context "wizard header links" do
+      before do
+        sign_in_as_teammate_for_request(manager_person, organization)
+      end
+
+      it "uses the correct teammate in step links" do
+        # Create another teammate to ensure we're not accidentally using the wrong one
+        other_person = create(:person)
+        other_teammate = create(:teammate, person: other_person, organization: organization)
+        
+        get organization_company_teammate_check_ins_path(organization, employee_teammate)
+        
+        expect(response).to have_http_status(:success)
+        html = response.body
+        
+        # Verify Step 1 link uses the correct teammate
+        step1_path = organization_company_teammate_check_ins_path(organization, employee_teammate)
+        expect(html).to include(step1_path)
+        expect(html).not_to include(organization_company_teammate_check_ins_path(organization, other_teammate))
+        
+        # Verify Step 2 link uses the correct teammate
+        step2_path = organization_company_teammate_finalization_path(organization, employee_teammate)
+        expect(html).to include(step2_path)
+        expect(html).not_to include(organization_company_teammate_finalization_path(organization, other_teammate))
+        
+        # Verify Step 3 link uses the correct teammate
+        step3_path = audit_organization_employee_path(organization, employee_teammate)
+        expect(html).to include(step3_path)
+        expect(html).not_to include(audit_organization_employee_path(organization, other_teammate))
+      end
+    end
+
     context "manager viewing employee check-ins" do
       before do
         sign_in_as_teammate_for_request(manager_person, organization)

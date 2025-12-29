@@ -33,7 +33,7 @@
       %i.bi.bi-arrow-left.me-2
       Back to Profile
 
-= render 'shared/check_in_wizard_header', organization: organization, person: @teammate.person, current_step: 1
+= render 'shared/check_in_wizard_header', organization: organization, teammate: @teammate, current_step: 1
 
 -# Show pending acknowledgement banner if applicable
 - if @view_mode == :employee && @teammate.person.maap_snapshots.executed.where(employee_acknowledged_at: nil).any?
@@ -245,7 +245,7 @@
   
   -# Aspiration Section
   = render 'shared/section_header', 
-           title: 'Aspirations/Values', 
+           title: 'Aspirational Values', 
            icon: 'bi-star', 
            description: 'Track progress toward personal goals'
 

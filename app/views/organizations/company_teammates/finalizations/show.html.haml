@@ -11,7 +11,7 @@
     %i.bi.bi-arrow-left.me-2
     Back to Check-Ins
 
-= render 'shared/check_in_wizard_header', organization: @organization, person: @person, current_step: 2
+= render 'shared/check_in_wizard_header', organization: @organization, teammate: @teammate, current_step: 2
 
 = form_with url: organization_company_teammate_finalization_path(organization, @teammate), method: :post, local: true do |f|
   
@@ -33,7 +33,7 @@
   
   -# Aspiration Section
   = render 'shared/section_header', 
-           title: 'Aspirations/Values', 
+           title: 'Aspirational Values', 
            icon: 'bi-star', 
            description: 'Set official aspiration ratings'
   
