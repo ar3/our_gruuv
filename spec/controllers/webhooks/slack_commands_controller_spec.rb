@@ -121,13 +121,32 @@ RSpec.describe Webhooks::SlackCommandsController, type: :controller do
 
       context 'when command is huddle' do
         let(:text) { 'huddle' }
+        let(:channel_id) { 'C123456' }
+        let(:channel_name) { 'general' }
+        let!(:slack_channel) do
+          create(:third_party_object, :slack_channel,
+                 organization: organization,
+                 third_party_id: channel_id,
+                 display_name: channel_name)
+        end
+        let!(:playbook) do
+          create(:huddle_playbook,
+                 organization: organization,
+                 slack_channel: "##{channel_name}")
+        end
 
-        it 'returns placeholder message' do
+        before do
+          allow(Slack::ProcessHuddleCommandService).to receive(:call).and_return(
+            Result.ok("Huddle started successfully! View it here: http://example.com/huddles/1")
+          )
+        end
+
+        it 'processes huddle command' do
           params_hash, raw_body, sig = build_request_params(text)
           setup_request_with_signature(params_hash, raw_body, sig)
           post :create, params: params_hash
           expect(response).to have_http_status(:ok)
-          expect(JSON.parse(response.body)['text']).to include('Phase 2')
+          expect(JSON.parse(response.body)['text']).to include('Huddle started successfully')
         end
       end
 
