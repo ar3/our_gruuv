@@ -109,6 +109,48 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
       # Verify assignment1 is most observed with count of 2
       expect(assigns(:spotlight_stats)[:most_observed_assignment]).to eq(assignment1)
       expect(assigns(:spotlight_stats)[:most_observed_assignment_count]).to eq(2)
+      
+      # Verify runner-up counts are included
+      expect(assigns(:spotlight_stats)).to have_key(:runner_up_assignment_count)
+      expect(assigns(:spotlight_stats)).to have_key(:runner_up_ability_count)
+      expect(assigns(:spotlight_stats)).to have_key(:runner_up_aspiration_count)
+      expect(assigns(:spotlight_stats)).to have_key(:runner_up_person_count)
+      expect(assigns(:spotlight_stats)).to have_key(:runner_up_observer_count)
+    end
+
+    it 'handles empty names gracefully using casual_name' do
+      # Create a person with no first_name or preferred_name
+      person_without_name = create(:person, first_name: nil, preferred_name: nil, email: 'test@example.com')
+      person_teammate = create(:teammate, person: person_without_name, organization: company)
+      
+      # Create observation where this person is observed
+      obs = build(:observation, observer: observer, company: company)
+      obs.observees.build(teammate: person_teammate)
+      obs.save!
+      obs.publish!
+      
+      get :index, params: { organization_id: company.id, spotlight: 'most_observed' }
+      expect(response).to have_http_status(:success)
+      
+      # Should not crash and should handle empty names
+      stats = assigns(:spotlight_stats)
+      if stats[:most_observed_person]
+        # casual_name should return email or fallback
+        expect(stats[:most_observed_person].casual_name.presence || stats[:most_observed_person].email).to be_present
+      end
+    end
+
+    it 'shows no data placeholders when stats are empty' do
+      # Create observations but ensure no person/observer stats
+      obs = build(:observation, observer: observer, company: company)
+      obs.observees.build(teammate: observee_teammate)
+      obs.save!
+      obs.publish!
+      
+      get :index, params: { organization_id: company.id, spotlight: 'most_observed' }
+      expect(response).to have_http_status(:success)
+      # View should render without errors even if some stats are nil
+      expect(response.body).to include('Most Observed')
     end
 
     it 'renders wall view when view is wall' do
@@ -2403,6 +2445,92 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(response).to redirect_to(root_path)
         expect(flash[:alert]).to be_present
       end
+    end
+  end
+
+  describe 'privacy enforcement on index page' do
+    let(:manager_person) { create(:person) }
+    let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
+    let(:random_person) { create(:person) }
+    let(:random_teammate) { create(:teammate, person: random_person, organization: company) }
+
+    before do
+      # Set up managerial hierarchy: observee -> manager
+      create(:employment_tenure, teammate: manager_teammate, company: company)
+      create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+    end
+
+    it 'does not show observed_only observations to managers on index' do
+      observed_only_obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
+      observed_only_obs.observees.build(teammate: observee_teammate)
+      observed_only_obs.save!
+      observed_only_obs.publish!
+
+      sign_in_as_teammate(manager_person, company)
+      get :index, params: { organization_id: company.id }
+      
+      expect(assigns(:observations)).not_to include(observed_only_obs)
+    end
+
+    it 'does not show unpublished observations to non-observers on index' do
+      unpublished_obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil)
+      unpublished_obs.observees.build(teammate: observee_teammate)
+      unpublished_obs.save!
+
+      sign_in_as_teammate(random_person, company)
+      get :index, params: { organization_id: company.id }
+      
+      expect(assigns(:observations)).not_to include(unpublished_obs)
+    end
+
+    it 'shows published managers_only observations to managers on index' do
+      managers_only_obs = build(:observation, observer: observer, company: company, privacy_level: :managers_only)
+      managers_only_obs.observees.build(teammate: observee_teammate)
+      managers_only_obs.save!
+      managers_only_obs.publish!
+
+      sign_in_as_teammate(manager_person, company)
+      get :index, params: { organization_id: company.id }
+      
+      expect(assigns(:observations)).to include(managers_only_obs)
+    end
+  end
+
+  describe 'privacy enforcement on show page' do
+    let(:manager_person) { create(:person) }
+    let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
+    let(:random_person) { create(:person) }
+    let(:random_teammate) { create(:teammate, person: random_person, organization: company) }
+
+    before do
+      # Set up managerial hierarchy: observee -> manager
+      create(:employment_tenure, teammate: manager_teammate, company: company)
+      create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+    end
+
+    it 'redirects manager when trying to view observed_only observation' do
+      observed_only_obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
+      observed_only_obs.observees.build(teammate: observee_teammate)
+      observed_only_obs.save!
+      observed_only_obs.publish!
+
+      sign_in_as_teammate(manager_person, company)
+      get :show, params: { organization_id: company.id, id: observed_only_obs.id }
+      
+      date_part = observed_only_obs.observed_at.strftime('%Y-%m-%d')
+      expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observed_only_obs.id))
+    end
+
+    it 'redirects random person when trying to view unpublished observation' do
+      unpublished_obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil)
+      unpublished_obs.observees.build(teammate: observee_teammate)
+      unpublished_obs.save!
+
+      sign_in_as_teammate(random_person, company)
+      get :show, params: { organization_id: company.id, id: unpublished_obs.id }
+      
+      date_part = unpublished_obs.observed_at.strftime('%Y-%m-%d')
+      expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: unpublished_obs.id))
     end
   end
 

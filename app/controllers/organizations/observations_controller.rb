@@ -1645,6 +1645,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     most_observed_assignment_id = assignment_results.first&.first
     most_observed_assignment_count = assignment_results.first&.last || 0
     runner_up_assignment_id = assignment_results.second&.first
+    runner_up_assignment_count = assignment_results.second&.last || 0
     assignment = most_observed_assignment_id ? Assignment.find_by(id: most_observed_assignment_id) : nil
     runner_up_assignment = runner_up_assignment_id ? Assignment.find_by(id: runner_up_assignment_id) : nil
     
@@ -1660,6 +1661,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     most_observed_ability_id = ability_results.first&.first
     most_observed_ability_count = ability_results.first&.last || 0
     runner_up_ability_id = ability_results.second&.first
+    runner_up_ability_count = ability_results.second&.last || 0
     ability = most_observed_ability_id ? Ability.find_by(id: most_observed_ability_id) : nil
     runner_up_ability = runner_up_ability_id ? Ability.find_by(id: runner_up_ability_id) : nil
     
@@ -1675,6 +1677,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     most_observed_aspiration_id = aspiration_results.first&.first
     most_observed_aspiration_count = aspiration_results.first&.last || 0
     runner_up_aspiration_id = aspiration_results.second&.first
+    runner_up_aspiration_count = aspiration_results.second&.last || 0
     aspiration = most_observed_aspiration_id ? Aspiration.find_by(id: most_observed_aspiration_id) : nil
     runner_up_aspiration = runner_up_aspiration_id ? Aspiration.find_by(id: runner_up_aspiration_id) : nil
     
@@ -1689,6 +1692,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     most_observed_person_id = person_results.first&.first
     most_observed_person_count = person_results.first&.last || 0
     runner_up_person_id = person_results.second&.first
+    runner_up_person_count = person_results.second&.last || 0
     most_observed_person = most_observed_person_id ? Person.find_by(id: most_observed_person_id) : nil
     runner_up_person = runner_up_person_id ? Person.find_by(id: runner_up_person_id) : nil
     
@@ -1702,6 +1706,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     most_active_observer_id = observer_results.first&.first
     most_active_observer_count = observer_results.first&.last || 0
     runner_up_observer_id = observer_results.second&.first
+    runner_up_observer_count = observer_results.second&.last || 0
     most_active_observer = most_active_observer_id ? Person.find_by(id: most_active_observer_id) : nil
     runner_up_observer = runner_up_observer_id ? Person.find_by(id: runner_up_observer_id) : nil
     
@@ -1709,18 +1714,23 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       most_observed_assignment: assignment,
       most_observed_assignment_count: most_observed_assignment_count,
       runner_up_assignment: runner_up_assignment,
+      runner_up_assignment_count: runner_up_assignment_count,
       most_observed_ability: ability,
       most_observed_ability_count: most_observed_ability_count,
       runner_up_ability: runner_up_ability,
+      runner_up_ability_count: runner_up_ability_count,
       most_observed_aspiration: aspiration,
       most_observed_aspiration_count: most_observed_aspiration_count,
       runner_up_aspiration: runner_up_aspiration,
+      runner_up_aspiration_count: runner_up_aspiration_count,
       most_observed_person: most_observed_person,
       most_observed_person_count: most_observed_person_count,
       runner_up_person: runner_up_person,
+      runner_up_person_count: runner_up_person_count,
       most_active_observer: most_active_observer,
       most_active_observer_count: most_active_observer_count,
-      runner_up_observer: runner_up_observer
+      runner_up_observer: runner_up_observer,
+      runner_up_observer_count: runner_up_observer_count
     }
   end
 

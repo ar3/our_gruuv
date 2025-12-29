@@ -88,8 +88,9 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         expect(results).to include(observation4)
       end
 
-      it 'returns observations about people they indirectly manage (through direct reports)' do
+      it 'does not return observations about people they indirectly manage (only direct managers via employment_tenures)' do
         # Set up indirect report: observee -> manager -> grand_manager
+        # New rules only check direct manager relationships via employment_tenures
         grand_manager = create(:person)
         grand_manager_teammate = create(:teammate, person: grand_manager, organization: company)
         manager_teammate = Teammate.find_by(person: manager_person, organization: company)
@@ -111,7 +112,8 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         
         grand_manager_query = described_class.new(grand_manager, company)
         results = grand_manager_query.visible_observations
-        expect(results).to include(indirect_observation)
+        # Grand manager is NOT a direct manager of indirect_observee, so they cannot see it
+        expect(results).not_to include(indirect_observation)
       end
 
       it 'returns public observations' do
@@ -145,13 +147,15 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         admin_teammate # Ensure admin has a teammate record
       end
 
-      it 'returns all observations in company EXCEPT observed_only and observer_only' do
-        # Admins should NOT see observed_only observations (observer + observees only)
-        # Admins should NOT see observer_only observations (journal entries - observer only)
+      it 'returns only public observations and observations they created (no can_manage_employment override)' do
+        # New rules: can_manage_employment does NOT grant access
+        # Admin can only see: public observations, observations they created, observations where they are observee/manager
         results = query.visible_observations
-        expect(results).to include(observation3, observation4, observation5)
-        expect(results).not_to include(observation1) # observer_only (journal)
-        expect(results).not_to include(observation2) # observed_only
+        expect(results).to include(observation5) # public_to_world
+        expect(results).not_to include(observation1) # observer_only (journal) - not observer
+        expect(results).not_to include(observation2) # observed_only - not observer, not observee, not manager
+        expect(results).not_to include(observation3) # managers_only - not observer, not observee, not manager
+        expect(results).not_to include(observation4) # observed_and_managers - not observer, not observee, not manager
       end
 
       it 'does not return observed_only observations even with can_manage_employment' do
@@ -182,6 +186,185 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
       it 'returns empty collection' do
         results = query.visible_observations
         expect(results).to be_empty
+      end
+    end
+
+    context 'new 4-rule visibility logic' do
+      describe 'Rule 1: Public published observations' do
+        let(:public_company_obs) do
+          build(:observation, observer: observer, company: company, privacy_level: :public_to_company).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+        let(:public_world_obs) do
+          build(:observation, observer: observer, company: company, privacy_level: :public_to_world).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+        let(:unpublished_public_obs) do
+          build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+          end
+        end
+
+        it 'allows all teammates to see published public_to_company observations' do
+          random_query = described_class.new(random_person, company)
+          results = random_query.visible_observations
+          expect(results).to include(public_company_obs)
+        end
+
+        it 'allows all teammates to see published public_to_world observations' do
+          random_query = described_class.new(random_person, company)
+          results = random_query.visible_observations
+          expect(results).to include(public_world_obs)
+        end
+
+        it 'does not allow non-observers to see unpublished public observations' do
+          random_query = described_class.new(random_person, company)
+          results = random_query.visible_observations
+          expect(results).not_to include(unpublished_public_obs)
+        end
+      end
+
+      describe 'Rule 2: Observer sees all their own observations' do
+        let(:draft_obs) do
+          build(:observation, observer: observer, company: company, privacy_level: :observer_only, published_at: nil).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+          end
+        end
+        let(:published_private_obs) do
+          build(:observation, observer: observer, company: company, privacy_level: :observed_only).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+
+        it 'allows observer to see their own drafts regardless of privacy level' do
+          observer_query = described_class.new(observer, company)
+          results = observer_query.visible_observations
+          expect(results).to include(draft_obs)
+        end
+
+        it 'allows observer to see their own published observations regardless of privacy level' do
+          observer_query = described_class.new(observer, company)
+          results = observer_query.visible_observations
+          expect(results).to include(published_private_obs)
+        end
+      end
+
+      describe 'Rule 3: Observee sees published observations they are in' do
+        let(:published_observed_only) do
+          build(:observation, observer: observer, company: company, privacy_level: :observed_only).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+        let(:published_observed_and_managers) do
+          build(:observation, observer: observer, company: company, privacy_level: :observed_and_managers).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+        let(:unpublished_observed_only) do
+          build(:observation, observer: observer, company: company, privacy_level: :observed_only, published_at: nil).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+          end
+        end
+        let(:published_observer_only) do
+          build(:observation, observer: observer, company: company, privacy_level: :observer_only).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+
+        it 'allows observee to see published observed_only observations they are in' do
+          observee_query = described_class.new(observee_person, company)
+          results = observee_query.visible_observations
+          expect(results).to include(published_observed_only)
+        end
+
+        it 'allows observee to see published observed_and_managers observations they are in' do
+          observee_query = described_class.new(observee_person, company)
+          results = observee_query.visible_observations
+          expect(results).to include(published_observed_and_managers)
+        end
+
+        it 'does not allow observee to see unpublished observed_only observations' do
+          observee_query = described_class.new(observee_person, company)
+          results = observee_query.visible_observations
+          expect(results).not_to include(unpublished_observed_only)
+        end
+
+        it 'does not allow observee to see published observer_only (journal) observations' do
+          observee_query = described_class.new(observee_person, company)
+          results = observee_query.visible_observations
+          expect(results).not_to include(published_observer_only)
+        end
+      end
+
+      describe 'Rule 4: Manager sees published observations for their reports' do
+        let(:published_managers_only) do
+          build(:observation, observer: observer, company: company, privacy_level: :managers_only).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+        let(:published_observed_and_managers) do
+          build(:observation, observer: observer, company: company, privacy_level: :observed_and_managers).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+        let(:unpublished_managers_only) do
+          build(:observation, observer: observer, company: company, privacy_level: :managers_only, published_at: nil).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+          end
+        end
+        let(:published_observed_only) do
+          build(:observation, observer: observer, company: company, privacy_level: :observed_only).tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+            obs.publish!
+          end
+        end
+
+        it 'allows manager to see published managers_only observations for their reports' do
+          manager_query = described_class.new(manager_person, company)
+          results = manager_query.visible_observations
+          expect(results).to include(published_managers_only)
+        end
+
+        it 'allows manager to see published observed_and_managers observations for their reports' do
+          manager_query = described_class.new(manager_person, company)
+          results = manager_query.visible_observations
+          expect(results).to include(published_observed_and_managers)
+        end
+
+        it 'does not allow manager to see unpublished managers_only observations' do
+          manager_query = described_class.new(manager_person, company)
+          results = manager_query.visible_observations
+          expect(results).not_to include(unpublished_managers_only)
+        end
+
+        it 'does not allow manager to see published observed_only observations (even if they manage the observee)' do
+          manager_query = described_class.new(manager_person, company)
+          results = manager_query.visible_observations
+          expect(results).not_to include(published_observed_only)
+        end
       end
     end
   end
@@ -242,7 +425,7 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         expect(manager_query.visible_to?(observation3)).to be true
       end
 
-      it 'allows indirect managers (grand managers)' do
+      it 'does not allow indirect managers (only direct managers via employment_tenures)' do
         grand_manager = create(:person)
         grand_manager_teammate = create(:teammate, person: grand_manager, organization: company)
         manager_teammate = Teammate.find_by(person: manager_person, organization: company)
@@ -253,7 +436,8 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         manager_tenure.update!(manager: grand_manager)
         
         grand_manager_query = described_class.new(grand_manager, company)
-        expect(grand_manager_query.visible_to?(observation3)).to be true
+        # Grand manager is NOT a direct manager of observee_teammate, so they cannot see it
+        expect(grand_manager_query.visible_to?(observation3)).to be false
       end
 
       it 'denies observee' do
@@ -273,9 +457,10 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         expect(manager_query.visible_to?(observation4)).to be true
       end
 
-      it 'allows those with can_manage_employment' do
+      it 'does not allow those with can_manage_employment (no override in new rules)' do
         admin_query = described_class.new(admin_person, company)
-        expect(admin_query.visible_to?(observation4)).to be true
+        # Admin is not observer, not observee, not manager - so cannot see it
+        expect(admin_query.visible_to?(observation4)).to be false
       end
     end
 
@@ -425,11 +610,11 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         expect(query.can_view_negative_ratings?(observation4)).to be true  # observed_and_managers
       end
 
-      it 'allows those with can_manage_employment to view negative ratings EXCEPT observer_only' do
-        # Admins cannot see observer_only (journal) observations, so they cannot view negative ratings
+      it 'does not allow those with can_manage_employment to view negative ratings (no override in new rules)' do
+        # Admins can only view negative ratings if they are observer, observee, or manager
         query = described_class.new(admin_person, company)
-        expect(query.can_view_negative_ratings?(observation1)).to be false  # observer_only (journal)
-        expect(query.can_view_negative_ratings?(observation4)).to be true  # observed_and_managers
+        expect(query.can_view_negative_ratings?(observation1)).to be false  # observer_only (journal) - not observer
+        expect(query.can_view_negative_ratings?(observation4)).to be false  # observed_and_managers - not observer, not observee, not manager
       end
     end
 

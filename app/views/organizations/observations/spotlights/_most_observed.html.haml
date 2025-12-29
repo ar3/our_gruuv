@@ -9,7 +9,11 @@
           %small.text-muted Most Observed Assignment
           - if @spotlight_stats[:runner_up_assignment]
             %small.text-muted.d-block.mt-1
-              Runner-up: #{@spotlight_stats[:runner_up_assignment].name}
+              Runner-up: #{@spotlight_stats[:runner_up_assignment].name}#{@spotlight_stats[:runner_up_assignment_count] ? " (#{@spotlight_stats[:runner_up_assignment_count]})" : ''}
+      - else
+        .col-md-2.col-6.mb-3
+          .h5.text-primary.text-muted No data
+          %small.text-muted Most Observed Assignment
       - if @spotlight_stats[:most_observed_ability]
         .col-md-2.col-6.mb-3
           .h5.text-info= @spotlight_stats[:most_observed_ability].name
@@ -17,7 +21,11 @@
           %small.text-muted Most Observed Ability
           - if @spotlight_stats[:runner_up_ability]
             %small.text-muted.d-block.mt-1
-              Runner-up: #{@spotlight_stats[:runner_up_ability].name}
+              Runner-up: #{@spotlight_stats[:runner_up_ability].name}#{@spotlight_stats[:runner_up_ability_count] ? " (#{@spotlight_stats[:runner_up_ability_count]})" : ''}
+      - else
+        .col-md-2.col-6.mb-3
+          .h5.text-info.text-muted No data
+          %small.text-muted Most Observed Ability
       - if @spotlight_stats[:most_observed_aspiration]
         .col-md-2.col-6.mb-3
           .h5.text-success= @spotlight_stats[:most_observed_aspiration].name
@@ -25,21 +33,33 @@
           %small.text-muted Most Observed Value
           - if @spotlight_stats[:runner_up_aspiration]
             %small.text-muted.d-block.mt-1
-              Runner-up: #{@spotlight_stats[:runner_up_aspiration].name}
+              Runner-up: #{@spotlight_stats[:runner_up_aspiration].name}#{@spotlight_stats[:runner_up_aspiration_count] ? " (#{@spotlight_stats[:runner_up_aspiration_count]})" : ''}
+      - else
+        .col-md-2.col-6.mb-3
+          .h5.text-success.text-muted No data
+          %small.text-muted Most Observed Value
       - if @spotlight_stats[:most_observed_person]
         .col-md-3.col-6.mb-3
-          .h5.text-warning= @spotlight_stats[:most_observed_person].preferred_name || @spotlight_stats[:most_observed_person].first_name
+          .h5.text-warning= (@spotlight_stats[:most_observed_person].casual_name.presence || @spotlight_stats[:most_observed_person].email || 'Unknown Person')
           .h6.text-warning= "#{@spotlight_stats[:most_observed_person_count]} observations"
           %small.text-muted Most Observed Person
           - if @spotlight_stats[:runner_up_person]
             %small.text-muted.d-block.mt-1
-              Runner-up: #{@spotlight_stats[:runner_up_person].preferred_name || @spotlight_stats[:runner_up_person].first_name}
+              Runner-up: #{(@spotlight_stats[:runner_up_person].casual_name.presence || @spotlight_stats[:runner_up_person].email || 'Unknown Person')}#{@spotlight_stats[:runner_up_person_count] ? " (#{@spotlight_stats[:runner_up_person_count]})" : ''}
+      - else
+        .col-md-3.col-6.mb-3
+          .h5.text-warning.text-muted No data
+          %small.text-muted Most Observed Person
       - if @spotlight_stats[:most_active_observer]
         .col-md-3.col-6.mb-3
-          .h5.text-danger= @spotlight_stats[:most_active_observer].preferred_name || @spotlight_stats[:most_active_observer].first_name
+          .h5.text-danger= (@spotlight_stats[:most_active_observer].casual_name.presence || @spotlight_stats[:most_active_observer].email || 'Unknown Person')
           .h6.text-danger= "#{@spotlight_stats[:most_active_observer_count]} observations"
           %small.text-muted Most Active Observer
           - if @spotlight_stats[:runner_up_observer]
             %small.text-muted.d-block.mt-1
-              Runner-up: #{@spotlight_stats[:runner_up_observer].preferred_name || @spotlight_stats[:runner_up_observer].first_name}
+              Runner-up: #{(@spotlight_stats[:runner_up_observer].casual_name.presence || @spotlight_stats[:runner_up_observer].email || 'Unknown Person')}#{@spotlight_stats[:runner_up_observer_count] ? " (#{@spotlight_stats[:runner_up_observer_count]})" : ''}
+      - else
+        .col-md-3.col-6.mb-3
+          .h5.text-danger.text-muted No data
+          %small.text-muted Most Active Observer
 
