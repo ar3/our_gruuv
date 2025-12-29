@@ -47,6 +47,31 @@ This document defines the coding standards and style conventions for this Rails 
 
 ## View Organization & Partials
 
+### Page Titles (REQUIRED)
+- **Every view file MUST include `content_for :title`** at the top of the file
+- **Purpose**: Provides descriptive page titles for browser tabs and page visit tracking
+- **Format**: Use descriptive, concise titles (3-8 words)
+- **Placement**: Must be the first line in the view file (before any other content_for blocks)
+
+**Patterns:**
+- **Index pages**: `"Positions"`, `"Observations"`, `"Assignments"`
+- **Show pages**: `@resource.name`, `@resource.title`, `@resource.display_name`
+- **Edit pages**: `"Edit Position"`, `"Edit Assignment"`
+- **New pages**: `"New Position"`, `"New Assignment"`
+- **Dashboard**: `"#{@organization.display_name} Dashboard"`
+- **Custom actions**: `"Manage Assignments"`, `"Customize View"`
+
+**Examples:**
+```haml
+- content_for :title, "Positions"
+- content_for :title, @position.display_name
+- content_for :title, "Edit Position"
+- content_for :title, "#{@organization.display_name} Dashboard"
+- content_for :title, "Manage Assignments for #{@position.position_type.external_title}"
+```
+
+**Note**: Page titles are automatically extracted from rendered HTML and tracked in `PageVisit` records. They also appear in browser tabs, making navigation easier for users.
+
 ### Partial Rendering Rules
 - **Always use full paths for partials** - never use relative paths
 - **Organize partials in logical subdirectories** - use `spotlights/`, `forms/`, `cards/` folders

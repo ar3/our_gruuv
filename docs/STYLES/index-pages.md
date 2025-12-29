@@ -4,7 +4,25 @@ This document defines the standard style guide for all index pages in the OurGru
 
 ## Required Elements
 
-### 1. Back Link Section
+### 1. Page Title
+- **REQUIRED**: Every page MUST include `content_for :title` at the top of the view file
+- **Purpose**: Provides descriptive page titles for browser tabs and page visit tracking
+- **Format**: Use descriptive, concise titles (3-8 words)
+- **Pattern**: For index pages, use the resource name (e.g., "Positions", "Observations", "Assignments")
+- **Placement**: Must be the first line in the view file (before any other content_for blocks)
+
+```haml
+- content_for :title, "Positions"
+```
+
+**Examples:**
+- Index pages: `"Positions"`, `"Observations"`, `"Assignments"`
+- Dashboard: `"#{@organization.display_name} Dashboard"`
+- Custom pages: `"Customize View"`, `"Manage Assignments"`
+
+**Note**: Page titles are automatically tracked in `PageVisit` records and appear in browser tabs. Always include a descriptive title for every page.
+
+### 2. Back Link Section
 - **Back Link**: Use `content_for :go_back_link` to provide navigation back to the parent page
 - **Icon**: Use `bi-arrow-left` icon with consistent styling
 - **Target**: Should link back to the appropriate parent page (e.g., organization show page)
@@ -221,14 +239,15 @@ This document defines the standard style guide for all index pages in the OurGru
 
 ## Implementation Notes
 
-1. **Modal Functionality**: The modal doesn't need to work initially - just the UI structure
-2. **Save Button**: Always disable the "Apply Filters" button in the modal
-3. **Responsive**: Use Bootstrap responsive classes for mobile compatibility
-4. **Accessibility**: Include proper ARIA labels and semantic HTML
-5. **Consistency**: Follow the same pattern across all index pages
-6. **Back Link Styling**: Use the `go-back-link` CSS class instead of inline styles for consistency
-7. **Header Layout**: Use `.d-flex.align-items-center` with proper spacing (`me-2` on title, `ml-2` on button)
-8. **Authorization**: Always include conditional logic for create button permissions with tooltip warnings
+1. **Page Title**: Always include `content_for :title` as the first line of every view file (REQUIRED)
+2. **Modal Functionality**: The modal doesn't need to work initially - just the UI structure
+3. **Save Button**: Always disable the "Apply Filters" button in the modal
+4. **Responsive**: Use Bootstrap responsive classes for mobile compatibility
+5. **Accessibility**: Include proper ARIA labels and semantic HTML
+6. **Consistency**: Follow the same pattern across all index pages
+7. **Back Link Styling**: Use the `go-back-link` CSS class instead of inline styles for consistency
+8. **Header Layout**: Use `.d-flex.align-items-center` with proper spacing (`me-2` on title, `ml-2` on button)
+9. **Authorization**: Always include conditional logic for create button permissions with tooltip warnings
 
 ## Examples
 

@@ -2,6 +2,29 @@
 
 This document defines the standard style guide for all show pages in the OurGruuv application.
 
+## Required Elements
+
+### Page Title
+- **REQUIRED**: Every page MUST include `content_for :title` at the top of the view file
+- **Purpose**: Provides descriptive page titles for browser tabs and page visit tracking
+- **Format**: Use descriptive, concise titles (3-8 words)
+- **Pattern**: For show pages, use the resource name or identifier (e.g., `@position.display_name`, `@assignment.title`)
+- **Placement**: Must be the first line in the view file (before any other content_for blocks)
+
+```haml
+- content_for :title, @position.display_name
+- content_for :title, "Edit Position"
+- content_for :title, "About Me - #{@teammate.person.casual_name}"
+```
+
+**Examples:**
+- Show pages: `@resource.name`, `@resource.title`, `@resource.display_name`
+- Edit pages: `"Edit Position"`, `"Edit Assignment"`
+- Custom pages: `"Manage Assignments for #{@position.position_type.external_title}"`
+- Person pages: `"About Me - #{@teammate.person.casual_name}"`
+
+**Note**: Page titles are automatically tracked in `PageVisit` records and appear in browser tabs. Always include a descriptive title for every page.
+
 ## Page Header Layout
 
 ### Standard Header Structure
@@ -292,6 +315,7 @@ button[aria-expanded="false"] .collapsed, a[aria-expanded="false"] .collapsed {
 ## Implementation Checklist
 
 When creating or updating show pages, ensure:
+- [ ] `content_for :title` included at the top of the view file (REQUIRED)
 - [ ] Header follows standard layout (title left, actions right)
 - [ ] Uses all three required content_for sections (`:header`, `:header_action`, `:go_back_link`)
 - [ ] Single edit button placed in `header` content_for with authorization check
@@ -309,6 +333,7 @@ When creating or updating show pages, ensure:
 - [ ] Authorization properly implemented with tooltips for disabled actions
 
 When creating or updating edit pages, ensure:
+- [ ] `content_for :title` included at the top of the view file (REQUIRED)
 - [ ] Uses same content_for structure as show pages (`:header`, `:header_action`, `:go_back_link`)
 - [ ] Header title prefixed with "Edit " + resource name
 - [ ] Quick action links to show page (view action)

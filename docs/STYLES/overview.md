@@ -19,6 +19,7 @@ This document provides a comprehensive overview of all styling patterns used in 
 
 ### Index Pages
 Use the `content_for` pattern with:
+- `content_for :title` for page title (REQUIRED - first line)
 - `content_for :go_back_link` for navigation
 - `content_for :header` for title and create button
 - `content_for :header_action` for filter/sort button
@@ -26,6 +27,7 @@ Use the `content_for` pattern with:
 
 ### Show Pages
 Use the direct layout pattern with:
+- `content_for :title` for page title (REQUIRED - first line)
 - `.d-flex.justify-content-between.align-items-center.mb-2` for header
 - Direct back link below header as muted text
 - 8:4 column split for content vs actions
@@ -65,6 +67,8 @@ When creating or updating any page:
 - [ ] Clean card headers without colors
 
 **All Pages:**
+- [ ] `content_for :title` included at the top of every view file (REQUIRED)
+- [ ] Page title is descriptive and concise (3-8 words)
 - [ ] Consistent button patterns and spacing
 - [ ] Semantic color usage only
 - [ ] Responsive design considerations
