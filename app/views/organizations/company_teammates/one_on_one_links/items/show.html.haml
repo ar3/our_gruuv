@@ -1,0 +1,82 @@
+- content_for :title, "#{@item_details['name']} - #{@teammate.person.display_name}"
+- content_for :header, @item_details['name'] || 'Item Details'
+- content_for :return_url, organization_company_teammate_one_on_one_link_path(organization, @teammate)
+- content_for :return_text, "Back to 1:1 Area"
+
+.card
+  .card-header.d-flex.justify-content-between.align-items-center
+    %h5.mb-0 Item Details
+    = link_to "Refresh", request.fullpath, class: "btn btn-sm btn-outline-primary"
+  
+  .card-body
+    %dl.row
+      %dt.col-sm-3 Name:
+      %dd.col-sm-9= @item_details['name'] || 'Unnamed'
+      
+      - if @item_details['completed']
+        %dt.col-sm-3 Status:
+        %dd.col-sm-9
+          %span.badge.bg-success Completed
+          - if @item_details['completed_at']
+            %small.text-muted.ms-2
+              on #{Time.parse(@item_details['completed_at']).strftime('%b %d, %Y at %I:%M %p')}
+      - else
+        %dt.col-sm-3 Status:
+        %dd.col-sm-9
+          %span.badge.bg-secondary Incomplete
+      
+      - if @item_details['due_on']
+        %dt.col-sm-3 Due Date:
+        %dd.col-sm-9= Date.parse(@item_details['due_on']).strftime('%B %d, %Y')
+      
+      - if @item_details['assignee']
+        %dt.col-sm-3 Assignee:
+        %dd.col-sm-9= @item_details['assignee']['name'] rescue 'Unknown'
+      
+      - if @item_details['created_at']
+        %dt.col-sm-3 Created At:
+        %dd.col-sm-9= Time.parse(@item_details['created_at']).strftime('%B %d, %Y at %I:%M %p')
+      
+      - if @item_details['tags'] && @item_details['tags'].any?
+        %dt.col-sm-3 Tags:
+        %dd.col-sm-9
+          .d-flex.flex-wrap.gap-2
+            - @item_details['tags'].each do |tag|
+              %span.badge{style: "background-color: ##{tag['color'] || '6c757d'};"}
+                = tag['name'] || 'Tag'
+      
+      - if @item_details['parent']
+        %dt.col-sm-3 Parent Task:
+        %dd.col-sm-9= @item_details['parent']['name'] rescue 'Unknown'
+      
+      - if @item_details['projects'] && @item_details['projects'].any?
+        %dt.col-sm-3 Projects:
+        %dd.col-sm-9
+          .d-flex.flex-wrap.gap-2
+            - @item_details['projects'].each do |project|
+              %span.badge.bg-info= project['name'] rescue 'Unknown'
+      
+      - if @item_details['workspace']
+        %dt.col-sm-3 Workspace:
+        %dd.col-sm-9= @item_details['workspace']['name'] rescue 'Unknown'
+      
+      - if @item_details['permalink_url']
+        %dt.col-sm-3 Permalink:
+        %dd.col-sm-9= link_to @item_details['permalink_url'], @item_details['permalink_url'], target: '_blank', rel: 'noopener noreferrer'
+      
+      - if @item_details['notes'] || @item_details['html_notes']
+        %dt.col-sm-3 Description:
+        %dd.col-sm-9
+          - if @item_details['html_notes']
+            != @item_details['html_notes']
+          - elsif @item_details['notes']
+            %p.text-pre-wrap= @item_details['notes']
+    
+    - if @source == 'asana' && @one_on_one_link.asana_project_id
+      .mt-3
+        = link_to "View in Asana", 
+                  AsanaService.task_url(@item_gid, @one_on_one_link.asana_project_id),
+                  target: '_blank',
+                  rel: 'noopener noreferrer',
+                  class: "btn btn-outline-primary"
+

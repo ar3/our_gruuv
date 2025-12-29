@@ -185,10 +185,14 @@ get '/login', to: 'auth#login', as: :login
       # Goal check-ins page (overlay)
       resource :goal_check_ins, controller: 'company_teammates/goal_check_ins', only: [:show, :update]
       
-      resource :one_on_one_link, controller: 'company_teammates/one_on_one_links', only: [:show, :update] do
+      resource :one_on_one_link, controller: 'company_teammates/one_on_one_links', only: [:show, :create, :update] do
         member do
+          post 'sync', to: 'company_teammates/one_on_one_links#sync', as: :sync
+          post 'associate_project', to: 'company_teammates/one_on_one_links#associate_project', as: :associate_project
+          post 'disassociate_project', to: 'company_teammates/one_on_one_links#disassociate_project', as: :disassociate_project
           get 'asana/oauth/authorize', to: 'company_teammates/asana/oauth#authorize', as: :asana_oauth_authorize_one_on_one
         end
+        resources :items, controller: 'company_teammates/one_on_one_links/items', only: [:show]
       end
       
       # Finalization flow (separate from check-ins)

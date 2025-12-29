@@ -7,18 +7,26 @@
          collapse_target: 'oneOnOneSection',
          status_indicator: one_on_one_indicator
 
+- source = @one_on_one_link&.external_project_source
+- cache = @one_on_one_link&.external_project_cache_for(source) if source
+- incomplete_count = cache ? cache.incomplete_items.length : 0
+- recently_completed_count = cache ? cache.recently_completed_items.length : 0
+
 -# Summary view (shown when collapsed)
-- total_incomplete_tasks = 0
-- if @one_on_one_link&.is_asana_link? && @one_on_one_link.has_deep_integration? && @teammate&.has_asana_identity? && @asana_section_tasks
-  - total_incomplete_tasks = @asana_section_tasks.values.flatten.count
 %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(one_on_one_indicator)}"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(one_on_one_indicator)} #{status_indicator_badge_class(one_on_one_indicator)} me-2"}
     - if @one_on_one_link&.url.present?
-      - if @one_on_one_link.has_deep_integration? && total_incomplete_tasks > 0
-        1:1 link configured, #{pluralize(total_incomplete_tasks, 'incomplete task')}
-      - elsif @one_on_one_link.has_deep_integration?
-        1:1 link configured and integrated
+      - if cache
+        - summary_parts = []
+        - summary_parts << pluralize(incomplete_count, 'incomplete task') if incomplete_count > 0
+        - summary_parts << pluralize(recently_completed_count, 'recently completed task') if recently_completed_count > 0
+        - if summary_parts.any?
+          1:1 link configured, #{summary_parts.join(', ')}
+        - else
+          1:1 link configured and integrated
+      - elsif source
+        1:1 link configured (#{source_display_name(source)} project detected)
       - else
         1:1 link configured
     - else
@@ -33,55 +41,52 @@
           %p.mb-2
             %strong 1:1 Source:
             = link_to @one_on_one_link.url, @one_on_one_link.url, target: '_blank', rel: 'noopener noreferrer'
-          - if @one_on_one_link.is_asana_link?
-            %span.badge.bg-info Asana Project
-          - if @one_on_one_link.has_deep_integration?
+          - if source
+            %span.badge.bg-info= "#{source_display_name(source)} Project"
+          - if cache
             %span.badge.bg-success.ms-2 Integrated
-            - if @one_on_one_link.asana_project_id
-              %small.text-muted.ms-2
-                Project ID: #{@one_on_one_link.asana_project_id}
         
-        -# Display Asana project data if integrated
-        - if @one_on_one_link.is_asana_link? && @one_on_one_link.has_deep_integration? && @teammate&.has_asana_identity? && @asana_sections.any?
+        -# Display cached project summary if available
+        - if cache
           .mt-3
-            %h5.mb-3 Project Sections & Tasks
-            - @asana_sections.each do |section|
-              .card.mb-3
-                .card-header
-                  %strong= section['name'] || 'Unnamed Section'
-                .card-body
-                  - section_tasks = @asana_section_tasks[section['gid']] || []
-                  - if section_tasks.any?
-                    %ul.list-unstyled.mb-0
-                      - section_tasks.each do |task|
-                        %li.mb-2
-                          %i.bi.bi-circle.me-2
-                          - task_url = AsanaService.task_url(task['gid'], @one_on_one_link.asana_project_id)
-                          = link_to task['name'], task_url, target: '_blank', rel: 'noopener noreferrer', class: 'text-decoration-none'
-                          - if task['due_on']
-                            %small.text-muted.ms-2
-                              Due: #{Date.parse(task['due_on']).strftime('%b %d, %Y')}
-                  - else
-                    %p.text-muted.mb-0 No incomplete tasks in this section.
-        - elsif @one_on_one_link.has_deep_integration?
+            %h5.mb-3 Project Summary
+            - cache.sections_data.each do |section|
+              - section_incomplete = cache.items_for_section(section['gid']).select { |item| !item['completed'] }.length
+              - section_completed = cache.recently_completed_items.select { |item| item['section_gid'] == section['gid'] }.length
+              - if section_incomplete > 0 || section_completed > 0
+                .card.mb-2
+                  .card-body
+                    %strong= section['name'] || 'Unnamed Section'
+                    %br
+                    - if section_incomplete > 0
+                      %small.text-muted
+                        #{pluralize(section_incomplete, 'incomplete task')}
+                    - if section_incomplete > 0 && section_completed > 0
+                      %span.mx-2 |
+                    - if section_completed > 0
+                      %small.text-muted
+                        #{pluralize(section_completed, 'recently completed task')}
+            
+            .mt-3
+              = link_to "View Full Details", 
+                        @one_on_one_url,
+                        class: "btn btn-outline-primary"
+        - elsif source && !has_external_identity?(@teammate, source)
+          .alert.alert-warning
+            %strong #{source_display_name(source)} Project Detected
+            %p.mb-0.mt-2
+              This is a #{source_display_name(source)} project link. 
+              %br
+              Connect your #{source_display_name(source)} account to enable automatic syncing of sections and #{pluralize(2, item_term(source))}.
+        - elsif source
           .alert.alert-info
-            %strong Deep Integration Active
+            %strong Ready to Sync
             %p.mb-0.mt-2
-              This 1:1 is connected to an external system. 
+              This #{source_display_name(source)} project is ready to be synced. 
               %br
-              Headlines, todos, and discussion topics will be displayed here once fully integrated.
-        - elsif @one_on_one_link.is_asana_link?
-          .alert.alert-warning
-            %strong Asana Project Detected
-            %p.mb-0.mt-2
-              This is an Asana project link. 
-              %br
-              - if @teammate && !@teammate.has_asana_identity?
-                Connect your Asana account to enable automatic syncing of sections and tasks.
-              - else
-                Integration will be enabled after connecting your account.
+              Visit the 1:1 Area page to sync and view project data.
         - else
-          .alert.alert-warning
+          .alert.alert-info
             %strong No Deep Integration
             %p.mb-0.mt-2
               This 1:1 link is not yet integrated. 
@@ -96,4 +101,3 @@
         = link_to "Manage 1:1 Area", 
                   @one_on_one_url,
                   class: "btn btn-outline-primary"
-

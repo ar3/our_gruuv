@@ -1,0 +1,74 @@
+- cache ||= local_assigns[:cache]
+- cacheable ||= local_assigns[:cacheable]
+- current_teammate ||= local_assigns[:current_teammate] || current_company_teammate
+- source ||= local_assigns[:source]
+- return_url ||= local_assigns[:return_url] || request.fullpath
+
+- has_identity = has_external_identity?(current_teammate, source)
+- refresh_path = external_project_cache_path(cacheable, source, :sync)
+
+.card.mb-3
+  .card-header.d-flex.justify-content-between.align-items-center
+    %h5.mb-0
+      %i.bi.bi-link-45deg.me-2
+      #{source_display_name(source)} Project
+    = render 'shared/external_project/refresh_controls', 
+             cache: cache, 
+             current_teammate: current_teammate, 
+             source: source, 
+             refresh_path: refresh_path
+  
+  .card-body
+    - if cache.has_more_items
+      .alert.alert-info.mb-3
+        %i.bi.bi-info-circle.me-2
+        Showing 200 #{pluralize(200, item_term(source))}. 
+        Some #{pluralize(2, item_term(source))} may not be displayed.
+    
+    - if cache.sections_data.any?
+      - cache.sections_data.each do |section|
+        .card.mb-3
+          .card-header
+            %strong= section['name'] || 'Unnamed Section'
+          .card-body
+            - section_items = cache.items_for_section(section['gid'])
+            - if section_items.any?
+              %ul.list-unstyled.mb-0
+                - section_items.each do |item|
+                  %li.mb-2
+                    - if item['completed']
+                      %i.bi.bi-check-circle.text-success.me-2
+                    - else
+                      %i.bi.bi-circle.me-2
+                    
+                    - if has_identity
+                      = link_to item['name'], 
+                                external_project_item_path(cacheable, item['gid'], source),
+                                class: 'text-decoration-none'
+                    - else
+                      %span= item['name']
+                      %small.text-muted.ms-2
+                        (Connect #{source_display_name(source)} to view details)
+                    
+                    .d-flex.flex-wrap.gap-2.mt-1.ms-4
+                      - if item['due_on']
+                        %small{class: due_date_class(item['due_on'])}
+                          %i{class: "#{due_date_icon(item['due_on'])} me-1"}
+                          Due: #{Date.parse(item['due_on']).strftime('%b %d, %Y')}
+                      - if item['assignee'] && item['assignee']['name']
+                        %small.text-muted
+                          %i.bi.bi-person.me-1
+                          = item['assignee']['name']
+                      - if item['created_at']
+                        %small.text-muted
+                          %i.bi.bi-clock-history.me-1
+                          Created: #{Time.parse(item['created_at']).strftime('%b %d, %Y')}
+                      - if item['tags'] && item['tags'].any?
+                        - item['tags'].each do |tag|
+                          %span.badge{style: "background-color: ##{tag['color'] || '6c757d'};"}
+                            = tag['name'] || 'Tag'
+            - else
+              %p.text-muted.mb-0 No #{pluralize(2, item_term(source))} in this #{section_term(source)}.
+    - else
+      %p.text-muted.mb-0 No #{pluralize(2, section_term(source))} found in this project.
+

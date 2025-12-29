@@ -15,7 +15,12 @@ class Organizations::CompanyTeammates::Asana::OauthController < ApplicationContr
     scope = ENV.fetch('ASANA_OAUTH_SCOPE', 'default') # Can be overridden via env var
     # Store source in state: 'one_on_one' or 'identities'
     source = params[:one_on_one_link_id].present? ? 'one_on_one' : 'identities'
-    state = "#{@organization.id}_#{@teammate.id}_#{source}" # Use organization, teammate IDs, and source as state
+    
+    # Handle return_url parameter
+    return_url = params[:return_to] || params[:return_url]
+    return_url_encoded = return_url.present? ? Base64.urlsafe_encode64(return_url) : ''
+    
+    state = "#{@organization.id}_#{@teammate.id}_#{source}_#{return_url_encoded}" # Use organization, teammate IDs, source, and return_url as state
     
     oauth_url = "https://app.asana.com/-/oauth_authorize?client_id=#{client_id}&redirect_uri=#{CGI.escape(redirect_uri)}&response_type=code&scope=#{CGI.escape(scope)}&state=#{CGI.escape(state)}"
     
@@ -76,8 +81,10 @@ class Organizations::CompanyTeammates::Asana::OauthController < ApplicationContr
               one_on_one_link.save
             end
             
-            # Redirect based on where the request came from (stored in state)
-            redirect_path = if @oauth_source == 'identities'
+            # Redirect based on return_url or where the request came from (stored in state)
+            redirect_path = if @return_url.present?
+              @return_url
+            elsif @oauth_source == 'identities'
               organization_company_teammate_path(@organization, @teammate)
             else
               organization_company_teammate_one_on_one_link_path(@organization, @teammate)
@@ -85,7 +92,9 @@ class Organizations::CompanyTeammates::Asana::OauthController < ApplicationContr
             
             redirect_to redirect_path, notice: 'Asana account connected successfully!'
           else
-            redirect_path = if @oauth_source == 'identities'
+            redirect_path = if @return_url.present?
+              @return_url
+            elsif @oauth_source == 'identities'
               organization_company_teammate_path(@organization, @teammate)
             else
               organization_company_teammate_one_on_one_link_path(@organization, @teammate)
@@ -94,7 +103,9 @@ class Organizations::CompanyTeammates::Asana::OauthController < ApplicationContr
             redirect_to redirect_path, alert: "Failed to save Asana identity: #{identity.errors.full_messages.join(', ')}"
           end
         else
-          redirect_path = if @oauth_source == 'identities'
+          redirect_path = if @return_url.present?
+            @return_url
+          elsif @oauth_source == 'identities'
             organization_company_teammate_path(@organization, @teammate)
           else
             organization_company_teammate_one_on_one_link_path(@organization, @teammate)
@@ -103,7 +114,9 @@ class Organizations::CompanyTeammates::Asana::OauthController < ApplicationContr
           redirect_to redirect_path, alert: 'Failed to get user information from Asana'
         end
       else
-        redirect_path = if @oauth_source == 'identities'
+        redirect_path = if @return_url.present?
+          @return_url
+        elsif @oauth_source == 'identities'
           organization_company_teammate_path(@organization, @teammate)
         else
           organization_company_teammate_one_on_one_link_path(@organization, @teammate)
@@ -115,7 +128,9 @@ class Organizations::CompanyTeammates::Asana::OauthController < ApplicationContr
       Rails.logger.error "Asana OAuth error: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
       
-      redirect_path = if @oauth_source == 'identities'
+      redirect_path = if @return_url.present?
+        @return_url
+      elsif @oauth_source == 'identities'
         organization_company_teammate_path(@organization, @teammate)
       else
         organization_company_teammate_one_on_one_link_path(@organization, @teammate)
@@ -146,8 +161,21 @@ class Organizations::CompanyTeammates::Asana::OauthController < ApplicationContr
       org_id = parts[0]
       teammate_id = parts[1]
       # Handle backward compatibility: old state format was just org_id_teammate_id
-      # New format is org_id_teammate_id_source
+      # New format is org_id_teammate_id_source_base64_return_url
       @oauth_source = parts[2] || 'one_on_one' # Default to one_on_one for backward compatibility
+      
+      # Extract return_url if present (parts[3] would be the base64 encoded return_url)
+      if parts[3].present?
+        begin
+          @return_url = Base64.urlsafe_decode64(parts[3])
+        rescue ArgumentError
+          # If decoding fails, ignore return_url
+          @return_url = nil
+        end
+      else
+        @return_url = nil
+      end
+      
       @organization = Organization.find(org_id)
       @teammate = Teammate.find(teammate_id)
     else

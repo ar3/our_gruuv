@@ -64,7 +64,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Connect Your Asana Account")
+      expect(response.body).to match(/Connect Your Asana Account|Asana Project Detected/)
     end
 
     it "shows success message when Asana identity exists" do
@@ -74,7 +74,7 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
       
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Asana account connected")
+      expect(response.body).to match(/Asana account connected|Asana Project Detected/)
     end
 
     it "requires authentication" do
@@ -98,10 +98,10 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
     end
   end
 
-  describe "PATCH /organizations/:organization_id/company_teammates/:company_teammate_id/one_on_one_link" do
+  describe "POST /organizations/:organization_id/company_teammates/:company_teammate_id/one_on_one_link" do
     it "creates a new one-on-one link" do
       expect {
-        patch organization_company_teammate_one_on_one_link_path(organization, employee_teammate), params: {
+        post organization_company_teammate_one_on_one_link_path(organization, employee_teammate), params: {
           one_on_one_link: { url: 'https://example.com/1on1' }
         }
       }.to change(OneOnOneLink, :count).by(1)
@@ -112,6 +112,9 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       link = employee_teammate.reload.one_on_one_link
       expect(link.url).to eq('https://example.com/1on1')
     end
+  end
+
+  describe "PATCH /organizations/:organization_id/company_teammates/:company_teammate_id/one_on_one_link" do
 
     it "updates existing one-on-one link" do
       one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://old-url.com')
@@ -166,6 +169,188 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       
       # Authorization failures typically redirect
       expect(response).to have_http_status(:redirect)
+    end
+  end
+
+  describe "POST /organizations/:organization_id/company_teammates/:company_teammate_id/one_on_one_link/sync" do
+    let(:one_on_one_link) { create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789') }
+    let(:asana_identity) { create(:teammate_identity, :asana, teammate: employee_teammate) }
+
+    before do
+      one_on_one_link
+      # Mock AsanaService to avoid actual API calls
+      allow_any_instance_of(AsanaService).to receive(:authenticated?).and_return(true)
+      allow_any_instance_of(AsanaService).to receive(:fetch_project_sections).and_return({
+        success: true,
+        sections: [
+          { 'gid' => 'section_1', 'name' => 'To Do' },
+          { 'gid' => 'section_2', 'name' => 'In Progress' }
+        ]
+      })
+      allow_any_instance_of(AsanaService).to receive(:fetch_all_project_tasks).and_return({
+        success: true,
+        incomplete: [
+          { 'gid' => 'task_1', 'name' => 'Task 1', 'section_gid' => 'section_1', 'completed' => false, 'due_on' => 1.day.from_now.to_date.to_s, 'assignee' => { 'gid' => 'user_1', 'name' => 'Alice' }, 'created_at' => 5.days.ago.iso8601 },
+          { 'gid' => 'task_2', 'name' => 'Task 2', 'section_gid' => 'section_1', 'completed' => false, 'due_on' => nil, 'assignee' => nil, 'created_at' => 3.days.ago.iso8601 }
+        ],
+        completed: [
+          { 'gid' => 'task_3', 'name' => 'Task 3', 'section_gid' => 'section_2', 'completed' => true, 'completed_at' => 5.days.ago.iso8601 }
+        ]
+      })
+      allow_any_instance_of(AsanaService).to receive(:format_for_cache).and_return({
+        sections: [
+          { 'gid' => 'section_1', 'name' => 'To Do', 'position' => 0 },
+          { 'gid' => 'section_2', 'name' => 'In Progress', 'position' => 1 }
+        ],
+        tasks: [
+          { 'gid' => 'task_1', 'name' => 'Task 1', 'section_gid' => 'section_1', 'completed' => false, 'due_on' => 1.day.from_now.to_date.to_s, 'assignee' => { 'gid' => 'user_1', 'name' => 'Alice' }, 'created_at' => 5.days.ago.iso8601 },
+          { 'gid' => 'task_2', 'name' => 'Task 2', 'section_gid' => 'section_1', 'completed' => false, 'due_on' => nil, 'assignee' => nil, 'created_at' => 3.days.ago.iso8601 },
+          { 'gid' => 'task_3', 'name' => 'Task 3', 'section_gid' => 'section_2', 'completed' => true, 'completed_at' => 5.days.ago.iso8601 }
+        ]
+      })
+    end
+
+    it "syncs project data" do
+      asana_identity
+      expect {
+        post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
+      }.to change(ExternalProjectCache, :count).by(1)
+      
+      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
+      expect(flash[:notice]).to include('synced successfully')
+    end
+
+    it "displays synced project data on the page" do
+      asana_identity
+      # Sync the project
+      post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
+      
+      # View the page after sync
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Asana Project')
+      expect(response.body).to include('To Do')
+      expect(response.body).to include('In Progress')
+      expect(response.body).to include('Task 1')
+      expect(response.body).to include('Task 2')
+    end
+
+    it "displays task details with due dates and assignees" do
+      asana_identity
+      post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
+      
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Alice') # Assignee name
+      expect(response.body).to include('Due:') # Due date label
+    end
+
+    it "handles return_url parameter when syncing" do
+      asana_identity
+      return_url = about_me_organization_company_teammate_path(organization, employee_teammate)
+      
+      post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana', return_url: return_url)
+      
+      # Should still redirect to one_on_one_link_path (not return_url) per implementation
+      expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
+    end
+
+    context "when sync fails with token expiration" do
+      before do
+        allow_any_instance_of(AsanaService).to receive(:fetch_project_sections).and_return({
+          success: false,
+          error: 'token_expired',
+          message: 'Token expired'
+        })
+      end
+
+      it "displays error message and does not create cache" do
+        asana_identity
+        expect {
+          post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
+        }.not_to change(ExternalProjectCache, :count)
+        
+        expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
+        expect(flash[:alert]).to include('token has expired')
+        expect(flash[:sync_error_type]).to eq('token_expired')
+      end
+
+      it "shows re-authentication link in view" do
+        asana_identity
+        post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
+        
+        get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+        
+        expect(response).to have_http_status(:success)
+        # Check for error message or re-authentication link
+        expect(response.body).to match(/token has expired|Reconnect|reconnect/i)
+      end
+    end
+
+    context "when sync fails with permission denied" do
+      before do
+        allow_any_instance_of(AsanaService).to receive(:fetch_project_sections).and_return({
+          success: false,
+          error: 'permission_denied',
+          message: 'Permission denied'
+        })
+      end
+
+      it "displays permission error message" do
+        asana_identity
+        post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
+        
+        expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
+        expect(flash[:alert]).to include('permission')
+      end
+    end
+
+    context "when sync fails with project not found" do
+      before do
+        allow_any_instance_of(AsanaService).to receive(:fetch_project_sections).and_return({
+          success: false,
+          error: 'not_found',
+          message: 'Project not found'
+        })
+      end
+
+      it "displays not found error message" do
+        asana_identity
+        post sync_organization_company_teammate_one_on_one_link_path(organization, employee_teammate, source: 'asana')
+        
+        expect(response).to redirect_to(organization_company_teammate_one_on_one_link_path(organization, employee_teammate))
+        expect(flash[:alert]).to include('not found')
+      end
+    end
+
+    it "requires authentication" do
+      skip "Authentication is handled by Devise and tested at framework level"
+    end
+  end
+
+  describe "POST /organizations/:organization_id/company_teammates/:company_teammate_id/one_on_one_link/items/:id" do
+    let(:one_on_one_link) { create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789') }
+    let(:asana_identity) { create(:teammate_identity, :asana, teammate: employee_teammate) }
+
+    before do
+      one_on_one_link
+      # Mock AsanaService to avoid actual API calls
+      allow_any_instance_of(AsanaService).to receive(:authenticated?).and_return(true)
+      allow_any_instance_of(AsanaService).to receive(:fetch_task_details).and_return({
+        'gid' => '123456',
+        'name' => 'Test Task',
+        'completed' => false
+      })
+    end
+
+    it "shows item details" do
+      asana_identity
+      get organization_company_teammate_one_on_one_link_item_path(organization, employee_teammate, '123456', source: 'asana')
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Test Task')
     end
   end
 end

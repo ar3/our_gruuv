@@ -151,6 +151,27 @@ RSpec.describe 'About Me Page', type: :request do
         # Should show red indicator when no 1:1 link
         expect(response.body).to match(/text-danger|bg-danger/)
       end
+
+      it 'displays cached project summary when cache exists' do
+        one_on_one_link = create(:one_on_one_link, teammate: teammate, url: 'https://app.asana.com/0/123456/789')
+        cache = create(:external_project_cache, 
+                      cacheable: one_on_one_link, 
+                      source: 'asana',
+                      items_data: [
+                        { 'gid' => '1', 'name' => 'Task 1', 'completed' => false, 'section_gid' => 'section_1' },
+                        { 'gid' => '2', 'name' => 'Task 2', 'completed' => true, 'completed_at' => 5.days.ago.iso8601, 'section_gid' => 'section_1' }
+                      ],
+                      sections_data: [
+                        { 'gid' => 'section_1', 'name' => 'Section 1', 'position' => 0 }
+                      ])
+        
+        get about_me_organization_company_teammate_path(organization, teammate)
+        
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('1:1 Area')
+        expect(response.body).to include('incomplete task')
+        expect(response.body).to include('recently completed task')
+      end
     end
   end
 end

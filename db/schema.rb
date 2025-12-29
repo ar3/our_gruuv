@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_22_195239) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_29_080815) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -252,6 +252,27 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_22_195239) do
     t.index ["assessment_codes"], name: "index_enm_partnerships_on_assessment_codes", using: :gin
     t.index ["code"], name: "index_enm_partnerships_on_code", unique: true
     t.index ["relationship_type"], name: "index_enm_partnerships_on_relationship_type"
+  end
+
+  create_table "external_project_caches", force: :cascade do |t|
+    t.string "cacheable_type", null: false
+    t.bigint "cacheable_id", null: false
+    t.string "source", null: false
+    t.string "external_project_id", null: false
+    t.string "external_project_url"
+    t.jsonb "sections_data", default: {}
+    t.jsonb "items_data", default: {}
+    t.boolean "has_more_items", default: false
+    t.datetime "last_synced_at"
+    t.bigint "last_synced_by_teammate_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["cacheable_type", "cacheable_id", "source"], name: "index_external_project_caches_on_cacheable_and_source", unique: true
+    t.index ["cacheable_type", "cacheable_id"], name: "index_external_project_caches_on_cacheable"
+    t.index ["external_project_id"], name: "index_external_project_caches_on_external_project_id"
+    t.index ["last_synced_by_teammate_id"], name: "index_external_project_caches_on_last_synced_by_teammate_id"
+    t.index ["source", "last_synced_at"], name: "index_external_project_caches_on_source_and_synced_at"
+    t.index ["source"], name: "index_external_project_caches_on_source"
   end
 
   create_table "external_references", force: :cascade do |t|
@@ -945,6 +966,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_22_195239) do
   add_foreign_key "employment_tenures", "positions"
   add_foreign_key "employment_tenures", "seats"
   add_foreign_key "employment_tenures", "teammates"
+  add_foreign_key "external_project_caches", "teammates", column: "last_synced_by_teammate_id"
   add_foreign_key "goal_check_ins", "goals"
   add_foreign_key "goal_check_ins", "people", column: "confidence_reporter_id"
   add_foreign_key "goal_links", "goals", column: "child_id"

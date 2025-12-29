@@ -1,0 +1,24 @@
+- cacheable ||= local_assigns[:cacheable]
+- current_teammate ||= local_assigns[:current_teammate] || current_company_teammate
+- source ||= local_assigns[:source]
+- return_url ||= local_assigns[:return_url] || request.fullpath
+
+- has_identity = has_external_identity?(current_teammate, source)
+- oauth_path = external_project_oauth_path(cacheable, source)
+
+.alert.alert-info
+  %strong= "#{source_display_name(source)} Project Detected"
+  %p.mb-2
+    This appears to be a #{source_display_name(source)} project link.
+    %br
+    To enable full integration (sections, #{pluralize(2, item_term(source))}, etc.), you'll need to connect your #{source_display_name(source)} account.
+  - if has_identity
+    %p.mb-0.text-success
+      %i.bi.bi-check-circle.me-2
+      #{source_display_name(source)} account connected. Integration will be enabled after syncing.
+  - else
+    %p.mb-0
+      = link_to oauth_path, class: "btn btn-primary" do
+        %i.bi.bi-link-45deg.me-2
+        Connect Your #{source_display_name(source)} Account
+
