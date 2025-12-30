@@ -223,10 +223,40 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   end
   
   def edit
+    authorize @goal
+    
     @form = GoalForm.new(@goal)
     @form.current_person = current_person
     @form.current_teammate = current_person.teammates.find_by(organization: @organization)
-    authorize @goal
+    
+    # Preload linked goals for display (read-only on edit page)
+    linked_goal_ids = (@goal.outgoing_links.pluck(:child_id) + @goal.incoming_links.pluck(:parent_id)).uniq
+    if linked_goal_ids.any?
+      # Load all linked goals including completed and deleted
+      @linked_goals = Goal.where(id: linked_goal_ids).index_by(&:id)
+      
+      # Preload check-ins for linked goals
+      @goal.outgoing_links.includes(child: :goal_check_ins).load
+      @goal.incoming_links.includes(parent: :goal_check_ins).load
+      
+      # Reload associations to use the explicitly loaded goals
+      @goal.outgoing_links.each do |link|
+        link.association(:child).target = @linked_goals[link.child_id] if @linked_goals[link.child_id]
+      end
+      @goal.incoming_links.each do |link|
+        link.association(:parent).target = @linked_goals[link.parent_id] if @linked_goals[link.parent_id]
+      end
+      
+      @linked_goal_check_ins = GoalCheckIn
+        .where(goal_id: linked_goal_ids)
+        .includes(:confidence_reporter, :goal)
+        .recent
+        .group_by(&:goal_id)
+        .transform_values { |check_ins| check_ins.first }
+    else
+      @linked_goals = {}
+      @linked_goal_check_ins = {}
+    end
   end
   
   def update

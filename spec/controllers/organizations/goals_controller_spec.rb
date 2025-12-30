@@ -288,6 +288,34 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:form)).to be_present
       expect(assigns(:form).model).to eq(goal)
     end
+    
+    it 'loads linked goals data for display' do
+      linked_goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
+      create(:goal_link, parent: goal, child: linked_goal)
+      
+      get :edit, params: { organization_id: company.id, id: goal.id }
+      
+      expect(assigns(:linked_goals)).to be_present
+      expect(assigns(:linked_goals)[linked_goal.id]).to eq(linked_goal)
+      expect(assigns(:linked_goal_check_ins)).to be_a(Hash)
+    end
+    
+    it 'loads incoming links data' do
+      parent_goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
+      create(:goal_link, parent: parent_goal, child: goal)
+      
+      get :edit, params: { organization_id: company.id, id: goal.id }
+      
+      expect(assigns(:linked_goals)).to be_present
+      expect(assigns(:linked_goals)[parent_goal.id]).to eq(parent_goal)
+    end
+    
+    it 'initializes empty linked goals when goal has no links' do
+      get :edit, params: { organization_id: company.id, id: goal.id }
+      
+      expect(assigns(:linked_goals)).to eq({})
+      expect(assigns(:linked_goal_check_ins)).to eq({})
+    end
   end
   
   describe 'PATCH #update' do

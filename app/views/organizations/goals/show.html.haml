@@ -46,15 +46,6 @@
             - else
               %em.text-muted No description provided
 
-          %dt.col-sm-4 Goal Type:
-          %dd.col-sm-8
-            %span.badge{class: goal_badge_class(@goal.goal_type)}
-              = @goal.goal_type.humanize
-
-          %dt.col-sm-4 Timeframe:
-          %dd.col-sm-8
-            %span.badge{class: timeframe_badge_class(@goal.timeframe)}
-              = @goal.timeframe.to_s.humanize
 
           %dt.col-sm-4 Status:
           %dd.col-sm-8
@@ -67,6 +58,10 @@
             %dt.col-sm-4 Top Priority Since:
             %dd.col-sm-8= @goal.became_top_priority.strftime("%B %d, %Y at %I:%M %p")
 
+          %dt.col-sm-4 Timeframe:
+          %dd.col-sm-8
+            %span.badge{class: timeframe_badge_class(@goal.timeframe)}
+              = @goal.timeframe.to_s.humanize
           %dt.col-sm-4 Target Dates:
           %dd.col-sm-8
             - if @goal.earliest_target_date.present? || @goal.most_likely_target_date.present? || @goal.latest_target_date.present?
@@ -101,13 +96,6 @@
                 .mt-2
                   %strong Learnings:
                   = simple_format(last_check_in.confidence_reason)
-
-          %dt.col-sm-4 Creator:
-          %dd.col-sm-8= @goal.creator.person.display_name
-          %dt.col-sm-4 Created:
-          %dd.col-sm-8= @goal.created_at.strftime("%B %d, %Y at %I:%M %p")
-          %dt.col-sm-4 Updated:
-          %dd.col-sm-8= @goal.updated_at.strftime("%B %d, %Y at %I:%M %p")
 
     / Outgoing Links Card
     .card.mb-4{ role: "region", "aria-labelledby": "outgoing-links" }
@@ -166,63 +154,84 @@
         - if policy(@goal).update?
           .dropdown.d-inline.ms-1
             %button.btn.btn-link.p-0.text-decoration-underline.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button", style: "border: none; box-shadow: none; font-weight: inherit; color: inherit; vertical-align: baseline;"}
-              select
+              %i.bi.bi-node-plus-fill.text-success
+              New Child Goal
             %ul.dropdown-menu
-              %li= link_to "... this stepping stone / activity / output", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
-              %li= link_to "... this measurable outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'quantitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
-              %li= link_to "... this sentiment outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'qualitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
-              %li= link_to "... this objective", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'inspirational_objective', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+              %li= link_to "... this new stepping stone / activity / output", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+              %li= link_to "... this new measurable outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'quantitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+              %li= link_to "... this new sentiment outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'qualitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+              %li= link_to "... this new objective", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'inspirational_objective', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
 
-    / Incoming Links Card
-    .card.mb-4{ role: "region", "aria-labelledby": "incoming-links" }
-      .card-header.d-flex.justify-content-between.align-items-center
-        %h5.mb-0{ id: "incoming-links" }
-          %i.bi.bi-arrow-left-circle.me-2
-          Pursuing #{@goal.title}, is in part in service to the following goals/visions
-        - if policy(@goal).update?
-          = link_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-primary" do
-            %i.bi.bi-plus.me-1
-            Add Link
-      .card-body
-        - if @goal.incoming_links.any?
-          %ul.list-unstyled
-            - @goal.incoming_links.each do |link|
-              - linked_goal = @linked_goals[link.parent_id] || link.parent
-              - next unless linked_goal.present?
-              - most_recent_check_in = @linked_goal_check_ins[linked_goal.id]
-              - status_icon = goal_status_icon(linked_goal)
-              - is_struck_through = goal_should_be_struck_through?(linked_goal)
-              %li.mb-2
-                .d-flex.justify-content-between.align-items-start
-                  .flex-grow-1
-                    = link_to organization_goal_path(@organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
-                      %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
-                      %strong= linked_goal.title
-                    - if link.metadata.present? && link.metadata['notes'].present?
-                      %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
-                    - if most_recent_check_in.present?
-                      %small.text-muted.d-block.mt-1
-                        As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
-                  .d-flex.gap-1
-                    - action_button = child_goal_action_button(linked_goal)
-                    - if action_button.present? && policy(linked_goal).update?
-                      - if action_button[:type] == 'fix'
-                        = link_to organization_goal_path(@organization, linked_goal), class: "btn btn-sm #{action_button[:class]}", target: "_blank" do
-                          = action_button[:text]
-                      - elsif action_button[:type] == 'start'
-                        = button_to start_organization_goal_path(@organization, linked_goal, parent_goal_id: @goal.id), method: :patch, class: "btn btn-sm #{action_button[:class]}", form: { style: "display: inline-block;" } do
-                          = action_button[:text]
-                    - if policy(linked_goal).update? && !goal_is_completed?(linked_goal) && linked_goal.started_at.present?
-                      = link_to done_organization_goal_path(@organization, linked_goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-outline-success" do
-                        %i.bi.bi-check-circle
-                    - if policy(link).destroy?
-                      = button_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this link?" } do
-                        %i.bi.bi-trash
-        - else
-          %em.text-muted No incoming links. No other goals relate to this goal yet.
-          - if policy(@goal).update?
-            = link_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "text-decoration-none" do
-              Add a link
+    / Advanced Settings
+    .card.mb-4
+      .card-header
+        %button.btn.btn-link.p-0.text-decoration-none.w-100.text-start{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#advancedSettings", "aria-expanded": "false", "aria-controls": "advancedSettings"}
+          %i.bi.bi-chevron-down.me-2
+          Advanced Settings
+      .collapse#advancedSettings
+        .card-body
+          %dl.row
+            %dt.col-sm-4 Goal Type:
+            %dd.col-sm-8
+              %span.badge{class: goal_badge_class(@goal.goal_type)}
+                = @goal.goal_type.humanize
+
+            %dt.col-sm-4 Creator:
+            %dd.col-sm-8= @goal.creator.person.display_name
+            %dt.col-sm-4 Created:
+            %dd.col-sm-8= @goal.created_at.strftime("%B %d, %Y at %I:%M %p")
+            %dt.col-sm-4 Updated:
+            %dd.col-sm-8= @goal.updated_at.strftime("%B %d, %Y at %I:%M %p")
+
+          / Incoming Links Section
+          .mt-4.pt-4.border-top
+            %h6.mb-3
+              %i.bi.bi-arrow-left-circle.me-2
+              Pursuing #{@goal.title}, is in part in service to the following goals/visions
+            - if policy(@goal).update?
+              .mb-3
+                = link_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-primary" do
+                  %i.bi.bi-plus.me-1
+                  Add Parent Goal
+            - if @goal.incoming_links.any?
+              %ul.list-unstyled
+                - @goal.incoming_links.each do |link|
+                  - linked_goal = @linked_goals[link.parent_id] || link.parent
+                  - next unless linked_goal.present?
+                  - most_recent_check_in = @linked_goal_check_ins[linked_goal.id]
+                  - status_icon = goal_status_icon(linked_goal)
+                  - is_struck_through = goal_should_be_struck_through?(linked_goal)
+                  %li.mb-2
+                    .d-flex.justify-content-between.align-items-start
+                      .flex-grow-1
+                        = link_to organization_goal_path(@organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
+                          %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
+                          %strong= linked_goal.title
+                        - if link.metadata.present? && link.metadata['notes'].present?
+                          %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
+                        - if most_recent_check_in.present?
+                          %small.text-muted.d-block.mt-1
+                            As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
+                      .d-flex.gap-1
+                        - action_button = child_goal_action_button(linked_goal)
+                        - if action_button.present? && policy(linked_goal).update?
+                          - if action_button[:type] == 'fix'
+                            = link_to organization_goal_path(@organization, linked_goal), class: "btn btn-sm #{action_button[:class]}", target: "_blank" do
+                              = action_button[:text]
+                          - elsif action_button[:type] == 'start'
+                            = button_to start_organization_goal_path(@organization, linked_goal, parent_goal_id: @goal.id), method: :patch, class: "btn btn-sm #{action_button[:class]}", form: { style: "display: inline-block;" } do
+                              = action_button[:text]
+                        - if policy(linked_goal).update? && !goal_is_completed?(linked_goal) && linked_goal.started_at.present?
+                          = link_to done_organization_goal_path(@organization, linked_goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-outline-success" do
+                            %i.bi.bi-check-circle
+                        - if policy(link).destroy?
+                          = button_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this link?" } do
+                            %i.bi.bi-trash
+            - else
+              %em.text-muted No Parent Goals linked to this goal yet.
+              - if policy(@goal).update?
+                = link_to new_incoming_link_organization_goal_goal_links_path(@organization, @goal, return_url: request.url, return_text: 'Goal'), class: "text-decoration-none" do
+                  Add a link to a parent goal
 
   .col-md-4
     / Actions Card
