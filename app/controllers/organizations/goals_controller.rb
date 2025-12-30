@@ -1,6 +1,6 @@
 class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseController
   before_action :authenticate_person!
-  before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe, :done, :complete, :undelete]
+  before_action :set_goal, only: [:show, :edit, :update, :destroy, :start, :check_in, :set_timeframe, :done, :complete, :undelete, :weekly_update]
   
   after_action :verify_authorized
   after_action :verify_policy_scoped, only: :index
@@ -183,6 +183,32 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     end
   end
   
+  def weekly_update
+    authorize @goal, :show?
+    
+    # Load all check-ins chronologically (oldest first) for display
+    @all_check_ins = @goal.goal_check_ins
+      .includes(:confidence_reporter)
+      .order(check_in_week_start: :asc)
+    
+    # Load check-in data for current week
+    @current_week_start = Date.current.beginning_of_week(:monday)
+    @current_check_in = @goal.goal_check_ins
+      .for_week(@current_week_start)
+      .includes(:confidence_reporter)
+      .first
+    
+    # Load most recent check-in
+    @most_recent_check_in = @goal.goal_check_ins
+      .includes(:confidence_reporter)
+      .recent
+      .first
+    
+    # Set return_url and return_text from params (for mode switcher navigation)
+    @return_url = params[:return_url] || organization_goal_path(@organization, @goal)
+    @return_text = params[:return_text] || 'Back to Goal'
+  end
+  
   def new
     company = @organization.root_company || @organization
     @goal = Goal.new(company: company)
@@ -351,11 +377,12 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         @goal.update(completed_at: Time.current)
       end
       
-      redirect_to organization_goal_path(@organization, @goal),
-                  notice: 'Check-in saved successfully.'
+      # Use return_url if provided, otherwise default to goal show page
+      return_url = params[:return_url] || organization_goal_path(@organization, @goal)
+      redirect_to return_url, notice: 'Check-in saved successfully.'
     else
-      redirect_to organization_goal_path(@organization, @goal),
-                  alert: "Failed to save check-in: #{check_in.errors.full_messages.join(', ')}"
+      return_url = params[:return_url] || organization_goal_path(@organization, @goal)
+      redirect_to return_url, alert: "Failed to save check-in: #{check_in.errors.full_messages.join(', ')}"
     end
   end
   

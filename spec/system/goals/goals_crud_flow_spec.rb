@@ -457,7 +457,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       expect(page).to have_field("goal_ids_#{goal2.id}")
     end
     
-    it 'deletes a goal link' do
+    it 'unlinks a goal link' do
       # Create link between goals
       link = create(:goal_link, parent: goal1, child: goal2)
       link_id = link.id
@@ -465,19 +465,19 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       visit organization_goal_path(organization, goal1)
       
       # Verify link is displayed on page in the outgoing links section
-      expect(page).to have_content('In order to achieve')
+      expect(page).to have_content('In pursuit of')
       expect(page).to have_content(goal2.title)
       
-      # Find delete button - button_to creates a form with a button inside
+      # Find unlink button - button_to creates a form with a button inside
       # Look for the button within a form that posts to the delete path
-      delete_form = find("form[action='#{organization_goal_goal_link_path(organization, goal1, link)}']")
-      expect(delete_form).to be_present
+      unlink_form = find("form[action='#{organization_goal_goal_link_path(organization, goal1, link)}']")
+      expect(unlink_form).to be_present
       
       # Set up JavaScript confirm to return true before clicking
       page.execute_script("window.confirm = function() { return true; }")
       
-      # Click the delete button (button_to creates a button inside a form)
-      within(delete_form) do
+      # Click the unlink button (button_to creates a button inside a form)
+      within(unlink_form) do
         click_button
       end
       

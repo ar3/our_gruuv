@@ -262,6 +262,7 @@ get '/login', to: 'auth#login', as: :login
         get :done
         post :complete
         patch :undelete
+        get :weekly_update
       end
       resources :goal_links, only: [:create, :destroy] do
         collection do

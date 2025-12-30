@@ -3,14 +3,7 @@
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2= @goal.title
-    - if policy(@goal).update?
-      = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary ml-2" do
-        %i.bi.bi-pencil.me-2
-        Edit
-    - else
-      .btn.btn-outline-secondary.disabled{style: "opacity: 0.6; cursor: not-allowed;"}
-        %i.bi.bi-pencil.me-2
-        Edit
+    = render 'mode_switcher', organization: @organization, goal: @goal
 
 - content_for :go_back_link do
   = link_to organization_goals_path(@organization), class: "go-back-link" do
@@ -104,63 +97,28 @@
           %i.bi.bi-arrow-right-circle.me-2
           In pursuit of #{@goal.title}, here are some things that will help get there.
       .card-body
-        - valid_links = @goal.outgoing_links.includes(:child).select { |link| (@linked_goals[link.child_id] || link.child).present? }
-        - grouped_links = valid_links.group_by { |link| (@linked_goals[link.child_id] || link.child).goal_type }
-        - goal_types = ['stepping_stone_activity', 'quantitative_key_result', 'qualitative_key_result', 'inspirational_objective']
-        - goal_type_labels = { 'stepping_stone_activity' => 'Stepping Stones/Activities', 'quantitative_key_result' => 'Measurable Outcomes', 'qualitative_key_result' => 'Sentiment Outcomes', 'inspirational_objective' => 'Objectives' }
-        
-        - goal_types.each do |goal_type|
-          - links_for_type = grouped_links[goal_type] || []
-          - if links_for_type.any?
-            .mb-4
-              %h6.mb-2
-                = goal_type_labels[goal_type]
-                %span.badge{class: goal_badge_class(goal_type), style: "font-size: 0.75em;"}
-                  = pluralize(links_for_type.count, 'goal')
-              %ul.list-unstyled
-                - links_for_type.each do |link|
-                  - linked_goal = @linked_goals[link.child_id] || link.child
-                  - next unless linked_goal.present?
-                  - most_recent_check_in = @linked_goal_check_ins[linked_goal.id]
-                  - status_icon = goal_status_icon(linked_goal)
-                  - is_struck_through = goal_should_be_struck_through?(linked_goal)
-                  %li.mb-2
-                    .d-flex.justify-content-between.align-items-start
-                      .flex-grow-1
-                        = link_to organization_goal_path(@organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
-                          %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
-                          %strong= linked_goal.title
-                        - if link.metadata.present? && link.metadata['notes'].present?
-                          %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
-                        - if most_recent_check_in.present?
-                          %small.text-muted.d-block.mt-1
-                            As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
-                      .d-flex.gap-1
-                        - action_button = child_goal_action_button(linked_goal)
-                        - if action_button.present? && policy(linked_goal).update?
-                          - if action_button[:type] == 'fix'
-                            = link_to organization_goal_path(@organization, linked_goal), class: "btn btn-sm #{action_button[:class]}", target: "_blank" do
-                              = action_button[:text]
-                          - elsif action_button[:type] == 'start'
-                            = button_to start_organization_goal_path(@organization, linked_goal, parent_goal_id: @goal.id), method: :patch, class: "btn btn-sm #{action_button[:class]}", form: { style: "display: inline-block;" } do
-                              = action_button[:text]
-                        - if policy(linked_goal).update? && !goal_is_completed?(linked_goal) && linked_goal.started_at.present?
-                          = link_to done_organization_goal_path(@organization, linked_goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-outline-success" do
-                            %i.bi.bi-check-circle
-                        - if policy(link).destroy?
-                          = button_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this link?" } do
-                            %i.bi.bi-trash
-        In order to achieve #{@goal.title}, we need to see
-        - if policy(@goal).update?
-          .dropdown.d-inline.ms-1
-            %button.btn.btn-link.p-0.text-decoration-underline.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button", style: "border: none; box-shadow: none; font-weight: inherit; color: inherit; vertical-align: baseline;"}
-              %i.bi.bi-node-plus-fill.text-success
-              New Child Goal
-            %ul.dropdown-menu
-              %li= link_to "... this new stepping stone / activity / output", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
-              %li= link_to "... this new measurable outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'quantitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
-              %li= link_to "... this new sentiment outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'qualitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
-              %li= link_to "... this new objective", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'inspirational_objective', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+        - if @goal.outgoing_links.any?
+          = render 'grouped_goal_list', 
+              links: @goal.outgoing_links.includes(:child), 
+              linked_goals: @linked_goals, 
+              linked_goal_check_ins: @linked_goal_check_ins, 
+              organization: @organization, 
+              show_unlink: true,
+              parent_goal: @goal,
+              return_url: request.url,
+              return_text: 'Goal'
+        - else
+          %p.text-muted.mb-0 In order to achieve #{@goal.title}, we need to see
+          - if policy(@goal).update?
+            .dropdown.d-inline.ms-1
+              %button.btn.btn-link.p-0.text-decoration-underline.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button", style: "border: none; box-shadow: none; font-weight: inherit; color: inherit; vertical-align: baseline;"}
+                %i.bi.bi-node-plus-fill.text-success
+                New Child Goal
+              %ul.dropdown-menu
+                %li= link_to "... this new stepping stone / activity / output", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'stepping_stone_activity', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+                %li= link_to "... this new measurable outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'quantitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+                %li= link_to "... this new sentiment outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'qualitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
+                %li= link_to "... this new objective", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'inspirational_objective', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
 
     / Advanced Settings
     .card.mb-4
@@ -194,39 +152,15 @@
                   %i.bi.bi-plus.me-1
                   Add Parent Goal
             - if @goal.incoming_links.any?
-              %ul.list-unstyled
-                - @goal.incoming_links.each do |link|
-                  - linked_goal = @linked_goals[link.parent_id] || link.parent
-                  - next unless linked_goal.present?
-                  - most_recent_check_in = @linked_goal_check_ins[linked_goal.id]
-                  - status_icon = goal_status_icon(linked_goal)
-                  - is_struck_through = goal_should_be_struck_through?(linked_goal)
-                  %li.mb-2
-                    .d-flex.justify-content-between.align-items-start
-                      .flex-grow-1
-                        = link_to organization_goal_path(@organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
-                          %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
-                          %strong= linked_goal.title
-                        - if link.metadata.present? && link.metadata['notes'].present?
-                          %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
-                        - if most_recent_check_in.present?
-                          %small.text-muted.d-block.mt-1
-                            As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
-                      .d-flex.gap-1
-                        - action_button = child_goal_action_button(linked_goal)
-                        - if action_button.present? && policy(linked_goal).update?
-                          - if action_button[:type] == 'fix'
-                            = link_to organization_goal_path(@organization, linked_goal), class: "btn btn-sm #{action_button[:class]}", target: "_blank" do
-                              = action_button[:text]
-                          - elsif action_button[:type] == 'start'
-                            = button_to start_organization_goal_path(@organization, linked_goal, parent_goal_id: @goal.id), method: :patch, class: "btn btn-sm #{action_button[:class]}", form: { style: "display: inline-block;" } do
-                              = action_button[:text]
-                        - if policy(linked_goal).update? && !goal_is_completed?(linked_goal) && linked_goal.started_at.present?
-                          = link_to done_organization_goal_path(@organization, linked_goal, return_url: request.url, return_text: 'Goal'), class: "btn btn-sm btn-outline-success" do
-                            %i.bi.bi-check-circle
-                        - if policy(link).destroy?
-                          = button_to organization_goal_goal_link_path(@organization, @goal, link), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this link?" } do
-                            %i.bi.bi-trash
+              = render 'grouped_goal_list', 
+                  links: @goal.incoming_links.includes(:parent), 
+                  linked_goals: @linked_goals, 
+                  linked_goal_check_ins: @linked_goal_check_ins, 
+                  organization: @organization, 
+                  show_unlink: true,
+                  parent_goal: @goal,
+                  return_url: request.url,
+                  return_text: 'Goal'
             - else
               %em.text-muted No Parent Goals linked to this goal yet.
               - if policy(@goal).update?

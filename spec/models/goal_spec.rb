@@ -876,6 +876,74 @@ RSpec.describe Goal, type: :model do
         end
       end
     end
+    
+    describe '#calculated_target_date' do
+      let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
+      
+      context 'when all dates are nil' do
+        it 'returns nil' do
+          goal.update(earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: nil)
+          expect(goal.calculated_target_date).to be_nil
+        end
+      end
+      
+      context 'when only one date is set' do
+        it 'returns earliest_target_date when only it is set' do
+          date = Date.today + 30.days
+          goal.update(earliest_target_date: date, most_likely_target_date: nil, latest_target_date: nil)
+          expect(goal.calculated_target_date).to eq(date)
+        end
+        
+        it 'returns most_likely_target_date when only it is set' do
+          date = Date.today + 60.days
+          goal.update(earliest_target_date: nil, most_likely_target_date: date, latest_target_date: nil)
+          expect(goal.calculated_target_date).to eq(date)
+        end
+        
+        it 'returns latest_target_date when only it is set' do
+          date = Date.today + 90.days
+          goal.update(earliest_target_date: nil, most_likely_target_date: nil, latest_target_date: date)
+          expect(goal.calculated_target_date).to eq(date)
+        end
+      end
+      
+      context 'when multiple dates are set' do
+        let(:today) { Date.current }
+        let(:earliest) { today + 30.days }
+        let(:most_likely) { today + 60.days }
+        let(:latest) { today + 90.days }
+        
+        it 'uses most_likely_target_date when today < most_likely_target_date' do
+          goal.update(earliest_target_date: earliest, most_likely_target_date: most_likely, latest_target_date: latest)
+          expect(goal.calculated_target_date).to eq(most_likely)
+        end
+        
+        it 'uses latest_target_date when today < latest_target_date and most_likely is past' do
+          past_most_likely = today - 10.days
+          goal.update(earliest_target_date: earliest, most_likely_target_date: past_most_likely, latest_target_date: latest)
+          expect(goal.calculated_target_date).to eq(latest)
+        end
+        
+        it 'uses latest non-nil date when today > all dates' do
+          past_earliest = today - 30.days
+          past_most_likely = today - 20.days
+          past_latest = today - 10.days
+          goal.update(earliest_target_date: past_earliest, most_likely_target_date: past_most_likely, latest_target_date: past_latest)
+          expect(goal.calculated_target_date).to eq(past_latest)
+        end
+        
+        it 'uses most_likely when only earliest and most_likely are set and today < most_likely' do
+          goal.update(earliest_target_date: earliest, most_likely_target_date: most_likely, latest_target_date: nil)
+          expect(goal.calculated_target_date).to eq(most_likely)
+        end
+        
+        it 'uses latest when only most_likely and latest are set and today < latest' do
+          past_most_likely = today - 10.days
+          goal.update(earliest_target_date: nil, most_likely_target_date: past_most_likely, latest_target_date: latest)
+          expect(goal.calculated_target_date).to eq(latest)
+        end
+      end
+    end
   end
 end
 

@@ -318,6 +318,71 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     end
   end
   
+  describe 'GET #weekly_update' do
+    let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago) }
+    
+    it 'renders the weekly update page' do
+      get :weekly_update, params: { organization_id: company.id, id: goal.id }
+      expect(response).to have_http_status(:success)
+    end
+    
+    it 'authorizes goal access' do
+      get :weekly_update, params: { organization_id: company.id, id: goal.id }
+      expect(response).to have_http_status(:success)
+    end
+    
+    it 'loads all check-ins chronologically' do
+      check_in1 = create(:goal_check_in, goal: goal, check_in_week_start: 3.weeks.ago.beginning_of_week(:monday), confidence_reporter: person)
+      check_in2 = create(:goal_check_in, goal: goal, check_in_week_start: 2.weeks.ago.beginning_of_week(:monday), confidence_reporter: person)
+      check_in3 = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_reporter: person)
+      
+      get :weekly_update, params: { organization_id: company.id, id: goal.id }
+      
+      expect(assigns(:all_check_ins)).to eq([check_in1, check_in2, check_in3])
+    end
+    
+    it 'loads current week check-in if exists' do
+      current_week_start = Date.current.beginning_of_week(:monday)
+      current_check_in = create(:goal_check_in, goal: goal, check_in_week_start: current_week_start, confidence_reporter: person)
+      
+      get :weekly_update, params: { organization_id: company.id, id: goal.id }
+      
+      expect(assigns(:current_check_in)).to eq(current_check_in)
+      expect(assigns(:current_week_start)).to eq(current_week_start)
+    end
+    
+    it 'loads most recent check-in' do
+      old_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 2.weeks.ago.beginning_of_week(:monday), confidence_reporter: person)
+      recent_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_reporter: person)
+      
+      get :weekly_update, params: { organization_id: company.id, id: goal.id }
+      
+      expect(assigns(:most_recent_check_in)).to eq(recent_check_in)
+    end
+    
+    it 'sets return_url and return_text from params' do
+      return_url = organization_goal_path(company, goal)
+      return_text = 'Back to Goal'
+      
+      get :weekly_update, params: { 
+        organization_id: company.id, 
+        id: goal.id,
+        return_url: return_url,
+        return_text: return_text
+      }
+      
+      expect(assigns(:return_url)).to eq(return_url)
+      expect(assigns(:return_text)).to eq(return_text)
+    end
+    
+    it 'defaults return_url and return_text if not provided' do
+      get :weekly_update, params: { organization_id: company.id, id: goal.id }
+      
+      expect(assigns(:return_url)).to eq(organization_goal_path(company, goal))
+      expect(assigns(:return_text)).to eq('Back to Goal')
+    end
+  end
+  
   describe 'PATCH #update' do
     let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Original Title') }
     

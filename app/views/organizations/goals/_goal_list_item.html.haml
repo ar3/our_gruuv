@@ -1,0 +1,47 @@
+- show_unlink = local_assigns.fetch(:show_unlink, true)
+- link = local_assigns[:link]
+- linked_goal = local_assigns[:goal]
+- linked_goal_check_ins = local_assigns[:linked_goal_check_ins] || {}
+- organization = local_assigns[:organization]
+
+- most_recent_check_in = linked_goal_check_ins[linked_goal.id]
+- status_icon = goal_status_icon(linked_goal)
+- is_struck_through = goal_should_be_struck_through?(linked_goal)
+
+%li.mb-2
+  .d-flex.justify-content-between.align-items-start
+    .flex-grow-1
+      = link_to organization_goal_path(organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
+        %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
+        %strong= linked_goal.title
+      - if link && link.metadata.present? && link.metadata['notes'].present?
+        %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
+      - if most_recent_check_in.present?
+        %small.text-muted.d-block.mt-1.ms-5
+          As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
+    .d-flex.gap-1
+      - action_button = child_goal_action_button(linked_goal)
+      - if action_button.present? && policy(linked_goal).update?
+        - if action_button[:type] == 'fix'
+          = link_to organization_goal_path(organization, linked_goal), class: "btn btn-sm #{action_button[:class]}", target: "_blank" do
+            = action_button[:text]
+        - elsif action_button[:type] == 'start'
+          = button_to start_organization_goal_path(organization, linked_goal, parent_goal_id: local_assigns[:parent_goal_id]), method: :patch, class: "btn btn-sm #{action_button[:class]}", form: { style: "display: inline-block;" } do
+            = action_button[:text]
+      - if policy(linked_goal).show? && linked_goal.started_at.present? && !goal_is_completed?(linked_goal)
+        - return_url = local_assigns[:return_url] || (defined?(request) ? request.url : '#')
+        - return_text = local_assigns[:return_text] || 'Goal'
+        = link_to weekly_update_organization_goal_path(organization, linked_goal, return_url: return_url, return_text: return_text), class: "btn btn-sm btn-outline-primary", target: "_blank" do
+          %i.bi.bi-calendar-check.me-1
+          Weekly Update
+      - if policy(linked_goal).update? && !goal_is_completed?(linked_goal) && linked_goal.started_at.present?
+        - return_url = local_assigns[:return_url] || (defined?(request) ? request.url : '#')
+        - return_text = local_assigns[:return_text] || 'Goal'
+        = link_to done_organization_goal_path(organization, linked_goal, return_url: return_url, return_text: return_text), class: "btn btn-sm btn-outline-success" do
+          %i.bi.bi-check-circle
+      - if show_unlink && link && policy(link).destroy?
+        - parent_goal_for_link = local_assigns[:parent_goal] || (defined?(@goal) ? @goal : nil)
+        - if parent_goal_for_link
+          = button_to organization_goal_goal_link_path(organization, parent_goal_for_link, link), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;", data: { turbo_confirm: "Are you sure you want to unlink \"#{linked_goal.title}\" from this goal? This action cannot be undone." } } do
+            %i.bi.bi-folder-x
+

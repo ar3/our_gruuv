@@ -8,6 +8,7 @@
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2 Edit Goal
+    = render 'mode_switcher', organization: @organization, goal: @goal, return_url: organization_goal_path(@organization, @goal), return_text: 'Back to Goal'
 
 .container-fluid
   .row
@@ -134,22 +135,15 @@
                   %h6.mb-3
                     %i.bi.bi-arrow-left-circle.me-2
                     Parent Goals
-                  %ul.list-unstyled
-                    - @goal.incoming_links.each do |link|
-                      - linked_goal = @linked_goals[link.parent_id] || link.parent
-                      - next unless linked_goal.present?
-                      - most_recent_check_in = @linked_goal_check_ins[linked_goal.id]
-                      - status_icon = goal_status_icon(linked_goal)
-                      - is_struck_through = goal_should_be_struck_through?(linked_goal)
-                      %li.mb-2
-                        = link_to organization_goal_path(@organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
-                          %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
-                          %strong= linked_goal.title
-                        - if link.metadata.present? && link.metadata['notes'].present?
-                          %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
-                        - if most_recent_check_in.present?
-                          %small.text-muted.d-block.mt-1
-                            As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
+                  = render 'grouped_goal_list', 
+                      links: @goal.incoming_links.includes(:parent), 
+                      linked_goals: @linked_goals, 
+                      linked_goal_check_ins: @linked_goal_check_ins, 
+                      organization: @organization, 
+                      show_unlink: true,
+                      parent_goal: @goal,
+                      return_url: request.url,
+                      return_text: 'Edit Goal'
               - else
                 .col-md-6
                   %h6.mb-3
@@ -162,42 +156,21 @@
                   %h6.mb-3
                     %i.bi.bi-arrow-right-circle.me-2
                     Child Goals
-                  - valid_links = @goal.outgoing_links.includes(:child).select { |link| (@linked_goals[link.child_id] || link.child).present? }
-                  - grouped_links = valid_links.group_by { |link| (@linked_goals[link.child_id] || link.child).goal_type }
-                  - goal_types = ['stepping_stone_activity', 'quantitative_key_result', 'qualitative_key_result', 'inspirational_objective']
-                  - goal_type_labels = { 'stepping_stone_activity' => 'Stepping Stones/Activities', 'quantitative_key_result' => 'Measurable Outcomes', 'qualitative_key_result' => 'Sentiment Outcomes', 'inspirational_objective' => 'Objectives' }
-                  
-                  - goal_types.each do |goal_type|
-                    - links_for_type = grouped_links[goal_type] || []
-                    - if links_for_type.any?
-                      .mb-3
-                        %h6.mb-2.small
-                          = goal_type_labels[goal_type]
-                          %span.badge{class: goal_badge_class(goal_type), style: "font-size: 0.75em;"}
-                            = pluralize(links_for_type.count, 'goal')
-                        %ul.list-unstyled
-                          - links_for_type.each do |link|
-                            - linked_goal = @linked_goals[link.child_id] || link.child
-                            - next unless linked_goal.present?
-                            - most_recent_check_in = @linked_goal_check_ins[linked_goal.id]
-                            - status_icon = goal_status_icon(linked_goal)
-                            - is_struck_through = goal_should_be_struck_through?(linked_goal)
-                            %li.mb-2
-                              = link_to organization_goal_path(@organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
-                                %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
-                                %strong= linked_goal.title
-                              - if link.metadata.present? && link.metadata['notes'].present?
-                                %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
-                              - if most_recent_check_in.present?
-                                %small.text-muted.d-block.mt-1
-                                  As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
+                  = render 'grouped_goal_list', 
+                      links: @goal.outgoing_links.includes(:child), 
+                      linked_goals: @linked_goals, 
+                      linked_goal_check_ins: @linked_goal_check_ins, 
+                      organization: @organization, 
+                      show_unlink: true,
+                      parent_goal: @goal,
+                      return_url: request.url,
+                      return_text: 'Edit Goal'
               - else
                 .col-md-6
                   %h6.mb-3
                     %i.bi.bi-arrow-right-circle.me-2
                     Child Goals
                   %em.text-muted No linked child goals yet.
-              
               
       / Goal Links Info
       .alert.alert-info.mt-4

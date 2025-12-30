@@ -246,6 +246,31 @@ class Goal < ApplicationRecord
     deleted_at.present?
   end
   
+  def calculated_target_date
+    # Return nil if all three dates are nil
+    return nil if earliest_target_date.nil? && most_likely_target_date.nil? && latest_target_date.nil?
+    
+    # Return the non-nil date if only one is set
+    non_nil_dates = [earliest_target_date, most_likely_target_date, latest_target_date].compact
+    return non_nil_dates.first if non_nil_dates.length == 1
+    
+    # If multiple dates are set
+    today = Date.current
+    
+    # Use most_likely_target_date if today < most_likely_target_date and it's set
+    if most_likely_target_date.present? && today < most_likely_target_date
+      return most_likely_target_date
+    end
+    
+    # Else use latest_target_date if today < latest_target_date and it's set
+    if latest_target_date.present? && today < latest_target_date
+      return latest_target_date
+    end
+    
+    # Else use the latest non-nil date
+    non_nil_dates.max
+  end
+  
   private
   
   def date_ordering

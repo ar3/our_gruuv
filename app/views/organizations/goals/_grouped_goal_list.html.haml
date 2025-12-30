@@ -1,0 +1,34 @@
+- links = local_assigns[:links] || []
+- linked_goals = local_assigns[:linked_goals] || {}
+- linked_goal_check_ins = local_assigns[:linked_goal_check_ins] || {}
+- organization = local_assigns[:organization]
+- show_unlink = local_assigns.fetch(:show_unlink, true)
+- parent_goal = local_assigns[:parent_goal] || @goal
+- return_url = local_assigns[:return_url] || (defined?(request) ? request.url : '#')
+- return_text = local_assigns[:return_text] || 'Goal'
+
+- valid_links = links.select { |link| (linked_goals[link.child_id] || linked_goals[link.parent_id] || link.child || link.parent).present? }
+- grouped_links = {}
+- valid_links.each do |link|
+  - goal = linked_goals[link.child_id] || linked_goals[link.parent_id] || link.child || link.parent
+  - if goal.present?
+    - goal_type = goal.goal_type
+    - grouped_links[goal_type] ||= []
+    - grouped_links[goal_type] << link
+
+- goal_types = ['stepping_stone_activity', 'quantitative_key_result', 'qualitative_key_result', 'inspirational_objective']
+- goal_type_labels = { 'stepping_stone_activity' => 'Stepping Stones/Activities', 'quantitative_key_result' => 'Measurable Outcomes', 'qualitative_key_result' => 'Sentiment Outcomes', 'inspirational_objective' => 'Objectives' }
+
+- goal_types.each do |goal_type|
+  - links_for_type = grouped_links[goal_type] || []
+  - if links_for_type.any?
+    .mb-4
+      %h6.mb-2
+        = goal_type_labels[goal_type]
+        %span.badge{class: goal_badge_class(goal_type), style: "font-size: 0.75em;"}
+          = pluralize(links_for_type.count, 'goal')
+      %ul.list-unstyled
+        - links_for_type.each do |link|
+          - linked_goal = linked_goals[link.child_id] || linked_goals[link.parent_id] || link.child || link.parent
+          - next unless linked_goal.present?
+          = render 'goal_list_item', goal: linked_goal, link: link, linked_goal_check_ins: linked_goal_check_ins, organization: organization, show_unlink: show_unlink, parent_goal: parent_goal, parent_goal_id: parent_goal.id, return_url: return_url, return_text: return_text

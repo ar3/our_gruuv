@@ -308,6 +308,21 @@ module GoalsHelper
     lines.join('<br>')
   end
   
+  def goal_current_view_name
+    return 'View Mode' unless action_name
+    
+    case action_name
+    when 'show'
+      'View Mode'
+    when 'edit'
+      'Edit Mode'
+    when 'weekly_update'
+      'Check-in Mode'
+    else
+      action_name.titleize
+    end
+  end
+  
   def render_hierarchical_indented_goal(goal, depth, parent_child_map, organization)
     children = (parent_child_map[goal.id] || []).compact
     indent_px = depth * 30
