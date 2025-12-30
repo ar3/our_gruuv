@@ -105,6 +105,17 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       @recent_check_ins_by_goal = recent_check_ins.transform_values { |check_ins| check_ins.first(3) }
     end
     
+    # For hierarchical-indented view, load most recent check-ins for display
+    if @view_style == 'hierarchical-indented'
+      goal_ids = @goals.pluck(:id)
+      @most_recent_check_ins_by_goal = GoalCheckIn
+        .where(goal_id: goal_ids)
+        .includes(:confidence_reporter, :goal)
+        .recent
+        .group_by(&:goal_id)
+        .transform_values { |check_ins| check_ins.first }
+    end
+    
     # Performance check for visualizations
     @goal_count = @goals.count
     @show_performance_warning = @goal_count > 100 && %w[network tree nested timeline].include?(@view_style)
@@ -196,12 +207,6 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @current_check_in = @goal.goal_check_ins
       .for_week(@current_week_start)
       .includes(:confidence_reporter)
-      .first
-    
-    # Load most recent check-in
-    @most_recent_check_in = @goal.goal_check_ins
-      .includes(:confidence_reporter)
-      .recent
       .first
     
     # Set return_url and return_text from params (for mode switcher navigation)
@@ -356,6 +361,26 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     confidence_percentage = params[:confidence_percentage]&.to_i
     confidence_reason = params[:confidence_reason]&.strip
     
+    # Handle target date update if provided
+    target_date_updated = false
+    if params[:most_likely_target_date].present?
+      authorize @goal, :update?
+      new_target_date = Date.parse(params[:most_likely_target_date])
+      
+      # Ensure earliest date is not after the new target date if earliest is set
+      if @goal.earliest_target_date.present? && @goal.earliest_target_date > new_target_date
+        @goal.earliest_target_date = new_target_date
+      end
+      
+      # Ensure latest date is at least one day after the new target date if latest is set
+      if @goal.latest_target_date.present? && new_target_date >= @goal.latest_target_date
+        @goal.latest_target_date = new_target_date + 1.day
+      end
+      
+      @goal.most_likely_target_date = new_target_date
+      target_date_updated = true
+    end
+    
     # Set PaperTrail whodunnit for version tracking
     PaperTrail.request.whodunnit = current_person.id.to_s
     
@@ -371,7 +396,20 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       confidence_reporter: current_person
     )
     
-    if check_in.save
+    # Save both check-in and goal (if target date was updated)
+    success = true
+    if target_date_updated
+      Goal.transaction do
+        success = check_in.save && @goal.save
+        unless success
+          raise ActiveRecord::Rollback
+        end
+      end
+    else
+      success = check_in.save
+    end
+    
+    if success
       # Auto-complete goal if confidence is 0% or 100%
       if (confidence_percentage == 0 || confidence_percentage == 100) && @goal.completed_at.nil?
         @goal.update(completed_at: Time.current)
@@ -379,10 +417,14 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       
       # Use return_url if provided, otherwise default to goal show page
       return_url = params[:return_url] || organization_goal_path(@organization, @goal)
-      redirect_to return_url, notice: 'Check-in saved successfully.'
+      notice = 'Check-in saved successfully.'
+      notice += ' Target date updated.' if target_date_updated
+      redirect_to return_url, notice: notice
     else
       return_url = params[:return_url] || organization_goal_path(@organization, @goal)
-      redirect_to return_url, alert: "Failed to save check-in: #{check_in.errors.full_messages.join(', ')}"
+      errors = check_in.errors.full_messages
+      errors += @goal.errors.full_messages if target_date_updated && @goal.errors.any?
+      redirect_to return_url, alert: "Failed to save check-in: #{errors.join(', ')}"
     end
   end
   

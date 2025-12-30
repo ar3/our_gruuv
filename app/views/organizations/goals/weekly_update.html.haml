@@ -1,9 +1,10 @@
 - content_for :title, "Weekly Update - #{@goal.title}"
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2= @goal.title
-    = render 'mode_switcher', organization: @organization, goal: @goal
+  %h1.mb-0= @goal.title
+
+- content_for :header_action do
+  = render 'mode_switcher', organization: @organization, goal: @goal, current_mode: :check_in
 
 - content_for :go_back_link do
   = link_to @return_url, class: "go-back-link" do
@@ -42,14 +43,11 @@
                 %h6.mb-2
                   Week of #{check_in.check_in_week_start.strftime('%B %d')} - #{check_in.check_in_week_start.end_of_week(:sunday).strftime('%B %d, %Y')}
                 %p.mb-1
-                  %strong Confidence:
-                  = "#{check_in.confidence_percentage}%"
+                  = render 'organizations/goals/goal_check_in_sentence', check_in: check_in, goal: @goal
                 - if check_in.confidence_reason.present?
                   %p.mb-1
                     %strong Notes:
                     = simple_format(check_in.confidence_reason)
-                %p.mb-0.text-muted.small
-                  Reported by #{check_in.confidence_reporter.display_name} on #{check_in.created_at.strftime('%B %d, %Y at %I:%M %p')}
   
   / Current Week Form (between history and target dates)
   .timeline-item.mb-4
@@ -65,17 +63,22 @@
         %p.small.text-muted.mb-3
           Week of #{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}
         
-        - if @current_check_in.present?
-          %p.small.text-muted.mb-3
-            Filled out by #{@current_check_in.confidence_reporter.display_name} on #{@current_check_in.created_at.strftime('%B %d, %Y at %I:%M %p')}
-        
         = form_with url: check_in_organization_goal_path(@organization, @goal, return_url: @return_url, return_text: @return_text), method: :post, local: true do |f|
           .mb-3
-            = f.label :confidence_percentage, "Confidence", class: "form-label"
-            = f.select :confidence_percentage, 
-                options_for_select(confidence_percentage_options, @current_check_in&.confidence_percentage),
-                { include_blank: 'Select confidence...' },
-                { class: 'form-select', required: true }
+            %p.mb-2
+              As of 
+              %strong= current_week_start.strftime('%B %d, %Y')
+              , 
+              %strong= current_person.display_name
+              reports a 
+              = f.select :confidence_percentage, 
+                  options_for_select(confidence_percentage_options, @current_check_in&.confidence_percentage),
+                  { include_blank: 'Select confidence...' },
+                  { class: 'form-select d-inline-block w-auto mx-1', style: 'vertical-align: baseline;', required: true }
+              confidence we will achieve 
+              %strong= @goal.title
+              by 
+              = f.date_field :most_likely_target_date, value: @goal.most_likely_target_date, class: 'form-control d-inline-block w-auto mx-1', style: 'vertical-align: baseline;'
           
           .mb-3
             = f.label :confidence_reason, "Notes", class: "form-label"
@@ -83,30 +86,6 @@
           
           .d-grid
             = f.submit "Save Check-In", class: "btn btn-primary"
-  
-  / Most Recent Check-In Summary
-  - if @most_recent_check_in.present?
-    .timeline-item.mb-4
-      .card.border-warning
-        .card-body
-          .d-flex.align-items-start
-            .timeline-marker.bg-warning.text-dark.rounded-circle.d-flex.align-items-center.justify-content-center.me-3{style: "width: 40px; height: 40px; min-width: 40px;"}
-              %i.bi.bi-info-circle
-            .flex-grow-1
-              %h5.mb-2 Most Recent Check-In
-              - calculated_date = @goal.calculated_target_date
-              - if calculated_date.present?
-                %p.mb-0
-                  As of #{@most_recent_check_in.check_in_week_start.strftime('%B %d, %Y')}, we are 
-                  %strong= "#{@most_recent_check_in.confidence_percentage}%"
-                  confident we will achieve this goal by 
-                  %strong= calculated_date.strftime('%B %d, %Y')
-              - else
-                %p.mb-0
-                  As of #{@most_recent_check_in.check_in_week_start.strftime('%B %d, %Y')}, we are 
-                  %strong= "#{@most_recent_check_in.confidence_percentage}%"
-                  confident we will achieve this goal.
-                  %em.text-muted (No target date set)
   
   / Bottom: Target Dates
   .timeline-item.mb-4
@@ -127,14 +106,7 @@
           - if @goal.latest_target_date.present?
             %dt.col-sm-4 Latest:
             %dd.col-sm-8= @goal.latest_target_date.strftime("%B %d, %Y")
-          - if calculated_date.present?
-            %dt.col-sm-4
-              %strong Calculated Target:
-            %dd.col-sm-8
-              %strong= calculated_date.strftime("%B %d, %Y")
-              %small.text-muted.d-block.mt-1
-                This is the date used for planning and tracking purposes.
-          - else
+          - if calculated_date.nil?
             %dt.col-sm-4 Calculated Target:
             %dd.col-sm-8
               %em.text-muted No target date calculated (all dates are nil)

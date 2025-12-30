@@ -101,6 +101,193 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
   
+  describe 'GET /organizations/:organization_id/goals/:id/weekly_update' do
+    it 'renders the weekly update page' do
+      get weekly_update_organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(goal.title)
+      expect(response.body).to include('Weekly Update')
+      expect(response.body).to include('Current Week Check-In')
+    end
+    
+    it 'loads all check-ins chronologically' do
+      check_in1 = create(:goal_check_in, goal: goal, check_in_week_start: 3.weeks.ago.beginning_of_week(:monday), confidence_percentage: 60, confidence_reporter: person)
+      check_in2 = create(:goal_check_in, goal: goal, check_in_week_start: 2.weeks.ago.beginning_of_week(:monday), confidence_percentage: 70, confidence_reporter: person)
+      check_in3 = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_percentage: 80, confidence_reporter: person)
+      
+      get weekly_update_organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('60%')
+      expect(response.body).to include('70%')
+      expect(response.body).to include('80%')
+    end
+    
+    it 'loads current week check-in if exists' do
+      current_week_start = Date.current.beginning_of_week(:monday)
+      current_check_in = create(:goal_check_in, goal: goal, check_in_week_start: current_week_start, confidence_percentage: 75, confidence_reporter: person)
+      
+      get weekly_update_organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('75%')
+    end
+    
+    it 'displays check-ins in chronological order' do
+      old_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 2.weeks.ago.beginning_of_week(:monday), confidence_percentage: 60, confidence_reporter: person)
+      recent_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_percentage: 80, confidence_reporter: person)
+      
+      get weekly_update_organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Check-In History')
+      expect(response.body).to include('60%')
+      expect(response.body).to include('80%')
+      # Verify they appear in chronological order (oldest first)
+      old_index = response.body.index('60%')
+      recent_index = response.body.index('80%')
+      expect(old_index).to be < recent_index
+    end
+    
+    it 'displays target dates section' do
+      goal.update(
+        earliest_target_date: Date.today + 30.days,
+        most_likely_target_date: Date.today + 60.days,
+        latest_target_date: Date.today + 90.days
+      )
+      
+      get weekly_update_organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Target Dates')
+      expect(response.body).to include('Earliest')
+      expect(response.body).to include('Most Likely')
+      expect(response.body).to include('Latest')
+    end
+    
+    it 'displays calculated target when all dates are nil' do
+      goal.update(
+        earliest_target_date: nil,
+        most_likely_target_date: nil,
+        latest_target_date: nil
+      )
+      
+      get weekly_update_organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Calculated Target')
+      expect(response.body).to include('No target date calculated')
+    end
+    
+    it 'displays goal started date if present' do
+      goal.update(started_at: 2.weeks.ago)
+      
+      get weekly_update_organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Goal Started')
+    end
+    
+    it 'accepts return_url and return_text params' do
+      return_url = organization_goals_path(organization)
+      return_text = 'Back to Goals'
+      
+      get weekly_update_organization_goal_path(organization, goal), params: {
+        return_url: return_url,
+        return_text: return_text
+      }
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(return_text)
+    end
+    
+    it 'displays check-in sentence format correctly' do
+      check_in = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_percentage: 75, confidence_reporter: person)
+      goal.update(most_likely_target_date: Date.today + 60.days)
+      
+      get weekly_update_organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      # Verify the sentence is rendered, not literal HAML code
+      expect(response.body).to include('As of')
+      expect(response.body).to include(person.display_name)
+      expect(response.body).to include('75%')
+      expect(response.body).to include(goal.title)
+      # Verify HTML tags are rendered (not literal HAML)
+      expect(response.body).to match(/<strong[^>]*>.*#{Regexp.escape(person.display_name)}/i)
+      expect(response.body).to match(/<strong[^>]*>.*75%/)
+      # Verify it's not showing literal HAML code (check for common HAML syntax that shouldn't appear)
+      expect(response.body).not_to match(/%strong\s*=/)
+      expect(response.body).not_to include('date_str')
+      expect(response.body).not_to include('person_name')
+    end
+    
+    it 'displays check-in sentence without "by" when calculated_target_date is nil' do
+      check_in = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_percentage: 50, confidence_reporter: person)
+      goal.update(most_likely_target_date: nil, earliest_target_date: nil, latest_target_date: nil)
+      
+      get weekly_update_organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('As of')
+      expect(response.body).to include(person.display_name)
+      expect(response.body).to include('50%')
+      expect(response.body).to include(goal.title)
+      # Should not include "by" when no target date
+      # The sentence should end with the goal title, not have "by" after it
+      expect(response.body).not_to match(/by.*<strong[^>]*>.*#{Date.today.strftime('%B')}/)
+    end
+    
+    it 'displays check-in sentence with "by" when calculated_target_date is present' do
+      target_date = Date.today + 60.days
+      check_in = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_percentage: 80, confidence_reporter: person)
+      goal.update(most_likely_target_date: target_date)
+      
+      get weekly_update_organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('As of')
+      expect(response.body).to include(person.display_name)
+      expect(response.body).to include('80%')
+      expect(response.body).to include(goal.title)
+      expect(response.body).to include('by')
+      expect(response.body).to include(target_date.strftime('%B %d, %Y'))
+    end
+    
+    it 'displays form with confidence dropdown and target date field' do
+      get weekly_update_organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('confidence_percentage')
+      expect(response.body).to include('most_likely_target_date')
+      expect(response.body).to include('form-select')
+      expect(response.body).to include('form-control')
+    end
+    
+    context 'when user is not authorized' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) do
+        other_person.teammates.find_or_initialize_by(organization: organization).tap do |t|
+          t.type = 'CompanyTeammate' unless t.persisted?
+          t.save! unless t.persisted?
+        end
+      end
+      let(:other_goal) { create(:goal, creator: other_teammate, owner: other_teammate, title: 'Other Goal', started_at: 1.week.ago, privacy_level: 'only_creator') }
+      
+      before do
+        other_teammate
+        sign_in_as_teammate_for_request(person, organization)
+      end
+      
+      it 'denies access' do
+        get weekly_update_organization_goal_path(organization, other_goal)
+        
+        expect(response).to have_http_status(:redirect)
+      end
+    end
+  end
+  
   describe 'GET /organizations/:organization_id/goals with check-in view' do
     let(:check_in_eligible_goal) do
       create(:goal, 

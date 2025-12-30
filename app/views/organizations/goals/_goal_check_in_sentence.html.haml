@@ -1,0 +1,22 @@
+- check_in = local_assigns[:check_in]
+- goal = local_assigns[:goal] || check_in.goal
+- calculated_date = goal.calculated_target_date
+
+- if check_in.present? && goal.present?
+  - date_str = check_in.check_in_week_start.strftime('%B %d, %Y')
+  - person_name = check_in.confidence_reporter.display_name
+  - confidence = check_in.confidence_percentage
+  - goal_title = goal.title
+  
+  %span
+    = "As of "
+    %strong= date_str
+    = ", "
+    %strong= person_name
+    = " reports a "
+    %strong= "#{confidence}%"
+    = " confidence we will achieve "
+    %strong= goal_title
+    - if calculated_date.present?
+      = " by "
+      %strong= calculated_date.strftime('%B %d, %Y')

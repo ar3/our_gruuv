@@ -308,26 +308,28 @@ module GoalsHelper
     lines.join('<br>')
   end
   
-  def goal_current_view_name
-    return 'View Mode' unless action_name
+  def goal_current_view_name(current_mode = nil)
+    # If current_mode is not provided, fall back to action_name for backward compatibility
+    mode = current_mode || (action_name == 'show' ? :view : (action_name == 'edit' ? :edit : (action_name == 'weekly_update' ? :check_in : :view)))
     
-    case action_name
-    when 'show'
+    case mode
+    when :view
       'View Mode'
-    when 'edit'
+    when :edit
       'Edit Mode'
-    when 'weekly_update'
+    when :check_in
       'Check-in Mode'
     else
-      action_name.titleize
+      'View Mode' # Default
     end
   end
   
-  def render_hierarchical_indented_goal(goal, depth, parent_child_map, organization)
+  def render_hierarchical_indented_goal(goal, depth, parent_child_map, organization, most_recent_check_ins_by_goal = {})
     children = (parent_child_map[goal.id] || []).compact
     indent_px = depth * 30
     warning_class = goal_warning_class(goal)
     border_style = depth > 0 ? 'border-left: 2px solid #dee2e6; padding-left: 15px;' : ''
+    most_recent_check_in = most_recent_check_ins_by_goal[goal.id]
     
     html = content_tag(:div, class: "list-group-item #{warning_class}", style: "margin-left: #{indent_px}px; #{border_style}") do
       content_tag(:div, class: 'd-flex w-100 justify-content-between align-items-start') do
@@ -341,13 +343,19 @@ module GoalsHelper
             content_tag(:span, goal.timeframe.to_s.humanize, class: "badge me-2 #{timeframe_badge_class(goal.timeframe)}", 'data-bs-toggle': 'tooltip', 'data-bs-title': timeframe_tooltip_text(goal)) +
             content_tag(:span, goal.status.to_s.humanize, class: "badge me-2 #{status_badge_class(goal.status)}")
           end
-          title + badges
+          check_in_sentence = ''
+          if most_recent_check_in.present?
+            check_in_sentence = content_tag(:p, class: 'mb-1 small text-muted') do
+              render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal
+            end
+          end
+          title + badges + check_in_sentence
         end
         flex_grow
       end
     end
     
-    children_html = children.map { |child| render_hierarchical_indented_goal(child, depth + 1, parent_child_map, organization) }.join.html_safe
+    children_html = children.map { |child| render_hierarchical_indented_goal(child, depth + 1, parent_child_map, organization, most_recent_check_ins_by_goal) }.join.html_safe
     
     (html + children_html).html_safe
   end

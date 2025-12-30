@@ -51,8 +51,14 @@ class Organizations::CompanyTeammates::GoalCheckInsController < Organizations::O
   def load_goals_for_check_in
     return unless @teammate
     
-    # Load check-in eligible goals for the teammate (active, check-in eligible)
-    base_goals = Goal.for_teammate(@teammate).active.check_in_eligible.includes(:goal_check_ins, :recent_check_ins)
+    # Load all goals where the teammate is the owner, has a start date, and does not have a completed date
+    base_goals = Goal.where(
+      company: organization,
+      owner_type: 'Teammate',
+      owner_id: @teammate.id,
+      deleted_at: nil,
+      completed_at: nil
+    ).where.not(started_at: nil).includes(:goal_check_ins, :recent_check_ins)
     
     @goals = base_goals.order(:most_likely_target_date)
     @current_week_start = Date.current.beginning_of_week(:monday)

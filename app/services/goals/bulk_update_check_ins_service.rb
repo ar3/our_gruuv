@@ -46,6 +46,37 @@ module Goals
       # Parse and normalize values
       confidence_percentage = check_in_data[:confidence_percentage].present? ? check_in_data[:confidence_percentage].to_i : nil
       confidence_reason = check_in_data[:confidence_reason]&.strip.presence
+      
+      # Handle target date update if provided
+      target_date_updated = false
+      if check_in_data[:most_likely_target_date].present?
+        # Check authorization for goal update using Pundit
+        teammate = current_person.teammates.find_by(organization: organization)
+        unless teammate
+          return add_error(goal_id, "You don't have permission to update this goal")
+        end
+        
+        pundit_user = OpenStruct.new(user: teammate, impersonating_teammate: nil)
+        policy = GoalPolicy.new(pundit_user, goal)
+        unless policy.update?
+          return add_error(goal_id, "You don't have permission to update this goal")
+        end
+        
+        new_target_date = Date.parse(check_in_data[:most_likely_target_date])
+        
+        # Ensure earliest date is not after the new target date if earliest is set
+        if goal.earliest_target_date.present? && goal.earliest_target_date > new_target_date
+          goal.earliest_target_date = new_target_date
+        end
+        
+        # Ensure latest date is at least one day after the new target date if latest is set
+        if goal.latest_target_date.present? && new_target_date >= goal.latest_target_date
+          goal.latest_target_date = new_target_date + 1.day
+        end
+        
+        goal.most_likely_target_date = new_target_date
+        target_date_updated = true
+      end
 
       # If both fields are empty, delete existing check-in if it exists
       if confidence_percentage.nil? && confidence_reason.nil?
@@ -88,7 +119,20 @@ module Goals
       check_in.confidence_reason = confidence_reason
       check_in.confidence_reporter = current_person
 
-      if check_in.save
+      # Save both check-in and goal (if target date was updated)
+      success = true
+      if target_date_updated
+        Goal.transaction do
+          success = check_in.save && goal.save
+          unless success
+            raise ActiveRecord::Rollback
+          end
+        end
+      else
+        success = check_in.save
+      end
+
+      if success
         # Auto-complete goal if confidence is 0% or 100%
         if confidence_percentage.present? && (confidence_percentage == 0 || confidence_percentage == 100) && goal.completed_at.nil?
           goal.update(completed_at: Time.current)
@@ -97,7 +141,10 @@ module Goals
         @success_count += 1
       else
         @failure_count += 1
-        add_error(goal_id, check_in.errors.full_messages.join(', '))
+        error_messages = []
+        error_messages.concat(check_in.errors.full_messages) if check_in.errors.any?
+        error_messages.concat(goal.errors.full_messages) if goal.errors.any?
+        add_error(goal_id, error_messages.join(', '))
       end
     rescue => e
       @failure_count += 1

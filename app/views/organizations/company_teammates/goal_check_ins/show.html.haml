@@ -24,9 +24,10 @@
         %thead
           %tr
             %th Goal Title
-            %th Started / Due Date
+            %th Started
             %th Last 3 Weeks
-            %th Current Week Confidence
+            %th Confidence Now
+            %th Due By
             %th Reason
         %tbody
           - @goals.each do |goal|
@@ -38,20 +39,10 @@
               %td
                 = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
               %td
-                .d-flex.gap-2
-                  - if goal.started_at.present?
-                    %span
-                      %strong Started:
-                      = goal.started_at.strftime('%b %d, %Y')
-                  - else
-                    %span.text-muted Started: Not set
-                  %span |
-                  - if goal.most_likely_target_date.present?
-                    %span
-                      %strong Due:
-                      = goal.most_likely_target_date.strftime('%b %d, %Y')
-                  - else
-                    %span.text-muted Due: Not set
+                - if goal.started_at.present?
+                  = goal.started_at.strftime('%b %d, %Y')
+                - else
+                  %span.text-muted Not set
               %td
                 - if recent_check_ins.any?
                   .d-flex.gap-2
@@ -82,7 +73,19 @@
                 - else
                   = select_tag "goal_check_ins[#{goal.id}][confidence_percentage]", 
                       options_for_select(confidence_percentage_options, check_in&.confidence_percentage),
-                      { include_blank: 'Select confidence...', class: 'form-select form-select-sm' }
+                      { include_blank: 'Select confidence...', class: 'form-select form-select-sm', style: 'width: 125px' }
+              %td
+                - if is_completed
+                  - if goal.most_likely_target_date.present?
+                    = goal.most_likely_target_date.strftime('%b %d, %Y')
+                  - else
+                    %span.text-muted Not set
+                - else
+                  %span.text-muted ...By
+                  = date_field_tag "goal_check_ins[#{goal.id}][most_likely_target_date]",
+                      goal.most_likely_target_date,
+                      { class: 'form-control form-control-sm', style: 'width: 125px' }
+
               %td
                 - if is_completed && last_check_in
                   .completion-info

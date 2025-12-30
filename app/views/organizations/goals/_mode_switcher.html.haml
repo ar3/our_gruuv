@@ -1,10 +1,12 @@
+- current_mode = local_assigns[:current_mode] || (action_name == 'show' ? :view : (action_name == 'edit' ? :edit : (action_name == 'weekly_update' ? :check_in : :view)))
+
 .dropdown
   %button.btn.btn-outline-primary.btn-sm.dropdown-toggle{"data-bs-toggle" => "dropdown", "aria-expanded" => "false", type: "button"}
     %i.bi.bi-eye.me-2
-    = goal_current_view_name
+    = goal_current_view_name(current_mode)
   %ul.dropdown-menu
     %li
-      - if action_name == 'show'
+      - if current_mode == :view
         .dropdown-item.text-muted
           %i.bi.bi-eye.me-2
           View Mode (Active)
@@ -15,13 +17,15 @@
           View Mode
       
     %li
-      - if action_name == 'edit'
+      - if current_mode == :edit
         .dropdown-item.text-muted
           %i.bi.bi-pencil.me-2
           Edit Mode (Active)
           %i.bi.bi-check-circle.text-success.ms-2
       - elsif policy(goal).update?
-        = link_to edit_organization_goal_path(organization, goal, return_url: organization_goal_path(organization, goal), return_text: 'Back to Goal'), class: 'dropdown-item' do
+        - return_url = local_assigns[:return_url] || organization_goal_path(organization, goal)
+        - return_text = local_assigns[:return_text] || 'Back to Goal'
+        = link_to edit_organization_goal_path(organization, goal, return_url: return_url, return_text: return_text), class: 'dropdown-item' do
           %i.bi.bi-pencil.me-2
           Edit Mode
       - else
@@ -31,7 +35,7 @@
           %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need permission to edit this goal"}
     
     %li
-      - if action_name == 'weekly_update'
+      - if current_mode == :check_in
         .dropdown-item.text-muted
           %i.bi.bi-calendar-check.me-2
           Check-in Mode (Active)

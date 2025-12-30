@@ -351,13 +351,13 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:current_week_start)).to eq(current_week_start)
     end
     
-    it 'loads most recent check-in' do
+    it 'loads all check-ins in chronological order' do
       old_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 2.weeks.ago.beginning_of_week(:monday), confidence_reporter: person)
       recent_check_in = create(:goal_check_in, goal: goal, check_in_week_start: 1.week.ago.beginning_of_week(:monday), confidence_reporter: person)
       
       get :weekly_update, params: { organization_id: company.id, id: goal.id }
       
-      expect(assigns(:most_recent_check_in)).to eq(recent_check_in)
+      expect(assigns(:all_check_ins)).to eq([old_check_in, recent_check_in])
     end
     
     it 'sets return_url and return_text from params' do
@@ -617,6 +617,63 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       
       expect(response).to redirect_to(organization_goal_path(company, goal))
       expect(flash[:alert]).to match(/Failed to save check-in/)
+    end
+    
+    it 'updates most_likely_target_date when provided' do
+      new_target_date = Date.today + 60.days
+      goal.update(most_likely_target_date: Date.today + 30.days)
+      
+      post :check_in, params: { 
+        organization_id: company.id, 
+        id: goal.id,
+        confidence_percentage: 75,
+        most_likely_target_date: new_target_date.to_s
+      }
+      
+      goal.reload
+      expect(goal.most_likely_target_date).to eq(new_target_date)
+      expect(flash[:notice]).to match(/Target date updated/)
+    end
+    
+    it 'updates latest_target_date to be at least one day after new target date if latest is set' do
+      goal.update!(
+        earliest_target_date: nil,
+        most_likely_target_date: Date.today + 30.days,
+        latest_target_date: Date.today + 60.days
+      )
+      new_target_date = Date.today + 70.days  # After current latest
+      
+      post :check_in, params: { 
+        organization_id: company.id, 
+        id: goal.id,
+        confidence_percentage: 75,
+        most_likely_target_date: new_target_date.to_s
+      }
+      
+      goal.reload
+      expect(goal.most_likely_target_date).to eq(new_target_date)
+      expect(goal.latest_target_date).to eq(new_target_date + 1.day)
+    end
+    
+    it 'does not update latest_target_date if new target date is before existing latest' do
+      original_latest = Date.today + 60.days
+      goal.update!(
+        earliest_target_date: nil,
+        most_likely_target_date: Date.today + 30.days,
+        latest_target_date: original_latest
+      )
+      new_target_date = Date.today + 40.days  # Before current latest
+      
+      post :check_in, params: { 
+        organization_id: company.id, 
+        id: goal.id,
+        confidence_percentage: 75,
+        most_likely_target_date: new_target_date.to_s
+      }
+      
+      goal.reload
+      expect(goal.most_likely_target_date).to eq(new_target_date)
+      expect(goal.latest_target_date).to eq(original_latest)
     end
     
     context 'when user is not authorized to view goal' do

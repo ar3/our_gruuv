@@ -18,7 +18,7 @@
         %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
       - if most_recent_check_in.present?
         %small.text-muted.d-block.mt-1.ms-5
-          As of #{most_recent_check_in.check_in_week_start.strftime('%b %d, %Y')}, we are #{most_recent_check_in.confidence_percentage}% confident we'll accomplish this.
+          = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: linked_goal
     .d-flex.gap-1
       - action_button = child_goal_action_button(linked_goal)
       - if action_button.present? && policy(linked_goal).update?
@@ -31,13 +31,12 @@
       - if policy(linked_goal).show? && linked_goal.started_at.present? && !goal_is_completed?(linked_goal)
         - return_url = local_assigns[:return_url] || (defined?(request) ? request.url : '#')
         - return_text = local_assigns[:return_text] || 'Goal'
-        = link_to weekly_update_organization_goal_path(organization, linked_goal, return_url: return_url, return_text: return_text), class: "btn btn-sm btn-outline-primary", target: "_blank" do
+        = link_to weekly_update_organization_goal_path(organization, linked_goal, return_url: return_url, return_text: return_text), class: "btn btn-sm btn-outline-primary", target: "_blank", "data-bs-toggle" => "tooltip", "data-bs-title" => "add/update weekly goal check-in" do
           %i.bi.bi-calendar-check.me-1
-          Weekly Update
       - if policy(linked_goal).update? && !goal_is_completed?(linked_goal) && linked_goal.started_at.present?
         - return_url = local_assigns[:return_url] || (defined?(request) ? request.url : '#')
         - return_text = local_assigns[:return_text] || 'Goal'
-        = link_to done_organization_goal_path(organization, linked_goal, return_url: return_url, return_text: return_text), class: "btn btn-sm btn-outline-success" do
+        = link_to done_organization_goal_path(organization, linked_goal, return_url: return_url, return_text: return_text), class: "btn btn-sm btn-outline-success", "data-bs-toggle" => "tooltip", "data-bs-title" => "mark this goal completed" do
           %i.bi.bi-check-circle
       - if show_unlink && link && policy(link).destroy?
         - parent_goal_for_link = local_assigns[:parent_goal] || (defined?(@goal) ? @goal : nil)

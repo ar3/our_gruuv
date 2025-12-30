@@ -6,9 +6,10 @@
     Back to Goal
 
 - content_for :header do
-  .d-flex.align-items-center
-    %h1.mb-0.me-2 Edit Goal
-    = render 'mode_switcher', organization: @organization, goal: @goal, return_url: organization_goal_path(@organization, @goal), return_text: 'Back to Goal'
+  %h1.mb-0 Edit Goal
+
+- content_for :header_action do
+  = render 'mode_switcher', organization: @organization, goal: @goal, current_mode: :edit, return_url: organization_goal_path(@organization, @goal), return_text: 'Back to Goal'
 
 .container-fluid
   .row

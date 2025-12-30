@@ -55,11 +55,11 @@
               - if recent_check_ins.any?
                 .d-flex.gap-2
                   - recent_check_ins.each do |ci|
-                    - tooltip_content = goal_check_in_tooltip_content(ci)
+                    - sentence_html = render 'organizations/goals/goal_check_in_sentence', check_in: ci, goal: goal
                     %span.badge.bg-secondary{
                       "data-bs-toggle" => "tooltip",
                       "data-bs-html" => "true",
-                      "data-bs-title" => tooltip_content
+                      "data-bs-title" => sentence_html.to_s.html_safe
                     }
                       = "#{ci.confidence_percentage}%"
               - else
