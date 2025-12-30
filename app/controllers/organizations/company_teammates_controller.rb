@@ -575,6 +575,9 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         goal.instance_variable_set(:@needs_check_in, current_week_check_ins[goal.id].nil?)
       end
       
+      # Check if any goals were completed in the last 90 days (for status indicator)
+      @goals_completed_recently = base_goals.where('completed_at >= ?', 90.days.ago).exists?
+      
       @goals_check_in_url = organization_goals_path(
         organization,
         owner_type: 'Teammate',

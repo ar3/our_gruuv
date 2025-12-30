@@ -17,6 +17,8 @@
       %strong= pluralize(all_goals.count, 'active goal')
       - if goals_needing_check_in > 0
         , #{pluralize(goals_needing_check_in, 'needs check-in')}
+      - if defined?(@goals_completed_recently) && !@goals_completed_recently
+        , no goals are completed in the last 90 days
     - else
       No active goals found.
 
