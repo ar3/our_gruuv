@@ -62,13 +62,17 @@ RSpec.describe Slack::ProcessHuddleCommandService, type: :service do
         end
 
         it 'creates huddle with correct attributes' do
+          # Capture time before service call to account for time spent in jobs
+          before_time = Time.current
+          
           result = service.call
           expect(result.ok?).to be true
           
           huddle = Huddle.last
           expect(huddle.huddle_playbook).to eq(playbook)
-          expect(huddle.started_at).to be_within(1.second).of(Time.current)
-          expect(huddle.expires_at).to be_within(1.second).of(24.hours.from_now)
+          # Compare against time captured before service call, not current time after jobs run
+          expect(huddle.started_at).to be_within(1.second).of(before_time)
+          expect(huddle.expires_at).to be_within(1.second).of(24.hours.from_now(before_time))
         end
 
         it 'returns success message with full huddle URL' do

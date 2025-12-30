@@ -38,6 +38,12 @@ class Webhooks::SlackCommandsController < ApplicationController
     # Parse action from text parameter
     action, remaining_text = parse_action(text)
     
+    # Handle help or empty command
+    if action.nil? || action == 'help'
+      incoming_webhook.mark_processed!
+      return render json: { text: build_help_message }
+    end
+    
     # Route to appropriate handler
     result = case action
     when 'feedback'
@@ -45,10 +51,9 @@ class Webhooks::SlackCommandsController < ApplicationController
     when 'huddle'
       handle_huddle_command(organization, user_id, channel_id, incoming_webhook)
     when 'goal-check'
-      # Phase 3 - placeholder
-      { text: "Goal check-in command coming in Phase 3" }
+      handle_goal_check_command(organization, user_id, trigger_id, incoming_webhook)
     else
-      { text: "Unknown command. Available commands: `feedback`, `huddle`, `goal-check`. Use `/og feedback <your message>` to create an observation." }
+      { text: "Unknown command. #{build_help_message}" }
     end
     
     # Convert Result objects to hash format for Slack
@@ -102,7 +107,54 @@ class Webhooks::SlackCommandsController < ApplicationController
     
     [action, remaining_text]
   end
+
+  def build_help_message
+    <<~HELP
+      *OurGruuv Slack Commands*
+
+      Available commands:
+      • `/og feedback <message>` - Create an observation. You can mention people with @username to add them as observees. Aliases: `observe`, `kudos`, `note`
+      • `/og huddle` - Start a huddle for the current channel (if configured)
+      • `/og goal-check` - Check in on your goals for the current week
+
+      Use `/og help` to see this message again.
+    HELP
+  end
   
+  def handle_goal_check_command(organization, user_id, trigger_id, incoming_webhook)
+    unless organization
+      return Result.err("Organization not found for this Slack workspace. Please ensure Slack is properly configured.")
+    end
+    
+    unless organization.slack_configured?
+      return Result.err("Slack is not configured for this organization. Please configure Slack integration first.")
+    end
+    
+    unless trigger_id.present?
+      return Result.err("Missing trigger_id. Please try the command again.")
+    end
+    
+    # Extract command information for trigger (if we want to track this later)
+    command_info = {
+      command: params[:command],
+      user_id: user_id,
+      team_id: params[:team_id],
+      team_domain: params[:team_domain],
+      channel_id: params[:channel_id],
+      channel_name: params[:channel_name],
+      user_name: params[:user_name],
+      response_url: params[:response_url],
+      trigger_id: trigger_id
+    }
+    
+    Slack::ProcessGoalCheckCommandService.call(
+      organization: organization,
+      user_id: user_id,
+      trigger_id: trigger_id,
+      command_info: command_info
+    )
+  end
+
   def handle_huddle_command(organization, user_id, channel_id, incoming_webhook)
     unless organization
       return Result.err("Organization not found for this Slack workspace. Please ensure Slack is properly configured.")

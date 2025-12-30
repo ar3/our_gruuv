@@ -39,6 +39,22 @@ class Slack::ProcessInteractionJob < ApplicationJob
   private
   
   def handle_view_submission(incoming_webhook, payload)
+    callback_id = payload.dig('view', 'callback_id')
+    
+    case callback_id
+    when 'create_observation_from_message'
+      handle_observation_modal_submission(incoming_webhook, payload)
+    when 'goal_check_in'
+      # Goal check-in is handled synchronously in the controller (needs immediate response)
+      Rails.logger.warn "Slack::ProcessInteractionJob: goal_check_in should be handled synchronously"
+      incoming_webhook.mark_failed!("goal_check_in should be handled synchronously")
+    else
+      Rails.logger.warn "Slack::ProcessInteractionJob: Unknown callback_id: #{callback_id}"
+      incoming_webhook.mark_failed!("Unknown callback_id: #{callback_id}")
+    end
+  end
+  
+  def handle_observation_modal_submission(incoming_webhook, payload)
     # Check if this is our observation creation modal
     callback_id = payload.dig('view', 'callback_id')
     return unless callback_id == 'create_observation_from_message'
@@ -135,6 +151,7 @@ class Slack::ProcessInteractionJob < ApplicationJob
       incoming_webhook.mark_failed!(error_message)
     end
   end
+  
 end
 
 

@@ -29,13 +29,16 @@ class Webhooks::SlackController < ApplicationController
     # Handle message_action/shortcut immediately (trigger_id expires in 3 seconds)
     if event_type == 'message_action' || event_type == 'shortcut'
       handle_shortcut_immediately(incoming_webhook, payload, organization)
+      head :ok
+    elsif event_type == 'view_submission'
+      # Handle view_submission synchronously (Slack requires response within 3 seconds)
+      response = handle_view_submission_synchronously(incoming_webhook, payload, organization)
+      render json: response
     else
-      # For other events (like view_submission), process in background
+      # For other events, process in background
       Slack::ProcessInteractionJob.perform_and_get_result(incoming_webhook.id)
+      head :ok
     end
-    
-    # Return 200 immediately (Slack expects quick response)
-    head :ok
   rescue JSON::ParserError => e
     Rails.logger.error "Slack webhook: Failed to parse payload - #{e.message}"
     head :bad_request
@@ -140,6 +143,157 @@ class Webhooks::SlackController < ApplicationController
     end
   end
   
+  def handle_view_submission_synchronously(incoming_webhook, payload, organization)
+    callback_id = payload.dig('view', 'callback_id')
+    
+    case callback_id
+    when 'goal_check_in'
+      handle_goal_check_in_submission(incoming_webhook, payload, organization)
+    when 'create_observation_from_message'
+      # Observation modal is handled in background job (doesn't need immediate response)
+      Slack::ProcessInteractionJob.perform_and_get_result(incoming_webhook.id)
+      { response_action: 'clear' }
+    else
+      Rails.logger.warn "Slack webhook: Unknown callback_id: #{callback_id}"
+      incoming_webhook.mark_failed!("Unknown callback_id: #{callback_id}")
+      { response_action: 'clear' }
+    end
+  rescue => e
+    Rails.logger.error "Slack webhook: Error handling view_submission - #{e.message}"
+    Rails.logger.error e.backtrace.first(10).join("\n")
+    incoming_webhook.mark_failed!(e.message) if incoming_webhook
+    { response_action: 'errors', errors: { base: 'An unexpected error occurred. Please try again.' } }
+  end
+  
+  def handle_goal_check_in_submission(incoming_webhook, payload, organization)
+    # Parse private metadata
+    private_metadata_str = payload.dig('view', 'private_metadata')
+    unless private_metadata_str
+      incoming_webhook.mark_failed!("Missing private_metadata")
+      return { response_action: 'errors', errors: { base: 'Missing metadata' } }
+    end
+    
+    # Handle both string (from JSON) and hash (from JSONB) cases
+    private_metadata = if private_metadata_str.is_a?(String)
+      JSON.parse(private_metadata_str)
+    else
+      private_metadata_str.is_a?(Hash) ? private_metadata_str.with_indifferent_access : private_metadata_str
+    end
+    
+    teammate_id = private_metadata['teammate_id'] || private_metadata[:teammate_id]
+    organization_id = private_metadata['organization_id'] || private_metadata[:organization_id]
+    
+    # Resolve organization and teammate
+    org = organization || Organization.find_by(id: organization_id)
+    unless org
+      incoming_webhook.mark_failed!("Organization not found")
+      return { response_action: 'errors', errors: { base: 'Organization not found' } }
+    end
+    
+    teammate = Teammate.find_by(id: teammate_id)
+    unless teammate
+      incoming_webhook.mark_failed!("Teammate not found for id: #{teammate_id}")
+      return { response_action: 'errors', errors: { base: 'Teammate not found' } }
+    end
+    
+    # Update webhook with organization if it was nil
+    incoming_webhook.update!(organization_id: org.id) if incoming_webhook.organization_id.nil?
+    
+    # Extract form values
+    state_values = payload.dig('view', 'state', 'values') || {}
+    
+    goal_selection_block = state_values['goal_selection'] || {}
+    goal_id = goal_selection_block.dig('goal_selection', 'selected_option', 'value')
+    
+    confidence_percentage_block = state_values['confidence_percentage'] || {}
+    confidence_percentage_str = confidence_percentage_block.dig('confidence_percentage', 'value')
+    confidence_percentage = confidence_percentage_str.present? ? confidence_percentage_str.to_i : nil
+    
+    confidence_reason_block = state_values['confidence_reason'] || {}
+    confidence_reason = confidence_reason_block.dig('confidence_reason', 'value')&.strip
+    
+    # Validate that we have a goal
+    unless goal_id.present?
+      return { response_action: 'errors', errors: { goal_selection: 'Please select a goal' } }
+    end
+    
+    goal = Goal.find_by(id: goal_id)
+    unless goal
+      incoming_webhook.mark_failed!("Goal not found for id: #{goal_id}")
+      return { response_action: 'errors', errors: { goal_selection: 'Selected goal not found' } }
+    end
+    
+    # Validate that at least one field is present
+    unless confidence_percentage.present? || confidence_reason.present?
+      return { 
+        response_action: 'errors', 
+        errors: { 
+          confidence_percentage: 'Either confidence percentage or reason must be provided',
+          confidence_reason: 'Either confidence percentage or reason must be provided'
+        } 
+      }
+    end
+    
+    # Validate confidence percentage range
+    if confidence_percentage.present? && (confidence_percentage < 0 || confidence_percentage > 100)
+      return { 
+        response_action: 'errors', 
+        errors: { confidence_percentage: 'Confidence percentage must be between 0 and 100' } 
+      }
+    end
+    
+    # Get current week start (Monday)
+    week_start = Date.current.beginning_of_week(:monday)
+    
+    # Set PaperTrail whodunnit for version tracking
+    PaperTrail.request.whodunnit = teammate.person.id.to_s
+    
+    # Find or initialize check-in for current week
+    check_in = GoalCheckIn.find_or_initialize_by(
+      goal: goal,
+      check_in_week_start: week_start
+    )
+    
+    check_in.assign_attributes(
+      confidence_percentage: confidence_percentage,
+      confidence_reason: confidence_reason,
+      confidence_reporter: teammate.person
+    )
+    
+    if check_in.save
+      # Auto-complete goal if confidence is 0% or 100%
+      if (confidence_percentage == 0 || confidence_percentage == 100) && goal.completed_at.nil?
+        goal.update(completed_at: Time.current)
+      end
+      
+      # Link the webhook to the created check-in
+      incoming_webhook.update!(resultable: check_in)
+      incoming_webhook.mark_processed!
+      
+      # Post confirmation message asynchronously
+      user_id = private_metadata['user_id'] || private_metadata[:user_id]
+      if user_id.present?
+        Slack::PostGoalCheckInConfirmationJob.perform_later(org.id, user_id, goal.id)
+      end
+      
+      # Return success response to close the modal
+      { response_action: 'clear' }
+    else
+      error_message = "Failed to save check-in: #{check_in.errors.full_messages.join(', ')}"
+      Rails.logger.error "Slack webhook: #{error_message}"
+      incoming_webhook.mark_failed!(error_message)
+      
+      # Return errors to show in modal
+      errors_hash = {}
+      check_in.errors.each do |error|
+        field = error.attribute.to_s
+        errors_hash[field] = error.message
+      end
+      
+      { response_action: 'errors', errors: errors_hash }
+    end
+  end
+
   def handle_shortcut_immediately(incoming_webhook, payload, organization)
     unless organization
       incoming_webhook.mark_failed!("Organization not found for workspace")

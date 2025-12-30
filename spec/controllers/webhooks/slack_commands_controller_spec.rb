@@ -152,13 +152,76 @@ RSpec.describe Webhooks::SlackCommandsController, type: :controller do
 
       context 'when command is goal-check' do
         let(:text) { 'goal-check' }
+        let(:trigger_id) { '123.456.789' }
 
-        it 'returns placeholder message' do
+        before do
+          params_hash, raw_body, sig = build_request_params(text)
+          params_hash[:trigger_id] = trigger_id
+          raw_body = params_hash.map { |k, v| "#{k}=#{CGI.escape(v.to_s)}" }.join('&')
+          signature = 'v0=' + OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), signing_secret, "v0:#{timestamp}:#{raw_body}")
+          setup_request_with_signature(params_hash, raw_body, signature)
+        end
+
+        context 'when user has goals' do
+          let!(:goal) do
+            create(:goal, 
+                   owner: teammate.person, 
+                   creator: teammate, 
+                   company: organization)
+          end
+
+          before do
+            allow(Slack::ProcessGoalCheckCommandService).to receive(:call).and_return(
+              Result.ok("Opening goal check-in form...")
+            )
+          end
+
+          it 'opens goal check-in modal' do
+            post :create, params: build_request_params(text).first.merge(trigger_id: trigger_id)
+            expect(response).to have_http_status(:ok)
+            expect(JSON.parse(response.body)['text']).to include('Opening goal check-in form')
+          end
+        end
+
+        context 'when user has no goals' do
+          before do
+            allow(Slack::ProcessGoalCheckCommandService).to receive(:call).and_return(
+              Result.err("You don't have any goals available for check-in. Create a goal first in OurGruuv.")
+            )
+          end
+
+          it 'returns error message' do
+            post :create, params: build_request_params(text).first.merge(trigger_id: trigger_id)
+            expect(response).to have_http_status(:ok)
+            expect(JSON.parse(response.body)['text']).to include("don't have any goals")
+          end
+        end
+      end
+
+      context 'when command is empty' do
+        let(:text) { '' }
+
+        it 'returns help message' do
           params_hash, raw_body, sig = build_request_params(text)
           setup_request_with_signature(params_hash, raw_body, sig)
           post :create, params: params_hash
           expect(response).to have_http_status(:ok)
-          expect(JSON.parse(response.body)['text']).to include('Phase 3')
+          expect(JSON.parse(response.body)['text']).to include('OurGruuv Slack Commands')
+          expect(JSON.parse(response.body)['text']).to include('feedback')
+          expect(JSON.parse(response.body)['text']).to include('huddle')
+          expect(JSON.parse(response.body)['text']).to include('goal-check')
+        end
+      end
+
+      context 'when command is help' do
+        let(:text) { 'help' }
+
+        it 'returns help message' do
+          params_hash, raw_body, sig = build_request_params(text)
+          setup_request_with_signature(params_hash, raw_body, sig)
+          post :create, params: params_hash
+          expect(response).to have_http_status(:ok)
+          expect(JSON.parse(response.body)['text']).to include('OurGruuv Slack Commands')
         end
       end
 
@@ -171,6 +234,7 @@ RSpec.describe Webhooks::SlackCommandsController, type: :controller do
           post :create, params: params_hash
           expect(response).to have_http_status(:ok)
           expect(JSON.parse(response.body)['text']).to include('Unknown command')
+          expect(JSON.parse(response.body)['text']).to include('OurGruuv Slack Commands')
         end
       end
 
