@@ -1,0 +1,18 @@
+- content_for :title, "Edit Change Log"
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-pencil.me-2
+    Edit Change Log
+
+- content_for :go_back_link do
+  = link_to "Back to Change Log", change_log_path(@change_log), class: "text-muted text-decoration-none"
+
+.card
+  .card-header
+    %h5.mb-0
+      %i.bi.bi-clock-history.me-2
+      Update Change Log
+  .card-body
+    = render 'form'
+

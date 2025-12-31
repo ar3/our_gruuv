@@ -175,6 +175,12 @@ module NavigationHelper
             coming_soon: false
           }
         ]
+      },
+      {
+        label: 'Help Improve OG',
+        icon: 'bi-lightbulb',
+        path: interest_submissions_path,
+        section: nil
       }
     ]
   end

@@ -1,0 +1,86 @@
+- content_for :title, "Change Logs"
+
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0
+      %i.bi.bi-clock-history.me-2
+      Change Logs
+    - if current_person&.og_admin?
+      = link_to new_change_log_path, class: "btn btn-primary" do
+        %i.bi.bi-plus.me-1
+        New Change Log
+
+/ Spotlight Section
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row.text-center
+          .col-3
+            .h3.text-spice-1= @spotlight_stats[:new_value]
+            %small.text-muted New Value
+          .col-3
+            .h3.text-spice-2= @spotlight_stats[:major_enhancement]
+            %small.text-muted Major Enhancement
+          .col-3
+            .h3.text-spice-3= @spotlight_stats[:minor_enhancement]
+            %small.text-muted Minor Enhancement
+          .col-3
+            .h3.text-spice-4= @spotlight_stats[:bug_fix]
+            %small.text-muted Bug Fix
+      .card-footer.bg-light
+        %small.text-muted Changes in the past 90 days
+
+/ Pagination Info
+.row.justify-content-center.mb-2
+  .col-lg-12
+    .d-flex.justify-content-between.align-items-center
+      %small.text-muted= raw pagy_info(@pagy) if @pagy
+
+/ Change Logs List
+.row.justify-content-center
+  .col-lg-12
+    - if @change_logs&.any?
+      - @change_logs.each do |change_log|
+        .card.mb-3
+          .card-body
+            .row
+              / Left side - 3 columns - Image
+              .col-md-3
+                - if change_log.image_url.present?
+                  = image_tag change_log.image_url, alt: "Change log image", class: "img-fluid rounded"
+                - else
+                  .text-center.text-muted.py-5
+                    %i.bi.bi-image{style: "font-size: 3rem;"}
+                    %p.mt-2 No image
+              
+              / Right side - 9 columns - Description and details
+              .col-md-9
+                .d-flex.justify-content-between.align-items-start.mb-2
+                  %div
+                    %h5.mb-1
+                      %span.badge{class: "bg-#{change_log.change_type == 'new_value' ? 'primary' : change_log.change_type == 'major_enhancement' ? 'success' : change_log.change_type == 'minor_enhancement' ? 'info' : 'warning'}"}
+                        = change_log.change_type.humanize
+                    %small.text-muted.ms-2
+                      %i.bi.bi-calendar.me-1
+                      = change_log.launched_on.strftime("%B %d, %Y")
+                  - if current_person&.og_admin?
+                    = link_to edit_change_log_path(change_log), class: "btn btn-sm btn-outline-secondary" do
+                      %i.bi.bi-pencil.me-1
+                      Edit
+                
+                .markdown-content.mb-3
+                  = render_markdown(change_log.description)
+                
+                = link_to "View Details", change_log, class: "btn btn-sm btn-outline-primary"
+      
+      / Pagination
+      - if @pagy
+        .d-flex.justify-content-center.mt-4
+          = raw pagy_nav(@pagy) if @pagy.pages > 1
+    - else
+      .text-center.py-5
+        %i.bi.bi-clock-history.text-muted{style: "font-size: 3rem;"}
+        %h5.text-muted.mt-3 No Change Logs Yet
+        %p.text-muted Check back soon for updates!
+

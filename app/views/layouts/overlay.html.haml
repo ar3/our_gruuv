@@ -11,6 +11,7 @@
     = javascript_importmap_tags
 
   %body.overlay-layout
+    - has_return = content_for(:return_url).present? || content_for(:return_text).present?
     - return_url = content_for(:return_url) || "#"
     - return_text = content_for(:return_text) || "Back"
     .container.mt-4.overlay-content
@@ -20,11 +21,12 @@
             .flex-grow-1
               %h1.mb-0
                 = content_for(:header) || "Return to Previous Page"
-      .row.mb-3
-        .col-12
-          = link_to return_url, class: "text-muted", id: "return-button" do
-            %i.bi.bi-arrow-left.me-1
-            = return_text
+      - if has_return
+        .row.mb-3
+          .col-12
+            = link_to return_url, class: "text-muted", id: "return-button" do
+              %i.bi.bi-arrow-left.me-1
+              = return_text
       
       .row.overlay-body
         .col-12

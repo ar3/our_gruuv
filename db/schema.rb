@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_29_171248) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_31_125904) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -190,6 +190,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_29_171248) do
     t.index ["initiator_id"], name: "index_bulk_sync_events_on_initiator_id"
     t.index ["organization_id"], name: "index_bulk_sync_events_on_organization_id"
     t.index ["status"], name: "index_bulk_sync_events_on_status"
+  end
+
+  create_table "change_logs", force: :cascade do |t|
+    t.date "launched_on"
+    t.string "image_url"
+    t.text "description"
+    t.string "change_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "debug_responses", force: :cascade do |t|

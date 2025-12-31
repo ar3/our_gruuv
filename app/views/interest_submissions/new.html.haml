@@ -12,8 +12,8 @@
   .card-header
     %h5.mb-0
       %i.bi.bi-lightbulb.me-2
-      Tell Us About Your Interest
-    %small.text-muted Help us understand what features you'd like to see in OurGruuv
+      Tell Us About You
+    %small.text-muted Help us understand what you struggle with, what you hope to accomplish, what you wish for when thinkig about creating an environment condusive to full teams getting in the zone (getting their Gruuv on)
   
   .card-body
     = form_with model: @interest_submission, local: true, class: "needs-validation", novalidate: true do |form|
@@ -21,8 +21,8 @@
       
       .mb-3
         = form.label :thing_interested_in, "What are you interested in?", class: "form-label"
-        = form.text_area :thing_interested_in, class: "form-control", rows: 3, placeholder: "Describe the feature or functionality you're interested in..."
-        .form-text This could be a specific feature, improvement, or new capability you'd like to see.
+        = form.text_area :thing_interested_in, class: "form-control", rows: 3, placeholder: "Describe the situation tht leads you to be interested..."
+        .form-text This could be a specific feature you use today that you'd like to see improved... or it could be an entirely different opportunity you'd like to see explored
       
       .mb-3
         = form.label :why_interested, "Why are you interested?", class: "form-label"

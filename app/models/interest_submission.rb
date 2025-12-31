@@ -4,6 +4,7 @@ class InterestSubmission < ApplicationRecord
   # Scopes
   scope :recent, -> { order(created_at: :desc) }
   scope :by_source_page, ->(page) { where(source_page: page) }
+  scope :by_person, ->(person) { where(person: person) }
   
   # Instance methods
   def display_name

@@ -1,12 +1,38 @@
 class InterestSubmissionsController < ApplicationController
-  before_action :require_login, except: [:new, :create, :show]
-  before_action :ensure_admin!, only: [:index]
+  before_action :require_login, except: [:index, :new, :create, :show]
   
   def index
-    @interest_submissions = InterestSubmission.includes(:person).recent
+    authorize InterestSubmission
+    
+    # Use policy scope to get user's own submissions (or none if not logged in)
+    @interest_submissions = policy_scope(InterestSubmission).includes(:person).recent
+    
+    # Load change logs with pagination
+    authorize ChangeLog
+    change_logs_scope = policy_scope(ChangeLog).recent
+    total_count = change_logs_scope.count
+    @pagy = Pagy.new(count: total_count, page: params[:page] || 1, items: 25)
+    @change_logs = change_logs_scope.limit(@pagy.items).offset(@pagy.offset)
+    
+    # Calculate spotlight stats (counts by change_type in past 90 days)
+    past_90_days_logs = ChangeLog.in_past_90_days
+    @spotlight_stats = {
+      new_value: past_90_days_logs.by_change_type('new_value').count,
+      major_enhancement: past_90_days_logs.by_change_type('major_enhancement').count,
+      minor_enhancement: past_90_days_logs.by_change_type('minor_enhancement').count,
+      bug_fix: past_90_days_logs.by_change_type('bug_fix').count
+    }
+    render layout: 'overlay'
   end
   
   def new
+    # If not logged in, redirect to login with flash message
+    unless current_person
+      session[:return_to] = new_interest_submission_path
+      redirect_to login_path, alert: 'To submit your ideas, login or create an account'
+      return
+    end
+    
     @interest_submission = InterestSubmission.new
     @source_page = params[:source_page] || 'unknown'
     @return_url = params[:return_url] || root_path
@@ -36,6 +62,7 @@ class InterestSubmissionsController < ApplicationController
   
   def show
     @interest_submission = InterestSubmission.find(params[:id])
+    authorize @interest_submission
   end
   
   private
@@ -46,11 +73,6 @@ class InterestSubmissionsController < ApplicationController
     end
   end
   
-  def ensure_admin!
-    unless current_person&.og_admin?
-      redirect_to root_path, alert: 'You must be an administrator to access this page.'
-    end
-  end
   
   def interest_submission_params
     params.require(:interest_submission).permit(:thing_interested_in, :why_interested, :current_solution, :source_page)

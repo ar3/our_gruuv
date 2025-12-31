@@ -1,0 +1,43 @@
+= form_with model: @change_log, local: true, class: "needs-validation", novalidate: true, multipart: true do |form|
+  - if @change_log.errors.any?
+    .alert.alert-danger
+      %h5.mb-2 Errors prevented this change log from being saved:
+      %ul.mb-0
+        - @change_log.errors.full_messages.each do |message|
+          %li= message
+  
+  .mb-3
+    = form.label :launched_on, "Launch Date", class: "form-label"
+    = form.date_field :launched_on, class: "form-control", required: true
+    .form-text The date this change was launched
+  
+  .mb-3
+    = form.label :change_type, "Change Type", class: "form-label"
+    - change_type_options = [['New Value', 'new_value'], ['Major Enhancement', 'major_enhancement'], ['Minor Enhancement', 'minor_enhancement'], ['Bug Fix', 'bug_fix']]
+    = form.select :change_type, options_for_select(change_type_options, @change_log.change_type), {}, { class: "form-select", required: true }
+    .form-text Select the type of change
+  
+  .mb-3
+    = form.label :image, "Upload Image", class: "form-label"
+    = form.file_field :image, class: "form-control", accept: "image/*"
+    .form-text Upload an image file (any image type accepted). This will upload to S3 and replace any existing image URL.
+    - if @change_log.persisted? && @change_log.image_url.present?
+      .mt-2
+        %small.text-muted Current image:
+        = link_to @change_log.image_url, @change_log.image_url, target: "_blank", class: "ms-2"
+        = image_tag @change_log.image_url, alt: "Current change log image", class: "img-thumbnail ms-2", style: "max-height: 100px;", onerror: "this.style.display='none'"
+  
+  .mb-3
+    = form.label :image_url, "Or Image URL", class: "form-label"
+    = form.url_field :image_url, class: "form-control", placeholder: "https://example.com/image.png"
+    .form-text Optional: Alternatively, provide a direct URL to an image. Leave blank if uploading a file above.
+  
+  .mb-3
+    = form.label :description, "Description", class: "form-label"
+    = form.text_area :description, class: "form-control", rows: 10, placeholder: "Describe the change...", required: true
+    .form-text Markdown is supported for formatting
+  
+  .d-flex.justify-content-between
+    = link_to "Cancel", change_logs_path, class: "btn btn-outline-secondary"
+    = form.submit class: "btn btn-primary"
+

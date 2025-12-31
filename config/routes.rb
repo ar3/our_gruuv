@@ -420,6 +420,9 @@ resources :impersonations, only: [:create, :destroy]
 # Interest submissions for coming soon features
 resources :interest_submissions, path: 'interest', only: [:index, :new, :create, :show]
 
+# Change logs
+resources :change_logs, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+
 # Identity management
 post '/profile/identities/connect_google', to: 'people#connect_google_identity', as: :connect_google_identity
 delete '/profile/identities/:id', to: 'people#disconnect_identity', as: :disconnect_identity

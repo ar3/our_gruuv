@@ -1,0 +1,61 @@
+- content_for :title, "Change Log"
+
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0
+      %i.bi.bi-clock-history.me-2
+      Change Log
+    - if current_person&.og_admin?
+      = link_to edit_change_log_path(@change_log), class: "btn btn-outline-primary" do
+        %i.bi.bi-pencil.me-1
+        Edit
+
+- content_for :go_back_link do
+  = link_to "Back to Change Logs", change_logs_path, class: "text-muted text-decoration-none"
+
+.row
+  .col-md-8
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-info-circle.me-2
+          Details
+      .card-body
+        %dl.row
+          %dt.col-sm-3 Launch Date:
+          %dd.col-sm-9
+            %i.bi.bi-calendar.me-2
+            = @change_log.launched_on.strftime("%B %d, %Y")
+          
+          %dt.col-sm-3 Change Type:
+          %dd.col-sm-9
+            %span.badge{class: "bg-#{@change_log.change_type == 'new_value' ? 'primary' : @change_log.change_type == 'major_enhancement' ? 'success' : @change_log.change_type == 'minor_enhancement' ? 'info' : 'warning'}"}
+              = @change_log.change_type.humanize
+          
+          - if @change_log.image_url.present?
+            %dt.col-sm-3 Image:
+            %dd.col-sm-9
+              = image_tag @change_log.image_url, alt: "Change log image", class: "img-fluid rounded"
+          
+          %dt.col-sm-3 Description:
+          %dd.col-sm-9
+            .markdown-content
+              = render_markdown(@change_log.description)
+  
+  .col-md-4
+    .card.mb-4
+      .card-header
+        %h6.mb-0
+          %i.bi.bi-info-circle.me-2
+          Information
+      .card-body
+        %small.text-muted
+          %p.mb-2
+            %strong Created:
+            %br
+            = @change_log.created_at.strftime("%B %d, %Y at %I:%M %p")
+          %p.mb-0
+            %strong Updated:
+            %br
+            = @change_log.updated_at.strftime("%B %d, %Y at %I:%M %p")
+
