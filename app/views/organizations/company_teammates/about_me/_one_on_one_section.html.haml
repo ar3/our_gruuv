@@ -13,7 +13,7 @@
 - recently_completed_count = cache ? cache.recently_completed_items.length : 0
 
 -# Summary view (shown when collapsed)
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(one_on_one_indicator)}"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(one_on_one_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#oneOnOneSection", "aria-expanded" => "false", "aria-controls" => "oneOnOneSection", style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(one_on_one_indicator)} #{status_indicator_badge_class(one_on_one_indicator)} me-2"}
     - if @one_on_one_link&.url.present?

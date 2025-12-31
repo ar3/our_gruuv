@@ -6,7 +6,7 @@
          collapse_target: 'promptsSection'
 
 -# Summary view (shown when collapsed)
-%div.alert.alert-info.mb-4.collapse-summary
+%div.alert.alert-info.mb-4.collapse-summary{"data-bs-toggle" => "collapse", "data-bs-target" => "#promptsSection", "aria-expanded" => "false", "aria-controls" => "promptsSection", style: "cursor: pointer;"}
   %p.mb-0
     - if @open_prompts_count > 0
       %strong= pluralize(@open_prompts_count, 'open prompt')
