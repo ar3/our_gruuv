@@ -14,6 +14,19 @@
         %i.bi.bi-calendar-event.me-2
         Current Check-in Week: #{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}
 
+.row.justify-content-center.mb-3
+  .col-lg-12
+    - if policy(Goal).create?
+      = link_to new_organization_goal_path(@organization), class: "btn btn-outline-primary" do
+        %i.bi.bi-plus.me-2
+        Create New Goal
+    - else
+      .d-flex.align-items-center.gap-2
+        = link_to new_organization_goal_path(@organization), class: "btn btn-outline-primary disabled", style: "opacity: 0.6; cursor: not-allowed;", disabled: true do
+          %i.bi.bi-plus.me-2
+          Create New Goal
+        %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need to be a teammate to create goals"}
+
 - if @goals.any?
   = form_with url: organization_company_teammate_goal_check_ins_path(@organization, @teammate), method: :patch, local: true do |f|
     = hidden_field_tag :return_url, @return_url

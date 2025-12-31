@@ -94,4 +94,10 @@
             = link_to "View All Observations Received", 
                       @observations_received_url,
                       class: "btn btn-outline-primary"
+      
+      - if policy(Observation).create?
+        .d-grid.mt-4
+          = link_to select_type_organization_observations_path(organization, return_url: about_me_organization_company_teammate_path(organization, @teammate), return_text: "Back to About #{@teammate.person.casual_name}"),
+                    class: "btn btn-primary" do
+            Add New Observation
 
