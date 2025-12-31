@@ -6,10 +6,10 @@
 - content_for :header_action do
   = render 'people/view_switcher'
 
-- content_for :go_back_link do
-  = link_to organization_company_teammate_path(organization, @teammate), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to Profile
+-# - content_for :go_back_link do
+-#   = link_to organization_company_teammate_path(organization, @teammate), class: "go-back-link" do
+-#     %i.bi.bi-arrow-left.me-2
+-#     Back to Profile
 
 -# Stories Section
 = render partial: 'organizations/company_teammates/about_me/stories_section'

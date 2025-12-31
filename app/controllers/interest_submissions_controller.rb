@@ -4,8 +4,17 @@ class InterestSubmissionsController < ApplicationController
   def index
     authorize InterestSubmission
     
-    # Use policy scope to get user's own submissions (or none if not logged in)
-    @interest_submissions = policy_scope(InterestSubmission).includes(:person).recent
+    # Store return_url and return_text from params for use in view
+    @return_url = params[:return_url]
+    @return_text = params[:return_text]
+    
+    # Use policy scope to get user's own submissions (or all if admin, or none if not logged in)
+    interest_submissions_scope = policy_scope(InterestSubmission).includes(:person).recent
+    
+    # Paginate interest submissions if there are many (especially for admins viewing all)
+    total_interest_count = interest_submissions_scope.count
+    @interest_pagy = Pagy.new(count: total_interest_count, page: params[:interest_page] || 1, items: 25)
+    @interest_submissions = interest_submissions_scope.limit(@interest_pagy.items).offset(@interest_pagy.offset)
     
     # Load change logs with pagination
     authorize ChangeLog

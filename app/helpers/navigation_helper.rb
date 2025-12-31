@@ -179,7 +179,11 @@ module NavigationHelper
       {
         label: 'Help Improve OG',
         icon: 'bi-lightbulb',
-        path: interest_submissions_path,
+        path: begin
+          about_me_path = about_me_organization_company_teammate_path(current_organization, current_company_teammate)
+          company_name = current_company&.name || current_organization&.name || 'OurGruuv'
+          interest_submissions_path(return_url: about_me_path, return_text: "back to #{company_name}'s Gruuv")
+        end,
         section: nil
       }
     ]

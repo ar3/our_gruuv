@@ -1,5 +1,10 @@
 - content_for :title, "Help Improve OurGruuv"
 
+- if @return_url.present?
+  - content_for :return_url, @return_url
+- if @return_text.present?
+  - content_for :return_text, @return_text
+
 - content_for :header do
   %h1.mb-0
     %i.bi.bi-lightbulb.me-2
@@ -27,12 +32,21 @@
           / Right side - 9 columns - User's interest submissions
           .col-md-9
             - if @interest_submissions.any?
-              %h6.mb-3 Your Interest Submissions
+              %h6.mb-3
+                - if current_person&.og_admin?
+                  All Interest Submissions
+                - else
+                  Your Interest Submissions
               .list-group
                 - @interest_submissions.each do |submission|
                   = link_to submission, class: "list-group-item list-group-item-action" do
                     .d-flex.w-100.justify-content-between
-                      %h6.mb-1= submission.source_page.humanize
+                      %div
+                        %h6.mb-1= submission.source_page.humanize
+                        - if current_person&.og_admin? && submission.person
+                          %small.text-muted
+                            %i.bi.bi-person.me-1
+                            = submission.person.display_name
                       %small.text-muted= submission.created_at.strftime("%B %d, %Y")
                     %p.mb-1
                       - if submission.thing_interested_in.present?
@@ -43,12 +57,20 @@
                         = truncate(submission.why_interested, length: 100)
                       - else
                         %em.text-muted No details provided
+              
+              / Pagination for interest submissions
+              - if @interest_pagy && @interest_pagy.pages > 1
+                .d-flex.justify-content-center.mt-3
+                  = raw pagy_nav(@interest_pagy, param_name: :interest_page)
             - else
               .text-center.py-4
                 %i.bi.bi-heart.text-muted{style: "font-size: 2rem;"}
                 %p.text-muted.mt-2
                   - if current_person
-                    You haven't submitted any ideas yet. Click the button to get started!
+                    - if current_person.og_admin?
+                      No interest submissions have been submitted yet.
+                    - else
+                      You haven't submitted any ideas yet. Click the button to get started!
                   - else
                     Login or create an account to submit your ideas and help improve OurGruuv.
 

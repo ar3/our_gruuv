@@ -629,6 +629,93 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         end
       end
     end
+
+    context 'generic observation privacy levels' do
+      context 'when observation has observees' do
+        it 'enables all privacy levels' do
+          get :new, params: {
+            organization_id: company.id,
+            observee_ids: [observee_teammate.id]
+          }
+          
+          expect(assigns(:allowed_privacy_levels)).to contain_exactly(
+            :observer_only,
+            :observed_only,
+            :managers_only,
+            :observed_and_managers,
+            :public_to_company,
+            :public_to_world
+          )
+          expect(assigns(:disabled_levels)).to be_empty
+        end
+      end
+
+      context 'when observation has no observees' do
+        it 'disables all privacy levels with warning message' do
+          get :new, params: { organization_id: company.id }
+          
+          expect(assigns(:allowed_privacy_levels)).to be_empty
+          expect(assigns(:disabled_levels)).to be_a(Hash)
+          expect(assigns(:disabled_levels).keys).to contain_exactly(
+            :observer_only,
+            :observed_only,
+            :managers_only,
+            :observed_and_managers,
+            :public_to_company,
+            :public_to_world
+          )
+          expect(assigns(:disabled_levels).values.all? { |msg| msg.include?('Privacy levels require at least one observee') }).to be true
+        end
+
+        it 'renders warning alert in the view' do
+          get :new, params: { organization_id: company.id }
+          
+          expect(response.body).to include('Privacy levels require at least one observee')
+          expect(response.body).to include('alert-warning')
+        end
+      end
+
+      context 'when loading existing draft with observees' do
+        it 'enables all privacy levels' do
+          draft = build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'generic')
+          draft.observees.build(teammate: observee_teammate)
+          draft.save!
+          
+          get :new, params: {
+            organization_id: company.id,
+            draft_id: draft.id
+          }
+          
+          expect(assigns(:allowed_privacy_levels)).to contain_exactly(
+            :observer_only,
+            :observed_only,
+            :managers_only,
+            :observed_and_managers,
+            :public_to_company,
+            :public_to_world
+          )
+          expect(assigns(:disabled_levels)).to be_empty
+        end
+      end
+
+      context 'when loading existing draft without observees' do
+        it 'disables all privacy levels with warning message' do
+          # Create observation without using factory callback that adds observees
+          draft = Observation.new(observer: observer, company: company, published_at: nil, observation_type: 'generic', story: 'Test story')
+          draft.save!(validate: false) # Skip validation since we don't have observees
+          
+          get :new, params: {
+            organization_id: company.id,
+            draft_id: draft.id
+          }
+          
+          expect(assigns(:allowed_privacy_levels)).to be_empty
+          expect(assigns(:disabled_levels)).to be_a(Hash)
+          expect(assigns(:disabled_levels).keys.length).to eq(6)
+          expect(assigns(:disabled_levels).values.all? { |msg| msg.include?('Privacy levels require at least one observee') }).to be true
+        end
+      end
+    end
   end
 
   describe 'POST #create' do

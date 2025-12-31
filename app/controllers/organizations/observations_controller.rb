@@ -324,12 +324,16 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   end
 
   def prepare_privacy_selector_data
-    # Get observee casual names
-    @observee_names = @observation.observed_teammates.map { |teammate| teammate.person.casual_name }
+    # Get observee casual names - check both saved and unsaved observees
+    saved_observees = @observation.observed_teammates.to_a
+    unsaved_observees = @observation.observees.select { |o| o.new_record? && o.teammate_id.present? }
+    all_observee_teammates = saved_observees + unsaved_observees.map { |o| o.teammate }.compact
+    
+    @observee_names = all_observee_teammates.map { |teammate| teammate.person.casual_name }
     
     # Get manager names for all observees (deduplicated)
     @manager_names = []
-    @observation.observed_teammates.each do |teammate|
+    all_observee_teammates.each do |teammate|
       managers = ManagerialHierarchyQuery.new(person: teammate.person, organization: @observation.company).call
       managers.each do |manager_info|
         manager_name = manager_info[:name]
@@ -338,11 +342,31 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
     
     # Check if only observee is the observer
-    @only_observee_is_observer = @observation.observed_teammates.any? && 
-                                  @observation.observed_teammates.all? { |teammate| teammate.person == @observation.observer }
+    @only_observee_is_observer = all_observee_teammates.any? && 
+                                  all_observee_teammates.all? { |teammate| teammate.person == @observation.observer }
     
     # Pass observation type
     @observation_type = @observation.observation_type
+    
+    # For generic observations, control privacy levels based on observees
+    if @observation_type == 'generic'
+      # Check both saved and unsaved observees
+      # Load the association to ensure we check both saved and unsaved
+      observees_collection = @observation.observees.to_a
+      has_observees = observees_collection.any? { |o| o.teammate_id.present? && !o.marked_for_destruction? }
+      
+      if has_observees
+        # All privacy levels enabled when there are observees
+        @allowed_privacy_levels = Observation.privacy_levels.keys.map(&:to_sym)
+        @disabled_levels = {}
+      else
+        # All privacy levels disabled when there are no observees
+        @allowed_privacy_levels = []
+        @disabled_levels = Observation.privacy_levels.keys.each_with_object({}) do |key, hash|
+          hash[key.to_sym] = "Privacy levels require at least one observee. Please add observees first."
+        end
+      end
+    end
   end
 
   def new_kudos

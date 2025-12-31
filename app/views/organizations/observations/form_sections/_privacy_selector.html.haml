@@ -68,6 +68,11 @@
               Convert to Generic
 - else
   = form.label :privacy_level, "Privacy Level", class: 'form-label'
+  - all_levels_disabled = allowed_levels.is_a?(Array) && allowed_levels.empty?
+  - if all_levels_disabled
+    .alert.alert-warning.mb-3
+      %i.bi.bi-exclamation-triangle.me-2
+      Privacy levels require at least one observee.
   - Observation.privacy_levels.keys.each do |key|
     - is_allowed = allowed_levels.nil? || allowed_levels.include?(key.to_sym)
     - disabled_message = disabled_levels[key.to_sym]
