@@ -20,7 +20,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Default to logged in user if no owner is selected
     unless params[:owner_type].present? && params[:owner_id].present?
       if current_teammate
-        params[:owner_type] = 'Teammate'
+        params[:owner_type] = 'CompanyTeammate'
         params[:owner_id] = current_teammate.id.to_s
       else
         @goals = policy_scope(Goal.none)
@@ -233,7 +233,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Default owner to current teammate if they have a CompanyTeammate record
     # Use unified format for the select dropdown
     if @form.current_teammate
-      @form.owner_id = "Teammate_#{@form.current_teammate.id}"
+      @form.owner_id = "CompanyTeammate_#{@form.current_teammate.id}"
     end
     authorize @goal
   end
@@ -523,7 +523,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     unless params[:owner_type].present? && params[:owner_id].present?
       current_teammate = current_person.teammates.find_by(organization: @organization)
       if current_teammate
-        params[:owner_type] = 'Teammate'
+        params[:owner_type] = 'CompanyTeammate'
         params[:owner_id] = current_teammate.id.to_s
       end
     end
@@ -773,39 +773,46 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Add current teammate (person themselves) - should be first/default
     # Find teammate in the company or any descendant organization
     # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
+    # Filter at database level for efficiency
     company_descendant_ids = company.self_and_descendants.pluck(:id)
-    current_teammate = current_person.teammates.find_by(organization_id: company_descendant_ids)
-    if current_teammate && current_teammate.is_a?(CompanyTeammate)
-      options << ["Teammate: #{current_person.display_name}", "Teammate_#{current_teammate.id}"]
+    current_teammate = current_person.teammates
+                                     .where(organization_id: company_descendant_ids)
+                                     .where(type: 'CompanyTeammate')
+                                     .first
+    if current_teammate
+      options << ["Teammate: #{current_person.display_name}", "CompanyTeammate_#{current_teammate.id}"]
     end
     
     # Get teammates managed by current user in this organization (their employees)
     # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
-    managed_teammates = Teammate.joins(:employment_tenures)
-                                 .where(employment_tenures: { company: company, manager: current_person, ended_at: nil })
-                                 .where.not(id: current_teammate&.id)
-                                 .includes(:person)
-                                 .distinct
-                                 .order('people.last_name', 'people.first_name')
+    # Use CompanyTeammate directly to filter at database level
+    managed_teammates = CompanyTeammate.joins(:employment_tenures)
+                                       .where(employment_tenures: { company: company, manager: current_person, ended_at: nil })
+                                       .where.not(id: current_teammate&.id)
+                                       .includes(:person)
+                                       .distinct
+                                       .order('people.last_name', 'people.first_name')
     
     managed_teammates.each do |teammate|
-      # Only include CompanyTeammate instances
-      if teammate.is_a?(CompanyTeammate)
-        options << ["Teammate: #{teammate.person.display_name}", "Teammate_#{teammate.id}"]
-      end
+      options << ["Teammate: #{teammate.person.display_name}", "CompanyTeammate_#{teammate.id}"]
     end
     
     # Get departments and teams within the company where the user is a teammate
     # Only include organizations that are descendants of the company
+    # Explicitly filter to only valid organization types (Department, Team, Company)
     company_descendant_ids = company.self_and_descendants.pluck(:id)
     associated_orgs = Organization.joins(:teammates)
                                   .where(teammates: { person: current_person })
                                   .where(id: company_descendant_ids)
+                                  .where(type: ['Department', 'Team', 'Company']) # Explicitly filter valid types
                                   .where.not(id: company.id) # Exclude company as we'll add it separately if needed
                                   .distinct
                                   .order(:name)
     
     associated_orgs.each do |org|
+      # Explicitly check for valid types only
+      next unless org.type.in?(['Department', 'Team', 'Company'])
+      
       type_label = org.company? ? 'Company' : (org.department? ? 'Department' : 'Team')
       options << ["#{type_label}: #{org.display_name}", "#{org.type}_#{org.id}"]
     end

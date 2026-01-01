@@ -52,7 +52,7 @@
                         = goal_privacy_rings_with_label(goal)
                       | 
                       Owner: 
-                      - if goal.owner_type == 'Teammate'
+                      - if goal.owner_type == 'CompanyTeammate'
                         = goal.owner.person.display_name
                       - elsif goal.owner_type == 'Organization'
                         = goal.owner.display_name

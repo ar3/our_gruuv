@@ -70,8 +70,8 @@ class GoalPolicy < ApplicationPolicy
     
     person = viewing_teammate.person
     
-    # User is owner (if owner is Teammate)
-    if record.owner_type == 'Teammate'
+    # User is owner (if owner is CompanyTeammate)
+    if record.owner_type == 'CompanyTeammate'
       # Check if viewing_teammate is the owner Teammate, or if person matches owner's person
       return true if record.owner == viewing_teammate || record.owner.person == person
     end

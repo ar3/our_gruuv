@@ -50,6 +50,7 @@ class GoalForm < Reform::Form
     end
     
     # Set owner polymorphic association (already parsed in before_validation)
+    # Only allow CompanyTeammate, Company, Department, or Team as owner types
     model.owner_type = owner_type
     model.owner_id = owner_id
     
@@ -106,10 +107,16 @@ class GoalForm < Reform::Form
   end
   
   def parse_owner_selection
-    # Handle unified owner selection format: "Teammate_123", "Company_456", "Department_789", "Team_101"
+    # Handle unified owner selection format: "CompanyTeammate_123", "Company_456", "Department_789", "Team_101"
     if owner_id.is_a?(String) && owner_id.include?('_')
       parts = owner_id.split('_', 2)
-      self.owner_type = parts[0]
+      parsed_type = parts[0]
+      # Reject 'Teammate' - it must be 'CompanyTeammate'
+      if parsed_type == 'Teammate'
+        errors.add(:owner_id, 'must be CompanyTeammate, not Teammate')
+        return
+      end
+      self.owner_type = parsed_type
       self.owner_id = parts[1]
     end
   end
@@ -174,9 +181,21 @@ class GoalForm < Reform::Form
     
     return unless owner_type && owner_id
     
+    # Reject 'Teammate' - it must be 'CompanyTeammate'
+    if owner_type == 'Teammate'
+      errors.add(:owner_id, 'must be CompanyTeammate, not Teammate')
+      return
+    end
+    
+    # Only allow CompanyTeammate, Company, Department, or Team as owner types
+    unless owner_type.in?(['CompanyTeammate', 'Company', 'Department', 'Team', 'Organization'])
+      errors.add(:owner_type, 'must be CompanyTeammate, Company, Department, or Team')
+      return
+    end
+    
     # Load the owner to validate its type
     owner = case owner_type
-            when 'Teammate'
+            when 'CompanyTeammate'
               Teammate.find_by(id: owner_id)
             when 'Organization', 'Company', 'Department', 'Team'
               Organization.find_by(id: owner_id)
@@ -184,7 +203,7 @@ class GoalForm < Reform::Form
     
     return unless owner
     
-    if owner_type == 'Teammate'
+    if owner_type == 'CompanyTeammate'
       # Check the actual type, not just is_a? since polymorphic associations may not preserve STI type
       unless owner.type == 'CompanyTeammate' || owner.is_a?(CompanyTeammate)
         errors.add(:owner_id, 'must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')

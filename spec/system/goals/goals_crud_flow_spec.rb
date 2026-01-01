@@ -238,7 +238,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       
       # Approach 2: Verify filtering in database
       # Goals with "now" timeframe should have most_likely_target_date within 3 months
-      now_goals = Goal.where(owner: teammate, owner_type: 'Teammate')
+      now_goals = Goal.where(owner: teammate, owner_type: 'CompanyTeammate')
                      .where('most_likely_target_date >= ? AND most_likely_target_date < ?', Date.today, Date.today + 3.months)
       expect(now_goals.pluck(:id)).to include(now_goal.id)
       expect(now_goals.pluck(:id)).not_to include(next_goal.id, later_goal.id)
@@ -257,7 +257,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       expect(displayed_goal_ids).not_to include(next_goal.id, later_goal.id)
       
       # Approach 6: Verify using Goal model's now scope
-      expect(Goal.timeframe_now.where(owner: teammate, owner_type: 'Teammate').pluck(:id)).to include(now_goal.id)
+      expect(Goal.timeframe_now.where(owner: teammate, owner_type: 'CompanyTeammate').pluck(:id)).to include(now_goal.id)
     end
     
     xit 'filters goals by goal type' do # SKIPPED: Goal index must have owner not yet implemented
@@ -306,7 +306,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       end
       
       # Approach 2: Verify filtering in database
-      filtered_goals = Goal.where(owner: teammate, owner_type: 'Teammate', goal_type: 'inspirational_objective')
+      filtered_goals = Goal.where(owner: teammate, owner_type: 'CompanyTeammate', goal_type: 'inspirational_objective')
       expect(filtered_goals.pluck(:id)).to include(inspirational.id)
       expect(filtered_goals.pluck(:id)).not_to include(qualitative.id)
       
@@ -323,7 +323,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       expect(displayed_goal_ids).not_to include(qualitative.id)
       
       # Approach 6: Verify using Goal model's goal_type enum
-      expect(Goal.inspirational_objective.where(owner: teammate, owner_type: 'Teammate').pluck(:id)).to include(inspirational.id)
+      expect(Goal.inspirational_objective.where(owner: teammate, owner_type: 'CompanyTeammate').pluck(:id)).to include(inspirational.id)
     end
     
     xit 'sorts goals by target date' do # SKIPPED: Goal index must have owner not yet implemented
@@ -377,7 +377,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       end
       
       # Approach 2: Verify sorting in database
-      sorted_goals = Goal.where(owner: teammate, owner_type: 'Teammate')
+      sorted_goals = Goal.where(owner: teammate, owner_type: 'CompanyTeammate')
                         .order(most_likely_target_date: :asc)
       expect(sorted_goals.pluck(:id)).to eq([goal2.id, goal3.id, goal1.id])
       

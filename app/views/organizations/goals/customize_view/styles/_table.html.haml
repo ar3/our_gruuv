@@ -30,7 +30,7 @@
           %td
             = goal.incoming_links.count
           %td
-            - if goal.owner_type == 'Teammate'
+            - if goal.owner_type == 'CompanyTeammate'
               = goal.owner.person.display_name
             - elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
               = goal.owner.display_name

@@ -50,7 +50,7 @@ class Goal < ApplicationRecord
     organization_ids = teammates.map(&:organization_id)
     
     where(
-      "(owner_type = 'Teammate' AND owner_id IN (?)) OR creator_id IN (?) OR (owner_type = 'Organization' AND owner_id IN (?))",
+      "(owner_type = 'CompanyTeammate' AND owner_id IN (?)) OR creator_id IN (?) OR (owner_type = 'Organization' AND owner_id IN (?))",
       teammate_ids, teammate_ids, organization_ids
     )
   }
@@ -161,7 +161,7 @@ class Goal < ApplicationRecord
     when 'only_creator'
       false
     when 'only_creator_and_owner'
-      if owner_type == 'Teammate'
+      if owner_type == 'CompanyTeammate'
         owner.person == person
       elsif owner_type == 'Organization' && owner.is_a?(Organization)
         # Organization owner: check if person belongs directly to owner organization
@@ -170,7 +170,7 @@ class Goal < ApplicationRecord
         false
       end
     when 'only_creator_owner_and_managers'
-      if owner_type == 'Teammate'
+      if owner_type == 'CompanyTeammate'
         # Owner can always view
         return true if owner.person == person
         # Check if person is in managerial hierarchy of owner's person
@@ -221,7 +221,7 @@ class Goal < ApplicationRecord
   end
   
   def managers
-    return [] unless owner_type == 'Teammate'
+    return [] unless owner_type == 'CompanyTeammate'
     
     # Get managers from active employment tenures in the company
     return [] unless company
@@ -311,8 +311,27 @@ class Goal < ApplicationRecord
   def owner_type_valid
     return unless owner_type && owner
     
+    # Only allow CompanyTeammate, Company, Department, or Team as owner types
+    # Reject 'Teammate' - it must be 'CompanyTeammate'
     if owner_type == 'Teammate'
+      # Check if the actual owner is a CompanyTeammate, DepartmentTeammate, or TeamTeammate
+      if owner.respond_to?(:type)
+        if owner.type == 'CompanyTeammate'
+          # Owner is CompanyTeammate but owner_type is 'Teammate' - reject
+          errors.add(:owner_type, 'must be CompanyTeammate, not Teammate')
+        elsif owner.type.in?(['DepartmentTeammate', 'TeamTeammate'])
+          # Owner is DepartmentTeammate or TeamTeammate - reject
+          errors.add(:owner, 'must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
+        end
+      else
+        errors.add(:owner_type, 'must be CompanyTeammate, not Teammate')
+      end
+      return
+    end
+    
+    if owner_type == 'CompanyTeammate'
       # Check the actual type, not just is_a? since polymorphic associations may not preserve STI type
+      # Reject if owner is not a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)
       unless owner.type == 'CompanyTeammate' || owner.is_a?(CompanyTeammate)
         errors.add(:owner, 'must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
       end
@@ -322,6 +341,9 @@ class Goal < ApplicationRecord
       unless org_type.in?(['Department', 'Team', 'Company']) || owner.is_a?(Department) || owner.is_a?(Team) || owner.is_a?(Company)
         errors.add(:owner, 'must be a Department, Team, or Company')
       end
+    else
+      # Reject any other owner types
+      errors.add(:owner_type, 'must be CompanyTeammate, Company, Department, or Team')
     end
   end
   

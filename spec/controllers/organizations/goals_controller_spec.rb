@@ -17,7 +17,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     let!(:later_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, most_likely_target_date: Date.today + 12.months) }
     
     it 'renders the index page' do
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id }
       expect(response).to have_http_status(:success)
     end
     
@@ -29,12 +29,12 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     end
     
     it 'assigns goals for the teammate when owner filter is provided' do
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id }
       expect(assigns(:goals)).to include(personal_goal, later_goal)
     end
     
     it 'filters by timeframe: now' do
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, timeframe: 'now' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, timeframe: 'now' }
       goals = assigns(:goals)
       expect(goals).to include(personal_goal)
       expect(goals).not_to include(team_goal, later_goal)
@@ -48,7 +48,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
     end
     
     it 'filters by timeframe: later' do
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, timeframe: 'later' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, timeframe: 'later' }
       goals = assigns(:goals)
       expect(goals).to include(later_goal)
       expect(goals).not_to include(personal_goal, team_goal)
@@ -58,7 +58,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       inspirational_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'inspirational_objective')
       qualitative_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, goal_type: 'qualitative_key_result')
       
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, goal_type: 'inspirational_objective' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, goal_type: 'inspirational_objective' }
       goals = assigns(:goals)
       expect(goals).to include(inspirational_goal)
       expect(goals).not_to include(qualitative_goal)
@@ -68,7 +68,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       draft_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil)
       active_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago)
       
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, status: 'draft' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, status: 'draft' }
       goals = assigns(:goals)
       expect(goals).to include(draft_goal)
       expect(goals).not_to include(active_goal)
@@ -78,21 +78,21 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       draft_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil)
       active_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.day.ago)
       
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, status: 'active' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, status: 'active' }
       goals = assigns(:goals)
       expect(goals).to include(active_goal)
       expect(goals).not_to include(draft_goal)
     end
     
     it 'sorts by most_likely_target_date ascending' do
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, sort: 'most_likely_target_date', direction: 'asc' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, sort: 'most_likely_target_date', direction: 'asc' }
       goals = assigns(:goals).to_a
       expect(goals.index(personal_goal)).to be < goals.index(later_goal)
       expect(goals).not_to include(team_goal) # team_goal has different owner
     end
     
     it 'sorts by most_likely_target_date descending' do
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, sort: 'most_likely_target_date', direction: 'desc' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, sort: 'most_likely_target_date', direction: 'desc' }
       goals = assigns(:goals).to_a
       expect(goals.index(later_goal)).to be < goals.index(personal_goal)
       expect(goals).not_to include(team_goal) # team_goal has different owner
@@ -102,7 +102,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       goal_a = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'A Goal')
       goal_z = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Z Goal')
       
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, sort: 'title', direction: 'asc' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, sort: 'title', direction: 'asc' }
       goals = assigns(:goals).to_a
       expect(goals.index(goal_a)).to be < goals.index(goal_z)
     end
@@ -111,7 +111,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       old_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, created_at: 1.week.ago)
       new_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, created_at: 1.day.ago)
       
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, sort: 'created_at', direction: 'desc' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, sort: 'created_at', direction: 'desc' }
       goals = assigns(:goals).to_a
       expect(goals.index(new_goal)).to be < goals.index(old_goal)
     end
@@ -120,7 +120,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       top_priority_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, became_top_priority: 1.day.ago)
       regular_goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
       
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, spotlight: 'top_priority' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, spotlight: 'top_priority' }
       goals = assigns(:goals)
       expect(goals).to include(top_priority_goal)
       # Spotlight may filter or just highlight - check that it's included
@@ -130,18 +130,18 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       recent_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, created_at: 1.day.ago)
       old_goal = create(:goal, creator: creator_teammate, owner: creator_teammate, created_at: 1.month.ago)
       
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, spotlight: 'recently_added' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, spotlight: 'recently_added' }
       goals = assigns(:goals)
       expect(goals).to include(recent_goal)
     end
     
     it 'sets view style from params' do
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id, view: 'cards' }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id, view: 'cards' }
       expect(assigns(:view_style)).to eq('cards')
     end
     
     it 'defaults view style to hierarchical-indented' do
-      get :index, params: { organization_id: company.id, owner_type: 'Teammate', owner_id: creator_teammate.id }
+      get :index, params: { organization_id: company.id, owner_type: 'CompanyTeammate', owner_id: creator_teammate.id }
       expect(assigns(:view_style)).to eq('hierarchical-indented')
     end
   end
@@ -238,7 +238,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
         most_likely_target_date: Date.today + 2.months,
         latest_target_date: Date.today + 3.months,
         privacy_level: 'only_creator',
-        owner_type: 'Teammate',
+        owner_type: 'CompanyTeammate',
         owner_id: creator_teammate.id
       }
     end
@@ -288,7 +288,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       
       it 'does not allow creating goal with DepartmentTeammate as owner' do
         invalid_attributes = valid_attributes.merge(
-          owner_type: 'Teammate',
+          owner_type: 'CompanyTeammate',
           owner_id: department_teammate.id
         )
         
@@ -305,7 +305,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       
       it 'does not allow creating goal with TeamTeammate as owner' do
         invalid_attributes = valid_attributes.merge(
-          owner_type: 'Teammate',
+          owner_type: 'CompanyTeammate',
           owner_id: team_teammate.id
         )
         
@@ -540,7 +540,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
             most_likely_target_date: goal.most_likely_target_date,
             latest_target_date: goal.latest_target_date,
             privacy_level: goal.privacy_level,
-            owner_type: 'Teammate',
+            owner_type: 'CompanyTeammate',
             owner_id: department_teammate.id
           }
         }
@@ -566,7 +566,7 @@ RSpec.describe Organizations::GoalsController, type: :controller do
             most_likely_target_date: goal.most_likely_target_date,
             latest_target_date: goal.latest_target_date,
             privacy_level: goal.privacy_level,
-            owner_type: 'Teammate',
+            owner_type: 'CompanyTeammate',
             owner_id: team_teammate.id
           }
         }

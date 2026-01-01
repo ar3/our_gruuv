@@ -109,7 +109,7 @@ RSpec.describe Goal, type: :model do
       expect { goal.privacy_level = 'invalid_level' }.to raise_error(ArgumentError, "'invalid_level' is not a valid privacy_level")
     end
     
-    context 'with Teammate owner' do
+    context 'with CompanyTeammate owner' do
       let(:goal) { build(:goal, creator: creator_teammate, owner: creator_teammate, privacy_level: 'only_creator_owner_and_managers') }
       
       it 'allows all privacy levels' do
@@ -118,7 +118,7 @@ RSpec.describe Goal, type: :model do
           goal.earliest_target_date = Date.today + 1.month
           goal.most_likely_target_date = Date.today + 2.months
           goal.latest_target_date = Date.today + 3.months
-          expect(goal).to be_valid, "should allow privacy_level #{level} for Teammate owner"
+          expect(goal).to be_valid, "should allow privacy_level #{level} for CompanyTeammate owner"
         end
       end
     end
@@ -267,7 +267,7 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '.for_teammate' do
-      it 'returns goals where teammate is owner (Teammate)' do
+      it 'returns goals where teammate is owner (CompanyTeammate)' do
         result = described_class.for_teammate(creator_teammate)
         expect(result).to include(personal_goal)
       end
@@ -428,7 +428,7 @@ RSpec.describe Goal, type: :model do
       let(:owner_teammate) { CompanyTeammate.find(create(:teammate, person: owner_person, organization: company).id) }
       let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
       
-      context 'with Teammate owner' do
+      context 'with CompanyTeammate owner' do
         context 'with only_creator privacy level' do
           let(:goal) { create(:goal, creator: creator_teammate, owner: owner_teammate, privacy_level: 'only_creator') }
           
@@ -689,7 +689,7 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '#owner_company' do
-      context 'with Teammate owner' do
+      context 'with CompanyTeammate owner' do
         let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
         
         it 'returns the company (via company_id)' do
@@ -721,7 +721,7 @@ RSpec.describe Goal, type: :model do
     end
     
     describe '#managers' do
-      context 'with Teammate owner' do
+      context 'with CompanyTeammate owner' do
         let(:goal) { create(:goal, creator: creator_teammate, owner: creator_teammate) }
         let(:manager_person) { create(:person) }
         let(:employment_tenure) { create(:employment_tenure, teammate: creator_teammate, manager: manager_person, company: company) }
@@ -1009,6 +1009,43 @@ RSpec.describe Goal, type: :model do
           goal.update(earliest_target_date: nil, most_likely_target_date: past_most_likely, latest_target_date: latest)
           expect(goal.calculated_target_date).to eq(latest)
         end
+      end
+    end
+    
+    describe 'owner_type validation' do
+      it 'rejects Teammate as invalid owner_type' do
+        goal = build(:goal, creator: creator_teammate, owner: creator_teammate)
+        goal.owner_type = 'Teammate'
+        goal.earliest_target_date = Date.today + 1.month
+        goal.most_likely_target_date = Date.today + 2.months
+        goal.latest_target_date = Date.today + 3.months
+        
+        expect(goal).not_to be_valid
+        expect(goal.errors[:owner_type]).to include('must be CompanyTeammate, not Teammate')
+      end
+      
+      it 'accepts CompanyTeammate as valid owner_type' do
+        goal = build(:goal, creator: creator_teammate, owner: creator_teammate)
+        goal.owner_type = 'CompanyTeammate'
+        goal.earliest_target_date = Date.today + 1.month
+        goal.most_likely_target_date = Date.today + 2.months
+        goal.latest_target_date = Date.today + 3.months
+        
+        expect(goal).to be_valid
+        expect(goal.owner_type).to eq('CompanyTeammate')
+      end
+      
+      it 'accepts Organization as valid owner_type' do
+        goal = build(:goal, creator: creator_teammate, owner: company)
+        goal.owner_type = 'Organization'
+        goal.earliest_target_date = Date.today + 1.month
+        goal.most_likely_target_date = Date.today + 2.months
+        goal.latest_target_date = Date.today + 3.months
+        
+        goal.save!
+        
+        expect(goal.owner_type).to eq('Organization')
+        expect(goal.reload.owner_type).to eq('Organization')
       end
     end
   end

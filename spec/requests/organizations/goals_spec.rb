@@ -341,7 +341,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       
       get organization_goals_path(organization), params: {
         view: 'check-in',
-        owner_type: 'Teammate',
+        owner_type: 'CompanyTeammate',
         owner_id: teammate.id
       }
       
@@ -363,7 +363,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       
       get organization_goals_path(organization), params: {
         view: 'check-in',
-        owner_type: 'Teammate',
+        owner_type: 'CompanyTeammate',
         owner_id: teammate.id
       }
       
@@ -384,7 +384,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       
       get organization_goals_path(organization), params: {
         view: 'check-in',
-        owner_type: 'Teammate',
+        owner_type: 'CompanyTeammate',
         owner_id: teammate.id
       }
       
@@ -406,7 +406,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       
       get organization_goals_path(organization), params: {
         view: 'check-in',
-        owner_type: 'Teammate',
+        owner_type: 'CompanyTeammate',
         owner_id: teammate.id,
         show_completed: '1'
       }
@@ -422,7 +422,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
     it 'shows "Check-in Eligible" filter in spotlight footer' do
       get organization_goals_path(organization), params: {
         view: 'check-in',
-        owner_type: 'Teammate',
+        owner_type: 'CompanyTeammate',
         owner_id: teammate.id
       }
       
@@ -437,7 +437,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       
       get organization_goals_path(organization), params: {
         view: 'check-in',
-        owner_type: 'Teammate',
+        owner_type: 'CompanyTeammate',
         owner_id: teammate.id
       }
       
@@ -452,7 +452,7 @@ RSpec.describe 'Organizations::Goals', type: :request do
       
       get organization_goals_path(organization), params: {
         view: 'check-in',
-        owner_type: 'Teammate',
+        owner_type: 'CompanyTeammate',
         owner_id: teammate.id
       }
       

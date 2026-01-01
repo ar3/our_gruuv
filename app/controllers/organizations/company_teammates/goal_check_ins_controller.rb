@@ -54,7 +54,7 @@ class Organizations::CompanyTeammates::GoalCheckInsController < Organizations::O
     # Load all goals where the teammate is the owner, has a start date, and does not have a completed date
     base_goals = Goal.where(
       company: organization,
-      owner_type: 'Teammate',
+      owner_type: 'CompanyTeammate',
       owner_id: @teammate.id,
       deleted_at: nil,
       completed_at: nil

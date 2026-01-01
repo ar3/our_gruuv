@@ -19,7 +19,7 @@
                 %i.bi.bi-calendar.me-1
                 = goal.most_likely_target_date.strftime('%b %d, %Y')
           %small.text-muted
-            - if goal.owner_type == 'Teammate'
+            - if goal.owner_type == 'CompanyTeammate'
               Owner: #{goal.owner.person.display_name}
             - elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
               Owner: #{goal.owner.display_name}

@@ -28,6 +28,48 @@ FactoryBot.define do
         company = goal.creator.organization.root_company || goal.creator.organization
         goal.company_id = company.id if company&.company?
       end
+      
+      # Explicitly set owner_type based on owner's actual type
+      # Rails polymorphic associations use base class name, so we need to override
+      if goal.owner.present?
+        if goal.owner.respond_to?(:type)
+          if goal.owner.type == 'CompanyTeammate'
+            goal.owner_type = 'CompanyTeammate'
+          elsif goal.owner.type.in?(['Department', 'Team', 'Company'])
+            goal.owner_type = 'Organization'
+          end
+        elsif goal.owner.is_a?(CompanyTeammate)
+          goal.owner_type = 'CompanyTeammate'
+        elsif goal.owner.is_a?(Organization)
+          goal.owner_type = 'Organization'
+        end
+      end
+    end
+    
+    after(:create) do |goal|
+      # Ensure owner_type is set correctly after creation as well
+      # This handles cases where owner is set during creation
+      if goal.owner.present?
+        correct_owner_type = if goal.owner.respond_to?(:type)
+          if goal.owner.type == 'CompanyTeammate'
+            'CompanyTeammate'
+          elsif goal.owner.type.in?(['Department', 'Team', 'Company'])
+            'Organization'
+          else
+            nil
+          end
+        elsif goal.owner.is_a?(CompanyTeammate)
+          'CompanyTeammate'
+        elsif goal.owner.is_a?(Organization)
+          'Organization'
+        else
+          nil
+        end
+        
+        if correct_owner_type && goal.owner_type != correct_owner_type
+          goal.update_column(:owner_type, correct_owner_type)
+        end
+      end
     end
     
     trait :inspirational_objective do

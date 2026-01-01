@@ -414,7 +414,7 @@
                     %td
                       = link_to goal.title, organization_goal_path(@current_organization, goal), class: "text-decoration-none"
                     %td
-                      - if goal.owner_type == 'Teammate'
+                      - if goal.owner_type == 'CompanyTeammate'
                         = goal.owner.person.display_name
                       - elsif goal.owner_type == 'Organization'
                         = goal.owner.name

@@ -21,7 +21,7 @@
                 = goal.most_likely_target_date.strftime('%b %d, %Y')
         .card-footer.bg-transparent.border-top-0
           %small.text-muted
-            - if goal.owner_type == 'Teammate'
+            - if goal.owner_type == 'CompanyTeammate'
               Owner: #{goal.owner.person.display_name}
             - elsif goal.owner_type.in?(['Company', 'Department', 'Team'])
               Owner: #{goal.owner.display_name}

@@ -130,7 +130,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @public_goals = Goal
       .where(company: organization)
       .where(privacy_level: 'everyone_in_company')
-      .where(owner_type: 'Teammate', owner_id: @teammate.id)
+      .where(owner_type: 'CompanyTeammate', owner_id: @teammate.id)
       .active
       .includes(:goal_check_ins, :creator, :owner)
       .order(created_at: :desc)
@@ -580,7 +580,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       
       @goals_check_in_url = organization_goals_path(
         organization,
-        owner_type: 'Teammate',
+        owner_type: 'CompanyTeammate',
         owner_id: @teammate.id,
         view: 'check-in'
       )
