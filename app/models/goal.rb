@@ -41,6 +41,7 @@ class Goal < ApplicationRecord
   validate :title_not_blank_after_strip
   validate :date_ordering
   validate :privacy_level_for_owner_type
+  validate :owner_type_valid
   
   # Scopes
   scope :for_teammate, ->(teammate_or_collection) {
@@ -304,6 +305,23 @@ class Goal < ApplicationRecord
         errors.add(:privacy_level, 'is not valid for Organization owner')
       end
       # Note: only_creator_owner_and_managers IS valid for Organization owners
+    end
+  end
+  
+  def owner_type_valid
+    return unless owner_type && owner
+    
+    if owner_type == 'Teammate'
+      # Check the actual type, not just is_a? since polymorphic associations may not preserve STI type
+      unless owner.type == 'CompanyTeammate' || owner.is_a?(CompanyTeammate)
+        errors.add(:owner, 'must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
+      end
+    elsif owner_type == 'Organization'
+      # Check the actual type attribute for STI
+      org_type = owner.respond_to?(:type) ? owner.type : owner.class.name
+      unless org_type.in?(['Department', 'Team', 'Company']) || owner.is_a?(Department) || owner.is_a?(Team) || owner.is_a?(Company)
+        errors.add(:owner, 'must be a Department, Team, or Company')
+      end
     end
   end
   

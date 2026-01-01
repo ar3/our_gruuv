@@ -273,6 +273,53 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(response).to render_template(:new)
       expect(assigns(:form).errors).to be_present
     end
+    
+    context 'with invalid owner types' do
+      let(:department) { create(:organization, :department, parent: company) }
+      let(:team_org) { create(:organization, :team, parent: company) }
+      let(:department_teammate) { create(:teammate, person: person, organization: department) }
+      let(:team_teammate) { create(:teammate, person: person, organization: team_org) }
+      
+      before do
+        # Ensure teammates are actually DepartmentTeammate and TeamTeammate
+        department_teammate.update_column(:type, 'DepartmentTeammate')
+        team_teammate.update_column(:type, 'TeamTeammate')
+      end
+      
+      it 'does not allow creating goal with DepartmentTeammate as owner' do
+        invalid_attributes = valid_attributes.merge(
+          owner_type: 'Teammate',
+          owner_id: department_teammate.id
+        )
+        
+        expect {
+          post :create, params: { organization_id: company.id, goal: invalid_attributes }
+        }.not_to change(Goal, :count)
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:new)
+        # Check for errors on owner_id (form validation) or owner (model validation)
+        form_errors = assigns(:form).errors
+        expect(form_errors[:owner_id].present? || form_errors[:owner].present?).to be true
+      end
+      
+      it 'does not allow creating goal with TeamTeammate as owner' do
+        invalid_attributes = valid_attributes.merge(
+          owner_type: 'Teammate',
+          owner_id: team_teammate.id
+        )
+        
+        expect {
+          post :create, params: { organization_id: company.id, goal: invalid_attributes }
+        }.not_to change(Goal, :count)
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:new)
+        # Check for errors on owner_id (form validation) or owner (model validation)
+        form_errors = assigns(:form).errors
+        expect(form_errors[:owner_id].present? || form_errors[:owner].present?).to be true
+      end
+    end
   end
   
   describe 'GET #edit' do
@@ -467,6 +514,71 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response).to render_template(:edit)
       expect(assigns(:form).errors).to be_present
+    end
+    
+    context 'with invalid owner types' do
+      let(:department) { create(:organization, :department, parent: company) }
+      let(:team_org) { create(:organization, :team, parent: company) }
+      let(:department_teammate) { create(:teammate, person: person, organization: department) }
+      let(:team_teammate) { create(:teammate, person: person, organization: team_org) }
+      
+      before do
+        # Ensure teammates are actually DepartmentTeammate and TeamTeammate
+        department_teammate.update_column(:type, 'DepartmentTeammate')
+        team_teammate.update_column(:type, 'TeamTeammate')
+      end
+      
+      it 'does not allow updating goal to have DepartmentTeammate as owner' do
+        patch :update, params: { 
+          organization_id: company.id, 
+          id: goal.id,
+          goal: {
+            title: goal.title,
+            description: goal.description,
+            goal_type: goal.goal_type,
+            earliest_target_date: goal.earliest_target_date,
+            most_likely_target_date: goal.most_likely_target_date,
+            latest_target_date: goal.latest_target_date,
+            privacy_level: goal.privacy_level,
+            owner_type: 'Teammate',
+            owner_id: department_teammate.id
+          }
+        }
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:edit)
+        # Check for errors on owner_id (form validation) or owner (model validation)
+        form_errors = assigns(:form).errors
+        expect(form_errors[:owner_id].present? || form_errors[:owner].present?).to be true
+        goal.reload
+        expect(goal.owner).not_to eq(department_teammate)
+      end
+      
+      it 'does not allow updating goal to have TeamTeammate as owner' do
+        patch :update, params: { 
+          organization_id: company.id, 
+          id: goal.id,
+          goal: {
+            title: goal.title,
+            description: goal.description,
+            goal_type: goal.goal_type,
+            earliest_target_date: goal.earliest_target_date,
+            most_likely_target_date: goal.most_likely_target_date,
+            latest_target_date: goal.latest_target_date,
+            privacy_level: goal.privacy_level,
+            owner_type: 'Teammate',
+            owner_id: team_teammate.id
+          }
+        }
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:edit)
+        # Check for errors on owner_id (form validation) or owner (model validation)
+        form_errors = assigns(:form).errors
+        expect(form_errors[:owner_id].present? || form_errors[:owner].present?).to be true
+        goal.reload
+        expect(goal.owner).not_to eq(team_teammate)
+      end
     end
   end
   

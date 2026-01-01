@@ -222,12 +222,15 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @form = GoalForm.new(@goal)
     @form.current_person = current_person
     # Find teammate in the company or any descendant organization
+    # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
     company_descendant_ids = company.self_and_descendants.pluck(:id)
-    @form.current_teammate = current_person.teammates.find_by(organization_id: company_descendant_ids)
+    current_teammate = current_person.teammates.find_by(organization_id: company_descendant_ids)
+    # Ensure it's a CompanyTeammate
+    @form.current_teammate = current_teammate.is_a?(CompanyTeammate) ? current_teammate : nil
     # Set defaults
     @form.goal_type = 'inspirational_objective' # Default to objective
     @form.privacy_level = 'everyone_in_company'
-    # Default owner to current teammate if they have a teammate record
+    # Default owner to current teammate if they have a CompanyTeammate record
     # Use unified format for the select dropdown
     if @form.current_teammate
       @form.owner_id = "Teammate_#{@form.current_teammate.id}"
@@ -769,13 +772,15 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     # Add current teammate (person themselves) - should be first/default
     # Find teammate in the company or any descendant organization
+    # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
     company_descendant_ids = company.self_and_descendants.pluck(:id)
     current_teammate = current_person.teammates.find_by(organization_id: company_descendant_ids)
-    if current_teammate
+    if current_teammate && current_teammate.is_a?(CompanyTeammate)
       options << ["Teammate: #{current_person.display_name}", "Teammate_#{current_teammate.id}"]
     end
     
     # Get teammates managed by current user in this organization (their employees)
+    # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
     managed_teammates = Teammate.joins(:employment_tenures)
                                  .where(employment_tenures: { company: company, manager: current_person, ended_at: nil })
                                  .where.not(id: current_teammate&.id)
@@ -784,7 +789,10 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
                                  .order('people.last_name', 'people.first_name')
     
     managed_teammates.each do |teammate|
-      options << ["Teammate: #{teammate.person.display_name}", "Teammate_#{teammate.id}"]
+      # Only include CompanyTeammate instances
+      if teammate.is_a?(CompanyTeammate)
+        options << ["Teammate: #{teammate.person.display_name}", "Teammate_#{teammate.id}"]
+      end
     end
     
     # Get departments and teams within the company where the user is a teammate

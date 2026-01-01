@@ -163,6 +163,73 @@ RSpec.describe Goal, type: :model do
         expect(goal).to be_valid
       end
     end
+    
+    context 'owner type validation' do
+      let(:department) { create(:organization, :department, parent: company) }
+      let(:team_org) { create(:organization, :team, parent: company) }
+      let(:department_teammate) { create(:teammate, person: person, organization: department) }
+      let(:team_teammate) { create(:teammate, person: person, organization: team_org) }
+      
+      context 'with valid owner types' do
+        it 'allows CompanyTeammate as owner' do
+          goal = build(:goal, creator: creator_teammate, owner: creator_teammate)
+          goal.earliest_target_date = Date.today + 1.month
+          goal.most_likely_target_date = Date.today + 2.months
+          goal.latest_target_date = Date.today + 3.months
+          expect(goal).to be_valid
+        end
+        
+        it 'allows Department as owner' do
+          goal = build(:goal, creator: creator_teammate, owner: department)
+          goal.earliest_target_date = Date.today + 1.month
+          goal.most_likely_target_date = Date.today + 2.months
+          goal.latest_target_date = Date.today + 3.months
+          expect(goal).to be_valid
+        end
+        
+        it 'allows Team as owner' do
+          goal = build(:goal, creator: creator_teammate, owner: team_org)
+          goal.earliest_target_date = Date.today + 1.month
+          goal.most_likely_target_date = Date.today + 2.months
+          goal.latest_target_date = Date.today + 3.months
+          expect(goal).to be_valid
+        end
+        
+        it 'allows Company as owner' do
+          goal = build(:goal, creator: creator_teammate, owner: company)
+          goal.earliest_target_date = Date.today + 1.month
+          goal.most_likely_target_date = Date.today + 2.months
+          goal.latest_target_date = Date.today + 3.months
+          expect(goal).to be_valid
+        end
+      end
+      
+      context 'with invalid owner types' do
+        it 'does not allow DepartmentTeammate as owner' do
+          # Ensure department_teammate is actually a DepartmentTeammate
+          department_teammate.update_column(:type, 'DepartmentTeammate')
+          goal = build(:goal, creator: creator_teammate, owner: department_teammate)
+          goal.earliest_target_date = Date.today + 1.month
+          goal.most_likely_target_date = Date.today + 2.months
+          goal.latest_target_date = Date.today + 3.months
+          
+          expect(goal).not_to be_valid
+          expect(goal.errors[:owner]).to include('must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
+        end
+        
+        it 'does not allow TeamTeammate as owner' do
+          # Ensure team_teammate is actually a TeamTeammate
+          team_teammate.update_column(:type, 'TeamTeammate')
+          goal = build(:goal, creator: creator_teammate, owner: team_teammate)
+          goal.earliest_target_date = Date.today + 1.month
+          goal.most_likely_target_date = Date.today + 2.months
+          goal.latest_target_date = Date.today + 3.months
+          
+          expect(goal).not_to be_valid
+          expect(goal.errors[:owner]).to include('must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
+        end
+      end
+    end
   end
   
   describe 'scopes' do

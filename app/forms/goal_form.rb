@@ -23,6 +23,7 @@ class GoalForm < Reform::Form
   # Target dates are optional
   validate :date_ordering
   validate :owner_selection
+  validate :owner_type_valid
   validate :privacy_level_for_owner_type
   validate :goal_type_inclusion
   validate :privacy_level_inclusion
@@ -162,6 +163,38 @@ class GoalForm < Reform::Form
     
     unless Goal.privacy_levels.key?(privacy_level)
       errors.add(:privacy_level, 'is not included in the list')
+    end
+  end
+  
+  def owner_type_valid
+    return unless owner_type && owner_id
+    
+    # Parse owner if it's in the unified format
+    parse_owner_selection if owner_id.is_a?(String) && owner_id.include?('_')
+    
+    return unless owner_type && owner_id
+    
+    # Load the owner to validate its type
+    owner = case owner_type
+            when 'Teammate'
+              Teammate.find_by(id: owner_id)
+            when 'Organization', 'Company', 'Department', 'Team'
+              Organization.find_by(id: owner_id)
+            end
+    
+    return unless owner
+    
+    if owner_type == 'Teammate'
+      # Check the actual type, not just is_a? since polymorphic associations may not preserve STI type
+      unless owner.type == 'CompanyTeammate' || owner.is_a?(CompanyTeammate)
+        errors.add(:owner_id, 'must be a CompanyTeammate (DepartmentTeammate and TeamTeammate are not allowed)')
+      end
+    elsif owner_type.in?(['Organization', 'Company', 'Department', 'Team'])
+      # Check the actual type attribute for STI
+      org_type = owner.respond_to?(:type) ? owner.type : owner.class.name
+      unless org_type.in?(['Department', 'Team', 'Company']) || owner.is_a?(Department) || owner.is_a?(Team) || owner.is_a?(Company)
+        errors.add(:owner_id, 'must be a Department, Team, or Company')
+      end
     end
   end
 end
