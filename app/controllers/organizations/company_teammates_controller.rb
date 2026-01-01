@@ -597,36 +597,24 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       # Get shareable observations (published, not observer_only) in last 30 days
       since_date = 30.days.ago
       
-      # Observations given (where teammate is observer)
-      given_observations = Observation
-        .where(observer_id: @teammate.person.id, company: organization)
-        .where.not(published_at: nil)
-        .where.not(privacy_level: 'observer_only')
-        .where('observed_at >= ?', since_date)
-        .where(deleted_at: nil)
-        .order(observed_at: :desc)
+      # Use query object for observations
+      query = AboutMeObservationsQuery.new(@teammate, organization)
+      
+      # Observations given (where teammate is observer, excluding self-observations)
+      given_observations = query.observations_given
       
       @observations_given_count = given_observations.count
       @recent_observations_given = given_observations.limit(3).includes(observees: { teammate: :person })
       
-      # Observations received (where teammate is observee)
-      teammate_ids = @teammate.person.teammates.where(organization: organization).pluck(:id)
-      received_observations = Observation
-        .joins(:observees)
-        .where(observees: { teammate_id: teammate_ids })
-        .where(company: organization)
-        .where.not(published_at: nil)
-        .where.not(privacy_level: 'observer_only')
-        .where('observed_at >= ?', since_date)
-        .where(deleted_at: nil)
-        .distinct
-        .order(observed_at: :desc)
+      # Observations received (where teammate is observee, including self-observations)
+      received_observations = query.observations_received
       
       @observations_received_count = received_observations.count
       @recent_observations_received = received_observations.limit(3).includes(:observer, observees: { teammate: :person })
       
       # Build filter URLs
       casual_name = @teammate.person.casual_name
+      teammate_ids = @teammate.person.teammates.where(organization: organization).pluck(:id)
       @observations_given_url = filtered_observations_organization_observations_path(
         organization,
         observer_id: @teammate.person.id,

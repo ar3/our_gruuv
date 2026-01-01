@@ -58,10 +58,10 @@ RSpec.describe 'About Me Page', type: :request do
         allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(nil)
       end
 
-      it 'raises error' do
-        expect {
-          get about_me_organization_company_teammate_path(organization, teammate)
-        }.to raise_error(RuntimeError, /Teammate not found/)
+      it 'redirects to root path' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(root_path)
       end
     end
   end
@@ -119,12 +119,288 @@ RSpec.describe 'About Me Page', type: :request do
 
     it 'renders aspirations check-in section' do
       get about_me_organization_company_teammate_path(organization, teammate)
-      expect(response.body).to match(/ASPIRATIONS\/VALUES|Aspirations\/Values/i)
+      expect(response.body).to match(/ASPIRATIONAL VALUES|Aspirational Values/i)
     end
 
     it 'renders abilities section' do
       get about_me_organization_company_teammate_path(organization, teammate)
       expect(response.body).to include('Abilities')
+    end
+  end
+
+  describe 'Observations section' do
+    let(:other_person) { create(:person) }
+    let(:other_teammate) { create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate') }
+    let(:third_person) { create(:person) }
+    let(:third_teammate) { create(:teammate, person: third_person, organization: organization, type: 'CompanyTeammate') }
+
+    context 'when teammate is only observer' do
+      let!(:observation_given) do
+        build(:observation,
+              observer: person,
+              company: organization,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+      end
+
+      it 'appears in Observations Given' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_given_count)).to eq(1)
+        expect(assigns(:recent_observations_given)).to include(observation_given)
+      end
+
+      it 'does not appear in Observations Received' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_received_count)).to eq(0)
+        expect(assigns(:recent_observations_received)).not_to include(observation_given)
+      end
+    end
+
+    context 'when teammate is only observee' do
+      let!(:observation_received) do
+        build(:observation,
+              observer: other_person,
+              company: organization,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: teammate)
+          obs.save!
+        end
+      end
+
+      it 'appears in Observations Received' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_received_count)).to eq(1)
+        expect(assigns(:recent_observations_received)).to include(observation_received)
+      end
+
+      it 'does not appear in Observations Given' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_given_count)).to eq(0)
+        expect(assigns(:recent_observations_given)).not_to include(observation_received)
+      end
+    end
+
+    context 'when teammate is both observer and observee (self-observation)' do
+      let!(:self_observation) do
+        build(:observation,
+              observer: person,
+              company: organization,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: teammate)
+          obs.save!
+        end
+      end
+
+      it 'does NOT appear in Observations Given' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_given_count)).to eq(0)
+        expect(assigns(:recent_observations_given)).not_to include(self_observation)
+      end
+
+      it 'DOES appear in Observations Received' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_received_count)).to eq(1)
+        expect(assigns(:recent_observations_received)).to include(self_observation)
+      end
+    end
+
+    context 'when teammate is observer and one of multiple observees' do
+      let!(:multi_observee_observation) do
+        build(:observation,
+              observer: person,
+              company: organization,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: teammate)
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+      end
+
+      it 'does NOT appear in Observations Given' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_given_count)).to eq(0)
+        expect(assigns(:recent_observations_given)).not_to include(multi_observee_observation)
+      end
+
+      it 'DOES appear in Observations Received' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_received_count)).to eq(1)
+        expect(assigns(:recent_observations_received)).to include(multi_observee_observation)
+      end
+    end
+
+    context 'with mixed observations' do
+      let!(:observation_given) do
+        build(:observation,
+              observer: person,
+              company: organization,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+      end
+
+      let!(:observation_received) do
+        build(:observation,
+              observer: other_person,
+              company: organization,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: teammate)
+          obs.save!
+        end
+      end
+
+      let!(:self_observation) do
+        build(:observation,
+              observer: person,
+              company: organization,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: teammate)
+          obs.save!
+        end
+      end
+
+      it 'correctly separates observations into given and received' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        
+        # Observations Given should only include observation_given (not self_observation)
+        expect(assigns(:observations_given_count)).to eq(1)
+        expect(assigns(:recent_observations_given)).to include(observation_given)
+        expect(assigns(:recent_observations_given)).not_to include(self_observation)
+        
+        # Observations Received should include both observation_received and self_observation
+        expect(assigns(:observations_received_count)).to eq(2)
+        expect(assigns(:recent_observations_received)).to include(observation_received, self_observation)
+        expect(assigns(:recent_observations_received)).not_to include(observation_given)
+      end
+    end
+
+    context 'filtering' do
+      it 'excludes observations older than 30 days' do
+        recent = create(:observation,
+                        observer: person,
+                        company: organization,
+                        privacy_level: :public_to_company,
+                        observed_at: 10.days.ago,
+                        published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        old = create(:observation,
+                     observer: person,
+                     company: organization,
+                     privacy_level: :public_to_company,
+                     observed_at: 35.days.ago,
+                     published_at: 35.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_given_count)).to eq(1)
+        expect(assigns(:recent_observations_given)).to include(recent)
+        expect(assigns(:recent_observations_given)).not_to include(old)
+      end
+
+      it 'excludes draft observations' do
+        published = create(:observation,
+                           observer: person,
+                           company: organization,
+                           privacy_level: :public_to_company,
+                           observed_at: 10.days.ago,
+                           published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        draft = create(:observation,
+                       observer: person,
+                       company: organization,
+                       privacy_level: :public_to_company,
+                       observed_at: 10.days.ago,
+                       published_at: nil).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_given_count)).to eq(1)
+        expect(assigns(:recent_observations_given)).to include(published)
+        expect(assigns(:recent_observations_given)).not_to include(draft)
+      end
+
+      it 'excludes observer_only privacy level' do
+        observer_only = create(:observation,
+                                observer: person,
+                                company: organization,
+                                privacy_level: :observer_only,
+                                observed_at: 10.days.ago,
+                                published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        public_obs = create(:observation,
+                            observer: person,
+                            company: organization,
+                            privacy_level: :public_to_company,
+                            observed_at: 10.days.ago,
+                            published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_given_count)).to eq(1)
+        expect(assigns(:recent_observations_given)).to include(public_obs)
+        expect(assigns(:recent_observations_given)).not_to include(observer_only)
+      end
+
+      it 'excludes soft-deleted observations' do
+        active = create(:observation,
+                        observer: person,
+                        company: organization,
+                        privacy_level: :public_to_company,
+                        observed_at: 10.days.ago,
+                        published_at: 10.days.ago,
+                        deleted_at: nil).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        deleted = create(:observation,
+                         observer: person,
+                         company: organization,
+                         privacy_level: :public_to_company,
+                         observed_at: 10.days.ago,
+                         published_at: 10.days.ago,
+                         deleted_at: 1.day.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(assigns(:observations_given_count)).to eq(1)
+        expect(assigns(:recent_observations_given)).to include(active)
+        expect(assigns(:recent_observations_given)).not_to include(deleted)
+      end
     end
   end
 
