@@ -124,9 +124,9 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       manager3 = create(:person, first_name: 'Charlie', last_name: 'Beta')
       
       # Create teammates for managers
-      manager1_teammate = create(:teammate, type: 'CompanyTeammate', person: manager1, organization: organization)
-      manager2_teammate = create(:teammate, type: 'CompanyTeammate', person: manager2, organization: organization)
-      manager3_teammate = create(:teammate, type: 'CompanyTeammate', person: manager3, organization: organization)
+      manager1_teammate = CompanyTeammate.find(create(:teammate, type: 'CompanyTeammate', person: manager1, organization: organization).id)
+      manager2_teammate = CompanyTeammate.find(create(:teammate, type: 'CompanyTeammate', person: manager2, organization: organization).id)
+      manager3_teammate = CompanyTeammate.find(create(:teammate, type: 'CompanyTeammate', person: manager3, organization: organization).id)
       
       # Create active employment tenures for managers (so they are active teammates)
       create(:employment_tenure, teammate: manager1_teammate, company: organization, position: position, started_at: 1.year.ago)
@@ -138,34 +138,35 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       other_employee1 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
       other_employee2 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
       other_employee3 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
-      create(:employment_tenure, teammate: other_employee1, company: organization, position: position, manager: manager1, started_at: 6.months.ago)
-      create(:employment_tenure, teammate: other_employee2, company: organization, position: position, manager: manager2, started_at: 5.months.ago)
-      create(:employment_tenure, teammate: other_employee3, company: organization, position: position, manager: manager3, started_at: 4.months.ago)
+      create(:employment_tenure, teammate: other_employee1, company: organization, position: position, manager_teammate: manager1_teammate, started_at: 6.months.ago)
+      create(:employment_tenure, teammate: other_employee2, company: organization, position: position, manager_teammate: manager2_teammate, started_at: 5.months.ago)
+      create(:employment_tenure, teammate: other_employee3, company: organization, position: position, manager_teammate: manager3_teammate, started_at: 4.months.ago)
       
       # Create an inactive manager (should not appear)
       inactive_manager = create(:person, first_name: 'Inactive', last_name: 'Manager')
-      inactive_manager_teammate = create(:teammate, type: 'CompanyTeammate', person: inactive_manager, organization: organization)
+      inactive_manager_teammate = CompanyTeammate.find(create(:teammate, type: 'CompanyTeammate', person: inactive_manager, organization: organization).id)
       create(:employment_tenure, teammate: inactive_manager_teammate, company: organization, position: position, started_at: 2.years.ago, ended_at: 1.year.ago)
       other_employee4 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
-      create(:employment_tenure, teammate: other_employee4, company: organization, position: position, manager: inactive_manager, started_at: 3.months.ago, ended_at: 1.month.ago)
+      create(:employment_tenure, teammate: other_employee4, company: organization, position: position, manager_teammate: inactive_manager_teammate, started_at: 3.months.ago, ended_at: 1.month.ago)
       
       # Create a manager who is not an active teammate (should not appear)
       non_teammate_manager = create(:person, first_name: 'Non', last_name: 'Teammate')
       other_employee5 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
-      create(:employment_tenure, teammate: other_employee5, company: organization, position: position, manager: non_teammate_manager, started_at: 2.months.ago)
+      # Note: non_teammate_manager doesn't have a teammate, so they won't appear in managers list
+      create(:employment_tenure, teammate: other_employee5, company: organization, position: position, started_at: 2.months.ago)
       
       get organization_teammate_position_path(organization, employee_teammate)
       
       managers = assigns(:managers)
       expect(managers).to be_present
-      # Should include active managers who are active teammates
-      expect(managers).to include(manager1, manager2, manager3)
+      # Should include active managers who are active teammates (managers are CompanyTeammate objects)
+      expect(managers.map(&:person)).to include(manager1, manager2, manager3)
       # Should not include inactive manager
-      expect(managers).not_to include(inactive_manager)
+      expect(managers.map(&:person)).not_to include(inactive_manager)
       # Should not include non-teammate manager
-      expect(managers).not_to include(non_teammate_manager)
+      expect(managers.map(&:person)).not_to include(non_teammate_manager)
       # Should be ordered by last_name, first_name
-      expect(managers.map(&:last_name)).to eq(['Alpha', 'Beta', 'Zebra'])
+      expect(managers.map { |m| m.person.last_name }).to eq(['Alpha', 'Beta', 'Zebra'])
       # Should be distinct
       expect(managers.uniq.size).to eq(managers.size)
     end
@@ -178,23 +179,23 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       
       # Create another manager (already tested above, but needed for this test)
       manager1 = create(:person, first_name: 'Alice', last_name: 'Zebra')
-      manager1_teammate = create(:teammate, type: 'CompanyTeammate', person: manager1, organization: organization)
+      manager1_teammate = CompanyTeammate.find(create(:teammate, type: 'CompanyTeammate', person: manager1, organization: organization).id)
       create(:employment_tenure, teammate: manager1_teammate, company: organization, position: position, started_at: 1.year.ago)
       other_employee = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization)
-      create(:employment_tenure, teammate: other_employee, company: organization, position: position, manager: manager1, started_at: 6.months.ago)
+      create(:employment_tenure, teammate: other_employee, company: organization, position: position, manager_teammate: manager1_teammate, started_at: 6.months.ago)
       
       get organization_teammate_position_path(organization, employee_teammate)
       
       all_employees = assigns(:all_employees)
       expect(all_employees).to be_present
-      # Should include non-manager employees
-      expect(all_employees).to include(non_manager_person)
+      # Should include non-manager employees (all_employees contains CompanyTeammate objects)
+      expect(all_employees.map(&:person)).to include(non_manager_person)
       # Should not include managers
-      expect(all_employees).not_to include(manager1)
+      expect(all_employees.map(&:person)).not_to include(manager1)
       # Should not include the current person being edited
-      expect(all_employees).not_to include(employee_person)
+      expect(all_employees.map(&:person)).not_to include(employee_person)
       # Should be ordered by last_name, first_name
-      expect(all_employees.map(&:last_name)).to eq(all_employees.map(&:last_name).sort)
+      expect(all_employees.map { |e| e.person.last_name }).to eq(all_employees.map { |e| e.person.last_name }.sort)
     end
   end
 
@@ -268,7 +269,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         expect(new_tenure.position).to eq(new_position)
       end
 
-      it 'updates tenure on termination date' do
+      it 'redirects to confirmation page when termination date is provided' do
         termination_date = Date.current + 1.week
         
         patch organization_teammate_position_path(organization, employee_teammate), params: {
@@ -281,8 +282,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
           }
         }
         
-        # ended_at is stored as DateTime, so compare dates
-        expect(current_tenure.reload.ended_at.to_date).to eq(termination_date)
+        expect(response).to redirect_to(confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: termination_date.to_s))
       end
 
       it 'creates maap_snapshot when manager changes' do
@@ -320,7 +320,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         }.to change { MaapSnapshot.count }.by(1)
       end
 
-      it 'creates maap_snapshot when termination_date is provided' do
+      it 'redirects to confirmation when termination_date is provided (does not create snapshot yet)' do
         termination_date = Date.current + 1.week
         
         expect {
@@ -333,10 +333,9 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
               termination_date: termination_date
             }
           }
-        }.to change { MaapSnapshot.count }.by(1)
+        }.not_to change { MaapSnapshot.count }
         
-        snapshot = MaapSnapshot.last
-        expect(snapshot.effective_date).to eq(termination_date)
+        expect(response).to redirect_to(confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: termination_date.to_s))
       end
 
       it 'does not create maap_snapshot when only seat changes' do
@@ -577,6 +576,172 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
             position_id: position.id,
             started_at: Date.current
           }
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to match(/permission|don't have permission/i)
+      end
+    end
+  end
+
+  describe 'GET /organizations/:id/teammates/:id/position/confirm_termination' do
+    before { current_tenure }
+
+    context 'when user has can_manage_employment permission' do
+      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: true) }
+
+      it 'returns http success' do
+        termination_date = Date.current + 1.week
+        get confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: termination_date)
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'displays termination confirmation page' do
+        termination_date = Date.current + 1.week
+        get confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: termination_date)
+        
+        expect(response.body).to include('Confirm Employment Termination')
+        expect(response.body).to include(employee_person.display_name)
+        expect(response.body).to include(termination_date.strftime('%B %d, %Y'))
+      end
+
+      it 'redirects if no active employment tenure' do
+        current_tenure.update!(ended_at: 1.day.ago)
+        termination_date = Date.current + 1.week
+        
+        get confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: termination_date)
+        
+        expect(response).to redirect_to(organization_teammate_position_path(organization, employee_teammate))
+        expect(flash[:alert]).to eq('No active employment tenure found.')
+      end
+
+      it 'redirects if invalid termination date' do
+        get confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: 'invalid-date')
+        
+        expect(response).to redirect_to(organization_teammate_position_path(organization, employee_teammate))
+        expect(flash[:alert]).to eq('Invalid termination date.')
+      end
+    end
+
+    context 'when user does not have can_manage_employment permission' do
+      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: false) }
+      
+      let!(:teammate_employment_tenure) do
+        pos = position
+        create(:employment_tenure,
+          teammate: teammate,
+          company: organization,
+          position: pos,
+          employment_type: 'full_time',
+          started_at: 1.year.ago
+        )
+      end
+
+      it 'returns 403 without permission' do
+        termination_date = Date.current + 1.week
+        get confirm_termination_organization_teammate_position_path(organization, employee_teammate, termination_date: termination_date)
+        
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to match(/permission|don't have permission/i)
+      end
+    end
+  end
+
+  describe 'POST /organizations/:id/teammates/:id/position/process_termination' do
+    before do
+      current_tenure
+      # Set first_employed_at for employee_teammate to allow last_terminated_at to be set
+      employee_teammate.update!(first_employed_at: current_tenure.started_at.to_date) unless employee_teammate.first_employed_at
+    end
+
+    context 'when user has can_manage_employment permission' do
+      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: true) }
+
+      it 'terminates employment and updates last_terminated_at' do
+        termination_date = Date.current + 1.week
+        expect(employee_teammate.last_terminated_at).to be_nil
+        
+        post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
+          termination_date: termination_date
+        }
+        
+        expect(response).to redirect_to(organization_teammate_position_path(organization, employee_teammate))
+        expect(flash[:notice]).to eq('Employment was successfully terminated.')
+        expect(current_tenure.reload.ended_at.to_date).to eq(termination_date)
+        expect(employee_teammate.reload.last_terminated_at).to eq(termination_date)
+      end
+
+      it 'creates MAAP snapshot on termination' do
+        termination_date = Date.current + 1.week
+        
+        expect {
+          post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
+            termination_date: termination_date,
+            reason: 'Voluntary resignation'
+          }
+        }.to change { MaapSnapshot.count }.by(1)
+        
+        snapshot = MaapSnapshot.last
+        expect(snapshot.change_type).to eq('position_tenure')
+        expect(snapshot.employee).to eq(employee_person)
+        expect(snapshot.effective_date).to eq(termination_date)
+        expect(snapshot.reason).to eq('Voluntary resignation')
+      end
+
+      it 'uses default reason if none provided' do
+        termination_date = Date.current + 1.week
+        
+        post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
+          termination_date: termination_date
+        }
+        
+        snapshot = MaapSnapshot.last
+        expect(snapshot.reason).to eq('Employment termination')
+      end
+
+      it 'handles errors gracefully' do
+        termination_date = Date.current + 1.week
+        allow_any_instance_of(TerminateEmploymentService).to receive(:call).and_return(Result.err('Test error'))
+        
+        post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
+          termination_date: termination_date
+        }
+        
+        expect(response).to redirect_to(organization_teammate_position_path(organization, employee_teammate))
+        expect(flash[:alert]).to include('Failed to terminate employment')
+      end
+
+      it 'redirects if no active employment tenure' do
+        current_tenure.update!(ended_at: 1.day.ago)
+        termination_date = Date.current + 1.week
+        
+        post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
+          termination_date: termination_date
+        }
+        
+        expect(response).to redirect_to(organization_teammate_position_path(organization, employee_teammate))
+        expect(flash[:alert]).to eq('No active employment tenure found.')
+      end
+    end
+
+    context 'when user does not have can_manage_employment permission' do
+      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: false) }
+      
+      let!(:teammate_employment_tenure) do
+        pos = position
+        create(:employment_tenure,
+          teammate: teammate,
+          company: organization,
+          position: pos,
+          employment_type: 'full_time',
+          started_at: 1.year.ago
+        )
+      end
+
+      it 'returns 403 without permission' do
+        termination_date = Date.current + 1.week
+        post process_termination_organization_teammate_position_path(organization, employee_teammate), params: {
+          termination_date: termination_date
         }
         
         expect(response).to have_http_status(:redirect)

@@ -49,6 +49,14 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       return
     end
     
+    employment_params = params[:employment_tenure_update] || params[:employment_tenure] || {}
+    
+    # Check if termination_date is provided - if so, redirect to confirmation page
+    if employment_params[:termination_date].present?
+      redirect_to confirm_termination_organization_teammate_position_path(organization, @teammate, termination_date: employment_params[:termination_date])
+      return
+    end
+    
     # Load check-ins for the view (in case validation fails and we render :show)
     @check_ins = PositionCheckIn
                    .where(teammate: @teammate)
@@ -72,8 +80,6 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     @form.current_person = current_person
     @form.teammate = @teammate
     
-    employment_params = params[:employment_tenure_update] || params[:employment_tenure] || {}
-    
     if @form.validate(employment_params) && @form.save
       redirect_to organization_teammate_position_path(organization, @teammate),
                   notice: 'Position information was successfully updated.'
@@ -81,6 +87,71 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       # Set @person for view switcher
       @person = @teammate.person
       render :show, status: :unprocessable_entity
+    end
+  end
+
+  def confirm_termination
+    authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
+    
+    @current_employment = @teammate.employment_tenures.active.first
+    
+    unless @current_employment
+      redirect_to organization_teammate_position_path(organization, @teammate), 
+                  alert: 'No active employment tenure found.'
+      return
+    end
+    
+    @termination_date = params[:termination_date]
+    @person = @teammate.person
+    
+    # Validate termination_date
+    begin
+      @parsed_termination_date = if @termination_date.is_a?(String)
+        if @termination_date.match?(/\A\d{4}-\d{2}-\d{2}\z/)
+          Date.strptime(@termination_date, '%Y-%m-%d')
+        else
+          Date.parse(@termination_date)
+        end
+      elsif @termination_date.is_a?(Date)
+        @termination_date
+      else
+        Date.parse(@termination_date.to_s)
+      end
+    rescue ArgumentError
+      redirect_to organization_teammate_position_path(organization, @teammate),
+                  alert: 'Invalid termination date.'
+      return
+    end
+  end
+
+  def process_termination
+    authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
+    
+    @current_employment = @teammate.employment_tenures.active.first
+    
+    unless @current_employment
+      redirect_to organization_teammate_position_path(organization, @teammate), 
+                  alert: 'No active employment tenure found.'
+      return
+    end
+    
+    termination_date = params[:termination_date]
+    reason = params[:reason]
+    
+    result = TerminateEmploymentService.call(
+      teammate: @teammate,
+      current_tenure: @current_employment,
+      termination_date: termination_date,
+      created_by: current_person,
+      reason: reason
+    )
+    
+    if result.ok?
+      redirect_to organization_teammate_position_path(organization, @teammate),
+                  notice: 'Employment was successfully terminated.'
+    else
+      redirect_to organization_teammate_position_path(organization, @teammate),
+                  alert: "Failed to terminate employment: #{result.error}"
     end
   end
 

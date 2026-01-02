@@ -1,0 +1,52 @@
+- content_for :title, "Confirm Termination - #{@teammate.person.display_name}"
+
+- content_for :go_back_link do
+  = link_to organization_teammate_position_path(organization, @teammate), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Position Management
+
+- content_for :header do
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0 Confirm Employment Termination
+
+.row
+  .col-12
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-exclamation-triangle.text-warning.me-2
+          Termination Confirmation
+      .card-body
+        .alert.alert-warning
+          %strong This action will:
+          %ul.mb-0
+            %li End the employment tenure on #{@parsed_termination_date.strftime('%B %d, %Y')}
+            %li Mark #{@teammate.person.display_name} as terminated
+            %li Create a MAAP snapshot for audit purposes
+
+        .row.mb-3
+          .col-md-6
+            %strong Employee:
+            %p.mb-0= @teammate.person.display_name
+          .col-md-6
+            %strong Current Position:
+            %p.mb-0= @current_employment.position.position_type.external_title
+        .row.mb-3
+          .col-md-6
+            %strong Termination Date:
+            %p.mb-0= @parsed_termination_date.strftime('%B %d, %Y')
+          .col-md-6
+            %strong Employment Started:
+            %p.mb-0= @current_employment.started_at.strftime('%B %d, %Y')
+
+        = form_with url: process_termination_organization_teammate_position_path(organization, @teammate), method: :post, local: true do |f|
+          = hidden_field_tag :termination_date, @termination_date
+          
+          .mb-3
+            = f.label :reason, "Reason (optional)", class: "form-label"
+            = f.text_area :reason, class: "form-control", rows: 3, placeholder: "e.g., Voluntary resignation, Position eliminated, Performance issues, etc."
+          
+          .d-flex.gap-2
+            = f.submit "Confirm Termination", class: "btn btn-danger", data: { confirm: "Are you sure you want to terminate this employment? This action cannot be undone." }
+            = link_to "Cancel", organization_teammate_position_path(organization, @teammate), class: "btn btn-outline-secondary"
+

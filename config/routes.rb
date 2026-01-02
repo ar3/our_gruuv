@@ -221,6 +221,8 @@ get '/login', to: 'auth#login', as: :login
     resources :teammates, module: :organizations, only: [] do
       resource :position, only: [:show, :update], controller: 'teammates/position' do
         post :create_employment, on: :member
+        get :confirm_termination, on: :member
+        post :process_termination, on: :member
       end
       resources :assignments, only: [:show], controller: 'teammates/assignments'
       resources :aspirations, only: [:show], controller: 'teammates/aspirations'
