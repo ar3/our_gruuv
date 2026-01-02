@@ -32,7 +32,7 @@ FactoryBot.define do
         {
           employment_tenure: {
             position_id: create(:position).id,
-            manager_id: create(:person).id,
+            manager_teammate_id: create(:teammate, type: 'CompanyTeammate').id,
             started_at: Date.current,
             seat_id: nil
           },

@@ -487,8 +487,8 @@ module EmployeesHelper
     
     fields << {
       label: 'Manager',
-      old: format_person_value(old_position['manager_id']),
-      new: format_person_value(new_position['manager_id'])
+      old: format_company_teammate_value(old_position['manager_teammate_id']),
+      new: format_company_teammate_value(new_position['manager_teammate_id'])
     }
     
     fields << {
@@ -512,8 +512,8 @@ module EmployeesHelper
     
     fields << {
       label: 'Rated Manager',
-      old: format_person_value(old_rated['manager_id']),
-      new: format_person_value(new_rated['manager_id'])
+      old: format_company_teammate_value(old_rated['manager_teammate_id']),
+      new: format_company_teammate_value(new_rated['manager_teammate_id'])
     }
     
     fields << {
@@ -707,6 +707,11 @@ module EmployeesHelper
   def format_person_value(person_id)
     return 'None' unless person_id.present?
     Person.find_by(id: person_id)&.display_name || 'None'
+  end
+
+  def format_company_teammate_value(company_teammate_id)
+    return 'None' unless company_teammate_id.present?
+    CompanyTeammate.find_by(id: company_teammate_id)&.person&.display_name || 'None'
   end
 
   def format_seat_value(seat_id)

@@ -90,8 +90,8 @@ class MaapChangeDetectionService
       if previous_rated['seat_id'].to_s != proposed_rated['seat_id'].to_s
         changes << { field: 'rated_seat', current: previous_rated['seat_id'], proposed: proposed_rated['seat_id'] }
       end
-      if previous_rated['manager_id'].to_s != proposed_rated['manager_id'].to_s
-        changes << { field: 'rated_manager', current: previous_rated['manager_id'], proposed: proposed_rated['manager_id'] }
+      if previous_rated['manager_teammate_id'].to_s != proposed_rated['manager_teammate_id'].to_s
+        changes << { field: 'rated_manager', current: previous_rated['manager_teammate_id'], proposed: proposed_rated['manager_teammate_id'] }
       end
       if previous_rated['position_id'].to_s != proposed_rated['position_id'].to_s
         changes << { field: 'rated_position', current: previous_rated['position_id'], proposed: proposed_rated['position_id'] }
@@ -445,7 +445,7 @@ class MaapChangeDetectionService
     
     # Compare all fields within rated_position
     previous_rated['seat_id'].to_s != proposed_rated['seat_id'].to_s ||
-    previous_rated['manager_id'].to_s != proposed_rated['manager_id'].to_s ||
+    previous_rated['manager_teammate_id'].to_s != proposed_rated['manager_teammate_id'].to_s ||
     previous_rated['position_id'].to_s != proposed_rated['position_id'].to_s ||
     previous_rated['employment_type'] != proposed_rated['employment_type'] ||
     previous_rated['official_position_rating'] != proposed_rated['official_position_rating'] ||

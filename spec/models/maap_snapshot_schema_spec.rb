@@ -31,7 +31,7 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
       position_data = maap_data[:position] || maap_data['position']
       expect(position_data).to be_present
       expect(position_data).to include(
-        :position_id, :manager_id, :seat_id, :employment_type, :rated_position
+        :position_id, :manager_teammate_id, :seat_id, :employment_type, :rated_position
       )
       expect(position_data).not_to include(:official_position_rating)
       expect(position_data[:position_id]).to eq(employment_tenure.position_id)
@@ -95,7 +95,7 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
       # Check position format
       expect(maap_data[:position]).to include(
         :position_id,
-        :manager_id,
+        :manager_teammate_id,
         :seat_id,
         :employment_type,
         :rated_position
@@ -143,7 +143,7 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
       # Check position format
       expect(maap_data[:position]).to include(
         :position_id,
-        :manager_id,
+        :manager_teammate_id,
         :seat_id,
         :employment_type,
         :rated_position

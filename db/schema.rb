@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_01_141906) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_02_014458) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -215,7 +215,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_01_141906) do
   create_table "employment_tenures", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.bigint "position_id", null: false
-    t.bigint "manager_id"
     t.datetime "started_at", null: false
     t.datetime "ended_at"
     t.datetime "created_at", null: false
@@ -227,7 +226,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_01_141906) do
     t.integer "official_position_rating"
     t.bigint "manager_teammate_id"
     t.index ["company_id"], name: "index_employment_tenures_on_company_id"
-    t.index ["manager_id"], name: "index_employment_tenures_on_manager_id"
     t.index ["manager_teammate_id"], name: "index_employment_tenures_on_manager_teammate_id"
     t.index ["position_id"], name: "index_employment_tenures_on_position_id"
     t.index ["seat_id"], name: "index_employment_tenures_on_seat_id"
@@ -985,7 +983,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_01_141906) do
   add_foreign_key "bulk_sync_events", "people", column: "creator_id"
   add_foreign_key "bulk_sync_events", "people", column: "initiator_id"
   add_foreign_key "employment_tenures", "organizations", column: "company_id"
-  add_foreign_key "employment_tenures", "people", column: "manager_id"
   add_foreign_key "employment_tenures", "positions"
   add_foreign_key "employment_tenures", "seats"
   add_foreign_key "employment_tenures", "teammates"

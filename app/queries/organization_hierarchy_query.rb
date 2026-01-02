@@ -16,10 +16,10 @@ class OrganizationHierarchyQuery
     tenures = EmploymentTenure.joins(:teammate)
                              .joins('INNER JOIN people ON teammates.person_id = people.id')
                              .where(company_id: org_ids)
-                             .where(teammates: { organization_id: org_ids })
-                             .active
-                             .includes(:teammate, :manager, :position)
-                             .order('employment_tenures.manager_id NULLS FIRST, people.last_name, people.first_name')
+                            .where(teammates: { organization_id: org_ids })
+                            .active
+                            .includes(:teammate, manager_teammate: :person, position: nil)
+                            .order('employment_tenures.manager_teammate_id NULLS FIRST, people.last_name, people.first_name')
 
     # Build nodes hash keyed by person_id for easy lookup
     nodes_hash = {}
@@ -41,8 +41,9 @@ class OrganizationHierarchyQuery
       end
 
       # Add link if there's a manager
-      if tenure.manager
-        manager_id = "person_#{tenure.manager.id}"
+      if tenure.manager_teammate
+        manager_person = tenure.manager_teammate.person
+        manager_id = "person_#{manager_person.id}"
         links << {
           from: manager_id,
           to: person_id
@@ -51,7 +52,7 @@ class OrganizationHierarchyQuery
         # Ensure manager node exists (in case manager's tenure isn't in this org)
         unless nodes_hash[manager_id]
           manager_tenure = EmploymentTenure.joins(:teammate)
-                                          .where(teammates: { person: tenure.manager, organization_id: org_ids })
+                                          .where(teammates: { person: manager_person, organization_id: org_ids })
                                           .active
                                           .includes(:position)
                                           .first
@@ -59,7 +60,7 @@ class OrganizationHierarchyQuery
           nodes_hash[manager_id] = {
             id: manager_id,
             title: manager_tenure&.position&.display_name || 'No Position',
-            name: tenure.manager.display_name
+            name: manager_person.display_name
           }
         end
       end

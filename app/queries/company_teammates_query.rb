@@ -35,10 +35,10 @@ class CompanyTeammatesQuery
     end
     filters[:organization_id] = params[:organization_id] if params[:organization_id].present?
     filters[:permission] = params[:permission] if params[:permission].present?
-    # Handle both single manager_id and manager_id[] array
-    if params[:manager_id].present?
-      manager_ids = Array(params[:manager_id])
-      filters[:manager_id] = manager_ids.map(&:to_s)
+    # Handle both single manager_teammate_id and manager_teammate_id[] array
+    if params[:manager_teammate_id].present?
+      manager_teammate_ids = Array(params[:manager_teammate_id])
+      filters[:manager_teammate_id] = manager_teammate_ids.map(&:to_s)
     end
     # Handle department_id[] array
     if params[:department_id].present?
@@ -160,14 +160,14 @@ class CompanyTeammatesQuery
   end
 
   def filter_by_manager_relationship(teammates)
-    return teammates unless params[:manager_id].present?
+    return teammates unless params[:manager_teammate_id].present?
 
-    manager_ids = Array(params[:manager_id]).map(&:to_i).reject(&:zero?)
-    return teammates if manager_ids.empty?
+    manager_teammate_ids = Array(params[:manager_teammate_id]).map(&:to_i).reject(&:zero?)
+    return teammates if manager_teammate_ids.empty?
 
     # Filter to only direct reports based on active employment tenure manager relationships
     teammates.joins(:employment_tenures)
-             .where(employment_tenures: { manager_id: manager_ids, ended_at: nil })
+             .where(employment_tenures: { manager_teammate_id: manager_teammate_ids, ended_at: nil })
              .distinct
   end
 

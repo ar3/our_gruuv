@@ -41,7 +41,7 @@ module MaapData
       rated_position = if previous_closed_tenure
         {
           seat_id: previous_closed_tenure.seat_id,
-          manager_id: previous_closed_tenure.manager_id,
+          manager_teammate_id: previous_closed_tenure.manager_teammate_id,
           position_id: previous_closed_tenure.position_id,
           employment_type: previous_closed_tenure.employment_type,
           official_position_rating: previous_closed_tenure.official_position_rating,
@@ -54,7 +54,7 @@ module MaapData
 
       {
         position_id: active_employment.position_id,
-        manager_id: active_employment.manager_id,
+        manager_teammate_id: active_employment.manager_teammate_id,
         seat_id: active_employment.seat_id,
         employment_type: active_employment.employment_type,
         rated_position: rated_position

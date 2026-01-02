@@ -228,9 +228,9 @@ class Goal < ApplicationRecord
     
     EmploymentTenure.active
       .where(teammate: owner, company: company)
-      .where.not(manager_id: nil)
-      .includes(:manager)
-      .map(&:manager)
+      .where.not(manager_teammate_id: nil)
+      .includes(manager_teammate: :person)
+      .map { |tenure| tenure.manager_teammate&.person }
       .compact
       .uniq
   end
