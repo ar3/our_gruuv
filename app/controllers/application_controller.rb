@@ -24,6 +24,7 @@ class ApplicationController < ActionController::Base
   helper_method :current_person
   helper_method :current_organization
   helper_method :impersonating?
+  helper_method :authenticated?
   helper_method :impersonating_teammate
   helper_method :recent_page_visits
   helper_method :current_user_preferences
