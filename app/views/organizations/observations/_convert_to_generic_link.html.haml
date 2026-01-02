@@ -1,7 +1,12 @@
-= link_to convert_to_generic_organization_observation_path(@organization, observation), 
-          method: :patch,
-          data: { confirm: "This will enable all privacy levels and features. Continue?" },
-          class: "btn btn-sm btn-outline-secondary" do
-  %i.bi.bi-arrow-right-circle.me-1
-  Convert to Generic
+- if local_assigns[:form] && local_assigns[:organization] && local_assigns[:observation]
+  = form.button type: 'submit',
+                class: 'btn btn-sm btn-outline-secondary',
+                name: 'save_and_convert_to_generic',
+                value: 'Convert to Generic',
+                formaction: update_draft_organization_observation_path(organization, observation.new_record? ? :new : observation),
+                formmethod: :post,
+                data: { confirm: "This will enable all privacy levels and features. Continue?" },
+                onclick: "var field = document.getElementById('form_method_field'); if (field) field.value = 'patch'; return true;" do
+    %i.bi.bi-arrow-right-circle.me-1
+    Convert to Generic
 

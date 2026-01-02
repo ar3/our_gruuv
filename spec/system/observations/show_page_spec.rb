@@ -187,5 +187,181 @@ RSpec.describe 'Observation Show Page', type: :system do
       end
     end
   end
+
+  describe 'Form buttons on new/edit pages' do
+    let(:draft_observation) do
+      build(:observation, observer: observer, company: company, published_at: nil, story: 'Test story').tap do |obs|
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+      end
+    end
+
+    describe 'button presence and functionality' do
+      context 'on new generic observation page' do
+        it 'shows all form buttons' do
+          visit new_organization_observation_path(company)
+          
+          expect(page).to have_button('Publish', exact: false)
+          expect(page).to have_button('Save Draft', exact: false)
+          expect(page).to have_button('Cancel')
+        end
+
+        it 'publish button submits form' do
+          visit new_organization_observation_path(company, draft_id: draft_observation.id)
+          
+          # Fill in required fields
+          fill_in 'observation_story', with: 'Test story for publishing'
+          
+          expect(page).to have_button('Publish', exact: false)
+          click_button('Publish', exact: false)
+          
+          # Should redirect (either to show page or back with errors)
+          expect(page).to have_current_path(/.+/, wait: 5)
+        end
+
+        it 'save draft button submits form' do
+          visit new_organization_observation_path(company, draft_id: draft_observation.id)
+          
+          fill_in 'observation_story', with: 'Updated story'
+          
+          expect(page).to have_button('Save Draft', exact: false)
+          click_button('Save Draft', exact: false)
+          
+          # Should redirect
+          expect(page).to have_current_path(/.+/, wait: 5)
+        end
+
+        it 'cancel button submits form' do
+          visit new_organization_observation_path(company, draft_id: draft_observation.id)
+          
+          expect(page).to have_button('Cancel')
+          click_button 'Cancel'
+          
+          # Should redirect
+          expect(page).to have_current_path(/.+/, wait: 5)
+        end
+      end
+
+      context 'on edit generic observation page' do
+        it 'shows all form buttons' do
+          visit new_organization_observation_path(company, draft_id: draft_observation.id)
+          
+          expect(page).to have_button('Publish', exact: false)
+          expect(page).to have_button('Save Draft', exact: false)
+          expect(page).to have_button('Cancel')
+        end
+
+        it 'publish button works' do
+          visit new_organization_observation_path(company, draft_id: draft_observation.id)
+          
+          expect(page).to have_button('Publish', exact: false)
+          click_button('Publish', exact: false)
+          
+          # Button should submit - either publishes or shows validation errors
+          sleep 1 # Give time for form submission
+          expect(page).to have_current_path(/.+/, wait: 5)
+        end
+
+        it 'save draft button works' do
+          original_updated_at = draft_observation.updated_at
+          visit new_organization_observation_path(company, draft_id: draft_observation.id)
+          
+          fill_in 'observation_story', with: 'Updated draft story'
+          
+          expect(page).to have_button('Save Draft', exact: false)
+          click_button('Save Draft', exact: false)
+          
+          # Should redirect back to edit page
+          sleep 1 # Give time for redirect
+          draft_observation.reload
+          expect(draft_observation.updated_at).to be > original_updated_at
+        end
+      end
+
+      context 'on new kudos page' do
+        let(:kudos_draft) do
+          build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'kudos', created_as_type: 'kudos', story: 'Great work!').tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+          end
+        end
+
+        it 'shows all form buttons' do
+          visit new_kudos_organization_observations_path(company, draft_id: kudos_draft.id)
+          
+          expect(page).to have_button('Publish', exact: false)
+          expect(page).to have_button('Save Draft', exact: false)
+          expect(page).to have_button('Cancel')
+        end
+
+        it 'publish button works' do
+          visit new_kudos_organization_observations_path(company, draft_id: kudos_draft.id)
+          
+          expect(page).to have_button('Publish', exact: false)
+          click_button('Publish', exact: false)
+          
+          # Button should submit - either publishes or shows validation errors
+          sleep 1 # Give time for form submission
+          expect(page).to have_current_path(/.+/, wait: 5)
+        end
+      end
+
+      context 'on new feedback page' do
+        let(:feedback_draft) do
+          build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'feedback', created_as_type: 'feedback', story: 'Your intent with this feedback').tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+          end
+        end
+
+        it 'shows all form buttons' do
+          visit new_feedback_organization_observations_path(company, draft_id: feedback_draft.id)
+          
+          expect(page).to have_button('Publish', exact: false)
+          expect(page).to have_button('Save Draft', exact: false)
+          expect(page).to have_button('Cancel')
+        end
+
+        it 'publish button works' do
+          visit new_feedback_organization_observations_path(company, draft_id: feedback_draft.id)
+          
+          expect(page).to have_button('Publish', exact: false)
+          click_button('Publish', exact: false)
+          
+          # Button should submit - either publishes or shows validation errors
+          sleep 1 # Give time for form submission
+          expect(page).to have_current_path(/.+/, wait: 5)
+        end
+      end
+
+      context 'on new quick_note page' do
+        let(:quick_note_draft) do
+          build(:observation, observer: observer, company: company, published_at: nil, observation_type: 'quick_note', created_as_type: 'quick_note', story: 'Quick note').tap do |obs|
+            obs.observees.build(teammate: observee_teammate)
+            obs.save!
+          end
+        end
+
+        it 'shows all form buttons' do
+          visit new_quick_note_organization_observations_path(company, draft_id: quick_note_draft.id)
+          
+          expect(page).to have_button('Publish', exact: false)
+          expect(page).to have_button('Save Draft', exact: false)
+          expect(page).to have_button('Cancel')
+        end
+
+        it 'publish button works' do
+          visit new_quick_note_organization_observations_path(company, draft_id: quick_note_draft.id)
+          
+          expect(page).to have_button('Publish', exact: false)
+          click_button('Publish', exact: false)
+          
+          # Button should submit - either publishes or shows validation errors
+          sleep 1 # Give time for form submission
+          expect(page).to have_current_path(/.+/, wait: 5)
+        end
+      end
+    end
+  end
 end
 

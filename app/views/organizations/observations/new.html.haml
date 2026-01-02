@@ -33,8 +33,8 @@
     = form_with model: @observation, url: form_url, method: :post, local: true, data: { turbo: false, turbo_method: false }, html: { id: 'observation_form' } do |form|
       / Add _method field only for buttons that need PATCH (Add Assignments and default form submission)
       = hidden_field_tag '_method', 'patch', id: 'form_method_field'
-      / Explicitly include CSRF token (form_with should add this, but ensuring it's present for ngrok)
-      = hidden_field_tag :authenticity_token, form_authenticity_token
+      / Explicitly include CSRF token for formaction compatibility
+      = hidden_field_tag :authenticity_token, form_authenticity_token, id: 'form_authenticity_token'
       - if @observation.errors.any?
         .alert.alert-danger
           %h6 Please correct the following errors:

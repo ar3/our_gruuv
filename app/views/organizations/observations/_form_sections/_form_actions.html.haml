@@ -5,13 +5,14 @@
                 formaction: publish_organization_observation_path(organization, observation.new_record? ? :new : observation),
                 formmethod: :post,
                 name: 'publish',
-                onclick: "document.getElementById('form_method_field').remove(); return true;"
+                onclick: "var field = document.getElementById('form_method_field'); if (field) field.remove(); return true;"
   -# Save Draft button - submit form to update_draft action (PATCH via _method override)
   = form.submit "Save Draft & return to #{return_text.presence || 'Back'}", 
                 class: 'btn btn-outline-primary',
                 formaction: update_draft_organization_observation_path(organization, observation.new_record? ? :new : observation),
+                formmethod: :post,
                 name: 'save_draft_and_return',
-                onclick: "document.getElementById('form_method_field').value = 'patch'; return true;"
+                onclick: "var field = document.getElementById('form_method_field'); if (field) field.value = 'patch'; return true;"
   -# Cancel button - submit form to cancel action (POST, no _method)
   - cancel_id = observation.new_record? ? :new : observation
   = form.submit 'Cancel',
@@ -19,6 +20,6 @@
                 formaction: cancel_organization_observation_path(organization, cancel_id),
                 formmethod: :post,
                 name: 'cancel',
-                onclick: "document.getElementById('form_method_field').remove(); return true;",
+                onclick: "var field = document.getElementById('form_method_field'); if (field) field.remove(); return true;",
                 data: { disable_with: 'Canceling...' }
 

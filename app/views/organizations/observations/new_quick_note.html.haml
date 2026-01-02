@@ -15,19 +15,26 @@
       %h5.mb-0
         %i.bi.bi-sticky.me-2
         Quick Note
-      - if @show_convert_link
-        = render 'organizations/observations/convert_to_generic_link', observation: @observation
-  
   .card-body
     - form_url = @observation.persisted? ? update_draft_organization_observation_path(organization, @observation) : update_draft_organization_observation_path(organization, :new)
     = form_with model: @observation, url: form_url, method: :post, local: true, data: { turbo: false, turbo_method: false }, html: { id: 'observation_form' } do |form|
+      / Add _method field only for buttons that need PATCH (Add Assignments and default form submission)
       = hidden_field_tag '_method', 'patch', id: 'form_method_field'
-      = hidden_field_tag :authenticity_token, form_authenticity_token
+      / Explicitly include CSRF token for formaction compatibility
+      = hidden_field_tag :authenticity_token, form_authenticity_token, id: 'form_authenticity_token'
+      - if @observation.errors.any?
+        .alert.alert-danger
+          %h6 Please correct the following errors:
+          %ul.mb-0
+            - @observation.errors.full_messages.each do |message|
+              %li= message
+      
+      / Hidden fields for publish action
       = hidden_field_tag :return_url, @return_url
       = hidden_field_tag :return_text, @return_text
-      = hidden_field_tag :show_observations_for, params[:show_observations_for] if params[:show_observations_for].present?
+      = hidden_field_tag :show_observations_for, params[:show_observations_for]
       = form.hidden_field :observation_type, value: 'quick_note'
-      
+      -# Preserve observee_ids through form submissions
       - @observation.observees.each do |observee|
         = hidden_field_tag "observee_ids[]", observee.teammate_id
       
@@ -40,6 +47,10 @@
         %hr/
       
       = render 'organizations/observations/form_sections/privacy_selector', form: form, observation: @observation, allowed_levels: @allowed_privacy_levels, disabled_levels: @disabled_levels, organization: organization
+      
+      - if @show_convert_link
+        .mb-3
+          = render 'organizations/observations/convert_to_generic_link', form: form, observation: @observation, organization: organization
       
       = render 'organizations/observations/form_sections/form_actions', form: form, observation: @observation, return_text: @return_text, organization: organization
 

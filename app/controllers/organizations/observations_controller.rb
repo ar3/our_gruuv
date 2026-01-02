@@ -877,6 +877,14 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
           return_text: params[:return_text] || 'Observation'
         )
+      elsif params[:save_and_convert_to_generic].present?
+        @observation.update!(observation_type: 'generic')
+        redirect_to new_organization_observation_path(
+          organization,
+          draft_id: @observation.id,
+          return_url: params[:return_url],
+          return_text: params[:return_text]
+        ), notice: 'Converted to generic observation. All features are now available.'
       elsif params[:save_draft_and_return].present?
         # Convert published observation to draft if it was published
         if @observation.published_at.present?
@@ -1263,9 +1271,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         notice = "No changes made"
       end
       
-      redirect_url = params[:return_url] || typed_observation_path_for(@observation)
-      if params[:return_url].present? || params[:return_text].present?
+      # Use typed path if return_url is not provided, otherwise use return_url with optional return_text
+      if params[:return_url].present?
         redirect_url = typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text])
+      else
+        redirect_url = typed_observation_path_for(@observation, return_text: params[:return_text])
       end
       redirect_to redirect_url, notice: notice
     else
@@ -1275,7 +1285,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         .includes(:person)
         .to_a
         .sort_by { |teammate| teammate.person.casual_name }
-      @return_url = params[:return_url] || new_organization_observation_path(organization, draft_id: @observation.id)
+      @return_url = params[:return_url] || typed_observation_path_for(@observation)
       @return_text = params[:return_text] || 'Back'
       render layout: 'overlay'
     end
@@ -2037,10 +2047,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
 
   def typed_observation_path_for(observation, options = {})
     path_options = {
-      draft_id: observation.id,
-      return_url: options[:return_url],
-      return_text: options[:return_text]
-    }.compact
+      draft_id: observation.id
+    }
+    path_options[:return_url] = options[:return_url] if options[:return_url].present?
+    path_options[:return_text] = options[:return_text] if options[:return_text].present?
     
     case observation.observation_type
     when 'kudos'

@@ -75,14 +75,86 @@ RSpec.describe 'Organizations::Observations', type: :request do
   end
 
   describe 'PATCH /organizations/:organization_id/observations/:id/convert_to_generic' do
-    let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos') }
+    context 'for kudos observation' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos') }
 
-    it 'converts observation type to generic' do
-      patch convert_to_generic_organization_observation_path(organization, observation)
-      expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id))
-      observation.reload
-      expect(observation.observation_type).to eq('generic')
-      expect(observation.created_as_type).to eq('kudos') # Should not change
+      it 'converts observation type to generic' do
+        patch convert_to_generic_organization_observation_path(organization, observation)
+        expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id))
+        observation.reload
+        expect(observation.observation_type).to eq('generic')
+        expect(observation.created_as_type).to eq('kudos') # Should not change
+      end
+
+      it 'preserves return_url and return_text params in redirect' do
+        return_url = organization_observations_path(organization)
+        return_text = 'Back to Observations'
+        patch convert_to_generic_organization_observation_path(organization, observation, return_url: return_url, return_text: return_text)
+        expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id, return_url: return_url, return_text: return_text))
+        observation.reload
+        expect(observation.observation_type).to eq('generic')
+        expect(observation.created_as_type).to eq('kudos')
+      end
+    end
+
+    context 'for feedback observation' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'feedback', created_as_type: 'feedback') }
+
+      it 'converts observation type to generic' do
+        patch convert_to_generic_organization_observation_path(organization, observation)
+        expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id))
+        observation.reload
+        expect(observation.observation_type).to eq('generic')
+        expect(observation.created_as_type).to eq('feedback') # Should not change
+      end
+
+      it 'preserves return_url and return_text params in redirect' do
+        return_url = organization_observations_path(organization)
+        return_text = 'Back to Observations'
+        patch convert_to_generic_organization_observation_path(organization, observation, return_url: return_url, return_text: return_text)
+        expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id, return_url: return_url, return_text: return_text))
+        observation.reload
+        expect(observation.observation_type).to eq('generic')
+        expect(observation.created_as_type).to eq('feedback')
+      end
+    end
+
+    context 'for quick_note observation' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'quick_note', created_as_type: 'quick_note') }
+
+      it 'converts observation type to generic' do
+        patch convert_to_generic_organization_observation_path(organization, observation)
+        expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id))
+        observation.reload
+        expect(observation.observation_type).to eq('generic')
+        expect(observation.created_as_type).to eq('quick_note') # Should not change
+      end
+
+      it 'preserves return_url and return_text params in redirect' do
+        return_url = organization_observations_path(organization)
+        return_text = 'Back to Observations'
+        patch convert_to_generic_organization_observation_path(organization, observation, return_url: return_url, return_text: return_text)
+        expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id, return_url: return_url, return_text: return_text))
+        observation.reload
+        expect(observation.observation_type).to eq('generic')
+        expect(observation.created_as_type).to eq('quick_note')
+      end
+    end
+
+    context 'authorization' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:teammate, person: other_person, organization: organization) }
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos') }
+
+      it 'requires update permission' do
+        sign_in_as_teammate_for_request(other_person, organization)
+        original_type = observation.observation_type
+        patch convert_to_generic_organization_observation_path(organization, observation)
+        # Authorization failures typically redirect in this app
+        expect(response).to have_http_status(:redirect)
+        observation.reload
+        expect(observation.observation_type).to eq(original_type) # Should not change
+      end
     end
   end
 
@@ -297,6 +369,243 @@ RSpec.describe 'Organizations::Observations', type: :request do
         expect(redirect_location).to include('add_assignments')
         # Verify the return_url in the redirect uses typed path
         expect(redirect_location).to include('new_kudos')
+      end
+    end
+
+    context 'with save_and_convert_to_generic' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos') }
+
+      it 'converts observation type to generic and redirects' do
+        return_url = organization_observations_path(organization)
+        return_text = 'Back to Observations'
+        
+        post update_draft_organization_observation_path(organization, observation), params: {
+          _method: 'patch',
+          observation: { privacy_level: 'observed_and_managers' },
+          save_and_convert_to_generic: '1',
+          return_url: return_url,
+          return_text: return_text
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        observation.reload
+        expect(observation.observation_type).to eq('generic')
+        expect(observation.created_as_type).to eq('kudos') # Should not change
+        expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id, return_url: return_url, return_text: return_text))
+      end
+
+      context 'for feedback observation' do
+        let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'feedback', created_as_type: 'feedback') }
+
+        it 'converts observation type to generic' do
+          post update_draft_organization_observation_path(organization, observation), params: {
+            _method: 'patch',
+            observation: { privacy_level: 'observed_only' },
+            save_and_convert_to_generic: '1'
+          }
+          
+          observation.reload
+          expect(observation.observation_type).to eq('generic')
+          expect(observation.created_as_type).to eq('feedback')
+        end
+      end
+
+      context 'for quick_note observation' do
+        let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'quick_note', created_as_type: 'quick_note') }
+
+        it 'converts observation type to generic' do
+          post update_draft_organization_observation_path(organization, observation), params: {
+            _method: 'patch',
+            observation: { privacy_level: 'observed_only' },
+            save_and_convert_to_generic: '1'
+          }
+          
+          observation.reload
+          expect(observation.observation_type).to eq('generic')
+          expect(observation.created_as_type).to eq('quick_note')
+        end
+      end
+    end
+
+    context 'with save_and_add_abilities' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos') }
+
+      it 'redirects to add_abilities with typed return_url' do
+        patch update_draft_organization_observation_path(organization, observation), params: {
+          observation: { privacy_level: 'observed_and_managers' },
+          save_and_add_abilities: '1'
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        redirect_location = response.headers['Location']
+        expect(redirect_location).to include('add_abilities')
+        expect(redirect_location).to include('new_kudos')
+      end
+    end
+
+    context 'with save_and_add_aspirations' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos') }
+
+      it 'redirects to add_aspirations with typed return_url' do
+        patch update_draft_organization_observation_path(organization, observation), params: {
+          observation: { privacy_level: 'observed_and_managers' },
+          save_and_add_aspirations: '1'
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        redirect_location = response.headers['Location']
+        expect(redirect_location).to include('add_aspirations')
+        expect(redirect_location).to include('new_kudos')
+      end
+    end
+
+    context 'with save_and_manage_observees' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos') }
+
+      it 'redirects to manage_observees with typed return_url' do
+        patch update_draft_organization_observation_path(organization, observation), params: {
+          observation: { privacy_level: 'observed_and_managers' },
+          save_and_manage_observees: '1'
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        redirect_location = response.headers['Location']
+        expect(redirect_location).to include('manage_observees')
+        expect(redirect_location).to include('new_kudos')
+      end
+    end
+
+    context 'with save_draft_and_return' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos') }
+
+      it 'saves draft and redirects to return_url' do
+        return_url = organization_observations_path(organization)
+        post update_draft_organization_observation_path(organization, observation), params: {
+          _method: 'patch',
+          observation: { privacy_level: 'observed_and_managers', story: 'Test story' },
+          save_draft_and_return: '1',
+          return_url: return_url
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(return_url)
+        observation.reload
+        expect(observation.story).to eq('Test story')
+      end
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/observations/:id/publish' do
+    let(:observation) do
+      obs = build(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos', published_at: nil)
+      obs.observees.build(teammate: create(:teammate, person: create(:person), organization: organization))
+      obs.save!
+      obs
+    end
+
+    context 'for kudos observation' do
+      it 'publishes the observation' do
+        post publish_organization_observation_path(organization, observation), params: {
+          observation: {
+            story: 'Test story',
+            privacy_level: 'observed_and_managers'
+          },
+          return_url: organization_observations_path(organization)
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        observation.reload
+        expect(observation.published_at).to be_present
+      end
+    end
+
+    context 'for feedback observation' do
+      let(:observation) do
+        obs = build(:observation, observer: person, company: organization, observation_type: 'feedback', created_as_type: 'feedback', published_at: nil)
+        obs.observees.build(teammate: create(:teammate, person: create(:person), organization: organization))
+        obs.save!
+        obs
+      end
+
+      it 'publishes the observation' do
+        post publish_organization_observation_path(organization, observation), params: {
+          observation: {
+            story: 'Test story',
+            privacy_level: 'observed_only'
+          },
+          return_url: organization_observations_path(organization)
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        observation.reload
+        expect(observation.published_at).to be_present
+      end
+    end
+  end
+
+  describe 'POST /organizations/:organization_id/observations/:id/cancel' do
+    let(:observation) do
+      obs = build(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos', published_at: nil)
+      obs.observees.build(teammate: create(:teammate, person: create(:person), organization: organization))
+      obs.save!
+      obs
+    end
+
+    context 'for kudos observation' do
+      it 'redirects to return_url' do
+        return_url = organization_observations_path(organization)
+        post cancel_organization_observation_path(organization, observation), params: {
+          return_url: return_url
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(return_url)
+      end
+    end
+  end
+
+  describe 'CSRF token in forms' do
+    context 'for kudos observation form' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'kudos', created_as_type: 'kudos') }
+
+      it 'includes CSRF token in new_kudos form' do
+        get new_kudos_organization_observations_path(organization, draft_id: observation.id)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('authenticity_token')
+        expect(response.body).to include('form_authenticity_token')
+      end
+    end
+
+    context 'for feedback observation form' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'feedback', created_as_type: 'feedback') }
+
+      it 'includes CSRF token in new_feedback form' do
+        get new_feedback_organization_observations_path(organization, draft_id: observation.id)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('authenticity_token')
+        expect(response.body).to include('form_authenticity_token')
+      end
+    end
+
+    context 'for quick_note observation form' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'quick_note', created_as_type: 'quick_note') }
+
+      it 'includes CSRF token in new_quick_note form' do
+        get new_quick_note_organization_observations_path(organization, draft_id: observation.id)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('authenticity_token')
+        expect(response.body).to include('form_authenticity_token')
+      end
+    end
+
+    context 'for generic observation form' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'generic', created_as_type: 'generic') }
+
+      it 'includes CSRF token in new form' do
+        get new_organization_observation_path(organization, draft_id: observation.id)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('authenticity_token')
+        expect(response.body).to include('form_authenticity_token')
       end
     end
   end

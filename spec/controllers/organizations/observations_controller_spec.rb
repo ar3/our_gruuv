@@ -1141,6 +1141,177 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(published_observation.draft?).to be true
       end
     end
+
+    context 'with save_and_convert_to_generic' do
+      let(:kudos_observation) do
+        obs = build(:observation, observer: observer, company: company, observation_type: 'kudos', created_as_type: 'kudos')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'converts kudos observation to generic' do
+        patch :update_draft, params: {
+          organization_id: company.id,
+          id: kudos_observation.id,
+          save_and_convert_to_generic: '1',
+          observation: {
+            privacy_level: 'observed_and_managers'
+          },
+          return_url: organization_observations_path(company),
+          return_text: 'Back'
+        }
+        
+        kudos_observation.reload
+        expect(kudos_observation.observation_type).to eq('generic')
+        expect(kudos_observation.created_as_type).to eq('kudos') # Should not change
+        expect(response).to redirect_to(new_organization_observation_path(company, draft_id: kudos_observation.id, return_url: organization_observations_path(company), return_text: 'Back'))
+      end
+
+      context 'for feedback observation' do
+        let(:feedback_observation) do
+          obs = build(:observation, observer: observer, company: company, observation_type: 'feedback', created_as_type: 'feedback')
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs
+        end
+
+        it 'converts feedback observation to generic' do
+          patch :update_draft, params: {
+            organization_id: company.id,
+            id: feedback_observation.id,
+            save_and_convert_to_generic: '1',
+            observation: {
+              privacy_level: 'observed_only'
+            }
+          }
+          
+          feedback_observation.reload
+          expect(feedback_observation.observation_type).to eq('generic')
+          expect(feedback_observation.created_as_type).to eq('feedback')
+        end
+      end
+
+      context 'for quick_note observation' do
+        let(:quick_note_observation) do
+          obs = build(:observation, observer: observer, company: company, observation_type: 'quick_note', created_as_type: 'quick_note')
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs
+        end
+
+        it 'converts quick_note observation to generic' do
+          patch :update_draft, params: {
+            organization_id: company.id,
+            id: quick_note_observation.id,
+            save_and_convert_to_generic: '1',
+            observation: {
+              privacy_level: 'observed_only'
+            }
+          }
+          
+          quick_note_observation.reload
+          expect(quick_note_observation.observation_type).to eq('generic')
+          expect(quick_note_observation.created_as_type).to eq('quick_note')
+        end
+      end
+    end
+
+    context 'with save_and_add_assignments' do
+      let(:observation) do
+        obs = build(:observation, observer: observer, company: company, observation_type: 'kudos', created_as_type: 'kudos')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'redirects to add_assignments' do
+        patch :update_draft, params: {
+          organization_id: company.id,
+          id: observation.id,
+          save_and_add_assignments: '1',
+          observation: {
+            privacy_level: 'observed_and_managers'
+          }
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        redirect_location = response.headers['Location']
+        expect(redirect_location).to include('add_assignments')
+      end
+    end
+
+    context 'with save_and_add_abilities' do
+      let(:observation) do
+        obs = build(:observation, observer: observer, company: company, observation_type: 'kudos', created_as_type: 'kudos')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'redirects to add_abilities' do
+        patch :update_draft, params: {
+          organization_id: company.id,
+          id: observation.id,
+          save_and_add_abilities: '1',
+          observation: {
+            privacy_level: 'observed_and_managers'
+          }
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        redirect_location = response.headers['Location']
+        expect(redirect_location).to include('add_abilities')
+      end
+    end
+
+    context 'with save_and_add_aspirations' do
+      let(:observation) do
+        obs = build(:observation, observer: observer, company: company, observation_type: 'kudos', created_as_type: 'kudos')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'redirects to add_aspirations' do
+        patch :update_draft, params: {
+          organization_id: company.id,
+          id: observation.id,
+          save_and_add_aspirations: '1',
+          observation: {
+            privacy_level: 'observed_and_managers'
+          }
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        redirect_location = response.headers['Location']
+        expect(redirect_location).to include('add_aspirations')
+      end
+    end
+
+    context 'with save_and_manage_observees' do
+      let(:observation) do
+        obs = build(:observation, observer: observer, company: company, observation_type: 'kudos', created_as_type: 'kudos')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'redirects to manage_observees' do
+        patch :update_draft, params: {
+          organization_id: company.id,
+          id: observation.id,
+          save_and_manage_observees: '1',
+          observation: {
+            privacy_level: 'observed_and_managers'
+          }
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        redirect_location = response.headers['Location']
+        expect(redirect_location).to include('manage_observees')
+      end
+    end
   end
 
   describe 'POST #publish' do
