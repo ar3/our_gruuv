@@ -193,21 +193,22 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     org_hierarchy = company.company? ? company.self_and_descendants : [company, company.parent].compact
     manager_teammate_ids = @managers.map { |m| m.is_a?(CompanyTeammate) ? m.id : CompanyTeammate.find_by(organization: company, person: m)&.id }.compact
     
-    # Get all active employees (people with active employment tenures in the organization hierarchy)
-    all_active_employee_ids = EmploymentTenure.active
+    # Get all active employees (CompanyTeammates with active employment tenures in the organization hierarchy)
+    all_active_teammate_ids = EmploymentTenure.active
                                               .joins(:teammate)
                                               .where(company: org_hierarchy, teammates: { organization: org_hierarchy })
                                               .distinct
-                                              .pluck('teammates.person_id')
+                                              .pluck('teammates.id')
     
-    # Exclude managers and the current person being edited (to prevent self-management)
-    manager_person_ids = @managers.map { |m| m.is_a?(CompanyTeammate) ? m.person_id : m.id }
-    person_ids_to_exclude = (manager_person_ids + [@teammate.person_id]).compact
-    non_manager_employee_ids = all_active_employee_ids - person_ids_to_exclude
+    # Exclude managers and the current teammate being edited (to prevent self-management)
+    manager_teammate_ids = @managers.map { |m| m.is_a?(CompanyTeammate) ? m.id : CompanyTeammate.find_by(organization: company, person: m)&.id }.compact
+    teammate_ids_to_exclude = (manager_teammate_ids + [@teammate.id]).compact
+    non_manager_teammate_ids = all_active_teammate_ids - teammate_ids_to_exclude
     
-    # Get Person objects for non-manager employees, ordered by last_name, first_name
-    @all_employees = Person.where(id: non_manager_employee_ids)
-                           .order(:last_name, :first_name)
+    # Get CompanyTeammate objects for non-manager employees, ordered by person's last_name, first_name
+    @all_employees = CompanyTeammate.where(id: non_manager_teammate_ids)
+                                    .joins(:person)
+                                    .order('people.last_name, people.first_name')
     
     # Load positions - get all positions for company and descendant departments
     orgs_in_hierarchy = [company] + company.descendants.select { |org| org.department? }

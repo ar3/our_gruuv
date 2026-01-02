@@ -173,6 +173,49 @@ RSpec.describe 'Position Update', type: :system, js: true do
       # The employee_person should not appear in the dropdown (to prevent self-management)
       expect(page).not_to have_select('employment_tenure_update[manager_teammate_id]', with_options: [employee_person.last_first_display_name])
     end
+
+    it 'sets the currently saved value using company_teammate_id' do
+      expect(page).to have_content('Current Position')
+      
+      # Reload current_tenure to get the actual manager (may have been updated by manager_employment_tenure_for_permission)
+      current_tenure.reload
+      saved_manager_teammate_id = current_tenure.manager_teammate_id
+      
+      # Skip test if no manager is set
+      skip 'No manager set on employment tenure' if saved_manager_teammate_id.nil?
+      
+      # Verify that the dropdown is pre-selected with the company_teammate_id
+      select_element = page.find('select[name="employment_tenure_update[manager_teammate_id]"]')
+      selected_value = select_element.value
+      
+      # The selected value should be the company_teammate_id from the employment tenure
+      expect(selected_value.to_i).to eq(saved_manager_teammate_id)
+      
+      # Verify it's a valid CompanyTeammate ID (not a person_id)
+      expect(CompanyTeammate.exists?(id: selected_value)).to be true
+      
+      # Verify the selected value corresponds to the correct CompanyTeammate
+      selected_teammate = CompanyTeammate.find(selected_value.to_i)
+      expect(selected_teammate.id).to eq(saved_manager_teammate_id)
+      
+      # Verify that all option values in the dropdown are company_teammate_ids
+      # Get all option values from the select element (excluding empty/blank values)
+      option_values = select_element.all('option').map { |opt| opt.value.to_i }.reject(&:zero?)
+      
+      # All option values should be valid CompanyTeammate IDs
+      option_values.each do |option_value|
+        expect(CompanyTeammate.exists?(id: option_value)).to be true
+        # The option_value should be the company_teammate.id
+        teammate = CompanyTeammate.find(option_value)
+        expect(option_value).to eq(teammate.id)
+      end
+      
+      # Additional check: verify that if we have a manager set, the selected value
+      # matches the manager_teammate_id from the form object
+      # This ensures the form is using manager_teammate_id, not person_id
+      form_manager_id = current_tenure.manager_teammate_id
+      expect(selected_value.to_i).to eq(form_manager_id) if form_manager_id
+    end
   end
 
   describe 'Simple submission' do
