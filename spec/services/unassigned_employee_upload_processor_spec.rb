@@ -98,7 +98,8 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         expect(john_tenure.company).to be_a(Organization)
         expect(john_tenure.position).to be_present
         expect(john_tenure.position.position_type.external_title).to eq('Software Engineer')
-        expect(john_tenure.manager).to eq(jane) # Jane is John's manager
+        jane_teammate = jane.teammates.find_by(organization: organization)
+        expect(john_tenure.manager_teammate).to eq(jane_teammate) # Jane is John's manager
         
         # Jane should have employment tenure
         expect(jane_tenure).to be_present
@@ -106,7 +107,8 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         expect(jane_tenure.company).to be_a(Organization)
         expect(jane_tenure.position).to be_present
         expect(jane_tenure.position.position_type.external_title).to eq('Senior Engineer')
-        expect(jane_tenure.manager).to eq(bob) # Bob is Jane's manager
+        bob_teammate = bob.teammates.find_by(organization: organization)
+        expect(jane_tenure.manager_teammate).to eq(bob_teammate) # Bob is Jane's manager
         
         # Bob should NOT have employment tenure (he's only a manager, not an employee)
         expect(bob_tenure).to be_nil
@@ -356,6 +358,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
       let!(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
       let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
       let!(:manager) { create(:person, first_name: 'Jane', last_name: 'Smith') }
+      let!(:manager_teammate) { create(:teammate, person: manager, organization: organization, type: 'CompanyTeammate') }
       let(:employee_data) do
         {
           'start_date' => Date.parse('2024-01-15'),
@@ -373,7 +376,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         expect(employment_tenure.teammate).to eq(teammate)
         expect(employment_tenure.position).to eq(position)
         expect(employment_tenure.started_at).to eq(Date.parse('2024-01-15'))
-        expect(employment_tenure.manager).to eq(manager)
+        expect(employment_tenure.manager_teammate.id).to eq(manager_teammate.id)
       end
 
       it 'handles missing manager gracefully' do
@@ -382,7 +385,7 @@ RSpec.describe UnassignedEmployeeUploadProcessor, type: :service do
         employment_tenure = processor.send(:create_employment_tenure, person, teammate, employee_data_without_manager)
         
         expect(employment_tenure).to be_persisted
-        expect(employment_tenure.manager).to be_nil
+        expect(employment_tenure.manager_teammate).to be_nil
       end
 
       it 'handles missing position gracefully' do

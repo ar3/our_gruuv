@@ -12,8 +12,8 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
 
   before do
     # Create employment tenures with manager relationships
-    create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, ended_at: nil)
-    create(:employment_tenure, teammate: non_direct_report_teammate, company: organization, manager: nil, ended_at: nil)
+    create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager_teammate: manager_teammate, ended_at: nil)
+    create(:employment_tenure, teammate: non_direct_report_teammate, company: organization, manager_teammate: nil, ended_at: nil)
     
     # Set first_employed_at so teammates pass the 'active' status filter
     direct_report_teammate.update!(first_employed_at: 1.month.ago)
@@ -34,7 +34,7 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
     manager_ct = CompanyTeammate.find(manager_teammate.id)
     expect(manager_ct.has_direct_reports?).to be true
     
-    get organization_employees_path(organization, manager_id: manager.id)
+    get organization_employees_path(organization, manager_teammate_id: manager_teammate.id)
     
     expect(response).to be_successful
     teammates = assigns(:filtered_and_paginated_teammates)
@@ -47,13 +47,13 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
 
   it 'returns empty results when manager has no direct reports' do
     # Remove the direct report relationship
-    EmploymentTenure.where(manager: manager).destroy_all
+    EmploymentTenure.where(manager_teammate: manager_teammate).destroy_all
     
     # Reload to get CompanyTeammate instance
     manager_ct = CompanyTeammate.find(manager_teammate.id)
     expect(manager_ct.has_direct_reports?).to be false
     
-    get organization_employees_path(organization, manager_id: manager.id)
+    get organization_employees_path(organization, manager_teammate_id: manager_teammate.id)
     
     expect(response).to be_successful
     teammates = assigns(:filtered_and_paginated_teammates)

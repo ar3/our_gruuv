@@ -19,7 +19,7 @@ class VerticalHierarchyQuery
                              .where(company_id: org_ids)
                              .where(teammates: { organization_id: org_ids })
                              .active
-                             .includes(:teammate, :manager, :position, :seat)
+                             .includes(:teammate, :manager_teammate, :position, :seat)
                              .order('people.last_name, people.first_name')
 
     # Build person data hash and parent-child map
@@ -43,8 +43,9 @@ class VerticalHierarchyQuery
       end
 
       # Build parent-child relationships
-      if tenure.manager
-        manager_id = tenure.manager.id
+      if tenure.manager_teammate
+        manager_person = tenure.manager_teammate.person
+        manager_id = manager_person.id
         parent_child_map[manager_id] ||= []
         parent_child_map[manager_id] << person_id
         people_with_managers.add(person_id)
@@ -52,13 +53,13 @@ class VerticalHierarchyQuery
         # Ensure manager data exists (in case manager's tenure isn't in this org)
         unless person_data[manager_id]
           manager_tenure = EmploymentTenure.joins(:teammate)
-                                          .where(teammates: { person: tenure.manager, organization_id: org_ids })
+                                          .where(teammates: { person: manager_person, organization_id: org_ids })
                                           .active
                                           .includes(:position, :seat)
                                           .first
 
           person_data[manager_id] = {
-            person: tenure.manager,
+            person: manager_person,
             position: manager_tenure&.position&.display_name || 'No Position',
             employment_tenure: manager_tenure
           }

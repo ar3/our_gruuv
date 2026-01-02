@@ -15,9 +15,9 @@ RSpec.describe ActiveManagersQuery, type: :query do
         manager2 = create(:person, first_name: 'Bob', last_name: 'Alpha')
         manager3 = create(:person, first_name: 'Charlie', last_name: 'Beta')
         
-        manager1_teammate = create(:teammate, type: 'CompanyTeammate', person: manager1, organization: company)
-        manager2_teammate = create(:teammate, type: 'CompanyTeammate', person: manager2, organization: company)
-        manager3_teammate = create(:teammate, type: 'CompanyTeammate', person: manager3, organization: company)
+        manager1_teammate = CompanyTeammate.create!(person: manager1, organization: company)
+        manager2_teammate = CompanyTeammate.create!(person: manager2, organization: company)
+        manager3_teammate = CompanyTeammate.create!(person: manager3, organization: company)
         
         # Create active employment tenures for managers (so they are active teammates)
         create(:employment_tenure, teammate: manager1_teammate, company: company, position: position, started_at: 1.year.ago)
@@ -28,57 +28,58 @@ RSpec.describe ActiveManagersQuery, type: :query do
         emp1 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: company)
         emp2 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: company)
         emp3 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: company)
-        create(:employment_tenure, teammate: emp1, company: company, position: position, manager: manager1, started_at: 6.months.ago)
-        create(:employment_tenure, teammate: emp2, company: company, position: position, manager: manager2, started_at: 5.months.ago)
-        create(:employment_tenure, teammate: emp3, company: company, position: position, manager: manager3, started_at: 4.months.ago)
+        create(:employment_tenure, teammate: emp1, company: company, position: position, manager_teammate: manager1_teammate, started_at: 6.months.ago)
+        create(:employment_tenure, teammate: emp2, company: company, position: position, manager_teammate: manager2_teammate, started_at: 5.months.ago)
+        create(:employment_tenure, teammate: emp3, company: company, position: position, manager_teammate: manager3_teammate, started_at: 4.months.ago)
         
         result = ActiveManagersQuery.new(company: company, require_active_teammate: true).call
         
-        expect(result).to include(manager1, manager2, manager3)
+        expect(result.map(&:id)).to include(manager1_teammate.id, manager2_teammate.id, manager3_teammate.id)
         expect(result.size).to eq(3)
         # Should be ordered by last_name, first_name
-        expect(result.map(&:last_name)).to eq(['Alpha', 'Beta', 'Zebra'])
+        expect(result.map { |mt| mt.person.last_name }).to eq(['Alpha', 'Beta', 'Zebra'])
       end
 
       it 'excludes managers who are not active teammates' do
         # Create a manager who has direct reports but is not an active teammate
         non_teammate_manager = create(:person, first_name: 'Non', last_name: 'Teammate')
+        non_teammate_manager_teammate = CompanyTeammate.create!(person: non_teammate_manager, organization: company)
         emp = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: company)
-        create(:employment_tenure, teammate: emp, company: company, position: position, manager: non_teammate_manager, started_at: 2.months.ago)
+        create(:employment_tenure, teammate: emp, company: company, position: position, manager_teammate: non_teammate_manager_teammate, started_at: 2.months.ago)
         
         result = ActiveManagersQuery.new(company: company, require_active_teammate: true).call
         
-        expect(result).not_to include(non_teammate_manager)
+        expect(result.map(&:id)).not_to include(non_teammate_manager_teammate.id)
       end
 
       it 'excludes inactive managers' do
         # Create an inactive manager
         inactive_manager = create(:person, first_name: 'Inactive', last_name: 'Manager')
-        inactive_manager_teammate = create(:teammate, type: 'CompanyTeammate', person: inactive_manager, organization: company)
+        inactive_manager_teammate = CompanyTeammate.create!(person: inactive_manager, organization: company)
         create(:employment_tenure, teammate: inactive_manager_teammate, company: company, position: position, started_at: 2.years.ago, ended_at: 1.year.ago)
         
         emp = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: company)
-        create(:employment_tenure, teammate: emp, company: company, position: position, manager: inactive_manager, started_at: 3.months.ago, ended_at: 1.month.ago)
+        create(:employment_tenure, teammate: emp, company: company, position: position, manager_teammate: inactive_manager_teammate, started_at: 3.months.ago, ended_at: 1.month.ago)
         
         result = ActiveManagersQuery.new(company: company, require_active_teammate: true).call
         
-        expect(result).not_to include(inactive_manager)
+        expect(result.map(&:id)).not_to include(inactive_manager_teammate.id)
       end
 
       it 'returns distinct managers' do
         manager = create(:person, first_name: 'Manager', last_name: 'One')
-        manager_teammate = create(:teammate, type: 'CompanyTeammate', person: manager, organization: company)
+        manager_teammate = CompanyTeammate.create!(person: manager, organization: company)
         create(:employment_tenure, teammate: manager_teammate, company: company, position: position, started_at: 1.year.ago)
         
         # Create multiple employees with the same manager
         emp1 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: company)
         emp2 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: company)
-        create(:employment_tenure, teammate: emp1, company: company, position: position, manager: manager, started_at: 6.months.ago)
-        create(:employment_tenure, teammate: emp2, company: company, position: position, manager: manager, started_at: 5.months.ago)
+        create(:employment_tenure, teammate: emp1, company: company, position: position, manager_teammate: manager_teammate, started_at: 6.months.ago)
+        create(:employment_tenure, teammate: emp2, company: company, position: position, manager_teammate: manager_teammate, started_at: 5.months.ago)
         
         result = ActiveManagersQuery.new(company: company, require_active_teammate: true).call
         
-        expect(result.count { |m| m.id == manager.id }).to eq(1)
+        expect(result.count { |mt| mt.id == manager_teammate.id }).to eq(1)
       end
     end
 
@@ -86,22 +87,24 @@ RSpec.describe ActiveManagersQuery, type: :query do
       it 'returns all managers with active direct reports, even if they are not active teammates' do
         # Create a manager who has direct reports but is not an active teammate
         non_teammate_manager = create(:person, first_name: 'Non', last_name: 'Teammate')
+        non_teammate_manager_teammate = CompanyTeammate.create!(person: non_teammate_manager, organization: company)
         emp = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: company)
-        create(:employment_tenure, teammate: emp, company: company, position: position, manager: non_teammate_manager, started_at: 2.months.ago)
+        create(:employment_tenure, teammate: emp, company: company, position: position, manager_teammate: non_teammate_manager_teammate, started_at: 2.months.ago)
         
         result = ActiveManagersQuery.new(company: company, require_active_teammate: false).call
         
-        expect(result).to include(non_teammate_manager)
+        expect(result.map(&:id)).to include(non_teammate_manager_teammate.id)
       end
 
       it 'still excludes inactive managers' do
         inactive_manager = create(:person, first_name: 'Inactive', last_name: 'Manager')
+        inactive_manager_teammate = CompanyTeammate.create!(person: inactive_manager, organization: company)
         emp = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: company)
-        create(:employment_tenure, teammate: emp, company: company, position: position, manager: inactive_manager, started_at: 3.months.ago, ended_at: 1.month.ago)
+        create(:employment_tenure, teammate: emp, company: company, position: position, manager_teammate: inactive_manager_teammate, started_at: 3.months.ago, ended_at: 1.month.ago)
         
         result = ActiveManagersQuery.new(company: company, require_active_teammate: false).call
         
-        expect(result).not_to include(inactive_manager)
+        expect(result.map(&:id)).not_to include(inactive_manager_teammate.id)
       end
     end
 
@@ -111,50 +114,50 @@ RSpec.describe ActiveManagersQuery, type: :query do
 
       it 'handles company hierarchy correctly' do
         manager = create(:person, first_name: 'Manager', last_name: 'One')
-        manager_teammate = create(:teammate, type: 'CompanyTeammate', person: manager, organization: parent_company)
+        manager_teammate = CompanyTeammate.create!(person: manager, organization: parent_company)
         create(:employment_tenure, teammate: manager_teammate, company: parent_company, position: position, started_at: 1.year.ago)
         
         # Employee in child company with manager from parent
         emp = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: child_company)
-        create(:employment_tenure, teammate: emp, company: child_company, position: position, manager: manager, started_at: 6.months.ago)
+        create(:employment_tenure, teammate: emp, company: child_company, position: position, manager_teammate: manager_teammate, started_at: 6.months.ago)
         
         result = ActiveManagersQuery.new(company: parent_company, require_active_teammate: true).call
         
-        expect(result).to include(manager)
+        expect(result.map(&:id)).to include(manager_teammate.id)
       end
 
       it 'handles team/department hierarchy correctly' do
         team = create(:organization, type: 'Team', parent: company)
         
         manager = create(:person, first_name: 'Manager', last_name: 'One')
-        manager_teammate = create(:teammate, type: 'CompanyTeammate', person: manager, organization: company)
+        manager_teammate = CompanyTeammate.create!(person: manager, organization: company)
         create(:employment_tenure, teammate: manager_teammate, company: company, position: position, started_at: 1.year.ago)
         
         emp = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: team)
-        create(:employment_tenure, teammate: emp, company: company, position: position, manager: manager, started_at: 6.months.ago)
+        create(:employment_tenure, teammate: emp, company: company, position: position, manager_teammate: manager_teammate, started_at: 6.months.ago)
         
         result = ActiveManagersQuery.new(company: team, require_active_teammate: true).call
         
-        expect(result).to include(manager)
+        expect(result.map(&:id)).to include(manager_teammate.id)
       end
     end
   end
 
   describe '#manager_ids' do
-    it 'returns array of manager person IDs' do
+    it 'returns array of manager person IDs (for backward compatibility)' do
       manager1 = create(:person, first_name: 'Manager', last_name: 'One')
       manager2 = create(:person, first_name: 'Manager', last_name: 'Two')
       
-      manager1_teammate = create(:teammate, type: 'CompanyTeammate', person: manager1, organization: company)
-      manager2_teammate = create(:teammate, type: 'CompanyTeammate', person: manager2, organization: company)
+      manager1_teammate = CompanyTeammate.create!(person: manager1, organization: company)
+      manager2_teammate = CompanyTeammate.create!(person: manager2, organization: company)
       
       create(:employment_tenure, teammate: manager1_teammate, company: company, position: position, started_at: 1.year.ago)
       create(:employment_tenure, teammate: manager2_teammate, company: company, position: position, started_at: 1.year.ago)
       
       emp1 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: company)
       emp2 = create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: company)
-      create(:employment_tenure, teammate: emp1, company: company, position: position, manager: manager1, started_at: 6.months.ago)
-      create(:employment_tenure, teammate: emp2, company: company, position: position, manager: manager2, started_at: 5.months.ago)
+      create(:employment_tenure, teammate: emp1, company: company, position: position, manager_teammate: manager1_teammate, started_at: 6.months.ago)
+      create(:employment_tenure, teammate: emp2, company: company, position: position, manager_teammate: manager2_teammate, started_at: 5.months.ago)
       
       result = ActiveManagersQuery.new(company: company, require_active_teammate: true).manager_ids
       

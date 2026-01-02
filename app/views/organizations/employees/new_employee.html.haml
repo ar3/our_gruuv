@@ -44,9 +44,9 @@
                     { class: 'form-select', required: true }
                 
                 .mb-3
-                  = form.label :manager_id, 'Manager', class: 'form-label'
-                  = form.select :manager_id,
-                    @managers.map { |manager| [manager.display_name, manager.id] },
+                  = form.label :manager_teammate_id, 'Manager', class: 'form-label'
+                  = form.select :manager_teammate_id,
+                    @managers.map { |manager| [manager.is_a?(CompanyTeammate) ? manager.person.display_name : manager.display_name, manager.is_a?(CompanyTeammate) ? manager.id : manager.id] },
                     { prompt: 'Select a manager (optional)' },
                     { class: 'form-select' }
                 

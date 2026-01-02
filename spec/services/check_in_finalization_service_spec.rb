@@ -6,7 +6,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
   let(:employee) { create(:person) }
   let(:assignment) { create(:assignment, company: organization) }
   
-  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let!(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
   let!(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   
   let!(:assignment_tenure) do
@@ -31,7 +31,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
     create(:employment_tenure,
            teammate: employee_teammate,
            company: organization,
-           manager: manager,
+           manager_teammate: manager_teammate,
            started_at: 1.month.ago)
   end
   
@@ -151,7 +151,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           create(:employment_tenure,
             teammate: employee_teammate,
             company: organization,
-            manager: manager,
+            manager_teammate: manager_teammate,
             position: position,
             started_at: 1.month.ago)
       end
@@ -335,7 +335,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           expect(rated_position).to be_present
           expect(rated_position['official_position_rating']).to eq(2)
           expect(rated_position['position_id']).to eq(closed_tenure.position_id)
-          expect(rated_position['manager_id']).to eq(closed_tenure.manager_id)
+          expect(rated_position['manager_teammate_id']).to eq(closed_tenure.manager_teammate_id)
           expect(rated_position['started_at']).to be_present
           expect(rated_position['ended_at']).to be_present
         end
@@ -345,7 +345,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           old_tenure = create(:employment_tenure,
             teammate: employee_teammate,
             company: organization,
-            manager: manager,
+            manager_teammate: manager_teammate,
             position: position,
             started_at: 3.months.ago,
             ended_at: 2.months.ago,

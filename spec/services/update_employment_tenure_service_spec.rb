@@ -5,7 +5,9 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: company) }
   let(:current_manager) { create(:person) }
+  let(:current_manager_teammate) { CompanyTeammate.create!(person: current_manager, organization: company) }
   let(:new_manager) { create(:person) }
+  let(:new_manager_teammate) { CompanyTeammate.create!(person: new_manager, organization: company) }
   let(:position_major_level) { create(:position_major_level) }
   let(:current_position_type) { create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'Current Engineer') }
   let(:new_position_type) { create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'New Engineer') }
@@ -32,11 +34,13 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
     seat = create(:seat, position_type: pos.position_type, seat_needed_by: Date.current + 10.months)
     
     # Create employment_tenure directly to avoid factory's after(:build) hook overwriting position
+    # Ensure manager_teammate is created
+    current_manager_teammate
     EmploymentTenure.create!(
       teammate: teammate,
       company: company,
       position: pos,
-      manager: current_manager,
+      manager_teammate: current_manager_teammate,
       seat: seat,
       employment_type: 'full_time',
       started_at: 6.months.ago
@@ -46,8 +50,9 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
   describe '.call' do
     context 'when manager changes' do
       it 'ends current tenure and creates new tenure with manager change' do
+        new_manager_teammate
         params = {
-          manager_id: new_manager.id,
+          manager_teammate_id: new_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'full_time',
           seat_id: current_seat.id
@@ -64,7 +69,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         expect(current_tenure.reload.ended_at).to be_within(1.second).of(Time.current)
         
         new_tenure = EmploymentTenure.where(teammate: teammate, company: company).order(:created_at).last
-        expect(new_tenure.manager).to eq(new_manager)
+        expect(new_tenure.manager_teammate).to eq(new_manager_teammate)
         expect(new_tenure.position).to eq(current_position)
         expect(new_tenure.employment_type).to eq('full_time')
         expect(new_tenure.seat).to eq(current_seat)
@@ -73,8 +78,9 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
       end
 
       it 'creates maap_snapshot with position_tenure change_type' do
+        new_manager_teammate
         params = {
-          manager_id: new_manager.id,
+          manager_teammate_id: new_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'full_time',
           seat_id: current_seat.id,
@@ -107,7 +113,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         seat_for_new_position = create(:seat, position_type: new_position_type, seat_needed_by: Date.current + 3.months)
         
         params = {
-          manager_id: current_manager.id,
+          manager_teammate_id: current_manager_teammate.id,
           position_id: new_position.id,
           employment_type: 'full_time',
           seat_id: seat_for_new_position.id
@@ -125,7 +131,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         
         new_tenure = EmploymentTenure.where(teammate: teammate, company: company).order(:created_at).last
         expect(new_tenure.position).to eq(new_position)
-        expect(new_tenure.manager).to eq(current_manager)
+        expect(new_tenure.manager_teammate).to eq(current_manager_teammate)
         expect(new_tenure.employment_type).to eq('full_time')
         expect(new_tenure.seat).to eq(seat_for_new_position)
         expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
@@ -135,7 +141,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         seat_for_new_position = create(:seat, position_type: new_position_type, seat_needed_by: Date.current + 4.months)
         
         params = {
-          manager_id: current_manager.id,
+          manager_teammate_id: current_manager_teammate.id,
           position_id: new_position.id,
           employment_type: 'full_time',
           seat_id: seat_for_new_position.id
@@ -155,7 +161,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
     context 'when employment_type changes' do
       it 'ends current tenure and creates new tenure with employment_type change' do
         params = {
-          manager_id: current_manager.id,
+          manager_teammate_id: current_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'part_time',
           seat_id: current_seat.id
@@ -173,14 +179,14 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         
         new_tenure = EmploymentTenure.where(teammate: teammate, company: company).order(:created_at).last
         expect(new_tenure.employment_type).to eq('part_time')
-        expect(new_tenure.manager).to eq(current_manager)
+        expect(new_tenure.manager_teammate).to eq(current_manager_teammate)
         expect(new_tenure.position).to eq(current_position)
         expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
       end
 
       it 'creates maap_snapshot' do
         params = {
-          manager_id: current_manager.id,
+          manager_teammate_id: current_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'part_time',
           seat_id: current_seat.id
@@ -201,7 +207,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
       it 'updates active tenure ended_at without creating new tenure' do
         termination_date = Date.current + 1.week
         params = {
-          manager_id: current_manager.id,
+          manager_teammate_id: current_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'full_time',
           seat_id: current_seat.id,
@@ -223,7 +229,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
       it 'creates maap_snapshot with effective_date set to termination_date' do
         termination_date = Date.current + 1.week
         params = {
-          manager_id: current_manager.id,
+          manager_teammate_id: current_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'full_time',
           seat_id: current_seat.id,
@@ -249,7 +255,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
     context 'when only seat changes' do
       it 'updates tenure in place without creating new tenure' do
         params = {
-          manager_id: current_manager.id,
+          manager_teammate_id: current_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'full_time',
           seat_id: new_seat.id
@@ -270,7 +276,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
 
       it 'does not create maap_snapshot' do
         params = {
-          manager_id: current_manager.id,
+          manager_teammate_id: current_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'full_time',
           seat_id: new_seat.id
@@ -289,10 +295,11 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
 
     context 'when multiple changes occur' do
       it 'handles manager and position change together' do
+        new_manager_teammate
         seat_for_new_position = create(:seat, position_type: new_position_type, seat_needed_by: Date.current + 5.months)
         
         params = {
-          manager_id: new_manager.id,
+          manager_teammate_id: new_manager_teammate.id,
           position_id: new_position.id,
           employment_type: 'full_time',
           seat_id: seat_for_new_position.id
@@ -309,17 +316,18 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         expect(current_tenure.reload.ended_at).to be_within(1.second).of(Time.current)
         
         new_tenure = EmploymentTenure.where(teammate: teammate, company: company).order(:created_at).last
-        expect(new_tenure.manager).to eq(new_manager)
+        expect(new_tenure.manager_teammate).to eq(new_manager_teammate)
         expect(new_tenure.position).to eq(new_position)
         expect(new_tenure.seat).to eq(seat_for_new_position)
         expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
       end
 
       it 'creates maap_snapshot for multiple changes' do
+        new_manager_teammate
         seat_for_new_position = create(:seat, position_type: new_position_type, seat_needed_by: Date.current + 6.months)
         
         params = {
-          manager_id: new_manager.id,
+          manager_teammate_id: new_manager_teammate.id,
           position_id: new_position.id,
           employment_type: 'part_time',
           seat_id: seat_for_new_position.id
@@ -340,7 +348,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
       it 'does not create new tenure' do
         # Use the actual values from current_tenure
         params = {
-          manager_id: current_tenure.manager_id,
+          manager_teammate_id: current_tenure.manager_teammate_id,
           position_id: current_tenure.position_id,
           employment_type: current_tenure.employment_type,
           seat_id: current_tenure.seat_id
@@ -359,7 +367,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
       it 'does not create maap_snapshot' do
         # Use the actual values from current_tenure
         params = {
-          manager_id: current_tenure.manager_id,
+          manager_teammate_id: current_tenure.manager_teammate_id,
           position_id: current_tenure.position_id,
           employment_type: current_tenure.employment_type,
           seat_id: current_tenure.seat_id
@@ -378,9 +386,10 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
 
     context 'when termination_date and other changes occur' do
       it 'updates ended_at and does not create new tenure (termination takes precedence)' do
+        new_manager_teammate
         termination_date = Date.current + 1.week
         params = {
-          manager_id: new_manager.id,
+          manager_teammate_id: new_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'full_time',
           seat_id: current_seat.id,
@@ -402,9 +411,10 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
       end
 
       it 'creates maap_snapshot when termination_date and other changes occur' do
+        new_manager_teammate
         termination_date = Date.current + 1.week
         params = {
-          manager_id: new_manager.id,
+          manager_teammate_id: new_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'full_time',
           seat_id: current_seat.id,
@@ -429,7 +439,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         allow(current_tenure).to receive(:update!).and_raise(ActiveRecord::RecordInvalid.new(invalid_record))
         
         params = {
-          manager_id: current_manager.id,
+          manager_teammate_id: current_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'full_time',
           seat_id: current_seat.id,
@@ -457,8 +467,9 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         allow(EmploymentTenure).to receive(:new).and_call_original
         allow_any_instance_of(EmploymentTenure).to receive(:save!).and_raise(ActiveRecord::RecordInvalid.new(invalid_record))
         
+        new_manager_teammate
         params = {
-          manager_id: new_manager.id,
+          manager_teammate_id: new_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'full_time',
           seat_id: current_seat.id
@@ -484,8 +495,9 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
           official_position_rating: 2
         )
 
+        new_manager_teammate
         params = {
-          manager_id: new_manager.id,
+          manager_teammate_id: new_manager_teammate.id,
           position_id: current_position.id,
           employment_type: 'contract', # Same
           seat_id: current_seat.id
@@ -503,7 +515,7 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         new_tenure = EmploymentTenure.where(teammate: teammate, company: company).order(:created_at).last
         expect(new_tenure.employment_type).to eq('contract')
         expect(new_tenure.official_position_rating).to eq(2)
-        expect(new_tenure.manager).to eq(new_manager) # Changed
+        expect(new_tenure.manager_teammate).to eq(new_manager_teammate) # Changed
       end
     end
   end

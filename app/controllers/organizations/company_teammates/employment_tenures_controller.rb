@@ -24,7 +24,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
         @employment_tenure.assign_attributes(
           company: @company,
           position: most_recent.position,
-          manager: most_recent.manager,
+          manager_teammate: most_recent.manager_teammate,
           started_at: Date.current
         )
       else
@@ -34,7 +34,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     end
     
     authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
-    @managers = @company ? @company.employees : []
+    @managers = @company ? @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name') : []
     @positions = @company ? @company.positions.includes(:position_type, :position_level) : []
     @seats = @company ? @company.seats.includes(:position_type).where(state: [:open, :filled]) : []
   end
@@ -84,7 +84,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
         redirect_to organization_company_teammate_path(@employment_tenure.company, target_teammate), notice: 'Employment tenure was successfully created.'
       else
         @company = @employment_tenure.company
-        @managers = @company ? @company.employees : []
+        @managers = @company ? @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name') : []
         @positions = @company ? @company.positions.includes(:position_type, :position_level) : []
         @seats = @company ? @company.seats.includes(:position_type).where(state: [:open, :filled]) : []
         render :change, status: :unprocessable_entity
@@ -93,7 +93,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   rescue ActiveRecord::RecordInvalid
     # If save fails, we need to set up the form for re-rendering
     @company = @employment_tenure.company
-    @managers = @company ? @company.employees : []
+    @managers = @company ? @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name') : []
     @positions = @company ? @company.positions.includes(:position_type, :position_level) : []
     @seats = @company ? @company.seats.includes(:position_type).where(state: [:open, :filled]) : []
     render :change, status: :unprocessable_entity
@@ -108,7 +108,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     authorize @employment_tenure
     # Don't allow changing company
     @company = @employment_tenure.company
-    @managers = @company.employees
+    @managers = @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name')
     @positions = @company.positions.includes(:position_type, :position_level)
     @seats = @company.seats.includes(:position_type).where(state: [:open, :filled])
   end
@@ -119,7 +119,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
       redirect_to organization_company_teammate_path(@employment_tenure.company, @employment_tenure.teammate), notice: 'Employment tenure was successfully updated.'
     else
       @company = @employment_tenure.company
-      @managers = @company.employees
+      @managers = @company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name')
       @positions = @company.positions.includes(:position_type, :position_level)
       @seats = @company.seats.includes(:position_type).where(state: [:open, :filled])
       render :edit, status: :unprocessable_entity
@@ -146,7 +146,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
     @person = @teammate.person
     @employment_tenures = EmploymentTenure.joins(:teammate)
                                           .where(teammates: { person: @teammate.person })
-                                          .includes(:company, :position, :manager)
+                                          .includes(:company, :position, :manager_teammate)
                                           .order(started_at: :desc)
                                           .decorate
   end
@@ -164,7 +164,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
   end
 
   def employment_tenure_params
-    params.require(:employment_tenure).permit(:company_id, :position_id, :manager_id, :seat_id, :started_at, :ended_at, :employment_change_notes)
+    params.require(:employment_tenure).permit(:company_id, :position_id, :manager_teammate_id, :seat_id, :started_at, :ended_at, :employment_change_notes)
   end
 
   def require_authentication
@@ -175,7 +175,7 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
 
   def job_change_has_no_changes?(old_tenure, new_tenure)
     old_tenure.position_id == new_tenure.position_id &&
-    old_tenure.manager_id == new_tenure.manager_id
+    old_tenure.manager_teammate_id == new_tenure.manager_teammate_id
   end
 end
 

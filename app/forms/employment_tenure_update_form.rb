@@ -1,6 +1,6 @@
 class EmploymentTenureUpdateForm < Reform::Form
   # Define form properties - Reform handles Rails integration automatically
-  property :manager_id
+  property :manager_teammate_id
   property :position_id
   property :employment_type
   property :seat_id
@@ -10,7 +10,7 @@ class EmploymentTenureUpdateForm < Reform::Form
   # Use ActiveModel validations
   validates :position_id, presence: true
   validate :position_exists
-  validate :manager_exists, if: -> { manager_id.present? }
+  validate :manager_teammate_exists, if: -> { manager_teammate_id.present? }
   validate :seat_matches_position_type, if: -> { seat_id.present? }
   validate :termination_date_format, if: -> { termination_date.present? }
   validate :employment_type_inclusion, if: -> { employment_type.present? }
@@ -57,7 +57,7 @@ class EmploymentTenureUpdateForm < Reform::Form
       @original_params.each do |key, value|
         key_sym = key.to_sym
         # Convert ID values to integers if they're strings
-        if [:manager_id, :position_id, :seat_id].include?(key_sym)
+        if [:manager_teammate_id, :position_id, :seat_id].include?(key_sym)
           if value.is_a?(String) && value.present?
             service_params[key_sym] = value.to_i
           elsif value.nil? || value == ''
@@ -81,7 +81,7 @@ class EmploymentTenureUpdateForm < Reform::Form
     
     # Fallback to form properties if @original_params not available
     # But prefer @original_params since it contains what was actually submitted
-    service_params[:manager_id] ||= manager_id if respond_to?(:manager_id)
+    service_params[:manager_teammate_id] ||= manager_teammate_id if respond_to?(:manager_teammate_id)
     service_params[:position_id] ||= position_id if respond_to?(:position_id) && position_id.present?
     service_params[:employment_type] ||= employment_type if respond_to?(:employment_type) && employment_type.present?
     service_params[:seat_id] ||= seat_id if respond_to?(:seat_id)
@@ -152,10 +152,10 @@ class EmploymentTenureUpdateForm < Reform::Form
     end
   end
 
-  def manager_exists
-    return if manager_id.blank?
-    unless Person.exists?(id: manager_id)
-      errors.add(:manager_id, 'does not exist')
+  def manager_teammate_exists
+    return if manager_teammate_id.blank?
+    unless CompanyTeammate.exists?(id: manager_teammate_id)
+      errors.add(:manager_teammate_id, 'does not exist')
     end
   end
 
@@ -196,7 +196,7 @@ class EmploymentTenureUpdateForm < Reform::Form
     return if reason.blank?
     
     # Check if any major changes are present
-    manager_changed = manager_id.present? && model.manager_id.to_s != manager_id.to_s
+    manager_changed = manager_teammate_id.present? && model.manager_teammate_id.to_s != manager_teammate_id.to_s
     position_changed = position_id.present? && model.position_id.to_s != position_id.to_s
     employment_type_changed = employment_type.present? && model.employment_type.to_s != employment_type.to_s
     termination_date_provided = termination_date.present?

@@ -37,9 +37,9 @@
                               - if tenure.seat
                                 %br
                                 %small.text-muted Seat: #{tenure.seat.display_name}
-                              - if tenure.manager
+                              - if tenure.manager_teammate
                                 %br
-                                %small.text-muted Manager: #{tenure.manager.display_name}
+                                %small.text-muted Manager: #{tenure.manager_teammate.person.display_name}
                               - if tenure.employment_change_notes.present?
                                 %br
                                 %small.text-muted Notes: #{tenure.employment_change_notes}

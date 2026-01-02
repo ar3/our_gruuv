@@ -52,7 +52,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       teammate: emp_teammate,
       company: company,
       position: position,
-      manager: current_manager,
+      manager_teammate: current_manager_teammate,
       employment_type: 'full_time',
       started_at: 6.months.ago
     )
@@ -63,7 +63,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       teammate: emp_teammate,
       company: company,
       position: position,
-      manager: new_manager,
+      manager_teammate: new_manager_teammate,
       employment_type: 'full_time',
       started_at: 5.months.ago
     )
@@ -77,7 +77,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       teammate: employee_teammate,
       company: company,
       position: position,
-      manager: current_manager,
+      manager_teammate: current_manager_teammate,
       seat: seat,
       employment_type: 'full_time',
       started_at: 6.months.ago
@@ -91,9 +91,9 @@ RSpec.describe 'Position Update', type: :system, js: true do
   # Update current_tenure to have manager_person as manager so they're in managerial hierarchy
   # This allows view_check_ins? to pass even without can_manage_employment
   let!(:manager_employment_tenure_for_permission) do
-    # Update current_tenure after it's created to have manager_person as manager
+    # Update current_tenure after it's created to have manager_teammate as manager
     # This ensures manager_person is in the managerial hierarchy
-    current_tenure.update!(manager: manager_person)
+    current_tenure.update!(manager_teammate: manager_teammate)
     current_tenure
   end
 
@@ -135,11 +135,11 @@ RSpec.describe 'Position Update', type: :system, js: true do
       expect(page).to have_content('Current Position')
       
       # Check that managers appear in the dropdown
-      expect(page).to have_select('employment_tenure_update[manager_id]', with_options: [current_manager.last_first_display_name])
-      expect(page).to have_select('employment_tenure_update[manager_id]', with_options: [new_manager.last_first_display_name])
+      expect(page).to have_select('employment_tenure_update[manager_teammate_id]', with_options: [current_manager.last_first_display_name])
+      expect(page).to have_select('employment_tenure_update[manager_teammate_id]', with_options: [new_manager.last_first_display_name])
       
       # Check for optgroup labels (using HTML structure)
-      select_element = page.find('select[name="employment_tenure_update[manager_id]"]')
+      select_element = page.find('select[name="employment_tenure_update[manager_teammate_id]"]')
       expect(select_element).to have_selector('optgroup[label="Active Managers"]', visible: false)
     end
 
@@ -147,31 +147,31 @@ RSpec.describe 'Position Update', type: :system, js: true do
       expect(page).to have_content('Current Position')
       
       # Check that non-manager employees appear in the dropdown
-      expect(page).to have_select('employment_tenure_update[manager_id]', with_options: [non_manager_employee.last_first_display_name])
+      expect(page).to have_select('employment_tenure_update[manager_teammate_id]', with_options: [non_manager_employee.last_first_display_name])
       
       # Check for optgroup labels
-      select_element = page.find('select[name="employment_tenure_update[manager_id]"]')
+      select_element = page.find('select[name="employment_tenure_update[manager_teammate_id]"]')
       expect(select_element).to have_selector('optgroup[label="Other Employees"]', visible: false)
     end
 
     it 'allows selecting a non-manager employee as manager' do
       expect(page).to have_content('Current Position')
       
-      select non_manager_employee.last_first_display_name, from: 'employment_tenure_update[manager_id]'
+      select non_manager_employee.last_first_display_name, from: 'employment_tenure_update[manager_teammate_id]'
       click_button 'Update Position'
       
       expect(page).to have_content('Position information was successfully updated')
       expect(current_tenure.reload.ended_at).to be_within(5.seconds).of(Time.current)
       
       new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: company).order(:created_at).last
-      expect(new_tenure.manager).to eq(non_manager_employee)
+      expect(new_tenure.manager_teammate.person).to eq(non_manager_employee)
     end
 
     it 'excludes the current person being edited from the dropdown' do
       expect(page).to have_content('Current Position')
       
       # The employee_person should not appear in the dropdown (to prevent self-management)
-      expect(page).not_to have_select('employment_tenure_update[manager_id]', with_options: [employee_person.last_first_display_name])
+      expect(page).not_to have_select('employment_tenure_update[manager_teammate_id]', with_options: [employee_person.last_first_display_name])
     end
   end
 
@@ -182,21 +182,21 @@ RSpec.describe 'Position Update', type: :system, js: true do
       # So we check for manager_person instead
       expect(page).to have_content(manager_person.last_first_display_name)
       
-      select new_manager.last_first_display_name, from: 'employment_tenure_update[manager_id]'
+      select new_manager.last_first_display_name, from: 'employment_tenure_update[manager_teammate_id]'
       click_button 'Update Position'
       
       expect(page).to have_content('Position information was successfully updated')
       expect(current_tenure.reload.ended_at).to be_within(5.seconds).of(Time.current)
       
       new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: company).order(:created_at).last
-      expect(new_tenure.manager).to eq(new_manager)
+      expect(new_tenure.manager_teammate.person).to eq(new_manager)
     end
   end
 
   describe 'Complex submission' do
 
     it 'allows manager to update all fields with multiple changes' do
-      select new_manager.last_first_display_name, from: 'employment_tenure_update[manager_id]'
+      select new_manager.last_first_display_name, from: 'employment_tenure_update[manager_teammate_id]'
       select new_position.display_name, from: 'employment_tenure_update[position_id]'
       select 'Part Time', from: 'employment_tenure_update[employment_type]'
       select seat_for_new_position.display_name, from: 'employment_tenure_update[seat_id]'
@@ -209,7 +209,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
       # Verify new tenure was created
       expect(current_tenure.reload.ended_at).to be_within(5.seconds).of(Time.current)
       new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: company).order(:created_at).last
-      expect(new_tenure.manager).to eq(new_manager)
+      expect(new_tenure.manager_teammate.person).to eq(new_manager)
       expect(new_tenure.position).to eq(new_position)
       expect(new_tenure.employment_type).to eq('part_time')
       expect(new_tenure.seat).to eq(seat_for_new_position)
@@ -281,7 +281,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
   describe 'Permission-based UI' do
     context 'when user has can_manage_employment permission' do
       it 'shows enabled form fields' do
-        expect(page).to have_select('employment_tenure_update[manager_id]', disabled: false)
+        expect(page).to have_select('employment_tenure_update[manager_teammate_id]', disabled: false)
         expect(page).to have_select('employment_tenure_update[position_id]', disabled: false)
         expect(page).to have_button('Update Position', disabled: false)
       end
@@ -303,7 +303,7 @@ RSpec.describe 'Position Update', type: :system, js: true do
 
       it 'shows enabled form fields via managerial hierarchy' do
         expect(page).to have_content('Current Position')
-        expect(page).to have_select('employment_tenure_update[manager_id]', disabled: false)
+        expect(page).to have_select('employment_tenure_update[manager_teammate_id]', disabled: false)
         expect(page).to have_select('employment_tenure_update[position_id]', disabled: false)
         expect(page).to have_select('employment_tenure_update[employment_type]', disabled: false)
         expect(page).to have_select('employment_tenure_update[seat_id]', disabled: false)
@@ -337,6 +337,128 @@ RSpec.describe 'Position Update', type: :system, js: true do
         # users without either cannot view the position page at all
         expect(page).to have_content(/don't have permission|not authorized/i)
         expect(page).not_to have_content('Current Position')
+      end
+    end
+  end
+
+  describe 'Position dropdown grouping' do
+    let(:department) { create(:organization, :department, parent: company) }
+    let!(:dept_position_type) { create(:position_type, organization: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
+    let!(:dept_position) { create(:position, position_type_id: dept_position_type.id, position_level_id: position_level1.id) }
+
+    it 'shows positions grouped by department with optgroups' do
+      visit organization_teammate_position_path(company, employee_teammate)
+      
+      expect(page).to have_content('Current Position')
+      
+      # Check for optgroup labels
+      select_element = page.find('select[name="employment_tenure_update[position_id]"]')
+      expect(select_element).to have_selector('optgroup[label="' + company.display_name + '"]', visible: false)
+      expect(select_element).to have_selector('optgroup[label="' + department.display_name + '"]', visible: false)
+    end
+  end
+
+  describe 'Start/Restart Employment Form' do
+    let(:teammate_without_employment) do
+      person = create(:person, first_name: 'No', last_name: 'Employment')
+      CompanyTeammate.create!(person: person, organization: company)
+    end
+
+    context 'when no active employment and no previous tenures' do
+      before do
+        sign_in_and_visit(manager_person, company, organization_teammate_position_path(company, teammate_without_employment))
+      end
+
+      it 'shows Start Employment form' do
+        expect(page).to have_content('Start Employment')
+        expect(page).to have_field('employment_tenure[position_id]')
+        expect(page).to have_field('employment_tenure[started_at]')
+        expect(page).to have_button('Start Employment')
+      end
+
+      it 'allows starting employment' do
+        select position.display_name, from: 'employment_tenure[position_id]'
+        fill_in 'employment_tenure[started_at]', with: Date.current.strftime('%Y-%m-%d')
+        click_button 'Start Employment'
+        
+        expect(page).to have_content('Employment was successfully started')
+        expect(EmploymentTenure.where(teammate: teammate_without_employment, company: company).active.count).to eq(1)
+      end
+    end
+
+    context 'when no active employment but has inactive tenures' do
+      let!(:inactive_tenure) do
+        EmploymentTenure.create!(
+          teammate: teammate_without_employment,
+          company: company,
+          position: position,
+          started_at: 2.years.ago,
+          ended_at: 1.year.ago
+        )
+      end
+
+      before do
+        sign_in_and_visit(manager_person, company, organization_teammate_position_path(company, teammate_without_employment))
+      end
+
+      it 'shows Restart Employment form' do
+        expect(page).to have_content('Restart Employment')
+        expect(page).to have_field('employment_tenure[position_id]')
+        expect(page).to have_field('employment_tenure[started_at]')
+        expect(page).to have_button('Restart Employment')
+        expect(page).to have_content('Must be after the last employment end date')
+      end
+
+      it 'allows restarting employment' do
+        select position.display_name, from: 'employment_tenure[position_id]'
+        restart_date = (inactive_tenure.ended_at + 1.day).to_date
+        # Clear the field first, then fill it with the correct date
+        page.execute_script("document.querySelector('input[name=\"employment_tenure[started_at]\"]').value = '#{restart_date.strftime('%Y-%m-%d')}';")
+        click_button 'Restart Employment'
+        
+        expect(page).to have_content('Employment was successfully started')
+        new_tenure = EmploymentTenure.where(teammate: teammate_without_employment, company: company).active.first
+        expect(new_tenure.started_at.to_date).to eq(restart_date)
+      end
+    end
+
+    context 'when active employment exists' do
+      let!(:active_tenure) do
+        EmploymentTenure.create!(
+          teammate: teammate_without_employment,
+          company: company,
+          position: position,
+          started_at: 6.months.ago
+        )
+      end
+
+      before do
+        sign_in_and_visit(manager_person, company, organization_teammate_position_path(company, teammate_without_employment))
+      end
+
+      it 'does not show Start/Restart Employment form' do
+        expect(page).not_to have_content('Start Employment')
+        expect(page).not_to have_content('Restart Employment')
+        expect(page).to have_content('Current Position')
+      end
+    end
+
+    context 'position dropdown grouping in start/restart form' do
+      let(:department) { create(:organization, :department, parent: company) }
+      let!(:dept_position_type) { create(:position_type, organization: department, position_major_level: shared_major_level, external_title: 'Department Engineer') }
+      let!(:dept_position) { create(:position, position_type_id: dept_position_type.id, position_level_id: position_level1.id) }
+
+      before do
+        sign_in_and_visit(manager_person, company, organization_teammate_position_path(company, teammate_without_employment))
+      end
+
+      it 'shows positions grouped by department with optgroups' do
+        expect(page).to have_content('Start Employment')
+        
+        # Check for optgroup labels in the start employment form
+        select_element = page.find('select[name="employment_tenure[position_id]"]')
+        expect(select_element).to have_selector('optgroup[label="' + company.display_name + '"]', visible: false)
+        expect(select_element).to have_selector('optgroup[label="' + department.display_name + '"]', visible: false)
       end
     end
   end

@@ -84,11 +84,11 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       end
       
       # Filter by manager relationship
-      if params[:manager_id].present?
-        manager_ids = Array(params[:manager_id]).map(&:to_i).reject(&:zero?)
-        if manager_ids.any?
+      if params[:manager_teammate_id].present?
+        manager_teammate_ids = Array(params[:manager_teammate_id]).map(&:to_i).reject(&:zero?)
+        if manager_teammate_ids.any?
           unassigned_base = unassigned_base.joins(:employment_tenures)
-                                           .where(employment_tenures: { manager_id: manager_ids, ended_at: nil })
+                                           .where(employment_tenures: { manager_teammate_id: manager_teammate_ids, ended_at: nil })
                                            .distinct
         end
       end
@@ -410,13 +410,13 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       when 'my_direct_reports_check_in_status_1'
         {
           display: 'check_in_status',
-          manager_id: current_person&.id
+          manager_teammate_id: current_person&.company_teammates&.find_by(organization: @organization)&.id
         }
       when 'my_direct_reports_check_in_status_2'
         {
           display: 'check_ins_health',
           spotlight: 'check_ins_health',
-          manager_id: current_person&.id
+          manager_teammate_id: current_person&.company_teammates&.find_by(organization: @organization)&.id
         }
       when 'hierarchical_accountability_chart'
         {
@@ -435,7 +435,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       return params[:spotlight] if params[:spotlight].present?
       
       # Auto-select manager_overview if manager filter is active
-      return 'manager_overview' if params[:manager_id].present?
+      return 'manager_overview' if params[:manager_teammate_id].present?
       
       # Default to teammates_overview (matches CompanyTeammatesQuery default)
       'teammates_overview'
@@ -673,9 +673,10 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       EmploymentTenure.active
                       .where(company: org_hierarchy)
                       .joins(:teammate)
-                      .pluck('teammates.person_id', :manager_id)
-                      .each do |person_id, manager_id|
-        person_to_manager[person_id] = manager_id
+                      .joins('LEFT JOIN teammates AS manager_teammates ON employment_tenures.manager_teammate_id = manager_teammates.id')
+                      .pluck('teammates.person_id', 'manager_teammates.person_id')
+                      .each do |person_id, manager_person_id|
+        person_to_manager[person_id] = manager_person_id
       end
       
       # Build management levels
@@ -761,6 +762,6 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   end
 
   def employment_tenure_params
-    params.require(:employment_tenure).permit(:position_id, :manager_id, :started_at, :employment_change_notes)
+    params.require(:employment_tenure).permit(:position_id, :manager_teammate_id, :started_at, :employment_change_notes)
   end
 end

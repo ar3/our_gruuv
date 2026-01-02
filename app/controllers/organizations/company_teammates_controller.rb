@@ -425,7 +425,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     return true unless current
     
     current.position_id.to_s != proposed['position_id'].to_s ||
-    current.manager_id.to_s != proposed['manager_id'].to_s ||
+    current.manager_teammate_id.to_s != proposed['manager_teammate_id'].to_s ||
     current.started_at.to_date != Date.parse(proposed['started_at']) ||
     current.seat_id.to_s != proposed['seat_id'].to_s
   end

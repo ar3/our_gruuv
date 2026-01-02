@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_31_125904) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_01_141906) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -225,8 +225,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_125904) do
     t.bigint "teammate_id"
     t.string "employment_type", default: "full_time"
     t.integer "official_position_rating"
+    t.bigint "manager_teammate_id"
     t.index ["company_id"], name: "index_employment_tenures_on_company_id"
     t.index ["manager_id"], name: "index_employment_tenures_on_manager_id"
+    t.index ["manager_teammate_id"], name: "index_employment_tenures_on_manager_teammate_id"
     t.index ["position_id"], name: "index_employment_tenures_on_position_id"
     t.index ["seat_id"], name: "index_employment_tenures_on_seat_id"
     t.index ["teammate_id"], name: "index_employment_tenures_on_teammate_id"
@@ -987,6 +989,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_125904) do
   add_foreign_key "employment_tenures", "positions"
   add_foreign_key "employment_tenures", "seats"
   add_foreign_key "employment_tenures", "teammates"
+  add_foreign_key "employment_tenures", "teammates", column: "manager_teammate_id"
   add_foreign_key "external_project_caches", "teammates", column: "last_synced_by_teammate_id"
   add_foreign_key "goal_check_ins", "goals"
   add_foreign_key "goal_check_ins", "people", column: "confidence_reporter_id"

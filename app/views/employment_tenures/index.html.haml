@@ -21,7 +21,7 @@
               %td= tenure.person.display_name
               %td= tenure.company.display_name
               %td= tenure.position.display_name
-              %td= tenure.manager&.display_name || 'No manager'
+              %td= tenure.manager_teammate&.person&.display_name || 'No manager'
               %td= tenure.duration_display
               %td= tenure.status_badge
               %td

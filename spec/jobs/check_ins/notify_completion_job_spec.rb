@@ -156,7 +156,7 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
 
     context 'when manager is missing' do
       before do
-        employee_teammate.employment_tenures.update_all(manager_id: nil)
+        employee_teammate.employment_tenures.update_all(manager_teammate_id: nil)
         check_in.update!(employee_completed_at: Time.current)
       end
 

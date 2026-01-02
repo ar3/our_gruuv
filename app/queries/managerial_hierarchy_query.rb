@@ -19,10 +19,13 @@ class ManagerialHierarchyQuery
       tenures = EmploymentTenure.joins(:teammate)
                                .where(teammates: { person: person, organization: org })
                                .active
-                               .includes(:manager, :company, :position)
+                               .includes(:manager_teammate, :company, :position)
 
       tenures.each do |tenure|
-        manager = tenure.manager
+        manager_teammate = tenure.manager_teammate
+        next unless manager_teammate
+        
+        manager = manager_teammate.person
         next unless manager
 
         # Only process if we haven't already added this manager

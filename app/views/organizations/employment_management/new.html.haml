@@ -122,8 +122,8 @@
                   
                   .col-md-6
                     .mb-3
-                      = form.label "employment_tenure[manager_id]", "Manager (Optional)", class: "form-label"
-                      = form.collection_select "employment_tenure[manager_id]", @managers, :id, :display_name, 
+                      = form.label "employment_tenure[manager_teammate_id]", "Manager (Optional)", class: "form-label"
+                      = form.collection_select "employment_tenure[manager_teammate_id]", @managers, :id, ->(m) { m.is_a?(CompanyTeammate) ? m.person.display_name : m.display_name }, 
                         { prompt: 'Select a manager (optional)', include_blank: 'No Manager' }, 
                         { class: "form-select" }
                 

@@ -298,8 +298,8 @@
                   %span.text-muted Not set
               %p.mb-2
                 %strong Manager:
-                - if @active_employment_tenure.manager
-                  = link_to @active_employment_tenure.manager.display_name, internal_organization_company_teammate_path(@current_organization, @current_organization.teammates.find_by(person: @active_employment_tenure.manager)), class: "text-decoration-none"
+                - if @active_employment_tenure.manager_teammate
+                  = link_to @active_employment_tenure.manager_teammate.person.display_name, internal_organization_company_teammate_path(@current_organization, @active_employment_tenure.manager_teammate), class: "text-decoration-none"
                 - else
                   %span.text-muted Not set
             .col-md-6

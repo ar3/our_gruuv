@@ -2,7 +2,8 @@ class EmploymentTenure < ApplicationRecord
   belongs_to :teammate
   belongs_to :company, class_name: 'Organization'
   belongs_to :position
-  belongs_to :manager, class_name: 'Person', optional: true
+  belongs_to :manager, class_name: 'Person', optional: true # DO NOT USE - will be removed in Phase 2
+  belongs_to :manager_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :seat, optional: true
   
   has_many :position_check_ins, dependent: :nullify

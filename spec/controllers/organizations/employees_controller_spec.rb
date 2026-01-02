@@ -259,5 +259,70 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       end
     end
   end
+
+  describe 'GET #index with manager_distribution spotlight' do
+    let(:manager) { create(:person) }
+    let(:manager_teammate) { CompanyTeammate.find(create(:teammate, person: manager, organization: company, first_employed_at: 1.year.ago).id) }
+    let(:direct_report) { create(:person) }
+    let(:direct_report_teammate) { CompanyTeammate.find(create(:teammate, person: direct_report, organization: company, first_employed_at: 6.months.ago).id) }
+    let!(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, company: company, position: position, started_at: 1.year.ago) }
+    let!(:direct_report_employment) do 
+      create(:employment_tenure, 
+        teammate: direct_report_teammate, 
+        company: company, 
+        position: position, 
+        started_at: 6.months.ago,
+        manager_teammate: manager_teammate
+      ) 
+    end
+
+    before do
+      # Ensure the test data is created
+      manager_employment
+      direct_report_employment
+    end
+
+    it 'calculates manager distribution stats correctly' do
+      get :index, params: { 
+        organization_id: company.id, 
+        spotlight: 'manager_distribution',
+        view: 'list'
+      }
+      
+      expect(response).to have_http_status(:success)
+      expect(assigns(:spotlight_stats)).to be_present
+      expect(assigns(:spotlight_stats)).to have_key(:active_managers)
+      expect(assigns(:spotlight_stats)).to have_key(:non_managers)
+      expect(assigns(:spotlight_stats)).to have_key(:management_levels)
+      expect(assigns(:spotlight_stats)).to have_key(:max_level)
+      expect(assigns(:spotlight_stats)).to have_key(:total_teammates)
+    end
+
+    it 'correctly identifies managers and non-managers' do
+      get :index, params: { 
+        organization_id: company.id, 
+        spotlight: 'manager_distribution',
+        view: 'list'
+      }
+      
+      stats = assigns(:spotlight_stats)
+      # Manager should be counted as an active manager
+      expect(stats[:active_managers]).to be >= 1
+      # Should have both managers and non-managers
+      expect(stats[:total_teammates]).to be > stats[:active_managers]
+    end
+
+    it 'builds management levels correctly using manager_teammate_id' do
+      get :index, params: { 
+        organization_id: company.id, 
+        spotlight: 'manager_distribution',
+        view: 'list'
+      }
+      
+      stats = assigns(:spotlight_stats)
+      expect(stats[:management_levels]).to be_present
+      expect(stats[:max_level]).to be >= 1
+    end
+  end
 end
 

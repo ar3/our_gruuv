@@ -219,7 +219,9 @@ get '/login', to: 'auth#login', as: :login
     
     # Teammates resource routes for position, assignments, and aspirations
     resources :teammates, module: :organizations, only: [] do
-      resource :position, only: [:show, :update], controller: 'teammates/position'
+      resource :position, only: [:show, :update], controller: 'teammates/position' do
+        post :create_employment, on: :member
+      end
       resources :assignments, only: [:show], controller: 'teammates/assignments'
       resources :aspirations, only: [:show], controller: 'teammates/aspirations'
     end

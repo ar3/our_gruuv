@@ -26,7 +26,7 @@ module Finalizers
         teammate: @teammate,
         company: current_tenure.company,
         position: current_tenure.position,
-        manager: current_tenure.manager,
+        manager_teammate: current_tenure.manager_teammate,
         seat: current_tenure.seat,
         employment_type: current_tenure.employment_type,
         started_at: Time.current,
@@ -47,7 +47,7 @@ module Finalizers
         new_tenure: new_tenure,
         rating_data: {
           position_id: current_tenure.position_id,
-          manager_id: current_tenure.manager_id,
+          manager_teammate_id: current_tenure.manager_teammate_id,
           official_rating: @official_rating,
           rated_at: Time.current.to_s
         }

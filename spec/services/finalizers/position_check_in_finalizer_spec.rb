@@ -5,8 +5,9 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:manager) { create(:person) }
+  let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
-  let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, manager: manager) }
+  let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, manager_teammate: manager_teammate) }
   let(:check_in) { create(:position_check_in, :ready_for_finalization, teammate: teammate, employment_tenure: employment_tenure) }
   let(:finalizer) { described_class.new(check_in: check_in, official_rating: 2, shared_notes: 'Great work!', finalized_by: manager) }
 
@@ -32,7 +33,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
           expect(new_tenure.teammate).to eq(teammate)
           expect(new_tenure.company).to eq(organization)
           expect(new_tenure.position).to eq(employment_tenure.position)
-          expect(new_tenure.manager).to eq(manager)
+          expect(new_tenure.manager_teammate).to eq(manager_teammate)
           expect(new_tenure.seat).to eq(employment_tenure.seat)
           expect(new_tenure.employment_type).to eq(employment_tenure.employment_type)
           expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
@@ -60,7 +61,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
           
           rating_data = result.value[:rating_data]
           expect(rating_data[:position_id]).to eq(employment_tenure.position_id)
-          expect(rating_data[:manager_id]).to eq(manager.id)
+          expect(rating_data[:manager_teammate_id]).to eq(manager_teammate.id)
           expect(rating_data[:official_rating]).to eq(2)
           expect(rating_data[:rated_at]).to eq(Time.current.to_s)
         end

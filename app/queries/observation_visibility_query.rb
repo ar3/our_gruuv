@@ -53,13 +53,13 @@ class ObservationVisibilityQuery
     #
     # To check if current teammate is manager of an observee:
     # - Get all observee teammate_ids for the observation
-    # - Check if any of those teammates have an active employment_tenure where manager_id = current_teammate.person_id
+    # - Check if any of those teammates have an active employment_tenure where manager_teammate_id = current_teammate.id
     manager_condition = <<-SQL.squish
       observations.id IN (
         SELECT DISTINCT observees.observation_id
         FROM observees
         INNER JOIN employment_tenures ON employment_tenures.teammate_id = observees.teammate_id
-        WHERE employment_tenures.manager_id = ?
+        WHERE employment_tenures.manager_teammate_id = ?
           AND employment_tenures.company_id = ?
           AND employment_tenures.ended_at IS NULL
       )
@@ -67,7 +67,7 @@ class ObservationVisibilityQuery
       AND privacy_level IN (?, ?)
     SQL
     conditions << manager_condition
-    params << @person.id
+    params << current_teammate.id
     params << @company.id
     params << 'observed_and_managers'
     params << 'managers_only'
@@ -115,9 +115,9 @@ class ObservationVisibilityQuery
       # Check if current teammate is manager of any observee
       observee_teammate_ids = observation.observed_teammates.pluck(:id)
       if observee_teammate_ids.any?
-        # Check if any observee has an active employment_tenure where current_teammate.person is the manager
+        # Check if any observee has an active employment_tenure where current_teammate is the manager
         has_manager_relationship = EmploymentTenure.active
-          .where(teammate_id: observee_teammate_ids, company_id: @company.id, manager_id: @person.id)
+          .where(teammate_id: observee_teammate_ids, company_id: @company.id, manager_teammate_id: current_teammate.id)
           .exists?
         
         return true if has_manager_relationship
@@ -146,7 +146,7 @@ class ObservationVisibilityQuery
     observee_teammate_ids = observation.observed_teammates.pluck(:id)
     if observee_teammate_ids.any?
       has_manager_relationship = EmploymentTenure.active
-        .where(teammate_id: observee_teammate_ids, company_id: @company.id, manager_id: @person.id)
+        .where(teammate_id: observee_teammate_ids, company_id: @company.id, manager_teammate_id: current_teammate.id)
         .exists?
       
       return true if has_manager_relationship

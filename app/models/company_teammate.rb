@@ -116,13 +116,13 @@ class CompanyTeammate < Teammate
 
   def has_direct_reports?
     # Check if this teammate manages anyone in the organization
-    EmploymentTenure.where(company: organization, manager: person, ended_at: nil)
+    EmploymentTenure.where(company: organization, manager_teammate: self, ended_at: nil)
                     .exists?
   end
 
   # Current manager method (moved from Person model)
   def current_manager
-    employment_tenures.active.first&.manager
+    employment_tenures.active.first&.manager_teammate&.person
   end
   
   private

@@ -1,6 +1,28 @@
 .mb-3
   = form.label :position_id, "Position", class: "form-label"
-  = form.collection_select :position_id, positions, :id, :display_name,
-    { prompt: 'Select a position', selected: form.object.position_id },
-    { class: "form-select", required: true, disabled: disabled }
-
+  - if positions_by_department.present?
+    - # Build grouped options for select
+    - grouped_options = []
+    - company = positions_by_department.keys.find { |org| org.company? }
+    - departments = positions_by_department.keys.select { |org| org.department? }.sort_by(&:display_name)
+    
+    - # Add company positions first if they exist
+    - if company && positions_by_department[company].any?
+      - company_positions = positions_by_department[company].map { |p| [p.display_name, p.id] }
+      - grouped_options << [company.display_name, company_positions]
+    
+    - # Add department positions
+    - departments.each do |dept|
+      - if positions_by_department[dept].any?
+        - dept_positions = positions_by_department[dept].map { |p| [p.display_name, p.id] }
+        - grouped_options << [dept.display_name, dept_positions]
+    
+    = form.select :position_id,
+      grouped_options_for_select(grouped_options, form.object.position_id),
+      { prompt: 'Select a position' },
+      { class: "form-select", required: true, disabled: disabled }
+  - else
+    - # Fall back to simple collection_select for backward compatibility
+    = form.collection_select :position_id, positions || [], :id, :display_name,
+      { prompt: 'Select a position', selected: form.object.position_id },
+      { class: "form-select", required: true, disabled: disabled }

@@ -47,7 +47,7 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
   
   def set_wizard_data
     @positions = @organization.positions.includes(:position_type, :position_level)
-    @managers = @organization.employees
+    @managers = @organization.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name')
     @employment_tenure = EmploymentTenure.new
   end
   
@@ -123,7 +123,7 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
   end
   
   def employment_tenure_params
-    params.require(:employment_tenure).permit(:position_id, :manager_id, :started_at, :employment_change_notes)
+    params.require(:employment_tenure).permit(:position_id, :manager_teammate_id, :started_at, :employment_change_notes)
   end
   
   def require_authentication

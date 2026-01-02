@@ -74,8 +74,8 @@
               - @active_managers.each_with_index do |manager, index|
                 .col-md-4.col-sm-6.col-12
                   .form-check
-                    = check_box_tag 'manager_id[]', manager.id, @current_filters[:manager_id]&.include?(manager.id.to_s), class: 'form-check-input', id: "manager_#{manager.id}"
-                    = label_tag "manager_#{manager.id}", manager.last_first_display_name, class: 'form-check-label'
+                    = check_box_tag 'manager_teammate_id[]', manager.id, @current_filters[:manager_teammate_id]&.include?(manager.id.to_s), class: 'form-check-input', id: "manager_#{manager.id}"
+                    = label_tag "manager_#{manager.id}", manager.is_a?(CompanyTeammate) ? manager.person.last_first_display_name : manager.last_first_display_name, class: 'form-check-label'
           
           .mb-3
             %label.form-label Department

@@ -108,16 +108,16 @@ module TeammateHelper
       when 'maap_mgmt' then 'MAAP Management'
       else filter_value.to_s.humanize
       end
-    when 'manager_id'
+    when 'manager_teammate_id'
       if filter_value.present?
         # Handle both single value and array
-        manager_ids = Array(filter_value).map(&:to_i).reject(&:zero?)
-        if manager_ids.any?
-          managers = Person.where(id: manager_ids).order(:last_name, :first_name)
-          if managers.count == 1
-            managers.first.display_name
+        manager_teammate_ids = Array(filter_value).map(&:to_i).reject(&:zero?)
+        if manager_teammate_ids.any?
+          manager_teammates = CompanyTeammate.where(id: manager_teammate_ids).includes(:person).order('people.last_name, people.first_name')
+          if manager_teammates.count == 1
+            manager_teammates.first.person.display_name
           else
-            managers.map(&:display_name).join(', ')
+            manager_teammates.map { |mt| mt.person.display_name }.join(', ')
           end
         else
           'All Teammates'
@@ -162,11 +162,11 @@ module TeammateHelper
     when 'permission'
       current_params[:permission] = Array(current_params[:permission]) - [filter_value]
       current_params[:permission] = nil if current_params[:permission].empty?
-    when 'manager_id'
+    when 'manager_teammate_id'
       # Handle both single value and array
-      manager_ids = Array(current_params[:manager_id])
-      manager_ids = manager_ids - [filter_value]
-      current_params[:manager_id] = manager_ids.empty? ? nil : (manager_ids.length == 1 ? manager_ids.first : manager_ids)
+      manager_teammate_ids = Array(current_params[:manager_teammate_id])
+      manager_teammate_ids = manager_teammate_ids - [filter_value]
+      current_params[:manager_teammate_id] = manager_teammate_ids.empty? ? nil : (manager_teammate_ids.length == 1 ? manager_teammate_ids.first : manager_teammate_ids)
     when 'department_id'
       # Handle array
       department_ids = Array(current_params[:department_id])

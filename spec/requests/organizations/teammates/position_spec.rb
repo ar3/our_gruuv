@@ -7,7 +7,13 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
   let(:employee_person) { create(:person) }
   let(:employee_teammate) { create(:teammate, type: 'CompanyTeammate', person: employee_person, organization: organization) }
   let(:manager) { create(:person) }
+  let(:manager_teammate) do
+    teammate = create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization)
+    # Ensure it's actually a CompanyTeammate instance
+    CompanyTeammate.find(teammate.id)
+  end
   let(:new_manager) { create(:person) }
+  let(:new_manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: new_manager, organization: organization) }
   let(:position_major_level) { create(:position_major_level) }
   let(:position_type) { create(:position_type, organization: organization, position_major_level: position_major_level) }
   let(:new_position_type) { create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'New Position Type') }
@@ -34,11 +40,14 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
     seat_obj = create(:seat, position_type: pos.position_type, seat_needed_by: Date.current + 10.months)
     
     # Create employment_tenure directly to avoid factory's after(:build) hook overwriting position
+    # Ensure manager_teammate is created and is a CompanyTeammate instance
+    manager_ct = manager_teammate
+    manager_ct = CompanyTeammate.find(manager_ct.id) unless manager_ct.is_a?(CompanyTeammate)
     EmploymentTenure.create!(
       teammate: employee_teammate,
       company: organization,
       position: pos,
-      manager: manager,
+      manager_teammate: manager_ct,
       seat: seat_obj,
       employment_type: 'full_time',
       started_at: 6.months.ago
@@ -196,9 +205,10 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: true) }
 
       it 'authorizes with can_manage_employment permission' do
+        new_manager_teammate
         patch organization_teammate_position_path(organization, employee_teammate), params: {
           employment_tenure: {
-            manager_id: new_manager.id,
+            manager_teammate_id: new_manager_teammate.id,
             position_id: position.id,
             employment_type: 'full_time',
             seat_id: current_tenure.seat_id
@@ -209,14 +219,15 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       end
 
       it 'updates tenure on manager change' do
+        new_manager_teammate
         # Debug: Check initial state
-        puts "Current tenure manager_id: #{current_tenure.manager_id.inspect}"
-        puts "New manager id: #{new_manager.id.inspect}"
-        puts "Managers are different: #{current_tenure.manager_id != new_manager.id}"
+        puts "Current tenure manager_teammate_id: #{current_tenure.manager_teammate_id.inspect}"
+        puts "New manager teammate id: #{new_manager_teammate.id.inspect}"
+        puts "Managers are different: #{current_tenure.manager_teammate_id != new_manager_teammate.id}"
         
         patch organization_teammate_position_path(organization, employee_teammate), params: {
           employment_tenure: {
-            manager_id: new_manager.id,
+            manager_teammate_id: new_manager_teammate.id,
             position_id: position.id,
             employment_type: 'full_time',
             seat_id: current_tenure.seat_id
@@ -228,15 +239,15 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         if assigns(:form)
           puts "Form errors: #{assigns(:form).errors.full_messages}" if assigns(:form).errors.any?
           puts "Form valid?: #{assigns(:form).valid?}"
-          puts "Form manager_id: #{assigns(:form).manager_id.inspect}" if assigns(:form).respond_to?(:manager_id)
+          puts "Form manager_teammate_id: #{assigns(:form).manager_teammate_id.inspect}" if assigns(:form).respond_to?(:manager_teammate_id)
         end
         puts "Current tenure ended_at after: #{current_tenure.reload.ended_at.inspect}"
-        puts "All tenures: #{EmploymentTenure.where(teammate: employee_teammate, company: organization).pluck(:id, :manager_id, :ended_at).inspect}"
+        puts "All tenures: #{EmploymentTenure.where(teammate: employee_teammate, company: organization).pluck(:id, :manager_teammate_id, :ended_at).inspect}"
         
         expect(response).to have_http_status(:redirect)
         expect(current_tenure.reload.ended_at).not_to be_nil
         new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: organization).order(:created_at).last
-        expect(new_tenure.manager).to eq(new_manager)
+        expect(new_tenure.manager_teammate_id).to eq(new_manager_teammate.id)
       end
 
       it 'updates tenure on position change' do
@@ -245,7 +256,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         expect {
           patch organization_teammate_position_path(organization, employee_teammate), params: {
             employment_tenure: {
-              manager_id: manager.id,
+              manager_teammate_id: manager_teammate.id,
               position_id: new_position.id,
               employment_type: 'full_time',
               seat_id: seat_for_new_position.id
@@ -262,7 +273,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         
         patch organization_teammate_position_path(organization, employee_teammate), params: {
           employment_tenure: {
-            manager_id: manager.id,
+            manager_teammate_id: manager_teammate.id,
             position_id: position.id,
             employment_type: 'full_time',
             seat_id: current_tenure.seat_id,
@@ -275,10 +286,11 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       end
 
       it 'creates maap_snapshot when manager changes' do
+        new_manager_teammate
         expect {
           patch organization_teammate_position_path(organization, employee_teammate), params: {
             employment_tenure: {
-              manager_id: new_manager.id,
+              manager_teammate_id: new_manager_teammate.id,
               position_id: position.id,
               employment_type: 'full_time',
               seat_id: current_tenure.seat_id,
@@ -299,7 +311,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         expect {
           patch organization_teammate_position_path(organization, employee_teammate), params: {
             employment_tenure: {
-              manager_id: manager.id,
+              manager_teammate_id: manager_teammate.id,
               position_id: new_position.id,
               employment_type: 'full_time',
               seat_id: seat_for_new_position.id
@@ -314,7 +326,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         expect {
           patch organization_teammate_position_path(organization, employee_teammate), params: {
             employment_tenure: {
-              manager_id: manager.id,
+              manager_teammate_id: manager_teammate.id,
               position_id: position.id,
               employment_type: 'full_time',
               seat_id: current_tenure.seat_id,
@@ -333,7 +345,7 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         expect {
           patch organization_teammate_position_path(organization, employee_teammate), params: {
             employment_tenure: {
-              manager_id: manager.id,
+              manager_teammate_id: manager_teammate.id,
               position_id: position.id,
               employment_type: 'full_time',
               seat_id: new_seat.id
@@ -355,9 +367,10 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       end
 
       it 'redirects with success message on successful update' do
+        new_manager_teammate
         patch organization_teammate_position_path(organization, employee_teammate), params: {
           employment_tenure: {
-            manager_id: new_manager.id,
+            manager_teammate_id: new_manager_teammate.id,
             position_id: position.id,
             employment_type: 'full_time',
             seat_id: current_tenure.seat_id
@@ -385,9 +398,10 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
       end
 
       it 'returns 403 without permission' do
+        new_manager_teammate
         patch organization_teammate_position_path(organization, employee_teammate), params: {
           employment_tenure: {
-            manager_id: new_manager.id,
+            manager_teammate_id: new_manager_teammate.id,
             position_id: position.id,
             employment_type: 'full_time',
             seat_id: current_tenure.seat_id
@@ -395,6 +409,176 @@ RSpec.describe 'Organizations::Teammates::Position', type: :request do
         }
         
         # Authorization failures redirect (302) with flash message, not 403
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to match(/permission|don't have permission/i)
+      end
+    end
+  end
+
+  describe 'POST /organizations/:id/teammates/:id/position/create_employment' do
+    let(:teammate_without_employment) { create(:teammate, type: 'CompanyTeammate', person: create(:person), organization: organization) }
+    
+    context 'when user has can_manage_employment permission' do
+      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: true) }
+
+      context 'starting new employment (no previous tenures)' do
+        it 'creates a new employment tenure' do
+          post create_employment_organization_teammate_position_path(organization, teammate_without_employment), params: {
+            employment_tenure: {
+              position_id: position.id,
+              manager_teammate_id: manager_teammate.id,
+              started_at: Date.current
+            }
+          }
+          
+          expect(response).to have_http_status(:redirect)
+          expect(flash[:notice]).to eq('Employment was successfully started.')
+          
+          new_tenure = EmploymentTenure.where(teammate: teammate_without_employment, company: organization).last
+          expect(new_tenure).to be_present
+          expect(new_tenure.position).to eq(position)
+          expect(new_tenure.manager_teammate_id).to eq(manager_teammate.id)
+          expect(new_tenure.started_at.to_date).to eq(Date.current)
+          expect(new_tenure.employment_type).to eq('full_time')
+          expect(new_tenure.active?).to be true
+        end
+
+        it 'creates employment without manager' do
+          post create_employment_organization_teammate_position_path(organization, teammate_without_employment), params: {
+            employment_tenure: {
+              position_id: position.id,
+              started_at: Date.current
+            }
+          }
+          
+          expect(response).to have_http_status(:redirect)
+          new_tenure = EmploymentTenure.where(teammate: teammate_without_employment, company: organization).last
+          expect(new_tenure.manager_teammate).to be_nil
+        end
+      end
+
+      context 'restarting employment (with inactive tenures)' do
+        let!(:inactive_tenure) do
+          EmploymentTenure.create!(
+            teammate: teammate_without_employment,
+            company: organization,
+            position: position,
+            started_at: 2.years.ago,
+            ended_at: 1.year.ago
+          )
+        end
+
+        it 'creates a new employment tenure after inactive tenure' do
+          restart_date = 6.months.ago.to_date
+          post create_employment_organization_teammate_position_path(organization, teammate_without_employment), params: {
+            employment_tenure: {
+              position_id: position.id,
+              manager_teammate_id: manager_teammate.id,
+              started_at: restart_date
+            }
+          }
+          
+          expect(response).to have_http_status(:redirect)
+          new_tenure = EmploymentTenure.where(teammate: teammate_without_employment, company: organization).order(:created_at).last
+          expect(new_tenure.started_at.to_date).to eq(restart_date)
+          expect(new_tenure.active?).to be true
+        end
+
+        it 'adjusts start date if before last inactive end date' do
+          # Try to start before the inactive tenure ended
+          early_date = (inactive_tenure.ended_at - 1.day).to_date
+          post create_employment_organization_teammate_position_path(organization, teammate_without_employment), params: {
+            employment_tenure: {
+              position_id: position.id,
+              started_at: early_date
+            }
+          }
+          
+          expect(response).to have_http_status(:redirect)
+          new_tenure = EmploymentTenure.where(teammate: teammate_without_employment, company: organization).order(:created_at).last
+          # Should be adjusted to 1 minute after the inactive end date
+          expect(new_tenure.started_at).to be > inactive_tenure.ended_at
+          expect(new_tenure.started_at).to be_within(2.minutes).of(inactive_tenure.ended_at + 1.minute)
+        end
+      end
+
+      it 'requires position_id' do
+        post create_employment_organization_teammate_position_path(organization, teammate_without_employment), params: {
+          employment_tenure: {
+            started_at: Date.current
+          }
+        }
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:show)
+      end
+
+      it 'requires started_at' do
+        post create_employment_organization_teammate_position_path(organization, teammate_without_employment), params: {
+          employment_tenure: {
+            position_id: position.id
+          }
+        }
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:show)
+      end
+
+      it 'handles invalid position_id' do
+        post create_employment_organization_teammate_position_path(organization, teammate_without_employment), params: {
+          employment_tenure: {
+            position_id: 999999,
+            started_at: Date.current
+          }
+        }
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:show)
+      end
+
+      it 'loads positions grouped by department' do
+        department = create(:organization, :department, parent: organization)
+        dept_position_type = create(:position_type, organization: department, position_major_level: position_major_level)
+        dept_position = create(:position, position_type: dept_position_type, position_level: position_level)
+        
+        get organization_teammate_position_path(organization, teammate_without_employment)
+        
+        positions_by_dept = assigns(:positions_by_department)
+        expect(positions_by_dept).to be_present
+        # Check that both company and department are in the keys (using IDs for comparison)
+        org_ids = positions_by_dept.keys.map(&:id)
+        expect(org_ids).to include(organization.id, department.id)
+        # Find the actual objects in the hash
+        company_key = positions_by_dept.keys.find { |k| k.id == organization.id }
+        dept_key = positions_by_dept.keys.find { |k| k.id == department.id }
+        expect(positions_by_dept[company_key]).to include(position)
+        expect(positions_by_dept[dept_key]).to include(dept_position)
+      end
+    end
+
+    context 'when user does not have can_manage_employment permission' do
+      let(:teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization, can_manage_employment: false) }
+      
+      # Create employment tenure for the teammate so they have an org, but without permission
+      let!(:teammate_employment_tenure) do
+        pos = position
+        create(:employment_tenure,
+          teammate: teammate,
+          company: organization,
+          position: pos,
+          employment_type: 'full_time',
+          started_at: 1.year.ago
+        )
+      end
+
+      it 'returns 403 without permission' do
+        post create_employment_organization_teammate_position_path(organization, teammate_without_employment), params: {
+          employment_tenure: {
+            position_id: position.id,
+            started_at: Date.current
+          }
+        }
+        
         expect(response).to have_http_status(:redirect)
         expect(flash[:alert]).to match(/permission|don't have permission/i)
       end

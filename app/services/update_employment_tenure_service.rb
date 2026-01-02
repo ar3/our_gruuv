@@ -14,7 +14,7 @@ class UpdateEmploymentTenureService
     ApplicationRecord.transaction do
       
       # Detect what changed
-      manager_changed = manager_id_changed?
+      manager_changed = manager_teammate_id_changed?
       position_changed = position_id_changed?
       employment_type_changed = employment_type_changed?
       seat_changed = seat_id_changed?
@@ -109,11 +109,11 @@ class UpdateEmploymentTenureService
 
   attr_reader :teammate, :current_tenure, :params, :created_by
 
-  def manager_id_changed?
-    return false if params[:manager_id].nil?
+  def manager_teammate_id_changed?
+    return false if params[:manager_teammate_id].nil?
     # Handle empty string as "clear manager" (nil)
-    new_manager_id = params[:manager_id].to_s == '' ? nil : params[:manager_id]
-    current_tenure.manager_id.to_s != new_manager_id.to_s
+    new_manager_teammate_id = params[:manager_teammate_id].to_s == '' ? nil : params[:manager_teammate_id]
+    current_tenure.manager_teammate_id.to_s != new_manager_teammate_id.to_s
   end
 
   def position_id_changed?
@@ -136,11 +136,11 @@ class UpdateEmploymentTenureService
   def create_new_tenure
     # Copy all attributes from current tenure, then update with new values
     # Handle empty strings as nil (to clear fields)
-    manager_id_value = if params[:manager_id].present?
-                         params[:manager_id].to_s == '' ? nil : params[:manager_id]
-                       else
-                         current_tenure.manager_id
-                       end
+    manager_teammate_id_value = if params[:manager_teammate_id].present?
+                                   params[:manager_teammate_id].to_s == '' ? nil : params[:manager_teammate_id]
+                                 else
+                                   current_tenure.manager_teammate_id
+                                 end
     
     seat_id_value = if params[:seat_id].present?
                       params[:seat_id].to_s == '' ? nil : params[:seat_id]
@@ -152,7 +152,7 @@ class UpdateEmploymentTenureService
       teammate: current_tenure.teammate,
       company: current_tenure.company,
       position_id: params[:position_id] || current_tenure.position_id,
-      manager_id: manager_id_value,
+      manager_teammate_id: manager_teammate_id_value,
       employment_type: params[:employment_type].presence || current_tenure.employment_type,
       seat_id: seat_id_value,
       started_at: Time.current,
@@ -183,7 +183,7 @@ class UpdateEmploymentTenureService
     # Add employment_tenure data for position_tenure change_type
     maap_data['employment_tenure'] = {
       position_id: tenure.position_id,
-      manager_id: tenure.manager_id,
+      manager_teammate_id: tenure.manager_teammate_id,
       seat_id: tenure.seat_id,
       employment_type: tenure.employment_type,
       started_at: tenure.started_at.is_a?(Time) ? tenure.started_at.iso8601 : tenure.started_at.to_time.iso8601,

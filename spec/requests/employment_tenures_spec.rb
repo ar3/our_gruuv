@@ -87,7 +87,7 @@ RSpec.describe "EmploymentTenures", type: :request do
           employment_tenure: { 
             company_id: company.id, 
             position_id: active_tenure.position_id, 
-            manager_id: active_tenure.manager_id,
+            manager_teammate_id: active_tenure.manager_teammate_id,
             started_at: Date.current 
           }
         }

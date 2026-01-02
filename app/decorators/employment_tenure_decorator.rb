@@ -22,6 +22,6 @@ class EmploymentTenureDecorator < Draper::Decorator
   end
 
   def manager_display
-    manager&.display_name || 'No manager assigned'
+    manager_teammate&.person&.display_name || 'No manager assigned'
   end
 end

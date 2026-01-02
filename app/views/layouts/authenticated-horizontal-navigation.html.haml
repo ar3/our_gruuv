@@ -113,7 +113,7 @@
                     - if current_organization && policy(current_organization).manage_employment?
                       %li= link_to "Check-ins Health", organization_check_ins_health_path(current_organization), class: "dropdown-item"
                     - if current_company_teammate&.has_direct_reports?
-                      %li= link_to "My Employees", organization_employees_path(current_organization, manager_id: current_person&.id, display: 'check_in_status'), class: "dropdown-item"
+                      %li= link_to "My Employees", organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, display: 'check_in_status'), class: "dropdown-item"
 
                   / Layout switcher
                   %li

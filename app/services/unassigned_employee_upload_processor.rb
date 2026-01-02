@@ -318,8 +318,8 @@ class UnassignedEmployeeUploadProcessor
         return
       end
 
-      # Find manager if specified
-      manager = find_manager_by_name(manager_name) if manager_name.present?
+      # Find manager teammate if specified
+      manager_teammate = find_manager_teammate_by_name(manager_name) if manager_name.present?
 
       # Check if employment tenure already exists
       existing_tenure = teammate.employment_tenures.find_by(company: organization)
@@ -393,12 +393,12 @@ class UnassignedEmployeeUploadProcessor
     position
   end
 
-  def find_manager_by_name(manager_name)
+  def find_manager_teammate_by_name(manager_name)
     return nil if manager_name.blank?
 
-    # Try to find manager by name
+    # Try to find manager person by name
     name_parts = manager_name.split(' ', 2)
-    if name_parts.length >= 2
+    manager_person = if name_parts.length >= 2
       Person.find_by(
         first_name: name_parts.first,
         last_name: name_parts.last
@@ -407,6 +407,11 @@ class UnassignedEmployeeUploadProcessor
       # If only one name part, try to find by first name
       Person.find_by(first_name: manager_name)
     end
+    
+    # Find CompanyTeammate for this person in the organization
+    return nil unless manager_person
+    
+    CompanyTeammate.find_by(organization: organization, person: manager_person)
   end
 
   def create_employment_tenure(person, teammate, employee_data)
@@ -419,14 +424,14 @@ class UnassignedEmployeeUploadProcessor
       raise ActiveRecord::RecordInvalid.new(EmploymentTenure.new)
     end
     
-    # Find manager if specified
-    manager = find_manager_by_name(manager_name) if manager_name.present?
+    # Find manager teammate if specified
+    manager_teammate = find_manager_teammate_by_name(manager_name) if manager_name.present?
     
     EmploymentTenure.create!(
       teammate: teammate,
       company: organization,
       position: position,
-      manager: manager,
+      manager_teammate: manager_teammate,
       started_at: employee_data['start_date'] || Time.current
     )
   end

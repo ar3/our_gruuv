@@ -43,11 +43,11 @@
             .row
               .col-md-6
                 .mb-3
-                  = f.label :manager_id, "Manager (Optional)", class: "form-label"
-                  = f.collection_select :manager_id, 
+                  = f.label :manager_teammate_id, "Manager (Optional)", class: "form-label"
+                  = f.collection_select :manager_teammate_id, 
                                        @managers, 
                                        :id, 
-                                       :display_name, 
+                                       ->(m) { m.is_a?(CompanyTeammate) ? m.person.display_name : m.display_name }, 
                                        { prompt: "Select a manager...", include_blank: "No Manager" }, 
                                        { class: "form-select" }
 

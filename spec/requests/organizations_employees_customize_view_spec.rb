@@ -9,7 +9,7 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
 
   before do
     # Create employment tenure with manager relationship
-    create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, ended_at: nil)
+    create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager_teammate: manager_teammate, ended_at: nil)
     
     # Reload as CompanyTeammate to ensure has_direct_reports? method is available
     manager_ct = CompanyTeammate.find(manager_teammate.id)
@@ -45,7 +45,7 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
     get customize_view_organization_employees_path(organization)
     
     expect(response).to be_successful
-    expect(response.body).to include('manager_id[]')
+    expect(response.body).to include('manager_teammate_id[]')
     expect(response.body).to include('form-check-input')
   end
 
@@ -71,10 +71,10 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
   end
 
   it 'preserves selected manager filters' do
-    get customize_view_organization_employees_path(organization, manager_id: manager.id)
+    get customize_view_organization_employees_path(organization, manager_teammate_id: manager_teammate.id)
     
     expect(response).to be_successful
-    expect(assigns(:current_filters)[:manager_id]).to include(manager.id.to_s)
+    expect(assigns(:current_filters)[:manager_teammate_id]).to include(manager_teammate.id.to_s)
   end
 
   it 'preserves selected department filters' do
@@ -257,7 +257,7 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
           sort: 'name_desc',
           view: 'cards',
           spotlight: 'teammate_tenures',
-          manager_id: [999],
+          manager_teammate_id: [999],
           department_id: [888]
         }
         
@@ -266,7 +266,7 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
         expect(redirect_url).to include('/employees')
         # Verify preset-defined params are included
         expect(redirect_url).to include('display=check_in_status')
-        expect(redirect_url).to include("manager_id=#{manager.id}")
+        expect(redirect_url).to include("manager_teammate_id=#{manager_teammate.id}")
         # Verify manual customizations are NOT included (check for param names, not values that might appear in other params)
         expect(redirect_url).not_to match(/[?&]status[=\[]/)
         expect(redirect_url).not_to include('sort=name_desc')

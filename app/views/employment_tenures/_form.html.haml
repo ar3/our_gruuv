@@ -25,10 +25,10 @@
   .row
     .col-md-6
       .mb-3
-        = form.label :manager_id, "Manager (Optional)", class: "form-label"
-        - managers = employment_tenure.company ? employment_tenure.company.employees : []
-        = form.collection_select :manager_id, managers, :id, :display_name, 
-          { prompt: 'Select a manager (optional)', include_blank: 'No Manager' }, { class: "form-select" }
+        = form.label :manager_teammate_id, "Manager (Optional)", class: "form-label"
+        - managers = employment_tenure.company ? employment_tenure.company.teammates.where(type: 'CompanyTeammate').includes(:person).order('people.last_name, people.first_name') : []
+        = form.collection_select :manager_teammate_id, managers, :id, ->(m) { m.person.display_name }, 
+          { selected: employment_tenure.manager_teammate_id, prompt: 'Select a manager (optional)', include_blank: 'No Manager' }, { class: "form-select" }
 
     .col-md-6
       .mb-3
