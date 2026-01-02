@@ -73,6 +73,8 @@ RSpec.describe 'Position Update', type: :system, js: true do
   let!(:seat_for_new_position) { Seat.create!(position_type_id: position_type2.id, seat_needed_by: Date.current + 4.months, job_classification: 'Salaried Exempt', state: :open) }
   
   let!(:current_tenure) do
+    # Ensure employee_teammate has first_employed_at set (required for termination validation)
+    employee_teammate.update!(first_employed_at: 6.months.ago) unless employee_teammate.first_employed_at.present?
     EmploymentTenure.create!(
       teammate: employee_teammate,
       company: company,
@@ -269,11 +271,20 @@ RSpec.describe 'Position Update', type: :system, js: true do
       
       # Use JavaScript to set the date field value directly to avoid Capybara date conversion issues
       page.execute_script("document.querySelector('input[name=\"employment_tenure_update[termination_date]\"]').value = '#{date_string}';")
-      fill_in 'employment_tenure_update[reason]', with: 'End of contract'
       
       click_button 'Update Position'
       
-      expect(page).to have_content('Position information was successfully updated')
+      # Should redirect to confirmation page
+      expect(page).to have_content('Confirm Employment Termination')
+      expect(page).to have_content(termination_date.strftime('%B %d, %Y'))
+      
+      # Fill in reason and confirm termination
+      fill_in 'reason', with: 'End of contract'
+      click_button 'Confirm Termination'
+      
+      # Should redirect back to position page with success message
+      expect(page).to have_content('Employment was successfully terminated')
+      
       # Reload and check the date - it should match what we submitted
       current_tenure.reload
       expect(current_tenure.ended_at).to be_present
@@ -318,6 +329,25 @@ RSpec.describe 'Position Update', type: :system, js: true do
       # Check if we're still on the same page (form errors) or if validation passed
       # If validation passed, we'd be redirected, so check for error message or stay on page
       expect(page).to have_content('does not exist').or have_content('Current Position')
+    end
+
+    it 'allows clearing seat by selecting "No Seat"' do
+      # Ensure current_tenure has a seat
+      expect(current_tenure.seat).to be_present
+      
+      # Select "No Seat" option (empty value)
+      select 'No Seat', from: 'employment_tenure_update[seat_id]'
+      click_button 'Update Position'
+      
+      expect(page).to have_content('Position information was successfully updated')
+      
+      # Verify seat was cleared
+      current_tenure.reload
+      expect(current_tenure.seat).to be_nil
+      expect(current_tenure.ended_at).to be_nil
+      
+      # Verify no new tenure was created (seat change only)
+      expect(EmploymentTenure.where(teammate: employee_teammate, company: company).count).to eq(1)
     end
   end
 

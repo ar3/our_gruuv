@@ -84,7 +84,10 @@ class EmploymentTenureUpdateForm < Reform::Form
     service_params[:manager_teammate_id] ||= manager_teammate_id if respond_to?(:manager_teammate_id)
     service_params[:position_id] ||= position_id if respond_to?(:position_id) && position_id.present?
     service_params[:employment_type] ||= employment_type if respond_to?(:employment_type) && employment_type.present?
-    service_params[:seat_id] ||= seat_id if respond_to?(:seat_id)
+    # Handle seat_id fallback - convert empty strings to nil
+    if respond_to?(:seat_id) && service_params[:seat_id].nil?
+      service_params[:seat_id] = (seat_id.to_s == '' ? nil : seat_id)
+    end
     # For termination_date, always use @original_params value if available, otherwise use form property
     # But ensure it's a string, not converted to integer
     if @original_params && @original_params['termination_date'].present?

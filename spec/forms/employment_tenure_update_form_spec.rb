@@ -154,6 +154,14 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
         
         expect(form).to be_valid
       end
+
+      it 'allows empty string seat_id' do
+        form.position_id = position.id
+        form.seat_id = ''
+        form.employment_type = 'full_time'
+        
+        expect(form).to be_valid
+      end
     end
 
     describe 'termination_date validation' do
@@ -224,6 +232,62 @@ RSpec.describe EmploymentTenureUpdateForm, type: :form do
       form.position_id = 999999
       
       expect(form.save).to be false
+    end
+
+    it 'clears seat when seat_id is set to nil' do
+      form.current_person = create(:person)
+      form.teammate = teammate
+      
+      # Ensure current_tenure has a seat
+      expect(current_tenure.seat).to be_present
+      
+      params = {
+        manager_teammate_id: current_manager_teammate.id,
+        position_id: position.id,
+        employment_type: 'full_time',
+        seat_id: nil
+      }
+      
+      form.validate(params)
+      expect(form).to be_valid
+      
+      allow(UpdateEmploymentTenureService).to receive(:call).and_return(Result.ok(current_tenure))
+      
+      form.save
+      
+      expect(UpdateEmploymentTenureService).to have_received(:call).with(
+        teammate: teammate,
+        current_tenure: current_tenure,
+        params: hash_including(seat_id: nil),
+        created_by: anything
+      )
+    end
+
+    it 'clears seat when seat_id is set to empty string' do
+      form.current_person = create(:person)
+      form.teammate = teammate
+      
+      # Ensure current_tenure has a seat
+      expect(current_tenure.seat).to be_present
+      
+      params = {
+        manager_teammate_id: current_manager_teammate.id,
+        position_id: position.id,
+        employment_type: 'full_time',
+        seat_id: ''
+      }
+      
+      form.validate(params)
+      expect(form).to be_valid
+      
+      allow(UpdateEmploymentTenureService).to receive(:call).and_return(Result.ok(current_tenure))
+      
+      form.save
+      
+      # The form should convert empty string to nil before passing to service
+      expect(UpdateEmploymentTenureService).to have_received(:call) do |args|
+        expect(args[:params][:seat_id]).to be_nil
+      end
     end
   end
 end

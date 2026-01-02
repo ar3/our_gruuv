@@ -85,7 +85,9 @@ class UpdateEmploymentTenureService
         updated_tenure = create_new_tenure
       elsif seat_changed
         # Just update the seat
-        @current_tenure.update!(seat_id: @params[:seat_id])
+        # Handle empty string as "clear seat" (nil)
+        seat_id_value = @params[:seat_id].to_s == '' ? nil : @params[:seat_id]
+        @current_tenure.update!(seat_id: seat_id_value)
         updated_tenure = @current_tenure
       else
         # No changes
@@ -127,9 +129,14 @@ class UpdateEmploymentTenureService
   end
 
   def seat_id_changed?
-    return false if params[:seat_id].nil?
     # Handle empty string as "clear seat" (nil)
-    new_seat_id = params[:seat_id].to_s == '' ? nil : params[:seat_id]
+    new_seat_id = if params[:seat_id].nil?
+                    nil
+                  elsif params[:seat_id].to_s == ''
+                    nil
+                  else
+                    params[:seat_id]
+                  end
     current_tenure.seat_id.to_s != new_seat_id.to_s
   end
 

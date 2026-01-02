@@ -291,6 +291,54 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
           )
         }.not_to change { MaapSnapshot.count }
       end
+
+      it 'clears seat when seat_id is set to nil' do
+        # Ensure current_tenure has a seat
+        expect(current_tenure.seat).to be_present
+        
+        params = {
+          manager_teammate_id: current_manager_teammate.id,
+          position_id: current_position.id,
+          employment_type: 'full_time',
+          seat_id: nil
+        }
+
+        result = described_class.call(
+          teammate: teammate,
+          current_tenure: current_tenure,
+          params: params,
+          created_by: created_by
+        )
+
+        expect(result.ok?).to be true
+        expect(current_tenure.reload.seat).to be_nil
+        expect(current_tenure.ended_at).to be_nil
+        expect(EmploymentTenure.where(teammate: teammate, company: company).count).to eq(1)
+      end
+
+      it 'clears seat when seat_id is set to empty string' do
+        # Ensure current_tenure has a seat
+        expect(current_tenure.seat).to be_present
+        
+        params = {
+          manager_teammate_id: current_manager_teammate.id,
+          position_id: current_position.id,
+          employment_type: 'full_time',
+          seat_id: ''
+        }
+
+        result = described_class.call(
+          teammate: teammate,
+          current_tenure: current_tenure,
+          params: params,
+          created_by: created_by
+        )
+
+        expect(result.ok?).to be true
+        expect(current_tenure.reload.seat).to be_nil
+        expect(current_tenure.ended_at).to be_nil
+        expect(EmploymentTenure.where(teammate: teammate, company: company).count).to eq(1)
+      end
     end
 
     context 'when multiple changes occur' do
