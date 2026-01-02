@@ -5,14 +5,15 @@ RSpec.describe 'Organizations::Employees#customize_view', type: :request do
   let(:manager) { create(:person) }
   let(:direct_report) { create(:person) }
   let!(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
-  let(:direct_report_teammate) { create(:teammate, person: direct_report, organization: organization) }
+  let(:direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: direct_report, organization: organization) }
 
   before do
-    # Create employment tenure with manager relationship
-    create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager_teammate: manager_teammate, ended_at: nil)
-    
-    # Reload as CompanyTeammate to ensure has_direct_reports? method is available
+    # Reload as CompanyTeammate instances before using them
     manager_ct = CompanyTeammate.find(manager_teammate.id)
+    direct_report_ct = CompanyTeammate.find(direct_report_teammate.id)
+    
+    # Create employment tenure with manager relationship
+    create(:employment_tenure, teammate: direct_report_ct, company: organization, manager_teammate: manager_ct, ended_at: nil)
     
     # Mock authentication for manager
     allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)

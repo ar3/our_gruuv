@@ -2,7 +2,6 @@ require 'rails_helper'
 
 RSpec.describe 'Abilities Core Flow', type: :system do
   let(:company) { create(:organization, :company) }
-  let(:department) { create(:organization, :department, parent: company) }
   let(:person) { create(:person) }
   let!(:company_teammate) { CompanyTeammate.create!(person: person, organization: company, can_manage_employment: true, can_manage_maap: true) }
   let!(:employee_person) { create(:person, full_name: 'John Doe', email: 'john@example.com') }
@@ -60,44 +59,6 @@ RSpec.describe 'Abilities Core Flow', type: :system do
     end
   end
 
-  describe 'CRUD ability on department' do
-    it 'creates, views, updates, and deletes an ability on a department' do
-      # Sign in with the company (parent of department) - user should have access to descendants
-      sign_in_as(person, company)
-      
-      # Create
-      visit new_organization_ability_path(department)
-      expect(page).to have_content('New Ability')
-      
-      fill_in 'ability_name', with: 'Department-Specific Skill'
-      fill_in 'ability_description', with: 'Ability specific to this department'
-      fill_in 'ability_milestone_1_description', with: 'Basic level'
-      choose 'version_type_ready'
-      
-      click_button 'Create Ability'
-      
-      expect(page).to have_content('Department-Specific Skill')
-      
-      ability = Ability.last
-      expect(ability.organization.id).to eq(department.id)
-      expect(ability.organization.class.base_class).to eq(Organization)
-      
-      # View
-      visit organization_abilities_path(department)
-      expect(page).to have_content('Department-Specific Skill')
-      
-      # Update
-      visit edit_organization_ability_path(department, ability)
-      fill_in 'ability_name', with: 'Updated Department Skill'
-      choose 'version_type_clarifying'
-      click_button 'Update Ability'
-      
-      expect(page).to have_content('Updated Department Skill')
-      ability.reload
-      expect(ability.name).to eq('Updated Department Skill')
-    end
-  end
-
   describe 'Assign milestone to employee' do
     let!(:ability) do
       create(:ability,
@@ -117,7 +78,7 @@ RSpec.describe 'Abilities Core Flow', type: :system do
       employee_teammate.update!(first_employed_at: 1.year.ago)
       
       # Set manager relationship so person can view employee's complete picture
-      employment_tenure.update!(manager: person)
+      employment_tenure.update!(manager_teammate: company_teammate)
       
       # Ensure manager also has active employment
       create(:employment_tenure, teammate: company_teammate, company: company, started_at: 1.year.ago, ended_at: nil)

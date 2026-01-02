@@ -493,7 +493,7 @@ RSpec.describe Goal, type: :model do
             create(:employment_tenure,
               teammate: owner_teammate,
               company: company,
-              manager: manager_person,
+              manager_teammate: manager_teammate,
               started_at: 1.month.ago,
               ended_at: nil
             )
@@ -601,7 +601,7 @@ RSpec.describe Goal, type: :model do
           let(:org_member) { create(:person) }
           let(:org_member_teammate) { create(:teammate, person: org_member, organization: company) }
           let(:manager_of_member) { create(:person) }
-          let(:manager_of_member_teammate) { create(:teammate, person: manager_of_member, organization: company) }
+          let(:manager_of_member_teammate) { CompanyTeammate.create!(person: manager_of_member, organization: company) }
           let(:other_org_member) { create(:person) }
           let(:other_org_member_teammate) { create(:teammate, person: other_org_member, organization: company) }
           
@@ -614,7 +614,7 @@ RSpec.describe Goal, type: :model do
             create(:employment_tenure,
               teammate: org_member_teammate,
               company: company,
-              manager: manager_of_member,
+              manager_teammate: manager_of_member_teammate,
               started_at: 1.month.ago,
               ended_at: nil
             )

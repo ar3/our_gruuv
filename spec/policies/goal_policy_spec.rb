@@ -40,7 +40,7 @@ RSpec.describe GoalPolicy, type: :policy do
       end
       
       it 'denies owner to view (if owner is not creator)' do
-        goal.update!(owner: owner_teammate)
+        goal.update!(owner: owner_teammate, owner_type: 'CompanyTeammate')
         policy = GoalPolicy.new(pundit_user_owner, goal)
         expect(policy.show?).to be false
       end
@@ -90,7 +90,7 @@ RSpec.describe GoalPolicy, type: :policy do
         owner_employment = create(:employment_tenure, 
           teammate: owner_teammate, 
           company: company,
-          manager: manager_person,
+          manager_teammate: manager_teammate,
           started_at: 1.month.ago,
           ended_at: nil
         )

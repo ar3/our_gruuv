@@ -7,21 +7,23 @@ RSpec.describe 'Organizations::Employees#index manager filter integration', type
   let(:non_direct_report) { create(:person) }
   
   let!(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
-  let!(:direct_report_teammate) { create(:teammate, person: direct_report, organization: organization) }
-  let!(:non_direct_report_teammate) { create(:teammate, person: non_direct_report, organization: organization) }
+  let!(:direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: direct_report, organization: organization) }
+  let!(:non_direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: non_direct_report, organization: organization) }
 
   before do
-    # Create employment tenures with manager relationships
-    create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager_teammate: manager_teammate, ended_at: nil)
-    create(:employment_tenure, teammate: non_direct_report_teammate, company: organization, manager_teammate: nil, ended_at: nil)
-    
     # Set first_employed_at so teammates pass the 'active' status filter
     direct_report_teammate.update!(first_employed_at: 1.month.ago)
     non_direct_report_teammate.update!(first_employed_at: 1.month.ago)
     manager_teammate.update!(first_employed_at: 1.month.ago)
     
-    # Reload as CompanyTeammate to ensure has_direct_reports? method is available
+    # Reload as CompanyTeammate instances before using them
     manager_ct = CompanyTeammate.find(manager_teammate.id)
+    direct_report_ct = CompanyTeammate.find(direct_report_teammate.id)
+    non_direct_report_ct = CompanyTeammate.find(non_direct_report_teammate.id)
+    
+    # Create employment tenures with manager relationships
+    create(:employment_tenure, teammate: direct_report_ct, company: organization, manager_teammate: manager_ct, ended_at: nil)
+    create(:employment_tenure, teammate: non_direct_report_ct, company: organization, manager_teammate: nil, ended_at: nil)
     
     # Mock authentication for manager
     sign_in_as_teammate_for_request(manager, organization)

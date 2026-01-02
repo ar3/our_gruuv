@@ -72,6 +72,12 @@ class CompanyTeammate < Teammate
                .distinct
   end
 
+  def has_direct_reports?
+    # Check if this teammate manages anyone in the organization
+    EmploymentTenure.where(company: organization, manager_teammate: self, ended_at: nil)
+                    .exists?
+  end
+
   # Hierarchy methods (moved from Person model)
   def in_managerial_hierarchy_of?(other_teammate)
     return false unless other_teammate
@@ -90,15 +96,10 @@ class CompanyTeammate < Teammate
       
       # Get active employment tenures for this teammate in this company
       # Query directly from database to avoid association caching issues
-      tenures = EmploymentTenure.where(teammate: teammate, company: company, ended_at: nil).includes(:manager)
+      tenures = EmploymentTenure.where(teammate: teammate, company: company, ended_at: nil).includes(:manager_teammate)
       
       tenures.each do |tenure|
-        manager = tenure.manager
-        next unless manager
-        
-        # Get manager's teammate in this organization
-        # Query directly from database to avoid association caching issues
-        manager_teammate = CompanyTeammate.find_by(organization: company, person: manager)
+        manager_teammate = tenure.manager_teammate
         next unless manager_teammate
         
         # Found self in the hierarchy
@@ -114,11 +115,6 @@ class CompanyTeammate < Teammate
     check_hierarchy.call(other_teammate, visited)
   end
 
-  def has_direct_reports?
-    # Check if this teammate manages anyone in the organization
-    EmploymentTenure.where(company: organization, manager_teammate: self, ended_at: nil)
-                    .exists?
-  end
 
   # Current manager method (moved from Person model)
   def current_manager

@@ -24,7 +24,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
       teammate: employee_teammate,
       position: position,
       company: company,
-      manager: manager_person,
+      manager_teammate: manager_teammate,
       started_at: 1.year.ago
     )
   end
@@ -191,7 +191,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
     
     # Ensure employment_tenure has manager set for manager view mode to work
     before do
-      employment_tenure.update!(manager: manager_person) if employment_tenure.manager != manager_person
+      employment_tenure.update!(manager_teammate: manager_teammate) if employment_tenure.manager_teammate != manager_teammate
     end
 
     describe 'Employee view' do

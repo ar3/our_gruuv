@@ -410,13 +410,13 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       when 'my_direct_reports_check_in_status_1'
         {
           display: 'check_in_status',
-          manager_teammate_id: current_person&.company_teammates&.find_by(organization: @organization)&.id
+          manager_teammate_id: current_company_teammate&.id
         }
       when 'my_direct_reports_check_in_status_2'
         {
           display: 'check_ins_health',
           spotlight: 'check_ins_health',
-          manager_teammate_id: current_person&.company_teammates&.find_by(organization: @organization)&.id
+          manager_teammate_id: current_company_teammate&.id
         }
       when 'hierarchical_accountability_chart'
         {

@@ -7,7 +7,7 @@ RSpec.describe ObservationsQuery, type: :query do
   let(:observee_person) { create(:person) }
   let(:observee_teammate) { create(:teammate, person: observee_person, organization: company) }
   let(:manager_person) { create(:person) }
-  let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
+  let(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: company) }
 
   let!(:observation1) do
     build(:observation, observer: observer, company: company, privacy_level: :observer_only, observed_at: 1.week.ago).tap do |obs|
@@ -43,7 +43,7 @@ RSpec.describe ObservationsQuery, type: :query do
   before do
     # Set up real management hierarchy
     create(:employment_tenure, teammate: manager_teammate, company: company)
-    create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+    create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: manager_teammate)
   end
 
   describe '#call' do

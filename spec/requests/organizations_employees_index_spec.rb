@@ -38,11 +38,11 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
   describe 'manager filter functionality' do
     let!(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
-    let(:direct_report_teammate) { create(:teammate, person: direct_report, organization: organization) }
+    let(:direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: direct_report, organization: organization) }
 
     before do
       # Create employment tenure with manager relationship
-      create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, ended_at: nil)
+      create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager_teammate: manager_teammate, ended_at: nil)
       
       # Reload to ensure we have the CompanyTeammate instance
       manager_ct = CompanyTeammate.find(manager_teammate.id)
@@ -74,10 +74,10 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
     it 'includes multiple manager_ids in current_filters' do
       manager2 = create(:person)
-      manager2_teammate = create(:teammate, person: manager2, organization: organization, first_employed_at: 1.month.ago)
+      manager2_teammate = CompanyTeammate.create!(person: manager2, organization: organization, first_employed_at: 1.month.ago)
       direct_report2 = create(:person)
-      direct_report2_teammate = create(:teammate, person: direct_report2, organization: organization, first_employed_at: 1.month.ago)
-      create(:employment_tenure, teammate: direct_report2_teammate, company: organization, manager: manager2, ended_at: nil)
+      direct_report2_teammate = create(:teammate, type: 'CompanyTeammate', person: direct_report2, organization: organization, first_employed_at: 1.month.ago)
+      create(:employment_tenure, teammate: direct_report2_teammate, company: organization, manager_teammate: manager2_teammate, ended_at: nil)
       
       get organization_employees_path(organization, manager_id: [manager.id, manager2.id])
       expect(assigns(:current_filters)[:manager_id]).to include(manager.id.to_s, manager2.id.to_s)
@@ -93,9 +93,9 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       direct_report_teammate.update!(first_employed_at: 1.month.ago)
       existing_tenure = EmploymentTenure.find_by(teammate: direct_report_teammate, company: organization)
       if existing_tenure
-        existing_tenure.update!(manager: manager, started_at: 1.month.ago, ended_at: nil)
+        existing_tenure.update!(manager_teammate: manager_teammate, started_at: 1.month.ago, ended_at: nil)
       else
-        create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, started_at: 1.month.ago, ended_at: nil)
+        create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager_teammate: manager_teammate, started_at: 1.month.ago, ended_at: nil)
       end
       
       get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
@@ -118,7 +118,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
     it 'handles empty direct reports gracefully' do
       # Remove the direct report
-      EmploymentTenure.where(manager: manager).destroy_all
+      EmploymentTenure.where(manager_teammate: manager_teammate).destroy_all
       
       get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
       
@@ -133,7 +133,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
       30.times do |i|
         person = create(:person, first_name: "Employee#{i}", last_name: "Test")
         teammate = create(:teammate, person: person, organization: organization, first_employed_at: 1.month.ago)
-        create(:employment_tenure, teammate: teammate, company: organization, manager: manager, started_at: 1.month.ago, ended_at: nil)
+        create(:employment_tenure, teammate: teammate, company: organization, manager_teammate: manager_teammate, started_at: 1.month.ago, ended_at: nil)
       end
       
       get organization_employees_path(organization, manager_id: manager.id, page: 2)
@@ -155,10 +155,10 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     end
 
     it 'allows non-manager to access manager filter view (shows empty if no direct reports)' do
-      # Remove any direct reports for this manager
-      EmploymentTenure.where(manager: manager).destroy_all
+      # Remove any direct reports for this non-manager (they shouldn't have any)
+      EmploymentTenure.where(manager_teammate: non_manager_teammate).destroy_all
       
-      get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
+      get organization_employees_path(organization, manager_id: non_manager.id, display: 'check_in_status')
       
       expect(response).to be_successful
       teammates = assigns(:filtered_and_paginated_teammates)
@@ -209,10 +209,10 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
   describe 'integration with existing filters' do
     let(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
-    let(:direct_report_teammate) { create(:teammate, person: direct_report, organization: organization) }
+    let(:direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: direct_report, organization: organization) }
 
     before do
-      create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, ended_at: nil)
+      create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager_teammate: manager_teammate, ended_at: nil)
       
       # Reload as CompanyTeammate to ensure has_direct_reports? method is available
       manager_ct = CompanyTeammate.find(manager_teammate.id)
@@ -258,7 +258,7 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
     it 'combines manager filter with department filter' do
       department = create(:organization, type: 'Department', parent: organization)
       department_teammate = create(:teammate, person: direct_report, organization: department, first_employed_at: 1.month.ago)
-      create(:employment_tenure, teammate: department_teammate, company: organization, manager: manager, ended_at: nil)
+      create(:employment_tenure, teammate: department_teammate, company: organization, manager_teammate: manager_teammate, ended_at: nil)
       
       get organization_employees_path(organization, manager_id: manager.id, department_id: department.id)
       
@@ -390,11 +390,11 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
     it 'does not raise NoMethodError when accessing vertical_hierarchy view with manager filter' do
       manager = create(:person)
-      manager_teammate = create(:teammate, person: manager, organization: company_org, first_employed_at: 1.month.ago)
+      manager_teammate = CompanyTeammate.create!(person: manager, organization: company_org, first_employed_at: 1.month.ago)
       # Update existing employment tenure to have manager instead of creating a new one
-      employment_tenure.update!(manager: manager)
+      employment_tenure.update!(manager_teammate: manager_teammate)
       
-      manager_ct = CompanyTeammate.find(manager_teammate.id)
+      manager_ct = manager_teammate
       allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(manager)
       allow_any_instance_of(ApplicationController).to receive(:current_company_teammate).and_return(manager_ct)
 
@@ -480,10 +480,10 @@ RSpec.describe 'Organizations::Employees#index', type: :request do
 
     it 'combines department filter with manager filter' do
       manager = create(:person)
-      manager_teammate = create(:teammate, person: manager, organization: organization, first_employed_at: 1.month.ago)
+      manager_teammate = CompanyTeammate.create!(person: manager, organization: organization, first_employed_at: 1.month.ago)
       # Update existing tenure to have manager
       existing_tenure = EmploymentTenure.find_by(teammate: dept_teammate, company: organization)
-      existing_tenure.update!(manager: manager) if existing_tenure
+      existing_tenure.update!(manager_teammate: manager_teammate) if existing_tenure
       
       get organization_employees_path(organization, department_id: department.id, manager_id: manager.id)
       

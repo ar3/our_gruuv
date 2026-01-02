@@ -167,8 +167,13 @@ class OrganizationPolicy < ApplicationPolicy
       return true
     end
     
-    # For persisted records, check if record is the teammate's organization or in its hierarchy
-    record.id == teammate_org.id || teammate_org.self_and_descendants.map(&:id).include?(record.id)
+    # For persisted records, check if:
+    # 1. Record is the teammate's organization
+    # 2. Record is in teammate's organization hierarchy (descendant)
+    # 3. Teammate's organization is in record's hierarchy (ancestor/descendant relationship)
+    record.id == teammate_org.id || 
+      teammate_org.self_and_descendants.map(&:id).include?(record.id) ||
+      record.self_and_descendants.map(&:id).include?(teammate_org.id)
   end
 
   class Scope < ApplicationPolicy::Scope

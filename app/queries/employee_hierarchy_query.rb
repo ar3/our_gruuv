@@ -19,8 +19,13 @@ class EmployeeHierarchyQuery
       # EmploymentTenure uses 'company' association, not 'organization'
       # For managerial employment, we only care about the teammate record associated with the company
       org_ids = org.company? ? org.self_and_descendants.map(&:id) : [org.id]
+      
+      # Find the manager's CompanyTeammate record
+      manager_teammate = CompanyTeammate.find_by(person: person, organization_id: org_ids)
+      return unless manager_teammate
+      
       managed_tenures = EmploymentTenure.joins(:teammate)
-                                       .where(manager: person)
+                                       .where(manager_teammate: manager_teammate)
                                        .where(company_id: org_ids)
                                        .where(teammates: { organization_id: org_ids }) # Ensure teammate is associated with the company
                                        .active

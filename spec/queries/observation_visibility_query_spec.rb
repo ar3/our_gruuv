@@ -20,9 +20,9 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
     observer_teammate = create(:teammate, person: observer, organization: company)
     create(:employment_tenure, teammate: observer_teammate, company: company)
     
-    manager_teammate = create(:teammate, person: manager_person, organization: company)
+    manager_teammate = CompanyTeammate.create!(person: manager_person, organization: company)
     create(:employment_tenure, teammate: manager_teammate, company: company)
-    create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+    create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: manager_teammate)
     
     # Admin has employment management permissions
     admin_teammate = create(:teammate, person: admin_person, organization: company)
@@ -92,17 +92,17 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         # Set up indirect report: observee -> manager -> grand_manager
         # New rules only check direct manager relationships via employment_tenures
         grand_manager = create(:person)
-        grand_manager_teammate = create(:teammate, person: grand_manager, organization: company)
+        grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
         manager_teammate = Teammate.find_by(person: manager_person, organization: company)
         
         create(:employment_tenure, teammate: grand_manager_teammate, company: company)
         # Update existing manager tenure to have grand_manager as manager
         manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
-        manager_tenure.update!(manager: grand_manager)
+        manager_tenure.update!(manager_teammate: grand_manager_teammate)
         
         indirect_observee = create(:person)
         indirect_observee_teammate = create(:teammate, person: indirect_observee, organization: company)
-        create(:employment_tenure, teammate: indirect_observee_teammate, company: company, manager: manager_person)
+        create(:employment_tenure, teammate: indirect_observee_teammate, company: company, manager_teammate: manager_teammate)
         
         indirect_observation = build(:observation, observer: observer, company: company, privacy_level: :managers_only).tap do |obs|
           obs.observees.build(teammate: indirect_observee_teammate)
@@ -427,13 +427,13 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
 
       it 'does not allow indirect managers (only direct managers via employment_tenures)' do
         grand_manager = create(:person)
-        grand_manager_teammate = create(:teammate, person: grand_manager, organization: company)
+        grand_manager_teammate = CompanyTeammate.create!(person: grand_manager, organization: company)
         manager_teammate = Teammate.find_by(person: manager_person, organization: company)
         
         create(:employment_tenure, teammate: grand_manager_teammate, company: company)
         # Update existing manager tenure to have grand_manager as manager
         manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
-        manager_tenure.update!(manager: grand_manager)
+        manager_tenure.update!(manager_teammate: grand_manager_teammate)
         
         grand_manager_query = described_class.new(grand_manager, company)
         # Grand manager is NOT a direct manager of observee_teammate, so they cannot see it
@@ -646,13 +646,13 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
     it 'returns teammate IDs for indirect reports (reports of reports)' do
       # Set up hierarchy: indirect_report -> direct_report -> manager
       direct_report = create(:person)
-      direct_report_teammate = create(:teammate, person: direct_report, organization: company)
+      direct_report_teammate = CompanyTeammate.create!(person: direct_report, organization: company)
       indirect_report = create(:person)
       indirect_report_teammate = create(:teammate, person: indirect_report, organization: company)
       
       manager_teammate = Teammate.find_by(person: manager_person, organization: company)
-      create(:employment_tenure, teammate: direct_report_teammate, company: company, manager: manager_person)
-      create(:employment_tenure, teammate: indirect_report_teammate, company: company, manager: direct_report)
+      create(:employment_tenure, teammate: direct_report_teammate, company: company, manager_teammate: manager_teammate)
+      create(:employment_tenure, teammate: indirect_report_teammate, company: company, manager_teammate: direct_report_teammate)
       
       teammate_ids = query.send(:managed_teammate_ids_for_person)
       expect(teammate_ids).to include(direct_report_teammate.id)

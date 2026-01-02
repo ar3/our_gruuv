@@ -6,9 +6,9 @@ RSpec.describe 'PeopleController Security', type: :request do
   let(:person) { create(:person) }
   let(:person_teammate) { create(:teammate, person: person, organization: organization) }
   let(:manager) { create(:person) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
   let(:employment_manager) { create(:person) }
-  let(:employment_manager_teammate) { create(:teammate, person: employment_manager, organization: organization, can_manage_employment: true) }
+  let(:employment_manager_teammate) { CompanyTeammate.create!(person: employment_manager, organization: organization, can_manage_employment: true) }
   let(:regular_teammate_person) { create(:person) }
   let(:regular_teammate) { create(:teammate, person: regular_teammate_person, organization: organization) }
 
@@ -26,7 +26,7 @@ RSpec.describe 'PeopleController Security', type: :request do
     create(:employment_tenure, teammate: regular_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
     regular_teammate.update!(first_employed_at: 1.year.ago)
     # Set manager relationship
-    person_teammate.employment_tenures.first.update!(manager: manager)
+    person_teammate.employment_tenures.first.update!(manager_teammate: manager_teammate)
   end
 
   describe 'GET /organizations/:organization_id/people/:id' do

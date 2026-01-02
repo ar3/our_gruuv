@@ -7,7 +7,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
     @person = @teammate.person
     # Organization-scoped teammate view - filtered by the organization from the route
-    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, :manager)
+    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, :manager_teammate)
                                  &.where(company: organization)
                                  &.order(started_at: :desc)
                                  &.decorate || []
@@ -37,7 +37,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     authorize @teammate, :complete_picture?, policy_class: CompanyTeammatePolicy
     # Complete picture view - detailed view for managers to see teammate's position, assignments, and milestones
     # Filter by the organization from the route
-    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, :manager)
+    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, :manager_teammate)
                                  &.where(company: organization)
                                  &.order(started_at: :desc)
                                  &.decorate || []
@@ -78,7 +78,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     authorize @teammate, :internal?, policy_class: CompanyTeammatePolicy
     # Internal view - organization-specific data for teammates (active, inactive, or not yet active)
     @current_organization = organization
-    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :manager, position: :position_type)
+    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :manager_teammate, position: :position_type)
                                  &.where(company: organization)
                                  &.order(started_at: :desc)
                                  &.decorate || []
@@ -515,7 +515,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def setup_show_instance_variables
     # Get all employment tenures for this organization
-    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, :manager)
+    @employment_tenures = @teammate&.employment_tenures&.includes(:company, :position, :manager_teammate)
                                  &.where(company: organization)
                                  &.order(started_at: :desc)
                                  &.decorate || []

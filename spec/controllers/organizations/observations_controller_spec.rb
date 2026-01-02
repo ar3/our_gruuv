@@ -165,14 +165,14 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
   describe 'GET #show' do
     let(:manager_person) { create(:person) }
-    let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
+    let(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: company) }
     let(:random_person) { create(:person) }
     let(:random_teammate) { create(:teammate, person: random_person, organization: company) }
 
     before do
       # Set up managerial hierarchy: observee -> manager
       create(:employment_tenure, teammate: manager_teammate, company: company)
-      create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+      create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: manager_teammate)
     end
 
     context 'observer_only privacy' do
@@ -2361,12 +2361,12 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
       context 'with different privacy levels' do
         let(:manager_person) { create(:person) }
-        let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
+        let(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: company) }
 
         before do
           # Set up managerial hierarchy: observee -> manager
           create(:employment_tenure, teammate: manager_teammate, company: company)
-          create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+          create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: manager_teammate)
         end
 
         it 'shows observer and observees for observed_only' do
@@ -2537,14 +2537,14 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
   describe 'privacy enforcement on index page' do
     let(:manager_person) { create(:person) }
-    let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
+    let(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: company) }
     let(:random_person) { create(:person) }
     let(:random_teammate) { create(:teammate, person: random_person, organization: company) }
 
     before do
       # Set up managerial hierarchy: observee -> manager
       create(:employment_tenure, teammate: manager_teammate, company: company)
-      create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+      create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: manager_teammate)
     end
 
     it 'does not show observed_only observations to managers on index' do
@@ -2585,14 +2585,14 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
 
   describe 'privacy enforcement on show page' do
     let(:manager_person) { create(:person) }
-    let(:manager_teammate) { create(:teammate, person: manager_person, organization: company) }
+    let(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: company) }
     let(:random_person) { create(:person) }
     let(:random_teammate) { create(:teammate, person: random_person, organization: company) }
 
     before do
       # Set up managerial hierarchy: observee -> manager
       create(:employment_tenure, teammate: manager_teammate, company: company)
-      create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+      create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: manager_teammate)
     end
 
     it 'redirects manager when trying to view observed_only observation' do

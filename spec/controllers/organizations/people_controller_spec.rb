@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person) }
-  let(:manager_access) { create(:teammate, person: manager, organization: organization, can_manage_employment: true) }
+  let(:manager_access) { CompanyTeammate.create!(person: manager, organization: organization, can_manage_employment: true) }
   
   before do
     manager_access
@@ -28,7 +28,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
       # Create active employment for regular teammate
       create(:employment_tenure, teammate: regular_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
       # Set manager relationship
-      person_teammate.employment_tenures.first.update!(manager: manager)
+      person_teammate.employment_tenures.first.update!(manager_teammate: manager_access)
     end
 
     context 'authorization' do
@@ -677,7 +677,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
 
       context 'when user is in managerial hierarchy' do
         let(:hierarchy_manager) { create(:person) }
-        let(:hierarchy_manager_teammate) { create(:teammate, person: hierarchy_manager, organization: organization) }
+        let(:hierarchy_manager_teammate) { CompanyTeammate.create!(person: hierarchy_manager, organization: organization) }
         
         before do
           # Create active employment tenure for manager

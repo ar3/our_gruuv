@@ -17,11 +17,10 @@ module CheckIns
       
       # Get manager from active employment tenure in this organization
       employment_tenure = employee_teammate.employment_tenures.active.where(company: organization).first
-      manager = employment_tenure&.manager
-      return unless manager
-
-      manager_teammate = manager.teammates.find_by(organization: organization)
+      manager_teammate = employment_tenure&.manager_teammate
       return unless manager_teammate
+
+      manager = manager_teammate.person
 
       # Both must have Slack connected for group DM
       return unless employee_teammate.has_slack_identity? && employee_teammate.slack_user_id.present?

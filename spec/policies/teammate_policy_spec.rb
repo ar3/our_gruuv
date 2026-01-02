@@ -66,9 +66,9 @@ RSpec.describe TeammatePolicy, type: :policy do
           direct_manager_teammate
           grand_manager_teammate
           other_person_teammate
-          create(:employment_tenure, teammate: direct_manager_teammate, company: organization, manager: grand_manager)
+          create(:employment_tenure, teammate: direct_manager_teammate, company: organization, manager_teammate: grand_manager_teammate)
           create(:employment_tenure, teammate: grand_manager_teammate, company: organization)
-          create(:employment_tenure, teammate: other_person_teammate, company: organization, manager: direct_manager)
+          create(:employment_tenure, teammate: other_person_teammate, company: organization, manager_teammate: direct_manager_teammate)
           direct_manager_teammate.reload
           grand_manager_teammate.reload
           other_person_teammate.reload

@@ -54,8 +54,8 @@ class AbilityPolicy < ApplicationPolicy
     return false unless viewing_teammate_org
     
     # Check if record's organization is in viewing_teammate's organization hierarchy
-    orgs = viewing_teammate_org.self_and_descendants
-    return false unless orgs.include?(record.organization)
+    org_ids = viewing_teammate_org.self_and_descendants.map(&:id)
+    return false unless org_ids.include?(record.organization.id)
     
     viewing_teammate.can_manage_maap?
   end

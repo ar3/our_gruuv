@@ -5,7 +5,7 @@ RSpec.describe 'Organizations::People Show', type: :request do
   let(:person) { create(:person) }
   let(:person_teammate) { create(:teammate, person: person, organization: organization) }
   let(:manager) { create(:person) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
 
   before do
     # Create active employment for the person
@@ -17,7 +17,7 @@ RSpec.describe 'Organizations::People Show', type: :request do
     manager_teammate.update!(first_employed_at: 2.years.ago)
     
     # Set manager relationship
-    person_teammate.employment_tenures.first.update!(manager: manager)
+    person_teammate.employment_tenures.first.update!(manager_teammate: manager_teammate)
   end
 
   describe 'GET /organizations/:organization_id/people/:id' do

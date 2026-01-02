@@ -6,22 +6,23 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
   let(:direct_report) { create(:person) }
   let(:non_direct_report) { create(:person) }
   
-  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
-  let!(:direct_report_teammate) { create(:teammate, person: direct_report, organization: organization) }
-  let!(:non_direct_report_teammate) { create(:teammate, person: non_direct_report, organization: organization) }
+  let!(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization) }
+  let!(:direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: direct_report, organization: organization) }
+  let!(:non_direct_report_teammate) { create(:teammate, type: 'CompanyTeammate', person: non_direct_report, organization: organization) }
+
+  let(:manager_ct) { CompanyTeammate.find(manager_teammate.id) }
+  let(:direct_report_ct) { CompanyTeammate.find(direct_report_teammate.id) }
+  let(:non_direct_report_ct) { CompanyTeammate.find(non_direct_report_teammate.id) }
 
   before do
-    # Create employment tenures with manager relationships
-    create(:employment_tenure, teammate: direct_report_teammate, company: organization, manager: manager, ended_at: nil)
-    create(:employment_tenure, teammate: non_direct_report_teammate, company: organization, manager: nil, ended_at: nil)
-    
     # Set first_employed_at so teammates pass the 'active' status filter
     direct_report_teammate.update!(first_employed_at: 1.month.ago)
     non_direct_report_teammate.update!(first_employed_at: 1.month.ago)
     manager_teammate.update!(first_employed_at: 1.month.ago)
     
-    # Reload as CompanyTeammate to ensure has_direct_reports? method is available
-    manager_ct = CompanyTeammate.find(manager_teammate.id)
+    # Create employment tenures with manager relationships
+    create(:employment_tenure, teammate: direct_report_ct, company: organization, manager_teammate: manager_ct, ended_at: nil)
+    create(:employment_tenure, teammate: non_direct_report_ct, company: organization, manager_teammate: nil, ended_at: nil)
     
     # Mock authentication for manager
     sign_in_as_teammate_for_request(manager, organization)
@@ -29,7 +30,7 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
   end
 
   it 'returns only direct reports when manager_id is set' do
-    get organization_employees_path(organization, manager_id: manager.id)
+    get organization_employees_path(organization, manager_teammate_id: manager_ct.id)
     
     expect(response).to be_successful
     teammates = assigns(:filtered_and_paginated_teammates)
@@ -44,12 +45,16 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
 
   it 'returns direct reports for multiple managers when manager_id[] is set' do
     manager2 = create(:person)
-    manager2_teammate = create(:teammate, person: manager2, organization: organization, first_employed_at: 1.month.ago)
+    manager2_teammate = create(:teammate, type: 'CompanyTeammate', person: manager2, organization: organization, first_employed_at: 1.month.ago)
     direct_report2 = create(:person)
-    direct_report2_teammate = create(:teammate, person: direct_report2, organization: organization, first_employed_at: 1.month.ago)
-    create(:employment_tenure, teammate: direct_report2_teammate, company: organization, manager: manager2, ended_at: nil)
+    direct_report2_teammate = create(:teammate, type: 'CompanyTeammate', person: direct_report2, organization: organization, first_employed_at: 1.month.ago)
     
-    get organization_employees_path(organization, manager_id: [manager.id, manager2.id])
+    # Reload as CompanyTeammate instances
+    manager2_ct = CompanyTeammate.find(manager2_teammate.id)
+    direct_report2_ct = CompanyTeammate.find(direct_report2_teammate.id)
+    create(:employment_tenure, teammate: direct_report2_ct, company: organization, manager_teammate: manager2_ct, ended_at: nil)
+    
+    get organization_employees_path(organization, manager_teammate_id: [manager_ct.id, manager2_ct.id])
     
     expect(response).to be_successful
     teammates = assigns(:filtered_and_paginated_teammates)
@@ -76,7 +81,7 @@ RSpec.describe 'Organizations::Employees#index with manager filter', type: :requ
   end
 
   it 'renders the check_in_status display without errors' do
-    get organization_employees_path(organization, manager_id: manager.id, display: 'check_in_status')
+    get organization_employees_path(organization, manager_teammate_id: manager_ct.id, display: 'check_in_status')
     
     expect(response).to be_successful
     expect(response.body).not_to include('Association named')

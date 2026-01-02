@@ -54,7 +54,7 @@ class ApplicationPolicy
     return if viewing_teammate.nil? # Allow nil for unauthenticated checks
     
     unless viewing_teammate.is_a?(CompanyTeammate)
-      raise ArgumentError, "Policies must receive a CompanyTeammate, got #{teammate_obj.class.name}. Use teammate.person if you need the person."
+      raise ArgumentError, "Policies must receive a CompanyTeammate, got #{viewing_teammate.class.name}. Use teammate.person if you need the person."
     end
   end
 

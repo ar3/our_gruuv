@@ -33,8 +33,9 @@ RSpec.describe ObservationPolicy, type: :policy do
     
     # Set up real employment tenures to create managerial hierarchy
     # Manager is direct manager of observee
+    manager_teammate_company = CompanyTeammate.find_or_create_by!(person: manager_person, organization: company)
     create(:employment_tenure, teammate: manager_teammate, company: company)
-    create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+    create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: manager_teammate_company)
     
     # Admin has employment management permissions
     admin_teammate.update!(can_manage_employment: true)
@@ -143,7 +144,7 @@ RSpec.describe ObservationPolicy, type: :policy do
         # Delete and recreate manager tenure with grand_manager as manager to avoid association caching issues
         manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
         manager_tenure.destroy
-        create(:employment_tenure, teammate: manager_teammate, company: company, manager: grand_manager)
+        create(:employment_tenure, teammate: manager_teammate, company: company, manager_teammate: grand_manager_teammate)
         # Reload manager and grand_manager teammates to clear association cache
         manager_teammate.reload
         grand_manager_teammate.reload
@@ -199,7 +200,7 @@ RSpec.describe ObservationPolicy, type: :policy do
         # Delete and recreate manager tenure with grand_manager as manager to avoid association caching issues
         manager_tenure = EmploymentTenure.find_by(teammate: manager_teammate, company: company)
         manager_tenure.destroy
-        create(:employment_tenure, teammate: manager_teammate, company: company, manager: grand_manager)
+        create(:employment_tenure, teammate: manager_teammate, company: company, manager_teammate: grand_manager_teammate)
         # Reload teammates to clear association cache
         manager_teammate.reload
         grand_manager_teammate.reload
@@ -980,7 +981,7 @@ end
       
       # Set up management hierarchy: observee reports to manager
       create(:employment_tenure, teammate: manager_teammate, company: company)
-      create(:employment_tenure, teammate: observee_teammate, company: company, manager: manager_person)
+      create(:employment_tenure, teammate: observee_teammate, company: company, manager_teammate: manager_teammate)
       create(:employment_tenure, teammate: observer_teammate, company: company)
       create(:employment_tenure, teammate: unrelated_teammate, company: company)
       

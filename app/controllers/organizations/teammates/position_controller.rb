@@ -16,7 +16,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     
     @current_employment = @teammate.employment_tenures.active.first
     @employment_tenures = @teammate.employment_tenures
-      .includes(:position, :manager, :seat)
+      .includes(:position, :manager_teammate, :seat)
       .order(started_at: :desc)
     @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
     
@@ -55,7 +55,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
                    .includes(:position_check_in_ratings)
                    .order(created_at: :desc)
     @employment_tenures = @teammate.employment_tenures
-      .includes(:position, :manager, :seat)
+      .includes(:position, :manager_teammate, :seat)
       .order(started_at: :desc)
     @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
     

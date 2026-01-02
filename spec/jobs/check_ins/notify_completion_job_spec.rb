@@ -5,7 +5,7 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
   let(:employee) { create(:person) }
   let(:manager) { create(:person) }
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
   let(:slack_service) { instance_double(SlackService) }
 
   before do
@@ -19,7 +19,7 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
   describe 'AssignmentCheckIn' do
     before do
       # Set up manager relationship for AssignmentCheckIn specs
-      create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager)
+      create(:employment_tenure, teammate: employee_teammate, company: organization, manager_teammate: manager_teammate)
     end
     let(:assignment) { create(:assignment, company: organization) }
     let(:check_in) { create(:assignment_check_in, teammate: employee_teammate, assignment: assignment) }
@@ -176,7 +176,7 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
   end
 
   describe 'PositionCheckIn' do
-    let!(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager) }
+    let!(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: organization, manager_teammate: manager_teammate) }
     let(:check_in) { create(:position_check_in, teammate: employee_teammate, employment_tenure: employment_tenure) }
 
     before do
@@ -202,7 +202,7 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
   describe 'AspirationCheckIn' do
     before do
       # Set up manager relationship for AspirationCheckIn specs
-      create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager)
+      create(:employment_tenure, teammate: employee_teammate, company: organization, manager_teammate: manager_teammate)
     end
     let(:aspiration) { create(:aspiration, organization: organization) }
     let(:check_in) { create(:aspiration_check_in, teammate: employee_teammate, aspiration: aspiration) }
@@ -230,7 +230,7 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
   describe 'error handling' do
     before do
       # Set up manager relationship for error handling specs
-      create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager)
+      create(:employment_tenure, teammate: employee_teammate, company: organization, manager_teammate: manager_teammate)
     end
     let(:assignment) { create(:assignment, company: organization) }
     let(:check_in) { create(:assignment_check_in, teammate: employee_teammate, assignment: assignment) }

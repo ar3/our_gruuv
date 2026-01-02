@@ -363,6 +363,7 @@ RSpec.describe PositionCheckIn, type: :model do
 
   describe 'rating consistency after finalization' do
     let(:manager) { create(:person) }
+    let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
     let(:position_type) { create(:position_type, organization: organization) }
     let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
     let(:position) { create(:position, position_type: position_type, position_level: position_level) }
@@ -371,7 +372,7 @@ RSpec.describe PositionCheckIn, type: :model do
         create(:employment_tenure,
           teammate: teammate,
           company: organization,
-          manager: manager,
+          manager_teammate: manager_teammate,
           position: position,
           started_at: 1.month.ago)
     end

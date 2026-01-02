@@ -5,9 +5,9 @@ RSpec.describe CheckInCompletionService, type: :service do
   let(:employee) { create(:person) }
   let(:manager) { create(:person) }
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
 
-  let!(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager) }
+  let!(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: organization, manager_teammate: manager_teammate) }
 
   describe 'AssignmentCheckIn' do
     let(:assignment) { create(:assignment, company: organization) }

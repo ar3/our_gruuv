@@ -284,10 +284,10 @@ RSpec.describe Person, type: :model do
 
     before do
       # Set up employment tenures
-      create(:employment_tenure, teammate: employee_teammate, company: company, manager: direct_manager)
-      create(:employment_tenure, teammate: direct_manager_teammate, company: company, manager: grand_manager)
-      create(:employment_tenure, teammate: grand_manager_teammate, company: company, manager: great_grand_manager)
-      create(:employment_tenure, teammate: unrelated_teammate, company: company, manager: nil)
+      create(:employment_tenure, teammate: employee_teammate, company: company, manager_teammate: direct_manager_teammate)
+      create(:employment_tenure, teammate: direct_manager_teammate, company: company, manager_teammate: grand_manager_teammate)
+      create(:employment_tenure, teammate: grand_manager_teammate, company: company, manager_teammate: great_grand_manager_teammate)
+      create(:employment_tenure, teammate: unrelated_teammate, company: company, manager_teammate: nil)
     end
 
     context 'when person is direct manager' do
@@ -345,7 +345,7 @@ RSpec.describe Person, type: :model do
         create(:employment_tenure, 
                teammate: employee_teammate, 
                company: company, 
-               manager: other_manager,
+               manager_teammate: other_manager_teammate,
                started_at: 2.years.ago,
                ended_at: 1.year.ago)
       end
@@ -362,7 +362,7 @@ RSpec.describe Person, type: :model do
         # This shouldn't happen in real data, but we should handle it gracefully
         # Update existing direct_manager tenure to have employee as manager (circular)
         direct_manager_tenure = EmploymentTenure.find_by(teammate: direct_manager_teammate, company: company)
-        direct_manager_tenure.update!(manager: employee)
+        direct_manager_tenure.update!(manager_teammate: employee_teammate)
       end
 
       it 'does not cause infinite loop' do
@@ -388,7 +388,7 @@ RSpec.describe Person, type: :model do
         create(:employment_tenure, 
                teammate: other_company_employee_teammate, 
                company: other_company, 
-               manager: other_company_manager)
+               manager_teammate: other_company_manager_teammate)
       end
 
       it 'only checks within the specified organization' do
