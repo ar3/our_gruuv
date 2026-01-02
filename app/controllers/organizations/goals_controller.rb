@@ -786,12 +786,22 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Get teammates managed by current user in this organization (their employees)
     # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
     # Use CompanyTeammate directly to filter at database level
-    managed_teammates = CompanyTeammate.joins(:employment_tenures)
-                                       .where(employment_tenures: { company: company, manager: current_person, ended_at: nil })
-                                       .where.not(id: current_teammate&.id)
-                                       .includes(:person)
-                                       .distinct
-                                       .order('people.last_name', 'people.first_name')
+    # Find the current person's CompanyTeammate in the company to use as manager_teammate_id
+    current_manager_teammate = current_person.teammates
+                                             .where(organization_id: company.id)
+                                             .where(type: 'CompanyTeammate')
+                                             .first
+    
+    managed_teammates = if current_manager_teammate
+      CompanyTeammate.joins(:employment_tenures)
+                     .where(employment_tenures: { company: company, manager_teammate_id: current_manager_teammate.id, ended_at: nil })
+                     .where.not(id: current_teammate&.id)
+                     .includes(:person)
+                     .distinct
+                     .order('people.last_name', 'people.first_name')
+    else
+      CompanyTeammate.none
+    end
     
     managed_teammates.each do |teammate|
       options << ["Teammate: #{teammate.person.display_name}", "CompanyTeammate_#{teammate.id}"]

@@ -172,7 +172,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     # Validate required fields
     unless position_id.present? && started_at.present?
       @current_employment = @teammate.employment_tenures.active.first
-      @employment_tenures = @teammate.employment_tenures.includes(:position, :manager, :seat).order(started_at: :desc)
+      @employment_tenures = @teammate.employment_tenures.includes(:position, :manager_teammate, :seat).order(started_at: :desc)
       @inactive_tenures = inactive_tenures
       @has_inactive_tenures = inactive_tenures.any?
       @latest_inactive_end_date = latest_inactive_end_date
@@ -191,7 +191,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     position = Position.find_by(id: position_id)
     unless position
       @current_employment = @teammate.employment_tenures.active.first
-      @employment_tenures = @teammate.employment_tenures.includes(:position, :manager, :seat).order(started_at: :desc)
+      @employment_tenures = @teammate.employment_tenures.includes(:position, :manager_teammate, :seat).order(started_at: :desc)
       @inactive_tenures = inactive_tenures
       @has_inactive_tenures = inactive_tenures.any?
       @latest_inactive_end_date = latest_inactive_end_date
@@ -234,7 +234,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
                   notice: 'Employment was successfully started.'
     else
       @current_employment = @teammate.employment_tenures.active.first
-      @employment_tenures = @teammate.employment_tenures.includes(:position, :manager, :seat).order(started_at: :desc)
+      @employment_tenures = @teammate.employment_tenures.includes(:position, :manager_teammate, :seat).order(started_at: :desc)
       @inactive_tenures = inactive_tenures
       @has_inactive_tenures = inactive_tenures.any?
       @latest_inactive_end_date = latest_inactive_end_date

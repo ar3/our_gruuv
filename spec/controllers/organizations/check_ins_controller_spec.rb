@@ -10,10 +10,13 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
   let(:assignment) { create(:assignment, company: organization, title: 'Frontend Development') }
   let(:aspiration) { create(:aspiration, organization: organization, name: 'Technical Skills') }
 
-  let(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager, position: position) }
-  let(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization, can_manage_employment: true) }
+  let(:manager_teammate) { create(:teammate, type: 'CompanyTeammate', person: manager, organization: organization, can_manage_employment: true) }
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
+  let(:employment_tenure) do
+    mt = CompanyTeammate.find(manager_teammate.id) # Ensure it's a CompanyTeammate instance
+    create(:employment_tenure, teammate: employee_teammate, company: organization, manager_teammate: mt, position: position)
+  end
+  let(:assignment_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: assignment) }
   let(:manager_employment) do
     manager_teammate.update!(first_employed_at: 1.year.ago)
     create(:employment_tenure, teammate: manager_teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
