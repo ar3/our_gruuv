@@ -215,6 +215,7 @@ get '/login', to: 'auth#login', as: :login
       
       # Asana OAuth (nested under company_teammates)
       get 'asana/oauth/authorize', to: 'company_teammates/asana/oauth#authorize', as: :asana_oauth_authorize
+      delete 'asana/disconnect', to: 'company_teammates/asana/oauth#disconnect', as: :asana_disconnect
     end
     
     # Teammates resource routes for position, assignments, and aspirations

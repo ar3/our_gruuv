@@ -2,7 +2,7 @@ class Organizations::CompanyTeammates::Asana::OauthController < ApplicationContr
   before_action :require_authentication
   before_action :set_organization, except: [:callback]
   before_action :set_organization_from_state, only: [:callback]
-  before_action :set_teammate, only: [:authorize]
+  before_action :set_teammate, only: [:authorize, :disconnect]
   before_action :set_teammate_from_state, only: [:callback]
 
   def authorize
@@ -137,6 +137,23 @@ class Organizations::CompanyTeammates::Asana::OauthController < ApplicationContr
       end
       
       redirect_to redirect_path, alert: "Failed to connect Asana: #{e.message}"
+    end
+  end
+
+  def disconnect
+    unless policy(@teammate).update?
+      raise Pundit::NotAuthorizedError.new(query: :update?, record: @teammate, policy: CompanyTeammatePolicy.new(pundit_user, @teammate))
+    end
+    
+    identity = @teammate.asana_identity
+    if identity
+      if identity.destroy
+        redirect_to organization_company_teammate_path(@organization, @teammate), notice: 'Asana account disconnected successfully.'
+      else
+        redirect_to organization_company_teammate_path(@organization, @teammate), alert: 'Failed to disconnect Asana account. Please try again.'
+      end
+    else
+      redirect_to organization_company_teammate_path(@organization, @teammate), alert: 'No Asana account connected to disconnect.'
     end
   end
 

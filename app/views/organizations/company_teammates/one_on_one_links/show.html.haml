@@ -36,6 +36,7 @@
       
       - source = @one_on_one_link.external_project_source
       - cache = @one_on_one_link.external_project_cache_for(source) if source
+      - viewing_user_has_identity = has_external_identity?(current_company_teammate, source) if source
       
       - if source && cache
         -# Display cached project
@@ -45,18 +46,19 @@
                  current_teammate: @teammate,
                  source: source,
                  return_url: request.fullpath
-      - elsif source && !cache
-        -# Prompt to sync
+      - elsif source && !cache && viewing_user_has_identity
+        -# Prompt to sync (viewing user has identity)
         = render 'shared/external_project/sync_prompt',
                  cacheable: @one_on_one_link,
-                 current_teammate: @teammate,
+                 current_teammate: current_company_teammate,
                  source: source,
-                 return_url: request.fullpath
-      - elsif source && !has_external_identity?(@teammate, source)
-        -# Prompt to connect
+                 return_url: request.fullpath,
+                 has_project_access: @has_project_access
+      - elsif source && !viewing_user_has_identity
+        -# Prompt to connect (viewing user doesn't have identity)
         = render 'shared/external_project/associate_prompt',
                  cacheable: @one_on_one_link,
-                 current_teammate: @teammate,
+                 current_teammate: current_company_teammate,
                  source: source,
                  return_url: request.fullpath
       - else

@@ -51,6 +51,14 @@
             = link_to organization_company_teammate_asana_oauth_authorize_path(organization, @teammate), class: "btn btn-outline-primary" do
               %i.bi.bi-kanban.me-2
               Connect Asana Account
+          - if @teammate && @teammate.has_asana_identity?
+            = button_to organization_company_teammate_asana_disconnect_path(organization, @teammate),
+                        method: :delete,
+                        class: "btn btn-outline-danger",
+                        style: 'width: 100%;',
+                        data: { turbo: false, confirm: "Are you sure you want to disconnect your Asana account? You won't be able to sync Asana projects until you reconnect." } do
+              %i.bi.bi-x-circle.me-2
+              Disconnect Asana Account
           - if @person.person_identities.any?
             = link_to "#", class: "btn btn-outline-info" do
               %i.bi.bi-shield.me-2

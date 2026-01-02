@@ -7,6 +7,13 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
     authorize @one_on_one_link
     @person = @teammate.person
     @source = @one_on_one_link&.external_project_source
+    
+    # Check if viewing user has access to the Asana project
+    if @source == 'asana' && current_company_teammate&.has_asana_identity? && @one_on_one_link&.asana_project_id
+      @has_project_access = check_asana_project_access(@one_on_one_link.asana_project_id)
+    else
+      @has_project_access = nil
+    end
   end
 
   def create
@@ -169,6 +176,30 @@ class Organizations::CompanyTeammates::OneOnOneLinksController < Organizations::
 
   def one_on_one_link_params
     params.require(:one_on_one_link).permit(:url)
+  end
+
+  def check_asana_project_access(project_id)
+    return false unless current_company_teammate&.has_asana_identity?
+    
+    service = AsanaService.new(current_company_teammate)
+    return false unless service.authenticated?
+    
+    # Try to fetch the project to check access
+    project = service.fetch_project(project_id)
+    
+    # If project is nil, check if it was a permission error
+    # We'll check the sections endpoint which is more reliable for access
+    sections_result = service.fetch_project_sections(project_id)
+    
+    if sections_result[:success]
+      true
+    elsif sections_result[:error] == 'permission_denied'
+      false
+    else
+      # For other errors (not_found, network_error, etc.), assume no access
+      # The actual sync will handle these errors appropriately
+      false
+    end
   end
 end
 

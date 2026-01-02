@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Organizations::People Show', type: :request do
   let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:person_teammate) { create(:teammate, person: person, organization: organization) }
+  let(:person_teammate) { create(:teammate, type: 'CompanyTeammate', person: person, organization: organization) }
   let(:manager) { create(:person) }
   let(:manager_teammate) { CompanyTeammate.create!(person: manager, organization: organization) }
 
@@ -108,6 +108,45 @@ RSpec.describe 'Organizations::People Show', type: :request do
 
         expect(assigns(:most_visited_pages)).to be_present
         expect(assigns(:most_visited_pages).first.person).to eq(person)
+      end
+
+      context 'Asana identity management' do
+        it 'shows Connect Asana Account button when no Asana identity exists' do
+          get organization_company_teammate_path(organization, person_teammate)
+
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include('Connect Asana Account')
+          expect(response.body).not_to include('Disconnect Asana Account')
+        end
+
+        it 'shows Disconnect Asana Account button when Asana identity exists' do
+          create(:teammate_identity, :asana, teammate: person_teammate)
+
+          get organization_company_teammate_path(organization, person_teammate)
+
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include('Disconnect Asana Account')
+          expect(response.body).not_to include('Connect Asana Account')
+        end
+
+        it 'disconnects Asana account when disconnect button is clicked' do
+          asana_identity = create(:teammate_identity, :asana, teammate: person_teammate)
+
+          expect {
+            delete organization_company_teammate_asana_disconnect_path(organization, person_teammate)
+          }.to change(TeammateIdentity, :count).by(-1)
+
+          expect(response).to redirect_to(organization_company_teammate_path(organization, person_teammate))
+          expect(flash[:notice]).to include('Asana account disconnected successfully')
+          expect(person_teammate.reload.asana_identity).to be_nil
+        end
+
+        it 'handles disconnect when no Asana identity exists' do
+          delete organization_company_teammate_asana_disconnect_path(organization, person_teammate)
+
+          expect(response).to redirect_to(organization_company_teammate_path(organization, person_teammate))
+          expect(flash[:alert]).to include('No Asana account connected')
+        end
       end
     end
 

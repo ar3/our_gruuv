@@ -11,7 +11,7 @@ RSpec.describe Organizations::CompanyTeammates::Asana::OauthController, type: :c
   let(:position) { create(:position, position_type: position_type, position_level: position_level) }
   let(:employment_tenure) do
     employee_teammate.update!(first_employed_at: 1.year.ago)
-    create(:employment_tenure, teammate: employee_teammate, company: organization, manager: manager, position: position)
+    create(:employment_tenure, teammate: employee_teammate, company: organization, manager_teammate: CompanyTeammate.find(manager_teammate.id), position: position)
   end
 
   before do
@@ -152,6 +152,50 @@ RSpec.describe Organizations::CompanyTeammates::Asana::OauthController, type: :c
       
       expect(response).to redirect_to(organization_company_teammate_path(organization, employee_teammate))
       expect(flash[:alert]).to include('Failed to connect Asana')
+    end
+  end
+
+  describe 'DELETE #disconnect' do
+    let!(:asana_identity) { create(:teammate_identity, :asana, teammate: employee_teammate) }
+
+    it 'disconnects Asana account successfully' do
+      expect {
+        delete :disconnect, params: {
+          organization_id: organization.id,
+          company_teammate_id: employee_teammate.id
+        }
+      }.to change(TeammateIdentity, :count).by(-1)
+      
+      expect(response).to redirect_to(organization_company_teammate_path(organization, employee_teammate))
+      expect(flash[:notice]).to include('Asana account disconnected successfully')
+      expect(employee_teammate.reload.asana_identity).to be_nil
+    end
+
+    it 'handles case when no Asana identity exists' do
+      asana_identity.destroy
+      
+      delete :disconnect, params: {
+        organization_id: organization.id,
+        company_teammate_id: employee_teammate.id
+      }
+      
+      expect(response).to redirect_to(organization_company_teammate_path(organization, employee_teammate))
+      expect(flash[:alert]).to include('No Asana account connected')
+    end
+
+    it 'requires authorization' do
+      unauthorized_person = create(:person)
+      unauthorized_teammate = create(:teammate, type: 'CompanyTeammate', person: unauthorized_person, organization: organization)
+      unauthorized_teammate.update!(first_employed_at: 1.year.ago)
+      create(:employment_tenure, teammate: unauthorized_teammate, company: organization, manager_teammate: CompanyTeammate.find(unauthorized_teammate.id), started_at: 1.year.ago, ended_at: nil)
+      sign_in_as_teammate(unauthorized_person, organization)
+      
+      delete :disconnect, params: {
+        organization_id: organization.id,
+        company_teammate_id: employee_teammate.id
+      }
+      
+      expect(response).to have_http_status(:redirect)
     end
   end
 end

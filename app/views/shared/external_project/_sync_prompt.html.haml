@@ -2,6 +2,7 @@
 - current_teammate ||= local_assigns[:current_teammate] || current_company_teammate
 - source ||= local_assigns[:source]
 - return_url ||= local_assigns[:return_url] || request.fullpath
+- has_project_access = local_assigns[:has_project_access]
 
 - has_identity = has_external_identity?(current_teammate, source)
 - sync_path = external_project_cache_path(cacheable, source, :sync)
@@ -13,10 +14,17 @@
     %br
     Click the button below to fetch and cache the latest project data.
   - if has_identity
-    %p.mb-0
-      = form_with url: sync_path, method: :post, local: true, class: "d-inline" do |f|
-        = hidden_field_tag :source, source
-        = f.submit "Sync Project", class: "btn btn-primary"
+    - if has_project_access == false
+      %p.mb-2.text-danger
+        %i.bi.bi-exclamation-triangle.me-2
+        Your #{source_display_name(source)} account doesn't have access to this project.
+      %p.mb-0
+        = button_tag "Sync Project", type: "button", class: "btn btn-primary", disabled: true
+    - elsif has_project_access == true || has_project_access.nil?
+      %p.mb-0
+        = form_with url: sync_path, method: :post, local: true, class: "d-inline" do |f|
+          = hidden_field_tag :source, source
+          = f.submit "Sync Project", class: "btn btn-primary"
   - else
     %p.mb-0
       = button_tag "Sync Project", type: "button", class: "btn btn-primary", disabled: true, data: { bs_toggle: "tooltip", bs_placement: "top", bs_title: "Connect your #{source_display_name(source)} account to sync" } do
