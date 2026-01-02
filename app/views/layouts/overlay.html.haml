@@ -1,14 +1,7 @@
 !!!
 %html
   %head
-    %title= content_for(:title) || "OurGruuv"
-    %meta{name: "viewport", content: "width=device-width,initial-scale=1"}
-    = csrf_meta_tags
-    = csp_meta_tag
-    = yield(:head) if content_for?(:head)
-    
-    = stylesheet_link_tag "application", "data-turbo-track": "reload"
-    = javascript_importmap_tags
+    = render partial: 'layouts/head_common', locals: { title_default: "OurGruuv" }
 
   %body.overlay-layout
     - has_return = content_for(:return_url).present? || content_for(:return_text).present?
