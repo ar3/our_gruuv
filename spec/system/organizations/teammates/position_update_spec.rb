@@ -349,6 +349,28 @@ RSpec.describe 'Position Update', type: :system, js: true do
       # Verify no new tenure was created (seat change only)
       expect(EmploymentTenure.where(teammate: employee_teammate, company: company).count).to eq(1)
     end
+
+    it 'allows clearing seat when changing position' do
+      # Ensure current_tenure has a seat
+      expect(current_tenure.seat).to be_present
+      
+      # Change position and clear seat in the same submission
+      select new_position.display_name, from: 'employment_tenure_update[position_id]'
+      select 'No Seat', from: 'employment_tenure_update[seat_id]'
+      click_button 'Update Position'
+      
+      expect(page).to have_content('Position information was successfully updated')
+      
+      # Verify new tenure was created with new position and no seat
+      expect(current_tenure.reload.ended_at).to be_within(5.seconds).of(Time.current)
+      new_tenure = EmploymentTenure.where(teammate: employee_teammate, company: company).order(:created_at).last
+      expect(new_tenure.position).to eq(new_position)
+      expect(new_tenure.seat).to be_nil
+      
+      # Verify maap_snapshot was created
+      snapshot = MaapSnapshot.last
+      expect(snapshot.change_type).to eq('position_tenure')
+    end
   end
 
   describe 'Permission-based UI' do

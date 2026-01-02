@@ -11,7 +11,7 @@
   %p.mb-2
     This appears to be a #{source_display_name(source)} project link.
     %br
-    To enable full integration (sections, #{pluralize(2, item_term(source))}, etc.), you'll need to connect your #{source_display_name(source)} account.
+    To enable full integration (sections, #{item_term(source).pluralize}, etc.), you'll need to connect your #{source_display_name(source)} account.
   - if has_identity
     %p.mb-0.text-success
       %i.bi.bi-check-circle.me-2

@@ -23,7 +23,7 @@
       .alert.alert-info.mb-3
         %i.bi.bi-info-circle.me-2
         Showing 200 #{pluralize(200, item_term(source))}. 
-        Some #{pluralize(2, item_term(source))} may not be displayed.
+        Some #{item_term(source).pluralize} may not be displayed.
     
     - if cache.sections_data.any?
       - cache.sections_data.each do |section|

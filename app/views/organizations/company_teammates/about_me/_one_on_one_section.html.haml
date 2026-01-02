@@ -77,7 +77,7 @@
             %p.mb-0.mt-2
               This is a #{source_display_name(source)} project link. 
               %br
-              Connect your #{source_display_name(source)} account to enable automatic syncing of sections and #{pluralize(2, item_term(source))}.
+              Connect your #{source_display_name(source)} account to enable automatic syncing of sections and #{item_term(source).pluralize}.
         - elsif source
           .alert.alert-info
             %strong Ready to Sync

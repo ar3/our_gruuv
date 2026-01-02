@@ -156,6 +156,60 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
           )
         }.to change { MaapSnapshot.count }.by(1)
       end
+
+      it 'allows clearing seat when position changes' do
+        # Ensure current_tenure has a seat
+        expect(current_tenure.seat).to be_present
+        
+        params = {
+          manager_teammate_id: current_manager_teammate.id,
+          position_id: new_position.id,
+          employment_type: 'full_time',
+          seat_id: nil
+        }
+
+        result = described_class.call(
+          teammate: teammate,
+          current_tenure: current_tenure,
+          params: params,
+          created_by: created_by
+        )
+
+        expect(result.ok?).to be true
+        expect(current_tenure.reload.ended_at).to be_within(1.second).of(Time.current)
+        
+        new_tenure = EmploymentTenure.where(teammate: teammate, company: company).order(:created_at).last
+        expect(new_tenure.position).to eq(new_position)
+        expect(new_tenure.seat).to be_nil
+        expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
+      end
+
+      it 'allows clearing seat with empty string when position changes' do
+        # Ensure current_tenure has a seat
+        expect(current_tenure.seat).to be_present
+        
+        params = {
+          manager_teammate_id: current_manager_teammate.id,
+          position_id: new_position.id,
+          employment_type: 'full_time',
+          seat_id: ''
+        }
+
+        result = described_class.call(
+          teammate: teammate,
+          current_tenure: current_tenure,
+          params: params,
+          created_by: created_by
+        )
+
+        expect(result.ok?).to be true
+        expect(current_tenure.reload.ended_at).to be_within(1.second).of(Time.current)
+        
+        new_tenure = EmploymentTenure.where(teammate: teammate, company: company).order(:created_at).last
+        expect(new_tenure.position).to eq(new_position)
+        expect(new_tenure.seat).to be_nil
+        expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
+      end
     end
 
     context 'when employment_type changes' do

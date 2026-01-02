@@ -149,9 +149,13 @@ class UpdateEmploymentTenureService
                                    current_tenure.manager_teammate_id
                                  end
     
-    seat_id_value = if params[:seat_id].present?
+    # Check if seat_id was explicitly provided in params (even if nil/empty)
+    # This allows clearing the seat even when creating a new tenure
+    seat_id_value = if params.key?(:seat_id)
+                      # Explicitly provided - use it (convert empty string to nil)
                       params[:seat_id].to_s == '' ? nil : params[:seat_id]
                     else
+                      # Not provided - keep current seat
                       current_tenure.seat_id
                     end
     
