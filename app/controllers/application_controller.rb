@@ -292,6 +292,10 @@ class ApplicationController < ActionController::Base
     session[:impersonating_teammate_id].present?
   end
 
+  def authenticated?
+    current_company_teammate.present?
+  end
+
   def impersonating_teammate
     begin
       return @impersonating_teammate = nil unless session[:impersonating_teammate_id].present?
