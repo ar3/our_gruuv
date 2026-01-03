@@ -224,8 +224,12 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
         redirect_to organization_prompts_path(@organization), 
                     notice: 'Prompt updated successfully.'
       end
+    elsif params[:save_and_continue].present?
+      # Save and continue editing
+      redirect_to edit_organization_prompt_path(@organization, @prompt), 
+                  notice: 'Prompt updated successfully.'
     else
-      # Save and continue editing (default)
+      # Default: redirect to edit page
       redirect_to edit_organization_prompt_path(@organization, @prompt), 
                   notice: 'Prompt updated successfully.'
     end

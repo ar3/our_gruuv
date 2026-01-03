@@ -144,7 +144,7 @@ get '/login', to: 'auth#login', as: :login
     end
     
     # Prompts management
-    resources :prompts, module: :organizations, constraints: { id: /[0-9]+/ }, except: [:show, :new] do
+    resources :prompts, module: :organizations, constraints: { id: /[0-9]+/ }, except: [:new, :show] do
       collection do
         get :customize_view
         patch :update_view
