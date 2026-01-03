@@ -211,7 +211,7 @@
                                         = link_to huddle_path(huddle), class: "text-decoration-none" do
                                           %i.bi.bi-calendar-event.me-1
                                           = huddle.display_name
-                                          %small.text-muted.ms-2= huddle.created_at.strftime("%b %d, %Y")
+                                          %small.text-muted.ms-2= format_date_in_user_timezone(huddle.created_at, format: "%b %d, %Y")
                                           - if huddle.participants.any?
                                             %span.badge.bg-success.ms-1= huddle.participants.count
                   - else

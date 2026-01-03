@@ -46,7 +46,7 @@
               = @form.model.observer.preferred_name || @form.model.observer.first_name
             %p
               %strong Observed: 
-              = @form.observed_at&.strftime('%B %d, %Y at %l:%M %p') || 'Not set'
+              = @form.observed_at ? format_time_in_user_timezone(@form.observed_at) : 'Not set'
             %p
               %strong Privacy: 
               %span{class: privacy_level_class(@form.privacy_level)}

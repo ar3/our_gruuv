@@ -62,7 +62,7 @@
                       - if item['created_at']
                         %small.text-muted
                           %i.bi.bi-clock-history.me-1
-                          Created: #{Time.parse(item['created_at']).strftime('%b %d, %Y')}
+                          Created: #{format_date_in_user_timezone(Time.parse(item['created_at']), format: '%b %d, %Y')}
                       - if item['tags'] && item['tags'].any?
                         - item['tags'].each do |tag|
                           %span.badge{style: "background-color: ##{tag['color'] || '6c757d'};"}

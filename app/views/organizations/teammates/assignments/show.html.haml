@@ -129,10 +129,10 @@
                   %tbody
                     - @tenure_history.each do |tenure|
                       %tr
-                        %td= tenure.started_at.strftime('%m/%d/%Y')
+                        %td= format_date_in_user_timezone(tenure.started_at, format: '%m/%d/%Y')
                         %td
                           - if tenure.ended_at
-                            = tenure.ended_at.strftime('%m/%d/%Y')
+                            = format_date_in_user_timezone(tenure.ended_at, format: '%m/%d/%Y')
                           - else
                             %span.badge.bg-success Active
                         %td= "#{tenure.anticipated_energy_percentage}%"
@@ -160,7 +160,7 @@
                 %strong Latest:
                 - latest = @check_ins.first
                 - if latest.officially_completed?
-                  Finalized #{latest.official_check_in_completed_at.strftime('%m/%d/%Y')}
+                  Finalized #{format_date_in_user_timezone(latest.official_check_in_completed_at, format: '%m/%d/%Y')}
                 - elsif latest.ready_for_finalization?
                   Ready for finalization
                 - else
@@ -197,7 +197,7 @@
                       - if check_in.employee_completed?
                         %span.badge.bg-success.me-1 ✓ Complete
                         %br
-                        %small.text-muted= check_in.employee_completed_at.strftime('%m/%d/%Y %I:%M %p')
+                        %small.text-muted= format_time_in_user_timezone(check_in.employee_completed_at, format: '%m/%d/%Y %I:%M %p')
                       - else
                         %span.badge.bg-warning Pending
                     
@@ -205,7 +205,7 @@
                       - if check_in.manager_completed?
                         %span.badge.bg-success.me-1 ✓ Complete
                         %br
-                        %small.text-muted= check_in.manager_completed_at.strftime('%m/%d/%Y %I:%M %p')
+                        %small.text-muted= format_time_in_user_timezone(check_in.manager_completed_at, format: '%m/%d/%Y %I:%M %p')
                         - if check_in.manager_completed_by
                           %br
                           %small.text-muted by #{check_in.manager_completed_by.display_name}
@@ -216,7 +216,7 @@
                       - if check_in.officially_completed?
                         %span.badge.bg-primary.me-1 ✓ Finalized
                         %br
-                        %small.text-muted= check_in.official_check_in_completed_at.strftime('%m/%d/%Y %I:%M %p')
+                        %small.text-muted= format_time_in_user_timezone(check_in.official_check_in_completed_at, format: '%m/%d/%Y %I:%M %p')
                         - if check_in.finalized_by
                           %br
                           %small.text-muted by #{check_in.finalized_by.display_name}

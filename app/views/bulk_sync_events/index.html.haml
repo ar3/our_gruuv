@@ -57,9 +57,9 @@
             - @bulk_sync_events.each do |bulk_sync_event|
               %tr
                 %td
-                  %small.text-muted= bulk_sync_event.created_at.strftime('%b %d, %Y')
+                  %small.text-muted= format_date_in_user_timezone(bulk_sync_event.created_at, format: '%b %d, %Y')
                   %br
-                  %small.text-muted= bulk_sync_event.created_at.strftime('%I:%M %p')
+                  %small.text-muted= format_time_in_user_timezone(bulk_sync_event.created_at, format: '%I:%M %p')
                 %td
                   - if bulk_sync_event.filename.present?
                     %code.small= bulk_sync_event.filename

@@ -53,9 +53,9 @@
           %p.mb-2
             %strong Created:
             %br
-            = @change_log.created_at.strftime("%B %d, %Y at %I:%M %p")
+            = format_time_in_user_timezone(@change_log.created_at)
           %p.mb-0
             %strong Updated:
             %br
-            = @change_log.updated_at.strftime("%B %d, %Y at %I:%M %p")
+            = format_time_in_user_timezone(@change_log.updated_at)
 

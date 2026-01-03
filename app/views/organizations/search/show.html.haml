@@ -53,9 +53,9 @@
                       %tr
                         %td
                           - if teammate
-                            = link_to person.last_first_display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
+                            = link_to person.display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
                           - else
-                            = person.last_first_display_name
+                            = person.display_name
                         %td= person.email
                         %td
                           .btn-group.btn-group-sm
@@ -108,7 +108,7 @@
                         %td
                           = truncate(observation.story, length: 100)
                         %td= observation.observer.display_name
-                        %td= observation.observed_at.strftime("%b %d, %Y")
+                        %td= format_date_in_user_timezone(observation.observed_at, format: "%b %d, %Y")
                         %td
                           .btn-group.btn-group-sm
                             = link_to organization_observation_path(@organization, observation), class: "btn btn-outline-primary" do

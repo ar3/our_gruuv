@@ -37,7 +37,7 @@
                         Observed by #{observation.observer.preferred_name || observation.observer.first_name}
                       - if observation.observed_at
                         %span.mx-1 •
-                        = observation.observed_at.strftime('%B %d, %Y')
+                        = format_date_in_user_timezone(observation.observed_at)
                   .ms-3
                     - if policy(observation).view_permalink?
                       = link_to observation.decorate.permalink_path, class: "btn btn-sm btn-outline-primary", title: "View permalink" do

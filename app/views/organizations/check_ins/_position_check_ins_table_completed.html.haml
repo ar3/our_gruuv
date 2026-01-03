@@ -37,4 +37,4 @@
         %td
           .badge.bg-success Finalized
           %br
-          %small.text-muted Completed #{check_in.official_check_in_completed_at&.strftime('%m/%d/%Y')}
+          %small.text-muted Completed #{check_in.official_check_in_completed_at ? format_date_in_user_timezone(check_in.official_check_in_completed_at, format: '%m/%d/%Y') : ''}

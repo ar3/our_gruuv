@@ -36,9 +36,9 @@
                 %dt.col-sm-4 Total Huddles
                 %dd.col-sm-8= @huddles.count
                 %dt.col-sm-4 Created
-                %dd.col-sm-8= @huddle_playbook.created_at.strftime("%B %d, %Y")
+                %dd.col-sm-8= format_date_in_user_timezone(@huddle_playbook.created_at)
                 %dt.col-sm-4 Last Updated
-                %dd.col-sm-8= @huddle_playbook.updated_at.strftime("%B %d, %Y")
+                %dd.col-sm-8= format_date_in_user_timezone(@huddle_playbook.updated_at)
       
       / Actions
       .row.mb-4
@@ -69,7 +69,7 @@
                 %tbody
                   - @huddles.each do |huddle|
                     %tr
-                      %td= huddle.started_at.strftime("%B %d, %Y at %I:%M %p")
+                      %td= format_time_in_user_timezone(huddle.started_at)
                       %td
                         - participant_count = huddle.huddle_participants.count
                         - participant_names = huddle.huddle_participants.includes(teammate: :person).map { |hp| hp.teammate.person.full_name }.join(", ")

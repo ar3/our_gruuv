@@ -349,7 +349,7 @@
                       %strong= truncate(observation.story, length: 150)
                     %br
                     %small.text-muted
-                      By #{observation.observer.display_name} on #{observation.observed_at.strftime("%B %d, %Y")}
+                      By #{observation.observer.display_name} on #{format_date_in_user_timezone(observation.observed_at)}
                       - if observation.privacy_level == 'public_to_world'
                         %span.badge.bg-success.ms-2 Public
                       - else
@@ -379,7 +379,7 @@
                       %strong= truncate(observation.story, length: 150)
                     %br
                     %small.text-muted
-                      On #{observation.observed_at.strftime("%B %d, %Y")}
+                      On #{format_date_in_user_timezone(observation.observed_at)}
                       - if observation.privacy_level == 'public_to_world'
                         %span.badge.bg-success.ms-2 Public
                       - else

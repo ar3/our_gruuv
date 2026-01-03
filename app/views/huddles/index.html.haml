@@ -65,7 +65,7 @@
                           %strong Active Huddle This Week
                           %br
                           %small
-                            Started: #{active_huddle_data[:huddle].started_at.strftime('%B %d at %I:%M %p')}
+                            Started: #{format_time_in_user_timezone(active_huddle_data[:huddle].started_at, format: '%B %d at %I:%M %p')}
                           - if active_huddle_data[:slack_message_url]
                             %br
                             = link_to "View Slack Announcement", active_huddle_data[:slack_message_url], target: "_blank", class: "text-decoration-none"

@@ -28,7 +28,7 @@
                 %i.bi.bi-exclamation-triangle.text-danger.me-1
                 %strong.text-danger draft
                 %i.bi.bi-exclamation-triangle.text-danger.ms-1
-                created on #{observation.created_at.strftime('%m/%d/%y')}
+                created on #{format_date_in_user_timezone(observation.created_at, format: '%m/%d/%y')}
               - else
                 = observation_date_text(observation)
         

@@ -39,7 +39,7 @@
                     = link_to aspiration.name, organization_aspiration_path(organization, aspiration), class: "text-decoration-none"
                   %td
                     - if latest_finalized
-                      = latest_finalized.official_check_in_completed_at.strftime('%B %d, %Y')
+                      = format_date_in_user_timezone(latest_finalized.official_check_in_completed_at)
                     - else
                       %span.text-muted Check-in not started
                   %td
@@ -47,7 +47,7 @@
                       - if check_in.employee_completed?
                         %span.badge.bg-success Ready
                         %br
-                        %small.text-muted= check_in.employee_completed_at.strftime('%b %d, %Y')
+                        %small.text-muted= format_date_in_user_timezone(check_in.employee_completed_at, format: '%b %d, %Y')
                       - else
                         %span.badge.bg-warning Not ready
                     - else
@@ -57,7 +57,7 @@
                       - if check_in.manager_completed?
                         %span.badge.bg-success Ready
                         %br
-                        %small.text-muted= check_in.manager_completed_at.strftime('%b %d, %Y')
+                        %small.text-muted= format_date_in_user_timezone(check_in.manager_completed_at, format: '%b %d, %Y')
                       - else
                         %span.badge.bg-warning Not ready
                     - else

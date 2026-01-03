@@ -46,7 +46,7 @@
                       |  • Recognizing: 
                       - names = observation.observed_teammates.map { |t| t.person.preferred_name || t.person.first_name }
                       = names.join(', ')
-                  = link_to "View Observation", organization_kudo_path(observation.company, date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id), class: "btn btn-sm btn-outline-primary"
+                  = link_to "View Observation", organization_kudo_path(observation.company, date: format_date_in_user_timezone(observation.observed_at, format: '%Y-%m-%d'), id: observation.id), class: "btn btn-sm btn-outline-primary"
 
   .col-md-4
     - if current_person

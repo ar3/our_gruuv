@@ -17,13 +17,13 @@
           %small.text-muted
             = link_to "draft", organization_observation_path(organization, @observation), class: "text-muted text-decoration-none"
             = " saved at "
-            = @observation.updated_at.strftime("%l:%M %p on %B %d, %Y")
+            = format_time_in_user_timezone(@observation.updated_at, format: "%l:%M %p on %B %d, %Y")
       - elsif @observation.persisted? && @observation.published?
         .mt-2
           %small.text-muted
             = link_to "published observation", organization_observation_path(organization, @observation), class: "text-muted text-decoration-none"
             = " published at "
-            = @observation.published_at.strftime("%l:%M %p on %B %d, %Y")
+            = format_time_in_user_timezone(@observation.published_at, format: "%l:%M %p on %B %d, %Y")
       - elsif @observation.new_record?
         .mt-2
           %small.text-muted

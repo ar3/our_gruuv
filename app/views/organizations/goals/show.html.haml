@@ -47,10 +47,10 @@
               = @goal.status.to_s.humanize
           - if @goal.started_at.present?
             %dt.col-sm-4 Started:
-            %dd.col-sm-8= @goal.started_at.strftime("%B %d, %Y at %I:%M %p")
+            %dd.col-sm-8= format_time_in_user_timezone(@goal.started_at)
           - if @goal.became_top_priority.present?
             %dt.col-sm-4 Top Priority Since:
-            %dd.col-sm-8= @goal.became_top_priority.strftime("%B %d, %Y at %I:%M %p")
+            %dd.col-sm-8= format_time_in_user_timezone(@goal.became_top_priority)
 
           %dt.col-sm-4 Timeframe:
           %dd.col-sm-8
@@ -84,7 +84,7 @@
               - if completion_badge
                 %span.badge{class: completion_badge == 'Missed' ? 'bg-danger' : completion_badge == 'Hit (Late)' ? 'bg-warning' : 'bg-success', style: "margin-right: 0.5rem;"}
                   = completion_badge
-              = @goal.completed_at.strftime("%B %d, %Y at %I:%M %p")
+              = format_time_in_user_timezone(@goal.completed_at)
               - last_check_in = @goal.goal_check_ins.recent.first
               - if last_check_in && last_check_in.confidence_reason.present?
                 .mt-2
@@ -138,9 +138,9 @@
             %dt.col-sm-4 Creator:
             %dd.col-sm-8= @goal.creator.person.display_name
             %dt.col-sm-4 Created:
-            %dd.col-sm-8= @goal.created_at.strftime("%B %d, %Y at %I:%M %p")
+            %dd.col-sm-8= format_time_in_user_timezone(@goal.created_at)
             %dt.col-sm-4 Updated:
-            %dd.col-sm-8= @goal.updated_at.strftime("%B %d, %Y at %I:%M %p")
+            %dd.col-sm-8= format_time_in_user_timezone(@goal.updated_at)
 
           / Incoming Links Section
           .mt-4.pt-4.border-top
@@ -179,7 +179,7 @@
         - if @goal.deleted_at.present?
           .alert.alert-warning.mb-3
             %strong This goal has been deleted.
-            = @goal.deleted_at.strftime("%B %d, %Y at %I:%M %p")
+            = format_time_in_user_timezone(@goal.deleted_at)
           - if policy(@goal).update?
             .d-grid.gap-2.mb-3
               = button_to undelete_organization_goal_path(@organization, @goal), method: :patch, class: "btn btn-success w-100" do
@@ -211,7 +211,7 @@
           
           - if @current_check_in.present?
             %p.small.text-muted.mb-3
-              Filled out by #{@current_check_in.confidence_reporter.display_name} on #{@current_check_in.created_at.strftime('%B %d, %Y at %I:%M %p')}
+              Filled out by #{@current_check_in.confidence_reporter.display_name} on #{format_time_in_user_timezone(@current_check_in.created_at)}
           
           = form_with url: check_in_organization_goal_path(@organization, @goal), method: :post, local: true do |f|
             .mb-3
@@ -242,7 +242,7 @@
                   %strong Notes:
                   = @last_check_in.confidence_reason
               %p.small.text-muted.mb-0
-                By #{@last_check_in.confidence_reporter.display_name} on #{@last_check_in.created_at.strftime('%B %d, %Y')}
+                By #{@last_check_in.confidence_reporter.display_name} on #{format_date_in_user_timezone(@last_check_in.created_at)}
           
           .mt-3.pt-3.border-top
             .d-grid.gap-2

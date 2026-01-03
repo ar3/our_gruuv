@@ -53,7 +53,7 @@
                 = link_to goal.title, organization_goal_path(@organization, goal), class: "text-decoration-none"
               %td
                 - if goal.started_at.present?
-                  = goal.started_at.strftime('%b %d, %Y')
+                  = format_date_in_user_timezone(goal.started_at, format: '%b %d, %Y')
                 - else
                   %span.text-muted Not set
               %td
@@ -113,7 +113,7 @@
                     - if goal.completed_at.present?
                       %div
                         %small.text-muted
-                          Completed on: #{goal.completed_at.strftime('%b %d, %Y')}
+                          Completed on: #{format_date_in_user_timezone(goal.completed_at, format: '%b %d, %Y')}
                 - else
                   = text_area_tag "goal_check_ins[#{goal.id}][confidence_reason]", 
                       check_in&.confidence_reason,

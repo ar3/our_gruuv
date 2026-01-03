@@ -1,6 +1,6 @@
 - if check_in.present?
   %div.final-check-in-content
-    %h6="On #{check_in.official_check_in_completed_at.strftime('%m/%d/%Y')}, #{check_in.person.first_name} and #{check_in.manager_completed_by&.first_name} completed the following check-in:".html_safe
+    %h6="On #{format_date_in_user_timezone(check_in.official_check_in_completed_at, format: '%m/%d/%Y')}, #{check_in.person.first_name} and #{check_in.manager_completed_by&.first_name} completed the following check-in:".html_safe
     %p
       = render 'people/assignments/senences/employee_rating', check_in: check_in
     %p

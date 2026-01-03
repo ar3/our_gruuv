@@ -47,7 +47,7 @@
                           %small.text-muted
                             %i.bi.bi-person.me-1
                             = submission.person.display_name
-                      %small.text-muted= submission.created_at.strftime("%B %d, %Y")
+                      %small.text-muted= format_date_in_user_timezone(submission.created_at)
                     %p.mb-1
                       - if submission.thing_interested_in.present?
                         %strong Interested in:

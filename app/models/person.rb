@@ -86,11 +86,6 @@ class Person < ApplicationRecord
     timezone.present? ? timezone : 'Eastern Time (US & Canada)'
   end
   
-  def format_time_in_user_timezone(time)
-    timezone_name = timezone_or_default
-    time.in_time_zone(timezone_name).strftime('%B %d, %Y at %I:%M %p %Z')
-  end
-  
   # Safely set timezone with validation
   def safe_timezone=(value)
     if value.blank?
@@ -101,12 +96,6 @@ class Person < ApplicationRecord
       Rails.logger.warn "Invalid timezone attempted: #{value}, setting to Eastern Time"
       self.timezone = 'Eastern Time (US & Canada)'
     end
-  end
-  
-  def format_time_in_user_timezone(time)
-    return time.in_time_zone('Eastern Time (US & Canada)').strftime('%B %d, %Y at %I:%M %p %Z') unless timezone.present?
-    
-    time.in_time_zone(timezone).strftime('%B %d, %Y at %I:%M %p %Z')
   end
   
 

@@ -27,7 +27,7 @@
               %i.bi.bi-play-circle
             .flex-grow-1
               %h5.mb-1 Goal Started
-              %p.mb-0.text-muted= @goal.started_at.strftime("%B %d, %Y at %I:%M %p")
+              %p.mb-0.text-muted= format_time_in_user_timezone(@goal.started_at)
   
   / Middle: Check-in History (chronological, oldest to newest)
   - if @all_check_ins.any?

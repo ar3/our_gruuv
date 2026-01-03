@@ -26,10 +26,10 @@
                       .row
                         .col-md-2
                           %small.text-muted
-                            = tenure.started_at.strftime('%b %Y')
+                            = format_date_in_user_timezone(tenure.started_at, format: '%b %Y')
                             - if tenure.ended_at
                               %br
-                              to #{tenure.ended_at.strftime('%b %Y')}
+                              to #{format_date_in_user_timezone(tenure.ended_at, format: '%b %Y')}
                         .col-md-8
                           .card{class: tenure.active? ? 'border-success' : 'border-secondary'}
                             .card-body.py-2

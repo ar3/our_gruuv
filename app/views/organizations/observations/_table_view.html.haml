@@ -50,7 +50,7 @@
             - else
               %span.text-muted No one
           %td
-            = observation.observed_at.strftime('%b %d, %Y')
+            = format_date_in_user_timezone(observation.observed_at, format: '%b %d, %Y')
           %td
             - latest_notification = observation.last_successful_notification
             - if latest_notification&.slack_url.present?

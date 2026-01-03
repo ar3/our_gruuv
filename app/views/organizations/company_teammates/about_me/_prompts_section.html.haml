@@ -36,7 +36,7 @@
                     - else
                       %span.badge.bg-secondary.ms-2 Closed
                   %p.mb-1.text-muted
-                    = prompt.created_at.strftime('%B %d, %Y')
+                    = format_date_in_user_timezone(prompt.created_at)
                   - if prompt.prompt_answers.any?
                     %small.text-muted
                       = pluralize(prompt.prompt_answers.count, 'answer')

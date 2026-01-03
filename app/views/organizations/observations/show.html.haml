@@ -67,13 +67,13 @@
               = @observation.observer.preferred_name || @observation.observer.first_name
             %p
               %strong Observed: 
-              = @observation.observed_at.strftime('%B %d, %Y at %l:%M %p')
+              = format_time_in_user_timezone(@observation.observed_at)
             %p
               %strong Status: 
               - if @observation.draft?
                 %span.text-muted Draft
               - else
-                Published on #{@observation.published_at.strftime('%B %d, %Y at %l:%M %p')}
+                Published on #{format_time_in_user_timezone(@observation.published_at)}
             %p
               %strong Privacy: 
               %span{class: @observation.decorate.visibility_text_style}
@@ -199,7 +199,7 @@
                     = link_to 'View Message', notification.slack_url, target: '_blank', class: 'ms-2 text-decoration-none'
                     %i.bi.bi-box-arrow-up-right.ms-1
                 %small.text-muted.ms-auto
-                  = notification.created_at.strftime('%m/%d/%y %l:%M %p')
+                  = format_time_in_user_timezone(notification.created_at, format: '%m/%d/%y %l:%M %p')
         
         / Private notifications list
         - private_notifications = @observation.notifications.where(notification_type: 'observation_dm', status: 'sent_successfully').order(created_at: :desc)
@@ -348,8 +348,8 @@
         
         %p
           %strong Created: 
-          = @observation.created_at.strftime('%B %d, %Y')
+          = format_date_in_user_timezone(@observation.created_at)
         - if @observation.updated_at != @observation.created_at
           %p
             %strong Last Updated: 
-            = @observation.updated_at.strftime('%B %d, %Y')
+            = format_date_in_user_timezone(@observation.updated_at)

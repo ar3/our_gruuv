@@ -42,7 +42,7 @@
               - else
                 %span.text-muted No one
           %p.mb-0
-            %small.text-muted= observation.observed_at.strftime('%b %d, %Y')
+            %small.text-muted= format_date_in_user_timezone(observation.observed_at, format: '%b %d, %Y')
         .card-footer
           .btn-group.btn-group-sm.w-100
             - if policy(observation).view_permalink?

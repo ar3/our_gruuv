@@ -11,11 +11,11 @@
 - if show_date
   %p.mb-0.text-muted.small.text-end
     - if show_full_datetime
-      - full_datetime = observation.observed_at.strftime('%B %d, %Y at %l:%M %p')
-      - date_only = observation.observed_at.strftime('%B %d, %Y')
+      - full_datetime = format_time_in_user_timezone(observation.observed_at)
+      - date_only = format_date_in_user_timezone(observation.observed_at)
       %span{title: full_datetime, "data-bs-toggle" => "tooltip", "data-bs-placement" => "top"}
         = date_only
     - else
-      - date_only = observation.observed_at.strftime('%B %d, %Y')
+      - date_only = format_date_in_user_timezone(observation.observed_at)
       = date_only
 

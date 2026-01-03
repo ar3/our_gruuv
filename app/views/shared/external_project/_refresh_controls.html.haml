@@ -21,7 +21,7 @@
     
     - if cache&.last_synced_at
       %small.text-muted
-        Last synced: #{cache.last_synced_at.strftime('%b %d, %Y at %I:%M %p')}
+        Last synced: #{format_time_in_user_timezone(cache.last_synced_at, format: '%b %d, %Y at %I:%M %p')}
     - else
       %small.text-muted Never synced
   

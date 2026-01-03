@@ -64,7 +64,7 @@
               = observation.decorate.privacy_rings_with_label
           
           / Date
-          %small.text-muted= observation.observed_at.strftime('%b %d, %Y')
+          %small.text-muted= format_date_in_user_timezone(observation.observed_at, format: '%b %d, %Y')
         
         .card-footer.bg-light
           .btn-group.btn-group-sm.w-100

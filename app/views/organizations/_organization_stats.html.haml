@@ -23,7 +23,7 @@
               %small.text-muted Departments
           .row.text-center.mt-3
             .col-6
-              .h4.text-secondary= organization.created_at.strftime("%b %Y")
+              .h4.text-secondary= format_date_in_user_timezone(organization.created_at, format: "%b %Y")
               %small.text-muted Created
             .col-6
               - if organization.slack_configured?

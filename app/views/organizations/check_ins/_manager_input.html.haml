@@ -17,7 +17,7 @@
             %strong Private Notes:
             %span.text-muted <only visible by managers>
         %small.text-muted
-          Completed: #{check_in.manager_completed_at.strftime('%B %d, %Y at %l:%M %p')}
+          Completed: #{format_time_in_user_timezone(check_in.manager_completed_at)}
     - else
       .pending-section
         %p.text-muted

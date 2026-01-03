@@ -127,10 +127,10 @@
                   %tbody
                     - @tenure_history.order(ended_at: :desc).each do |tenure|
                       %tr
-                        %td= tenure.started_at.strftime('%m/%d/%Y')
+                        %td= format_date_in_user_timezone(tenure.started_at, format: '%m/%d/%Y')
                         %td
                           - if tenure.ended_at
-                            = tenure.ended_at.strftime('%m/%d/%Y')
+                            = format_date_in_user_timezone(tenure.ended_at, format: '%m/%d/%Y')
                           - else
                             %span.text-success Active
                         %td= "#{tenure.anticipated_energy_percentage}%"
@@ -179,7 +179,7 @@
                           - if check_in.officially_completed?
                             %span.badge.bg-success 
                               ✓
-                              %small= check_in.official_check_in_completed_at.strftime('%m/%d/%Y')
+                              %small= format_date_in_user_timezone(check_in.official_check_in_completed_at, format: '%m/%d/%Y')
                           - else
                             %span.badge.bg-secondary -
             - else

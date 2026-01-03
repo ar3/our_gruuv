@@ -156,7 +156,7 @@
                           Tenure Details
                         %p.mb-1
                           %strong Started:
-                          = tenure.started_at.strftime('%b %d, %Y')
+                          = format_date_in_user_timezone(tenure.started_at, format: '%b %d, %Y')
                         
                         %p.mb-1
                           %strong Duration:
@@ -277,7 +277,7 @@
                   %br
                   %small.text-muted Milestone #{milestone.milestone_level}
                 .text-muted
-                  %small= milestone.created_at.strftime('%b %Y')
+                  %small= format_date_in_user_timezone(milestone.created_at, format: '%b %Y')
           .col-md-4.border-start.border-secondary
             .d-grid.gap-2
               = link_to organization_abilities_path(@current_organization), class: "btn btn-outline-primary" do

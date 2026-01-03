@@ -32,7 +32,7 @@
     
     %li
       - if observation.privacy_level == 'public_to_world'
-        = link_to organization_kudo_path(organization, date: observation.observed_at.strftime('%Y-%m-%d'), id: observation.id), class: 'dropdown-item' do
+        = link_to organization_kudo_path(organization, date: format_date_in_user_timezone(observation.observed_at, format: '%Y-%m-%d'), id: observation.id), class: 'dropdown-item' do
           %i.bi.bi-globe.me-2
           Public Mode
       - else

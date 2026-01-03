@@ -32,7 +32,7 @@
                         %span.text-muted Not provided
                     %td= identity.email
                     %td= identity_status_badge(identity)
-                    %td= identity.created_at.strftime('%B %d, %Y')
+                    %td= format_date_in_user_timezone(identity.created_at)
                     %td
                       .d-flex.gap-2.align-items-center
                         = identity_raw_data_button(identity)

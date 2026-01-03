@@ -12,7 +12,7 @@
   %p.mb-0
     %i{class: "#{status_indicator_icon(position_indicator)} #{status_indicator_badge_class(position_indicator)} me-2"}
     - if @latest_finalized_position_check_in
-      Last finalized: #{@latest_finalized_position_check_in.official_check_in_completed_at.strftime('%B %d, %Y')}
+      Last finalized: #{format_date_in_user_timezone(@latest_finalized_position_check_in.official_check_in_completed_at)}
     - else
       No finalized check-ins
 
@@ -29,7 +29,7 @@
           - if @latest_finalized_position_check_in
             %p.mb-2
               %strong Last finalized check-in:
-              = @latest_finalized_position_check_in.official_check_in_completed_at.strftime('%B %d, %Y')
+              = format_date_in_user_timezone(@latest_finalized_position_check_in.official_check_in_completed_at)
           - else
             %p.mb-2.text-muted No finalized check-ins
           
@@ -43,7 +43,7 @@
                     - if @position_check_in.employee_completed?
                       %span.badge.bg-success Ready
                       %small.text-muted.ms-2
-                        (#{@position_check_in.employee_completed_at.strftime('%B %d, %Y at %l:%M %p')})
+                        (#{format_time_in_user_timezone(@position_check_in.employee_completed_at)})
                     - else
                       %span.badge.bg-warning Not ready
                 .col-md-6
@@ -52,7 +52,7 @@
                     - if @position_check_in.manager_completed?
                       %span.badge.bg-success Ready
                       %small.text-muted.ms-2
-                        (#{@position_check_in.manager_completed_at.strftime('%B %d, %Y at %l:%M %p')})
+                        (#{format_time_in_user_timezone(@position_check_in.manager_completed_at)})
                     - else
                       %span.badge.bg-warning Not ready
           - else

@@ -30,7 +30,7 @@
                   = current_tenure.position.position_type.external_title
                   - if current_tenure.started_at
                     %br
-                    %small Started: #{current_tenure.started_at.strftime("%B %d, %Y")}
+                    %small Started: #{format_date_in_user_timezone(current_tenure.started_at)}
               
               / Organization Access
               - org_access = @teammates.find { |a| a.organization == @current_organization }
@@ -79,10 +79,10 @@
                             %span.badge.bg-success Active
                           - else
                             %span.badge.bg-secondary Former
-                        %td= tenure.started_at.strftime("%B %Y")
+                        %td= format_date_in_user_timezone(tenure.started_at, format: "%B %Y")
                         %td
                           - if tenure.ended_at
-                            = tenure.ended_at.strftime("%B %Y")
+                            = format_date_in_user_timezone(tenure.ended_at, format: "%B %Y")
                           - else
                             %span.text-muted Present
             - else

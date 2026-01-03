@@ -6,7 +6,7 @@
           = truncate(observation.story, length: 80)
           %span.ms-2{title: observation.decorate.visibility_text, "data-bs-toggle" => "tooltip"}
             = observation.decorate.privacy_rings_with_label
-        %small= observation.observed_at.strftime('%b %d, %Y')
+        %small= format_date_in_user_timezone(observation.observed_at, format: '%b %d, %Y')
       %p.mb-1
         - if observation.primary_feeling.present?
           = observation.decorate.feelings_display_html

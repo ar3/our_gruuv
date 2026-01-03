@@ -51,7 +51,7 @@
                     %li.mb-1
                       = link_to edit_organization_prompt_path(@organization, prompt), class: "text-decoration-none" do
                         %i.bi.bi-file-text.me-1
-                        = prompt.created_at.strftime("%B %d, %Y")
+                        = format_date_in_user_timezone(prompt.created_at)
             - else
               .mt-3
                 %em.text-muted No previous reflections

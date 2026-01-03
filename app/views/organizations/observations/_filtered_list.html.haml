@@ -9,7 +9,7 @@
           .flex-grow-1
             %strong= observation.observer.display_name
             %br
-            %small.text-muted= observation.observed_at.strftime('%B %d, %Y')
+            %small.text-muted= format_date_in_user_timezone(observation.observed_at)
             %p.mb-0.mt-1= truncate(observation.story, length: 200)
           .ms-3
             = link_to organization_observation_path(@organization, observation), class: 'btn btn-sm btn-outline-primary', target: '_blank' do

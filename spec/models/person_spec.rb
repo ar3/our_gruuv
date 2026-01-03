@@ -97,49 +97,6 @@ RSpec.describe Person, type: :model do
     end
   end
 
-  describe '#format_time_in_user_timezone' do
-    let(:time) { Time.zone.parse('2025-07-21 14:30:00 UTC') }
-
-    context 'when timezone is set' do
-      before do
-        person.timezone = 'Eastern Time (US & Canada)'
-      end
-
-      it 'formats time in user timezone' do
-        formatted = person.format_time_in_user_timezone(time)
-        expect(formatted).to include('EDT') # Eastern Daylight Time
-        expect(formatted).to include('10:30 AM') # 14:30 UTC = 10:30 AM EDT
-      end
-    end
-
-    context 'when timezone is not set' do
-      before do
-        person.timezone = nil
-      end
-
-      it 'formats time in Eastern Time' do
-        formatted = person.format_time_in_user_timezone(time)
-        expect(formatted).to include('EDT') # Eastern Daylight Time
-        expect(formatted).to include('10:30 AM') # 14:30 UTC = 10:30 AM EDT
-      end
-    end
-
-    context 'with different timezones' do
-      it 'formats time in Pacific timezone' do
-        person.timezone = 'Pacific Time (US & Canada)'
-        formatted = person.format_time_in_user_timezone(time)
-        expect(formatted).to include('PDT') # Pacific Daylight Time
-        expect(formatted).to include('7:30 AM') # 14:30 UTC = 7:30 AM PDT
-      end
-
-      it 'formats time in Central timezone' do
-        person.timezone = 'Central Time (US & Canada)'
-        formatted = person.format_time_in_user_timezone(time)
-        expect(formatted).to include('CDT') # Central Daylight Time
-        expect(formatted).to include('9:30 AM') # 14:30 UTC = 9:30 AM CDT
-      end
-    end
-  end
 
   describe '#display_name' do
     context 'with preferred name' do

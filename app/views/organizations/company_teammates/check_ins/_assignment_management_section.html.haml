@@ -23,12 +23,12 @@
                         - # Check if there's a previous inactive tenure for this assignment
                         - previous_tenure = data[:assignment].assignment_tenures.joins(:teammate).where(teammates: { id: @teammate.id }).inactive.order(:ended_at).last
                         - if previous_tenure
-                          Went from #{previous_tenure.anticipated_energy_percentage || 0}% to #{data[:tenure].anticipated_energy_percentage || 0}% on #{previous_tenure.ended_at.strftime('%m/%d/%Y')}
+                          Went from #{previous_tenure.anticipated_energy_percentage || 0}% to #{data[:tenure].anticipated_energy_percentage || 0}% on #{format_date_in_user_timezone(previous_tenure.ended_at, format: '%m/%d/%Y')}
                         - else
-                          Started #{data[:tenure].started_at.strftime('%m/%d/%Y')}
+                          Started #{format_date_in_user_timezone(data[:tenure].started_at, format: '%m/%d/%Y')}
                       - elsif data[:most_recent_tenure]
                         - most_recent = data[:most_recent_tenure]
-                        Went from #{most_recent.anticipated_energy_percentage || 0}% to 0% on #{most_recent.ended_at.strftime('%m/%d/%Y')}
+                        Went from #{most_recent.anticipated_energy_percentage || 0}% to 0% on #{format_date_in_user_timezone(most_recent.ended_at, format: '%m/%d/%Y')}
                       - else
                         Not started
                     %br

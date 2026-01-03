@@ -74,7 +74,7 @@
             - @versions.each_with_index do |version, index|
               %tr
                 %td= @versions.count - index
-                %td= version.created_at.strftime("%B %d, %Y at %I:%M %p")
+                %td= format_time_in_user_timezone(version.created_at)
                 %td
                   - if version.whodunnit.present?
                     - teammate = Teammate.find_by(id: version.whodunnit)

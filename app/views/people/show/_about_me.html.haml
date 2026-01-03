@@ -112,7 +112,7 @@
                   %small.text-muted Timezone (Default)
               %p
                 %strong Gruuvin' Since:
-                = @person.created_at.strftime("%b %Y")
+                = format_date_in_user_timezone(@person.created_at, format: "%b %Y")
               
               / Other Companies Section (only visible to person themselves or og_admin)
               - if @teammate && (current_person == @person || current_person&.og_admin?)
@@ -130,9 +130,9 @@
                             - first_tenure = company_tenures.sort_by(&:started_at).first
                             - last_tenure = company_tenures.sort_by { |t| t.ended_at || Time.current }.last
                             - if first_tenure
-                              = "From #{first_tenure.started_at.strftime('%b %Y')}"
+                              = "From #{format_date_in_user_timezone(first_tenure.started_at, format: '%b %Y')}"
                               - if last_tenure&.ended_at
-                                = " to #{last_tenure.ended_at.strftime('%b %Y')}"
+                                = " to #{format_date_in_user_timezone(last_tenure.ended_at, format: '%b %Y')}"
                               - else
                                 = " to Present"
                         .ms-2

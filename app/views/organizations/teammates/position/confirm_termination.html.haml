@@ -37,7 +37,7 @@
             %p.mb-0= @parsed_termination_date.strftime('%B %d, %Y')
           .col-md-6
             %strong Employment Started:
-            %p.mb-0= @current_employment.started_at.strftime('%B %d, %Y')
+            %p.mb-0= format_date_in_user_timezone(@current_employment.started_at)
 
         = form_with url: process_termination_organization_teammate_position_path(organization, @teammate), method: :post, local: true do |f|
           = hidden_field_tag :termination_date, @termination_date

@@ -26,7 +26,7 @@
           %span.ms-2= @interest_submission.person.display_name
         .mb-3
           %strong Submitted On:
-          %span.ms-2= @interest_submission.created_at.strftime("%B %d, %Y at %I:%M %p")
+          %span.ms-2= format_time_in_user_timezone(@interest_submission.created_at)
         
         - if @interest_submission.has_content?
           %hr

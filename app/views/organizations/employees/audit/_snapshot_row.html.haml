@@ -16,7 +16,7 @@
                       class: 'snapshot-checkbox',
                       id: "snapshot_#{snapshot.id}"
   %td
-    = snapshot.created_at.strftime("%Y-%m-%d %I:%M %p")
+    = format_time_in_user_timezone(snapshot.created_at, format: "%Y-%m-%d %I:%M %p")
   %td
     = snapshot.created_by&.display_name || "System"
   %td
@@ -26,7 +26,7 @@
       - if snapshot.executed?
         %span.badge.bg-success Executed
         %br
-        %small.text-muted= "on #{snapshot.effective_date.strftime('%Y-%m-%d')}"
+        %small.text-muted= "on #{format_date_in_user_timezone(snapshot.effective_date, format: '%Y-%m-%d')}"
       - else
         %span.badge.bg-warning Pending
   - if show_acknowledgement
@@ -37,7 +37,7 @@
             %i.bi.bi-check-circle.me-1
             Acknowledged
           %br
-          %small.text-muted= "on #{snapshot.employee_acknowledged_at.strftime('%Y-%m-%d')}"
+          %small.text-muted= "on #{format_date_in_user_timezone(snapshot.employee_acknowledged_at, format: '%Y-%m-%d')}"
         - else
           %span.badge.bg-warning
             %i.bi.bi-exclamation-triangle.me-1

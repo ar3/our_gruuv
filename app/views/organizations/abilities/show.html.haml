@@ -42,9 +42,9 @@
           %dt.col-sm-3 Department:
           %dd.col-sm-9= @ability.organization.display_name
           %dt.col-sm-3 Created:
-          %dd.col-sm-9= @ability.created_at.strftime("%B %d, %Y at %I:%M %p")
+          %dd.col-sm-9= format_time_in_user_timezone(@ability.created_at)
           %dt.col-sm-3 Updated:
-          %dd.col-sm-9= @ability.updated_at.strftime("%B %d, %Y at %I:%M %p")
+          %dd.col-sm-9= format_time_in_user_timezone(@ability.updated_at)
 
     .card.mb-4{ role: "region", "aria-labelledby": "milestone-descriptions" }
       .card-header
@@ -94,7 +94,7 @@
             %strong= @ability.organization.display_name
           .d-flex.justify-content-between
             %span Created:
-            %strong= @ability.created_at.strftime("%b %d, %Y")
+            %strong= format_date_in_user_timezone(@ability.created_at, format: "%b %d, %Y")
           .d-flex.justify-content-between
             %span Required by:
             %strong= @ability.required_by_assignments_count

@@ -89,12 +89,20 @@ module ApplicationHelper
     content_tag(:span, content, class: badge_class(color))
   end
 
-  def format_time_in_user_timezone(time, user = nil)
-    user ||= current_person if respond_to?(:current_person)
-    user.person ||= current_person if user.is_a?(Teammate)
-    return time.in_time_zone('Eastern Time (US & Canada)').strftime('%B %d, %Y at %I:%M %p %Z') unless user&.timezone.present?
+  def format_time_in_user_timezone(time, user = nil, format: nil)
+    return '' if time.nil?
     
-    time.in_time_zone(user.timezone).strftime('%B %d, %Y at %I:%M %p %Z')
+    user ||= current_person if respond_to?(:current_person)
+    user = user.person if user.is_a?(Teammate)
+    
+    format ||= '%B %d, %Y at %I:%M %p %Z'
+    timezone_name = user&.timezone.present? ? user.timezone : 'Eastern Time (US & Canada)'
+    
+    time.in_time_zone(timezone_name).strftime(format)
+  end
+
+  def format_date_in_user_timezone(time, user = nil, format: '%B %d, %Y')
+    format_time_in_user_timezone(time, user, format: format)
   end
   
   def available_timezones

@@ -19,4 +19,4 @@
       .col-md-6
         %p
           %strong Created:
-          = organization.created_at.strftime("%B %d, %Y")
+          = format_date_in_user_timezone(organization.created_at)

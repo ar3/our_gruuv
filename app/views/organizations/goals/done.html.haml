@@ -41,7 +41,7 @@
                       - else
                         %em.text-muted No reason provided
                     %td= check_in.confidence_reporter.display_name
-                    %td= check_in.created_at.strftime('%b %d, %Y at %I:%M %p')
+                    %td= format_time_in_user_timezone(check_in.created_at)
         - else
           %p.text-muted No check-ins recorded yet.
 
