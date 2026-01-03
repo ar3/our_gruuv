@@ -11,6 +11,14 @@ class Organizations::AspirationsController < Organizations::OrganizationNamespac
 
   def show
     authorize @aspiration
+    
+    # Load public observations (public_to_company or public_to_world) for this aspiration
+    @observations = @aspiration.observations
+      .where(privacy_level: ['public_to_company', 'public_to_world'])
+      .published
+      .includes(:observer, { observed_teammates: :person }, :observation_ratings)
+      .recent
+    
     render layout: determine_layout
   end
 

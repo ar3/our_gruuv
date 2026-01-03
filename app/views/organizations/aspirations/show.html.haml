@@ -30,3 +30,16 @@
           %div.mt-3
             %small.text-muted
               Sort Order: #{@aspiration.sort_order}
+      
+      - if @observations.any?
+        %div.card.mt-4
+          %div.card-header
+            %h5.mb-0
+              %i.bi.bi-star.me-2
+              Public Observations
+          %div.card-body
+            = render 'organizations/observations/wall_view'
+      - else
+        %div.card.mt-4
+          %div.card-body.text-center.py-5
+            %p.text-muted.mb-0 No public observations yet.
