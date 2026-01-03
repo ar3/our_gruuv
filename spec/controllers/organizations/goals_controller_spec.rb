@@ -175,6 +175,17 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:goal).incoming_links).to include(link)
     end
     
+    it 'loads prompt attachments' do
+      template = create(:prompt_template, company: company, available_at: Date.current)
+      prompt = create(:prompt, company_teammate: creator_teammate, prompt_template: template)
+      prompt_goal = PromptGoal.create!(prompt: prompt, goal: goal)
+      
+      get :show, params: { organization_id: company.id, id: goal.id }
+      
+      expect(assigns(:prompt_goals)).to include(prompt_goal)
+      expect(assigns(:prompt_goals).first.prompt).to eq(prompt)
+    end
+    
     context 'when goal is started' do
       let(:started_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: 1.week.ago) }
       let(:current_week_start) { Date.current.beginning_of_week(:monday) }

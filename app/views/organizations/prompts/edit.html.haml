@@ -132,26 +132,17 @@
                 = pluralize(goals_for_type.count, 'goal')
             %ul.list-unstyled
               - goals_for_type.each do |goal|
-                - status_icon = goal_status_icon(goal)
-                - is_struck_through = goal_should_be_struck_through?(goal)
-                %li.mb-2
-                  .d-flex.justify-content-between.align-items-start
-                    .flex-grow-1
-                      = link_to organization_goal_path(@organization, goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
-                        %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
-                        %strong= goal.title
-                      %br
-                      %small.text-muted
-                        %span.badge{class: goal_category_badge_class(goal), style: "font-size: 0.75em;"}
-                          = goal_category_label(goal)
-                        | 
-                        %span{title: goal_privacy_tooltip_text(goal), "data-bs-toggle" => "tooltip"}
-                          = goal_privacy_rings_with_label(goal)
-                    - if @can_edit
-                      - prompt_goal = @prompt.prompt_goals.find_by(goal: goal)
-                      - if prompt_goal
-                        = button_to organization_prompt_prompt_goal_path(@organization, @prompt, prompt_goal), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this goal association?" } do
-                          %i.bi.bi-trash
+                - prompt_goal = @prompt.prompt_goals.find_by(goal: goal)
+                = render 'organizations/goals/goal_list_item', 
+                    goal: goal, 
+                    organization: @organization, 
+                    prompt: @prompt, 
+                    prompt_goal: prompt_goal, 
+                    show_disassociate: true, 
+                    can_edit_prompt: @can_edit, 
+                    show_category_badge: true, 
+                    show_unlink: false, 
+                    linked_goal_check_ins: {}
     - else
       %em.text-muted No goals associated with this prompt.
       - if @can_edit

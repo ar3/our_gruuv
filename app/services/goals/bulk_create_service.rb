@@ -48,10 +48,21 @@ module Goals
         title: title.strip,
         description: title.strip,
         goal_type: determine_goal_type,
-        owner: linking_goal.owner,
         privacy_level: linking_goal.privacy_level,
         creator: current_teammate
       )
+      
+      # Explicitly set owner_type and owner_id to preserve STI type
+      # Rails polymorphic associations don't preserve STI types, so we need to set them explicitly
+      owner_teammate = linking_goal.owner
+      if owner_teammate.respond_to?(:type) && owner_teammate.type == 'CompanyTeammate'
+        goal.owner_type = 'CompanyTeammate'
+      elsif owner_teammate.is_a?(CompanyTeammate)
+        goal.owner_type = 'CompanyTeammate'
+      else
+        goal.owner_type = owner_teammate.class.base_class.name
+      end
+      goal.owner_id = owner_teammate.id
 
       # Set most_likely_target_date based on parent goal (only for non-objective goals)
       goal_type_value = determine_goal_type

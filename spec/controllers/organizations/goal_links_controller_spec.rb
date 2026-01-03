@@ -216,9 +216,11 @@ RSpec.describe Organizations::GoalLinksController, type: :controller do
       before do
         sign_in_as_teammate(person, company)
         # Ensure other_goal is owned by other_person and has only_creator privacy
+        # Explicitly set owner_type and owner_id to preserve STI type
+        other_goal.owner_type = 'CompanyTeammate'
+        other_goal.owner_id = other_teammate.id
         other_goal.update!(
           privacy_level: 'only_creator',
-          owner: other_teammate,
           creator: other_teammate
         )
         # Verify person is not creator or owner

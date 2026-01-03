@@ -91,6 +91,30 @@ RSpec.describe 'Organizations::Goals', type: :request do
   end
   
   describe 'GET /organizations/:organization_id/goals/:id' do
+    it 'displays prompt attachments when goal is attached to prompts' do
+      # Ensure teammate is a CompanyTeammate by reloading from database
+      teammate.update_column(:type, 'CompanyTeammate') unless teammate.type == 'CompanyTeammate'
+      company_teammate = CompanyTeammate.find(teammate.id)
+      
+      template = create(:prompt_template, company: organization, available_at: Date.current)
+      prompt = create(:prompt, company_teammate: company_teammate, prompt_template: template)
+      prompt_goal = PromptGoal.create!(prompt: prompt, goal: goal)
+      
+      get organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Associated with Prompts')
+      expect(response.body).to include(template.title)
+      expect(response.body).to include('Associated on')
+    end
+    
+    it 'does not display prompt attachments section when goal has no prompts' do
+      get organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include('Associated with Prompts')
+    end
+    
     it 'can access show page for completed goal' do
       completed_goal = create(:goal, creator: teammate, owner: teammate, title: 'Completed Goal', started_at: 1.week.ago, completed_at: 1.day.ago)
       

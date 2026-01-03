@@ -3,6 +3,11 @@
 - linked_goal = local_assigns[:goal]
 - linked_goal_check_ins = local_assigns[:linked_goal_check_ins] || {}
 - organization = local_assigns[:organization]
+- prompt = local_assigns[:prompt]
+- prompt_goal = local_assigns[:prompt_goal]
+- show_disassociate = local_assigns.fetch(:show_disassociate, false)
+- can_edit_prompt = local_assigns.fetch(:can_edit_prompt, false)
+- show_category_badge = local_assigns.fetch(:show_category_badge, false)
 
 - most_recent_check_in = linked_goal_check_ins[linked_goal.id]
 - status_icon = goal_status_icon(linked_goal)
@@ -16,6 +21,14 @@
         %strong= linked_goal.title
       - if link && link.metadata.present? && link.metadata['notes'].present?
         %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
+      - if show_category_badge
+        %br
+        %small.text-muted
+          %span.badge{class: goal_category_badge_class(linked_goal), style: "font-size: 0.75em;"}
+            = goal_category_label(linked_goal)
+          | 
+          %span{title: goal_privacy_tooltip_text(linked_goal), "data-bs-toggle" => "tooltip"}
+            = goal_privacy_rings_with_label(linked_goal)
       - if most_recent_check_in.present?
         %small.text-muted.d-block.mt-1.ms-5
           = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: linked_goal
@@ -43,4 +56,7 @@
         - if parent_goal_for_link
           = button_to organization_goal_goal_link_path(organization, parent_goal_for_link, link), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;", data: { turbo_confirm: "Are you sure you want to unlink \"#{linked_goal.title}\" from this goal? This action cannot be undone." } } do
             %i.bi.bi-folder-x
+      - if show_disassociate && prompt_goal && can_edit_prompt && policy(prompt_goal).destroy?
+        = button_to organization_prompt_prompt_goal_path(organization, prompt, prompt_goal), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this goal association?" } do
+          %i.bi.bi-trash
 

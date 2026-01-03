@@ -18,6 +18,20 @@
         Select one or more goals to associate with this prompt.
   .card-body
     = form_with url: organization_prompt_prompt_goals_path(@organization, @prompt), method: :post, local: true do |f|
+      
+      .mb-4.mt-4
+        %label.form-label.fw-bold Create New Goals
+        %small.text-muted.d-block.mb-2
+          Enter one goal per line. Each goal will be created as a stepping stone goal with a due date 90 days from now.
+        = text_area_tag "bulk_goal_titles", nil, 
+                        class: "form-control", 
+                        rows: 6,
+                        placeholder: "Goal 1\nGoal 2\nGoal 3"
+      
+      .d-flex.gap-2.mt-3
+        = f.submit 'Create Goals', class: 'btn btn-primary', id: 'create-goals-btn'
+
+
       - if @available_goals_with_status.any?
         .mb-4
           %label.form-label.fw-bold Existing Goals
@@ -60,15 +74,6 @@
         .alert.alert-info
           %i.bi.bi-info-circle.me-2
           No goals available to associate. Create goals first from the Goals section.
-      
-      .mb-4.mt-4
-        %label.form-label.fw-bold Create New Goals
-        %small.text-muted.d-block.mb-2
-          Enter one goal per line. Each goal will be created as a stepping stone goal with a due date 90 days from now.
-        = text_area_tag "bulk_goal_titles", nil, 
-                        class: "form-control", 
-                        rows: 6,
-                        placeholder: "Goal 1\nGoal 2\nGoal 3"
       
       .d-flex.gap-2.mt-3
         = link_to @return_url, class: 'btn btn-outline-secondary' do

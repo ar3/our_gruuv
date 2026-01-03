@@ -192,6 +192,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       @linked_goals = {}
       @linked_goal_check_ins = {}
     end
+    
+    # Load prompt associations for display
+    @prompt_goals = @goal.prompt_goals.includes(:prompt, prompt: :prompt_template).order(created_at: :desc)
   end
   
   def weekly_update

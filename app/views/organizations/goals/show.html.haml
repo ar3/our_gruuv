@@ -91,6 +91,23 @@
                   %strong Learnings:
                   = simple_format(last_check_in.confidence_reason)
 
+    / Prompt Attachments Card
+    - if @prompt_goals.any?
+      .card.mb-4{ role: "region", "aria-labelledby": "prompt-attachments" }
+        .card-header
+          %h5.mb-0{ id: "prompt-attachments" }
+            %i.bi.bi-file-text.me-2
+            Associated with Prompts
+        .card-body
+          - @prompt_goals.each do |prompt_goal|
+            .mb-3.pb-3{class: "#{'border-bottom' unless prompt_goal == @prompt_goals.last}"}
+              = link_to edit_organization_prompt_path(@organization, prompt_goal.prompt), class: "text-decoration-none" do
+                %h6.mb-1
+                  %i.bi.bi-file-text.me-2
+                  = prompt_goal.prompt.prompt_template.title
+              %small.text-muted
+                Associated on #{format_time_in_user_timezone(prompt_goal.created_at)}
+
     / Outgoing Links Card
     .card.mb-4{ role: "region", "aria-labelledby": "outgoing-links" }
       .card-header
