@@ -55,6 +55,7 @@ RSpec.describe 'Goal Link Creation', type: :system do
       visit organization_goal_path(organization, goal1)
       
       expect(page).to have_content('In order to achieve')
+      expect(page).to have_button('Add Child Goal')
       
       # Visit the URL directly to verify the route works
       visit new_outgoing_link_organization_goal_goal_links_path(organization, goal1)
@@ -62,6 +63,18 @@ RSpec.describe 'Goal Link Creation', type: :system do
       expect(page.current_path).to include('new_outgoing_link')
       expect(page).to have_content('Create Links to Other Goals')
       expect(page).to have_link('Goal')
+    end
+    
+    it 'shows Add Child Goal button even when there are existing child goals' do
+      # Create a child goal
+      create(:goal_link, parent: goal1, child: goal2)
+      
+      visit organization_goal_path(organization, goal1)
+      
+      # Should show the Add Child Goal button above the list
+      expect(page).to have_button('Add Child Goal')
+      # Should also show the existing child goal
+      expect(page).to have_content('Goal 2')
     end
     
     it 'navigates to new_incoming_link page from show page' do

@@ -421,10 +421,11 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       
       # Should see outgoing links section
       expect(page).to have_content(/In order to achieve|Goal/i)
+      expect(page).to have_button('Add Child Goal')
       
       # Click the dropdown and select stepping stones/activities option
-      find('button.dropdown-toggle', text: 'select').click
-      find('a.dropdown-item', text: '... this stepping stone / activity / output').click
+      find('button.dropdown-toggle', text: 'Add Child Goal').click
+      find('a.dropdown-item', text: 'New stepping stone / activity / output').click
       
       # Should be on the new outgoing link page (overlay)
       expect(page).to have_content('Create Links to Other Goals')
@@ -444,8 +445,8 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       visit organization_goal_path(organization, goal1)
       
       # Click the dropdown and select stepping stones/activities option
-      find('button.dropdown-toggle', text: 'select').click
-      find('a.dropdown-item', text: '... this stepping stone / activity / output').click
+      find('button.dropdown-toggle', text: 'Add Child Goal').click
+      find('a.dropdown-item', text: 'New stepping stone / activity / output').click
       
       # Should be on the new outgoing link page
       expect(page).to have_content('Create Links to Other Goals')
@@ -609,6 +610,9 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       link_with_notes = create(:goal_link, parent: parent_goal, child: goal1, metadata: { 'notes' => note_text })
       
       visit organization_goal_path(organization, goal1)
+      
+      # Expand Advanced Settings to see incoming links section
+      find('button[data-bs-target="#advancedSettings"]').click
       
       # Should see the parent goal title in incoming links section
       expect(page).to have_content('Pursuing')
