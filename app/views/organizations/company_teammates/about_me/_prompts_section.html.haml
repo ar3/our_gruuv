@@ -1,56 +1,77 @@
-= render 'shared/section_header', 
-         title: 'Prompts / Reflections', 
-         icon: 'bi-file-text', 
-         description: 'Recent reflection prompts',
-         collapsible: true,
-         collapse_target: 'promptsSection'
+- company = @teammate.organization.root_company || @teammate.organization
+- active_prompts = PromptTemplate.where(company: company).available
+- if active_prompts.any?
+  - prompts_indicator = prompts_status_indicator(@teammate)
+  = render 'shared/section_header', 
+           title: 'Prompts / Reflections', 
+           icon: 'bi-file-text', 
+           description: 'Recent reflection prompts',
+           collapsible: true,
+           collapse_target: 'promptsSection',
+           status_indicator: prompts_indicator
 
--# Summary view (shown when collapsed)
-%div.alert.alert-info.mb-4.collapse-summary{"data-bs-toggle" => "collapse", "data-bs-target" => "#promptsSection", "aria-expanded" => "false", "aria-controls" => "promptsSection", style: "cursor: pointer;"}
-  %p.mb-0
-    - if @open_prompts_count > 0
-      %strong= pluralize(@open_prompts_count, 'open prompt')
-      available
-    - else
-      No open prompts available.
+  -# Summary view (shown when collapsed)
+  %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(prompts_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#promptsSection", "aria-expanded" => "false", "aria-controls" => "promptsSection", style: "cursor: pointer;"}
+    %p.mb-0
+      %i{class: "#{status_indicator_icon(prompts_indicator)} #{status_indicator_badge_class(prompts_indicator)} me-2"}
+      %strong= pluralize(@prompts_available_count, 'Reflection Prompt')
+      Available, #{@teammate.person.casual_name} has started #{pluralize(@reflections_started_count, 'reflection')}, has answered
+      %strong= @questions_answered_count
+      of the total
+      %strong= @total_questions_count
+      questions, and has
+      %strong= @total_goals_count
+      total goals associated with
+      %strong= @reflections_with_goals_count
+      of these reflections.
 
--# Collapsible content
-.collapse#promptsSection
-  .card.mb-4
-    .card-body
-      - if @open_prompts_count > 0
-        %p.mb-3
-          %strong= pluralize(@open_prompts_count, 'open prompt')
-          available
-      
-      - if @recent_prompts.any?
-        .list-group.mb-3
-          - @recent_prompts.each do |prompt|
-            .list-group-item
-              .d-flex.justify-content-between.align-items-start
-                .flex-grow-1
-                  %h6.mb-1
-                    = prompt.prompt_template.title
-                    - if prompt.open?
+  -# Collapsible content
+  .collapse#promptsSection
+    .card.mb-4
+      .card-body
+        - if @open_prompts.any?
+          .list-group.mb-3
+            - @open_prompts.each do |prompt|
+              - goals = prompt.goals.load
+              - total_goals = goals.count
+              - started_goals = goals.select { |g| g.started_at.present? }.count
+              .list-group-item
+                .d-flex.justify-content-between.align-items-start
+                  .flex-grow-1
+                    %h6.mb-1
+                      = prompt.prompt_template.title
                       %span.badge.bg-warning.text-dark.ms-2 Open
-                    - else
-                      %span.badge.bg-secondary.ms-2 Closed
-                  %p.mb-1.text-muted
-                    = format_date_in_user_timezone(prompt.created_at)
-                  - if prompt.prompt_answers.any?
-                    %small.text-muted
-                      = pluralize(prompt.prompt_answers.count, 'answer')
-                - if policy(prompt).show?
-                  = link_to edit_organization_prompt_path(organization, prompt), 
-                            class: "btn btn-sm btn-outline-primary ms-2",
-                            target: "_blank" do
-                    %i.bi.bi-eye.me-1
-                    View
-      - else
-        %p.text-muted.mb-3 No recent prompts to display.
-      
-      .d-grid
-        = link_to "View All Prompts", 
-                  @prompts_url,
-                  class: "btn btn-outline-primary"
+                    %p.mb-1.text-muted
+                      = format_date_in_user_timezone(prompt.created_at)
+                    - if prompt.prompt_answers.any?
+                      %small.text-muted
+                        = pluralize(prompt.prompt_answers.count, 'answer')
+                    - if total_goals > 0
+                      %small.text-muted.d-block
+                        - if started_goals == total_goals && total_goals > 0
+                          %strong= total_goals
+                          goals with
+                          %strong all
+                          started
+                        - elsif started_goals > 0
+                          %strong= total_goals
+                          goals with
+                          %strong= started_goals
+                          started
+                        - else
+                          %strong= total_goals
+                          goals
+                  - if policy(prompt).show?
+                    = link_to edit_organization_prompt_path(organization, prompt), 
+                              class: "btn btn-sm btn-outline-primary ms-2",
+                              target: "_blank" do
+                      %i.bi.bi-eye.me-1
+                      View
+        - else
+          %p.text-muted.mb-3 No open prompts to display.
+        
+        .d-grid
+          = link_to "View All Prompts", 
+                    @prompts_url,
+                    class: "btn btn-outline-primary"
 

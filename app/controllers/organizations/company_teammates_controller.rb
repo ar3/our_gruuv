@@ -674,22 +674,64 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         
         prompts_for_teammate = accessible_prompts.where(company_teammate: company_teammate)
         
-        @recent_prompts = prompts_for_teammate
-          .includes(:prompt_template, :prompt_answers)
+        # Get open prompts only for the expanded view
+        @open_prompts = prompts_for_teammate
+          .open
+          .includes(:prompt_template, :prompt_answers, prompt_goals: :goal)
           .order(created_at: :desc)
-          .limit(3)
         
-        @open_prompts_count = prompts_for_teammate.open.count
+        # Get all prompts for statistics
+        all_prompts = prompts_for_teammate.includes(:prompt_template, :prompt_answers, prompt_goals: :goal)
+        
+        # Calculate statistics for summary
+        active_templates = PromptTemplate.where(company: company).available
+        @prompts_available_count = active_templates.count
+        
+        # Count reflections started (all prompts)
+        @reflections_started_count = all_prompts.count
+        
+        # Count questions answered (non-empty text)
+        @questions_answered_count = PromptAnswer
+          .where(prompt: all_prompts)
+          .where("text IS NOT NULL AND text != ''")
+          .count
+        
+        # Count total questions across all active templates
+        @total_questions_count = PromptQuestion
+          .where(prompt_template: active_templates)
+          .active
+          .count
+        
+        # Count total goals associated with prompts
+        @total_goals_count = PromptGoal
+          .where(prompt: all_prompts)
+          .count
+        
+        # Count reflections with goals
+        @reflections_with_goals_count = all_prompts
+          .joins(:prompt_goals)
+          .distinct
+          .count
         
         @prompts_url = organization_prompts_path(organization, teammate: company_teammate.id)
       else
-        @recent_prompts = []
-        @open_prompts_count = 0
+        @open_prompts = []
+        @prompts_available_count = 0
+        @reflections_started_count = 0
+        @questions_answered_count = 0
+        @total_questions_count = 0
+        @total_goals_count = 0
+        @reflections_with_goals_count = 0
         @prompts_url = organization_prompts_path(organization)
       end
     else
-      @recent_prompts = []
-      @open_prompts_count = 0
+      @open_prompts = []
+      @prompts_available_count = 0
+      @reflections_started_count = 0
+      @questions_answered_count = 0
+      @total_questions_count = 0
+      @total_goals_count = 0
+      @reflections_with_goals_count = 0
       @prompts_url = organization_prompts_path(organization)
     end
   end

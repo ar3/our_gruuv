@@ -67,10 +67,6 @@
                       %small.text-muted
                         #{pluralize(section_completed, 'recently completed task')}
             
-            .mt-3
-              = link_to "View Full Details", 
-                        @one_on_one_url,
-                        class: "btn btn-outline-primary"
         - elsif source && !has_external_identity?(@teammate, source)
           .alert.alert-warning
             %strong #{source_display_name(source)} Project Detected
@@ -98,6 +94,6 @@
           Add a link to your 1:1 document, project, or system to get started.
       
       .d-grid
-        = link_to "Manage 1:1 Area", 
+        = link_to "Manage / View Full Details about 1:1", 
                   @one_on_one_url,
                   class: "btn btn-outline-primary"

@@ -10,7 +10,7 @@
         - if status_indicator && collapsible
           %i{class: "#{status_indicator_icon(status_indicator)} #{status_indicator_badge_class(status_indicator)} me-2"}
         %i{class: "#{icon} me-2"}
-        = title.upcase
+        = title
       - if local_assigns[:action_link]
         = link_to action_link[:url], class: "btn btn-sm btn-outline-primary ms-3", title: action_link[:title] do
           %i{class: "#{action_link[:icon]} #{action_link[:text].present? ? 'me-1' : ''}"}

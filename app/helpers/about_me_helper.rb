@@ -193,6 +193,45 @@ module AboutMeHelper
     end
   end
 
+  def prompts_status_indicator(company_teammate)
+    company = company_teammate.organization.root_company || company_teammate.organization
+    
+    # Get active prompts for the company
+    active_prompts = PromptTemplate.where(company: company).available
+    
+    # If no active prompts, return nil (section will be hidden)
+    return nil if active_prompts.empty?
+    
+    # Get user's prompts
+    user_prompts = Prompt.where(company_teammate: company_teammate)
+    
+    # Check if user has any responses (non-empty text)
+    # Use SQL to check for text that is not null and not empty
+    has_responses = PromptAnswer
+      .where(prompt: user_prompts)
+      .where("text IS NOT NULL AND text != ''")
+      .exists?
+    
+    # If no prompts or no responses, return red
+    if user_prompts.empty? || !has_responses
+      return :red
+    end
+    
+    # Check if there's at least one active goal associated with any prompt
+    prompt_ids = user_prompts.pluck(:id)
+    has_active_goals = PromptGoal
+      .where(prompt_id: prompt_ids)
+      .joins(:goal)
+      .merge(Goal.active)
+      .exists?
+    
+    if has_active_goals
+      :green
+    else
+      :yellow
+    end
+  end
+
   # Helper methods for displaying indicators
   def status_indicator_badge_class(status)
     case status
