@@ -32,10 +32,10 @@ RSpec.describe 'Teammate View Security', type: :request do
     context 'when user is unauthenticated' do
       it 'raises error (unauthenticated access not supported)' do
         # Don't sign in - test unauthenticated access
-        # The controller raises an error for unauthenticated users before redirect
-        expect {
-          get internal_organization_company_teammate_path(organization, person_teammate)
-        }.to raise_error(RuntimeError, /Teammate not found/)
+        # The controller redirects unauthenticated users
+        get internal_organization_company_teammate_path(organization, person_teammate)
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(root_path)
       end
     end
 

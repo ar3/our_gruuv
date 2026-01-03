@@ -10,7 +10,10 @@ class Organizations::PublicMaap::AssignmentsController < Organizations::PublicMa
       .ordered
     
     # Group by department for display
-    @assignments_by_department = @assignments.group_by(&:department)
+    # If assignment has no department but company is a department, use company
+    @assignments_by_department = @assignments.group_by do |assignment|
+      assignment.department || (assignment.company.department? ? assignment.company : nil)
+    end
   end
   
   def show

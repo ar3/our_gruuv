@@ -944,7 +944,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       
       story = params[:observation] && params[:observation][:story] ? params[:observation][:story] : @observation.story
       
-      if story.present? && story.strip.present?
+      if story.present? && story.strip.present? && params[:observation].present?
         # Update observation with form data
         @observation.update(draft_params)
         
@@ -2009,6 +2009,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   end
 
   def draft_params
+    return {} unless params[:observation].present?
     permitted = params.require(:observation).permit(
       :story, :primary_feeling, :secondary_feeling, :privacy_level,
       :observation_type, :created_as_type,

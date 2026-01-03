@@ -153,7 +153,7 @@ RSpec.describe 'Organizations::Search', type: :request do
       it 'redirects with authorization error' do
         get organization_search_path(organization)
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organizations_path)
+        expect(response).to redirect_to(dashboard_organization_path(other_organization))
       end
     end
   end

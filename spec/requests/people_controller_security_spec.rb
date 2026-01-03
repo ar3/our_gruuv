@@ -96,8 +96,8 @@ RSpec.describe 'PeopleController Security', type: :request do
       it 'denies access and redirects to organizations index' do
         get organization_company_teammate_path(organization, person_teammate)
         expect(response).to have_http_status(:redirect)
-        # When user doesn't have access to the organization, they get redirected to organizations index
-        expect(response).to redirect_to(organizations_path)
+        # When user doesn't have access to the organization, they get redirected to dashboard
+        expect(response).to redirect_to(dashboard_organization_path(other_organization))
       end
     end
 

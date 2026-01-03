@@ -65,15 +65,24 @@ class Organizations::CompanyTeammates::OneOnOneLinks::ItemsController < Organiza
     case source
     when 'asana'
       service = AsanaService.new(@teammate)
-      service.fetch_task_details(item_gid) if service.authenticated?
+      if service.authenticated?
+        task = service.fetch_task_details(item_gid)
+        if task
+          { success: true, task: task }
+        else
+          { success: false, error: 'Task not found' }
+        end
+      else
+        { success: false, error: 'Not authenticated with Asana' }
+      end
     when 'jira'
       # Future: JiraService.new(@teammate).fetch_issue_details(item_gid)
-      nil
+      { success: false, error: 'Jira integration not yet implemented' }
     when 'linear'
       # Future: LinearService.new(@teammate).fetch_issue_details(item_gid)
-      nil
+      { success: false, error: 'Linear integration not yet implemented' }
     else
-      nil
+      { success: false, error: 'Unknown source' }
     end
   end
 end

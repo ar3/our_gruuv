@@ -9,7 +9,7 @@ RSpec.describe 'Organizations::Assignments', type: :request do
 
   let(:person_teammate) { create(:teammate, person: person, organization: organization) }
   let(:admin_teammate) { create(:teammate, person: admin, organization: organization) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization, can_manage_employment: true) }
+  let(:manager_teammate) { create(:teammate, person: manager, organization: organization, can_manage_employment: true, can_manage_maap: true) }
 
   before do
     # Temporarily disable PaperTrail for request tests to avoid controller_info issues
@@ -366,8 +366,10 @@ RSpec.describe 'Organizations::Assignments', type: :request do
     end
 
     context 'when user is manager with employment permissions' do
+      let(:manager_without_maap) { create(:teammate, person: manager, organization: organization, can_manage_employment: true, can_manage_maap: false) }
+      
       before do
-        manager_teammate
+        manager_without_maap
         sign_in_as_teammate_for_request(manager, organization)
       end
 

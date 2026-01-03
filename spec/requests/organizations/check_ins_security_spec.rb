@@ -96,8 +96,8 @@ RSpec.describe 'Check-In Security', type: :request do
       it 'denies access' do
         get organization_company_teammate_check_ins_path(organization, person_teammate)
         expect(response).to have_http_status(:redirect)
-        # User from different organization is redirected to organizations_path by ensure_teammate_matches_organization
-        expect(response).to redirect_to(organizations_path)
+        # User from different organization is redirected to dashboard by ensure_teammate_matches_organization
+        expect(response).to redirect_to(dashboard_organization_path(other_organization))
       end
     end
   end

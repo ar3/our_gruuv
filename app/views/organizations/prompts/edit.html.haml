@@ -5,11 +5,17 @@
     %i.bi.bi-arrow-left.me-2
     Back to My Reflections
 
+- view_mode = params[:view] || 'split'
 - content_for :header do
   .d-flex.align-items-center.justify-content-between
     %h1.mb-0.me-2
       %i.bi.bi-file-text.me-2
       Edit #{@prompt_template.title}
+    .d-flex.gap-2
+      - if view_mode == 'split'
+        %span.badge.bg-primary Split View
+      - else
+        %span.badge.bg-secondary Vertical View
 
 .card.mb-4
   .card-header
@@ -21,11 +27,11 @@
       .col-md-6
         %p.mb-2
           %strong Created:
-          = @prompt.created_at.strftime("%B %d, %Y at %I:%M %p")
+          = format_time_in_user_timezone(@prompt.created_at)
       .col-md-6
         %p.mb-2
           %strong Last Updated:
-          = @prompt.updated_at.strftime("%B %d, %Y at %I:%M %p")
+          = format_time_in_user_timezone(@prompt.updated_at)
 
 .card
   .card-header
@@ -33,7 +39,7 @@
       %i.bi.bi-question-circle.me-2
       Answer Questions
   .card-body
-    = form_with url: organization_prompt_path(@organization, @prompt), method: :patch, local: true, id: "prompt-edit-form" do |form|
+    = form_with url: organization_prompt_path(@organization, @prompt, view: view_mode), method: :patch, local: true, id: "prompt-edit-form" do |form|
       - if @prompt.errors.any?
         .alert.alert-danger
           %h4= "#{pluralize(@prompt.errors.count, "error")} prohibited this prompt from being saved:"
@@ -41,20 +47,34 @@
             - @prompt.errors.full_messages.each do |message|
               %li= message
       
-      / Split View: 3x9 column layout
-      - @prompt_questions.each do |question|
-        .row.mb-4
-          .col-sm-3.col-12.mb-3.mb-sm-0
+      - if view_mode == 'vertical'
+        / Vertical View: full width layout
+        - @prompt_questions.each do |question|
+          .mb-4
             = form.label "prompt_answers[#{question.id}][text]", question.label, class: 'form-label fw-bold'
             - if question.helper_text.present?
-              %small.text-muted.d-block.mt-1= question.helper_text
-          .col-sm-9.col-12
+              %small.text-muted.d-block.mt-1.mb-2= question.helper_text
             = form.text_area "prompt_answers[#{question.id}][text]", 
                             value: @prompt_answers[question.id]&.text,
                             class: 'form-control', 
                             rows: 4,
                             placeholder: question.placeholder_text.presence || 'Enter your answer...',
                             disabled: !@can_edit
+      - else
+        / Split View: 3x9 column layout
+        - @prompt_questions.each do |question|
+          .row.mb-4
+            .col-sm-3.col-12.mb-3.mb-sm-0
+              = form.label "prompt_answers[#{question.id}][text]", question.label, class: 'form-label fw-bold'
+              - if question.helper_text.present?
+                %small.text-muted.d-block.mt-1= question.helper_text
+            .col-sm-9.col-12
+              = form.text_area "prompt_answers[#{question.id}][text]", 
+                              value: @prompt_answers[question.id]&.text,
+                              class: 'form-control', 
+                              rows: 4,
+                              placeholder: question.placeholder_text.presence || 'Enter your answer...',
+                              disabled: !@can_edit
       
       - if @archived_questions.any?
         .mt-4.pt-4.border-top
