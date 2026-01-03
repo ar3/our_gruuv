@@ -143,5 +143,217 @@ RSpec.describe AboutMeHelper, type: :helper do
       end
     end
   end
+
+  describe '#goals_status_indicator' do
+    context 'when no active goals exist' do
+      it 'returns :red' do
+        result = helper.goals_status_indicator(company_teammate)
+        expect(result).to eq(:red)
+      end
+    end
+
+    context 'when goals exist' do
+      let!(:goal1) do
+        create(:goal,
+               owner: company_teammate,
+               creator: company_teammate,
+               company: company,
+               started_at: 1.day.ago,
+               completed_at: nil)
+      end
+
+      context 'when any goal completed in last 90 days' do
+        before do
+          goal1.update!(completed_at: 30.days.ago)
+        end
+
+        it 'returns :green' do
+          result = helper.goals_status_indicator(company_teammate)
+          expect(result).to eq(:green)
+        end
+
+        context 'even when other goals have no recent check-ins' do
+          let!(:goal2) do
+            create(:goal,
+                   owner: company_teammate,
+                   creator: company_teammate,
+                   company: company,
+                   started_at: 1.day.ago,
+                   completed_at: nil)
+          end
+
+          it 'still returns :green (completed goal takes precedence)' do
+            result = helper.goals_status_indicator(company_teammate)
+            expect(result).to eq(:green)
+          end
+        end
+      end
+
+      context 'when no goals completed in last 90 days' do
+        context 'when all active goals have check-ins in past 2 weeks' do
+          let(:cutoff_week) { (Date.current - 14.days).beginning_of_week(:monday) }
+          let(:recent_week) { cutoff_week }
+          let(:confidence_reporter) { create(:person) }
+
+          before do
+            create(:goal_check_in,
+                   goal: goal1,
+                   check_in_week_start: recent_week,
+                   confidence_reporter: confidence_reporter)
+          end
+
+          it 'returns :green' do
+            result = helper.goals_status_indicator(company_teammate)
+            expect(result).to eq(:green)
+          end
+
+          context 'with multiple goals' do
+            let!(:goal2) do
+              create(:goal,
+                     owner: company_teammate,
+                     creator: company_teammate,
+                     company: company,
+                     started_at: 1.day.ago,
+                     completed_at: nil)
+            end
+
+            before do
+              create(:goal_check_in,
+                     goal: goal2,
+                     check_in_week_start: recent_week,
+                     confidence_reporter: confidence_reporter)
+            end
+
+            it 'returns :green when all goals have recent check-ins' do
+              result = helper.goals_status_indicator(company_teammate)
+              expect(result).to eq(:green)
+            end
+          end
+
+          context 'when check-in is exactly on the cutoff week' do
+            before do
+              goal1.goal_check_ins.destroy_all
+              create(:goal_check_in,
+                     goal: goal1,
+                     check_in_week_start: cutoff_week,
+                     confidence_reporter: confidence_reporter)
+            end
+
+            it 'returns :green' do
+              result = helper.goals_status_indicator(company_teammate)
+              expect(result).to eq(:green)
+            end
+          end
+
+          context 'when check-in is for current week' do
+            let(:current_week) { Date.current.beginning_of_week(:monday) }
+
+            before do
+              goal1.goal_check_ins.destroy_all
+              create(:goal_check_in,
+                     goal: goal1,
+                     check_in_week_start: current_week,
+                     confidence_reporter: confidence_reporter)
+            end
+
+            it 'returns :green' do
+              result = helper.goals_status_indicator(company_teammate)
+              expect(result).to eq(:green)
+            end
+          end
+        end
+
+        context 'when some goals have recent check-ins but not all' do
+          let(:cutoff_week) { (Date.current - 14.days).beginning_of_week(:monday) }
+          let(:recent_week) { cutoff_week }
+          let(:confidence_reporter) { create(:person) }
+          let!(:goal2) do
+            create(:goal,
+                   owner: company_teammate,
+                   creator: company_teammate,
+                   company: company,
+                   started_at: 1.day.ago,
+                   completed_at: nil)
+          end
+
+          before do
+            create(:goal_check_in,
+                   goal: goal1,
+                   check_in_week_start: recent_week,
+                   confidence_reporter: confidence_reporter)
+            # goal2 has no check-ins
+          end
+
+          it 'returns :yellow' do
+            result = helper.goals_status_indicator(company_teammate)
+            expect(result).to eq(:yellow)
+          end
+        end
+
+        context 'when goals have check-ins but all are older than 2 weeks' do
+          let(:old_week) { (Date.current - 14.days).beginning_of_week(:monday) - 1.week }
+          let(:confidence_reporter) { create(:person) }
+
+          before do
+            create(:goal_check_in,
+                   goal: goal1,
+                   check_in_week_start: old_week,
+                   confidence_reporter: confidence_reporter)
+          end
+
+          it 'returns :yellow' do
+            result = helper.goals_status_indicator(company_teammate)
+            expect(result).to eq(:yellow)
+          end
+        end
+
+        context 'when goals have no check-ins at all' do
+          it 'returns :yellow' do
+            result = helper.goals_status_indicator(company_teammate)
+            expect(result).to eq(:yellow)
+          end
+        end
+
+        context 'week calculation edge cases' do
+          let(:confidence_reporter) { create(:person) }
+
+          context 'when check-in is exactly on the cutoff week (14 days ago)' do
+            let(:cutoff_week) { (Date.current - 14.days).beginning_of_week(:monday) }
+
+            before do
+              goal1.goal_check_ins.destroy_all
+              create(:goal_check_in,
+                     goal: goal1,
+                     check_in_week_start: cutoff_week,
+                     confidence_reporter: confidence_reporter)
+            end
+
+            it 'returns :green' do
+              result = helper.goals_status_indicator(company_teammate)
+              expect(result).to eq(:green)
+            end
+          end
+
+          context 'when check-in is one day before cutoff week' do
+            let(:cutoff_week) { (Date.current - 14.days).beginning_of_week(:monday) }
+            let(:old_week) { cutoff_week - 1.week }
+
+            before do
+              goal1.goal_check_ins.destroy_all
+              create(:goal_check_in,
+                     goal: goal1,
+                     check_in_week_start: old_week,
+                     confidence_reporter: confidence_reporter)
+            end
+
+            it 'returns :yellow' do
+              result = helper.goals_status_indicator(company_teammate)
+              expect(result).to eq(:yellow)
+            end
+          end
+        end
+      end
+    end
+  end
 end
 

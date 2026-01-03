@@ -36,14 +36,28 @@ module AboutMeHelper
   end
 
   def goals_status_indicator(teammate)
-    all_goals = Goal.for_teammate(teammate).active
+    # Check if any goal (active or completed) completed in last 90 days
+    completed_recently = Goal.for_teammate(teammate)
+      .where('completed_at >= ?', 90.days.ago)
+      .where(deleted_at: nil)
+      .exists?
+    
+    if completed_recently
+      return :green
+    end
+    
+    all_goals = Goal.for_teammate(teammate).active.includes(:goal_check_ins)
     
     return :red if all_goals.empty?
     
-    # Check if any goal completed in last 90 days
-    completed_recently = all_goals.where('completed_at >= ?', 90.days.ago).exists?
+    # Second path to green: all active goals have check-ins in past 2 weeks
+    cutoff_week = (Date.current - 14.days).beginning_of_week(:monday)
     
-    if completed_recently
+    all_goals_have_recent_check_ins = all_goals.all? do |goal|
+      goal.goal_check_ins.any? { |check_in| check_in.check_in_week_start >= cutoff_week }
+    end
+    
+    if all_goals_have_recent_check_ins
       :green
     else
       :yellow
