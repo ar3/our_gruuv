@@ -67,22 +67,165 @@
       /* Hero Section */
       .hero {
         text-align: center;
-        padding: 4rem 0;
-        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        padding: 5rem 0 3rem;
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
       }
 
       .hero h1 {
-        font-size: 3rem;
+        font-size: 3.5rem;
         font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 1.5rem;
+        line-height: 1.2;
+      }
+
+      .hero p {
+        font-size: 1.5rem;
+        color: #475569;
+        max-width: 700px;
+        margin: 0 auto 2rem;
+        font-weight: 500;
+      }
+
+      /* Benefits Section */
+      .benefits {
+        padding: 3rem 0;
+        background: white;
+      }
+
+      .benefits-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+      }
+
+      .benefit-card {
+        text-align: center;
+        padding: 1.5rem;
+      }
+
+      .benefit-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+      }
+
+      .benefit-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .benefit-list li {
+        color: #64748b;
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .benefit-list li:before {
+        content: "✓ ";
+        color: #10b981;
+        font-weight: bold;
+        margin-right: 0.5rem;
+      }
+
+      /* Three Pillars Section */
+      .pillars {
+        padding: 4rem 0;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      }
+
+      .pillars-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+        margin-top: 2rem;
+      }
+
+      .pillar-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 2px solid #e2e8f0;
+        text-align: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .pillar-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: #cbd5e1;
+      }
+
+      .pillar-title {
+        font-size: 1.75rem;
+        font-weight: 700;
         color: #1e293b;
         margin-bottom: 1rem;
       }
 
-      .hero p {
-        font-size: 1.25rem;
+      .pillar-description {
+        color: #64748b;
+        font-size: 1rem;
+        line-height: 1.6;
+      }
+
+      /* Science Section */
+      .science-section {
+        padding: 2rem 0;
+        background: white;
+        margin-top: 2rem;
+      }
+
+      .science-toggle {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem;
+        cursor: pointer;
+        text-align: center;
+        transition: background 0.2s;
+        margin-bottom: 1rem;
+      }
+
+      .science-toggle:hover {
+        background: #f1f5f9;
+      }
+
+      .science-toggle h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0;
+      }
+
+      .science-content {
+        display: none;
+        padding: 2rem;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+      }
+
+      .science-content.active {
+        display: block;
+      }
+
+      .science-content p {
         color: #475569;
-        max-width: 600px;
-        margin: 0 auto 2rem;
+        line-height: 1.8;
+        margin-bottom: 1rem;
+      }
+
+      .science-content h4 {
+        color: #1e293b;
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
       }
 
       .cta-button {
@@ -172,6 +315,11 @@
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
       }
 
+      .solution-card a {
+        text-decoration: none;
+        color: inherit;
+      }
+
       .solution-title {
         font-size: 1.25rem;
         font-weight: 600;
@@ -212,6 +360,14 @@
           grid-template-columns: 1fr;
         }
         
+        .pillars-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .benefits-grid {
+          grid-template-columns: 1fr;
+        }
+        
         .nav-links {
           display: none;
         }
@@ -227,75 +383,138 @@
             %li
               %a{href: "#solutions"} Solutions
             %li
-              %a{href: "#about"} About
-            %li
-              %a{href: "#contact"} Contact
-            %li
               = link_to "Sign In", login_path, class: "btn btn-primary", style: "background: #4285f4; border: none; color: white; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none; font-weight: 500;"
 
     / Hero Section
     %section.hero
       .container
-        %h1 Transform Your Workflow
-        %p Discover nine powerful solutions designed to solve your biggest challenges and streamline your operations.
+        %h1 Achieve Team Flow State
+        %p The conditions for flow state—Challenge, Clarity, and Continuous Feedback—are what great teams are built on.
         .hero-buttons
-          %a.cta-button{href: "#solutions"} Explore Solutions
+          %a.cta-button{href: "#solutions"} See How We Enable Flow State
           = link_to "Sign In", login_path, class: "cta-button", style: "background: #4285f4; margin-left: 1rem;"
+
+    / Benefits Section
+    %section.benefits
+      .container
+        %h2.section-title Why Flow State Matters
+        .benefits-grid
+          .benefit-card
+            %h3.benefit-title Individual Benefits
+            %ul.benefit-list
+              %li Increased productivity and focus
+              %li Deeper engagement with work
+              %li Personal growth and mastery
+              %li Sense of accomplishment
+          .benefit-card
+            %h3.benefit-title Team Benefits
+            %ul.benefit-list
+              %li Better collaboration and alignment
+              %li Enhanced innovation and creativity
+              %li Collective achievement
+              %li Stronger team cohesion
+
+    / Three Pillars Section
+    %section.pillars
+      .container
+        %h2.section-title The Three Conditions for Flow State
+        .pillars-grid
+          .pillar-card
+            %h3.pillar-title Challenge
+            %p.pillar-description
+              Teams need the right level of challenge—not too easy, not too hard. When work stretches capabilities just enough, individuals and teams enter a state of deep engagement where time seems to fly and performance soars.
+          .pillar-card
+            %h3.pillar-title Clarity
+            %p.pillar-description
+              Clear goals, defined roles, and transparent expectations create the foundation for flow. When everyone knows where they're going and what's expected, teams can focus their energy on execution rather than confusion.
+          .pillar-card
+            %h3.pillar-title Continuous Feedback
+            %p.pillar-description
+              Real-time feedback loops keep teams aligned and moving forward. Whether it's peer recognition, performance insights, or collaborative check-ins, continuous feedback ensures teams stay in sync and can adjust course quickly.
+
+    / Science Section
+    %section.science-section
+      .container
+        .science-toggle{onclick: "toggleScience()"}
+          %h3 Learn About the Science Behind Flow State
+        .science-content#science-content
+          %h4 The Research Foundation
+          %p
+            Flow state was first described by psychologist Mihaly Csikszentmihalyi in the 1970s. After decades of research, he identified that optimal human experience occurs when people are fully immersed in activities that match their skill level with appropriate challenges.
+          %h4 The Three Conditions
+          %p
+            <strong>Challenge</strong>: The task must be challenging enough to require focus, but not so difficult that it causes anxiety. When challenge and skill are balanced, individuals enter a state of flow.
+          %p
+            <strong>Clarity</strong>: Clear goals and immediate feedback about progress are essential. People need to know what they're working toward and how well they're doing.
+          %p
+            <strong>Continuous Feedback</strong>: Real-time information about performance allows for immediate adjustments. This feedback loop keeps individuals engaged and helps maintain the flow state.
+          %h4 Team Flow State
+          %p
+            When these conditions are met at the team level, organizations experience collective flow—where teams work in harmony, communication flows naturally, and collective performance exceeds the sum of individual contributions. This is what OurGruuv enables.
 
     / Main Content
     %main.main-content
       .container
-        %h2.section-title#solutions Our Solutions
+        %h2.section-title#solutions How We Enable Flow State
+        %p{style: "text-align: center; color: #64748b; font-size: 1.1rem; max-width: 800px; margin: 0 auto 3rem;"}
+          OurGruuv provides the tools and systems that create the three conditions for flow state. Each solution is designed to support Challenge, Clarity, or Continuous Feedback—helping teams achieve peak performance.
         
         .job-categories
-          / Job Category 1
+          / Clarity Category
           .job-category
             .category-header
-              %h3.category-title Align
-              %p.category-subtitle [Category description and value proposition]
+              %h3.category-title Clarity: Know Where You're Going
+              %p.category-subtitle Clear goals, defined roles, and transparent expectations create the foundation for flow state.
             .solutions-grid
               .solution-card
-                %h4.solution-title Responsibility
-                %p.solution-description [Tagline and brief description of this specific solution]
+                %h4.solution-title Positions
+                %p.solution-description Define organizational roles with clear job descriptions, requirements, and expectations. Everyone knows their position and what's expected.
               .solution-card
-                %h4.solution-title Eligibility
-                %p.solution-description [Tagline and brief description of this specific solution]
+                %h4.solution-title Assignments
+                %p.solution-description Track what people are working on with assignment management and check-ins. Clear accountability and progress visibility.
               .solution-card
-                %h4.solution-title Continuous Improvement Habits
-                %p.solution-description [Tagline and brief description of this specific solution]
+                %h4.solution-title Abilities
+                %p.solution-description Define the skills and competencies needed for success. Five-level milestone system tracks growth and mastery.
+              .solution-card
+                %h4.solution-title Seats
+                %p.solution-description Manage organizational structure and seat allocation. Clear view of who's in which role and what's needed.
+              .solution-card
+                %h4.solution-title Aspirations
+                %p.solution-description Capture company, department, and team values and philosophies. Align work with organizational purpose.
+              .solution-card
+                %h4.solution-title Goals
+                %p.solution-description Set clear goals with check-ins and progress tracking. Know what you're working toward and how you're doing.
+              .solution-card
+                %h4.solution-title Milestones
+                %p.solution-description Track ability milestone attainment with certification. Clear progression paths and recognition of growth.
 
-          / Job Category 2
+          / Continuous Feedback Category
           .job-category
             .category-header
-              %h3.category-title Collaborate
-              %p.category-subtitle [Category description and value proposition]
+              %h3.category-title Continuous Feedback: Stay in Sync
+              %p.category-subtitle Real-time feedback loops keep teams aligned and moving forward together.
             .solutions-grid
               .solution-card
-                %a{href: huddles_path}
-                  %h4.solution-title S.E.E. 20 Huddle
-                %p.solution-description [Tagline and brief description of this specific solution]
+                %a{href: huddles_path, style: "text-decoration: none; color: inherit;"}
+                  %h4.solution-title S.E.E. 20 Huddles
+                %p.solution-description Structured collaborative sessions with playbooks, Slack integration, and feedback collection. Create focused spaces for team alignment.
               .solution-card
-                %h4.solution-title "Good Opportunities"
-                %p.solution-description [Tagline and brief description of this specific solution]
-              .solution-card
-                %h4.solution-title Diverge <=> Converge
-                %p.solution-description [Tagline and brief description of this specific solution]
+                %h4.solution-title Observations
+                %p.solution-description 360-365 feedback system with Kudos, Feedback, and Quick Notes. Continuous recognition and improvement through peer observations.
 
-          / Job Category 3
+          / Challenge Category
           .job-category
             .category-header
-              %h3.category-title Transform
-              %p.category-subtitle [Category description and value proposition]
+              %h3.category-title Challenge: Grow Together
+              %p.category-subtitle The right level of challenge stretches capabilities and drives growth.
             .solutions-grid
               .solution-card
-                %h4.solution-title Scorecard of Signals
-                %p.solution-description [Tagline and brief description of this specific solution]
+                %h4.solution-title Goals
+                %p.solution-description Set challenging goals that stretch capabilities. Track progress and celebrate achievements as teams grow together.
               .solution-card
-                %h4.solution-title OKR-3's
-                %p.solution-description [Tagline and brief description of this specific solution]
-              .solution-card
-                %h4.solution-title Forest of Hypotheses
-                %p.solution-description [Tagline and brief description of this specific solution]
+                %h4.solution-title Coming Soon
+                %p.solution-description{style: "color: #94a3b8; font-style: italic;"}
+                  Additional challenge-focused solutions are in development, including OKR-3's, Hypothesis Management, and Team Signals.
 
     / Footer
     %footer.footer
@@ -303,3 +522,9 @@
         %p
           &copy;
           =" 2018-#{Time.current.year} OurGruuv. All rights reserved. "
+
+    :javascript
+      function toggleScience() {
+        const content = document.getElementById('science-content');
+        content.classList.toggle('active');
+      }
