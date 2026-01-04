@@ -12,7 +12,15 @@
   %p.mb-0
     %i{class: "#{status_indicator_icon(abilities_indicator)} #{status_indicator_badge_class(abilities_indicator)} me-2"}
     - if @required_assignments.any?
-      #{@required_assignments.count} required #{'assignment'.pluralize(@required_assignments.count)} with ability requirements
+      = "there are ".html_safe
+      %span.inline-sentence-highlight= pluralize(@total_ability_milestones_count, 'ability milestone')
+      = " associated with the ".html_safe
+      %span.inline-sentence-highlight= pluralize(@required_assignments.count, 'required assignment')
+      = " for ".html_safe
+      %span.inline-sentence-highlight= @position_display_name_for_abilities
+      = ", and #{@teammate.person.casual_name} is meeting the required milestone for ".html_safe
+      %span.inline-sentence-highlight= pluralize(@ability_milestones_met_count, 'ability milestone')
+      = " of these ability milestones.".html_safe
     - else
       No required assignments
 

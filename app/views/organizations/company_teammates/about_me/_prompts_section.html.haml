@@ -14,16 +14,18 @@
   %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(prompts_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#promptsSection", "aria-expanded" => "false", "aria-controls" => "promptsSection", style: "cursor: pointer;"}
     %p.mb-0
       %i{class: "#{status_indicator_icon(prompts_indicator)} #{status_indicator_badge_class(prompts_indicator)} me-2"}
-      %strong= pluralize(@prompts_available_count, 'Reflection Prompt')
-      Available, #{@teammate.person.casual_name} has started #{pluralize(@reflections_started_count, 'reflection')}, has answered
-      %strong= @questions_answered_count
-      of the total
-      %strong= @total_questions_count
-      questions, and has
-      %strong= @total_goals_count
-      total goals associated with
-      %strong= @reflections_with_goals_count
-      of these reflections.
+      %span.inline-sentence-highlight= pluralize(@prompts_available_count, 'Reflection Prompt')
+      = " Available, #{@teammate.person.casual_name} has started ".html_safe
+      %span.inline-sentence-highlight= pluralize(@reflections_started_count, 'reflection')
+      = ", has answered ".html_safe
+      %span.inline-sentence-highlight= @questions_answered_count
+      = " of the total ".html_safe
+      %span.inline-sentence-highlight= @total_questions_count
+      = " questions, and has ".html_safe
+      %span.inline-sentence-highlight= @total_goals_count
+      = " total goals associated with ".html_safe
+      %span.inline-sentence-highlight= @reflections_with_goals_count
+      = " of these reflections.".html_safe
 
   -# Collapsible content
   .collapse#promptsSection

@@ -12,7 +12,12 @@
   %p.mb-0
     %i{class: "#{status_indicator_icon(aspirations_indicator)} #{status_indicator_badge_class(aspirations_indicator)} me-2"}
     - if @company_aspirations.any?
-      #{@company_aspirations.count} company aspirational #{'value'.pluralize(@company_aspirations.count)}
+      %span.inline-sentence-highlight= @company_name
+      = " has ".html_safe
+      %span.inline-sentence-highlight= pluralize(@company_aspirations.count, 'aspirational value')
+      = ", and #{@teammate.person.casual_name} has had a check-in conversation about ".html_safe
+      %span.inline-sentence-highlight= pluralize(@aspirations_with_recent_check_ins_count, 'aspirational value')
+      = " of these aspirational values in the last 90 days.".html_safe
     - else
       No company aspirational values
 

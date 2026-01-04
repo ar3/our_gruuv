@@ -12,7 +12,12 @@
   %p.mb-0
     %i{class: "#{status_indicator_icon(assignments_indicator)} #{status_indicator_badge_class(assignments_indicator)} me-2"}
     - if @required_assignments.any?
-      #{@required_assignments.count} required #{'assignment'.pluralize(@required_assignments.count)}
+      %span.inline-sentence-highlight= @position_display_name_for_assignments
+      = " has ".html_safe
+      %span.inline-sentence-highlight= pluralize(@required_assignments.count, 'required assignment')
+      = ", and #{@teammate.person.casual_name} has had a check-in conversation about ".html_safe
+      %span.inline-sentence-highlight= pluralize(@assignments_with_recent_check_ins_count, 'assignment')
+      = " of these assignment in the last 90 days.".html_safe
     - else
       No required assignments
 

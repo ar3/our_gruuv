@@ -11,10 +11,10 @@
 %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(position_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#positionCheckInSection", "aria-expanded" => "false", "aria-controls" => "positionCheckInSection", style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(position_indicator)} #{status_indicator_badge_class(position_indicator)} me-2"}
-    - if @latest_finalized_position_check_in
-      Last finalized: #{format_date_in_user_timezone(@latest_finalized_position_check_in.official_check_in_completed_at)}
-    - else
-      No finalized check-ins
+    = "#{@teammate.person.casual_name} is ".html_safe
+    %span.inline-sentence-highlight= @position_display_name
+    = ", and their last overall check-in: ".html_safe
+    %span.inline-sentence-highlight= @last_check_in_date ? format_date_in_user_timezone(@last_check_in_date) : "has not happened yet"
 
 -# Collapsible content
 .collapse#positionCheckInSection

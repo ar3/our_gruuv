@@ -787,6 +787,12 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       organization: organization
     ).first
     @current_position = active_tenure&.position
+    @position_display_name = @current_position&.display_name || "not an employee yet"
+    @last_check_in_date = if @latest_finalized_position_check_in
+      @latest_finalized_position_check_in.official_check_in_completed_at
+    else
+      nil
+    end
   end
 
   def load_assignment_check_in_data
@@ -798,7 +804,9 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     
     if active_tenure&.position
       @required_assignments = active_tenure.position.required_assignments.includes(:assignment)
+      @position_display_name_for_assignments = active_tenure.position.display_name
       
+      cutoff_date = 90.days.ago
       @assignment_check_ins_data = @required_assignments.map do |position_assignment|
         assignment = position_assignment.assignment
         check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
@@ -815,16 +823,25 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
           latest_finalized: latest_finalized
         }
       end
+      
+      # Count assignments with finalized check-ins in the last 90 days
+      @assignments_with_recent_check_ins_count = @assignment_check_ins_data.count do |data|
+        data[:latest_finalized] && data[:latest_finalized].official_check_in_completed_at >= cutoff_date
+      end
     else
       @required_assignments = []
       @assignment_check_ins_data = []
+      @position_display_name_for_assignments = "undefined position"
+      @assignments_with_recent_check_ins_count = 0
     end
   end
 
   def load_aspiration_check_in_data
     # Get all company aspirational values
     @company_aspirations = Aspiration.within_hierarchy(organization).ordered
+    @company_name = organization.root_company&.name || organization.name
     
+    cutoff_date = 90.days.ago
     @aspiration_check_ins_data = @company_aspirations.map do |aspiration|
       check_in = AspirationCheckIn.find_or_create_open_for(@teammate, aspiration)
       latest_finalized = AspirationCheckIn
@@ -839,6 +856,11 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         latest_finalized: latest_finalized
       }
     end
+    
+    # Count aspirational values with finalized check-ins in the last 90 days
+    @aspirations_with_recent_check_ins_count = @aspiration_check_ins_data.count do |data|
+      data[:latest_finalized] && data[:latest_finalized].official_check_in_completed_at >= cutoff_date
+    end
   end
 
   def load_abilities_data
@@ -850,7 +872,10 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     
     if active_tenure&.position
       @required_assignments = active_tenure.position.required_assignments.includes(assignment: :assignment_abilities)
+      @position_display_name_for_abilities = active_tenure.position.display_name
       
+      # Collect all ability milestones
+      all_ability_milestones = []
       @abilities_data = @required_assignments.map do |position_assignment|
         assignment = position_assignment.assignment
         assignment_abilities = assignment.assignment_abilities.includes(:ability)
@@ -858,11 +883,20 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         abilities_info = assignment_abilities.map do |assignment_ability|
           ability = assignment_ability.ability
           teammate_milestone = @teammate.teammate_milestones.find_by(ability: ability)
+          current_milestone = teammate_milestone&.milestone_level || 0
+          required_milestone = assignment_ability.milestone_level
+          
+          all_ability_milestones << {
+            ability: ability,
+            required_milestone: required_milestone,
+            current_milestone: current_milestone,
+            met: current_milestone >= required_milestone
+          }
           
           {
             ability: ability,
-            required_milestone: assignment_ability.milestone_level,
-            current_milestone: teammate_milestone&.milestone_level || 0
+            required_milestone: required_milestone,
+            current_milestone: current_milestone
           }
         end
         
@@ -877,9 +911,15 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
           fully_qualified: all_milestones_met
         }
       end
+      
+      @total_ability_milestones_count = all_ability_milestones.count
+      @ability_milestones_met_count = all_ability_milestones.count { |m| m[:met] }
     else
       @required_assignments = []
       @abilities_data = []
+      @position_display_name_for_abilities = "undefined position"
+      @total_ability_milestones_count = 0
+      @ability_milestones_met_count = 0
     end
   end
 

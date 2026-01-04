@@ -917,5 +917,16 @@ body:has(.vertical-nav.open) .floating-toggle {
 // For highlighting numbers and their descriptive words in collapsed sections
 .inline-sentence-highlight {
   font-weight: 900;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
+  
+  a {
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: inherit;
+    
+    &:hover {
+      color: inherit;
+      text-decoration: underline;
+    }
+  }
 }
