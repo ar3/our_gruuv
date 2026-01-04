@@ -44,6 +44,14 @@ class PositionType < ApplicationRecord
   def maap_maturity_phase_status
     PositionTypeMaturityService.phase_status(self)
   end
+
+  def maap_maturity_phase_health_status
+    PositionTypeMaturityService.phase_health_status(self)
+  end
+
+  def maap_maturity_phase_health_reason(phase)
+    PositionTypeMaturityService.phase_health_reason(self, phase)
+  end
   
   # External reference convenience methods
   def published_url

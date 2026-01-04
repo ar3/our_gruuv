@@ -29,27 +29,48 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
 
-    &.filled {
+    &.red {
+      background-color: #dc3545;
+      color: white;
+      border: 1px solid #c82333;
+    }
+
+    &.yellow {
+      background-color: #ffc107;
+      color: #000;
+      border: 1px solid #e0a800;
+    }
+
+    &.green {
       background-color: #28a745;
       color: white;
+      border: 1px solid #218838;
     }
 
     &.current {
-      background-color: #007bff;
-      color: white;
       box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-    }
-
-    &.unfilled {
-      background-color: #e9ecef;
-      color: #6c757d;
-      border: 1px solid #dee2e6;
+      z-index: 1;
     }
 
     &:hover {
       transform: scale(1.05);
-      z-index: 1;
+      z-index: 2;
     }
+  }
+}
+
+// MAAP Maturity Popover
+.maap-maturity-popover {
+  max-width: 300px;
+  
+  strong {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  
+  p {
+    font-size: 0.875rem;
+    line-height: 1.4;
   }
 }
 
