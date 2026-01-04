@@ -912,3 +912,10 @@ body:has(.vertical-nav.open) .floating-toggle {
 .text-spice-5 {
   color: #7C2D12;
 }
+
+// ===== INLINE SENTENCE HIGHLIGHT =====
+// For highlighting numbers and their descriptive words in collapsed sections
+.inline-sentence-highlight {
+  font-weight: 900;
+  font-size: 1.5rem;
+}

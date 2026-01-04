@@ -578,6 +578,20 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       # Check if any goals were completed in the last 90 days (for status indicator)
       @goals_completed_recently = base_goals.where('completed_at >= ?', 90.days.ago).exists?
       
+      # Calculate goals with check-ins in the past two weeks
+      cutoff_week = (Date.current - 14.days).beginning_of_week(:monday)
+      recent_check_in_goal_ids = all_check_ins
+        .select { |check_in| check_in.check_in_week_start >= cutoff_week }
+        .map(&:goal_id)
+        .uniq
+      @goals_with_recent_check_ins_count = all_active_goals.count { |goal| recent_check_in_goal_ids.include?(goal.id) }
+      
+      # Calculate goals completed in the last 90 days
+      @goals_completed_count = Goal.for_teammate(@teammate)
+        .where('completed_at >= ?', 90.days.ago)
+        .where(deleted_at: nil)
+        .count
+      
       @goals_check_in_url = organization_goals_path(
         organization,
         owner_type: 'CompanyTeammate',
@@ -588,6 +602,8 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       @now_goals = []
       @next_goals = []
       @later_goals = []
+      @goals_with_recent_check_ins_count = 0
+      @goals_completed_count = 0
       @goals_check_in_url = organization_goals_path(organization)
     end
   end

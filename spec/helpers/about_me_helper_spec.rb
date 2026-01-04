@@ -144,6 +144,128 @@ RSpec.describe AboutMeHelper, type: :helper do
     end
   end
 
+  describe '#shareable_observations_status_indicator' do
+    let(:other_person) { create(:person) }
+    let(:other_teammate) { CompanyTeammate.create!(person: other_person, organization: company) }
+
+    context 'when no observations given or received' do
+      it 'returns :red' do
+        result = helper.shareable_observations_status_indicator(company_teammate, company)
+        expect(result).to eq(:red)
+      end
+    end
+
+    context 'when at least 1 observation given' do
+      let!(:observation_given) do
+        build(:observation,
+              observer: person,
+              company: company,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+      end
+
+      it 'returns :green when given >= 1 and received >= 1' do
+        observation_received = build(:observation,
+                                     observer: other_person,
+                                     company: company,
+                                     privacy_level: :public_to_company,
+                                     observed_at: 10.days.ago,
+                                     published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: company_teammate)
+          obs.save!
+        end
+
+        result = helper.shareable_observations_status_indicator(company_teammate, company)
+        expect(result).to eq(:green)
+      end
+
+      it 'returns :green when given >= 1 and received = 0' do
+        result = helper.shareable_observations_status_indicator(company_teammate, company)
+        expect(result).to eq(:green)
+      end
+    end
+
+    context 'when 0 observations given but some received' do
+      let!(:observation_received) do
+        build(:observation,
+              observer: other_person,
+              company: company,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: company_teammate)
+          obs.save!
+        end
+      end
+
+      it 'returns :yellow' do
+        result = helper.shareable_observations_status_indicator(company_teammate, company)
+        expect(result).to eq(:yellow)
+      end
+    end
+
+    context 'when observations are older than 30 days' do
+      let!(:old_observation) do
+        build(:observation,
+              observer: person,
+              company: company,
+              privacy_level: :public_to_company,
+              observed_at: 35.days.ago,
+              published_at: 35.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+      end
+
+      it 'does not count them' do
+        result = helper.shareable_observations_status_indicator(company_teammate, company)
+        expect(result).to eq(:red)
+      end
+    end
+
+    context 'when observations are drafts' do
+      let!(:draft_observation) do
+        build(:observation,
+              observer: person,
+              company: company,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: nil).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+      end
+
+      it 'does not count them' do
+        result = helper.shareable_observations_status_indicator(company_teammate, company)
+        expect(result).to eq(:red)
+      end
+    end
+
+    context 'when observations are observer_only' do
+      let!(:observer_only_observation) do
+        build(:observation,
+              observer: person,
+              company: company,
+              privacy_level: :observer_only,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+      end
+
+      it 'does not count them' do
+        result = helper.shareable_observations_status_indicator(company_teammate, company)
+        expect(result).to eq(:red)
+      end
+    end
+  end
+
   describe '#goals_status_indicator' do
     context 'when no active goals exist' do
       it 'returns :red' do

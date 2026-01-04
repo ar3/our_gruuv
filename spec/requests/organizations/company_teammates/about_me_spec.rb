@@ -415,7 +415,74 @@ RSpec.describe 'About Me Page', type: :request do
       it 'shows red indicator when no shareable observations in last 30 days' do
         get about_me_organization_company_teammate_path(organization, teammate)
         # Should show red indicator when 0 given and 0 received
-        expect(response.body).to match(/text-danger|bg-danger/)
+        expect(response.body).to match(/text-danger|bg-danger|alert-danger/)
+      end
+
+      it 'shows green indicator when at least 1 observation given' do
+        other_person = create(:person)
+        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        
+        observation_given = build(:observation,
+                                 observer: person,
+                                 company: organization,
+                                 privacy_level: :public_to_company,
+                                 observed_at: 10.days.ago,
+                                 published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to match(/text-success|bg-success|alert-success/)
+      end
+
+      it 'shows yellow indicator when 0 given but some received' do
+        other_person = create(:person)
+        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        
+        observation_received = build(:observation,
+                                    observer: other_person,
+                                    company: organization,
+                                    privacy_level: :public_to_company,
+                                    observed_at: 10.days.ago,
+                                    published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: teammate)
+          obs.save!
+        end
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to match(/text-warning|bg-warning|alert-warning/)
+      end
+
+      it 'shows collapsed text with given and received counts' do
+        other_person = create(:person)
+        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        
+        observation_given = build(:observation,
+                                 observer: person,
+                                 company: organization,
+                                 privacy_level: :public_to_company,
+                                 observed_at: 10.days.ago,
+                                 published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        observation_received = build(:observation,
+                                    observer: other_person,
+                                    company: organization,
+                                    privacy_level: :public_to_company,
+                                    observed_at: 10.days.ago,
+                                    published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: teammate)
+          obs.save!
+        end
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include("#{person.casual_name} has given")
+        expect(response.body).to include("observation")
+        expect(response.body).to include("has received")
+        expect(response.body).to include("in the past 30 days")
       end
     end
 
@@ -423,7 +490,38 @@ RSpec.describe 'About Me Page', type: :request do
       it 'shows red indicator when no active goals' do
         get about_me_organization_company_teammate_path(organization, teammate)
         # Should show red indicator when no active goals
-        expect(response.body).to match(/text-danger|bg-danger/)
+        expect(response.body).to match(/text-danger|bg-danger|alert-danger/)
+      end
+
+      it 'shows collapsed text with active goals, check-ins, and completed counts' do
+        goal = create(:goal,
+                     owner: teammate,
+                     creator: teammate,
+                     company: organization,
+                     started_at: 1.day.ago,
+                     completed_at: nil,
+                     deleted_at: nil)
+
+        cutoff_week = (Date.current - 14.days).beginning_of_week(:monday)
+        confidence_reporter = create(:person)
+        create(:goal_check_in,
+               goal: goal,
+               check_in_week_start: cutoff_week,
+               confidence_reporter: confidence_reporter)
+
+        completed_goal = create(:goal,
+                               owner: teammate,
+                               creator: teammate,
+                               company: organization,
+                               started_at: 60.days.ago,
+                               completed_at: 30.days.ago,
+                               deleted_at: nil)
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include("#{person.casual_name} has")
+        expect(response.body).to include("active goal")
+        expect(response.body).to include("with a check-in in the past two weeks")
+        expect(response.body).to include("completed in the last 90 days")
       end
     end
 

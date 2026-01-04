@@ -26,10 +26,10 @@ module AboutMeHelper
       .distinct
       .count
     
-    if given_count == 0 && received_count == 0
-      :red
-    elsif given_count >= 1 && received_count >= 1
+    if given_count >= 1
       :green
+    elsif given_count == 0 && received_count == 0
+      :red
     else
       :yellow
     end

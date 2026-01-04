@@ -9,16 +9,17 @@
 
 -# Summary view (shown when collapsed)
 - all_goals = @now_goals + @next_goals + @later_goals
-- goals_needing_check_in = all_goals.count { |goal| goal.instance_variable_get(:@needs_check_in) }
 %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(goals_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#goalsSection", "aria-expanded" => "false", "aria-controls" => "goalsSection", style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(goals_indicator)} #{status_indicator_badge_class(goals_indicator)} me-2"}
     - if all_goals.any?
-      %strong= pluralize(all_goals.count, 'active goal')
-      - if goals_needing_check_in > 0
-        , #{pluralize(goals_needing_check_in, 'needs check-in')}
-      - if defined?(@goals_completed_recently) && !@goals_completed_recently
-        , no goals are completed in the last 90 days
+      = "#{@teammate.person.casual_name} has ".html_safe
+      %span.inline-sentence-highlight= pluralize(all_goals.count, 'active goal')
+      = ", ".html_safe
+      %span.inline-sentence-highlight= pluralize(@goals_with_recent_check_ins_count, 'goal')
+      = " with a check-in in the past two weeks, and ".html_safe
+      %span.inline-sentence-highlight= pluralize(@goals_completed_count, 'goal')
+      = " completed in the last 90 days.".html_safe
     - else
       No active goals found.
 

@@ -11,8 +11,11 @@
 %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(stories_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#storiesSection", "aria-expanded" => "false", "aria-controls" => "storiesSection", style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(stories_indicator)} #{status_indicator_badge_class(stories_indicator)} me-2"}
-    %strong= pluralize(@observations_given_count + @observations_received_count, 'shareable observation')
-    in the last 30 days
+    = "#{@teammate.person.casual_name} has given ".html_safe
+    %span.inline-sentence-highlight= pluralize(@observations_given_count, 'observation')
+    = " and has received ".html_safe
+    %span.inline-sentence-highlight= pluralize(@observations_received_count, 'observation')
+    = " in the past 30 days.".html_safe
 
 -# Collapsible content
 .collapse#storiesSection
