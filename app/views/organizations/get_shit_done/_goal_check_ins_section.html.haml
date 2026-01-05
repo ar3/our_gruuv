@@ -1,0 +1,55 @@
+- goals_count = @goals_needing_check_in.count
+- goals_indicator = goals_count > 0 ? :warning : :success
+= render 'shared/section_header', 
+         title: 'Goal Check-ins', 
+         icon: 'bi-bullseye', 
+         description: 'Goals needing check-in updates',
+         collapsible: true,
+         collapse_target: 'goalCheckInsSection',
+         status_indicator: goals_indicator
+
+-# Summary view (shown when collapsed)
+- summary_class = goals_count > 0 ? "alert mb-4 collapse-summary #{status_indicator_alert_class(goals_indicator)}" : "alert mb-4 collapse-summary alert-light border border-light"
+- summary_style = goals_count > 0 ? "cursor: pointer;" : "cursor: pointer; background-color: #f8f9fa; border-color: #dee2e6 !important;"
+%div{class: summary_class, "data-bs-toggle" => "collapse", "data-bs-target" => "#goalCheckInsSection", "aria-expanded" => "false", "aria-controls" => "goalCheckInsSection", style: summary_style}
+  %p.mb-0{class: goals_count > 0 ? "" : "text-muted"}
+    %i{class: "#{status_indicator_icon(goals_indicator)} #{goals_count > 0 ? status_indicator_badge_class(goals_indicator) : 'text-muted'} me-2"}
+    - if goals_count > 0
+      = pluralize(goals_count, 'goal') + ' needing check-in'
+    - else
+      All goals are up to date
+
+-# Collapsible content
+.collapse#goalCheckInsSection
+  .card.mb-4
+    .card-body
+      - if @goals_needing_check_in.any?
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Goal
+                %th Last Check-in
+                %th Action
+            %tbody
+              - @goals_needing_check_in.each do |goal|
+                - last_check_in = goal.goal_check_ins.recent.first
+                %tr
+                  %td
+                    %strong= goal.title
+                    %br
+                    %small.text-muted= goal.goal_type.humanize
+                  %td
+                    - if last_check_in
+                      %strong= "#{last_check_in.confidence_percentage}%"
+                      %br
+                      %small.text-muted= last_check_in.check_in_week_start.strftime('%b %d, %Y')
+                    - else
+                      %span.text-muted No check-in yet
+                  %td
+                    = link_to "Check In", 
+                              check_in_organization_goal_path(organization, goal),
+                              class: "btn btn-primary btn-sm"
+      - else
+        %p.text-muted.mb-0 All goals are up to date.
+

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_02_014458) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_05_024005) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -510,6 +510,30 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_02_014458) do
     t.index ["original_message_id"], name: "index_notifications_on_original_message_id"
   end
 
+  create_table "observable_moments", force: :cascade do |t|
+    t.string "momentable_type", null: false
+    t.bigint "momentable_id", null: false
+    t.string "moment_type", null: false
+    t.bigint "company_id", null: false
+    t.bigint "created_by_id", null: false
+    t.bigint "primary_potential_observer_id", null: false
+    t.bigint "processed_by_teammate_id"
+    t.datetime "occurred_at", null: false
+    t.datetime "processed_at"
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_observable_moments_on_company_id"
+    t.index ["created_by_id"], name: "index_observable_moments_on_created_by_id"
+    t.index ["metadata"], name: "index_observable_moments_on_metadata", using: :gin
+    t.index ["moment_type"], name: "index_observable_moments_on_moment_type"
+    t.index ["momentable_type", "momentable_id"], name: "index_observable_moments_on_momentable_type_and_momentable_id"
+    t.index ["occurred_at"], name: "index_observable_moments_on_occurred_at"
+    t.index ["primary_potential_observer_id", "processed_at"], name: "index_observable_moments_on_observer_and_processed"
+    t.index ["primary_potential_observer_id"], name: "index_observable_moments_on_primary_potential_observer_id"
+    t.index ["processed_at"], name: "index_observable_moments_on_processed_at"
+  end
+
   create_table "observation_ratings", force: :cascade do |t|
     t.bigint "observation_id", null: false
     t.string "rateable_type", null: false
@@ -550,10 +574,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_02_014458) do
     t.string "observation_type", default: "generic", null: false
     t.string "created_as_type"
     t.bigint "observation_trigger_id"
+    t.bigint "observable_moment_id"
     t.index ["company_id"], name: "index_observations_on_company_id"
     t.index ["created_as_type"], name: "index_observations_on_created_as_type"
     t.index ["custom_slug"], name: "index_observations_on_custom_slug", unique: true
     t.index ["deleted_at"], name: "index_observations_on_deleted_at"
+    t.index ["observable_moment_id"], name: "index_observations_on_observable_moment_id"
     t.index ["observation_trigger_id"], name: "index_observations_on_observation_trigger_id"
     t.index ["observation_type"], name: "index_observations_on_observation_type"
     t.index ["observed_at", "id"], name: "index_observations_on_observed_at_and_id"
@@ -1009,7 +1035,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_02_014458) do
   add_foreign_key "missing_resource_requests", "people"
   add_foreign_key "notifications", "notifications", column: "main_thread_id"
   add_foreign_key "notifications", "notifications", column: "original_message_id"
+  add_foreign_key "observable_moments", "organizations", column: "company_id"
+  add_foreign_key "observable_moments", "people", column: "created_by_id"
+  add_foreign_key "observable_moments", "teammates", column: "primary_potential_observer_id"
+  add_foreign_key "observable_moments", "teammates", column: "processed_by_teammate_id"
   add_foreign_key "observation_ratings", "observations"
+  add_foreign_key "observations", "observable_moments"
   add_foreign_key "observations", "observation_triggers"
   add_foreign_key "observations", "organizations", column: "company_id"
   add_foreign_key "observations", "people", column: "observer_id"

@@ -127,6 +127,44 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         rated_at: Time.current.to_s
       )
       end
+      
+      context 'when rating improved' do
+        let!(:previous_check_in) do
+          create(:assignment_check_in,
+                 teammate: employee_teammate,
+                 assignment: assignment,
+                 official_rating: 'working_to_meet',
+                 official_check_in_completed_at: 1.month.ago,
+                 finalized_by: manager)
+        end
+        
+        it 'creates observable moment when rating improved' do
+          expect {
+            finalizer.finalize
+          }.to change { ObservableMoment.count }.by(1)
+          
+          moment = ObservableMoment.last
+          expect(moment.moment_type).to eq('check_in_completed')
+          expect(moment.momentable).to eq(assignment_check_in)
+        end
+      end
+      
+      context 'when rating did not improve' do
+        let!(:previous_check_in) do
+          create(:assignment_check_in,
+                 teammate: employee_teammate,
+                 assignment: assignment,
+                 official_rating: 'exceeding',
+                 official_check_in_completed_at: 1.month.ago,
+                 finalized_by: manager)
+        end
+        
+        it 'does not create observable moment when rating decreased' do
+          expect {
+            finalizer.finalize
+          }.not_to change { ObservableMoment.count }
+        end
+      end
     end
     
     context 'when check-in is not ready for finalization' do

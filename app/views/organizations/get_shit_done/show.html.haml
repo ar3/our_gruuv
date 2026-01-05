@@ -1,0 +1,18 @@
+- content_for :title, "Get Shit Done - #{@teammate.person.casual_name}"
+
+- content_for :header do
+  %h1.mb-0 Get Shit Done
+  %p.text-muted.mb-0 Items that need your attention
+
+-# Observable Moments Section
+= render partial: 'organizations/get_shit_done/observable_moments_section'
+
+-# MAAP Snapshots Section
+= render partial: 'organizations/get_shit_done/maap_snapshots_section'
+
+-# Observation Drafts Section
+= render partial: 'organizations/get_shit_done/observation_drafts_section'
+
+-# Goal Check-ins Section
+= render partial: 'organizations/get_shit_done/goal_check_ins_section'
+

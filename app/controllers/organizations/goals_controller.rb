@@ -421,6 +421,12 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
         @goal.update(completed_at: Time.current)
       end
       
+      # Create observable moment if confidence changed significantly
+      ObservableMoments::CreateGoalCheckInMomentService.call(
+        goal_check_in: check_in,
+        created_by: current_person
+      )
+      
       # Use return_url if provided, otherwise default to goal show page
       return_url = params[:return_url] || organization_goal_path(@organization, @goal)
       notice = 'Check-in saved successfully.'

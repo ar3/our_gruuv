@@ -21,7 +21,7 @@ class Organizations::KudosController < ApplicationController
   end
 
   def index
-    # Get all public observations for organization and its descendants
+    # Get all public observations for organization and its descendants (exclude soft-deleted)
     company = @organization.root_company || @organization
     orgs_in_hierarchy = [company] + company.descendants.to_a
     
@@ -29,6 +29,7 @@ class Organizations::KudosController < ApplicationController
       .where(company: orgs_in_hierarchy)
       .public_observations
       .published
+      .where(deleted_at: nil)
       .includes(:observer, :observed_teammates, :observation_ratings)
       .recent
   end
@@ -66,6 +67,15 @@ class Organizations::KudosController < ApplicationController
   end
 
   def authorize_view_permalink
+    # Block access to soft-deleted observations (even public ones)
+    if @observation.soft_deleted?
+      raise Pundit::NotAuthorizedError.new(
+        query: :view_permalink?,
+        record: @observation,
+        policy: policy(@observation)
+      )
+    end
+    
     # Check authorization and raise error before Pundit's rescue_from catches it
     # This allows tests to catch the error directly
     unless policy(@observation).view_permalink?

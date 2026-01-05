@@ -29,6 +29,7 @@ RSpec.describe Observation, type: :model do
     it { should belong_to(:observer).class_name('Person') }
     it { should belong_to(:company).class_name('Organization') }
     it { should belong_to(:observation_trigger).optional }
+    it { should belong_to(:observable_moment).optional }
     it { should have_many(:observees).dependent(:destroy) }
     it { should have_many(:observed_teammates).through(:observees).source(:teammate) }
     it { should have_many(:observation_ratings).dependent(:destroy) }
@@ -123,6 +124,28 @@ RSpec.describe Observation, type: :model do
       expect(observation).not_to be_valid
       expect(observation.errors[:observees]).to include('must be in the same company as the observer')
     end
+    
+    it 'allows moment-based observations to bypass company validation' do
+      observable_moment = create(:observable_moment, :new_hire, company: company)
+      other_company = create(:organization, :company)
+      other_teammate = create(:teammate, organization: other_company)
+      
+      # Create a new observation with observable_moment_id set from the start
+      # Use a fresh observation instance to avoid any caching issues
+      moment_observation = Observation.new(
+        observer: observer,
+        company: company,
+        story: 'Test story',
+        primary_feeling: 'happy',
+        privacy_level: :observed_only,
+        observable_moment_id: observable_moment.id
+      )
+      moment_observation.observees.build(teammate: other_teammate)
+      
+      # Should be valid because observable_moment_id provides context
+      expect(moment_observation.observable_moment_id).to be_present
+      expect(moment_observation).to be_valid
+    end
   end
 
   describe 'scopes' do
@@ -163,6 +186,50 @@ RSpec.describe Observation, type: :model do
         expect(Observation.by_feeling('happy')).to include(observation1)
         expect(Observation.by_feeling('happy')).not_to include(observation2)
         expect(Observation.by_feeling('lonely')).to include(observation2)
+      end
+    end
+    
+    describe '.with_observable_moments' do
+      it 'returns observations with observable moments' do
+        observable_moment = create(:observable_moment, :new_hire, company: company)
+        moment_observation = create(:observation, observable_moment: observable_moment, observer: observer, company: company)
+        moment_observation.observees.build(teammate: teammate1)
+        moment_observation.save!
+        
+        expect(Observation.with_observable_moments).to include(moment_observation)
+        expect(Observation.with_observable_moments).not_to include(observation1, observation2)
+      end
+    end
+    
+    describe '.without_observable_moments' do
+      it 'returns observations without observable moments' do
+        observable_moment = create(:observable_moment, :new_hire, company: company)
+        moment_observation = create(:observation, observable_moment: observable_moment, observer: observer, company: company)
+        moment_observation.observees.build(teammate: teammate1)
+        moment_observation.save!
+        
+        expect(Observation.without_observable_moments).to include(observation1, observation2)
+        expect(Observation.without_observable_moments).not_to include(moment_observation)
+      end
+    end
+    
+    describe '.for_moment_type' do
+      it 'returns observations for specific moment type' do
+        new_hire_moment = create(:observable_moment, :new_hire, company: company)
+        seat_change_moment = create(:observable_moment, :seat_change, company: company)
+        
+        new_hire_obs = build(:observation, observable_moment: new_hire_moment, observer: observer, company: company, story: 'New hire story')
+        new_hire_obs.observees.build(teammate: teammate1)
+        new_hire_obs.save!
+        
+        seat_change_obs = build(:observation, observable_moment: seat_change_moment, observer: observer, company: company, story: 'Seat change story')
+        seat_change_obs.observees.build(teammate: teammate1)
+        seat_change_obs.save!
+        
+        expect(Observation.for_moment_type('new_hire')).to include(new_hire_obs)
+        expect(Observation.for_moment_type('new_hire')).not_to include(seat_change_obs)
+        expect(Observation.for_moment_type('seat_change')).to include(seat_change_obs)
+        expect(Observation.for_moment_type('seat_change')).not_to include(new_hire_obs)
       end
     end
   end
@@ -318,12 +385,79 @@ RSpec.describe Observation, type: :model do
     end
   end
 
+  describe 'observable moment processing' do
+    let(:observer_teammate) { CompanyTeammate.find_or_create_by!(person: observer, organization: company) }
+    let(:observable_moment) { create(:observable_moment, :new_hire, company: company, primary_observer_person: observer) }
+    
+    describe '#mark_observable_moment_as_processed' do
+      it 'marks moment as processed when observation is published' do
+        observation.observable_moment = observable_moment
+        observation.observees.build(teammate: teammate1)
+        observation.save!
+        
+        expect(observable_moment.reload.processed?).to be false
+        
+        observation.update!(published_at: Time.current)
+        
+        expect(observable_moment.reload.processed?).to be true
+        expect(observable_moment.processed_by_teammate).to eq(observer_teammate)
+        expect(observable_moment.processed_at).to be_present
+        expect(observable_moment.processed_by_teammate.person).to eq(observer)
+      end
+      
+      it 'does not mark moment as processed for drafts' do
+        observation.observable_moment = observable_moment
+        observation.observees.build(teammate: teammate1)
+        observation.save!
+        
+        expect(observable_moment.reload.processed?).to be false
+      end
+      
+      it 'does not process moment if already processed' do
+        observation.observable_moment = observable_moment
+        observation.observees.build(teammate: teammate1)
+        observation.save!
+        
+        original_processed_at = 1.hour.ago
+        observable_moment.update!(processed_at: original_processed_at, processed_by_teammate: observer_teammate)
+        
+        observation.update!(published_at: Time.current)
+        
+        expect(observable_moment.reload.processed_at).to be_within(1.second).of(original_processed_at)
+      end
+    end
+  end
+
   describe 'callbacks' do
     describe 'before_validation' do
       it 'sets observed_at default' do
         observation.observed_at = nil
         observation.valid?
         expect(observation.observed_at).to be_present
+      end
+    end
+  end
+
+  describe 'scopes' do
+    describe '.soft_deleted' do
+      it 'returns only soft-deleted observations' do
+        obs1 = save_observation_with_observees
+        obs2 = save_observation_with_observees(build(:observation, observer: observer, company: company))
+        obs1.soft_delete!
+        
+        expect(Observation.soft_deleted).to include(obs1)
+        expect(Observation.soft_deleted).not_to include(obs2)
+      end
+    end
+
+    describe '.not_soft_deleted' do
+      it 'returns only non-soft-deleted observations' do
+        obs1 = save_observation_with_observees
+        obs2 = save_observation_with_observees(build(:observation, observer: observer, company: company))
+        obs1.soft_delete!
+        
+        expect(Observation.not_soft_deleted).not_to include(obs1)
+        expect(Observation.not_soft_deleted).to include(obs2)
       end
     end
   end

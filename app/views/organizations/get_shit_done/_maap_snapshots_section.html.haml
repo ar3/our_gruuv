@@ -1,0 +1,50 @@
+- snapshots_count = @maap_snapshots.count
+- snapshots_indicator = snapshots_count > 0 ? :warning : :success
+= render 'shared/section_header', 
+         title: 'MAAP Snapshots', 
+         icon: 'bi-clipboard-check', 
+         description: 'Check-ins awaiting your acknowledgement',
+         collapsible: true,
+         collapse_target: 'maapSnapshotsSection',
+         status_indicator: snapshots_indicator
+
+-# Summary view (shown when collapsed)
+- summary_class = snapshots_count > 0 ? "alert mb-4 collapse-summary #{status_indicator_alert_class(snapshots_indicator)}" : "alert mb-4 collapse-summary alert-light border border-light"
+- summary_style = snapshots_count > 0 ? "cursor: pointer;" : "cursor: pointer; background-color: #f8f9fa; border-color: #dee2e6 !important;"
+%div{class: summary_class, "data-bs-toggle" => "collapse", "data-bs-target" => "#maapSnapshotsSection", "aria-expanded" => "false", "aria-controls" => "maapSnapshotsSection", style: summary_style}
+  %p.mb-0{class: snapshots_count > 0 ? "" : "text-muted"}
+    %i{class: "#{status_indicator_icon(snapshots_indicator)} #{snapshots_count > 0 ? status_indicator_badge_class(snapshots_indicator) : 'text-muted'} me-2"}
+    - if snapshots_count > 0
+      = pluralize(snapshots_count, 'check-in') + ' awaiting acknowledgement'
+    - else
+      No check-ins awaiting acknowledgement
+
+-# Collapsible content
+.collapse#maapSnapshotsSection
+  .card.mb-4
+    .card-body
+      - if @maap_snapshots.any?
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Change Type
+                %th Reason
+                %th Effective Date
+                %th Action
+            %tbody
+              - @maap_snapshots.each do |snapshot|
+                %tr
+                  %td
+                    %strong= snapshot.change_type.humanize
+                  %td
+                    %small= truncate(snapshot.reason, length: 50)
+                  %td
+                    %small= snapshot.effective_date&.strftime('%b %d, %Y')
+                  %td
+                    = link_to "Acknowledge", 
+                              audit_organization_employee_path(organization, @teammate),
+                              class: "btn btn-primary btn-sm"
+      - else
+        %p.text-muted.mb-0 No check-ins awaiting acknowledgement.
+

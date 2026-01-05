@@ -609,5 +609,75 @@ RSpec.describe 'Organizations::Observations', type: :request do
       end
     end
   end
+
+  describe 'GET /organizations/:organization_id/observations/:id' do
+    let(:observation) { create(:observation, observer: person, company: organization) }
+
+    context 'when user is the observer' do
+      it 'renders the show page with Archive button' do
+        get organization_observation_path(organization, observation)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Archive')
+        expect(response.body).to include('button')
+      end
+
+      it 'renders the show page with Restore button when observation is archived' do
+        observation.soft_delete!
+        get organization_observation_path(organization, observation)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Restore')
+        expect(response.body).to include('Archived')
+      end
+
+      it 'shows Archive button even for observations older than 24 hours' do
+        observation.update_column(:created_at, 2.days.ago)
+        get organization_observation_path(organization, observation)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Archive')
+      end
+    end
+  end
+
+  describe 'PATCH /organizations/:organization_id/observations/:id/restore' do
+    let(:observation) do
+      obs = create(:observation, observer: person, company: organization)
+      obs.soft_delete!
+      obs
+    end
+
+    context 'when user is the observer' do
+      it 'restores the observation' do
+        expect {
+          patch restore_organization_observation_path(organization, observation)
+        }.to change { observation.reload.deleted_at }.to(nil)
+      end
+
+      it 'redirects to observation show page' do
+        patch restore_organization_observation_path(organization, observation)
+        expect(response).to redirect_to(organization_observation_path(organization, observation))
+      end
+
+      it 'sets a success notice' do
+        patch restore_organization_observation_path(organization, observation)
+        follow_redirect!
+        expect(flash[:notice]).to eq('Observation was successfully restored.')
+      end
+    end
+
+    context 'when user is not the observer' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:teammate, person: other_person, organization: organization) }
+
+      before do
+        sign_in_as_teammate_for_request(other_person, organization)
+      end
+
+      it 'redirects to kudos page' do
+        patch restore_organization_observation_path(organization, observation)
+        date_part = observation.observed_at.strftime('%Y-%m-%d')
+        expect(response).to redirect_to(organization_kudo_path(organization, date: date_part, id: observation.id))
+      end
+    end
+  end
 end
 

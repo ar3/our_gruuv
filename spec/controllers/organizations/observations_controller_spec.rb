@@ -420,6 +420,32 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
     end
   end
 
+  describe 'GET #new with observable_moment_id' do
+    let(:observable_moment) { create(:observable_moment, :new_hire, company: company, primary_potential_observer: observer_teammate) }
+    
+    it 'loads the observable moment' do
+      get :new, params: { organization_id: company.id, observable_moment_id: observable_moment.id }
+      
+      expect(assigns(:observable_moment)).to eq(observable_moment)
+    end
+    
+    it 'pre-fills observation from moment context' do
+      get :new, params: { organization_id: company.id, observable_moment_id: observable_moment.id }
+      
+      observation = assigns(:observation)
+      expect(observation.observable_moment).to eq(observable_moment)
+      expect(observation.story).to be_present
+      expect(observation.privacy_level).to eq('public_to_company')
+    end
+    
+    it 'sets return URL to dashboard when coming from moment' do
+      get :new, params: { organization_id: company.id, observable_moment_id: observable_moment.id }
+      
+      expect(assigns(:return_url)).to eq(get_shit_done_organization_path(company))
+      expect(assigns(:return_text)).to include('Get Shit Done Dashboard')
+    end
+  end
+
   describe 'GET #new' do
     it 'renders the new form (overlay layout)' do
       get :new, params: { organization_id: company.id }
@@ -800,6 +826,41 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(flash[:notice]).to eq('Observation was successfully created.')
       end
     end
+    
+    context 'with observable_moment_id' do
+      let(:observable_moment) { create(:observable_moment, :new_hire, company: company, primary_potential_observer: observer_teammate) }
+      let(:params_with_moment) do
+        {
+          organization_id: company.id,
+          observation: {
+            story: 'Welcome to the team!',
+            privacy_level: 'public_to_company',
+            primary_feeling: 'happy',
+            observed_at: Date.current,
+            observable_moment_id: observable_moment.id,
+            observees_attributes: {
+              '0' => { teammate_id: observee_teammate.id }
+            }
+          }
+        }
+      end
+      
+      it 'associates observation with observable moment' do
+        post :create, params: params_with_moment
+        observation = Observation.last
+        expect(observation.observable_moment).to eq(observable_moment)
+      end
+      
+      it 'marks moment as processed when observation is published' do
+        post :create, params: params_with_moment
+        observation = Observation.last
+        observation.update!(published_at: Time.current)
+        
+        expect(observable_moment.reload.processed?).to be true
+        expect(observable_moment.processed_by_teammate).to eq(observer_teammate)
+      end
+    end
+  end
 
     context 'with public privacy level but only positive ratings' do
       let(:ability) { create(:ability, organization: company) }
@@ -935,20 +996,21 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
   end
 
   describe 'DELETE #destroy' do
-    context 'when user is the observer and within 24 hours' do
-      before do
-        observation.update_column(:created_at, 1.hour.ago)
-      end
-
+    context 'when user is the observer' do
       it 'soft deletes the observation' do
         expect {
           delete :destroy, params: { organization_id: company.id, id: observation.id }
         }.to change { observation.reload.deleted_at }.from(nil)
       end
 
-      it 'redirects to observations index' do
+      it 'redirects to observation show page' do
         delete :destroy, params: { organization_id: company.id, id: observation.id }
-        expect(response).to redirect_to(organization_observations_path(company))
+        expect(response).to redirect_to(organization_observation_path(company, observation))
+      end
+
+      it 'sets a success notice' do
+        delete :destroy, params: { organization_id: company.id, id: observation.id }
+        expect(flash[:notice]).to eq('Observation was successfully archived.')
       end
     end
 
@@ -964,6 +1026,45 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         delete :destroy, params: { organization_id: company.id, id: observation.id }
         date_part = observation.observed_at.strftime('%Y-%m-%d')
         expect(response).to redirect_to(organization_kudo_path(company, date: date_part, id: observation.id))
+      end
+    end
+  end
+
+  describe 'PATCH #restore' do
+    before do
+      observation.soft_delete!
+    end
+
+    context 'when user is the observer' do
+      it 'restores the observation' do
+        expect {
+          patch :restore, params: { organization_id: company.id, id: observation.id }
+        }.to change { observation.reload.deleted_at }.to(nil)
+      end
+
+      it 'redirects to observation show page' do
+        patch :restore, params: { organization_id: company.id, id: observation.id }
+        expect(response).to redirect_to(organization_observation_path(company, observation))
+      end
+
+      it 'sets a success notice' do
+        patch :restore, params: { organization_id: company.id, id: observation.id }
+        expect(flash[:notice]).to eq('Observation was successfully restored.')
+      end
+    end
+
+    context 'when user is not the observer' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+      
+      before do
+        sign_in_as_teammate(other_person, company)
+      end
+
+      it 'raises Pundit::NotAuthorizedError' do
+        expect {
+          patch :restore, params: { organization_id: company.id, id: observation.id }
+        }.to raise_error(Pundit::NotAuthorizedError)
       end
     end
   end

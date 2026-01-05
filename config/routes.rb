@@ -82,6 +82,19 @@ get '/login', to: 'auth#login', as: :login
       get :new_refresh_slack
     end
     
+    # Get Shit Done Dashboard
+    resource :get_shit_done, only: [:show], controller: 'organizations/get_shit_done'
+    
+    # Observable Moments
+    resources :observable_moments, only: [], module: :organizations do
+      member do
+        post :create_observation
+        get :reassign
+        patch :reassign
+        patch :ignore
+      end
+    end
+    
     resources :employees, only: [:index, :new, :create], controller: 'organizations/employees' do
       collection do
         get :new_employee
@@ -295,6 +308,7 @@ get '/login', to: 'auth#login', as: :login
       end
       member do
         patch :convert_to_generic
+        patch :restore  # Restore soft-deleted observation
         get :set_ratings, action: :set_ratings
         post :set_ratings, action: :set_ratings
         get :review, action: :review

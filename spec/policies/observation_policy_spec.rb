@@ -1380,6 +1380,73 @@ end
       end
     end
   end
+
+  describe 'soft-deleted observations' do
+    let(:soft_deleted_observation) do
+      build(:observation, observer: observer, company: company, privacy_level: :public_to_world).tap do |obs|
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs.soft_delete!
+      end
+    end
+
+    describe '#show?' do
+      it 'allows observer to see their soft-deleted observation' do
+        policy = ObservationPolicy.new(pundit_user_observer, soft_deleted_observation)
+        expect(policy.show?).to be true
+      end
+
+      it 'denies everyone else from seeing soft-deleted observation' do
+        observee_policy = ObservationPolicy.new(pundit_user_observee, soft_deleted_observation)
+        manager_policy = ObservationPolicy.new(pundit_user_manager, soft_deleted_observation)
+        random_policy = ObservationPolicy.new(pundit_user_random, soft_deleted_observation)
+
+        expect(observee_policy.show?).to be false
+        expect(manager_policy.show?).to be false
+        expect(random_policy.show?).to be false
+      end
+    end
+
+    describe '#restore?' do
+      it 'allows observer to restore their observation' do
+        policy = ObservationPolicy.new(pundit_user_observer, soft_deleted_observation)
+        expect(policy.restore?).to be true
+      end
+
+      it 'denies everyone else from restoring observation' do
+        observee_policy = ObservationPolicy.new(pundit_user_observee, soft_deleted_observation)
+        manager_policy = ObservationPolicy.new(pundit_user_manager, soft_deleted_observation)
+        random_policy = ObservationPolicy.new(pundit_user_random, soft_deleted_observation)
+
+        expect(observee_policy.restore?).to be false
+        expect(manager_policy.restore?).to be false
+        expect(random_policy.restore?).to be false
+      end
+    end
+
+    describe 'Scope#resolve' do
+      let(:normal_observation) do
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_world).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+        end
+      end
+
+      it 'excludes soft-deleted observations for non-observers' do
+        scope = ObservationPolicy::Scope.new(pundit_user_observee, Observation.all).resolve
+        expect(scope).to include(normal_observation)
+        expect(scope).not_to include(soft_deleted_observation)
+      end
+
+      it 'includes observer\'s own soft-deleted observations' do
+        scope = ObservationPolicy::Scope.new(pundit_user_observer, Observation.all).resolve
+        expect(scope).to include(normal_observation)
+        expect(scope).to include(soft_deleted_observation)
+      end
+    end
+  end
 end
 
 

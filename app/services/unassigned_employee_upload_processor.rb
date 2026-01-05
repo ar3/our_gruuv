@@ -339,6 +339,15 @@ class UnassignedEmployeeUploadProcessor
         # Create new employment tenure
         employment_tenure = create_employment_tenure(person, teammate, employee_data)
         
+        # Create observable moment for new hire (only if no active tenure existed)
+        # Use the bulk_sync_event's creator if available, otherwise skip (bulk operations may not have a user)
+        if bulk_sync_event&.creator
+          ObservableMoments::CreateNewHireMomentService.call(
+            employment_tenure: employment_tenure,
+            created_by: bulk_sync_event.creator
+          )
+        end
+        
         results[:successes] << {
           type: 'employment_tenure',
           action: 'created',

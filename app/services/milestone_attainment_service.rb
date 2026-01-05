@@ -23,11 +23,17 @@ class MilestoneAttainmentService
       end
 
       # Create the milestone attainment
-      milestone = @teammate.person_milestones.create!(
+      milestone = @teammate.teammate_milestones.create!(
         ability: @ability,
         milestone_level: @milestone_level,
         certified_by: @certified_by,
         attained_at: @attained_at
+      )
+      
+      # Create observable moment for ability milestone
+      ObservableMoments::CreateAbilityMilestoneMomentService.call(
+        teammate_milestone: milestone,
+        created_by: @certified_by
       )
 
       Result.ok(milestone)

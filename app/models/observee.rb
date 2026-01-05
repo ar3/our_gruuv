@@ -13,6 +13,9 @@ class Observee < ApplicationRecord
   def teammate_in_same_company
     return unless observation && teammate
     
+    # Allow moment-based observations to bypass this validation if moment provides context
+    return if observation.observable_moment_id.present? || observation.observable_moment.present?
+    
     unless teammate.organization == observation.company
       errors.add(:teammate, "must be in the same company as the observation")
     end

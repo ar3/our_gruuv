@@ -76,6 +76,11 @@
                     %i.bi.bi-exclamation-triangle.text-warning.me-1
                   %i.bi.bi-person-circle.me-1
                   = current_person.full_name
+                  - if current_organization && current_company_teammate
+                    - pending_count = pending_get_shit_done_count(current_company_teammate)
+                    - if pending_count > 0
+                      = link_to organization_get_shit_done_path(current_organization), class: "badge bg-danger rounded-pill ms-2 text-decoration-none", title: "Get Shit Done (#{pending_count} items)" do
+                        = pending_count
                 %ul.dropdown-menu.dropdown-menu-end
                   - if impersonating?
                     %li

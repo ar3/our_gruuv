@@ -89,6 +89,52 @@ RSpec.describe ObservationForm, type: :form do
       observation.reload
       expect(observation.story_extras).to eq({ 'gif_urls' => ['https://media.giphy.com/media/test1/giphy.gif', 'https://media.giphy.com/media/test2/giphy.gif'] })
     end
+    
+    context 'with observable_moment_id' do
+      let(:observable_moment) { create(:observable_moment, :new_hire, company: company) }
+      let(:teammate) { create(:teammate, organization: company) }
+      
+      it 'pre-fills observation from moment context' do
+        form.observable_moment_id = observable_moment.id
+        form.story = nil  # Will be pre-filled
+        form.privacy_level = nil  # Will be pre-filled (validation allows nil when observable_moment_id is present)
+        form.primary_feeling = 'happy'
+        
+        expect(form.save).to be true
+        
+        observation.reload
+        expect(observation.observable_moment).to eq(observable_moment)
+        expect(observation.story).to be_present
+        expect(observation.privacy_level).to eq('public_to_company')
+      end
+      
+      it 'pre-fills observees from moment context' do
+        form.observable_moment_id = observable_moment.id
+        form.story = 'Test story'
+        form.privacy_level = 'public_to_company'
+        form.primary_feeling = 'happy'
+        
+        expect(form.save).to be true
+        
+        observation.reload
+        expect(observation.observable_moment).to eq(observable_moment)
+        # Should have observees from moment context
+        expect(observation.observees.count).to be > 0
+      end
+      
+      it 'allows overriding pre-filled values' do
+        form.observable_moment_id = observable_moment.id
+        form.story = 'Custom story override'
+        form.privacy_level = 'observed_only'  # Override suggested level
+        form.primary_feeling = 'happy'
+        
+        expect(form.save).to be true
+        
+        observation.reload
+        expect(observation.story).to eq('Custom story override')
+        expect(observation.privacy_level).to eq('observed_only')
+      end
+    end
 
     it 'filters out blank gif_urls' do
       form.story = 'Test story'

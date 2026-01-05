@@ -268,6 +268,70 @@ RSpec.describe CheckInFinalizationService, type: :service do
       end
 
       context 'full position finalization flow' do
+        context 'when rating improved' do
+          let!(:previous_position_check_in) do
+            create(:position_check_in,
+                   teammate: employee_teammate,
+                   employment_tenure: employment_tenure,
+                   official_rating: 1,
+                   official_check_in_completed_at: 1.month.ago,
+                   finalized_by: manager)
+          end
+          
+          it 'creates observable moment when position check-in rating improved' do
+            params = {
+              position_check_in: {
+                finalize: '1',
+                official_rating: '2',
+                shared_notes: 'Improved rating'
+              }
+            }
+            
+            expect {
+              described_class.new(
+                teammate: employee_teammate,
+                finalization_params: params,
+                finalized_by: manager,
+                request_info: request_info
+              ).call
+            }.to change { ObservableMoment.count }.by(1)
+            
+            moment = ObservableMoment.last
+            expect(moment.moment_type).to eq('check_in_completed')
+            expect(moment.momentable).to be_a(PositionCheckIn)
+          end
+        end
+        
+        context 'when rating did not improve' do
+          let!(:previous_position_check_in) do
+            create(:position_check_in,
+                   teammate: employee_teammate,
+                   employment_tenure: employment_tenure,
+                   official_rating: 3,
+                   official_check_in_completed_at: 1.month.ago,
+                   finalized_by: manager)
+          end
+          
+          it 'does not create observable moment when rating decreased' do
+            params = {
+              position_check_in: {
+                finalize: '1',
+                official_rating: '2',
+                shared_notes: 'Lower rating'
+              }
+            }
+            
+            expect {
+              described_class.new(
+                teammate: employee_teammate,
+                finalization_params: params,
+                finalized_by: manager,
+                request_info: request_info
+              ).call
+            }.not_to change { ObservableMoment.count }
+          end
+        end
+        
         it 'finalizes position, creates snapshot, and links check-in with consistent ratings' do
           service = described_class.new(
             teammate: employee_teammate,
@@ -367,6 +431,30 @@ RSpec.describe CheckInFinalizationService, type: :service do
           
           # The snapshot should use the NEWEST closed tenure (rating 2), not the old one (rating 1)
           newest_closed_tenure = employee_teammate.employment_tenures.inactive.order(ended_at: :desc).first
+        end
+        
+        it 'creates observable moment when rating improved from previous check-in' do
+          # Create previous check-in with lower rating
+          create(:position_check_in,
+                 teammate: employee_teammate,
+                 employment_tenure: employment_tenure,
+                 official_rating: 1,
+                 official_check_in_completed_at: 1.month.ago,
+                 finalized_by: manager)
+          
+          expect {
+            described_class.new(
+              teammate: employee_teammate,
+              finalization_params: position_finalization_params,
+              finalized_by: manager,
+              request_info: request_info
+            ).call
+          }.to change { ObservableMoment.count }.by(1)
+          
+          moment = ObservableMoment.last
+          expect(moment.moment_type).to eq('check_in_completed')
+          expect(moment.momentable).to eq(position_check_in)
+        end
           
           expect(newest_closed_tenure.official_position_rating).to eq(2)
           expect(newest_closed_tenure.id).not_to eq(old_tenure.id)

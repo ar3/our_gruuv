@@ -23,6 +23,10 @@
         %button.btn.btn-primary.disabled{disabled: true, "data-bs-toggle" => "tooltip", "data-bs-title" => "Only the creator can publish this observation"}
           Publish
         %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Only the creator can publish this observation"}
+    - if !@observation.soft_deleted? && policy(@observation).destroy?
+      = button_to 'Archive', organization_observation_path(@organization, @observation), method: :delete, class: 'btn btn-outline-secondary', data: { confirm: 'Are you sure you want to archive this observation?', turbo: false }
+    - elsif @observation.soft_deleted? && policy(@observation).restore?
+      = button_to 'Restore', restore_organization_observation_path(@organization, @observation), method: :patch, class: 'btn btn-outline-success', data: { turbo: false }
     = render 'mode_switcher', organization: @organization, observation: @observation
 
 .row
@@ -70,6 +74,8 @@
               = format_time_in_user_timezone(@observation.observed_at)
             %p
               %strong Status: 
+              - if @observation.soft_deleted?
+                %span.badge.bg-secondary.me-2 Archived
               - if @observation.draft?
                 %span.text-muted Draft
               - else

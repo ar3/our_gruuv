@@ -52,6 +52,18 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         results = query.visible_observations
         expect(results).not_to include(observation2, observation3)
       end
+
+      it 'includes observer\'s own soft-deleted observations' do
+        soft_deleted = build(:observation, observer: observer, company: company, privacy_level: :public_to_world).tap { |obs| obs.observees.build(teammate: observee_teammate); obs.save!; obs.publish!; obs.soft_delete! }
+        results = query.visible_observations
+        expect(results).to include(soft_deleted)
+      end
+
+      it 'excludes soft-deleted observations from others' do
+        soft_deleted = build(:observation, observer: random_person, company: company, privacy_level: :public_to_world).tap { |obs| obs.observees.build(teammate: create(:teammate, organization: company)); obs.save!; obs.publish!; obs.soft_delete! }
+        results = query.visible_observations
+        expect(results).not_to include(soft_deleted)
+      end
     end
 
     context 'for observee' do
@@ -580,6 +592,32 @@ RSpec.describe ObservationVisibilityQuery, type: :query do
         expect(observee_query.visible_to?(draft_observation)).to be false
         expect(manager_query.visible_to?(draft_observation)).to be false
         expect(random_query.visible_to?(draft_observation)).to be false
+      end
+    end
+
+    context '#visible_to? with soft-deleted observations' do
+      let(:soft_deleted_observation) do
+        build(:observation, observer: observer, company: company, privacy_level: :public_to_world).tap do |obs|
+          obs.observees.build(teammate: observee_teammate)
+          obs.save!
+          obs.publish!
+          obs.soft_delete!
+        end
+      end
+
+      it 'allows observer to see their own soft-deleted observation' do
+        query = described_class.new(observer, company)
+        expect(query.visible_to?(soft_deleted_observation)).to be true
+      end
+
+      it 'denies everyone else from seeing soft-deleted observations, even if privacy level would allow' do
+        observee_query = described_class.new(observee_person, company)
+        manager_query = described_class.new(manager_person, company)
+        random_query = described_class.new(random_person, company)
+
+        expect(observee_query.visible_to?(soft_deleted_observation)).to be false
+        expect(manager_query.visible_to?(soft_deleted_observation)).to be false
+        expect(random_query.visible_to?(soft_deleted_observation)).to be false
       end
     end
   end

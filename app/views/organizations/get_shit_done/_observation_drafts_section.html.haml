@@ -1,0 +1,73 @@
+- drafts_count = @observation_drafts.count
+- drafts_indicator = drafts_count > 0 ? :warning : :success
+= render 'shared/section_header', 
+         title: 'Observation Drafts', 
+         icon: 'bi-file-earmark-text', 
+         description: 'Draft observations needing action',
+         collapsible: true,
+         collapse_target: 'observationDraftsSection',
+         status_indicator: drafts_indicator
+
+-# Summary view (shown when collapsed)
+- summary_class = drafts_count > 0 ? "alert mb-4 collapse-summary #{status_indicator_alert_class(drafts_indicator)}" : "alert mb-4 collapse-summary alert-light border border-light"
+- summary_style = drafts_count > 0 ? "cursor: pointer;" : "cursor: pointer; background-color: #f8f9fa; border-color: #dee2e6 !important;"
+%div{class: summary_class, "data-bs-toggle" => "collapse", "data-bs-target" => "#observationDraftsSection", "aria-expanded" => "false", "aria-controls" => "observationDraftsSection", style: summary_style}
+  %p.mb-0{class: drafts_count > 0 ? "" : "text-muted"}
+    %i{class: "#{status_indicator_icon(drafts_indicator)} #{drafts_count > 0 ? status_indicator_badge_class(drafts_indicator) : 'text-muted'} me-2"}
+    - if drafts_count > 0
+      = pluralize(drafts_count, 'draft observation') + ' needing action'
+    - else
+      No draft observations
+
+-# Collapsible content
+.collapse#observationDraftsSection
+  .card.mb-4
+    .card-body
+      - if @observation_drafts.any?
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Preview
+                %th Created
+                %th{style: "width: 280px;"} Actions
+            %tbody
+              - @observation_drafts.each do |draft|
+                %tr
+                  %td
+                    %strong= truncate(draft.story || 'No story yet', length: 100)
+                    %br
+                    %small.text-muted
+                      - if draft.observees.any?
+                        = "Observing: #{draft.observed_teammates.map { |t| t.person.display_name }.join(', ')}"
+                      - else
+                        No observees yet
+                  %td
+                    %small= draft.created_at.strftime('%b %d, %Y')
+                  %td
+                    .btn-group.btn-group-sm{role: "group"}
+                      = link_to "Edit", 
+                                edit_organization_observation_path(organization, draft),
+                                class: "btn btn-primary btn-sm"
+                      - if draft.story.present? && draft.observees.any?
+                        = button_to "Publish", 
+                                    publish_organization_observation_path(organization, draft),
+                                    method: :post,
+                                    class: "btn btn-success btn-sm",
+                                    data: { confirm: "Publish this observation?" }
+                      = button_to "Make Journal", 
+                                  update_draft_organization_observation_path(organization, draft),
+                                  method: :patch,
+                                  params: { observation: { privacy_level: 'observer_only' }, return_url: organization_get_shit_done_path(organization) },
+                                  class: "btn btn-outline-secondary btn-sm",
+                                  data: { confirm: "Mark this as a private journal entry?" }
+                      - if policy(draft).destroy?
+                        = button_to "Archive", 
+                                    organization_observation_path(organization, draft),
+                                    method: :delete,
+                                    class: "btn btn-outline-warning btn-sm",
+                                    data: { confirm: "Archive this observation?", turbo: false },
+                                    form: { style: "display: inline-block;" }
+      - else
+        %p.text-muted.mb-0 No draft observations.
+

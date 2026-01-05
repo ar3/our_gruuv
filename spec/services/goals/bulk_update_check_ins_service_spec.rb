@@ -44,6 +44,66 @@ RSpec.describe Goals::BulkUpdateCheckInsService, type: :service do
         expect(check_in.confidence_reporter).to eq(person)
       end
       
+      context 'when confidence changed significantly' do
+        let!(:previous_check_in) do
+          create(:goal_check_in,
+                 goal: goal,
+                 confidence_percentage: 50,
+                 check_in_week_start: week_start - 1.week,
+                 confidence_reporter: person)
+        end
+        
+        it 'creates observable moment when confidence increased by 25 points' do
+          params = {
+            goal.id => {
+              confidence_percentage: '75',
+              confidence_reason: 'Making good progress'
+            }
+          }
+          
+          expect {
+            described_class.call(
+              organization: organization,
+              current_person: person,
+              goal_check_ins_params: params,
+              week_start: week_start
+            )
+          }.to change { ObservableMoment.count }.by(1)
+          
+          moment = ObservableMoment.last
+          expect(moment.moment_type).to eq('goal_check_in')
+          expect(moment.metadata['confidence_delta']).to eq(25)
+        end
+      end
+      
+      context 'when confidence changed by less than 20 points' do
+        let!(:previous_check_in) do
+          create(:goal_check_in,
+                 goal: goal,
+                 confidence_percentage: 50,
+                 check_in_week_start: week_start - 1.week,
+                 confidence_reporter: person)
+        end
+        
+        it 'does not create observable moment when change is only 15 points' do
+          params = {
+            goal.id => {
+              confidence_percentage: '65',
+              confidence_reason: 'Making good progress'
+            }
+          }
+          
+          expect {
+            described_class.call(
+              organization: organization,
+              current_person: person,
+              goal_check_ins_params: params,
+              week_start: week_start
+            )
+          }.not_to change { ObservableMoment.count }
+        end
+      end
+      
       it 'updates an existing check-in' do
         existing_check_in = create(:goal_check_in,
           goal: goal,

@@ -3,6 +3,14 @@ module NavigationHelper
   def current_company
     @current_company ||= current_organization&.root_company || current_organization
   end
+  
+  # Calculate pending items count for Get Shit Done dashboard
+  # Uses the same query service as the controller to ensure consistency
+  def pending_get_shit_done_count(teammate)
+    return 0 unless teammate
+    
+    GetShitDoneQueryService.new(teammate: teammate).total_pending_count
+  end
 
   # Navigation structure definition
   def navigation_structure

@@ -107,6 +107,12 @@ class Organizations::EmploymentManagementController < Organizations::Organizatio
       @employment_tenure.company = @organization
       @employment_tenure.save!
       
+      # Create observable moment for new hire
+      ObservableMoments::CreateNewHireMomentService.call(
+        employment_tenure: @employment_tenure,
+        created_by: current_person
+      )
+      
       if params[:save_and_continue] == 'true'
         redirect_to organization_company_teammate_path(@organization, teammate), notice: 'Employee was successfully created.'
       else

@@ -76,6 +76,30 @@ RSpec.describe UpdateEmploymentTenureService, type: :service do
         expect(new_tenure.started_at).to be_within(1.second).of(Time.current)
         expect(new_tenure.ended_at).to be_nil
       end
+      
+      it 'creates observable moment for seat change' do
+        new_manager_teammate
+        params = {
+          manager_teammate_id: new_manager_teammate.id,
+          position_id: current_position.id,
+          employment_type: 'full_time',
+          seat_id: current_seat.id
+        }
+
+        expect {
+          described_class.call(
+            teammate: teammate,
+            current_tenure: current_tenure,
+            params: params,
+            created_by: created_by
+          )
+        }.to change { ObservableMoment.count }.by(1)
+        
+        moment = ObservableMoment.last
+        expect(moment.moment_type).to eq('seat_change')
+        expect(moment.primary_potential_observer.person).to eq(created_by)
+        expect(moment.metadata['old_position_id']).to eq(current_position.id)
+      end
 
       it 'creates maap_snapshot with position_tenure change_type' do
         new_manager_teammate

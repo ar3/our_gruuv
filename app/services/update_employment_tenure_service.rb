@@ -172,6 +172,14 @@ class UpdateEmploymentTenureService
     )
     
     new_tenure.save!
+    
+    # Create observable moment for seat change
+    ObservableMoments::CreateSeatChangeMomentService.call(
+      new_employment_tenure: new_tenure,
+      old_employment_tenure: current_tenure,
+      created_by: created_by
+    )
+    
     new_tenure
   end
 

@@ -12,6 +12,9 @@ class ObservationPolicy < ApplicationPolicy
     return false if viewing_teammate.respond_to?(:terminated?) && viewing_teammate.terminated?
     return false if viewing_teammate.respond_to?(:last_terminated_at) && viewing_teammate.last_terminated_at.present?
     
+    # Soft-deleted observations: only the observer can see them
+    return false if record.soft_deleted? && person != record.observer
+    
     # Draft observations: only the observer can see them (if they have active teammate)
     return false if record.draft? && person != record.observer
     
@@ -60,8 +63,10 @@ class ObservationPolicy < ApplicationPolicy
   end
 
   def destroy?
+    # Allow observer to always archive (soft delete) their observations
+    # The 24-hour restriction was for actual deletion, but we're using soft delete for archiving
     return true if admin_bypass?
-    return true if viewing_teammate.person == record.observer && record.created_at > 24.hours.ago
+    return true if viewing_teammate.person == record.observer
     false
   end
 
@@ -138,6 +143,11 @@ class ObservationPolicy < ApplicationPolicy
     viewing_teammate.present? && viewing_teammate.person == record.observer && record.draft?
   end
 
+  def restore?
+    # Only the observer can restore
+    viewing_teammate.present? && viewing_teammate.person == record.observer
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless viewing_teammate
@@ -159,6 +169,7 @@ class ObservationPolicy < ApplicationPolicy
         # - Drafts: Only visible to observer
         # - Journal (observer_only): Only visible to observer
         # - Published: Follow privacy policy rules
+        # - Soft-deleted: Only visible to observer (handled in visibility_query)
         visibility_query = ObservationVisibilityQuery.new(person, company)
         visible_observations = visibility_query.visible_observations
         

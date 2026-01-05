@@ -1,0 +1,60 @@
+- moments_count = @observable_moments.count
+- moments_indicator = moments_count > 0 ? :warning : :success
+= render 'shared/section_header', 
+         title: 'Observable Moments', 
+         icon: 'bi-star', 
+         description: 'Celebratory moments ready to observe',
+         collapsible: true,
+         collapse_target: 'observableMomentsSection',
+         status_indicator: moments_indicator
+
+-# Summary view (shown when collapsed)
+- summary_class = moments_count > 0 ? "alert mb-4 collapse-summary #{status_indicator_alert_class(moments_indicator)}" : "alert mb-4 collapse-summary alert-light border border-light"
+- summary_style = moments_count > 0 ? "cursor: pointer;" : "cursor: pointer; background-color: #f8f9fa; border-color: #dee2e6 !important;"
+%div{class: summary_class, "data-bs-toggle" => "collapse", "data-bs-target" => "#observableMomentsSection", "aria-expanded" => "false", "aria-controls" => "observableMomentsSection", style: summary_style}
+  %p.mb-0{class: moments_count > 0 ? "" : "text-muted"}
+    %i{class: "#{status_indicator_icon(moments_indicator)} #{moments_count > 0 ? status_indicator_badge_class(moments_indicator) : 'text-muted'} me-2"}
+    - if moments_count > 0
+      = pluralize(moments_count, 'observable moment') + ' ready to celebrate'
+    - else
+      No observable moments pending
+
+-# Collapsible content
+.collapse#observableMomentsSection
+  .card.mb-4
+    .card-body
+      - if @observable_moments.any?
+        .table-responsive
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Moment
+                %th Date
+                %th Actions
+            %tbody
+              - @observable_moments.each do |moment|
+                %tr
+                  %td
+                    %strong= moment.display_name
+                    %br
+                    %small.text-muted= moment.description
+                  %td
+                    %small= moment.occurred_at.strftime('%b %d, %Y')
+                  %td
+                    .btn-group.btn-group-sm{role: "group"}
+                      = button_to "Create Observation", 
+                        create_observation_organization_observable_moment_path(organization, moment),
+                        method: :post,
+                        class: "btn btn-primary btn-sm"
+                      = link_to "Reassign", 
+                        reassign_organization_observable_moment_path(organization, moment),
+                        class: "btn btn-outline-secondary btn-sm"
+                      = button_to "Ignore", 
+                        ignore_organization_observable_moment_path(organization, moment),
+                        method: :patch,
+                        class: "btn btn-outline-warning btn-sm",
+                        data: { confirm: "Ignore this moment? It will be marked as processed.", turbo_method: :patch },
+                        form: { style: "display: inline-block;", data: { turbo: false } }
+      - else
+        %p.text-muted.mb-0 No observable moments pending.
+

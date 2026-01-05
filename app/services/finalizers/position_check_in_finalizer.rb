@@ -41,6 +41,12 @@ module Finalizers
         finalized_by: @finalized_by
       )
       
+      # Create observable moment if rating improved
+      ObservableMoments::CreateCheckInMomentService.call(
+        check_in: @check_in,
+        finalized_by: @finalized_by
+      )
+      
       # Return data for snapshot
       Result.ok(
         check_in: @check_in,

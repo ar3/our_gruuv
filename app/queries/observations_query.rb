@@ -13,6 +13,7 @@ class ObservationsQuery
     observations = filter_by_timeframe(observations)
     observations = filter_by_draft_status(observations)
     observations = filter_by_observer(observations)
+    observations = filter_by_soft_deleted_status(observations)
     observations = apply_sort(observations)
     observations
   end
@@ -25,6 +26,7 @@ class ObservationsQuery
       filters[:timeframe_start_date] = params[:timeframe_start_date] if params[:timeframe_start_date].present?
       filters[:timeframe_end_date] = params[:timeframe_end_date] if params[:timeframe_end_date].present?
     end
+    filters[:include_soft_deleted] = params[:include_soft_deleted] if params[:include_soft_deleted].present?
     filters
   end
 
@@ -117,6 +119,19 @@ class ObservationsQuery
     return observations unless params[:observer_id].present?
     
     observations.where(observer_id: params[:observer_id])
+  end
+
+  def filter_by_soft_deleted_status(observations)
+    # If param is not present or false: explicitly exclude soft-deleted
+    # If param is true: do not add exclusion (allow both soft-deleted and non-soft-deleted)
+    include_soft_deleted = params[:include_soft_deleted].present? && 
+                          (params[:include_soft_deleted] == 'true' || params[:include_soft_deleted] == true)
+    
+    unless include_soft_deleted
+      observations = observations.where(deleted_at: nil)
+    end
+    
+    observations
   end
 
   private

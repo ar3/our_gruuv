@@ -71,6 +71,11 @@
               = label_tag 'privacy_public_to_world', '🌍 Public to World', class: 'form-check-label'
           
           .mb-3
+            .form-check
+              = check_box_tag 'include_soft_deleted', 'true', @current_filters[:include_soft_deleted] == 'true' || @current_filters[:include_soft_deleted] == true, class: 'form-check-input', id: 'include_soft_deleted'
+              = label_tag 'include_soft_deleted', '📦 Show archived observations', class: 'form-check-label'
+          
+          .mb-3
             %label.form-label Timeframe
             .form-check
               = radio_button_tag 'timeframe', 'this_week', @current_filters[:timeframe] == 'this_week', class: 'form-check-input', id: 'timeframe_this_week'

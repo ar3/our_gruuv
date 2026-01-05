@@ -10,7 +10,7 @@ class ObservationVisibilityQuery
     # Get current teammate (must be active)
     current_teammate = @person.active_teammates.find_by(organization_id: @company.id)
     
-    # If no active teammate, only return published public_to_world observations
+    # If no active teammate, only return published public_to_world observations (not soft-deleted)
     unless current_teammate
       return Observation.where(
         company_id: @company.id,
@@ -19,21 +19,23 @@ class ObservationVisibilityQuery
       ).where.not(published_at: nil)
     end
 
-    # Start with observations in the company, not deleted
+    # Start with observations in the company
+    # We'll exclude soft-deleted in the base_scope, but include observer's soft-deleted via OR
     base_scope = Observation.where(company_id: @company.id, deleted_at: nil)
 
     # Build visibility conditions according to the 4 rules
     conditions = []
     params = []
 
-    # Rule 1: Public observations (published)
+    # Rule 1: Public observations (published, not soft-deleted)
     # privacy_level IN ('public_to_company', 'public_to_world') AND published_at IS NOT NULL
     conditions << "(privacy_level IN (?, ?) AND published_at IS NOT NULL)"
     params << 'public_to_company'
     params << 'public_to_world'
 
-    # Rule 2: Current teammate is the observer
-    # observer_id = current_teammate.person_id (regardless of published state or privacy level)
+    # Rule 2: Current teammate is the observer (regardless of published state, privacy level, or soft-deleted status)
+    # observer_id = current_teammate.person_id
+    # Note: This will match both non-soft-deleted (via base_scope) and soft-deleted (via OR below)
     conditions << "(observer_id = ?)"
     params << @person.id
 
@@ -75,8 +77,15 @@ class ObservationVisibilityQuery
     # Combine all conditions with OR
     where_clause = conditions.join(' OR ')
     
-    # Apply the combined conditions
-    base_scope.where(where_clause, *params)
+    # Apply the combined conditions to non-soft-deleted observations
+    visible_scope = base_scope.where(where_clause, *params)
+    
+    # For observer, explicitly include their soft-deleted observations
+    # This allows observer to see their own archived observations
+    observer_soft_deleted = Observation.where(company_id: @company.id, observer_id: @person.id).where.not(deleted_at: nil)
+    visible_scope = visible_scope.or(observer_soft_deleted)
+    
+    visible_scope
   end
 
   def visible_to?(observation)
@@ -85,23 +94,26 @@ class ObservationVisibilityQuery
     # Get current teammate (must be active)
     current_teammate = @person.active_teammates.find_by(organization_id: @company.id)
     
-    # If no active teammate, only allow published public_to_world observations
+    # If no active teammate, only allow published public_to_world observations (not soft-deleted)
     unless current_teammate
-      return observation.published? && observation.privacy_level == 'public_to_world'
+      return observation.published? && observation.privacy_level == 'public_to_world' && !observation.soft_deleted?
     end
 
-    # Rule 1: Public observations (published)
-    if observation.published? && ['public_to_company', 'public_to_world'].include?(observation.privacy_level)
+    # Soft-deleted observations: only visible to observer
+    return false if observation.soft_deleted? && observation.observer_id != @person.id
+
+    # Rule 1: Public observations (published, not soft-deleted)
+    if observation.published? && ['public_to_company', 'public_to_world'].include?(observation.privacy_level) && !observation.soft_deleted?
       return true
     end
 
-    # Rule 2: Current teammate is the observer (regardless of published state or privacy level)
+    # Rule 2: Current teammate is the observer (regardless of published state, privacy level, or soft-deleted status)
     if observation.observer_id == @person.id
       return true
     end
 
-    # Rules 3 and 4 require published observations
-    return false unless observation.published?
+    # Rules 3 and 4 require published observations (and not soft-deleted)
+    return false unless observation.published? && !observation.soft_deleted?
 
     # Rule 3: Current teammate is one of the observed
     if ['observed_only', 'observed_and_managers'].include?(observation.privacy_level)

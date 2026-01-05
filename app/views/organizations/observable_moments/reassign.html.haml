@@ -1,0 +1,27 @@
+- content_for :title, "Reassign Observable Moment"
+
+.card
+  .card-header
+    %h4.mb-0 Reassign Observable Moment
+  .card-body
+    %p
+      %strong= @observable_moment.display_name
+      %br
+      %small.text-muted= @observable_moment.description
+    
+    = form_with url: reassign_organization_observable_moment_path(organization, @observable_moment), 
+                method: :patch, 
+                local: true do |f|
+      .mb-3
+        = f.label :teammate_id, "Reassign to:", class: "form-label"
+        = f.collection_select :teammate_id,
+                              @teammates,
+                              :id,
+                              ->(t) { t.person.display_name },
+                              { prompt: "Select a teammate" },
+                              { class: "form-select", required: true }
+      
+      .d-flex.gap-2
+        = f.submit "Reassign", class: "btn btn-primary"
+        = link_to "Cancel", organization_get_shit_done_path(organization), class: "btn btn-secondary"
+

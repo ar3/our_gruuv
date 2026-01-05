@@ -66,6 +66,53 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
           expect(rating_data[:rated_at]).to eq(Time.current.to_s)
         end
       end
+      
+      context 'when rating improved' do
+        let!(:previous_check_in) do
+          create(:position_check_in,
+                 teammate: teammate,
+                 employment_tenure: employment_tenure,
+                 official_rating: 1,
+                 official_check_in_completed_at: 1.month.ago,
+                 finalized_by: manager)
+        end
+        
+        it 'creates observable moment when rating improved' do
+          expect {
+            finalizer.finalize
+          }.to change { ObservableMoment.count }.by(1)
+          
+          moment = ObservableMoment.last
+          expect(moment.moment_type).to eq('check_in_completed')
+          expect(moment.momentable).to eq(check_in)
+          expect(moment.primary_potential_observer).to eq(manager_teammate)
+        end
+      end
+      
+      context 'when rating did not improve' do
+        let!(:previous_check_in) do
+          create(:position_check_in,
+                 teammate: teammate,
+                 employment_tenure: employment_tenure,
+                 official_rating: 3,
+                 official_check_in_completed_at: 1.month.ago,
+                 finalized_by: manager)
+        end
+        
+        it 'does not create observable moment when rating decreased' do
+          expect {
+            finalizer.finalize
+          }.not_to change { ObservableMoment.count }
+        end
+      end
+      
+      context 'when this is the first check-in' do
+        it 'creates observable moment for first check-in' do
+          expect {
+            finalizer.finalize
+          }.to change { ObservableMoment.count }.by(1)
+        end
+      end
     end
 
     context 'when check-in is not ready for finalization' do

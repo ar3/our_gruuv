@@ -7,6 +7,7 @@ class Observation < ApplicationRecord
   belongs_to :observer, class_name: 'Person'
   belongs_to :company, class_name: 'Organization'
   belongs_to :observation_trigger, optional: true
+  belongs_to :observable_moment, optional: true
   has_many :observees, dependent: :destroy
   has_many :observed_teammates, through: :observees, source: :teammate
   has_many :observation_ratings, dependent: :destroy
@@ -64,8 +65,14 @@ class Observation < ApplicationRecord
   scope :generic_observations, -> { where(observation_type: 'generic') }
   scope :created_as_kudos, -> { where(created_as_type: 'kudos') }
   scope :created_as_feedback, -> { where(created_as_type: 'feedback') }
+  scope :with_observable_moments, -> { where.not(observable_moment_id: nil) }
+  scope :without_observable_moments, -> { where(observable_moment_id: nil) }
+  scope :for_moment_type, ->(type) { joins(:observable_moment).where(observable_moments: { moment_type: type }) }
+  scope :soft_deleted, -> { where.not(deleted_at: nil) }
+  scope :not_soft_deleted, -> { where(deleted_at: nil) }
   
   before_validation :set_observed_at_default
+  after_save :mark_observable_moment_as_processed, if: -> { observable_moment.present? && saved_change_to_published_at? && published? }
   after_update :update_channel_notifications_if_needed
   
   def permalink_id
@@ -145,12 +152,33 @@ class Observation < ApplicationRecord
   def observer_and_observees_in_same_company
     return unless observer && company
     
+    # Allow moment-based observations to bypass this validation if moment provides context
+    # Check both the ID and the association to handle cases where association isn't loaded yet
+    if observable_moment_id.present? || observable_moment.present?
+      return
+    end
+    
     observees.each do |observee|
       unless observee.teammate.organization == company
         errors.add(:observees, "must be in the same company as the observer")
         break
       end
     end
+  end
+  
+  def mark_observable_moment_as_processed
+    return unless observable_moment
+    return if observable_moment.processed?
+    
+    # Get current user's teammate for processed_by_teammate
+    current_teammate = if observer
+      observer.teammates.find_by(organization: company)
+    end
+    
+    observable_moment.update!(
+      processed_at: Time.current,
+      processed_by_teammate: current_teammate
+    )
   end
 
   def update_channel_notifications_if_needed

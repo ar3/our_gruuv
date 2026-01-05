@@ -76,11 +76,24 @@ class Organizations::CompanyTeammates::EmploymentTenuresController < Organizatio
         # Save the new tenure
         @employment_tenure.save!
         
+        # Create observable moment for seat change
+        ObservableMoments::CreateSeatChangeMomentService.call(
+          new_employment_tenure: @employment_tenure,
+          old_employment_tenure: active_tenure,
+          created_by: current_person
+        )
+        
         redirect_to organization_company_teammate_path(@employment_tenure.company, target_teammate), notice: 'Employment tenure was successfully created.'
       end
     else
       # Simple new employment creation
       if @employment_tenure.save
+        # Create observable moment for new hire
+        ObservableMoments::CreateNewHireMomentService.call(
+          employment_tenure: @employment_tenure,
+          created_by: current_person
+        )
+        
         redirect_to organization_company_teammate_path(@employment_tenure.company, target_teammate), notice: 'Employment tenure was successfully created.'
       else
         @company = @employment_tenure.company

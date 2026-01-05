@@ -138,6 +138,12 @@ module Goals
           goal.update(completed_at: Time.current)
         end
         
+        # Create observable moment if confidence changed significantly
+        ObservableMoments::CreateGoalCheckInMomentService.call(
+          goal_check_in: check_in,
+          created_by: current_person
+        )
+        
         @success_count += 1
       else
         @failure_count += 1

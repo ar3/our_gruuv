@@ -284,6 +284,12 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       @employment_tenure.teammate = teammate
       @employment_tenure.save!
       
+      # Create observable moment for new hire
+      ObservableMoments::CreateNewHireMomentService.call(
+        employment_tenure: @employment_tenure,
+        created_by: current_person
+      )
+      
       redirect_to organization_person_path(@organization, @person), notice: 'Employee was successfully created.'
     end
   rescue ActiveRecord::RecordInvalid

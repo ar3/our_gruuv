@@ -37,14 +37,43 @@ class ObservationForm < Reform::Form
   # Virtual property for story_extras (GIFs, etc.)
   property :story_extras, virtual: true
   
+  # Virtual property for observable moment association
+  property :observable_moment_id, virtual: true
+  
   validates :story, presence: true, if: :publishing?
-  validates :privacy_level, presence: true
+  validates :privacy_level, presence: true, unless: -> { observable_moment_id.present? }
   validates :primary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true, allow_blank: true
   validates :secondary_feeling, inclusion: { in: Feelings::FEELINGS.map { |f| f[:discrete_feeling].to_s } }, allow_nil: true, allow_blank: true
   validate :custom_slug_uniqueness
   
   def save
     return false unless valid?
+    
+    # Load and pre-fill from observable moment if present
+    if observable_moment_id.present?
+      observable_moment = ObservableMoment.find_by(id: observable_moment_id)
+      if observable_moment
+        # Pre-fill from moment context
+        template_service = ObservableMoments::ObservationStoryTemplateService.new(observable_moment)
+        
+        # Pre-fill story if not already set
+        self.story ||= template_service.template
+        
+        # Pre-fill observees if not already set
+        if observees.empty?
+          suggested_observees = template_service.suggested_observees
+          suggested_observees.each do |teammate|
+            observees << Observee.new(teammate: teammate)
+          end
+        end
+        
+        # Pre-fill privacy level if not already set
+        self.privacy_level ||= template_service.suggested_privacy_level
+        
+        # Associate with observable moment
+        model.observable_moment = observable_moment
+      end
+    end
     
     # Story can be nil for drafts (migration allows it)
     # Validation only requires it for published observations

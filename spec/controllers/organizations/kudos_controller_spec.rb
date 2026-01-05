@@ -86,6 +86,19 @@ RSpec.describe Organizations::KudosController, type: :controller do
       expect(observations).not_to include(unpublished_observation)
     end
 
+    it 'excludes soft-deleted observations' do
+      soft_deleted = create(:observation, observer: observer, company: company, privacy_level: :public_to_world, published_at: Time.current, observed_at: 5.days.ago)
+      soft_deleted.observees.build(teammate: observee_teammate)
+      soft_deleted.save!
+      soft_deleted.soft_delete!
+      
+      get :index, params: { organization_id: company.id }
+      observations = assigns(:observations)
+      
+      expect(observations).not_to include(soft_deleted)
+      expect(observations).to include(public_to_world)
+    end
+
     it 'handles id-name-parameterized format' do
       param = "#{company.id}-test-company"
       get :index, params: { organization_id: param }
@@ -248,6 +261,19 @@ RSpec.describe Organizations::KudosController, type: :controller do
         get :show, params: { organization_id: param, date: '2025-10-05', id: observation.id }
         expect(assigns(:organization).id).to eq(company.id)
         expect(response).to have_http_status(:success)
+      end
+    end
+
+    context 'with soft-deleted observation' do
+      before do
+        observation.update!(privacy_level: :public_to_world)
+        observation.soft_delete!
+      end
+
+      it 'raises Pundit::NotAuthorizedError' do
+        expect {
+          get :show, params: { organization_id: company.id, date: '2025-10-05', id: observation.id }
+        }.to raise_error(Pundit::NotAuthorizedError)
       end
     end
   end

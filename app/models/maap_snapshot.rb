@@ -119,6 +119,16 @@ class MaapSnapshot < ApplicationRecord
   def pending_acknowledgement?
     effective_date.present? && employee_acknowledged_at.nil?
   end
+  
+  def self.pending_acknowledgement_for(teammate)
+    where(employee: teammate.person, employee_acknowledged_at: nil)
+      .where.not(effective_date: nil)
+  end
+  
+  def primary_potential_observer
+    return nil unless employee
+    employee.teammates.find_by(organization: company)
+  end
 
   private
   

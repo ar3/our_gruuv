@@ -1,5 +1,5 @@
 class Organizations::ObservationsController < Organizations::OrganizationNamespaceBaseController
-  before_action :set_observation, only: [:show, :destroy, :post_to_slack, :share_publicly, :share_privately]
+  before_action :set_observation, only: [:show, :destroy, :restore, :post_to_slack, :share_publicly, :share_privately]
   
 
   def index
@@ -248,6 +248,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
   def new
     authorize Observation
     
+    # Load observable moment if provided
+    @observable_moment = ObservableMoment.find_by(id: params[:observable_moment_id]) if params[:observable_moment_id].present?
+    
     # Load existing observation (draft or published) or create new draft
     if params[:draft_id].present? || params[:id].present?
       observation_id = params[:draft_id].presence || params[:id]
@@ -262,7 +265,12 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       # Create new draft
       @observation = organization.observations.build(observer: current_person, observation_type: 'generic', created_as_type: 'generic')
       
-      # Set observees from params
+      # Pre-fill from observable moment if present
+      if @observable_moment
+        load_observable_moment_context(@observable_moment)
+      end
+      
+      # Set observees from params (may override moment suggestions)
       observee_ids = params[:observee_ids] || []
       observee_ids.each do |teammate_id|
         next if teammate_id.blank?
@@ -309,13 +317,19 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @aspirations = organization.aspirations
     @abilities = organization.abilities.order(:name)
     
-    # Store return context - default to show page if editing existing observation, otherwise index
+    # Store return context - default to show page if editing existing observation, otherwise index or dashboard
     if @observation.persisted?
       @return_url = params[:return_url] || organization_observation_path(organization, @observation)
       @return_text = params[:return_text] || 'Back to Observation'
     else
-      @return_url = params[:return_url] || organization_observations_path(organization)
-      @return_text = params[:return_text] || 'Back'
+      # If coming from observable moment, return to dashboard
+      if @observable_moment
+        @return_url = params[:return_url] || get_shit_done_organization_path(organization)
+        @return_text = params[:return_text] || 'Back to Get Shit Done Dashboard'
+      else
+        @return_url = params[:return_url] || organization_observations_path(organization)
+        @return_text = params[:return_text] || 'Back'
+      end
     end
     
     prepare_privacy_selector_data
@@ -430,6 +444,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     @observation = organization.observations.build(observer: current_person)
     @form = ObservationForm.new(@observation)
     
+    # Set observable_moment_id if provided
+    @form.observable_moment_id = params[:observation][:observable_moment_id] if params[:observation] && params[:observation][:observable_moment_id].present?
+    
     if @form.validate(observation_params)
       # Check if this is step 1 of wizard
       if params[:step] == '2'
@@ -485,8 +502,22 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     end
 
     @observation.soft_delete!
-    redirect_to organization_observations_path(organization), 
-                notice: 'Observation was successfully deleted.'
+    redirect_to organization_observation_path(organization, @observation), 
+                notice: 'Observation was successfully archived.'
+  end
+
+  def restore
+    begin
+      authorize @observation, :restore?
+    rescue Pundit::NotAuthorizedError
+      date_part = @observation.observed_at.strftime('%Y-%m-%d')
+      redirect_to organization_kudo_path(@observation.company, date: date_part, id: @observation.id)
+      return
+    end
+    
+    @observation.restore!
+    redirect_to organization_observation_path(organization, @observation), 
+                notice: 'Observation was successfully restored.'
   end
 
   def journal
@@ -1856,7 +1887,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       params.require(:observation).permit(
         :story, :privacy_level, :primary_feeling, :secondary_feeling, 
         :observed_at, :custom_slug, :send_notifications, :publishing,
-        :observation_type, :created_as_type,
+        :observation_type, :created_as_type, :observable_moment_id,
         teammate_ids: [], notify_teammate_ids: [],
         observees_attributes: [:id, :teammate_id, :_destroy],
         observation_ratings_attributes: {},
@@ -1865,6 +1896,27 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     else
       {}
     end
+  end
+  
+  def load_observable_moment_context(observable_moment)
+    template_service = ObservableMoments::ObservationStoryTemplateService.new(observable_moment)
+    
+    # Pre-fill story
+    @observation.story ||= template_service.template
+    
+    # Pre-fill observees
+    if @observation.observees.empty?
+      suggested_observees = template_service.suggested_observees
+      suggested_observees.each do |teammate|
+        @observation.observees.build(teammate: teammate)
+      end
+    end
+    
+    # Pre-fill privacy level
+    @observation.privacy_level ||= template_service.suggested_privacy_level
+    
+    # Associate with observable moment
+    @observation.observable_moment = observable_moment
   end
 
   def wizard_data_from_form(form)

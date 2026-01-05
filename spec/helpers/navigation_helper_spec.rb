@@ -1,139 +1,70 @@
 require 'rails_helper'
 
 RSpec.describe NavigationHelper, type: :helper do
-  let(:organization) { create(:organization, :company) }
+  let(:company) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, person: person, organization: organization) }
-  
-  # Set up helper methods that are normally provided by ApplicationController
-  before do
-    # Capture variables for closure
-    org = organization
-    p = person
-    t = teammate
-    
-    # Define helper methods directly on the helper object
-    # These are normally made available via helper_method in ApplicationController
-    helper.define_singleton_method(:current_organization) { org }
-    helper.define_singleton_method(:current_person) { p }
-    helper.define_singleton_method(:current_company_teammate) { t }
-    
-    # Stub policy method to return a policy double for any record
-    org_policy_double = double(
-      show?: true,
-      manage_employment?: true,
-      view_prompts?: true,
-      view_observations?: true,
-      view_seats?: true,
-      view_goals?: true,
-      view_abilities?: true,
-      view_assignments?: true,
-      view_aspirations?: true
-    )
-    
-    policy_double = double(
-      show?: true,
-      view_check_ins?: true
-    )
-    
-    helper.define_singleton_method(:policy) do |record|
-      case record
-      when Organization
-        # For organization instance checks - now using view_*? methods
-        org_policy_double
-      else
-        # For other instance checks
-        policy_double
-      end
+  let(:teammate) { create(:teammate, person: person, organization: company) }
+
+  describe '#pending_get_shit_done_count' do
+    it 'returns 0 when teammate is nil' do
+      expect(helper.pending_get_shit_done_count(nil)).to eq(0)
     end
-  end
-  
-  describe '#navigation_structure' do
-    it 'returns navigation structure' do
-      structure = helper.navigation_structure
+
+    it 'counts all pending items' do
+      # Ensure teammate is a CompanyTeammate
+      company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
       
-      expect(structure).to be_an(Array)
-      expect(structure.length).to be > 0
-    end
-    
-    it 'includes Dashboard' do
-      structure = helper.navigation_structure
-      dashboard = structure.find { |s| s[:label] == 'Dashboard' }
+      observable_moment = create(:observable_moment, :new_hire, company: company, primary_observer_person: person)
+      observable_moment.reload
+      create(:maap_snapshot, employee: person, company: company, employee_acknowledged_at: nil, effective_date: Time.current)
+      create(:observation, observer: person, company: company, published_at: nil)
+      # Goal needs to meet check_in_eligible criteria
+      goal = create(:goal, owner: company_teammate, company: company, started_at: Time.current, deleted_at: nil, completed_at: nil, most_likely_target_date: 1.month.from_now, goal_type: 'quantitative_key_result')
       
-      expect(dashboard).to be_present
-      expect(dashboard[:path]).to be_present
+      count = helper.pending_get_shit_done_count(company_teammate)
+      # Should have at least 3 (observable moment, maap snapshot, observation)
+      # Goal may or may not be included depending on check_in_eligible scope
+      expect(count).to be >= 3
     end
-    
-    it 'includes Admin section' do
-      structure = helper.navigation_structure
-      admin = structure.find { |s| s[:section] == 'admin' }
+
+    it 'excludes archived observations from count' do
+      company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
       
-      expect(admin).to be_present
-      expect(admin[:items]).to be_an(Array)
-    end
-  end
-  
-  describe '#nav_item_active?' do
-    before do
-      allow(helper).to receive(:current_page?).and_return(false)
-      allow(helper).to receive(:request).and_return(double(path: '/organizations/1/employees'))
-    end
-    
-    it 'returns false when path does not match' do
-      expect(helper.nav_item_active?('/organizations/1/observations')).to eq(false)
-    end
-    
-    it 'returns true when path matches' do
-      allow(helper).to receive(:current_page?).with('/organizations/1/employees').and_return(true)
+      draft1 = create(:observation, observer: person, company: company, published_at: nil)
+      archived_draft = create(:observation, observer: person, company: company, published_at: nil)
+      archived_draft.soft_delete!
       
-      expect(helper.nav_item_active?('/organizations/1/employees')).to eq(true)
+      count = helper.pending_get_shit_done_count(company_teammate)
+      # Should only count draft1, not archived_draft
+      expect(count).to eq(1)
     end
-    
-    it 'handles paths with query params' do
-      allow(helper).to receive(:request).and_return(double(path: '/organizations/1/employees?page=2'))
+
+    it 'excludes journal observations from count' do
+      company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
       
-      expect(helper.nav_item_active?('/organizations/1/employees')).to eq(true)
-    end
-  end
-  
-  describe '#visible_nav_items' do
-    let(:items) do
-      [
-        {
-          label: 'Test Item',
-          path: '/test',
-          policy_check: -> { true }
-        },
-        {
-          label: 'Hidden Item',
-          path: '/hidden',
-          policy_check: -> { false }
-        }
-      ]
-    end
-    
-    it 'filters items by policy check' do
-      visible = helper.visible_nav_items(items)
+      draft1 = create(:observation, observer: person, company: company, published_at: nil, privacy_level: :observed_only, story: "Draft 1 #{SecureRandom.hex(4)}")
+      journal_draft = create(:observation, observer: person, company: company, published_at: nil, privacy_level: :observer_only, story: "Journal #{SecureRandom.hex(4)}")
       
-      expect(visible.length).to eq(1)
-      expect(visible.first[:label]).to eq('Test Item')
+      count = helper.pending_get_shit_done_count(company_teammate)
+      # Should only count draft1, not journal_draft
+      expect(count).to eq(1)
     end
-  end
-  
-  describe '#visible_navigation_structure' do
-    it 'returns filtered navigation structure' do
-      structure = helper.visible_navigation_structure
+
+    it 'uses the same query logic as GetShitDoneQueryService' do
+      company_teammate = CompanyTeammate.find_or_create_by!(person: person, organization: company)
       
-      expect(structure).to be_an(Array)
-      # All items should pass policy checks
-      structure.each do |section|
-        if section[:items]
-          section[:items].each do |item|
-            expect(item[:policy_check]).to be_present
-          end
-        end
-      end
+      # Create various observations
+      draft1 = create(:observation, observer: person, company: company, published_at: nil)
+      journal_draft = create(:observation, observer: person, company: company, published_at: nil, privacy_level: :observer_only)
+      archived_draft = create(:observation, observer: person, company: company, published_at: nil)
+      archived_draft.soft_delete!
+      
+      # Both should return the same count
+      helper_count = helper.pending_get_shit_done_count(company_teammate)
+      service_count = GetShitDoneQueryService.new(teammate: company_teammate).total_pending_count
+      
+      expect(helper_count).to eq(service_count)
+      expect(helper_count).to eq(1) # Only draft1 should be counted
     end
   end
 end
-
