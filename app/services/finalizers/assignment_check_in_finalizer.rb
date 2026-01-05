@@ -19,26 +19,40 @@ module Finalizers
                                      .where(ended_at: nil)
                                      .first
       
-      return Result.err("No active tenure found for this assignment") unless active_tenure
-      
-      # Close current tenure with official rating
-      active_tenure.update!(
-        ended_at: Time.current,
-        official_rating: @official_rating
-      )
-      
-      # Create new tenure (same assignment, fresh rating period)
-      # Use provided anticipated_energy_percentage, or fallback to old tenure's value if nil
-      energy_percentage = @anticipated_energy_percentage.present? ? @anticipated_energy_percentage.to_i : active_tenure.anticipated_energy_percentage
-      
-      new_tenure = AssignmentTenure.create!(
-        teammate: @teammate,
-        assignment: @check_in.assignment,
-        started_at: Time.current,
-        anticipated_energy_percentage: energy_percentage,
-        ended_at: nil,
-        official_rating: nil
-      )
+      if active_tenure
+        # Existing tenure: close it and create a new one
+        # Close current tenure with official rating
+        active_tenure.update!(
+          ended_at: Time.current,
+          official_rating: @official_rating
+        )
+        
+        # Create new tenure (same assignment, fresh rating period)
+        # Use provided anticipated_energy_percentage, or fallback to old tenure's value if nil
+        energy_percentage = @anticipated_energy_percentage.present? ? @anticipated_energy_percentage.to_i : active_tenure.anticipated_energy_percentage
+        
+        new_tenure = AssignmentTenure.create!(
+          teammate: @teammate,
+          assignment: @check_in.assignment,
+          started_at: Time.current,
+          anticipated_energy_percentage: energy_percentage,
+          ended_at: nil,
+          official_rating: nil
+        )
+      else
+        # First check-in: create the first tenure
+        # Use provided anticipated_energy_percentage, or default to 50 if not provided
+        energy_percentage = @anticipated_energy_percentage.present? ? @anticipated_energy_percentage.to_i : 50
+        
+        new_tenure = AssignmentTenure.create!(
+          teammate: @teammate,
+          assignment: @check_in.assignment,
+          started_at: Time.current,
+          anticipated_energy_percentage: energy_percentage,
+          ended_at: nil,
+          official_rating: nil
+        )
+      end
       
       # Finalize the check-in (snapshot will be linked by orchestrator)
       @check_in.update!(

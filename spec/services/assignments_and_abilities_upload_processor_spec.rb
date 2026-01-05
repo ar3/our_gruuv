@@ -96,6 +96,15 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
         expect(PositionAssignment.find_by(assignment: assignment, position: position)).to be_present
       end
 
+      it 'sets max_estimated_energy to 5 for new position assignments' do
+        processor.process
+        assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
+        position = Position.find_by(position_type: position_type)
+        position_assignment = PositionAssignment.find_by(assignment: assignment, position: position)
+        expect(position_assignment.max_estimated_energy).to eq(5)
+        expect(position_assignment.min_estimated_energy).to be_nil
+      end
+
       it 'adds outcomes without deleting existing' do
         processor.process
         assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
@@ -271,6 +280,488 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
         expect(Rails.logger).to receive(:warn).at_least(:once)
         processor.process
         expect(Position.count).to eq(0)
+      end
+    end
+
+    context 'position tracking' do
+      let!(:position_major_level) { create(:position_major_level) }
+      let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
+      let!(:position_type) do
+        create(:position_type, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+      end
+
+      context 'when position is created' do
+        let(:preview_actions) do
+          {
+            'assignments' => [
+              {
+                'title' => 'Test Assignment',
+                'tagline' => 'Test tagline',
+                'outcomes' => [],
+                'required_activities' => [],
+                'department_names' => [],
+                'row' => 2
+              }
+            ],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => [],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'tracks position creation in results' do
+          processor.process
+          position_results = bulk_sync_event.reload.results['successes'].select { |s| s['type'] == 'position' }
+          expect(position_results.length).to eq(1)
+          expect(position_results.first['action']).to eq('created')
+          expect(position_results.first['position_type_id']).to eq(position_type.id)
+          expect(position_results.first['position_type_title']).to eq('Software Engineer')
+        end
+      end
+
+      context 'when position already exists' do
+        let!(:existing_position) do
+          create(:position, position_type: position_type, position_level: position_level)
+        end
+
+        let(:preview_actions) do
+          {
+            'assignments' => [
+              {
+                'title' => 'Test Assignment',
+                'tagline' => 'Test tagline',
+                'outcomes' => [],
+                'required_activities' => [],
+                'department_names' => [],
+                'row' => 2
+              }
+            ],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => [],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'tracks position finding in results' do
+          processor.process
+          position_results = bulk_sync_event.reload.results['successes'].select { |s| s['type'] == 'position' }
+          expect(position_results.length).to eq(1)
+          expect(position_results.first['action']).to eq('found')
+          expect(position_results.first['id']).to eq(existing_position.id)
+        end
+      end
+    end
+
+    context 'with existing position assignment' do
+      let!(:position_major_level) { create(:position_major_level) }
+      let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
+      let!(:position_type) do
+        create(:position_type, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+      end
+      let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+      let!(:assignment) { create(:assignment, title: 'Test Assignment', company: organization) }
+
+      context 'when both min and max energy are nil' do
+        let!(:existing_position_assignment) do
+          create(:position_assignment, position: position, assignment: assignment, 
+                 min_estimated_energy: nil, max_estimated_energy: nil)
+        end
+
+        let(:preview_actions) do
+          {
+            'assignments' => [],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => [],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'sets max_estimated_energy to 5' do
+          processor.process
+          existing_position_assignment.reload
+          expect(existing_position_assignment.max_estimated_energy).to eq(5)
+          expect(existing_position_assignment.min_estimated_energy).to be_nil
+        end
+      end
+
+      context 'when both min and max energy are 0' do
+        let!(:existing_position_assignment) do
+          pa = create(:position_assignment, position: position, assignment: assignment, 
+                      min_estimated_energy: 0, max_estimated_energy: nil)
+          pa.update_column(:max_estimated_energy, 0) # Bypass validation to set to 0
+          pa
+        end
+
+        let(:preview_actions) do
+          {
+            'assignments' => [],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => [],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'sets max_estimated_energy to 5' do
+          processor.process
+          existing_position_assignment.reload
+          expect(existing_position_assignment.max_estimated_energy).to eq(5)
+          expect(existing_position_assignment.min_estimated_energy).to eq(0)
+        end
+      end
+
+      context 'when min is nil and max is 0' do
+        let!(:existing_position_assignment) do
+          pa = create(:position_assignment, position: position, assignment: assignment, 
+                      min_estimated_energy: nil, max_estimated_energy: nil)
+          pa.update_column(:max_estimated_energy, 0) # Bypass validation to set to 0
+          pa
+        end
+
+        let(:preview_actions) do
+          {
+            'assignments' => [],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => [],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'sets max_estimated_energy to 5' do
+          processor.process
+          existing_position_assignment.reload
+          expect(existing_position_assignment.max_estimated_energy).to eq(5)
+          expect(existing_position_assignment.min_estimated_energy).to be_nil
+        end
+      end
+
+      context 'when min is 0 and max is nil' do
+        let!(:existing_position_assignment) do
+          create(:position_assignment, position: position, assignment: assignment, 
+                 min_estimated_energy: 0, max_estimated_energy: nil)
+        end
+
+        let(:preview_actions) do
+          {
+            'assignments' => [],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => [],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'sets max_estimated_energy to 5' do
+          processor.process
+          existing_position_assignment.reload
+          expect(existing_position_assignment.max_estimated_energy).to eq(5)
+          expect(existing_position_assignment.min_estimated_energy).to eq(0)
+        end
+      end
+
+      context 'when max_estimated_energy is already set to a non-zero value' do
+        let!(:existing_position_assignment) do
+          create(:position_assignment, position: position, assignment: assignment, 
+                 min_estimated_energy: nil, max_estimated_energy: 10)
+        end
+
+        let(:preview_actions) do
+          {
+            'assignments' => [],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => [],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'does not change max_estimated_energy' do
+          processor.process
+          existing_position_assignment.reload
+          expect(existing_position_assignment.max_estimated_energy).to eq(10)
+        end
+      end
+
+      context 'when min_estimated_energy is set to a non-zero value' do
+        let!(:existing_position_assignment) do
+          create(:position_assignment, position: position, assignment: assignment, 
+                 min_estimated_energy: 5, max_estimated_energy: nil)
+        end
+
+        let(:preview_actions) do
+          {
+            'assignments' => [],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => [],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'does not change max_estimated_energy' do
+          processor.process
+          existing_position_assignment.reload
+          expect(existing_position_assignment.max_estimated_energy).to be_nil
+          expect(existing_position_assignment.min_estimated_energy).to eq(5)
+        end
+      end
+    end
+
+    context 'seat department updates' do
+      let!(:position_major_level) { create(:position_major_level) }
+      let!(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.0') }
+      let!(:position_type) do
+        create(:position_type, external_title: 'Software Engineer', organization: organization, position_major_level: position_major_level)
+      end
+      let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
+      let!(:seat1) { create(:seat, position_type: position_type, department: nil, seat_needed_by: Date.current + 3.months) }
+      let!(:seat2) { create(:seat, position_type: position_type, department: nil, seat_needed_by: Date.current + 4.months) }
+
+      context 'when department_names are provided' do
+        let(:preview_actions) do
+          {
+            'assignments' => [
+              {
+                'title' => 'Test Assignment',
+                'tagline' => 'Test tagline',
+                'outcomes' => [],
+                'required_activities' => [],
+                'department_names' => [],
+                'row' => 2
+              }
+            ],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => ['Engineering'],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'updates all seats for the position type with single department' do
+          processor.process
+          seat1.reload
+          seat2.reload
+          expect(seat1.department_id).to eq(department.id)
+          expect(seat2.department_id).to eq(department.id)
+        end
+
+        it 'only updates department, not other seat attributes' do
+          original_seat_needed_by = seat1.seat_needed_by
+          original_state = seat1.state
+          processor.process
+          seat1.reload
+          expect(seat1.seat_needed_by).to eq(original_seat_needed_by)
+          expect(seat1.state).to eq(original_state)
+          expect(seat1.department_id).to eq(department.id)
+        end
+      end
+
+      context 'when department_names are not provided' do
+        let(:preview_actions) do
+          {
+            'assignments' => [
+              {
+                'title' => 'Test Assignment',
+                'tagline' => 'Test tagline',
+                'outcomes' => [],
+                'required_activities' => [],
+                'department_names' => [],
+                'row' => 2
+              }
+            ],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => [],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'does not update seat departments' do
+          original_dept1 = seat1.department_id
+          original_dept2 = seat2.department_id
+          processor.process
+          seat1.reload
+          seat2.reload
+          expect(seat1.department_id).to eq(original_dept1)
+          expect(seat2.department_id).to eq(original_dept2)
+        end
+      end
+
+      context 'when multiple departments match' do
+        let!(:dept1) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
+        let!(:dept2) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
+
+        let(:preview_actions) do
+          {
+            'assignments' => [
+              {
+                'title' => 'Test Assignment',
+                'tagline' => 'Test tagline',
+                'outcomes' => [],
+                'required_activities' => [],
+                'department_names' => [],
+                'row' => 2
+              }
+            ],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => ['Engineering'],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'sets department_id to nil when multiple departments found' do
+          processor.process
+          seat1.reload
+          seat2.reload
+          expect(seat1.department_id).to be_nil
+          expect(seat2.department_id).to be_nil
+        end
+      end
+
+      context 'when no departments match' do
+        let(:preview_actions) do
+          {
+            'assignments' => [
+              {
+                'title' => 'Test Assignment',
+                'tagline' => 'Test tagline',
+                'outcomes' => [],
+                'required_activities' => [],
+                'department_names' => [],
+                'row' => 2
+              }
+            ],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => ['Non-existent Department'],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'sets department_id to nil when no departments found' do
+          processor.process
+          seat1.reload
+          seat2.reload
+          expect(seat1.department_id).to be_nil
+          expect(seat2.department_id).to be_nil
+        end
+      end
+
+      context 'with multiple seats for same position type' do
+        let!(:seat3) { create(:seat, position_type: position_type, department: nil, seat_needed_by: Date.current + 5.months) }
+        let!(:department) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
+
+        let(:preview_actions) do
+          {
+            'assignments' => [
+              {
+                'title' => 'Test Assignment',
+                'tagline' => 'Test tagline',
+                'outcomes' => [],
+                'required_activities' => [],
+                'department_names' => [],
+                'row' => 2
+              }
+            ],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => ['Engineering'],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'updates all seats for the position type' do
+          processor.process
+          seat1.reload
+          seat2.reload
+          seat3.reload
+          expect(seat1.department_id).to eq(department.id)
+          expect(seat2.department_id).to eq(department.id)
+          expect(seat3.department_id).to eq(department.id)
+        end
       end
     end
   end

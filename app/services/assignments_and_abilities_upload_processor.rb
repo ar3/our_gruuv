@@ -219,16 +219,39 @@ class AssignmentsAndAbilitiesUploadProcessor
           next
         end
         
-        position = find_or_create_position(pa_data['position_title'])
+        position, was_position_created = find_or_create_position(pa_data['position_title'])
         unless position
           Rails.logger.error "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Position not found/created: #{pa_data['position_title']}"
           next
         end
         
+        # Track position creation/finding
+        @results[:successes] << {
+          type: 'position',
+          id: position.id,
+          position_type_id: position.position_type.id,
+          action: was_position_created ? 'created' : 'found',
+          position_title: position.display_name,
+          position_type_title: position.position_type.external_title,
+          row: pa_data['row']
+        }
+        
+        # Update seat departments if department_names are provided
+        if pa_data['department_names'].present?
+          update_seat_departments_for_position_type(position.position_type, pa_data['department_names'])
+        end
+        
         # Check if already linked
         existing = PositionAssignment.find_by(position: position, assignment: assignment)
         if existing
-          Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: PositionAssignment already exists, skipping"
+          Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: PositionAssignment already exists, checking energy values"
+          
+          # If both min and max energy are nil or 0, set max_estimated_energy to 5
+          if energy_values_nil_or_zero?(existing.min_estimated_energy, existing.max_estimated_energy)
+            Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Setting max_estimated_energy to 5 for existing PositionAssignment"
+            existing.update!(max_estimated_energy: 5)
+          end
+          
           @results[:successes] << {
             type: 'position_assignment',
             id: existing.id,
@@ -247,9 +270,10 @@ class AssignmentsAndAbilitiesUploadProcessor
         position_assignment = PositionAssignment.create!(
           position: position,
           assignment: assignment,
-          assignment_type: 'required'
+          assignment_type: 'required',
+          max_estimated_energy: 5
         )
-        Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created PositionAssignment (id: #{position_assignment.id})"
+        Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created PositionAssignment (id: #{position_assignment.id}) with max_estimated_energy: 5"
         
         @results[:successes] << {
           type: 'position_assignment',
@@ -413,7 +437,7 @@ class AssignmentsAndAbilitiesUploadProcessor
   def find_or_create_position(position_title)
     if position_title.blank?
       Rails.logger.error "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Position title is blank"
-      return nil
+      return nil, false
     end
     
     # Use flexible matching to find PositionType
@@ -427,7 +451,7 @@ class AssignmentsAndAbilitiesUploadProcessor
     
     unless position_type
       Rails.logger.warn "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: PositionType not found for title: #{position_title} in organization #{organization.id}"
-      return nil
+      return nil, false
     end
     
     Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found PositionType: #{position_type.external_title} (id: #{position_type.id})"
@@ -436,7 +460,7 @@ class AssignmentsAndAbilitiesUploadProcessor
     position = Position.find_by(position_type: position_type)
     if position
       Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found existing Position: #{position.display_name} (id: #{position.id})"
-      return position
+      return position, false
     end
     
     # Get first PositionLevel from PositionType's PositionMajorLevel
@@ -444,7 +468,7 @@ class AssignmentsAndAbilitiesUploadProcessor
     
     unless position_level
       Rails.logger.warn "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: No PositionLevel found for PositionType #{position_type.external_title} (PositionMajorLevel: #{position_type.position_major_level.id})"
-      return nil
+      return nil, false
     end
     
     # Create new Position
@@ -456,7 +480,7 @@ class AssignmentsAndAbilitiesUploadProcessor
     )
     Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created Position: #{position.display_name} (id: #{position.id})"
     
-    position
+    return position, true
   end
 
   def process_department_association(assignment, department_names)
@@ -521,6 +545,57 @@ class AssignmentsAndAbilitiesUploadProcessor
       name,
       Ability.where(organization: organization)
     )
+  end
+
+  def energy_values_nil_or_zero?(min_energy, max_energy)
+    (min_energy.nil? || min_energy == 0) && (max_energy.nil? || max_energy == 0)
+  end
+
+  def update_seat_departments_for_position_type(position_type, department_names)
+    if department_names.blank?
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: No department names provided for position type #{position_type.external_title}"
+      return
+    end
+    
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Processing department association for position type #{position_type.external_title} with departments: #{department_names.inspect}"
+    
+    # Find departments using flexible matching (same logic as process_department_association)
+    org_ids = organization.self_and_descendants.map(&:id)
+    base_scope = Organization.where(id: org_ids, type: 'Department')
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Searching in #{org_ids.length} organizations"
+    
+    departments = []
+    department_names.each do |dept_name|
+      next if dept_name.blank?
+      
+      # Find ALL departments matching this name
+      variations = name_variations(dept_name)
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Searching for department '#{dept_name}' with variations: #{variations.inspect}"
+      matching_depts = base_scope.where(name: variations).to_a
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found #{matching_depts.length} departments matching '#{dept_name}'"
+      departments.concat(matching_depts)
+    end
+    
+    # Remove duplicates
+    departments.uniq!
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Total unique departments found: #{departments.length}"
+    
+    # Determine department_id to set
+    department_id = if departments.length == 1
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Single department found: #{departments.first.id} (#{departments.first.name})"
+      departments.first.id
+    else
+      # Multiple or none: attach to company (nil)
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: #{departments.length == 0 ? 'No' : 'Multiple'} departments found, attaching seats to company"
+      nil
+    end
+    
+    # Update ALL seats for this position type
+    seats = Seat.where(position_type: position_type)
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updating #{seats.count} seats for position type #{position_type.external_title}"
+    
+    seats.update_all(department_id: department_id)
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updated #{seats.count} seats with department_id: #{department_id || 'nil (company)'}"
   end
 end
 

@@ -210,6 +210,78 @@ RSpec.describe "Organizations::AssignmentCheckIns", type: :request do
           expect(check_in.manager_completed_by).to be_nil
         end
       end
+
+      context "when no assignment tenure exists" do
+        before do
+          # Destroy the tenure and create a check-in without a tenure
+          AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
+          AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment).destroy_all
+          # Create check-in directly (matching load_or_build_assignment_check_ins behavior)
+          AssignmentCheckIn.create!(
+            teammate: employee_teammate,
+            assignment: assignment,
+            check_in_started_on: Date.current,
+            actual_energy_percentage: nil
+          )
+        end
+
+        it "saves assignment check-in data successfully without tenure" do
+          check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+          expect(check_in).to be_present
+          expect(AssignmentTenure.most_recent_for(employee_teammate, assignment)).to be_nil
+          
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
+                params: {
+                  check_ins: {
+                    assignment_check_ins: {
+                      check_in.id.to_s => {
+                        assignment_id: assignment.id,
+                        manager_rating: "meeting",
+                        manager_private_notes: "Saved without tenure",
+                        status: "complete"
+                      }
+                    }
+                  },
+                  redirect_to: organization_company_teammate_check_ins_path(organization, employee_teammate)
+                }
+          
+          check_in.reload
+          expect(check_in.manager_rating).to eq("meeting")
+          expect(check_in.manager_private_notes).to eq("Saved without tenure")
+          expect(check_in.manager_completed_at).to be_present
+          expect(check_in.manager_completed_by).to eq(manager_person)
+          
+          expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, employee_teammate))
+        end
+
+        it "creates new check-in when updating if none exists and no tenure exists" do
+          # Destroy the check-in we created in before block
+          AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment).destroy_all
+          
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
+                params: {
+                  check_ins: {
+                    assignment_check_ins: {
+                      'new_check_in' => {
+                        assignment_id: assignment.id,
+                        manager_rating: "exceeding",
+                        manager_private_notes: "Created without tenure",
+                        status: "draft"
+                      }
+                    }
+                  },
+                  redirect_to: organization_company_teammate_check_ins_path(organization, employee_teammate)
+                }
+          
+          check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+          expect(check_in).to be_present
+          expect(check_in.manager_rating).to eq("exceeding")
+          expect(check_in.manager_private_notes).to eq("Created without tenure")
+          expect(check_in.manager_completed_at).to be_nil
+          
+          expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, employee_teammate))
+        end
+      end
     end
     
     context "authorization" do

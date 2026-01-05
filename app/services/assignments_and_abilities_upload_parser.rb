@@ -172,11 +172,13 @@ class AssignmentsAndAbilitiesUploadParser
     assignment_title = row_hash['Assignment']&.strip
     return if assignment_title.blank?
 
-    # Extract position titles (comma-separated)
-    position_titles = parse_comma_separated(row_hash['Position(s)'] || row_hash['Positions'])
+    # Extract position titles (comma or newline separated)
+    position_titles = parse_comma_or_newline_separated(row_hash['Position(s)'] || row_hash['Positions'])
 
-    # Extract team/department names (comma-separated) - note: column is "Team(s)" but maps to Departments
-    department_names = parse_comma_separated(row_hash['Team(s)'] || row_hash['Teams'] || row_hash['Department'] || row_hash['Departments'])
+    # Extract team/department names (comma or newline separated) - note: column is "Team(s)" but maps to Departments
+    # If multiple departments found, treat as empty string
+    raw_department_names = parse_comma_or_newline_separated(row_hash['Team(s)'] || row_hash['Teams'] || row_hash['Department'] || row_hash['Departments'])
+    department_names = raw_department_names.length > 1 ? [] : raw_department_names
 
     # Extract tagline
     tagline = row_hash['Tagline']&.strip
@@ -240,6 +242,14 @@ class AssignmentsAndAbilitiesUploadParser
   def parse_multiline(value)
     return [] if value.blank?
     value.split("\n").map(&:strip).reject(&:blank?)
+  end
+
+  def parse_comma_or_newline_separated(value)
+    return [] if value.blank?
+    
+    # Split by both comma and newline, then flatten
+    # First split by newlines, then split each line by commas
+    value.split(/[\n,]+/).map(&:strip).reject(&:blank?)
   end
 
   def parse_ability_names(value)
@@ -347,15 +357,90 @@ class AssignmentsAndAbilitiesUploadParser
   end
 
   def enhance_position_assignments_preview(position_assignments)
-    position_assignments.map do |pa|
-      {
-        'assignment_title' => pa['assignment_title'],
-        'position_title' => pa['position_title'],
-        'department_names' => pa['department_names'],
-        'row' => pa['row'],
-        'action' => 'create'
-      }
+    return [] if position_assignments.blank?
+    
+    # If organization is blank, return basic data without enhancement
+    if organization.blank?
+      return position_assignments.map do |pa|
+        {
+          'assignment_title' => pa['assignment_title'],
+          'position_title' => pa['position_title'],
+          'department_names' => pa['department_names'],
+          'row' => pa['row'],
+          'action' => 'create',
+          'position_type_title' => nil,
+          'position_type_id' => nil,
+          'position_id' => nil,
+          'position_display_name' => nil,
+          'will_create_position' => false,
+          'seats_count' => 0,
+          'seats' => [],
+          'will_update_seat_department' => pa['department_names'].present?
+        }
+      end
     end
+    
+    position_assignments.map do |pa|
+      position_title = pa['position_title']
+      next nil if position_title.blank?
+      
+      # Find position type using flexible matching
+      position_type = find_with_flexible_matching(
+        PositionType,
+        :external_title,
+        position_title,
+        PositionType.joins(:organization).where(organizations: { id: organization.id })
+      )
+      
+      unless position_type
+        {
+          'assignment_title' => pa['assignment_title'],
+          'position_title' => position_title,
+          'department_names' => pa['department_names'],
+          'row' => pa['row'],
+          'action' => 'create',
+          'position_type_title' => nil,
+          'position_type_id' => nil,
+          'position_id' => nil,
+          'position_display_name' => nil,
+          'will_create_position' => false,
+          'seats_count' => 0,
+          'seats' => [],
+          'will_update_seat_department' => pa['department_names'].present?
+        }
+      else
+        # Find existing position for this position type
+        position = Position.find_by(position_type: position_type)
+        will_create_position = position.nil?
+        
+        # Get all seats for this position type
+        seats = Seat.where(position_type: position_type).includes(:department)
+        seats_data = seats.map do |seat|
+          {
+            'id' => seat.id,
+            'display_name' => seat.display_name,
+            'department_id' => seat.department_id,
+            'department_name' => seat.department&.name
+          }
+        end
+        
+        {
+          'assignment_title' => pa['assignment_title'],
+          'position_title' => position_title,
+          'department_names' => pa['department_names'],
+          'row' => pa['row'],
+          'action' => 'create',
+          'position_type_title' => position_type.external_title,
+          'position_type_id' => position_type.id,
+          'position_id' => position&.id,
+          'position_display_name' => position ? position.display_name : "#{position_type.external_title} - [Will be created]",
+          'will_create_position' => will_create_position,
+          'seats_count' => seats.count,
+          'seats' => seats_data,
+          'will_update_seat_department' => pa['department_names'].present?
+        }
+      end
+    end.compact
   end
 end
 

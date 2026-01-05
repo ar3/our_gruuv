@@ -224,6 +224,14 @@ class BulkSyncEvent < ApplicationRecord
         ability_name
       end
       "#{assignment_link} - #{ability_link}"
+    when 'position'
+      position_title = success_record['position_title'] || 'Unknown position'
+      position_type_title = success_record['position_type_title'] || 'Unknown position type'
+      if success_record['id']
+        "<a href='#{routes.organization_position_path(org, success_record['id'])}' class='text-decoration-none'>#{position_title}</a> (#{position_type_title})"
+      else
+        "#{position_title} (#{position_type_title})"
+      end
     when 'position_assignment'
       assignment_title = success_record['assignment_title'] || 'Unknown assignment'
       position_title = success_record['position_title'] || 'Unknown position'

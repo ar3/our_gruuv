@@ -176,7 +176,23 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       next unless assignment_id
 
       assignment = Assignment.find(assignment_id)
-      check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
+      
+      # First, try to find an existing open check-in (it may have been created without a tenure)
+      check_in = AssignmentCheckIn.where(teammate: @teammate, assignment: assignment).open.first
+      
+      # If no open check-in exists, try to find or create one (requires tenure)
+      check_in ||= AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
+      
+      # If still no check-in and no tenure, create one anyway (matching load_or_build_assignment_check_ins behavior)
+      if check_in.nil?
+        check_in = AssignmentCheckIn.create!(
+          teammate: @teammate,
+          assignment: assignment,
+          check_in_started_on: Date.current,
+          actual_energy_percentage: nil
+        )
+      end
+      
       next unless check_in
 
       # Handle status radio button

@@ -81,6 +81,65 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         expect(assignment_check_in.manager_completed?).to be true
       end
 
+      it 'updates assignment check-ins even when no assignment tenure exists' do
+        # Create a check-in without a tenure (matching load_or_build_assignment_check_ins behavior for required assignments)
+        assignment_check_in = create(:assignment_check_in,
+          teammate: employee.teammates.first,
+          assignment: assignment,
+          check_in_started_on: Date.current,
+          actual_energy_percentage: nil
+        )
+        # Ensure no tenure exists
+        AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
+        
+        patch :update, params: {
+          organization_id: organization.id,
+          company_teammate_id: employee_teammate.id,
+          assignment_check_ins: {
+            assignment_check_in.id => {
+              assignment_id: assignment.id,
+              manager_rating: 'exceeding',
+              manager_private_notes: 'Excellent work without tenure',
+              status: 'complete'
+            }
+          }
+        }
+
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
+        
+        assignment_check_in.reload
+        expect(assignment_check_in.manager_rating).to eq('exceeding')
+        expect(assignment_check_in.manager_private_notes).to eq('Excellent work without tenure')
+        expect(assignment_check_in.manager_completed?).to be true
+      end
+
+      it 'creates assignment check-in when updating if none exists and no tenure exists' do
+        # Ensure no check-in and no tenure exist
+        AssignmentCheckIn.where(teammate: employee_teammate, assignment: assignment).destroy_all
+        AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
+        
+        patch :update, params: {
+          organization_id: organization.id,
+          company_teammate_id: employee_teammate.id,
+          assignment_check_ins: {
+            'new_check_in' => {
+              assignment_id: assignment.id,
+              manager_rating: 'meeting',
+              manager_private_notes: 'Created without tenure',
+              status: 'draft'
+            }
+          }
+        }
+
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
+        
+        check_in = AssignmentCheckIn.find_by(teammate: employee_teammate, assignment: assignment)
+        expect(check_in).to be_present
+        expect(check_in.manager_rating).to eq('meeting')
+        expect(check_in.manager_private_notes).to eq('Created without tenure')
+        expect(check_in.manager_completed?).to be false
+      end
+
       it 'updates aspiration check-ins with manager fields' do
         aspiration_check_in = create(:aspiration_check_in, teammate: employee.teammates.first, aspiration: aspiration)
         
@@ -190,6 +249,42 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         expect(assignment_check_in.actual_energy_percentage).to eq(85)
         expect(assignment_check_in.employee_personal_alignment).to eq('love')
         expect(assignment_check_in.employee_completed?).to be true
+      end
+
+      it 'updates assignment check-ins with employee fields even when no assignment tenure exists' do
+        # Create a check-in without a tenure
+        assignment_check_in = create(:assignment_check_in,
+          teammate: employee.teammates.first,
+          assignment: assignment,
+          check_in_started_on: Date.current,
+          actual_energy_percentage: nil
+        )
+        # Ensure no tenure exists
+        AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
+        
+        patch :update, params: {
+          organization_id: organization.id,
+          company_teammate_id: employee_teammate.id,
+          assignment_check_ins: {
+            assignment_check_in.id => {
+              assignment_id: assignment.id,
+              employee_rating: 'meeting',
+              employee_private_notes: 'Working on it',
+              actual_energy_percentage: 75,
+              employee_personal_alignment: 'like',
+              status: 'draft'
+            }
+          }
+        }
+
+        expect(response).to redirect_to(organization_company_teammate_finalization_path(organization, employee_teammate))
+        
+        assignment_check_in.reload
+        expect(assignment_check_in.employee_rating).to eq('meeting')
+        expect(assignment_check_in.employee_private_notes).to eq('Working on it')
+        expect(assignment_check_in.actual_energy_percentage).to eq(75)
+        expect(assignment_check_in.employee_personal_alignment).to eq('like')
+        expect(assignment_check_in.employee_completed?).to be false
       end
 
       it 'raises ArgumentError when employee_personal_alignment is set to invalid value "tolerate"' do

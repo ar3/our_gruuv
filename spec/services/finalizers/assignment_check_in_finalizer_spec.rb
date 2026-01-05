@@ -164,16 +164,109 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
       end
     end
     
-    context 'when no active tenure exists' do
+    context 'when no active tenure exists (first check-in)' do
+      before do
+        AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
+      end
+      
+      it 'creates the first tenure successfully' do
+        result = nil
+        expect { result = finalizer.finalize }
+          .to change { AssignmentTenure.count }
+          .by(1)
+        
+        expect(result).to be_ok
+        
+        new_tenure = AssignmentTenure.last
+        expect(new_tenure.assignment).to eq(assignment)
+        expect(new_tenure.teammate).to be_a(Teammate)
+        expect(new_tenure.teammate.id).to eq(employee_teammate.id)
+        expect(new_tenure.anticipated_energy_percentage).to eq(80)
+        expect(new_tenure.started_at).to eq(Date.current)
+        expect(new_tenure.ended_at).to be_nil
+        expect(new_tenure.official_rating).to be_nil
+      end
+      
+      it 'uses provided anticipated_energy_percentage for first tenure' do
+        finalizer_with_energy = described_class.new(
+          check_in: assignment_check_in,
+          official_rating: 'meeting',
+          shared_notes: 'Great work',
+          anticipated_energy_percentage: 60,
+          finalized_by: manager
+        )
+        
+        result = finalizer_with_energy.finalize
+        expect(result).to be_ok
+        
+        new_tenure = AssignmentTenure.last
+        expect(new_tenure.anticipated_energy_percentage).to eq(60)
+      end
+      
+      it 'defaults to 50 when anticipated_energy_percentage is not provided' do
+        finalizer_without_energy = described_class.new(
+          check_in: assignment_check_in,
+          official_rating: 'meeting',
+          shared_notes: 'Great work',
+          anticipated_energy_percentage: nil,
+          finalized_by: manager
+        )
+        
+        result = finalizer_without_energy.finalize
+        expect(result).to be_ok
+        
+        new_tenure = AssignmentTenure.last
+        expect(new_tenure.anticipated_energy_percentage).to eq(50)
+      end
+      
+      it 'defaults to 50 when anticipated_energy_percentage is empty string' do
+        finalizer_with_empty = described_class.new(
+          check_in: assignment_check_in,
+          official_rating: 'meeting',
+          shared_notes: 'Great work',
+          anticipated_energy_percentage: '',
+          finalized_by: manager
+        )
+        
+        result = finalizer_with_empty.finalize
+        expect(result).to be_ok
+        
+        new_tenure = AssignmentTenure.last
+        expect(new_tenure.anticipated_energy_percentage).to eq(50)
+      end
+      
+      it 'finalizes the check-in correctly' do
+        result = finalizer.finalize
+        expect(result).to be_ok
+        
+        assignment_check_in.reload
+        expect(assignment_check_in.official_rating).to eq('meeting')
+        expect(assignment_check_in.shared_notes).to eq('Great work on this assignment')
+        expect(assignment_check_in.official_check_in_completed_at).to be_present
+        expect(assignment_check_in.finalized_by).to eq(manager)
+      end
+    end
+    
+    context 'when only inactive tenure exists' do
       before do
         assignment_tenure.update!(ended_at: 1.day.ago)
       end
       
-      it 'fails gracefully' do
-        result = finalizer.finalize
+      it 'creates the first active tenure successfully' do
+        result = nil
+        expect { result = finalizer.finalize }
+          .to change { AssignmentTenure.count }
+          .by(1)
         
-        expect(result.ok?).to be false
-        expect(result.error).to include('No active tenure')
+        expect(result).to be_ok
+        
+        new_tenure = AssignmentTenure.last
+        expect(new_tenure.assignment).to eq(assignment)
+        expect(new_tenure.teammate).to be_a(Teammate)
+        expect(new_tenure.teammate.id).to eq(employee_teammate.id)
+        expect(new_tenure.anticipated_energy_percentage).to eq(80)
+        expect(new_tenure.started_at).to eq(Date.current)
+        expect(new_tenure.ended_at).to be_nil
       end
     end
   end

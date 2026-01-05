@@ -818,6 +818,8 @@
                           %label.form-check-label.ms-1 Select All
                         %th Assignment
                         %th Position
+                        %th Position Type
+                        %th Seats
                         %th Departments
                         %th Action
                         %th Row
@@ -827,7 +829,32 @@
                           %td
                             = check_box_tag "selected_position_assignments[]", pa['row'], true, class: 'form-check-input position-assignments-checkbox'
                           %td= pa['assignment_title']
-                          %td= pa['position_title']
+                          %td
+                            - if pa['position_display_name']
+                              = pa['position_display_name']
+                              - if pa['will_create_position']
+                                %span.badge.bg-success.ms-1 New
+                              - elsif pa['position_id']
+                                %span.badge.bg-info.ms-1 Existing
+                            - else
+                              = pa['position_title']
+                              %span.badge.bg-warning.ms-1 Position Type Not Found
+                          %td
+                            - if pa['position_type_title']
+                              = pa['position_type_title']
+                            - else
+                              %span.text-muted Not found
+                          %td
+                            - if pa['seats_count'] && pa['seats_count'] > 0
+                              %span.badge.bg-secondary= "#{pa['seats_count']} seat#{pa['seats_count'] == 1 ? '' : 's'}"
+                              - if pa['will_update_seat_department']
+                                %br
+                                %small.text-muted Will update department
+                            - else
+                              %span.text-muted No seats
+                              - if pa['will_update_seat_department']
+                                %br
+                                %small.text-muted Will update department when seats are created
                           %td= Array(pa['department_names']).join(', ')
                           %td
                             %span.badge.bg-success= pa['action'] || 'create'
