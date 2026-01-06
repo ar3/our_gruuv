@@ -108,6 +108,14 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
+    # Teammate Milestones
+    resources :teammate_milestones, module: :organizations, only: [:new, :create, :show] do
+      collection do
+        get :select_teammate
+        get :select_ability
+      end
+    end
+    
     # Check-ins health dashboard
     get :check_ins_health, to: 'organizations/check_ins_health#index'
     

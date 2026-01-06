@@ -3,6 +3,7 @@ class TeammateMilestone < ApplicationRecord
   belongs_to :teammate
   belongs_to :ability
   belongs_to :certified_by, class_name: 'Person'
+  has_one :observable_moment, as: :momentable, dependent: :destroy
 
   # Validations
   validates :teammate, presence: true

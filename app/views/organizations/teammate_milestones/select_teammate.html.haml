@@ -1,0 +1,44 @@
+- content_for :return_url, @return_url
+- content_for :return_text, @return_text
+- content_for :header, "Select Teammate"
+
+- if @eligible_teammates.any?
+  .row
+    - @eligible_teammates.each do |teammate|
+      .col-md-4.mb-3
+        = link_to new_organization_teammate_milestone_path(organization, teammate_id: teammate.id),
+                 class: "card text-decoration-none h-100" do
+          .card-body
+            .d-flex.align-items-center.mb-2
+              .me-3
+                = teammate_profile_image(teammate, size: 48)
+              .flex-grow-1
+                %h6.mb-1= teammate.person.display_name
+            - manager = teammate.current_manager
+            - if manager
+              %p.text-muted.mb-1
+                %small Manager: #{manager.display_name}
+            - active_tenure = ActiveEmploymentTenureQuery.new(person: teammate.person, organization: organization).first
+            - if active_tenure&.position&.position_type
+              %p.text-muted.mb-0
+                %small Position: #{active_tenure.position.position_type.external_title}
+- else
+  .alert.alert-warning
+    %h6.mb-2
+      %i.bi.bi-exclamation-triangle.me-2
+      No Teammates Available
+    %p.mb-2
+      - if current_company_teammate.can_manage_employment?
+        You don't have any active teammates in this organization to award milestones to.
+      - else
+        You don't have any reports in your reporting hierarchy, and you don't have the manage employment permission.
+        If you feel you are receiving this in error, please contact an administrator.
+        
+        - administrators = organization.teammates.where(last_terminated_at: nil).select { |t| t.can_manage_employment? }
+        - if administrators.any?
+          %p.mt-3.mb-0
+            %strong People with manage employment permission:
+            %ul.mt-2
+              - administrators.each do |admin|
+                %li= admin.person.display_name
+

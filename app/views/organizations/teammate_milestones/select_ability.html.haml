@@ -1,0 +1,55 @@
+- content_for :return_url, @return_url
+- content_for :return_text, @return_text
+- content_for :header, "Select Ability"
+
+- if @abilities_data.any?
+  .card.mb-3
+    .card-body
+      .d-flex.justify-content-between.align-items-start
+        .flex-grow-1
+          .table-responsive
+            %table.table.table-sm.table-hover
+              %thead
+                %tr
+                  %th Ability
+                  %th Current Milestone
+                  %th Assignment
+                  %th Required Milestone
+              %tbody
+                - @abilities_data.each do |ability_data|
+                  %tr
+                    %td
+                      = link_to ability_data[:ability].name, organization_ability_path(organization, ability_data[:ability]), target: "_blank", rel: "noopener noreferrer"
+                      %br/
+                      = link_to new_organization_teammate_milestone_path(organization, teammate_id: @teammate.id, ability_id: ability_data[:ability].id),
+                              class: "btn btn-primary" do
+                        %i.bi.bi-check-circle.me-2
+                        Choose this ability
+                    %td
+                      %span.badge.bg-secondary #{@teammate&.person&.display_name} has earned Milestone #{ability_data[:current_milestone]}
+                    %td{colspan: 2}
+                      
+                  - if ability_data[:required_milestones].any?
+                    - ability_data[:required_milestones].each do |req|
+                      %tr
+                        %td{colspan: 2} 
+                          %i.bi.bi-arrow-90deg-down.rotate-270
+                          %i.bi.bi-arrow-90deg-down.rotate-270
+                          Is a requirement of the assignment...
+                          %i.bi.bi-arrow-90deg-down.rotate-270
+                          %i.bi.bi-arrow-90deg-down.rotate-270
+                        %td= link_to req[:assignment].title, organization_assignment_path(organization, req[:assignment]), target: "_blank", rel: "noopener noreferrer"
+                        %td
+                          %span.badge.bg-secondary Requires Milestone #{req[:milestone_level]}
+                  - else
+                    %tr
+                      %td{colspan: 3}
+                        %p.text-muted.mb-0 No assignments require this ability
+- else
+  .alert.alert-info
+    %h6.mb-2
+      %i.bi.bi-info-circle.me-2
+      No Abilities Found
+    %p.mb-0
+      This teammate doesn't have any assignments with ability requirements.
+

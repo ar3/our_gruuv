@@ -1,0 +1,191 @@
+- content_for :title, "Award Milestone"
+
+- content_for :go_back_link do
+  = link_to celebrate_milestones_organization_path(organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Celebrate Milestones
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-trophy.me-2
+      Award Milestone
+
+.row.justify-content-center.mt-4
+  .col-12
+    / Teammate Selection Section
+    .card.mb-4
+      .card-header
+        %h5.mb-0 FIRST: Select Teammate
+      .card-body
+        - if @teammate
+          .d-flex.align-items-center.justify-content-between
+            .d-flex.align-items-center
+              .me-3
+                = teammate_profile_image(@teammate, size: 64)
+              .flex-grow-1
+                %h5.mb-1= @teammate.person.display_name
+                - if @teammate_display[:manager]
+                  %p.text-muted.mb-1
+                    %small Manager: #{@teammate_display[:manager]}
+                - if @teammate_display[:position_type]
+                  %p.text-muted.mb-0
+                    %small Position: #{@teammate_display[:position_type]}
+            = link_to "Change milestone recipient", 
+                     select_teammate_organization_teammate_milestones_path(organization, return_url: request.url),
+                     class: "text-muted text-decoration-none"
+        - else
+          = link_to select_teammate_organization_teammate_milestones_path(organization, return_url: request.url),
+                   class: "btn btn-outline-primary w-100" do
+            %i.bi.bi-person-plus.me-2
+            Select who should be awarded a milestone
+
+
+
+.row.justify-content-center.mt-4
+  .col-12
+    / Ability Selection Section
+    .card.mb-4
+      .card-header
+        %h5.mb-0 SECOND: Select Ability
+      .card-body
+        - if @teammate && @ability && @ability_data
+          .d-flex.align-items-center.justify-content-between
+            .d-flex.align-items-center
+              .flex-grow-1
+                %h5.mb-1= @ability.display_name
+                %p.text-muted.mb-0
+                  %small #{@ability.description}
+            = link_to "Change ability", 
+                      select_ability_organization_teammate_milestones_path(organization, teammate_id: @teammate.id, return_url: request.url),
+                      class: "text-muted text-decoration-none mt-3 d-block"
+
+        - elsif @teammate.nil?
+          %p.text-muted Select a teammate, and then we'll select the ability
+        - else
+          = link_to select_ability_organization_teammate_milestones_path(organization, teammate_id: @teammate.id, return_url: request.url), class: "btn btn-outline-primary w-100" do
+            %i.bi.bi-lightning-charge.me-2
+            Select the Ability (skill/knowledge) #{@teammate&.person&.display_name} has demonstrated
+
+
+.row.justify-content-center.mt-4
+  .col-12
+    / Milestone Selection Section
+    .card.mb-4
+      .card-header
+        %h5.mb-0 THIRD: Select Milestone Level to award #{@teammate&.person&.display_name || 'Teammate you will select'} + #{@ability&.display_name || 'Ability you will select'}
+      .card-body
+        - if @teammate && @ability && @ability_data
+          %h5.mb-3 Select Milestone Level
+          
+          - awarded_milestones = @teammate.teammate_milestones.where(ability: @ability).pluck(:milestone_level)
+          - highest_awarded = awarded_milestones.max || 0
+          - all_awarded = awarded_milestones.length == 5
+          
+          - (1..5).each do |level|
+
+            - is_awarded = awarded_milestones.include?(level)
+            - is_disabled = is_awarded || level <= highest_awarded || all_awarded
+            - is_clickable = !is_disabled && level == (highest_awarded + 1)
+            
+            .card.mb-3{class: "#{'border-secondary' if is_disabled} #{'border-primary' if is_clickable}"}
+              .card-body
+                .card-title Milestone #{level} - #{milestone_level_display(level)} #{@ability.name.downcase}
+                - if is_disabled
+                  - if is_awarded
+                    - awarded = @teammate.teammate_milestones.find_by(ability: @ability, milestone_level: level)
+                    %p.mb-0
+                      %strong= @teammate_display[:casual_name]
+                      = " has been recognized for (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name} on #{awarded.attained_at.strftime('%B %d, %Y')}."
+                  - else
+                    %p.mb-0.text-muted
+                      %strong= @teammate_display[:casual_name]
+                      = " has been recognized for Milestone #{highest_awarded} #{@ability.name}."
+                - elsif is_clickable
+                  = form_with url: organization_teammate_milestones_path(organization),
+                             method: :post,
+                             local: true,
+                             class: "milestone-certification-form" do |f|
+                    = f.hidden_field :teammate_id, value: @teammate.id
+                    = f.hidden_field :ability_id, value: @ability.id
+                    = f.hidden_field :milestone_level, value: level
+                    
+                    %p.mb-3
+                      I, 
+                      %strong #{current_person.full_name}, 
+                      hereby certify that 
+                      %strong #{@teammate.person.full_name}
+                      has demonstrated the criteria associated with 
+                      %strong #{milestone_level_display(level)} #{@ability.name.downcase}.
+                      And they have done so...
+                    
+                    %ul.mb-3
+                      %li
+                        %strong Consciously:
+                        = " meaning #{@teammate_display[:casual_name]} has devoted intentional effort to (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name}"
+                      %li
+                        %strong Comfortably:
+                        = " meaning #{@teammate_display[:casual_name]} has demonstrated (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name} without being overly stretched"
+                      %li
+                        %strong Continuously:
+                        = " meaning #{@teammate_display[:casual_name]} has demonstrated (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name} for a reasonable period of time"
+                      %li
+                        %strong Consistently:
+                        = " meaning #{@teammate_display[:casual_name]} has reliably and evenly demonstrated (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name}"
+                      %li
+                        %strong Competently:
+                        = " meaning #{@teammate_display[:casual_name]} has meet the criteria that is deserving of (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name}"
+                    
+                    = f.submit "Award Milestone #{level}", class: "btn btn-primary"
+                - else
+                  %p.mb-0.text-muted Milestone certifiations must go in order... award the previous milestone first, and then the later milesteons will become available.
+
+        - else
+          %p.text-muted Select a teammate and an ability, and then we'll select the milestone level to award them
+- if @teammate && @ability && @evidence
+  .row.justify-content-center.mt-4
+    .col-12
+      / Evidence Section
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Evidence 
+        .card-body
+          - if @evidence[:observations].any?
+            .mb-4
+              %h6 Observations
+              - @evidence[:observations].each do |observation|
+                .card.mb-2
+                  .card-body
+                    .d-flex.justify-content-between
+                      .flex-grow-1
+                        %p.mb-1
+                          = link_to observation.story, 
+                                   organization_observation_path(organization, observation),
+                                   class: "text-decoration-none"
+                        %small.text-muted
+                          = "Observed on #{observation.observed_at.strftime('%B %d, %Y')}"
+                      - if observation.observer_id == @teammate.person_id
+                        %span.badge.bg-info Observer
+                      - elsif observation.observed_teammates.any? { |ot| ot.id == @teammate.id }
+                        %span.badge.bg-success Observed
+          
+          - if @evidence[:assignment_check_ins].any?
+            .mb-4
+              %h6 Assignment Check-Ins
+              - @evidence[:assignment_check_ins].each do |check_in|
+                .card.mb-2
+                  .card-body
+                    .d-flex.justify-content-between
+                      .flex-grow-1
+                        %p.mb-1
+                          = link_to check_in.assignment.title, 
+                                   organization_assignment_path(organization, check_in.assignment),
+                                   class: "text-decoration-none"
+                        %small.text-muted
+                          = "Completed on #{check_in.official_check_in_completed_at.strftime('%B %d, %Y')}"
+                          - if check_in.official_rating
+                            = " - Rating: #{check_in.official_rating.humanize}"
+          
+          - if @evidence[:observations].empty? && @evidence[:assignment_check_ins].empty?
+            %p.text-muted No evidence available for this teammate and ability.
+

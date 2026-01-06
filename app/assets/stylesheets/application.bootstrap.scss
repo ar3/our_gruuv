@@ -951,3 +951,20 @@ body:has(.vertical-nav.open) .floating-toggle {
     }
   }
 }
+
+// ===== ICON ROTATION UTILITIES =====
+.rotate-90 {
+  transform: rotate(90deg);
+  display: inline-block;
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+  display: inline-block;
+}
+
+.rotate-270 {
+  transform: rotate(270deg);
+  display: inline-block;
+}
+
