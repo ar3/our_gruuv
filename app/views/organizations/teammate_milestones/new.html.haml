@@ -142,50 +142,50 @@
 
         - else
           %p.text-muted Select a teammate and an ability, and then we'll select the milestone level to award them
-- if @teammate && @ability && @evidence
-  .row.justify-content-center.mt-4
-    .col-12
-      / Evidence Section
-      .card.mb-4
-        .card-header
-          %h5.mb-0 Evidence 
-        .card-body
-          - if @evidence[:observations].any?
-            .mb-4
-              %h6 Observations
-              - @evidence[:observations].each do |observation|
-                .card.mb-2
-                  .card-body
-                    .d-flex.justify-content-between
-                      .flex-grow-1
-                        %p.mb-1
-                          = link_to observation.story, 
-                                   organization_observation_path(organization, observation),
-                                   class: "text-decoration-none"
-                        %small.text-muted
-                          = "Observed on #{observation.observed_at.strftime('%B %d, %Y')}"
-                      - if observation.observer_id == @teammate.person_id
-                        %span.badge.bg-info Observer
-                      - elsif observation.observed_teammates.any? { |ot| ot.id == @teammate.id }
-                        %span.badge.bg-success Observed
-          
-          - if @evidence[:assignment_check_ins].any?
-            .mb-4
-              %h6 Assignment Check-Ins
-              - @evidence[:assignment_check_ins].each do |check_in|
-                .card.mb-2
-                  .card-body
-                    .d-flex.justify-content-between
-                      .flex-grow-1
-                        %p.mb-1
-                          = link_to check_in.assignment.title, 
-                                   organization_assignment_path(organization, check_in.assignment),
-                                   class: "text-decoration-none"
-                        %small.text-muted
-                          = "Completed on #{check_in.official_check_in_completed_at.strftime('%B %d, %Y')}"
-                          - if check_in.official_rating
-                            = " - Rating: #{check_in.official_rating.humanize}"
-          
-          - if @evidence[:observations].empty? && @evidence[:assignment_check_ins].empty?
-            %p.text-muted No evidence available for this teammate and ability.
+
+.row.justify-content-center.mt-4
+  .col-12
+    / Evidence Section
+    .card.mb-4
+      .card-header
+        %h5.mb-0 EVIDENCE: Observations and Assignment Check-Ins
+      .card-body
+        - if @evidence.present? && @evidence[:observations].any?
+          .mb-4
+            %h6 Observations
+            - @evidence[:observations].each do |observation|
+              .card.mb-2
+                .card-body
+                  .d-flex.justify-content-between
+                    .flex-grow-1
+                      %p.mb-1
+                        = link_to observation.story, 
+                                  organization_observation_path(organization, observation),
+                                  class: "text-decoration-none"
+                      %small.text-muted
+                        = "Observed on #{observation.observed_at.strftime('%B %d, %Y')}"
+                    - if observation.observer_id == @teammate.person_id
+                      %span.badge.bg-info Observer
+                    - elsif observation.observed_teammates.any? { |ot| ot.id == @teammate.id }
+                      %span.badge.bg-success Observed
+        
+        - if @evidence.present? && @evidence[:assignment_check_ins].any?
+          .mb-4
+            %h6 Assignment Check-Ins
+            - @evidence[:assignment_check_ins].each do |check_in|
+              .card.mb-2
+                .card-body
+                  .d-flex.justify-content-between
+                    .flex-grow-1
+                      %p.mb-1
+                        = link_to check_in.assignment.title, 
+                                  organization_assignment_path(organization, check_in.assignment),
+                                  class: "text-decoration-none"
+                      %small.text-muted
+                        = "Completed on #{check_in.official_check_in_completed_at.strftime('%B %d, %Y')}"
+                        - if check_in.official_rating
+                          = " - Rating: #{check_in.official_rating.humanize}"
+        
+        - if @evidence.nil? || (@evidence[:observations].empty? && @evidence[:assignment_check_ins].empty?)
+          %p.text-muted No evidence (observations or assignment check-ins) available for #{@teammate&.person&.display_name || 'Teammate you will select'} + #{@ability&.display_name || 'Ability you will select'}.
 
