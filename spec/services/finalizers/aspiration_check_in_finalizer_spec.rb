@@ -6,6 +6,7 @@ RSpec.describe Finalizers::AspirationCheckInFinalizer do
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:aspiration) { create(:aspiration, organization: organization) }
   let(:finalized_by) { create(:person) }
+  let(:finalizer_teammate) { create(:teammate, person: finalized_by, organization: organization) }
   
   let(:check_in) do
     create(:aspiration_check_in,
@@ -68,6 +69,9 @@ RSpec.describe Finalizers::AspirationCheckInFinalizer do
         end
         
         it 'creates observable moment when rating improved' do
+          # Ensure finalizer has a teammate in the organization
+          finalizer_teammate # Create the teammate
+          
           expect {
             finalizer.finalize
           }.to change { ObservableMoment.count }.by(1)

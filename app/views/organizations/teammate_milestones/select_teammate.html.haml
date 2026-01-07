@@ -18,7 +18,7 @@
             - if manager
               %p.text-muted.mb-1
                 %small Manager: #{manager.display_name}
-            - active_tenure = ActiveEmploymentTenureQuery.new(person: teammate.person, organization: organization).first
+            - active_tenure = teammate.active_employment_tenure
             - if active_tenure&.position&.position_type
               %p.text-muted.mb-0
                 %small Position: #{active_tenure.position.position_type.external_title}

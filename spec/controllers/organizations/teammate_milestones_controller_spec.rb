@@ -182,12 +182,9 @@ RSpec.describe Organizations::TeammateMilestonesController, type: :controller do
       expect(position.required_assignments.first.assignment).to eq(assignment)
       expect(assignment.assignment_abilities.count).to eq(1)
       
-      # Verify ActiveEmploymentTenureQuery can find the tenure
-      active_tenure = ActiveEmploymentTenureQuery.new(
-        person: teammate.person,
-        organization: organization
-      ).first
-      expect(active_tenure).to be_present, "ActiveEmploymentTenureQuery should find the employment tenure"
+      # Verify active_employment_tenure association can find the tenure
+      active_tenure = teammate.active_employment_tenure
+      expect(active_tenure).to be_present, "active_employment_tenure should find the employment tenure"
       expect(active_tenure.position).to eq(position)
       
       get :select_ability, params: { organization_id: organization.id, teammate_id: teammate.id }

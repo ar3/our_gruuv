@@ -89,10 +89,7 @@ module AboutMeHelper
   end
 
   def assignments_check_in_status_indicator(teammate, organization)
-    active_tenure = ActiveEmploymentTenureQuery.new(
-      person: teammate.person,
-      organization: organization
-    ).first
+    active_tenure = teammate.active_employment_tenure
     
     return :yellow unless active_tenure&.position
     
@@ -158,10 +155,7 @@ module AboutMeHelper
   end
 
   def abilities_status_indicator(teammate, organization)
-    active_tenure = ActiveEmploymentTenureQuery.new(
-      person: teammate.person,
-      organization: organization
-    ).first
+    active_tenure = teammate.active_employment_tenure
     
     return :yellow unless active_tenure&.position
     

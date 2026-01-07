@@ -13,12 +13,13 @@ class Teammate < ApplicationRecord
   has_many :assignments, through: :assignment_tenures
   has_many :employment_tenures, dependent: :nullify
   has_many :position_check_ins, through: :employment_tenures
-  has_many :huddle_feedbacks, dependent: :nullify
-  has_many :huddle_participants, dependent: :nullify
   has_many :observees, dependent: :destroy
   has_many :observations, through: :observees
   has_many :teammate_identities, dependent: :destroy
   has_one :one_on_one_link, dependent: :destroy
+
+  has_many :huddle_feedbacks, dependent: :nullify
+  has_many :huddle_participants, dependent: :nullify
   
   # Validations
   validates :person_id, uniqueness: { scope: :organization_id }

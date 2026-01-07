@@ -9,10 +9,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     
     # Load teammate if selected
     if @teammate
-      active_tenure = ActiveEmploymentTenureQuery.new(
-        person: @teammate.person,
-        organization: organization
-      ).first
+      active_tenure = @teammate.active_employment_tenure
       
       @teammate_display = {
         teammate: @teammate,
@@ -272,10 +269,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     end
     
     # Also include abilities from current position's required assignments
-    active_tenure = ActiveEmploymentTenureQuery.new(
-      person: teammate.person,
-      organization: organization
-    ).first
+    active_tenure = teammate.active_employment_tenure
     
     if active_tenure&.position
       active_tenure.position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
@@ -356,10 +350,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     end
     
     # Also check position's required assignments
-    active_tenure = ActiveEmploymentTenureQuery.new(
-      person: teammate.person,
-      organization: organization
-    ).first
+    active_tenure = teammate.active_employment_tenure
     
     if active_tenure&.position
       active_tenure.position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|

@@ -139,6 +139,9 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         end
         
         it 'creates observable moment when rating improved' do
+          # Ensure manager has a teammate in the organization
+          manager_teammate # Create the teammate
+          
           expect {
             finalizer.finalize
           }.to change { ObservableMoment.count }.by(1)

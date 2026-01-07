@@ -16,10 +16,12 @@ class PositionCheckIn < ApplicationRecord
   
   # Find or create open check-in for a teammate
   def self.find_or_create_open_for(teammate)
-    tenure = ActiveEmploymentTenureQuery.new(
-      person: teammate.person,
-      organization: teammate.organization
-    ).first
+    # Only CompanyTeammate has active_employment_tenure method
+    tenure = if teammate.is_a?(CompanyTeammate)
+      teammate.active_employment_tenure
+    else
+      teammate.employment_tenures.active.where(company: teammate.organization).first
+    end
     return nil unless tenure
     
     open_check_in = where(teammate: teammate).open.first

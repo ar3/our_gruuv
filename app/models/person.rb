@@ -282,7 +282,8 @@ class Person < ApplicationRecord
   
   # Active employment tenure convenience methods
   def active_employment_tenure_for(organization)
-    ActiveEmploymentTenureQuery.new(person: self, organization: organization).first
+    company = organization.root_company || organization
+    teammates.find_by(organization: company)&.active_employment_tenure
   end
 
   

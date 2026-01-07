@@ -5,6 +5,11 @@ class CompanyTeammate < Teammate
   # Associations
   has_many :prompts, foreign_key: 'company_teammate_id', dependent: :destroy
   
+  # Active employment tenure for this teammate's company
+  def active_employment_tenure
+    employment_tenures.active.where(company: organization).first
+  end
+  
   # Company-specific validations
   validate :company_level_permissions
   

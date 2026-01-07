@@ -782,10 +782,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @latest_finalized_position_check_in = PositionCheckIn.latest_finalized_for(@teammate)
     
     # Get current position from active employment tenure
-    active_tenure = ActiveEmploymentTenureQuery.new(
-      person: @teammate.person,
-      organization: organization
-    ).first
+    active_tenure = @teammate.active_employment_tenure
     @current_position = active_tenure&.position
     @position_display_name = @current_position&.display_name || "not an employee yet"
     @last_check_in_date = if @latest_finalized_position_check_in
@@ -797,10 +794,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def load_assignment_check_in_data
     # Get required assignments for current position
-    active_tenure = ActiveEmploymentTenureQuery.new(
-      person: @teammate.person,
-      organization: organization
-    ).first
+    active_tenure = @teammate.active_employment_tenure
     
     if active_tenure&.position
       @required_assignments = active_tenure.position.required_assignments.includes(:assignment)
@@ -865,10 +859,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
 
   def load_abilities_data
     # Get required assignments and their ability requirements
-    active_tenure = ActiveEmploymentTenureQuery.new(
-      person: @teammate.person,
-      organization: organization
-    ).first
+    active_tenure = @teammate.active_employment_tenure
     
     if active_tenure&.position
       @required_assignments = active_tenure.position.required_assignments.includes(assignment: :assignment_abilities)
