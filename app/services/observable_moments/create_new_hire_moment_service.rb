@@ -16,7 +16,7 @@ module ObservableMoments
       metadata = {
         person_name: @employment_tenure.teammate.person.display_name,
         position_id: @employment_tenure.position_id,
-        position_name: @employment_tenure.position&.name
+        position_name: @employment_tenure.position&.display_name
       }
       
       ObservableMoments::BaseObservableMomentService.new(

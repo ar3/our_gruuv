@@ -76,12 +76,13 @@
                               placeholder: question.placeholder_text.presence || 'Enter your answer...',
                               disabled: !@can_edit
       
-      - if @archived_questions.any?
+      - archived_questions_with_answers = @archived_questions.select { |q| @archived_answers[q.id]&.text.present? }
+      - if archived_questions_with_answers.any?
         .mt-4.pt-4.border-top
           %h6.mb-3
             %i.bi.bi-archive.me-2
             Archived Questions (Read-Only)
-          - @archived_questions.each do |question|
+          - archived_questions_with_answers.each do |question|
             .row.mb-4
               .col-sm-3.col-12.mb-3.mb-sm-0
                 %label.form-label.fw-bold.text-muted= question.label
@@ -89,11 +90,8 @@
                   %small.text-muted.d-block.mt-1= question.helper_text
               .col-sm-9.col-12
                 - answer = @archived_answers[question.id]
-                - if answer && answer.text.present?
-                  .p-3.bg-light.rounded
-                    = simple_format(answer.text)
-                - else
-                  %p.text-muted No answer provided
+                .p-3.bg-light.rounded
+                  = simple_format(answer.text)
       
       .d-flex.justify-content-between.mt-4
         = link_to 'Cancel', organization_prompts_path(@organization), class: 'btn btn-secondary'
@@ -107,31 +105,27 @@
             - if @next_prompt
               .btn.btn-outline-primary.disabled Save and go to #{@next_prompt.prompt_template.title}
 
+- quote_popover_content = capture do
+  %div.markdown-content
+    %blockquote.mb-2
+      "If your goals aren't synced with the substance of your heart, then achieving them won't matter much."
+    %p.mb-0.text-muted.small
+      ―
+      %strong Danielle LaPorte
+      %span.text-muted,
+      %a.text-muted.text-decoration-none{:href => "/work/quotes/18136546"} The Fire Starter Sessions: A Soulful + Practical Guide to Creating Success on Your Own Terms
+
 .card.mb-4
   .card-header.d-flex.justify-content-between.align-items-center
     %h5.mb-0
       %i.bi.bi-bullseye.me-2
       Associated Goals
-    Why Associate goals with these reflection prompts?
-    .quoteDetails.fullLine
-      %a.leftAlignedImage.quoteAvatar.quoteAvatar--large{:href => "/author/show/1038213.Danielle_LaPorte"}
-        %img{:alt => "Danielle LaPorte", :src => "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/authors/1477679710i/1038213._UY200_CR0,0,200,200_.jpg"}/
-      .quoteText
-        %h1.quoteText
-          “If your goals aren’t synced with the substance of your heart, then achieving them won’t matter much.”
-          %br/
-        ―
-        %span.authorOrTitle
-          Danielle LaPorte,
-        %span#quote_book_link_18874701
-          %a.authorOrTitle{:href => "/work/quotes/18136546"} The Fire Starter Sessions: A Soulful + Practical Guide to Creating Success on Your Own Terms
-      .quoteFooter
-
-
-    - if @can_edit
-      = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: request.url, return_text: 'Edit Prompt'), class: "btn btn-sm btn-primary" do
-        %i.bi.bi-plus.me-1
-        Manage Goals
+    .d-flex.align-items-center.gap-2
+      %span.text-muted.text-decoration-none{style: "cursor: pointer;", "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => quote_popover_content}= "Why associate goals with #{@prompt_template.title}?"
+      - if @can_edit
+        = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: request.url, return_text: 'Edit Prompt'), class: "btn btn-sm btn-primary" do
+          %i.bi.bi-plus.me-1
+          Manage Goals
   .card-body
     - if @prompt.goals.any?
       - grouped_goals = @prompt.goals.group_by(&:goal_type)

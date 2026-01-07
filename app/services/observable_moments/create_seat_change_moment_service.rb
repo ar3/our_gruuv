@@ -17,9 +17,9 @@ module ObservableMoments
       metadata = {
         person_name: @new_employment_tenure.teammate.person.display_name,
         old_position_id: @old_employment_tenure&.position_id,
-        old_position_name: @old_employment_tenure&.position&.name,
+        old_position_name: @old_employment_tenure&.position&.display_name,
         new_position_id: @new_employment_tenure.position_id,
-        new_position_name: @new_employment_tenure.position&.name,
+        new_position_name: @new_employment_tenure.position&.display_name,
         old_manager_id: @old_employment_tenure&.manager_teammate_id,
         new_manager_id: @new_employment_tenure.manager_teammate_id
       }

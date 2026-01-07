@@ -49,8 +49,8 @@ RSpec.describe ObservableMoments::CreateSeatChangeMomentService do
       )
       
       moment = result.value
-      expect(moment.metadata['old_position_name']).to eq(old_position.name)
-      expect(moment.metadata['new_position_name']).to eq(new_position.name)
+      expect(moment.metadata['old_position_name']).to eq(old_position.display_name)
+      expect(moment.metadata['new_position_name']).to eq(new_position.display_name)
     end
     
     it 'handles missing old tenure gracefully' do
