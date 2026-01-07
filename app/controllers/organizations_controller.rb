@@ -281,12 +281,9 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   end
 
   def celebrate_milestones
-    # Get milestones attained in the last 90 days within this organization
-    @recent_milestones = TeammateMilestone.joins(:ability, :teammate, :certified_by)
-                                       .where(abilities: { organization: @organization })
-                                       .where(attained_at: 90.days.ago..Time.current)
-                                       .includes(:ability, :teammate, :certified_by)
-                                       .order(attained_at: :desc)
+    # Use MilestonesQuery to handle filtering, sorting, and view customization
+    query = MilestonesQuery.new(@organization, params, current_person: current_person)
+    @recent_milestones = query.call
     
     # Group by person for easier display
     @milestones_by_person = @recent_milestones.group_by { |milestone| milestone.teammate.person }
@@ -294,6 +291,12 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
     # Get counts for the page
     @total_milestones = @recent_milestones.count
     @unique_people = @milestones_by_person.keys.count
+    
+    # Store view customization state
+    @current_filters = query.current_filters
+    @current_sort = query.current_sort
+    @current_view = query.current_view
+    @current_spotlight = query.current_spotlight
   end
 
   def accountability_chart

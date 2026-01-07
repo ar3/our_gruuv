@@ -15,6 +15,34 @@
   .col-lg-8
     .card.mb-4
       .card-body
+        .mb-3
+          .d-flex.align-items-center.justify-content-between
+            %h3.mb-0
+              = @teammate_milestone.ability.name
+              %span.badge.bg-primary.ms-2= @teammate_milestone.milestone_level_display
+            %button.btn.btn-sm.text-muted.p-0.border-0.bg-transparent{"data-bs-toggle" => "collapse", "data-bs-target" => "#milestoneDetails", "aria-expanded" => "false", "aria-controls" => "milestoneDetails", type: "button", style: "font-size: 0.875rem;"}
+              Show milestone details
+              %i.bi.bi-chevron-down.ms-1
+        
+        / Collapsible milestone details
+        .collapse.mb-3#milestoneDetails
+          .card.card-body.markdown-content--bordered
+            - milestone_description = @teammate_milestone.ability.milestone_description(@teammate_milestone.milestone_level)
+            - if milestone_description.present?
+              = render_markdown(milestone_description)
+            - else
+              %p.text-muted.mb-0 This Milestone has not been defined.
+            
+            / Assignment requirements
+            - if @required_assignments&.any?
+              .mt-3.pt-3.border-top
+                %p.mb-2.small.text-muted
+                  %strong Assignment Requirements:
+                .d-flex.flex-wrap.gap-2
+                  - @required_assignments.each do |ra|
+                    %span.badge.bg-info
+                      Required Milestone #{ra[:milestone_level]} for #{ra[:assignment].title}
+        
         .row.mb-3
           .col-md-4
             %strong Teammate:
@@ -47,7 +75,34 @@
           .col-md-4
             %strong Certified By:
           .col-md-8
-            = @teammate_milestone.certified_by.display_name
+            = @teammate_milestone.certifying_teammate.person.display_name
+        
+        - if @teammate_milestone.certification_note.present?
+          .row.mb-3
+            .col-md-4
+              %strong Certification Note:
+            .col-md-8
+              = simple_format(@teammate_milestone.certification_note)
+        
+        - if @teammate_milestone.published?
+          .row.mb-3
+            .col-md-4
+              %strong Published Status:
+            .col-md-8
+              %span.badge.bg-success Published to Company
+              - if @teammate_milestone.published_by_teammate
+                %small.text-muted.ms-2
+                  by #{@teammate_milestone.published_by_teammate.person.display_name}
+                  on #{@teammate_milestone.published_at.strftime('%B %d, %Y')}
+        
+        - if @teammate_milestone.public_profile_published?
+          .row.mb-3
+            .col-md-4
+              %strong Public Profile:
+            .col-md-8
+              %span.badge.bg-info Published to Public Profile
+              %small.text-muted.ms-2
+                on #{@teammate_milestone.public_profile_published_at.strftime('%B %d, %Y')}
         
         - if @observable_moment
           .row.mb-3
@@ -57,4 +112,30 @@
               %p.mb-0
                 %i.bi.bi-info-circle.me-2
                 = @observable_moment.description
+        
+        .row.mt-4
+          .col-12
+            .d-flex.gap-2
+              - if policy(@teammate_milestone).publish?
+                - if @teammate_milestone.published?
+                  = button_to unpublish_organization_teammate_milestone_path(organization, @teammate_milestone),
+                              method: :patch,
+                              class: "btn btn-warning",
+                              data: { confirm: "Are you sure you want to unpublish this milestone from the company celebration page?" } do
+                    %i.bi.bi-eye-slash.me-2
+                    Unpublish
+                - else
+                  = button_to publish_organization_teammate_milestone_path(organization, @teammate_milestone),
+                              method: :patch,
+                              class: "btn btn-success" do
+                    %i.bi.bi-eye.me-2
+                    Publish to Company
+              
+              - if policy(@teammate_milestone).publish_to_public_profile?
+                - unless @teammate_milestone.public_profile_published?
+                  = button_to publish_to_public_profile_organization_teammate_milestone_path(organization, @teammate_milestone),
+                              method: :patch,
+                              class: "btn btn-info" do
+                    %i.bi.bi-globe.me-2
+                    Publish to my public profile
 

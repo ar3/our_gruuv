@@ -1,0 +1,18 @@
+%h5.mb-3 Level 5 Achievements
+- level_5_milestones = (@recent_milestones || []).select { |m| m.milestone_level == 5 }
+- if level_5_milestones.any?
+  .row
+    - level_5_milestones.each do |milestone|
+      .col-md-6.col-lg-4.mb-3
+        .card.border-warning
+          .card-body
+            %h6.mb-2
+              = milestone.ability.name
+              %span.badge.bg-warning.text-dark.ms-2 Level 5
+            %p.mb-1
+              %strong= milestone.teammate.person.display_name
+            %p.mb-0.small.text-muted
+              = milestone.attained_at.strftime('%B %d, %Y')
+- else
+  %p.text-muted No Level 5 achievements to display.
+

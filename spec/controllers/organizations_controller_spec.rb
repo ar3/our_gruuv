@@ -382,7 +382,8 @@ RSpec.describe OrganizationsController, type: :controller do
 
     let!(:ability) { create(:ability, organization: organization, created_by: person, updated_by: person) }
     let!(:certifier) { create(:person) }
-    let!(:teammate_milestone) { create(:teammate_milestone, teammate: person.teammates.find_by(organization: organization), ability: ability, certified_by: certifier, attained_at: 30.days.ago) }
+    let(:certifier_teammate) { create(:teammate, person: certifier, organization: organization) }
+    let!(:teammate_milestone) { create(:teammate_milestone, teammate: person.teammates.find_by(organization: organization), ability: ability, certifying_teammate: certifier_teammate, attained_at: 30.days.ago) }
 
     it 'returns http success' do
       get :celebrate_milestones, params: { id: organization.id }
@@ -412,12 +413,12 @@ RSpec.describe OrganizationsController, type: :controller do
       other_org = create(:organization)
       other_ability = create(:ability, organization: other_org)
       other_teammate = create(:teammate, person: person, organization: other_org)
-      create(:teammate_milestone, teammate: other_teammate, ability: other_ability, certified_by: certifier, attained_at: 30.days.ago)
+      create(:teammate_milestone, teammate: other_teammate, ability: other_ability, certifying_teammate: certifier_teammate, attained_at: 30.days.ago)
       
       # Create an old milestone outside the 90-day range with a different ability
       old_ability = create(:ability, organization: organization, created_by: person, updated_by: person)
       teammate = person.teammates.find_by(organization: organization)
-      create(:teammate_milestone, teammate: teammate, ability: old_ability, certified_by: certifier, attained_at: 100.days.ago)
+      create(:teammate_milestone, teammate: teammate, ability: old_ability, certifying_teammate: certifier_teammate, attained_at: 100.days.ago)
       
       get :celebrate_milestones, params: { id: organization.id }
       

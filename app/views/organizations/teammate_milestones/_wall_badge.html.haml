@@ -1,0 +1,21 @@
+- milestones.each do |milestone|
+  .col-md-6.col-lg-4.mb-4
+    = link_to organization_teammate_milestone_path(milestone.teammate.organization, milestone), class: "text-decoration-none" do
+      .card.h-100.border-0.shadow-lg.rounded-circle.text-center.milestone-badge-card{style: "min-height: 280px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; cursor: pointer; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;"}
+        .card-body.d-flex.flex-column.justify-content-center
+          .mb-3
+            %i.bi.bi-award-fill{style: "font-size: 4rem; color: #ffd700;"}
+          %h4.mb-2.text-white= milestone.ability.name
+          .mb-3
+            %span.badge.bg-warning.text-dark{style: "font-size: 1.2rem; padding: 0.6rem 1.2rem; border-radius: 50px;"}
+              = milestone.milestone_level_display
+          %p.mb-1.text-white.small
+            %strong= milestone.teammate.person.display_name
+          %p.mb-0.text-white-50{style: "font-size: 0.85rem;"}
+            #{milestone.attained_at.strftime('%b %Y')}
+          .mt-3.pt-3.border-top.border-white-50{style: "border-top-color: rgba(255,255,255,0.3) !important;"}
+            .small.text-white-50
+              Certified by
+              %br
+              %strong.text-white= milestone.certifying_teammate.person.display_name
+

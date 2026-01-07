@@ -478,7 +478,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'includes abilities where employee has milestone attainments' do
-        milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certified_by: certifier, milestone_level: 2)
+        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 2)
         
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
@@ -504,7 +505,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'includes abilities with both milestones and assignment requirements' do
-        milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_both, certified_by: certifier, milestone_level: 1)
+        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_both, certifying_teammate: certifier_teammate, milestone_level: 1)
         assignment_with_ability = create(:assignment, company: organization, title: 'Test Assignment')
         active_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_with_ability, ended_at: nil)
         assignment_ability = create(:assignment_ability, assignment: assignment_with_ability, ability: ability_with_both, milestone_level: 3)
@@ -519,7 +521,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'deduplicates abilities that appear in both milestone and assignment lists' do
-        milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_both, certified_by: certifier, milestone_level: 2)
+        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_both, certifying_teammate: certifier_teammate, milestone_level: 2)
         assignment_with_ability = create(:assignment, company: organization, title: 'Test Assignment')
         active_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_with_ability, ended_at: nil)
         assignment_ability = create(:assignment_ability, assignment: assignment_with_ability, ability: ability_with_both, milestone_level: 3)
@@ -534,8 +537,9 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'only includes abilities from organization hierarchy' do
-        milestone_outside = create(:teammate_milestone, teammate: employee_teammate, ability: ability_outside_hierarchy, certified_by: certifier, milestone_level: 1)
-        milestone_inside = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certified_by: certifier, milestone_level: 1)
+        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        milestone_outside = create(:teammate_milestone, teammate: employee_teammate, ability: ability_outside_hierarchy, certifying_teammate: certifier_teammate, milestone_level: 1)
+        milestone_inside = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 1)
         
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
@@ -548,7 +552,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       it 'includes abilities from departments within the organization hierarchy' do
         department = create(:organization, type: 'Department', parent: organization, name: 'Engineering Department')
         ability_in_department = create(:ability, name: 'Department Ability', organization: department)
-        milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_in_department, certified_by: certifier, milestone_level: 2)
+        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_in_department, certifying_teammate: certifier_teammate, milestone_level: 2)
         
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
@@ -562,9 +567,10 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         ability_a = create(:ability, name: 'A Ability', organization: organization)
         ability_m = create(:ability, name: 'M Ability', organization: organization)
         
-        create(:teammate_milestone, teammate: employee_teammate, ability: ability_z, certified_by: certifier, milestone_level: 1)
-        create(:teammate_milestone, teammate: employee_teammate, ability: ability_a, certified_by: certifier, milestone_level: 1)
-        create(:teammate_milestone, teammate: employee_teammate, ability: ability_m, certified_by: certifier, milestone_level: 1)
+        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        create(:teammate_milestone, teammate: employee_teammate, ability: ability_z, certifying_teammate: certifier_teammate, milestone_level: 1)
+        create(:teammate_milestone, teammate: employee_teammate, ability: ability_a, certifying_teammate: certifier_teammate, milestone_level: 1)
+        create(:teammate_milestone, teammate: employee_teammate, ability: ability_m, certifying_teammate: certifier_teammate, milestone_level: 1)
         
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
@@ -574,8 +580,9 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'includes all milestone attainments for each ability' do
-        milestone1 = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certified_by: certifier, milestone_level: 1, attained_at: 6.months.ago)
-        milestone2 = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certified_by: certifier, milestone_level: 3, attained_at: 1.month.ago)
+        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        milestone1 = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 1, attained_at: 6.months.ago)
+        milestone2 = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 3, attained_at: 1.month.ago)
         
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         

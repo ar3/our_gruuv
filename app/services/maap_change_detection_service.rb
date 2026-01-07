@@ -333,8 +333,8 @@ class MaapChangeDetectionService
         if previous_data['milestone_level'] != proposed_data['milestone_level']
           milestone_changes << { field: 'milestone_level', current: previous_data['milestone_level'], proposed: proposed_data['milestone_level'] }
         end
-        if previous_data['certified_by_id'].to_s != proposed_data['certified_by_id'].to_s
-          milestone_changes << { field: 'certified_by', current: previous_data['certified_by_id'], proposed: proposed_data['certified_by_id'] }
+        if previous_data['certifying_teammate_id'].to_s != proposed_data['certifying_teammate_id'].to_s
+          milestone_changes << { field: 'certifying_teammate', current: previous_data['certifying_teammate_id'], proposed: proposed_data['certifying_teammate_id'] }
         end
         if previous_data['attained_at'].to_s != proposed_data['attained_at'].to_s
           milestone_changes << { field: 'attained_at', current: previous_data['attained_at'], proposed: proposed_data['attained_at'] }
@@ -342,8 +342,8 @@ class MaapChangeDetectionService
       else
         # New milestone - all fields are new
         milestone_changes << { field: 'milestone_level', current: 'none', proposed: proposed_data['milestone_level'] }
-        if proposed_data['certified_by_id'].present?
-          milestone_changes << { field: 'certified_by', current: 'none', proposed: proposed_data['certified_by_id'] }
+        if proposed_data['certifying_teammate_id'].present?
+          milestone_changes << { field: 'certifying_teammate', current: 'none', proposed: proposed_data['certifying_teammate_id'] }
         end
         if proposed_data['attained_at'].present?
           milestone_changes << { field: 'attained_at', current: 'none', proposed: proposed_data['attained_at'] }
@@ -607,7 +607,7 @@ class MaapChangeDetectionService
     return true unless previous_data
     
     previous_data['milestone_level'] != proposed_data['milestone_level'] ||
-    previous_data['certified_by_id'].to_s != proposed_data['certified_by_id'].to_s ||
+    previous_data['certifying_teammate_id'].to_s != proposed_data['certifying_teammate_id'].to_s ||
     previous_data['attained_at'].to_s != proposed_data['attained_at'].to_s
   end
 end

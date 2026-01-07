@@ -407,9 +407,9 @@ module EmployeesHelper
             current: change[:current].present? ? "Level #{change[:current]}" : 'None',
             proposed: change[:proposed].present? ? "Level #{change[:proposed]}" : 'None'
           }
-        when 'certified_by'
-          current_name = change[:current].present? ? Person.find_by(id: change[:current])&.display_name : 'None'
-          proposed_name = change[:proposed].present? ? Person.find_by(id: change[:proposed])&.display_name : 'None'
+        when 'certifying_teammate'
+          current_name = change[:current].present? ? CompanyTeammate.find_by(id: change[:current])&.person&.display_name : 'None'
+          proposed_name = change[:proposed].present? ? CompanyTeammate.find_by(id: change[:proposed])&.person&.display_name : 'None'
           milestone_formatted[:changes] << {
             label: 'Certified By',
             current: current_name || 'None',
@@ -644,8 +644,8 @@ module EmployeesHelper
       
       ability_fields << {
         label: 'Certified By',
-        old: format_person_value(old_ability['certified_by_id']),
-        new: format_person_value(new_ability['certified_by_id'])
+        old: format_company_teammate_value(old_ability['certifying_teammate_id']),
+        new: format_company_teammate_value(new_ability['certifying_teammate_id'])
       }
       
       ability_fields << {

@@ -1,0 +1,135 @@
+- content_for :title, "Customize View"
+
+- content_for :header do
+  Customize Milestones View
+
+- content_for :return_url do
+  = @return_url || celebrate_milestones_organization_path(@organization)
+
+- content_for :return_text do
+  = @return_text || 'Back to Celebrate Milestones'
+
+- organization = @organization || current_organization
+= form_with url: update_view_organization_teammate_milestones_path(organization), method: :patch, local: true do |form|
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Milestones You See
+    
+    .col-md-8
+      / Filters Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Milestones You See
+          
+          .mb-3
+            %label.form-label Timeframe
+            - timeframe_options = [['All Time', 'all'], ['Today', 'today'], ['This Week', 'this_week'], ['This Month', 'this_month'], ['Last 30 Days', 'last_30_days'], ['Last 90 Days', 'last_90_days'], ['This Year', 'this_year']]
+            = select_tag 'timeframe', options_for_select(timeframe_options, @current_filters[:timeframe] || 'last_90_days'), class: 'form-select'
+          
+          .mb-3
+            %label.form-label Ability
+            - abilities = organization.abilities.order(:name)
+            - ability_options = [['All Abilities', '']] + abilities.map { |a| [a.name, a.id] }
+            = select_tag 'ability', options_for_select(ability_options, @current_filters[:ability]), class: 'form-select'
+          
+          .mb-3
+            %label.form-label Milestone Level
+            - level_options = [['All Levels', '']] + (1..5).map { |l| ["Level #{l}", l] }
+            = select_tag 'milestone_level', options_for_select(level_options, @current_filters[:milestone_level]), class: 'form-select'
+          
+          .mb-3
+            %label.form-label Person
+            - people = organization.teammates.where(last_terminated_at: nil).includes(:person).order('people.last_name, people.first_name')
+            - person_options = [['All People', '']] + people.map { |t| [t.person.display_name, t.person.id] }
+            = select_tag 'person', options_for_select(person_options, @current_filters[:person]), class: 'form-select'
+          
+          .mb-3
+            %label.form-label Privacy
+            - privacy_options = [['Published to Company', 'published'], ['Private', 'private']]
+            = select_tag 'privacy', options_for_select(privacy_options, @current_filters[:privacy] || 'published'), class: 'form-select'
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select What Order You See Them In
+    
+    .col-md-8
+      / Sort Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select What Order You See Them In
+          .mb-3
+            %label.form-label Sort By
+            - sort_options = [['Most Recent', 'attained_at_desc'], ['Oldest First', 'attained_at_asc'], ['Person Name (A-Z)', 'person_name_asc'], ['Person Name (Z-A)', 'person_name_desc'], ['Ability Name (A-Z)', 'ability_name_asc'], ['Ability Name (Z-A)', 'ability_name_desc'], ['Milestone Level (High to Low)', 'milestone_level_desc'], ['Milestone Level (Low to High)', 'milestone_level_asc']]
+            = select_tag 'sort', options_for_select(sort_options, @current_sort), class: 'form-select', id: 'sort_select'
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select How They Appear
+    
+    .col-md-8
+      / View Style Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select How They Appear
+          .form-check
+            = radio_button_tag 'view', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
+            = label_tag 'view_table', class: 'form-check-label' do
+              %i.bi.bi-table.me-2
+              Table View
+          .form-check
+            = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
+            = label_tag 'view_list', class: 'form-check-label' do
+              %i.bi.bi-list.me-2
+              List View
+          .form-check
+            = radio_button_tag 'view', 'wall_trophy', @current_view == 'wall_trophy', class: 'form-check-input', id: 'view_wall_trophy'
+            = label_tag 'view_wall_trophy', class: 'form-check-label' do
+              %i.bi.bi-trophy.me-2
+              Wall View (Trophy)
+          .form-check
+            = radio_button_tag 'view', 'wall_badge', (@current_view == 'wall_badge' || (@current_view.blank? && params[:view].blank?)), class: 'form-check-input', id: 'view_wall_badge'
+            = label_tag 'view_wall_badge', class: 'form-check-label' do
+              %i.bi.bi-award.me-2
+              Wall View (Badge)
+          .form-check
+            = radio_button_tag 'view', 'wall_confetti', @current_view == 'wall_confetti', class: 'form-check-input', id: 'view_wall_confetti'
+            = label_tag 'view_wall_confetti', class: 'form-check-label' do
+              %i.bi.bi-balloon-fill.me-2
+              Wall View (Confetti)
+
+  .row
+    .col-md-4
+      .mb-4
+        %h2 Select the Spotlight for Them
+    
+    .col-md-8
+      / Spotlight Section
+      .card.mb-4
+        .card-body
+          %label.form-label.fw-bold Select the Spotlight for Them
+          .form-check
+            = radio_button_tag 'spotlight', 'overview', @current_spotlight == 'overview', class: 'form-check-input', id: 'spotlight_overview'
+            = label_tag 'spotlight_overview', 'Milestone Overview', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'high_achievers', @current_spotlight == 'high_achievers', class: 'form-check-input', id: 'spotlight_high_achievers'
+            = label_tag 'spotlight_high_achievers', 'High Achievers', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'level_5', @current_spotlight == 'level_5', class: 'form-check-input', id: 'spotlight_level_5'
+            = label_tag 'spotlight_level_5', 'Level 5 Achievements', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'recent', @current_spotlight == 'recent', class: 'form-check-input', id: 'spotlight_recent'
+            = label_tag 'spotlight_recent', 'Recent Milestones', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'none', (@current_spotlight.blank? || @current_spotlight == 'none'), class: 'form-check-input', id: 'spotlight_none'
+            = label_tag 'spotlight_none', 'No Spotlight', class: 'form-check-label'
+
+  .row
+    .col-12
+      / Form Actions
+      .d-flex.gap-2.mt-4.mb-4
+        = form.submit 'Apply View', class: 'btn btn-primary'
+        = link_to 'Cancel', @return_url || celebrate_milestones_organization_path(organization), class: 'btn btn-outline-secondary'
+

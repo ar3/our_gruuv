@@ -1,0 +1,16 @@
+%h5.mb-3 High Achievers
+- high_achievers = (@recent_milestones || []).group_by { |m| m.teammate.person }.sort_by { |person, milestones| -milestones.count }.first(5)
+- if high_achievers.any?
+  .row
+    - high_achievers.each do |person, milestones|
+      .col-md-6.col-lg-4.mb-3
+        .card
+          .card-body
+            %h6.mb-2= person.display_name
+            %p.mb-1
+              %span.badge.bg-primary= pluralize(milestones.count, 'milestone')
+            %p.mb-0.small.text-muted
+              Highest: Level #{milestones.map(&:milestone_level).max}
+- else
+  %p.text-muted No high achievers to display.
+

@@ -10,7 +10,7 @@ RSpec.describe ObservableMoments::CreateAbilityMilestoneMomentService do
     create(:teammate_milestone,
            teammate: teammate,
            ability: ability,
-           certified_by: certified_by,
+           certifying_teammate: certifier_teammate,
            milestone_level: 3)
   end
   

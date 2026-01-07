@@ -1,0 +1,25 @@
+%h5.mb-3 Milestone Overview
+.row.text-center
+  .col-3
+    .h3.text-primary= @total_milestones || 0
+    %small.text-muted Total Milestones
+  .col-3
+    .h3.text-success= @unique_people || 0
+    %small.text-muted People Celebrated
+  .col-3
+    .h3.text-info= (@recent_milestones || []).count { |m| m.attained_at >= 30.days.ago }
+    %small.text-muted Recent (30 days)
+  .col-3
+    .h3.text-warning= (@recent_milestones || []).count { |m| m.milestone_level == 5 }
+    %small.text-muted Level 5 Achievements
+- if @recent_milestones&.any?
+  .row.mt-3
+    .col-12
+      %h6.text-muted.mb-2 Top Abilities
+      .row
+        - @recent_milestones.group_by(&:ability).sort_by { |ability, milestones| -milestones.count }.first(3).each do |ability, milestones|
+          .col-4
+            .d-flex.align-items-center
+              %span.badge.bg-primary.me-2= milestones.count
+              %small= ability.name
+

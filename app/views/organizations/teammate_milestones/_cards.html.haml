@@ -1,0 +1,16 @@
+.row
+  - milestones.each do |milestone|
+    .col-md-6.col-lg-4.mb-3
+      .card
+        .card-body
+          %h5.card-title= milestone.ability.name
+          %p.card-text
+            %span.badge.bg-primary= milestone.milestone_level_display
+          %p.card-text
+            %small.text-muted
+              = milestone.teammate.person.display_name
+              %br
+              = milestone.attained_at.strftime('%B %d, %Y')
+          = link_to organization_teammate_milestone_path(milestone.teammate.organization, milestone), class: "btn btn-sm btn-outline-primary" do
+            View Details
+

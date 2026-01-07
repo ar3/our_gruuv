@@ -8,10 +8,8 @@ module ObservableMoments
     end
     
     def call
-      # Primary observer is the person who certified the milestone
-      primary_observer = @teammate_milestone.certified_by.teammates.find_by(
-        organization: @teammate_milestone.ability.organization
-      )
+      # Primary observer is the teammate who certified the milestone
+      primary_observer = @teammate_milestone.certifying_teammate
       return Result.err("Could not find certifier's teammate in organization") unless primary_observer
       
       # Build metadata

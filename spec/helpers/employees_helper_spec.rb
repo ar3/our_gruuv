@@ -173,7 +173,7 @@ RSpec.describe EmployeesHelper, type: :helper do
               {
                 'ability_id' => ability.id,
                 'milestone_level' => 1,
-                'certified_by_id' => nil,
+                'certifying_teammate_id' => nil,
                 'attained_at' => 1.year.ago.to_s
               }
             ],
@@ -195,7 +195,7 @@ RSpec.describe EmployeesHelper, type: :helper do
               {
                 'ability_id' => ability.id,
                 'milestone_level' => 2,
-                'certified_by_id' => manager.id,
+                'certifying_teammate_id' => manager_teammate.id,
                 'attained_at' => 6.months.ago.to_s
               }
             ],

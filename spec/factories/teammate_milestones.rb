@@ -2,9 +2,17 @@ FactoryBot.define do
   factory :teammate_milestone do
     association :teammate
     association :ability
-    association :certified_by, factory: :person
     milestone_level { rand(1..5) }
     attained_at { Date.current }
+    
+    # Create certifying_teammate if not provided, ensuring it's a CompanyTeammate
+    after(:build) do |milestone|
+      unless milestone.certifying_teammate
+        cert_teammate = build(:teammate, organization: milestone.teammate.organization)
+        cert_teammate.save!
+        milestone.certifying_teammate = CompanyTeammate.find(cert_teammate.id)
+      end
+    end
 
     trait :milestone_1 do
       milestone_level { 1 }

@@ -110,9 +110,16 @@ get '/login', to: 'auth#login', as: :login
     
     # Teammate Milestones
     resources :teammate_milestones, module: :organizations, only: [:new, :create, :show] do
+      member do
+        patch :publish
+        patch :unpublish
+        patch :publish_to_public_profile
+      end
       collection do
         get :select_teammate
         get :select_ability
+        get :customize_view
+        patch :update_view
       end
     end
     

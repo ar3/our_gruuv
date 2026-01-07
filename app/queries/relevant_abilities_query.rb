@@ -72,7 +72,7 @@ class RelevantAbilitiesQuery
     @teammate.teammate_milestones
               .where(ability: ability)
               .by_milestone_level
-              .includes(:ability, :certified_by)
+              .includes(:ability, certifying_teammate: :person)
   end
 
   def assignment_requirements_for(ability)

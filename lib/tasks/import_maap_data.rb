@@ -395,13 +395,19 @@ class MaapDataImporter
       ]
       
       milestones.each do |data|
-        person_milestone = PersonMilestone.find_or_create_by(person: person, ability: data[:ability], milestone_level: data[:level]) do |pm|
-          pm.certified_by = @natalie
-          pm.attained_at = 2.months.ago
+        teammate = person.teammates.find_by(organization: @organization)
+        next unless teammate
+        
+        natalie_teammate = @natalie.teammates.find_by(organization: @organization)
+        next unless natalie_teammate
+        
+        teammate_milestone = TeammateMilestone.find_or_create_by(teammate: teammate, ability: data[:ability], milestone_level: data[:level]) do |tm|
+          tm.certifying_teammate = natalie_teammate
+          tm.attained_at = 2.months.ago
         end
         
-        if person_milestone.persisted? && person_milestone.previously_new_record?
-          puts "  ✅ Created person milestone: #{person.first_name} #{person.last_name} - #{data[:ability].name} Level #{data[:level]}"
+        if teammate_milestone.persisted? && teammate_milestone.previously_new_record?
+          puts "  ✅ Created teammate milestone: #{person.first_name} #{person.last_name} - #{data[:ability].name} Level #{data[:level]}"
           @created_count += 1
         else
           puts "  ⏭️  Person milestone already exists: #{person.first_name} #{person.last_name} - #{data[:ability].name} Level #{data[:level]}"

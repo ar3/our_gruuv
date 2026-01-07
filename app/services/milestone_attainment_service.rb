@@ -2,18 +2,18 @@
 class MilestoneAttainmentService
   def self.call(...) = new(...).call
 
-  def initialize(teammate:, ability:, milestone_level:, certified_by:, attained_at: Date.current)
+  def initialize(teammate:, ability:, milestone_level:, certifying_teammate:, attained_at: Date.current)
     @teammate = teammate
     @ability = ability
     @milestone_level = milestone_level
-    @certified_by = certified_by
+    @certifying_teammate = certifying_teammate
     @attained_at = attained_at
   end
 
   def call
     ApplicationRecord.transaction do
       # Check if milestone already exists
-      existing_milestone = @teammate.person_milestones.find_by(
+      existing_milestone = @teammate.teammate_milestones.find_by(
         ability: @ability, 
         milestone_level: @milestone_level
       )
@@ -26,14 +26,14 @@ class MilestoneAttainmentService
       milestone = @teammate.teammate_milestones.create!(
         ability: @ability,
         milestone_level: @milestone_level,
-        certified_by: @certified_by,
+        certifying_teammate: @certifying_teammate,
         attained_at: @attained_at
       )
       
       # Create observable moment for ability milestone
       ObservableMoments::CreateAbilityMilestoneMomentService.call(
         teammate_milestone: milestone,
-        created_by: @certified_by
+        created_by: @certifying_teammate.person
       )
 
       Result.ok(milestone)

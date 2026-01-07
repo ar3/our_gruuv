@@ -1,0 +1,23 @@
+- milestones.each do |milestone|
+  .col-md-6.col-lg-4.mb-4
+    .card.h-100.border-primary.shadow-sm{style: "border-width: 3px;"}
+      .card-body.text-center.p-4
+        .mb-3
+          %i.bi.bi-trophy.text-warning{style: "font-size: 4rem;"}
+        %h4.mb-2= milestone.ability.name
+        %h5.text-primary.mb-3
+          %span.badge.bg-primary.bg-gradient{style: "font-size: 1.1rem; padding: 0.5rem 1rem;"}
+            = milestone.milestone_level_display
+        %p.mb-2.text-muted
+          %strong= milestone.teammate.person.display_name
+        %p.mb-2.small.text-muted
+          Attained: #{milestone.attained_at.strftime('%B %d, %Y')}
+        %hr.my-3
+        .small.text-muted
+          Certified by
+          %br
+          %strong= milestone.certifying_teammate.person.display_name
+          %br
+          %em{style: "font-size: 0.85rem;"}
+            Signed on #{milestone.attained_at.strftime('%B %d, %Y')}
+

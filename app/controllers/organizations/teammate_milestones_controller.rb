@@ -1,7 +1,7 @@
 class Organizations::TeammateMilestonesController < Organizations::OrganizationNamespaceBaseController
   before_action :set_teammate, only: [:new, :create]
   before_action :set_ability, only: [:new, :create]
-  before_action :set_teammate_milestone, only: [:show]
+  before_action :set_teammate_milestone, only: [:show, :publish, :unpublish, :publish_to_public_profile]
   after_action :verify_authorized
 
   def new
@@ -27,6 +27,8 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     if @ability && @teammate
       @ability_data = load_ability_data(@ability, @teammate)
       @evidence = load_evidence(@teammate, @ability)
+      # Load eligible viewers for privacy selection
+      @eligible_viewers = eligible_viewers_for_milestone(@teammate)
     end
   end
 
@@ -89,13 +91,21 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
       return
     end
     
+    # Determine privacy level and set published_at accordingly
+    privacy_level = params[:privacy_level] || 'private'
+    published_at = (privacy_level == 'company') ? Time.current : nil
+    published_by_teammate_id = (privacy_level == 'company') ? current_company_teammate.id : nil
+    
     # Create the teammate milestone
     teammate_milestone = TeammateMilestone.create!(
       teammate: @teammate,
       ability: @ability,
       milestone_level: milestone_level,
-      certified_by: current_person,
-      attained_at: Date.current
+      certifying_teammate: current_company_teammate,
+      attained_at: Date.current,
+      certification_note: params[:certification_note],
+      published_at: published_at,
+      published_by_teammate_id: published_by_teammate_id
     )
     
     # Create observable moment
@@ -116,6 +126,85 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     authorize @teammate_milestone
     
     @observable_moment = ObservableMoment.find_by(momentable: @teammate_milestone)
+    
+    # Find assignments that require at least this milestone level
+    assignment_abilities = AssignmentAbility
+      .joins(:assignment)
+      .where(ability: @teammate_milestone.ability)
+      .where('milestone_level <= ?', @teammate_milestone.milestone_level)
+      .where(assignments: { company: organization.self_and_descendants })
+      .includes(:assignment)
+      .distinct
+    
+    @required_assignments = assignment_abilities.map do |assignment_ability|
+      {
+        assignment: assignment_ability.assignment,
+        milestone_level: assignment_ability.milestone_level
+      }
+    end
+  end
+
+  def publish
+    authorize @teammate_milestone, :publish?
+    
+    @teammate_milestone.update!(
+      published_at: Time.current,
+      published_by_teammate_id: current_company_teammate.id
+    )
+    
+    redirect_to organization_teammate_milestone_path(organization, @teammate_milestone),
+                notice: 'Milestone published to company celebration page!'
+  end
+
+  def unpublish
+    authorize @teammate_milestone, :unpublish?
+    
+    @teammate_milestone.update!(
+      published_at: nil,
+      published_by_teammate_id: nil
+    )
+    
+    redirect_to organization_teammate_milestone_path(organization, @teammate_milestone),
+                notice: 'Milestone unpublished from company celebration page.'
+  end
+
+  def publish_to_public_profile
+    authorize @teammate_milestone, :publish_to_public_profile?
+    
+    @teammate_milestone.update!(
+      public_profile_published_at: Time.current
+    )
+    
+    redirect_to organization_teammate_milestone_path(organization, @teammate_milestone),
+                notice: 'Milestone published to your public profile!'
+  end
+
+  def customize_view
+    authorize TeammateMilestone, :new?
+    
+    # Load current state from params
+    query = MilestonesQuery.new(organization, params, current_person: current_person)
+    
+    @current_filters = query.current_filters
+    @current_sort = query.current_sort
+    @current_view = query.current_view
+    @current_spotlight = query.current_spotlight
+    
+    # Preserve current params for return URL
+    return_params = params.except(:controller, :action, :page).permit!.to_h
+    @return_url = celebrate_milestones_organization_path(organization, return_params)
+    @return_text = "Back to Celebrate Milestones"
+    
+    render layout: 'overlay'
+  end
+
+  def update_view
+    authorize TeammateMilestone, :new?
+    
+    # Build redirect URL with all view customization params
+    redirect_params = params.except(:controller, :action, :utf8, :_method, :commit).permit!.to_h
+    redirect_to celebrate_milestones_organization_path(organization, redirect_params),
+                notice: 'View updated successfully.'
   end
 
   private
@@ -266,6 +355,27 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
       end
     end
     
+    # Also check position's required assignments
+    active_tenure = ActiveEmploymentTenureQuery.new(
+      person: teammate.person,
+      organization: organization
+    ).first
+    
+    if active_tenure&.position
+      active_tenure.position.required_assignments.includes(assignment: :assignment_abilities).each do |position_assignment|
+        assignment_ability = position_assignment.assignment.assignment_abilities.find_by(ability: ability)
+        if assignment_ability
+          # Only add if not already in required_assignments (to avoid duplicates)
+          unless required_assignments.any? { |ra| ra[:assignment].id == position_assignment.assignment.id }
+            required_assignments << {
+              assignment: position_assignment.assignment,
+              milestone_level: assignment_ability.milestone_level
+            }
+          end
+        end
+      end
+    end
+    
     {
       ability: ability,
       current_milestone: current_milestone,
@@ -319,6 +429,47 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     end
     
     evidence
+  end
+
+  def eligible_viewers_for_milestone(teammate)
+    viewers = []
+    
+    # Add the employee (receiver)
+    viewers << {
+      person: teammate.person,
+      role: 'Employee (Milestone Recipient)'
+    }
+    
+    # Add managers in the hierarchy
+    managers = ManagerialHierarchyQuery.new(
+      person: teammate.person,
+      organization: organization
+    ).call
+    
+    managers.each do |manager|
+      viewers << {
+        person: Person.find(manager[:person_id]),
+        role: "Manager (Level #{manager[:level]})"
+      }
+    end
+    
+    # Add people with manage_employment permission in the organization
+    employment_managers = organization.teammates
+                                  .where(can_manage_employment: true, last_terminated_at: nil)
+                                  .includes(:person)
+    
+    employment_managers.each do |manager_teammate|
+      # Don't duplicate if already in managers list
+      next if managers.any? { |m| m[:person_id] == manager_teammate.person_id }
+      next if manager_teammate.person_id == teammate.person_id
+      
+      viewers << {
+        person: manager_teammate.person,
+        role: 'Has Manage Employment Permission'
+      }
+    end
+    
+    viewers.uniq { |v| v[:person].id }
   end
 end
 

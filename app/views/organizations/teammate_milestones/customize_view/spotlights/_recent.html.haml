@@ -1,0 +1,20 @@
+%h5.mb-3 Recent Milestones
+- recent_milestones = (@recent_milestones || []).select { |m| m.attained_at >= 7.days.ago }.sort_by(&:attained_at).reverse
+- if recent_milestones.any?
+  .list-group
+    - recent_milestones.first(10).each do |milestone|
+      .list-group-item
+        .d-flex.justify-content-between.align-items-center
+          .flex-grow-1
+            %h6.mb-1
+              = milestone.ability.name
+              %span.badge.bg-primary.ms-2= milestone.milestone_level_display
+            %small.text-muted
+              = milestone.teammate.person.display_name
+              %span.mx-2 •
+              = milestone.attained_at.strftime('%B %d, %Y')
+          = link_to organization_teammate_milestone_path(@organization, milestone), class: "btn btn-sm btn-outline-primary" do
+            View
+- else
+  %p.text-muted No recent milestones in the last 7 days.
+

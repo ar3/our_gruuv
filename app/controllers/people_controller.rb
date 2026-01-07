@@ -28,7 +28,7 @@ class PeopleController < ApplicationController
     @milestones = if person.teammates.exists?
       TeammateMilestone.joins(:teammate)
         .where(teammates: { person: person })
-        .includes(:ability, :certified_by)
+        .includes(:ability, certifying_teammate: :person)
         .order(attained_at: :desc)
     else
       TeammateMilestone.none

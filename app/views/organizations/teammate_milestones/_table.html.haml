@@ -1,0 +1,29 @@
+.table-responsive
+  %table.table.table-hover
+    %thead
+      %tr
+        %th Person
+        %th Ability
+        %th Milestone Level
+        %th Attained Date
+        %th Certified By
+        %th Actions
+    %tbody
+      - milestones.each do |milestone|
+        %tr
+          %td
+            = link_to complete_picture_organization_company_teammate_path(milestone.teammate.organization, milestone.teammate.person), class: "text-decoration-none" do
+              %strong= milestone.teammate.person.display_name
+          %td
+            = milestone.ability.name
+          %td
+            %span.badge.bg-primary= milestone.milestone_level_display
+          %td
+            = milestone.attained_at.strftime('%B %d, %Y')
+          %td
+            = milestone.certifying_teammate.person.display_name
+          %td
+            .btn-group.btn-group-sm
+              = link_to organization_teammate_milestone_path(milestone.teammate.organization, milestone), class: "btn btn-outline-primary", title: "View Milestone" do
+                %i.bi.bi-eye
+

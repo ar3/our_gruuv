@@ -55,13 +55,77 @@ RSpec.describe TeammateMilestonePolicy, type: :policy do
       expect(subject).to permit(admin_teammate, teammate_milestone)
     end
 
-    it 'denies other teammates from viewing' do
+    it 'denies other teammates from viewing unpublished milestones' do
       expect(subject).not_to permit(other_teammate, teammate_milestone)
+    end
+
+    it 'allows any teammate in the organization to view published milestones' do
+      teammate_milestone.update!(published_at: Time.current, published_by_teammate: teammate_milestone.certifying_teammate)
+      expect(subject).to permit(other_teammate, teammate_milestone)
     end
 
     it 'denies if viewing teammate is terminated' do
       teammate.update!(first_employed_at: 1.month.ago, last_terminated_at: Time.current)
       expect(subject).not_to permit(teammate, teammate_milestone)
+    end
+  end
+
+  permissions :publish?, :unpublish? do
+    it 'allows the receiver to publish/unpublish' do
+      expect(subject).to permit(teammate, teammate_milestone)
+    end
+
+    it 'allows the certifier to publish/unpublish' do
+      certifier_teammate = teammate_milestone.certifying_teammate
+      expect(subject).to permit(certifier_teammate, teammate_milestone)
+    end
+
+    it 'allows managers to publish/unpublish' do
+      manager_teammate_company = CompanyTeammate.find(manager_teammate.id)
+      create(:employment_tenure, 
+             teammate: teammate, 
+             company: organization, 
+             manager_teammate: manager_teammate_company)
+      
+      expect(subject).to permit(manager_teammate_company, teammate_milestone)
+    end
+
+    it 'allows users with manage_employment permission to publish/unpublish' do
+      admin_teammate = CompanyTeammate.find(create(:teammate, 
+                              person: create(:person), 
+                              organization: organization,
+                              can_manage_employment: true).id)
+      
+      expect(subject).to permit(admin_teammate, teammate_milestone)
+    end
+
+    it 'denies other teammates from publishing/unpublishing' do
+      expect(subject).not_to permit(other_teammate, teammate_milestone)
+    end
+  end
+
+  permissions :publish_to_public_profile? do
+    it 'allows only the receiver to publish to public profile' do
+      expect(subject).to permit(teammate, teammate_milestone)
+    end
+
+    it 'denies the certifier from publishing to public profile' do
+      certifier_teammate = teammate_milestone.certifying_teammate
+      expect(subject).not_to permit(certifier_teammate, teammate_milestone)
+    end
+
+    it 'denies managers from publishing to public profile' do
+      manager_teammate_company = CompanyTeammate.find(manager_teammate.id)
+      create(:employment_tenure, 
+             teammate: teammate, 
+             company: organization, 
+             manager_teammate: manager_teammate_company)
+      
+      expect(subject).not_to permit(manager_teammate_company, teammate_milestone)
+    end
+
+    it 'denies other teammates from publishing to public profile' do
+      expect(subject).not_to permit(other_teammate, teammate_milestone)
     end
   end
 

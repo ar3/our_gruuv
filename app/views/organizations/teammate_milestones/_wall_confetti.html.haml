@@ -1,0 +1,24 @@
+- milestones.each do |milestone|
+  .col-md-6.col-lg-4.mb-4
+    .card.h-100.border-0.shadow.rounded-4.overflow-hidden{style: "background: linear-gradient(45deg, #f093fb 0%, #f5576c 25%, #4facfe 50%, #00f2fe 75%, #43e97b 100%); background-size: 400% 400%; animation: gradient 15s ease infinite;"}
+      .card-body.text-center.p-4.position-relative{style: "background: rgba(255, 255, 255, 0.95);"}
+        .position-absolute.top-0.start-0.w-100.h-100{style: "pointer-events: none; opacity: 0.1;"}
+          %i.bi.bi-balloon-fill.text-primary{style: "font-size: 2rem; position: absolute; top: 10px; left: 10px;"}
+          %i.bi.bi-star-fill.text-warning{style: "font-size: 1.5rem; position: absolute; top: 20px; right: 15px;"}
+          %i.bi.bi-heart-fill.text-danger{style: "font-size: 1.8rem; position: absolute; bottom: 15px; left: 20px;"}
+        .mb-3
+          %i.bi.bi-trophy-fill.text-warning{style: "font-size: 3.5rem; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));"}
+        %h4.mb-2.text-primary= milestone.ability.name
+        .mb-3
+          %span.badge.bg-success.bg-gradient.rounded-pill{style: "font-size: 1.1rem; padding: 0.5rem 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"}
+            = milestone.milestone_level_display
+        %p.mb-1
+          %strong.text-dark= milestone.teammate.person.display_name
+        %p.mb-2.small.text-muted
+          🎉 #{milestone.attained_at.strftime('%B %d, %Y')} 🎉
+        %hr.my-2
+        .small.text-muted
+          Certified by
+          %br
+          %strong.text-primary= milestone.certifying_teammate.person.display_name
+

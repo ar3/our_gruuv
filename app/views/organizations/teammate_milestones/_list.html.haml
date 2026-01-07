@@ -1,0 +1,17 @@
+.list-group
+  - milestones.each do |milestone|
+    .list-group-item
+      .d-flex.justify-content-between.align-items-center
+        .flex-grow-1
+          %h6.mb-1
+            = milestone.ability.name
+            %span.badge.bg-primary.ms-2= milestone.milestone_level_display
+          %small.text-muted
+            = milestone.teammate.person.display_name
+            %span.mx-2 •
+            = milestone.attained_at.strftime('%B %d, %Y')
+            %span.mx-2 •
+            Certified by #{milestone.certifying_teammate.person.display_name}
+        = link_to organization_teammate_milestone_path(milestone.teammate.organization, milestone), class: "btn btn-sm btn-outline-primary" do
+          View
+

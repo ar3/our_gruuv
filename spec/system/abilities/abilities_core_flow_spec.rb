@@ -95,7 +95,7 @@ RSpec.describe 'Abilities Core Flow', type: :system do
         teammate: employee_teammate,
         ability: ability,
         milestone_level: 2,
-        certified_by: person,
+        certifying_teammate: create(:teammate, person: person, organization: organization),
         attained_at: Date.current
       )
       

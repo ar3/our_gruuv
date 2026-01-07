@@ -216,7 +216,7 @@ class CheckInFinalizationService
       {
         ability_id: milestone.ability_id,
         milestone_level: milestone.milestone_level,
-        certified_by_id: milestone.certified_by_id,
+        certifying_teammate_id: milestone.certifying_teammate_id,
         attained_at: milestone.attained_at
       }
     end

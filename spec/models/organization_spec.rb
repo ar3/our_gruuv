@@ -71,10 +71,11 @@ RSpec.describe Organization, type: :model do
 
     it 'returns milestones for a person in the organization' do
       # Create a milestone for person1
+      certifier_teammate = create(:teammate, person: certifier, organization: company)
       teammate_milestone = create(:teammate_milestone, 
         teammate: teammate1, 
         ability: ability, 
-        certified_by: certifier, 
+        certifying_teammate: certifier_teammate, 
         milestone_level: 2,
         attained_at: 30.days.ago
       )
@@ -101,17 +102,18 @@ RSpec.describe Organization, type: :model do
       other_ability = create(:ability, organization: other_company)
       
       # Create milestones for both abilities
+      certifier_teammate = create(:teammate, person: certifier, organization: company)
       milestone_in_company = create(:teammate_milestone, 
         teammate: teammate1, 
         ability: ability, 
-        certified_by: certifier, 
+        certifying_teammate: certifier_teammate, 
         milestone_level: 2,
         attained_at: 30.days.ago
       )
       milestone_in_other_company = create(:teammate_milestone, 
         teammate: teammate1, 
         ability: other_ability, 
-        certified_by: certifier, 
+        certifying_teammate: certifier_teammate, 
         milestone_level: 3,
         attained_at: 30.days.ago
       )

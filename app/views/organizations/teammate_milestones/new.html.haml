@@ -90,11 +90,38 @@
             
             .card.mb-3{class: "#{'border-secondary' if is_disabled} #{'border-primary' if is_clickable}"}
               .card-body
-                .card-title Milestone #{level} - #{milestone_level_display(level)} #{@ability.name.downcase}
+                .d-flex.align-items-center.justify-content-between.mb-2
+                  .card-title.mb-0 Milestone #{level} - #{milestone_level_display(level)} #{@ability.name.downcase}
+                  %button.btn.btn-sm.text-muted.p-0.border-0.bg-transparent{"data-bs-toggle" => "collapse", "data-bs-target" => "#milestoneDetails_#{level}", "aria-expanded" => "false", "aria-controls" => "milestoneDetails_#{level}", type: "button", style: "font-size: 0.875rem;"}
+                    Show milestone details
+                    %i.bi.bi-chevron-down.ms-1
+                
+                / Collapsible milestone details
+                .collapse.mb-3{id: "milestoneDetails_#{level}"}
+                  .card.card-body.markdown-content--bordered
+                    - milestone_description = @ability.milestone_description(level)
+                    - if milestone_description.present?
+                      = render_markdown(milestone_description)
+                    - else
+                      %p.text-muted.mb-0 This Milestone has not been defined.
+                    
+                    / Assignment requirements
+                    - if @ability_data && @ability_data[:required_assignments]
+                      - required_for_this_level = @ability_data[:required_assignments].select { |ra| level <= ra[:milestone_level] }
+                      - if required_for_this_level.any?
+                        .mt-3.pt-3.border-top
+                          %p.mb-2.small.text-muted
+                            %strong Assignment Requirements:
+                          .d-flex.flex-wrap.gap-2
+                            - required_for_this_level.each do |ra|
+                              %span.badge.bg-info
+                                Required Milestone #{ra[:milestone_level]} for #{ra[:assignment].title}
+                
                 - if is_disabled
                   - if is_awarded
                     - awarded = @teammate.teammate_milestones.find_by(ability: @ability, milestone_level: level)
                     %p.mb-0
+                      %i.bi.bi-trophy.text-success.me-2
                       %strong= @teammate_display[:casual_name]
                       = " has been recognized for (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name} on #{awarded.attained_at.strftime('%B %d, %Y')}."
                   - else
@@ -135,6 +162,29 @@
                       %li
                         %strong Competently:
                         = " meaning #{@teammate_display[:casual_name]} has meet the criteria that is deserving of (Milestone #{level}) #{milestone_level_display(level)} #{@ability.name}"
+                    
+                    .mb-3
+                      = f.label :certification_note, "Why are you awarding this milestone? (Optional)", class: "form-label"
+                      = f.text_area :certification_note, class: "form-control", rows: 3, placeholder: "Add a note explaining why you are awarding this milestone..."
+                    
+                    .mb-3
+                      = f.label :privacy_level, "Who can see this milestone?", class: "form-label"
+                      .form-check
+                        = f.radio_button :privacy_level, "company", class: "form-check-input", id: "privacy_company_#{level}", checked: true
+                        = f.label :privacy_level, "Company-wide (appears on celebration page)", value: "company", class: "form-check-label", for: "privacy_company_#{level}"
+                      .form-check
+                        = f.radio_button :privacy_level, "private", class: "form-check-input", id: "privacy_private_#{level}", data: { bs_toggle: "collapse", bs_target: "#eligible_viewers_#{level}" }
+                        = f.label :privacy_level, "Private (only visible to employee, their managers, and people with Manage employment permission)", value: "private", class: "form-check-label", for: "privacy_private_#{level}"
+                      
+                      .collapse.mt-2{id: "eligible_viewers_#{level}"}
+                        .card.card-body.bg-light
+                          %small.text-muted.mb-2 This milestone will be visible to:
+                          %ul.mb-0.small
+                            - if @eligible_viewers
+                              - @eligible_viewers.each do |viewer|
+                                %li
+                                  %strong= viewer[:person].display_name
+                                  %span.text-muted= " - #{viewer[:role]}"
                     
                     = f.submit "Award Milestone #{level}", class: "btn btn-primary"
                 - else

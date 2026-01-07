@@ -32,6 +32,87 @@ RSpec.describe Organizations::TeammateMilestonesController, type: :controller do
       expect(assigns(:ability)).to eq(ability)
       expect(assigns(:ability_data)).to be_present
     end
+
+    it 'includes required assignments from position required assignments in ability_data' do
+      # Ensure teammate has first_employed_at set so they're considered employed
+      teammate.update!(first_employed_at: 1.month.ago)
+      
+      # Create a position with required assignments
+      position_type = create(:position_type, organization: organization)
+      position_level = create(:position_level, position_major_level: position_type.position_major_level)
+      
+      # Create employment tenure (factory will create a position)
+      employment_tenure = create(:employment_tenure, 
+             teammate: teammate, 
+             company: organization,
+             started_at: 1.month.ago,
+             ended_at: nil)
+      
+      position = employment_tenure.position
+      
+      # Create an assignment with ability requirement
+      assignment = create(:assignment, company: organization)
+      assignment_ability = create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 2)
+      
+      # Make this assignment required for the position
+      create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required')
+      
+      get :new, params: { organization_id: organization.id, teammate_id: teammate.id, ability_id: ability.id }
+      
+      expect(response).to have_http_status(:success)
+      ability_data = assigns(:ability_data)
+      expect(ability_data).to be_present
+      expect(ability_data[:required_assignments]).to be_present
+      
+      # Verify that required_assignments includes the assignment from position's required assignments
+      assignment_found = ability_data[:required_assignments].any? { |ra| ra[:assignment].id == assignment.id }
+      expect(assignment_found).to eq(true)
+      expect(ability_data[:required_assignments].find { |ra| ra[:assignment].id == assignment.id }[:milestone_level]).to eq(2)
+    end
+
+    it 'displays required assignment pills on the new page' do
+      # Ensure teammate has first_employed_at set
+      teammate.update!(first_employed_at: 1.month.ago)
+      
+      # Create assignment with ability requirement at level 1 (so it shows for milestone 1+)
+      assignment = create(:assignment, company: organization, title: 'Test Assignment')
+      create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 1)
+      
+      # Create assignment tenure
+      create(:assignment_tenure, teammate: teammate, assignment: assignment, started_at: 1.month.ago, ended_at: nil)
+      
+      get :new, params: { organization_id: organization.id, teammate_id: teammate.id, ability_id: ability.id }
+      
+      expect(response).to have_http_status(:success)
+      # Check that the required assignment pill is displayed inside the collapsed details section
+      expect(response.body).to include('Required Milestone 1 for Test Assignment')
+      # Check that it's in the assignment requirements section
+      expect(response.body).to include('Assignment Requirements:')
+    end
+
+    it 'displays milestone details collapse section on the new page' do
+      # Set milestone description
+      ability.update!(milestone_1_description: 'This is milestone 1 description')
+      
+      get :new, params: { organization_id: organization.id, teammate_id: teammate.id, ability_id: ability.id }
+      
+      expect(response).to have_http_status(:success)
+      # Check that the collapse button is present
+      expect(response.body).to include('Show milestone details')
+      # Check that the milestone description is present in the collapse section
+      expect(response.body).to include('This is milestone 1 description')
+    end
+
+    it 'displays "This Milestone has not been defined" when milestone description is blank' do
+      # Ensure milestone description is blank
+      ability.update!(milestone_1_description: nil)
+      
+      get :new, params: { organization_id: organization.id, teammate_id: teammate.id, ability_id: ability.id }
+      
+      expect(response).to have_http_status(:success)
+      # Check that the fallback message is present
+      expect(response.body).to include('This Milestone has not been defined')
+    end
   end
 
   describe 'GET #select_teammate' do
@@ -172,7 +253,9 @@ RSpec.describe Organizations::TeammateMilestonesController, type: :controller do
     end
 
     it 'does not create duplicate milestones' do
-      create(:teammate_milestone, teammate: other_teammate, ability: ability, milestone_level: 1, certified_by: certifier)
+      # Use the existing teammate for the certifier (person is already a teammate)
+      certifier_teammate = teammate
+      create(:teammate_milestone, teammate: other_teammate, ability: ability, milestone_level: 1, certifying_teammate: certifier_teammate)
       
       expect {
         post :create, params: {
@@ -193,7 +276,7 @@ RSpec.describe Organizations::TeammateMilestonesController, type: :controller do
       create(:teammate_milestone, 
              teammate: teammate, 
              ability: ability, 
-             certified_by: person,
+             certifying_teammate: teammate,
              attained_at: Date.current)
     end
 

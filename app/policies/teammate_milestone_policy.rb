@@ -25,7 +25,43 @@ class TeammateMilestonePolicy < ApplicationPolicy
     return true if viewing_teammate.can_manage_employment? && 
                   viewing_teammate.organization == record.teammate.organization
     
+    # If the milestone is published to the company, anyone in the organization can view
+    return true if record.published? && viewing_teammate.organization == record.teammate.organization
+    
     false
+  end
+
+  def publish?
+    return false unless viewing_teammate && record
+    return false if viewing_teammate.terminated?
+    
+    # Receiver can publish
+    return true if viewing_teammate == record.teammate
+    
+    # Certifier can publish
+    return true if viewing_teammate == record.certifying_teammate
+    
+    # Managers can publish
+    return true if viewing_teammate.in_managerial_hierarchy_of?(record.teammate)
+    
+    # People with manage_employment permission can publish
+    return true if viewing_teammate.can_manage_employment? && 
+                  viewing_teammate.organization == record.teammate.organization
+    
+    false
+  end
+
+  def unpublish?
+    # Same permissions as publish
+    publish?
+  end
+
+  def publish_to_public_profile?
+    return false unless viewing_teammate && record
+    return false if viewing_teammate.terminated?
+    
+    # Only the receiver (teammate who was awarded) can publish to their public profile
+    viewing_teammate == record.teammate
   end
 
   class Scope < ApplicationPolicy::Scope

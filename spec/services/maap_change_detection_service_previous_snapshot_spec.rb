@@ -35,7 +35,7 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'ability_id' => ability.id,
               'milestone_level' => 2,
-              'certified_by_id' => manager.id,
+              'certifying_teammate_id' => create(:teammate, person: manager, organization: organization).id,
               'attained_at' => '2025-06-01'
             }
           ],
@@ -350,13 +350,13 @@ RSpec.describe MaapChangeDetectionService, 'previous snapshot comparison' do
             {
               'ability_id' => ability.id,
               'milestone_level' => 2,  # Changed from 1
-              'certified_by_id' => manager.id,
+              'certifying_teammate_id' => create(:teammate, person: manager, organization: organization).id,
               'attained_at' => '2025-06-01'
             },
             {
               'ability_id' => ability2.id,  # New milestone
               'milestone_level' => 3,
-              'certified_by_id' => manager.id,
+              'certifying_teammate_id' => create(:teammate, person: manager, organization: organization).id,
               'attained_at' => '2025-06-15'
             }
           ],

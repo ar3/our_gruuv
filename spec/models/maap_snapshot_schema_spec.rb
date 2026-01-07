@@ -9,7 +9,8 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
   let(:assignment) { create(:assignment, company: organization) }
   let(:assignment_tenure) { create(:assignment_tenure, teammate: teammate, assignment: assignment, anticipated_energy_percentage: 50, official_rating: 'meeting') }
   let(:ability) { create(:ability, organization: organization) }
-  let(:milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3, certified_by_id: manager.id, attained_at: Date.current) }
+  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let(:milestone) { create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 3, certifying_teammate: manager_teammate, attained_at: Date.current) }
   let(:aspiration) { create(:aspiration, organization: organization) }
   let(:aspiration_check_in) { create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, official_rating: 'exceeding', official_check_in_completed_at: Time.current) }
 
@@ -63,7 +64,7 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
       expect(ability_data).to include(
         :ability_id,
         :milestone_level,
-        :certified_by_id,
+        :certifying_teammate_id,
         :attained_at
       )
       expect(ability_data[:ability_id]).to eq(ability.id)
@@ -118,7 +119,7 @@ RSpec.describe 'MaapSnapshot Schema Standardization' do
       expect(ability_data).to include(
         :ability_id,
         :milestone_level,
-        :certified_by_id,
+        :certifying_teammate_id,
         :attained_at
       )
       

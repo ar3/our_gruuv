@@ -216,7 +216,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
         
         # Set up phase 6: all abilities have milestone attainments
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certified_by: person)
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
         
         expect(described_class.calculate_phase(position_type)).to eq(7)
       end
@@ -272,7 +272,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certified_by: person)
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
         
         expect(described_class.calculate_phase(position_type)).to eq(8)
       end
@@ -301,7 +301,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certified_by: person)
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
         
         expect(described_class.calculate_phase(position_type)).to eq(7)
       end
@@ -330,7 +330,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certified_by: person)
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
         
         # Total entities: 6 (2 positions, 2 assignments, 2 abilities)
         # Updated in last 6 months: 6 (all)
@@ -362,7 +362,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certified_by: person)
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
         
         # Total entities: 6 (2 positions, 2 assignments, 2 abilities)
         # Updated in last 6 months: 0
@@ -395,7 +395,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certified_by: person)
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
         
         # Set up phase 9: published observations
         observer = create(:person)
@@ -431,7 +431,7 @@ RSpec.describe PositionTypeMaturityService, type: :service do
         )
         create(:assignment_ability, assignment: assignment1, ability: ability, milestone_level: 1)
         create(:assignment_ability, assignment: assignment2, ability: ability, milestone_level: 1)
-        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certified_by: person)
+        create(:teammate_milestone, teammate: teammate, ability: ability, milestone_level: 1, certifying_teammate: create(:teammate, person: person, organization: organization))
         
         # No published observations (or <10%)
         # Total entities: 6 (2 positions, 2 assignments, 2 abilities)

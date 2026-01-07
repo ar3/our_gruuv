@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_05_024005) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_06_172738) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -900,15 +900,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_05_024005) do
   create_table "teammate_milestones", force: :cascade do |t|
     t.bigint "ability_id", null: false
     t.integer "milestone_level", null: false
-    t.bigint "certified_by_id", null: false
     t.date "attained_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "teammate_id"
+    t.bigint "certifying_teammate_id", null: false
+    t.text "certification_note"
+    t.datetime "published_at"
+    t.bigint "published_by_teammate_id"
+    t.datetime "public_profile_published_at"
     t.index ["ability_id"], name: "index_teammate_milestones_on_ability_id"
     t.index ["attained_at"], name: "index_teammate_milestones_on_attained_at"
-    t.index ["certified_by_id"], name: "index_teammate_milestones_on_certified_by_id"
+    t.index ["certifying_teammate_id"], name: "index_teammate_milestones_on_certifying_teammate_id"
     t.index ["milestone_level"], name: "index_teammate_milestones_on_milestone_level"
+    t.index ["public_profile_published_at"], name: "index_teammate_milestones_on_public_profile_published_at"
+    t.index ["published_at"], name: "index_teammate_milestones_on_published_at"
+    t.index ["published_by_teammate_id"], name: "index_teammate_milestones_on_published_by_teammate_id"
     t.index ["teammate_id"], name: "index_teammate_milestones_on_teammate_id"
   end
 
@@ -1080,6 +1087,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_05_024005) do
   add_foreign_key "teammate_identities", "teammates"
   add_foreign_key "teammate_milestones", "abilities"
   add_foreign_key "teammate_milestones", "teammates"
+  add_foreign_key "teammate_milestones", "teammates", column: "certifying_teammate_id"
+  add_foreign_key "teammate_milestones", "teammates", column: "published_by_teammate_id"
   add_foreign_key "teammates", "organizations"
   add_foreign_key "teammates", "people"
   add_foreign_key "third_party_object_associations", "third_party_objects"

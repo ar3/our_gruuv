@@ -112,6 +112,22 @@
     %h5.mb-0
       %i.bi.bi-bullseye.me-2
       Associated Goals
+    Why Associate goals with these reflection prompts?
+    .quoteDetails.fullLine
+      %a.leftAlignedImage.quoteAvatar.quoteAvatar--large{:href => "/author/show/1038213.Danielle_LaPorte"}
+        %img{:alt => "Danielle LaPorte", :src => "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/authors/1477679710i/1038213._UY200_CR0,0,200,200_.jpg"}/
+      .quoteText
+        %h1.quoteText
+          “If your goals aren’t synced with the substance of your heart, then achieving them won’t matter much.”
+          %br/
+        ―
+        %span.authorOrTitle
+          Danielle LaPorte,
+        %span#quote_book_link_18874701
+          %a.authorOrTitle{:href => "/work/quotes/18136546"} The Fire Starter Sessions: A Soulful + Practical Guide to Creating Success on Your Own Terms
+      .quoteFooter
+
+
     - if @can_edit
       = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: request.url, return_text: 'Edit Prompt'), class: "btn btn-sm btn-primary" do
         %i.bi.bi-plus.me-1
