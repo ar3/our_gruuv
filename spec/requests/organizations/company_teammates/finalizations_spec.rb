@@ -258,6 +258,140 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
         end
       end
     end
+
+    context "when no check-ins are finalized" do
+      it "succeeds but does not create a snapshot" do
+        empty_params = {}
+        
+        expect {
+          post organization_company_teammate_finalization_path(organization, employee_teammate),
+               params: empty_params
+        }.not_to change { MaapSnapshot.count }
+        
+        expect(response).to redirect_to(audit_organization_employee_path(organization, employee))
+      end
+
+      it "succeeds when finalize flag is not set for position" do
+        params_without_finalize = {
+          position_check_in: {
+            official_rating: '2',
+            shared_notes: 'Not finalizing'
+          }
+        }
+        
+        expect {
+          post organization_company_teammate_finalization_path(organization, employee_teammate),
+               params: params_without_finalize
+        }.not_to change { MaapSnapshot.count }
+        
+        expect(response).to redirect_to(audit_organization_employee_path(organization, employee))
+      end
+
+      it "succeeds when assignment_check_ins exists but finalize flag is not set" do
+        assignment = create(:assignment, company: organization)
+        assignment_check_in = create(:assignment_check_in,
+          teammate: employee_teammate,
+          assignment: assignment,
+          employee_rating: 'meeting',
+          manager_rating: 'exceeding',
+          employee_completed_at: 1.day.ago,
+          manager_completed_at: 1.day.ago)
+        
+        params_without_finalize = {
+          assignment_check_ins: {
+            assignment_check_in.id.to_s => {
+              finalize: '0',
+              official_rating: 'meeting',
+              shared_notes: 'Not finalizing'
+            }
+          }
+        }
+        
+        expect {
+          post organization_company_teammate_finalization_path(organization, employee_teammate),
+               params: params_without_finalize
+        }.not_to change { MaapSnapshot.count }
+        
+        expect(response).to redirect_to(audit_organization_employee_path(organization, employee))
+      end
+    end
+
+    context "when partial finalizations occur" do
+      let(:assignment) { create(:assignment, company: organization) }
+      let!(:assignment_check_in) do
+        create(:assignment_check_in,
+          teammate: employee_teammate,
+          assignment: assignment,
+          employee_rating: 'meeting',
+          manager_rating: 'exceeding',
+          employee_completed_at: 1.day.ago,
+          manager_completed_at: 1.day.ago)
+      end
+
+      it "creates snapshot when only position is finalized" do
+        position_params = {
+          position_check_in: {
+            finalize: '1',
+            official_rating: '2',
+            shared_notes: 'Finalizing position only'
+          }
+        }
+        
+        expect {
+          post organization_company_teammate_finalization_path(organization, employee_teammate),
+               params: position_params
+        }.to change { MaapSnapshot.count }.by(1)
+        
+        snapshot = MaapSnapshot.last
+        expect(snapshot.change_type).to eq('position_tenure')
+      end
+
+      it "creates snapshot when only assignment is finalized" do
+        assignment_params = {
+          assignment_check_ins: {
+            assignment_check_in.id.to_s => {
+              finalize: '1',
+              official_rating: 'exceeding',
+              shared_notes: 'Finalizing assignment only',
+              anticipated_energy_percentage: '60'
+            }
+          }
+        }
+        
+        expect {
+          post organization_company_teammate_finalization_path(organization, employee_teammate),
+               params: assignment_params
+        }.to change { MaapSnapshot.count }.by(1)
+        
+        snapshot = MaapSnapshot.last
+        expect(snapshot.change_type).to eq('assignment_management')
+      end
+
+      it "creates snapshot when position is finalized but assignment is not" do
+        mixed_params = {
+          position_check_in: {
+            finalize: '1',
+            official_rating: '2',
+            shared_notes: 'Finalizing position'
+          },
+          assignment_check_ins: {
+            assignment_check_in.id.to_s => {
+              finalize: '0',
+              official_rating: 'exceeding',
+              shared_notes: 'Not finalizing assignment'
+            }
+          }
+        }
+        
+        expect {
+          post organization_company_teammate_finalization_path(organization, employee_teammate),
+               params: mixed_params
+        }.to change { MaapSnapshot.count }.by(1)
+        
+        snapshot = MaapSnapshot.last
+        expect(snapshot.change_type).to eq('position_tenure')
+      end
+    end
   end
 end
 

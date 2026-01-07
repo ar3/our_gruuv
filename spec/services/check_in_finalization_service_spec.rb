@@ -526,6 +526,218 @@ RSpec.describe CheckInFinalizationService, type: :service do
         end
       end
     end
+
+    context 'conditional snapshot creation' do
+      let(:position_type) { create(:position_type, organization: organization) }
+      let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
+      let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+      let(:employment_tenure) do
+        EmploymentTenure.find_by(teammate: employee_teammate, company: organization) ||
+          create(:employment_tenure,
+            teammate: employee_teammate,
+            company: organization,
+            manager_teammate: manager_teammate,
+            position: position,
+            started_at: 1.month.ago)
+      end
+      let!(:position_check_in) do
+        create(:position_check_in,
+          :ready_for_finalization,
+          teammate: employee_teammate,
+          employment_tenure: employment_tenure,
+          employee_rating: 1,
+          manager_rating: 2)
+      end
+
+      context 'when no check-ins are finalized' do
+        it 'does not create a snapshot' do
+          empty_params = {}
+          
+          expect {
+            described_class.new(
+              teammate: employee_teammate,
+              finalization_params: empty_params,
+              finalized_by: manager,
+              request_info: request_info
+            ).call
+          }.not_to change { MaapSnapshot.count }
+        end
+
+        it 'returns success with nil snapshot' do
+          empty_params = {}
+          
+          result = described_class.new(
+            teammate: employee_teammate,
+            finalization_params: empty_params,
+            finalized_by: manager,
+            request_info: request_info
+          ).call
+          
+          expect(result.ok?).to be true
+          expect(result.value[:snapshot]).to be_nil
+        end
+
+        it 'does not create snapshot when finalize flag is not set' do
+          params_without_finalize = {
+            position_check_in: {
+              official_rating: '2',
+              shared_notes: 'Not finalizing'
+            }
+          }
+          
+          expect {
+            described_class.new(
+              teammate: employee_teammate,
+              finalization_params: params_without_finalize,
+              finalized_by: manager,
+              request_info: request_info
+            ).call
+          }.not_to change { MaapSnapshot.count }
+        end
+
+        it 'does not create snapshot when assignment_check_ins exists but none are finalized' do
+          params_with_empty_assignments = {
+            assignment_check_ins: {
+              assignment_check_in.id => {
+                finalize: '0',
+                official_rating: 'meeting',
+                shared_notes: 'Not finalizing'
+              }
+            }
+          }
+          
+          expect {
+            described_class.new(
+              teammate: employee_teammate,
+              finalization_params: params_with_empty_assignments,
+              finalized_by: manager,
+              request_info: request_info
+            ).call
+          }.not_to change { MaapSnapshot.count }
+        end
+      end
+
+      context 'when some check-ins are finalized' do
+        it 'creates snapshot when position is finalized' do
+          position_params = {
+            position_check_in: {
+              finalize: '1',
+              official_rating: '2',
+              shared_notes: 'Finalizing position'
+            }
+          }
+          
+          expect {
+            described_class.new(
+              teammate: employee_teammate,
+              finalization_params: position_params,
+              finalized_by: manager,
+              request_info: request_info
+            ).call
+          }.to change { MaapSnapshot.count }.by(1)
+        end
+
+        it 'creates snapshot when assignment is finalized' do
+          expect {
+            described_class.new(
+              teammate: employee_teammate,
+              finalization_params: finalization_params,
+              finalized_by: manager,
+              request_info: request_info
+            ).call
+          }.to change { MaapSnapshot.count }.by(1)
+        end
+
+        it 'creates snapshot when only one of multiple assignments is finalized' do
+          assignment2 = create(:assignment, company: organization)
+          assignment_tenure2 = create(:assignment_tenure,
+            teammate: employee_teammate,
+            assignment: assignment2,
+            anticipated_energy_percentage: 30,
+            started_at: 1.month.ago)
+          assignment_check_in2 = create(:assignment_check_in,
+            teammate: employee_teammate,
+            assignment: assignment2,
+            employee_rating: 'meeting',
+            manager_rating: 'exceeding',
+            employee_completed_at: 1.day.ago,
+            manager_completed_at: 1.day.ago)
+          
+          params_with_one_finalized = {
+            assignment_check_ins: {
+              assignment_check_in.id => {
+                finalize: '1',
+                official_rating: 'meeting',
+                shared_notes: 'Finalizing this one'
+              },
+              assignment_check_in2.id => {
+                finalize: '0',
+                official_rating: 'exceeding',
+                shared_notes: 'Not finalizing'
+              }
+            }
+          }
+          
+          expect {
+            described_class.new(
+              teammate: employee_teammate,
+              finalization_params: params_with_one_finalized,
+              finalized_by: manager,
+              request_info: request_info
+            ).call
+          }.to change { MaapSnapshot.count }.by(1)
+        end
+      end
+
+      context 'when all check-ins are finalized' do
+        let(:aspiration) { create(:aspiration, organization: organization) }
+        let!(:aspiration_check_in) do
+          create(:aspiration_check_in,
+            teammate: employee_teammate,
+            aspiration: aspiration,
+            employee_rating: 2,
+            manager_rating: 3,
+            employee_completed_at: 1.day.ago,
+            manager_completed_at: 1.day.ago)
+        end
+
+        it 'creates snapshot when position, assignment, and aspiration are all finalized' do
+          all_params = {
+            position_check_in: {
+              finalize: '1',
+              official_rating: '2',
+              shared_notes: 'Finalizing position'
+            },
+            assignment_check_ins: {
+              assignment_check_in.id => {
+                finalize: '1',
+                official_rating: 'meeting',
+                shared_notes: 'Finalizing assignment'
+              }
+            },
+            aspiration_check_ins: {
+              aspiration_check_in.id => {
+                finalize: '1',
+                official_rating: '3',
+                shared_notes: 'Finalizing aspiration'
+              }
+            }
+          }
+          
+          expect {
+            described_class.new(
+              teammate: employee_teammate,
+              finalization_params: all_params,
+              finalized_by: manager,
+              request_info: request_info
+            ).call
+          }.to change { MaapSnapshot.count }.by(1)
+          
+          snapshot = MaapSnapshot.last
+          expect(snapshot.change_type).to eq('bulk_check_in_finalization')
+        end
+      end
+    end
   end
 end
 

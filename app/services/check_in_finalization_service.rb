@@ -33,11 +33,15 @@ class CheckInFinalizationService
         results[:aspirations] = aspiration_results.value
       end
       
-      # Create ONE snapshot with complete MAAP state
-      snapshot = create_snapshot(results)
-      
-      # Link snapshot to all finalized check-ins
-      link_snapshot_to_check_ins(results, snapshot)
+      # Only create snapshot if something was actually finalized
+      snapshot = nil
+      if anything_finalized?(results)
+        # Create ONE snapshot with complete MAAP state
+        snapshot = create_snapshot(results)
+        
+        # Link snapshot to all finalized check-ins
+        link_snapshot_to_check_ins(results, snapshot)
+      end
       
       Result.ok(snapshot: snapshot, results: results)
     end
@@ -245,5 +249,11 @@ class CheckInFinalizationService
         assignment_result[:check_in].update!(maap_snapshot: snapshot)
       end
     end
+  end
+  
+  def anything_finalized?(results)
+    results[:position].present? ||
+      (results[:assignments].present? && results[:assignments].any?) ||
+      (results[:aspirations].present? && results[:aspirations].any?)
   end
 end

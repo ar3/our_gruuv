@@ -336,7 +336,42 @@ class EmploymentDataUploadProcessor
       assignment: assignment,
       check_in_started_on: check_in_data['check_in_date']
     )
-    return check_in, false if check_in
+    
+    if check_in
+      # Update existing check-in, but only update fields that are currently nil or empty string
+      update_attrs = {}
+      
+      if check_in_data['energy_percentage'].present? && check_in.actual_energy_percentage.blank?
+        update_attrs[:actual_energy_percentage] = check_in_data['energy_percentage']
+      end
+      
+      if check_in_data['manager_rating'].present? && check_in.manager_rating.blank?
+        update_attrs[:manager_rating] = check_in_data['manager_rating']
+      end
+      
+      if check_in_data['employee_rating'].present? && check_in.employee_rating.blank?
+        update_attrs[:employee_rating] = check_in_data['employee_rating']
+      end
+      
+      if check_in_data['official_rating'].present? && check_in.official_rating.blank?
+        update_attrs[:official_rating] = check_in_data['official_rating']
+      end
+      
+      if check_in_data['manager_private_notes'].present? && check_in.manager_private_notes.blank?
+        update_attrs[:manager_private_notes] = check_in_data['manager_private_notes']
+      end
+      
+      if check_in_data['employee_private_notes'].present? && check_in.employee_private_notes.blank?
+        update_attrs[:employee_private_notes] = check_in_data['employee_private_notes']
+      end
+      
+      if check_in_data['employee_personal_alignment'].present? && check_in.employee_personal_alignment.blank?
+        update_attrs[:employee_personal_alignment] = check_in_data['employee_personal_alignment']
+      end
+      
+      check_in.update!(update_attrs) if update_attrs.any?
+      return check_in, false
+    end
     
     # Create new check-in if not found
     check_in = AssignmentCheckIn.create!(
