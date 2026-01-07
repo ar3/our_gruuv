@@ -22,11 +22,15 @@ class RenameCertifiedByToCertifyingTeammateInTeammateMilestones < ActiveRecord::
       )
     SQL
     
-    # Handle edge cases - log any that couldn't be migrated
-    # For now, we'll set them to NULL and handle in a follow-up if needed
-    # In production, you might want to create CompanyTeammate records or handle differently
+    # Handle edge cases - set any NULL values to -1
+    execute <<-SQL
+      UPDATE teammate_milestones
+      SET certifying_teammate_id = -1
+      WHERE certifying_teammate_id IS NULL
+    SQL
     
-    # Make the column non-nullable
+    # Set default value to -1 and make the column non-nullable
+    change_column_default :teammate_milestones, :certifying_teammate_id, -1
     change_column_null :teammate_milestones, :certifying_teammate_id, false
     
     # Add foreign key constraint
