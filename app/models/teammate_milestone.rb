@@ -2,7 +2,7 @@ class TeammateMilestone < ApplicationRecord
   # Associations
   belongs_to :teammate
   belongs_to :ability
-  belongs_to :certifying_teammate, class_name: 'CompanyTeammate'
+  belongs_to :certifying_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :published_by_teammate, class_name: 'CompanyTeammate', optional: true
   has_one :observable_moment, as: :momentable, dependent: :destroy
 
