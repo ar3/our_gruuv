@@ -38,7 +38,16 @@
       - cache = @one_on_one_link.external_project_cache_for(source) if source
       - viewing_user_has_identity = has_external_identity?(current_company_teammate, source) if source
       
+      - if source == 'asana' && !viewing_user_has_identity
+        = render 'shared/external_project/associate_prompt',
+                  cacheable: @one_on_one_link,
+                  current_teammate: current_company_teammate,
+                  source: source,
+                  return_url: request.fullpath
+
       - if source && cache
+        -# Show connect prompt if Asana link is confirmed but user doesn't have identity
+          .mb-3
         -# Display cached project
         = render 'shared/external_project/project_display',
                  cache: cache,
@@ -54,13 +63,6 @@
                  source: source,
                  return_url: request.fullpath,
                  has_project_access: @has_project_access
-      - elsif source && !viewing_user_has_identity
-        -# Prompt to connect (viewing user doesn't have identity)
-        = render 'shared/external_project/associate_prompt',
-                 cacheable: @one_on_one_link,
-                 current_teammate: current_company_teammate,
-                 source: source,
-                 return_url: request.fullpath
       - else
         -# Display iframe for non-integrated links
         .mb-3

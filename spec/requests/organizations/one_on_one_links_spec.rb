@@ -82,6 +82,44 @@ RSpec.describe "Organizations::OneOnOneLinks", type: :request do
       expect(response.body).to include('Sync Project')
     end
 
+    it "shows connect button when Asana link is confirmed (has cache) but viewing user has no identity" do
+      one_on_one_link = create(:one_on_one_link, teammate: employee_teammate, url: 'https://app.asana.com/0/123456/789')
+      one_on_one_link.deep_integration_config = { 'asana_project_id' => '123456' }
+      one_on_one_link.save
+      
+      # Create a cache for the confirmed link (simulating a confirmed/synced state)
+      # Create identity for the employee (not the viewing user)
+      employee_asana_identity = create(:teammate_identity, :asana, teammate: employee_teammate)
+      
+      # Mock AsanaService to return successful sync
+      service = instance_double(AsanaService)
+      allow(AsanaService).to receive(:new).with(employee_teammate).and_return(service)
+      allow(service).to receive(:authenticated?).and_return(true)
+      allow(service).to receive(:fetch_project_sections).with('123456').and_return({
+        success: true,
+        sections: [{ 'gid' => 'section_1', 'name' => 'To Do' }]
+      })
+      allow(service).to receive(:fetch_all_project_tasks).with('123456').and_return({
+        success: true,
+        incomplete: [],
+        completed: []
+      })
+      allow(service).to receive(:format_for_cache).and_return({
+        sections: [{ 'gid' => 'section_1', 'name' => 'To Do', 'position' => 0 }],
+        tasks: []
+      })
+      
+      # Sync to create the cache
+      ExternalProjectCacheService.sync_project(one_on_one_link, 'asana', employee_teammate)
+      
+      # Now view as manager (who doesn't have Asana identity)
+      get organization_company_teammate_one_on_one_link_path(organization, employee_teammate)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Connect Your Asana Account')
+      expect(response.body).to include('Asana Project') # Should still show the project display
+    end
+
     it "shows no access message when viewing user's Asana account doesn't have project access" do
       # Create identity for viewing user (manager), not the employee
       create(:teammate_identity, :asana, teammate: manager_teammate)
