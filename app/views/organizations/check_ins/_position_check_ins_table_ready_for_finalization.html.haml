@@ -25,7 +25,7 @@
         %td
           - if view_mode == :manager
             = form.fields_for :position_check_in, check_in do |pf|
-              = pf.select :manager_rating, options_for_select([['Select...', ''], ['🔴 Performance Improvement Plan - Monitoring after PIP', 'performance_improvement_plan'], ['⭕️ Written Warning - Monitoring after written warning', 'written_warning'], ['🟠 Verbal Warning - Monitoring after verbal warning', 'verbal_warning'], ['🟡 Actively Coaching - Mostly meeting expectations', 'actively_coaching'], ['🔵 Praising/Trusting - Consistent strong performance', 'praising_trusting'], ['🟢 Looking to Reward - Exceptional, seeking to increase responsibility', 'looking_to_reward']], check_in.manager_rating), {}, class: 'form-control form-control-sm'
+              = pf.select :manager_rating, options_for_select([['Select...', '']] + position_rating_options, check_in.manager_rating), {}, class: 'form-control form-control-sm'
           - else
             %p.mb-2
               %strong Rating:

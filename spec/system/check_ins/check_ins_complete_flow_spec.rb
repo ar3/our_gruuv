@@ -49,9 +49,9 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
       
       # Fill out position check-in
       # Position ratings use numeric values (-3 to 3) with formatted display
-      # Use the formatted option text: "🔵 Praising/Trusting - Consistent strong performance" (value: 2)
+      # Use the formatted option text: "🔵 Accomplished - Consistently meets and sometimes exceeds expectations" (value: 2)
       # Capybara's select will wait for the element and options to be available
-      select '🔵 Praising/Trusting - Consistent strong performance', from: 'check_ins[position_check_in][employee_rating]'
+      select '🔵 Accomplished - Consistently meets and sometimes exceeds expectations', from: 'check_ins[position_check_in][employee_rating]'
       fill_in 'check_ins[position_check_in][employee_private_notes]', with: 'Position notes'
       
       # Fill out assignment check-ins

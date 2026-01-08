@@ -20,10 +20,11 @@ class EmploymentTenure < ApplicationRecord
     -3 => { key: :monitoring_pip, emoji: '🔴', label: 'Performance Improvement Plan', description: 'Monitoring after PIP' },
     -2 => { key: :monitoring_after_written_warning, emoji: '⭕️', label: 'Written Warning', description: 'Monitoring after written warning' },
     -1 => { key: :monitoring_after_verbal_warning, emoji: '🟠', label: 'Verbal Warning', description: 'Monitoring after verbal warning' },
-     1 => { key: :actively_coaching, emoji: '🟡', label: 'Actively Coaching', description: 'Mostly meeting expectations... Working on specific improvements' },
-     2 => { key: :actively_trusting, emoji: '🔵', label: 'Praising/Trusting', description: 'Consistent strong performance' },
-     3 => { key: :looking_to_reward, emoji: '🟢', label: 'Looking to Reward', description: 'Exceptional, seeking to increase responsibility' }
+     1 => { key: :actively_coaching, emoji: '🟡', label: 'Developing', description: 'Meets some expectations, but improvement and consistency are needed in specific areas' },
+     2 => { key: :actively_trusting, emoji: '🔵', label: 'Accomplished', description: 'Consistently meets and sometimes exceeds expectations' },
+     3 => { key: :looking_to_reward, emoji: '🟢', label: 'Exceptional', description: 'Consistently exceeds expectations, going above and beyond what is required' }
   }.freeze
+
 
   validates :official_position_rating, inclusion: { in: POSITION_RATINGS.keys }, allow_nil: true
 
