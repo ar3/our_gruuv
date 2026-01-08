@@ -496,5 +496,69 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
         end
       end
     end
+
+    context 'when observation story exceeds 2500 characters' do
+      let(:notify_teammate_ids) { [observee_teammate.id.to_s] }
+      let(:long_story) { 'A' * 3000 } # Story that exceeds 2500 chars
+      let(:observation_with_long_story) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only, story: long_story)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'truncates story at 2500 characters and includes view more link' do
+        job = Observations::PostNotificationJob.new
+        job.perform(observation_with_long_story.id, notify_teammate_ids)
+
+        main_notification = Notification.where(notification_type: 'observation_dm')
+                                       .where("metadata->>'is_thread_reply' != 'true' OR metadata->>'is_thread_reply' IS NULL")
+                                       .first
+        expect(main_notification).to be_present
+        
+        rich_message = main_notification.rich_message.is_a?(String) ? JSON.parse(main_notification.rich_message) : main_notification.rich_message
+        story_block = rich_message.find { |block| block['type'] == 'section' && block.dig('text', 'text') }
+        story_text = story_block.dig('text', 'text')
+        
+        # Story should be truncated to 2500 chars plus the view more link
+        expect(story_text.length).to be <= 3000
+        expect(story_text.length).to be > 2500 # Should include the link text
+        expect(story_text).to include('View the rest of this story')
+        expect(story_text).to include('OurGruuv')
+        # Should include a link to the observation
+        permalink_url = observation_with_long_story.decorate.permalink_url
+        expect(story_text).to include(permalink_url)
+      end
+
+      it 'does not raise invalid_blocks error when posting to Slack' do
+        # Mock SlackService to verify it doesn't raise invalid_blocks error
+        allow(slack_service).to receive(:post_message) do |notification_id|
+          notification = Notification.find(notification_id)
+          rich_message = notification.rich_message.is_a?(String) ? JSON.parse(notification.rich_message) : notification.rich_message
+          
+          # Verify all text fields are within Slack's 3000 char limit
+          rich_message.each do |block|
+            if block['text'] && block['text']['text']
+              expect(block['text']['text'].length).to be <= 3000, "Block text exceeds 3000 chars: #{block['text']['text'].length}"
+            end
+            if block['elements']
+              block['elements'].each do |element|
+                if element['text']
+                  expect(element['text'].length).to be <= 3000, "Element text exceeds 3000 chars: #{element['text'].length}"
+                end
+              end
+            end
+          end
+          
+          notification.update!(status: 'sent_successfully', message_id: '1234567890.123456')
+          { success: true, message_id: '1234567890.123456' }
+        end
+
+        expect {
+          job = Observations::PostNotificationJob.new
+          job.perform(observation_with_long_story.id, notify_teammate_ids)
+        }.not_to raise_error
+      end
+    end
   end
 end

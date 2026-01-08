@@ -331,6 +331,7 @@ class Observations::PostNotificationJob < ApplicationJob
     
     # Build intro text: "New awesome story about <slack mentions of observed> as told by <slack mention of observer>"
     intro_text = "New awesome story about #{observed_mentions.join(', ')} as told by #{observer_mention}"
+    intro_text = truncate_slack_text(intro_text)
     
     blocks = [
       {
@@ -346,7 +347,7 @@ class Observations::PostNotificationJob < ApplicationJob
         type: "section",
         text: {
           type: "mrkdwn",
-          text: observation.story
+          text: truncate_story_with_link(observation)
         }
       }
     ]
@@ -390,6 +391,7 @@ class Observations::PostNotificationJob < ApplicationJob
       about_text = observed_links.any? ? " about #{observed_links.join(', ')}" : ""
       
       feelings_text = "#{story_link}#{about_text} made #{observer_link} feel #{feelings_sentence}"
+      feelings_text = truncate_slack_text(feelings_text)
       
       blocks << {
         type: "section",
@@ -403,11 +405,14 @@ class Observations::PostNotificationJob < ApplicationJob
     # Add ratings using new formatter (grouped by type, then rating level)
     rating_sentences = observation.format_ratings_by_type_and_level(format: :slack)
     if rating_sentences.any?
+      ratings_text = rating_sentences.join("\n")
+      ratings_text = truncate_slack_text(ratings_text)
+      
       blocks << {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: rating_sentences.join("\n")
+          text: ratings_text
         }
       }
     end
@@ -419,6 +424,7 @@ class Observations::PostNotificationJob < ApplicationJob
     new_observation_url = Rails.application.routes.url_helpers.new_organization_observation_url(observer_company)
     
     ending_text = "Adding stories like this to the *#{company_name}* novel will help shape us, because they are specific about the best examples of us executing assignments, demonstrating abilities, and exemplifying the aspirational values we focus on.\n\nThis one was great, who's next to add to <#{new_observation_url}|OUR Story>?"
+    ending_text = truncate_slack_text(ending_text)
     
     blocks << {
       type: "context",
@@ -431,6 +437,41 @@ class Observations::PostNotificationJob < ApplicationJob
     }
     
     blocks
+  end
+
+  def truncate_story_with_link(observation, max_length: 2500)
+    story = observation.story
+    return story if story.length <= max_length
+
+    # Truncate to max_length, trying to break at word boundaries
+    truncated = story[0, max_length]
+    
+    # Try to find the last space before max_length to avoid breaking words
+    last_space = truncated.rindex(/\s/)
+    if last_space && last_space > max_length - 100 # Only use word boundary if it's reasonably close
+      truncated = story[0, last_space]
+    end
+    
+    # Get permalink URL for the observation
+    permalink_url = observation.decorate.permalink_url
+    
+    # Append view more link
+    "#{truncated}\n\n_View the rest of this story in <#{permalink_url}|OurGruuv>_"
+  end
+
+  def truncate_slack_text(text, max_length: 3000)
+    return text if text.length <= max_length
+    
+    # Truncate to max_length, trying to break at word boundaries
+    truncated = text[0, max_length]
+    
+    # Try to find the last space before max_length to avoid breaking words
+    last_space = truncated.rindex(/\s/)
+    if last_space && last_space > max_length - 100 # Only use word boundary if it's reasonably close
+      truncated = text[0, last_space]
+    end
+    
+    "#{truncated}..."
   end
 
   def build_channel_fallback_text(observation, organization)
