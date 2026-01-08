@@ -1,4 +1,5 @@
 module EmployeesHelper
+  include CheckInHelper
   def format_snapshot_changes(snapshot, person, organization, current_user: nil, previous_snapshot: nil)
     return nil unless snapshot&.maap_data
     
@@ -141,8 +142,8 @@ module EmployeesHelper
       when 'official_position_rating'
         formatted_changes << {
           label: 'Official Position Rating',
-          current: change[:current].present? ? change[:current].to_s : 'None',
-          proposed: change[:proposed].present? ? change[:proposed].to_s : 'None'
+          current: change[:current].present? ? position_rating_display(change[:current]) : 'None',
+          proposed: change[:proposed].present? ? position_rating_display(change[:proposed]) : 'None'
         }
       when 'new_rated_position'
         formatted_changes << {
@@ -530,8 +531,8 @@ module EmployeesHelper
     
     fields << {
       label: 'Official Position Rating',
-      old: old_rated['official_position_rating'].present? ? old_rated['official_position_rating'].to_s : 'None',
-      new: new_rated['official_position_rating'].present? ? new_rated['official_position_rating'].to_s : 'None'
+      old: old_rated['official_position_rating'].present? ? position_rating_display(old_rated['official_position_rating']) : 'None',
+      new: new_rated['official_position_rating'].present? ? position_rating_display(new_rated['official_position_rating']) : 'None'
     }
     
     fields << {

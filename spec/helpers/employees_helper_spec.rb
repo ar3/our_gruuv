@@ -159,6 +159,7 @@ RSpec.describe EmployeesHelper, type: :helper do
     
     context 'with milestone changes' do
       let(:ability) { create(:ability, organization: organization) }
+      let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
       let(:previous_snapshot) do
         create(:maap_snapshot,
           employee: person,
@@ -654,8 +655,8 @@ RSpec.describe EmployeesHelper, type: :helper do
         
         rating_change = changes[:employment].find { |c| c[:label] == 'Official Position Rating' }
         expect(rating_change).to be_present
-        expect(rating_change[:current]).to eq('2')
-        expect(rating_change[:proposed]).to eq('3')
+        expect(rating_change[:current]).to eq('🔵 Accomplished')
+        expect(rating_change[:proposed]).to eq('🟢 Exceptional')
       end
     end
     
