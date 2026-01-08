@@ -148,6 +148,19 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || true
   end
 
+  def download_company_teammates_csv?
+    return false unless viewing_teammate
+    return false unless record == viewing_teammate.organization
+    admin_bypass? || viewing_teammate.can_manage_employment?
+  end
+
+  def download_bulk_csv?
+    return false unless viewing_teammate
+    return false unless organization_in_hierarchy?
+    return false unless viewing_teammate.employed?
+    admin_bypass? || true
+  end
+
   private
 
   def organization_in_hierarchy?

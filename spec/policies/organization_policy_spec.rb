@@ -364,5 +364,57 @@ RSpec.describe OrganizationPolicy, type: :policy do
       end
     end
   end
+
+  describe '#download_company_teammates_csv?' do
+    context 'when organization matches viewing_teammate.organization' do
+      it 'allows access when viewing_teammate can manage employment' do
+        policy = OrganizationPolicy.new(pundit_user_employment, organization)
+        expect(policy.download_company_teammates_csv?).to be true
+      end
+
+      it 'denies access when viewing_teammate cannot manage employment' do
+        policy = OrganizationPolicy.new(pundit_user_no_permissions, organization)
+        expect(policy.download_company_teammates_csv?).to be false
+      end
+
+      it 'respects admin_bypass?' do
+        policy = OrganizationPolicy.new(pundit_user_admin, organization)
+        expect(policy.download_company_teammates_csv?).to be true
+      end
+    end
+
+    context 'when organization does not match viewing_teammate.organization' do
+      it 'returns false' do
+        policy = OrganizationPolicy.new(pundit_user_other_org, organization)
+        expect(policy.download_company_teammates_csv?).to be false
+      end
+    end
+  end
+
+  describe '#download_bulk_csv?' do
+    context 'when organization is in viewing_teammate hierarchy' do
+      it 'allows access for employed teammates' do
+        policy = OrganizationPolicy.new(pundit_user_employed, organization)
+        expect(policy.download_bulk_csv?).to be true
+      end
+
+      it 'denies access for non-employed teammates' do
+        policy = OrganizationPolicy.new(pundit_user_no_permissions, organization)
+        expect(policy.download_bulk_csv?).to be false
+      end
+
+      it 'respects admin_bypass?' do
+        policy = OrganizationPolicy.new(pundit_user_admin, organization)
+        expect(policy.download_bulk_csv?).to be true
+      end
+    end
+
+    context 'when organization is not in viewing_teammate hierarchy' do
+      it 'returns false' do
+        policy = OrganizationPolicy.new(pundit_user_other_org, organization)
+        expect(policy.download_bulk_csv?).to be false
+      end
+    end
+  end
 end
 

@@ -140,6 +140,13 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
+    # Bulk downloads
+    resources :bulk_downloads, only: [:index], module: :organizations do
+      collection do
+        get :download
+      end
+    end
+    
     # Legacy upload_events routes for backward compatibility
     resources :upload_events, only: [:index, :show, :new, :create, :destroy], controller: 'bulk_sync_events' do
       member do

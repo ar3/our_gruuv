@@ -162,6 +162,13 @@ module NavigationHelper
             coming_soon: false
           },
           {
+            label: 'Bulk Downloads',
+            icon: 'bi-download',
+            path: organization_bulk_downloads_path(current_organization),
+            policy_check: -> { policy(current_company).view_bulk_sync_events? },
+            coming_soon: false
+          },
+          {
             label: 'Slack Settings',
             icon: 'bi-slack',
             path: organization_slack_path(current_organization),
