@@ -1,0 +1,55 @@
+- content_for :title, "#{@company.name} Preferences"
+
+- content_for :header do
+  .d-flex.align-items-center
+    %h1.mb-0.me-2
+      %i.bi.bi-sliders.me-2
+      #{@company.name} Preferences
+
+- content_for :go_back_link do
+  = link_to dashboard_organization_path(@organization), class: "go-back-link" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Dashboard
+
+- can_customize = policy(@company).customize_company?
+
+.card.mb-4
+  .card-body
+    %p.text-muted
+      Customize terminology and labels used throughout the application for #{@company.name}. These preferences only apply to company-type organizations.
+
+- unless can_customize
+  .alert.alert-warning.mb-4
+    You need Customize Company permission to modify preferences.
+
+= form_with url: organization_company_preference_path(@organization), method: :patch, local: true do |f|
+  .row.mb-4
+    .col-6
+      %h5.mb-3 Prompt
+      %p.text-muted.small
+        Prompts are reflection questions that help team members think about their work, goals, and growth. They can be customized templates with multiple questions that team members answer periodically.
+    .col-6
+      = f.text_field "preferences[prompt]", 
+                     value: @preferences['prompt'],
+                     placeholder: 'Prompt',
+                     class: 'form-control',
+                     disabled: !can_customize
+
+  .d-flex.justify-content-end.gap-2.mt-4.mb-4
+    = link_to dashboard_organization_path(@organization), class: "btn btn-secondary" do
+      Cancel
+    - if can_customize
+      = f.submit "Save Preferences", class: "btn btn-primary"
+    - else
+      .d-flex.align-items-center.gap-2
+        = f.submit "Save Preferences", class: "btn btn-primary", disabled: true
+        %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires Customize Company permission"}, style: "font-size: 1rem;"}
+
+:javascript
+  // Initialize Bootstrap tooltips
+  document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  });

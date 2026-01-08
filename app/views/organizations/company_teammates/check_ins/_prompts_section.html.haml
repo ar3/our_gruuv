@@ -1,7 +1,7 @@
 = render 'shared/section_header', 
-         title: 'Prompts / Reflections', 
+         title: "#{company_label_plural('prompt', 'Prompt')} / #{company_label_plural('reflection', 'Reflection')}", 
          icon: 'bi-file-text', 
-         description: 'Recent reflection prompts',
+         description: "Recent #{company_label_for('reflection', 'reflection').downcase} #{company_label_for('prompt', 'prompt').pluralize}",
          collapsible: true,
          collapse_target: 'promptsSection'
 
@@ -10,10 +10,10 @@
   .card-body
     %p.mb-0
       - if @open_prompts_count > 0
-        %strong= pluralize(@open_prompts_count, 'open prompt')
+        %strong= pluralize(@open_prompts_count, "open #{company_label_for('prompt', 'prompt').downcase}")
         available
       - else
-        No open prompts available.
+        No open #{company_label_for('prompt', 'prompt').pluralize} available.
 
 -# Collapsible content
 .collapse#promptsSection
@@ -21,7 +21,7 @@
     .card-body
       - if @open_prompts_count > 0
         %p.mb-3
-          %strong= pluralize(@open_prompts_count, 'open prompt')
+          %strong= pluralize(@open_prompts_count, "open #{company_label_for('prompt', 'prompt').downcase}")
           available
       
       - if @recent_prompts.any?
@@ -48,10 +48,10 @@
                     %i.bi.bi-eye.me-1
                     View
       - else
-        %p.text-muted.mb-3 No recent prompts to display.
+        %p.text-muted.mb-3 No recent #{company_label_for('prompt', 'prompt').pluralize} to display.
       
       .d-grid
-        = button_to "View All Prompts", 
+        = button_to "View All #{company_label_plural('prompt', 'Prompt')}", 
                     save_and_redirect_organization_company_teammate_check_ins_path(organization, @teammate), 
                     method: :post,
                     params: { redirect_url: @prompts_url },

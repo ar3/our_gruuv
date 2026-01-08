@@ -162,6 +162,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @who_has_maap_management = organization.teammates.with_maap_management.includes(:person)
     @who_has_prompts_management = organization.teammates.with_prompts_management.includes(:person)
     @who_has_departments_and_teams_management = organization.teammates.with_departments_and_teams_management.includes(:person)
+    @who_has_customize_company = organization.teammates.with_customize_company.includes(:person)
     
     render layout: 'overlay'
   end
@@ -209,6 +210,12 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       params[:can_manage_departments_and_teams] == 'true'
     else
       access.can_manage_departments_and_teams
+    end
+    
+    access.can_customize_company = if params[:can_customize_company].present?
+      params[:can_customize_company] == 'true'
+    else
+      access.can_customize_company
     end
     
     # Save the access record

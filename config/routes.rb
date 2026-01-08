@@ -178,6 +178,9 @@ get '/login', to: 'auth#login', as: :login
       end
     end
     
+    # Company preferences
+    resource :company_preference, module: :organizations, only: [:edit, :update]
+    
     # Prompts management
     resources :prompts, module: :organizations, constraints: { id: /[0-9]+/ }, except: [:new, :show] do
       collection do

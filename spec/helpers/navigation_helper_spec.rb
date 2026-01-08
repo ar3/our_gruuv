@@ -67,4 +67,62 @@ RSpec.describe NavigationHelper, type: :helper do
       expect(helper_count).to eq(1) # Only draft1 should be counted
     end
   end
+
+  describe '#navigation_structure' do
+    before do
+      # Define the controller methods that are available in helpers
+      def helper.current_organization
+        @current_organization
+      end
+
+      def helper.current_person
+        @current_person
+      end
+
+      def helper.current_company_teammate
+        @current_company_teammate
+      end
+
+      def helper.current_company
+        @current_company
+      end
+
+      def helper.policy(record)
+        double(view_prompts?: true)
+      end
+
+      helper.instance_variable_set(:@current_organization, company)
+      helper.instance_variable_set(:@current_person, person)
+      helper.instance_variable_set(:@current_company_teammate, teammate)
+      helper.instance_variable_set(:@current_company, company)
+    end
+
+    it 'uses company_label_plural for prompts navigation label' do
+      company = Company.find_or_create_by!(name: 'Test Company', type: 'Company')
+      helper.instance_variable_set(:@current_organization, company)
+      helper.instance_variable_set(:@current_company, company)
+      
+      structure = helper.navigation_structure
+      prompts_item = structure.find { |item| item[:path]&.include?('prompts') }
+      expect(prompts_item).to be_present
+      expect(prompts_item[:label]).to eq('Prompts') # Default when no custom label
+    end
+
+    context 'when company has custom label preference' do
+      let(:company) { Company.find_or_create_by!(name: 'Test Company', type: 'Company') }
+
+      before do
+        create(:company_label_preference, company: company, label_key: 'prompt', label_value: 'Reflection')
+        helper.instance_variable_set(:@current_organization, company)
+        helper.instance_variable_set(:@current_company, company)
+      end
+
+      it 'uses the custom plural label' do
+        structure = helper.navigation_structure
+        prompts_item = structure.find { |item| item[:path]&.include?('prompts') }
+        expect(prompts_item).to be_present
+        expect(prompts_item[:label]).to eq('Reflections')
+      end
+    end
+  end
 end

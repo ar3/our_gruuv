@@ -1,15 +1,15 @@
-- content_for :title, "Edit Prompt Template"
+- content_for :title, "Edit #{company_label_for('prompt', 'Prompt')} Template"
 
 - content_for :go_back_link do
   = link_to organization_prompt_templates_path(@organization), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
-    Back to Prompt Templates
+    Back to #{company_label_plural('prompt', 'Prompt')} Templates
 
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2
       %i.bi.bi-file-text.me-2
-      Edit Prompt Template
+      Edit #{company_label_for('prompt', 'Prompt')} Template
 
 .card.mb-4
   .card-header

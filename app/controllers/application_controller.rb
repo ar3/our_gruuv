@@ -208,7 +208,9 @@ class ApplicationController < ActionController::Base
     
     if session[:current_company_teammate_id]
       begin
-        @current_company_teammate = CompanyTeammate.find(session[:current_company_teammate_id])
+        @current_company_teammate = CompanyTeammate
+          .includes(organization: :company_label_preferences)
+          .find(session[:current_company_teammate_id])
         # Ensure teammate is still active (not terminated)
         if @current_company_teammate.last_terminated_at.present?
           # Teammate was terminated, clear session

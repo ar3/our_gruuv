@@ -105,6 +105,9 @@
             .form-check
               = check_box_tag 'permission[]', 'maap_mgmt', @current_filters[:permission]&.include?('maap_mgmt'), class: 'form-check-input', id: 'perm_maap_mgmt'
               = label_tag 'perm_maap_mgmt', 'MAAP Management', class: 'form-check-label'
+            .form-check
+              = check_box_tag 'permission[]', 'customize_company', @current_filters[:permission]&.include?('customize_company'), class: 'form-check-input', id: 'perm_customize_company'
+              = label_tag 'perm_customize_company', 'Customize Company', class: 'form-check-label'
   .row
     .col-md-4
       .mb-4

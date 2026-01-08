@@ -9,7 +9,7 @@
   / Prompts Hero Card - Only show if company has active templates
   - prompts_header_html = capture do
     %i.bi.bi-file-text.me-3
-    Reflect
+    = company_label_plural('prompt', 'Prompts')
   - prompts_description = [''].sample
   
   / Primary button: View primary template or "all prompts" if none
@@ -21,7 +21,7 @@
   - else
     - prompts_primary_html = capture do
       %i.bi.bi-list.me-2
-      View All Prompts
+      View All #{company_label_plural('prompt', 'Prompt')}
     - prompts_primary_url = organization_prompts_path(@organization)
   
   / Secondary button: View secondary template or "all prompts" if none
@@ -33,14 +33,14 @@
   - else
     - prompts_secondary_html = capture do
       %i.bi.bi-list.me-2
-      View All Prompts
+      View All #{company_label_plural('prompt', 'Prompt')}
     - prompts_secondary_url = organization_prompts_path(@organization)
   
   / Tertiary button: "Manage Prompt Templates" if can_manage_prompts, else view tertiary template or "all prompts"
   - if current_teammate&.can_manage_prompts?
     - prompts_tertiary_html = capture do
       %i.bi.bi-gear.me-2
-      Manage Prompt Templates
+      Manage #{company_label_plural('prompt', 'Prompt')} Templates
     - prompts_tertiary_url = organization_prompt_templates_path(@organization)
   - elsif tertiary_template
     - prompts_tertiary_html = capture do
@@ -50,7 +50,7 @@
   - else
     - prompts_tertiary_html = capture do
       %i.bi.bi-list.me-2
-      View All Prompts
+      View All #{company_label_plural('prompt', 'Prompt')}
     - prompts_tertiary_url = organization_prompts_path(@organization)
 
   = render 'organizations/dashboard/dashboard_hero_card',
@@ -70,11 +70,11 @@
         .card-body.text-center.p-5
           %h3.mb-3.text-info
             %i.bi.bi-info-circle.me-2
-            Prompts Available
+            #{company_label_plural('prompt', 'Prompt')} Available
           %p.text-muted.mb-4.fs-5
-            Prompts available... speak with your admin
+            #{company_label_plural('prompt', 'Prompt')} available... speak with your admin
           - if current_teammate&.can_manage_prompts?
             = link_to organization_prompt_templates_path(@organization), class: "btn btn-primary btn-lg" do
               %i.bi.bi-gear.me-2
-              Manage Prompt Templates
+              Manage #{company_label_plural('prompt', 'Prompt')} Templates
 

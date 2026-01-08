@@ -45,7 +45,7 @@ module NavigationHelper
         policy_check: -> { policy(current_company).view_observations? }
       },
       {
-        label: 'Reflect',
+        label: company_label_plural('prompt', 'Prompts'),
         icon: 'bi-journal-text',
         path: organization_prompts_path(current_organization),
         section: nil,
@@ -187,6 +187,13 @@ module NavigationHelper
             icon: 'bi-heart-pulse',
             path: organization_check_ins_health_path(current_organization),
             policy_check: -> { policy(current_organization).manage_employment? },
+            coming_soon: false
+          },
+          {
+            label: "#{current_company.name} Preferences",
+            icon: 'bi-sliders',
+            path: edit_organization_company_preference_path(current_organization),
+            policy_check: -> { policy(current_company).customize_company? },
             coming_soon: false
           }
         ]

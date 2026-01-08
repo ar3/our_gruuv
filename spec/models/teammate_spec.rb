@@ -83,6 +83,17 @@ RSpec.describe Teammate, type: :model do
         expect(result).not_to include(access1, access2)
       end
     end
+
+    describe '.with_customize_company' do
+      let(:person7) { create(:person) }
+      let!(:customize_access) { create(:teammate, person: person7, organization: company, can_customize_company: true) }
+
+      it 'returns only access records with customize company permission' do
+        result = described_class.with_customize_company
+        expect(result).to include(customize_access)
+        expect(result).not_to include(access1, access2)
+      end
+    end
   end
   
   describe 'instance methods' do
@@ -153,6 +164,23 @@ RSpec.describe Teammate, type: :model do
       it 'returns false when can_manage_departments_and_teams is nil' do
         access.update!(can_manage_departments_and_teams: nil)
         expect(access.can_manage_departments_and_teams?).to be false
+      end
+    end
+
+    describe '#can_customize_company?' do
+      it 'returns true when can_customize_company is true' do
+        access.update!(can_customize_company: true)
+        expect(access.can_customize_company?).to be true
+      end
+
+      it 'returns false when can_customize_company is false' do
+        access.update!(can_customize_company: false)
+        expect(access.can_customize_company?).to be false
+      end
+
+      it 'returns false when can_customize_company is nil' do
+        access.update!(can_customize_company: nil)
+        expect(access.can_customize_company?).to be false
       end
     end
 
@@ -486,6 +514,43 @@ RSpec.describe Teammate, type: :model do
         access.update!(can_manage_departments_and_teams: false)
         team_access.update!(can_manage_departments_and_teams: false)
         expect(described_class.can_manage_departments_and_teams_in_hierarchy?(person, team)).to be false
+      end
+    end
+
+    describe '.can_customize_company?' do
+      it 'returns true when person has customize company access' do
+        access.update!(can_customize_company: true)
+        expect(described_class.can_customize_company?(person, company)).to be true
+      end
+
+      it 'returns false when person does not have customize company access' do
+        access.update!(can_customize_company: false)
+        expect(described_class.can_customize_company?(person, company)).to be false
+      end
+
+      it 'returns false when no access record exists' do
+        access.destroy
+        expect(described_class.can_customize_company?(person, company)).to be false
+      end
+    end
+
+    describe '.can_customize_company_in_hierarchy?' do
+      let!(:team_access) { create(:teammate, person: person, organization: team) }
+
+      it 'returns true when person has customize company access at organization level' do
+        team_access.update!(can_customize_company: true)
+        expect(described_class.can_customize_company_in_hierarchy?(person, team)).to be true
+      end
+
+      it 'returns true when person has customize company access at ancestor level' do
+        access.update!(can_customize_company: true)
+        expect(described_class.can_customize_company_in_hierarchy?(person, team)).to be true
+      end
+
+      it 'returns false when person has no customize company access in hierarchy' do
+        access.update!(can_customize_company: false)
+        team_access.update!(can_customize_company: false)
+        expect(described_class.can_customize_company_in_hierarchy?(person, team)).to be false
       end
     end
   end

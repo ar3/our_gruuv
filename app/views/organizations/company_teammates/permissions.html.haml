@@ -127,6 +127,27 @@
                 - @who_has_departments_and_teams_management.each do |teammate|
                   %li= teammate.person.display_name
 
+      .col-md-6
+        .card.mb-4
+          .card-header.d-flex.justify-content-between.align-items-center
+            %h5.mb-0 Customize Company
+            - if can_modify
+              .form-check.form-switch
+                - current_value = @teammate.can_customize_company == true
+                = f.check_box :can_customize_company, { checked: current_value, class: "form-check-input" }, "true", "false"
+          .card-body
+            %p.text-muted
+              Can customize company preferences and labels.
+              %br
+              %small
+                With this permission you can: customize company-specific terminology and labels; manage company preferences; and configure how terms are displayed throughout the application.
+            - if @who_has_customize_company.any?
+              %p.mb-1.mt-3
+                %strong Who has this permission:
+              %ul.mb-0
+                - @who_has_customize_company.each do |teammate|
+                  %li= teammate.person.display_name
+
     .d-flex.justify-content-end.gap-2.mt-4.mb-4
       = link_to @return_url, class: "btn btn-secondary" do
         Cancel
@@ -255,3 +276,26 @@
               - @who_has_departments_and_teams_management.each do |teammate|
                 %li= teammate.person.display_name
 
+    .col-md-6
+      .card.mb-4
+        .card-header
+          %h5.mb-0 Customize Company
+        .card-body
+          %p.text-muted
+            Can customize company preferences and labels.
+            %br
+            %small
+              With this permission you can: customize company-specific terminology and labels; manage company preferences; and configure how terms are displayed throughout the application.
+          .mb-3
+            .d-flex.align-items-center
+              - current_value = @teammate.can_customize_company == true
+              - if current_value
+                %span.badge.bg-success.me-2 Enabled
+              - else
+                %span.badge.bg-secondary.me-2 Disabled
+          - if @who_has_customize_company.any?
+            %p.mb-1.mt-3
+              %strong Who has this permission:
+            %ul.mb-0
+              - @who_has_customize_company.each do |teammate|
+                %li= teammate.person.display_name

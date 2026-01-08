@@ -360,6 +360,17 @@ RSpec.describe CompanyTeammatesQuery, type: :query do
       expect(results).not_to include(direct_report2_teammate) # No employment management permission
     end
 
+    it 'filters by customize_company permission' do
+      direct_report1_teammate.update!(can_customize_company: true)
+      direct_report2_teammate.update!(can_customize_company: false)
+      
+      query = CompanyTeammatesQuery.new(organization, { permission: 'customize_company' })
+      results = query.call
+      
+      expect(results).to include(direct_report1_teammate)
+      expect(results).not_to include(direct_report2_teammate)
+    end
+
       it 'combines manager filter with organization filter' do
       child_org = create(:organization, parent: organization)
       child_teammate = CompanyTeammate.find(create(:teammate, person: direct_report1, organization: child_org).id)

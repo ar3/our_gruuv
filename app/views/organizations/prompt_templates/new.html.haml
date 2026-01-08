@@ -1,21 +1,21 @@
-- content_for :title, "New Prompt Template"
+- content_for :title, "New #{company_label_for('prompt', 'Prompt')} Template"
 
 - content_for :go_back_link do
   = link_to organization_prompt_templates_path(@organization), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
-    Back to Prompt Templates
+    Back to #{company_label_plural('prompt', 'Prompt')} Templates
 
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2
       %i.bi.bi-file-text.me-2
-      New Prompt Template
+      New #{company_label_for('prompt', 'Prompt')} Template
 
 .card
   .card-header
     %h5.mb-0
       %i.bi.bi-file-text.me-2
-      Create New Prompt Template
+      Create New #{company_label_for('prompt', 'Prompt')} Template
   .card-body
     = form_with model: [@organization, @prompt_template], url: organization_prompt_templates_path(@organization), local: true do |form|
       - if @prompt_template.errors.any?

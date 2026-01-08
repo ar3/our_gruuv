@@ -36,4 +36,17 @@ class Company < Organization
       huddle_review_notification_channel_association&.destroy
     end
   end
+
+  has_many :company_label_preferences, dependent: :destroy
+
+  def label_for(key, default = nil)
+    preference = company_label_preferences.find_by(label_key: key.to_s)
+    if preference&.label_value.present?
+      preference.label_value
+    elsif default.present?
+      default
+    else
+      key.to_s.titleize
+    end
+  end
 end 

@@ -74,6 +74,19 @@
                 - else
                   %span.badge.bg-secondary Not Set
 
+          .mb-3
+            .d-flex.justify-content-between.align-items-center
+              .permission-label
+                %strong Customize Company
+                %small.text-muted.d-block Can customize company preferences and labels
+              .permission-status
+                - if current_access&.can_customize_company == true
+                  %span.badge.bg-success Yes
+                - elsif current_access&.can_customize_company == false
+                  %span.badge.bg-danger No
+                - else
+                  %span.badge.bg-secondary Not Set
+
       .col-md-4.border-start.border-secondary
         .d-grid.gap-2
           - if teammate

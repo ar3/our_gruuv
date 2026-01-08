@@ -1,10 +1,10 @@
-- content_for :title, "My Reflections"
+- content_for :title, "My #{company_label_plural('prompt', 'Prompts')}"
 
 - content_for :header do
   .d-flex.align-items-center
     %h1.mb-0.me-2
       %i.bi.bi-journal-text.me-2
-      My Reflections
+      My #{company_label_plural('prompt', 'Prompts')}
 
 - content_for :go_back_link do
   = link_to dashboard_organization_path(@organization), class: "go-back-link" do
@@ -45,7 +45,7 @@
             
             - if previous_prompts.any?
               .mt-3
-                %strong.d-block.mb-2 Previous Reflections
+                %strong.d-block.mb-2 Previous #{company_label_plural('reflection', 'Reflection')}
                 %ul.list-unstyled.mb-0
                   - previous_prompts.each do |prompt|
                     %li.mb-1
@@ -54,10 +54,10 @@
                         = format_date_in_user_timezone(prompt.created_at)
             - else
               .mt-3
-                %em.text-muted No previous reflections
+                %em.text-muted No previous #{company_label_plural('reflection', 'reflection').downcase}
 - else
   .alert.alert-info
     %h6.mb-2
       %i.bi.bi-info-circle.me-2
       No Active Templates
-    %p.mb-0 No active prompt templates are available. Contact your administrator to set up reflection templates.
+    %p.mb-0 No active #{company_label_for('prompt', 'prompt')} templates are available. Contact your administrator to set up #{company_label_for('reflection', 'reflection')} templates.

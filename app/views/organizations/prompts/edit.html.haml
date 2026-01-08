@@ -1,9 +1,9 @@
-- content_for :title, "Edit Reflection"
+- content_for :title, "Edit #{company_label_for('reflection', 'Reflection')}"
 
 - content_for :go_back_link do
   = link_to organization_prompts_path(@organization), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
-    Back to My Reflections
+    Back to My #{company_label_plural('reflection', 'Reflection')}
 
 - view_mode = params[:view] || 'split'
 - content_for :header do
@@ -21,7 +21,7 @@
   .card-header
     %h5.mb-0
       %i.bi.bi-clock-history.me-2
-      Reflection Details
+      #{company_label_for('reflection', 'Reflection')} Details
   .card-body
     .row
       .col-md-6

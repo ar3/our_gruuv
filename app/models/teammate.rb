@@ -39,6 +39,7 @@ class Teammate < ApplicationRecord
   scope :with_maap_management, -> { where(can_manage_maap: true) }
   scope :with_prompts_management, -> { where(can_manage_prompts: true) }
   scope :with_departments_and_teams_management, -> { where(can_manage_departments_and_teams: true) }
+  scope :with_customize_company, -> { where(can_customize_company: true) }
   
   # Employment state scopes
   scope :followers, -> { where(first_employed_at: nil, last_terminated_at: nil) }
@@ -66,6 +67,10 @@ class Teammate < ApplicationRecord
 
   def can_manage_departments_and_teams?
     self[:can_manage_departments_and_teams] == true
+  end
+
+  def can_customize_company?
+    self[:can_customize_company] == true
   end
   
   # Employment state methods
@@ -201,6 +206,12 @@ class Teammate < ApplicationRecord
     return true if person.og_admin?
     access = find_by(person: person, organization: organization)
     access&.can_manage_departments_and_teams? || false
+  end
+
+  def self.can_customize_company?(person, organization)
+    return true if person.og_admin?
+    access = find_by(person: person, organization: organization)
+    access&.can_customize_company? || false
   end
 
   # Class methods for permission checking (hierarchy-aware)
@@ -345,6 +356,35 @@ class Teammate < ApplicationRecord
       else
         access = current_access || parent_access
         return access&.can_manage_departments_and_teams? || false
+      end
+    end
+  end
+
+  def self.can_customize_company_in_hierarchy?(person, organization)
+    # og_admin users have access to all organizations
+    return true if person.og_admin?
+
+    if organization.company?
+      # Check company level first - if found, use it directly
+      company_access = find_by(person: person, organization: organization)
+      if company_access
+        return company_access.can_customize_company?
+      end
+      
+      # Only check descendants if no company-level record exists
+      descendant_access = where(organization: organization.descendants).find_by(person: person)
+      return descendant_access&.can_customize_company? || false
+    else
+      # Check current organization first, then parent
+      # Return true if either has the permission
+      current_access = find_by(person: person, organization: organization)
+      parent_access = find_by(person: person, organization: organization.parent) if organization.parent
+
+      if current_access&.can_customize_company? || parent_access&.can_customize_company?
+        return true
+      else
+        access = current_access || parent_access
+        return access&.can_customize_company? || false
       end
     end
   end

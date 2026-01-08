@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_07_112323) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_08_115924) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -199,6 +199,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_07_112323) do
     t.string "change_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "company_label_preferences", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "label_key", null: false
+    t.string "label_value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "label_key"], name: "index_company_label_preferences_on_company_id_and_label_key", unique: true
+    t.index ["company_id"], name: "index_company_label_preferences_on_company_id"
   end
 
   create_table "debug_responses", force: :cascade do |t|
@@ -932,6 +942,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_07_112323) do
     t.string "type"
     t.boolean "can_manage_prompts"
     t.boolean "can_manage_departments_and_teams"
+    t.boolean "can_customize_company", default: false
+    t.index ["can_customize_company"], name: "index_teammates_on_can_customize_company"
     t.index ["can_manage_departments_and_teams"], name: "index_teammates_on_can_manage_departments_and_teams"
     t.index ["can_manage_employment"], name: "index_teammates_on_can_manage_employment"
     t.index ["can_manage_maap"], name: "index_teammates_on_can_manage_maap"
@@ -1015,6 +1027,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_07_112323) do
   add_foreign_key "bulk_sync_events", "organizations"
   add_foreign_key "bulk_sync_events", "people", column: "creator_id"
   add_foreign_key "bulk_sync_events", "people", column: "initiator_id"
+  add_foreign_key "company_label_preferences", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "positions"
   add_foreign_key "employment_tenures", "seats"

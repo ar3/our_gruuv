@@ -12,6 +12,7 @@ RSpec.describe OrganizationPolicy, type: :policy do
   let(:create_employment_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_create_employment: true) }
   let(:no_permissions_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_manage_maap: false, can_manage_employment: false, can_create_employment: false) }
   let(:prompts_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_manage_prompts: true) }
+  let(:customize_company_teammate) { CompanyTeammate.create!(person: person, organization: organization, can_customize_company: true) }
   let(:employed_teammate) { CompanyTeammate.create!(person: person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil) }
   let(:other_org_teammate) { CompanyTeammate.create!(person: person, organization: other_organization, can_manage_maap: true) }
   let(:admin_teammate) { CompanyTeammate.create!(person: admin, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil) }
@@ -21,6 +22,7 @@ RSpec.describe OrganizationPolicy, type: :policy do
   let(:pundit_user_create_employment) { OpenStruct.new(user: create_employment_teammate, impersonating_teammate: nil) }
   let(:pundit_user_no_permissions) { OpenStruct.new(user: no_permissions_teammate, impersonating_teammate: nil) }
   let(:pundit_user_prompts) { OpenStruct.new(user: prompts_teammate, impersonating_teammate: nil) }
+  let(:pundit_user_customize_company) { OpenStruct.new(user: customize_company_teammate, impersonating_teammate: nil) }
   let(:pundit_user_employed) { OpenStruct.new(user: employed_teammate, impersonating_teammate: nil) }
   let(:pundit_user_other_org) { OpenStruct.new(user: other_org_teammate, impersonating_teammate: nil) }
   let(:pundit_user_admin) { OpenStruct.new(user: admin_teammate, impersonating_teammate: nil) }
@@ -413,6 +415,41 @@ RSpec.describe OrganizationPolicy, type: :policy do
       it 'returns false' do
         policy = OrganizationPolicy.new(pundit_user_other_org, organization)
         expect(policy.download_bulk_csv?).to be false
+      end
+    end
+  end
+
+  describe '#customize_company?' do
+    context 'when organization matches viewing_teammate.organization' do
+      it 'delegates to viewing_teammate.can_customize_company?' do
+        policy = OrganizationPolicy.new(pundit_user_customize_company, organization)
+        expect(policy.customize_company?).to be true
+        expect(customize_company_teammate.can_customize_company?).to be true
+      end
+
+      it 'returns false when viewing_teammate cannot customize company' do
+        policy = OrganizationPolicy.new(pundit_user_no_permissions, organization)
+        expect(policy.customize_company?).to be false
+      end
+
+      it 'respects admin_bypass?' do
+        policy = OrganizationPolicy.new(pundit_user_admin, organization)
+        expect(policy.customize_company?).to be true
+      end
+    end
+
+    context 'when organization does not match viewing_teammate.organization' do
+      it 'returns false' do
+        policy = OrganizationPolicy.new(pundit_user_other_org, organization)
+        expect(policy.customize_company?).to be false
+      end
+    end
+
+    context 'when viewing_teammate is nil' do
+      it 'returns false' do
+        pundit_user_nil = OpenStruct.new(user: nil, impersonating_teammate: nil)
+        policy = OrganizationPolicy.new(pundit_user_nil, organization)
+        expect(policy.customize_company?).to be false
       end
     end
   end

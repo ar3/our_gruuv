@@ -3,9 +3,9 @@
 - if active_prompts.any?
   - prompts_indicator = prompts_status_indicator(@teammate)
   = render 'shared/section_header', 
-           title: 'Prompts / Reflections', 
+           title: company_label_plural('prompt', 'Prompts'), 
            icon: 'bi-file-text', 
-           description: 'Recent reflection prompts',
+           description: "Recent #{company_label_for('prompt', 'prompt').pluralize}",
            collapsible: true,
            collapse_target: 'promptsSection',
            status_indicator: prompts_indicator
@@ -14,9 +14,9 @@
   %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(prompts_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#promptsSection", "aria-expanded" => "false", "aria-controls" => "promptsSection", style: "cursor: pointer;"}
     %p.mb-0
       %i{class: "#{status_indicator_icon(prompts_indicator)} #{status_indicator_badge_class(prompts_indicator)} me-2"}
-      %span.inline-sentence-highlight= pluralize(@prompts_available_count, 'Reflection Prompt')
+      %span.inline-sentence-highlight= pluralize(@prompts_available_count, company_label_for('prompt', 'Prompt'))
       = " Available, #{@teammate.person.casual_name} has started ".html_safe
-      %span.inline-sentence-highlight= pluralize(@reflections_started_count, 'reflection')
+      %span.inline-sentence-highlight= pluralize(@reflections_started_count, company_label_for('prompt', 'prompt').downcase)
       = ", has answered ".html_safe
       %span.inline-sentence-highlight= @questions_answered_count
       = " of the total ".html_safe
@@ -25,7 +25,7 @@
       %span.inline-sentence-highlight= @total_goals_count
       = " total goals associated with ".html_safe
       %span.inline-sentence-highlight= @reflections_with_goals_count
-      = " of these reflections.".html_safe
+      = " of these #{company_label_plural('prompt', 'prompts').downcase}.".html_safe
 
   -# Collapsible content
   .collapse#promptsSection
@@ -70,10 +70,10 @@
                       %i.bi.bi-eye.me-1
                       View
         - else
-          %p.text-muted.mb-3 No open prompts to display.
+          %p.text-muted.mb-3 No open #{company_label_for('prompt', 'prompt').pluralize} to display.
         
         .d-grid
-          = link_to "View All Prompts", 
+          = link_to "View All #{company_label_plural('prompt', 'Prompt')}", 
                     @prompts_url,
                     class: "btn btn-outline-primary"
 

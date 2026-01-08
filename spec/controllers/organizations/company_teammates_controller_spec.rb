@@ -243,7 +243,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_create_employment: 'false',
           can_manage_maap: 'true',
           can_manage_prompts: 'false',
-          can_manage_departments_and_teams: 'true'
+          can_manage_departments_and_teams: 'true',
+          can_customize_company: 'true'
         }
         
         expect(response).to redirect_to(organization_company_teammate_path(organization, employee_teammate))
@@ -257,7 +258,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_create_employment: false,
           can_manage_maap: false,
           can_manage_prompts: false,
-          can_manage_departments_and_teams: false
+          can_manage_departments_and_teams: false,
+          can_customize_company: false
         )
         
         post :update_permissions, params: {
@@ -267,7 +269,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_create_employment: 'true',
           can_manage_maap: 'false',
           can_manage_prompts: 'true',
-          can_manage_departments_and_teams: 'false'
+          can_manage_departments_and_teams: 'false',
+          can_customize_company: 'true'
         }
         
         employee_teammate.reload
@@ -276,6 +279,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         expect(employee_teammate.can_manage_maap).to eq(false)
         expect(employee_teammate.can_manage_prompts).to eq(true)
         expect(employee_teammate.can_manage_departments_and_teams).to eq(false)
+        expect(employee_teammate.can_customize_company).to eq(true)
       end
 
       it 'handles setting permissions to false' do
@@ -285,7 +289,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_create_employment: true,
           can_manage_maap: true,
           can_manage_prompts: true,
-          can_manage_departments_and_teams: true
+          can_manage_departments_and_teams: true,
+          can_customize_company: true
         )
         
         post :update_permissions, params: {
@@ -295,7 +300,8 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
           can_create_employment: 'false',
           can_manage_maap: 'false',
           can_manage_prompts: 'false',
-          can_manage_departments_and_teams: 'false'
+          can_manage_departments_and_teams: 'false',
+          can_customize_company: 'false'
         }
         
         employee_teammate.reload
@@ -304,6 +310,7 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         expect(employee_teammate.can_manage_maap).to eq(false)
         expect(employee_teammate.can_manage_prompts).to eq(false)
         expect(employee_teammate.can_manage_departments_and_teams).to eq(false)
+        expect(employee_teammate.can_customize_company).to eq(false)
       end
     end
 

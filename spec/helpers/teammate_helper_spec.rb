@@ -377,6 +377,25 @@ RSpec.describe TeammateHelper, type: :helper do
     it 'returns "Unknown Manager" for invalid manager_teammate_id' do
       expect(helper.filter_display_name('manager_teammate_id', '999999')).to eq('Unknown Manager')
     end
+
+    it 'returns correct display name for customize_company permission' do
+      expect(helper.filter_display_name('permission', 'customize_company')).to eq('Customize Company')
+    end
+  end
+
+  describe '#teammate_permissions_badges' do
+    it 'includes Customize badge when teammate has customize_company permission' do
+      teammate.update!(can_customize_company: true)
+      result = helper.teammate_permissions_badges(teammate)
+      expect(result).to include('Customize')
+      expect(result).to include('badge bg-warning')
+    end
+
+    it 'does not include Customize badge when teammate lacks permission' do
+      teammate.update!(can_customize_company: false)
+      result = helper.teammate_permissions_badges(teammate)
+      expect(result).not_to include('Customize')
+    end
   end
 
   describe '#clear_filter_url' do

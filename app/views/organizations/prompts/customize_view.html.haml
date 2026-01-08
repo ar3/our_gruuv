@@ -1,26 +1,26 @@
 - content_for :title, "Customize View"
 
 - content_for :header do
-  Customize Prompts View
+  Customize #{company_label_plural('prompt', 'Prompt')} View
 - content_for :return_url do
   = @return_url || organization_prompts_path(@organization)
 - content_for :return_text do
-  = @return_text || 'Back to Prompts'
+  = @return_text || "Back to #{company_label_plural('prompt', 'Prompt')}"
 
 = form_with url: update_view_organization_prompts_path(@organization), method: :patch, local: true do |form|
   .row
     .col-md-4
       .mb-4
-        %h2 Select What Prompts You See
+        %h2 Select What #{company_label_plural('prompt', 'Prompt')} You See
     
     .col-md-8
       / Filters Section
       .card.mb-4
         .card-body
-          %label.form-label.fw-bold Select What Prompts You See
+          %label.form-label.fw-bold Select What #{company_label_plural('prompt', 'Prompt')} You See
           
           .mb-3
-            %label.form-label Prompt Template
+            %label.form-label #{company_label_for('prompt', 'Prompt')} Template
             = select_tag 'template', options_from_collection_for_select(@available_templates, :id, :title, @current_filters[:template]), { include_blank: 'All Templates', class: 'form-select' }
           
           .mb-3

@@ -153,6 +153,8 @@ class CompanyTeammatesQuery
         filtered_teammates = filtered_teammates.where(can_create_employment: true)
       when 'maap_mgmt'
         filtered_teammates = filtered_teammates.where(can_manage_maap: true)
+      when 'customize_company'
+        filtered_teammates = filtered_teammates.where(can_customize_company: true)
       end
     end
 

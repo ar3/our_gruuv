@@ -161,6 +161,13 @@ class OrganizationPolicy < ApplicationPolicy
     admin_bypass? || true
   end
 
+  def customize_company?
+    return false unless viewing_teammate
+    return false unless record.company? # Only companies can be customized
+    return false unless organization_in_hierarchy?
+    admin_bypass? || viewing_teammate.can_customize_company?
+  end
+
   private
 
   def organization_in_hierarchy?
