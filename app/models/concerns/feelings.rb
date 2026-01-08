@@ -50,12 +50,16 @@ module Feelings
   ].freeze
 
   def self.hydrate(discrete_feeling)
+    return nil if discrete_feeling.nil?
     FEELINGS.find { |feeling| feeling[:discrete_feeling] == discrete_feeling.to_sym }
   end
 
   def self.hydrate_and_sentencify(primary_discrete_feeling_or_array, secondary_discrete_feeling = nil)
     raw_feelings = primary_discrete_feeling_or_array.is_a?(Array) ? primary_discrete_feeling_or_array : [primary_discrete_feeling_or_array]
     raw_feelings << secondary_discrete_feeling if secondary_discrete_feeling.present?
+    
+    # Filter out nil values before calling hydrate
+    raw_feelings = raw_feelings.compact
 
     feelings_grouped = raw_feelings.map { |feeling| hydrate(feeling).try(:[], :display).presence }.compact.group_by { |s| s }
     

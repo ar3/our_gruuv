@@ -23,6 +23,11 @@ RSpec.describe Feelings, type: :concern do
       result = Feelings.hydrate('happy')
       expect(result[:discrete_feeling]).to eq(:happy)
     end
+
+    it 'returns nil for nil input' do
+      result = Feelings.hydrate(nil)
+      expect(result).to be_nil
+    end
   end
 
   describe '.hydrate_and_sentencify' do
@@ -49,6 +54,16 @@ RSpec.describe Feelings, type: :concern do
     it 'handles nil secondary feeling' do
       result = Feelings.hydrate_and_sentencify(:happy, nil)
       expect(result).to eq('😀 (Happy)')
+    end
+
+    it 'handles nil primary feeling' do
+      result = Feelings.hydrate_and_sentencify(nil)
+      expect(result).to eq('')
+    end
+
+    it 'handles nil primary and secondary feelings' do
+      result = Feelings.hydrate_and_sentencify(nil, nil)
+      expect(result).to eq('')
     end
 
     it 'returns empty string for invalid feelings' do

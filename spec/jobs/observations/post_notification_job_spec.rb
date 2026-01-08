@@ -226,6 +226,23 @@ RSpec.describe Observations::PostNotificationJob, type: :job do
           job.perform(observation.id, notify_teammate_ids, company.id)
         }.not_to change(Notification, :count)
       end
+
+      it 'handles observation with nil primary_feeling gracefully' do
+        observation.update!(primary_feeling: nil, secondary_feeling: nil)
+
+        expect {
+          job = Observations::PostNotificationJob.new
+          job.perform(observation.id, notify_teammate_ids, company.id)
+        }.to change(Notification, :count).by(2) # Main message + thread reply (without feelings)
+
+        thread_notification = Notification.where(notification_type: 'observation_channel')
+                                          .where("metadata->>'is_thread_reply' = 'true'")
+                                          .first
+        expect(thread_notification).to be_present
+        # Should not raise error when building thread reply with nil feelings
+        rich_message = thread_notification.rich_message.is_a?(String) ? JSON.parse(thread_notification.rich_message) : thread_notification.rich_message
+        expect(rich_message).to be_an(Array)
+      end
     end
 
     context 'when sending both DMs and channels' do

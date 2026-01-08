@@ -287,6 +287,12 @@ RSpec.describe Observation, type: :model do
       observation.secondary_feeling = 'inspired'
       expect(observation.feelings_display).to eq('😀 (Happy) and 🤩 (Inspired)')
     end
+
+    it 'handles nil primary feeling gracefully' do
+      observation.primary_feeling = nil
+      observation.secondary_feeling = nil
+      expect(observation.feelings_display).to eq('')
+    end
   end
 
   describe 'rating methods' do
