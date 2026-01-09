@@ -389,7 +389,8 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
         }.to change { MaapSnapshot.count }.by(1)
         
         snapshot = MaapSnapshot.last
-        expect(snapshot.change_type).to eq('position_tenure')
+        # When assignment_check_ins params are present, even if not finalized, it's treated as bulk
+        expect(snapshot.change_type).to eq('bulk_check_in_finalization')
       end
     end
   end

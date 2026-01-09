@@ -22,8 +22,8 @@
       = form.select "aspiration_check_ins[#{check_in.id}][official_rating]", aspiration_rating_options, { selected: check_in.manager_rating || check_in.employee_rating, prompt: 'Select rating...' }, { class: "form-select form-select-sm", required: true }
   %td.text-center
     - if view_mode == :employee
-      = form.check_box "aspiration_check_ins[#{check_in.id}][finalize]", { class: "form-check-input", disabled: true }, "1", "0"
+      = form.check_box "aspiration_check_ins[#{check_in.id}][finalize]", { class: "form-check-input", disabled: true, checked: true }, "1", "0"
       %br
       %small.text-muted (Manager only)
     - else
-      = form.check_box "aspiration_check_ins[#{check_in.id}][finalize]", { class: "form-check-input" }, "1", "0"
+      = form.check_box "aspiration_check_ins[#{check_in.id}][finalize]", { class: "form-check-input finalize-checkbox", checked: true, data: { alert: "This row will not be saved if this stays unchecked" } }, "1", "0"

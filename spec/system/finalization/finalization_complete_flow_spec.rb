@@ -144,9 +144,9 @@ RSpec.describe 'Finalization Complete Flow', type: :system do
     it 'removes items from to be finalized list when manager saves' do
       visit organization_company_teammate_finalization_path(company, employee_teammate)
       
-      # Finalize first assignment - use correct field names
+      # Finalize first assignment - checkbox is checked by default
       check_box = find("input[type='checkbox'][name='assignment_check_ins[#{check_in_both1.id}][finalize]']")
-      check_box.check
+      expect(check_box).to be_checked
       
       # Verify check-in is ready for finalization
       expect(check_in_both1.reload.ready_for_finalization?).to be true

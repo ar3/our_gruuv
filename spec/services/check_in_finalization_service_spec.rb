@@ -431,6 +431,13 @@ RSpec.describe CheckInFinalizationService, type: :service do
           
           # The snapshot should use the NEWEST closed tenure (rating 2), not the old one (rating 1)
           newest_closed_tenure = employee_teammate.employment_tenures.inactive.order(ended_at: :desc).first
+          
+          expect(newest_closed_tenure.official_position_rating).to eq(2)
+          expect(newest_closed_tenure.id).not_to eq(old_tenure.id)
+          
+          snapshot_rating = snapshot.maap_data['position']['rated_position']['official_position_rating']
+          expect(snapshot_rating).to eq(2)
+          expect(snapshot_rating).not_to eq(old_tenure.official_position_rating)
         end
         
         it 'creates observable moment when rating improved from previous check-in' do
@@ -454,14 +461,6 @@ RSpec.describe CheckInFinalizationService, type: :service do
           moment = ObservableMoment.last
           expect(moment.moment_type).to eq('check_in_completed')
           expect(moment.momentable).to eq(position_check_in)
-        end
-          
-          expect(newest_closed_tenure.official_position_rating).to eq(2)
-          expect(newest_closed_tenure.id).not_to eq(old_tenure.id)
-          
-          snapshot_rating = snapshot.maap_data['position']['rated_position']['official_position_rating']
-          expect(snapshot_rating).to eq(2)
-          expect(snapshot_rating).not_to eq(old_tenure.official_position_rating)
         end
 
         it 'results hash contains check_in for linking' do
@@ -695,8 +694,8 @@ RSpec.describe CheckInFinalizationService, type: :service do
           create(:aspiration_check_in,
             teammate: employee_teammate,
             aspiration: aspiration,
-            employee_rating: 2,
-            manager_rating: 3,
+            employee_rating: 'meeting',
+            manager_rating: 'exceeding',
             employee_completed_at: 1.day.ago,
             manager_completed_at: 1.day.ago)
         end
@@ -718,7 +717,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
             aspiration_check_ins: {
               aspiration_check_in.id => {
                 finalize: '1',
-                official_rating: '3',
+                official_rating: 'exceeding',
                 shared_notes: 'Finalizing aspiration'
               }
             }
