@@ -2,34 +2,16 @@ module AboutMeHelper
   # Status indicator methods - return :red, :yellow, or :green
   
   def shareable_observations_status_indicator(teammate, organization)
-    since_date = 30.days.ago
+    # Use the same query logic as the view to ensure consistency
+    query = AboutMeObservationsQuery.new(teammate, organization)
     
-    # Observations given (published, not observer_only)
-    given_count = Observation
-      .where(observer: teammate.person, company: organization)
-      .where.not(published_at: nil)
-      .where.not(privacy_level: 'observer_only')
-      .where('observed_at >= ?', since_date)
-      .where(deleted_at: nil)
-      .count
+    given_count = query.observations_given.count
+    received_count = query.observations_received.count
     
-    # Observations received (published, not observer_only)
-    teammate_ids = teammate.person.teammates.where(organization: organization).pluck(:id)
-    received_count = Observation
-      .joins(:observees)
-      .where(observees: { teammate_id: teammate_ids })
-      .where(company: organization)
-      .where.not(published_at: nil)
-      .where.not(privacy_level: 'observer_only')
-      .where('observed_at >= ?', since_date)
-      .where(deleted_at: nil)
-      .distinct
-      .count
-    
-    if given_count >= 1
-      :green
-    elsif given_count == 0 && received_count == 0
+    if given_count == 0 && received_count == 0
       :red
+    elsif (given_count >= 1 && received_count >= 1) || given_count >= 2
+      :green
     else
       :yellow
     end

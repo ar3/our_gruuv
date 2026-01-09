@@ -183,7 +183,22 @@ RSpec.describe AboutMeHelper, type: :helper do
         expect(result).to eq(:green)
       end
 
-      it 'returns :green when given >= 1 and received = 0' do
+      it 'returns :yellow when given >= 1 and received = 0' do
+        result = helper.shareable_observations_status_indicator(company_teammate, company)
+        expect(result).to eq(:yellow)
+      end
+
+      it 'returns :green when given >= 2 and received = 0' do
+        second_observation_given = build(:observation,
+                                         observer: person,
+                                         company: company,
+                                         privacy_level: :public_to_company,
+                                         observed_at: 10.days.ago,
+                                         published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
         result = helper.shareable_observations_status_indicator(company_teammate, company)
         expect(result).to eq(:green)
       end
@@ -262,6 +277,43 @@ RSpec.describe AboutMeHelper, type: :helper do
       it 'does not count them' do
         result = helper.shareable_observations_status_indicator(company_teammate, company)
         expect(result).to eq(:red)
+      end
+    end
+
+    context 'when there is a self-observation' do
+      let!(:self_observation) do
+        build(:observation,
+              observer: person,
+              company: company,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: company_teammate)
+          obs.save!
+        end
+      end
+
+      it 'excludes self-observation from given count but includes it in received count' do
+        result = helper.shareable_observations_status_indicator(company_teammate, company)
+        # Self-observation should count as 0 given, 1 received = yellow
+        expect(result).to eq(:yellow)
+      end
+
+      it 'returns green when self-observation plus 1+ given observation' do
+        # Add a regular observation given
+        regular_observation = build(:observation,
+                                    observer: person,
+                                    company: company,
+                                    privacy_level: :public_to_company,
+                                    observed_at: 10.days.ago,
+                                    published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        result = helper.shareable_observations_status_indicator(company_teammate, company)
+        # 1 given (regular) + 1 received (self) = green
+        expect(result).to eq(:green)
       end
     end
   end

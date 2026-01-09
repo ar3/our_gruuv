@@ -216,6 +216,11 @@ RSpec.describe 'About Me Page', type: :request do
         expect(assigns(:observations_received_count)).to eq(1)
         expect(assigns(:recent_observations_received)).to include(self_observation)
       end
+
+      it 'shows yellow indicator (0 given, 1 received)' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to match(/text-warning|bg-warning|alert-warning/)
+      end
     end
 
     context 'when teammate is observer and one of multiple observees' do
@@ -418,7 +423,63 @@ RSpec.describe 'About Me Page', type: :request do
         expect(response.body).to match(/text-danger|bg-danger|alert-danger/)
       end
 
-      it 'shows green indicator when at least 1 observation given' do
+      it 'shows green indicator when 1+ given and 1+ received' do
+        other_person = create(:person)
+        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        
+        observation_given = build(:observation,
+                                 observer: person,
+                                 company: organization,
+                                 privacy_level: :public_to_company,
+                                 observed_at: 10.days.ago,
+                                 published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        observation_received = build(:observation,
+                                    observer: other_person,
+                                    company: organization,
+                                    privacy_level: :public_to_company,
+                                    observed_at: 10.days.ago,
+                                    published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: teammate)
+          obs.save!
+        end
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to match(/text-success|bg-success|alert-success/)
+      end
+
+      it 'shows green indicator when 2+ observations given' do
+        other_person = create(:person)
+        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        
+        observation_given1 = build(:observation,
+                                  observer: person,
+                                  company: organization,
+                                  privacy_level: :public_to_company,
+                                  observed_at: 10.days.ago,
+                                  published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        observation_given2 = build(:observation,
+                                   observer: person,
+                                   company: organization,
+                                   privacy_level: :public_to_company,
+                                   observed_at: 10.days.ago,
+                                   published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: other_teammate)
+          obs.save!
+        end
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to match(/text-success|bg-success|alert-success/)
+      end
+
+      it 'shows yellow indicator when 1 observation given and 0 received' do
         other_person = create(:person)
         other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
         
@@ -433,7 +494,7 @@ RSpec.describe 'About Me Page', type: :request do
         end
 
         get about_me_organization_company_teammate_path(organization, teammate)
-        expect(response.body).to match(/text-success|bg-success|alert-success/)
+        expect(response.body).to match(/text-warning|bg-warning|alert-warning/)
       end
 
       it 'shows yellow indicator when 0 given but some received' do
