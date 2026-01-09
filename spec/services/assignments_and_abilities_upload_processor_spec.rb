@@ -116,6 +116,31 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
         assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
         expect(assignment.department_id).to eq(department.id)
       end
+
+      it 'processes outcomes from preview_actions' do
+        processor.process
+        assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
+        outcome_descriptions = assignment.assignment_outcomes.pluck(:description)
+        expect(outcome_descriptions).to include('Outcome 1')
+        expect(outcome_descriptions).to include('Outcome 2')
+      end
+
+      it 'processes department_names from preview_actions' do
+        processor.process
+        assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
+        expect(assignment.department_id).to eq(department.id)
+        expect(assignment.department.name).to eq('Engineering')
+      end
+
+      it 'creates department when it does not exist' do
+        preview_actions['assignments'].first['department_names'] = ['New Department']
+        bulk_sync_event.update!(preview_actions: preview_actions)
+        
+        expect { processor.process }.to change(Organization.departments, :count).by(1)
+        assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
+        new_department = Organization.departments.find_by(name: 'New Department', parent: organization)
+        expect(assignment.department_id).to eq(new_department.id)
+      end
     end
 
     context 'with existing assignment' do
@@ -183,9 +208,10 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
       end
     end
 
-    context 'with multiple departments' do
-      let!(:dept1) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
-      let!(:dept2) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
+    context 'with multiple department names in input' do
+      let!(:existing_assignment) do
+        create(:assignment, title: 'Test Assignment', company: organization, department_id: nil)
+      end
 
       let(:preview_actions) do
         {
@@ -195,7 +221,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
               'tagline' => 'Test tagline',
               'outcomes' => [],
               'required_activities' => [],
-              'department_names' => ['Engineering'],
+              'department_names' => ['Engineering', 'Sales'],
               'row' => 2
             }
           ],
@@ -205,10 +231,115 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
         }
       end
 
-      it 'attaches to company when multiple departments found' do
+      it 'leaves department field untouched when multiple department names provided' do
+        original_department_id = existing_assignment.department_id
+        processor.process
+        existing_assignment.reload
+        expect(existing_assignment.department_id).to eq(original_department_id)
+      end
+    end
+
+    context 'with assignment outcomes' do
+      let(:preview_actions) do
+        {
+          'assignments' => [
+            {
+              'title' => 'Test Assignment',
+              'tagline' => 'Test tagline',
+              'outcomes' => ['Outcome 1', 'Outcome 2', 'Squad-mates agree: "We are learning"'],
+              'required_activities' => [],
+              'department_names' => [],
+              'row' => 2
+            }
+          ],
+          'abilities' => [],
+          'assignment_abilities' => [],
+          'position_assignments' => []
+        }
+      end
+
+      it 'creates outcomes with exact match find-or-create behavior' do
         processor.process
         assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
-        expect(assignment.department_id).to be_nil
+        expect(assignment.assignment_outcomes.count).to eq(3)
+        
+        outcome1 = assignment.assignment_outcomes.find_by(description: 'Outcome 1')
+        expect(outcome1).to be_present
+        expect(outcome1.outcome_type).to eq('quantitative')
+        
+        outcome2 = assignment.assignment_outcomes.find_by(description: 'Outcome 2')
+        expect(outcome2).to be_present
+        expect(outcome2.outcome_type).to eq('quantitative')
+        
+        sentiment_outcome = assignment.assignment_outcomes.find_by(description: 'Squad-mates agree: "We are learning"')
+        expect(sentiment_outcome).to be_present
+        expect(sentiment_outcome.outcome_type).to eq('sentiment')
+      end
+
+      it 'does not create duplicate outcomes when processing same assignment twice' do
+        processor.process
+        assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
+        original_count = assignment.assignment_outcomes.count
+        
+        # Process again with same outcomes
+        processor.process
+        assignment.reload
+        expect(assignment.assignment_outcomes.count).to eq(original_count)
+      end
+
+      it 'receives outcomes from preview_actions (not nil)' do
+        assignment_data = preview_actions['assignments'].first
+        expect(assignment_data['outcomes']).to be_present
+        expect(assignment_data['outcomes']).to be_an(Array)
+        
+        processor.process
+        assignment = Assignment.find_by(title: 'Test Assignment', company: organization)
+        expect(assignment.assignment_outcomes.count).to eq(3)
+      end
+    end
+
+    context 'end-to-end: CSV with department and outcomes' do
+      let(:csv_content) do
+        <<~CSV
+          Assignment,Position(s),Team(s),Tagline,Outcomes,Abilities,Required Activities
+          End-to-End Test,Position,Partner Services,Tagline,"-Outcome A
+          -Outcome B",Ability,Activity
+        CSV
+      end
+      let(:parser) { AssignmentsAndAbilitiesUploadParser.new(csv_content, organization) }
+      let(:preview_actions) do
+        parser.parse
+        parser.enhanced_preview_actions
+      end
+      let!(:department) { create(:organization, type: 'Department', name: 'Partner Services', parent: organization) }
+
+      before do
+        bulk_sync_event.update!(preview_actions: preview_actions, status: 'preview')
+      end
+
+      it 'processes department and outcomes from CSV through to assignment' do
+        processor.process
+        assignment = Assignment.find_by(title: 'End-to-End Test', company: organization)
+        
+        expect(assignment).to be_present
+        expect(assignment.department_id).to eq(department.id)
+        expect(assignment.assignment_outcomes.count).to eq(2)
+        
+        outcome_a = assignment.assignment_outcomes.find_by(description: '-Outcome A')
+        expect(outcome_a).to be_present
+        
+        outcome_b = assignment.assignment_outcomes.find_by(description: '-Outcome B')
+        expect(outcome_b).to be_present
+      end
+
+      it 'ensures enhanced_preview_actions includes required fields' do
+        assignment_data = preview_actions['assignments'].first
+        
+        expect(assignment_data).to have_key('department_names')
+        expect(assignment_data).to have_key('outcomes')
+        expect(assignment_data['department_names']).to eq(['Partner Services'])
+        expect(assignment_data['outcomes']).to be_an(Array)
+        expect(assignment_data['outcomes'].length).to eq(2)
       end
     end
 
@@ -651,10 +782,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
         end
       end
 
-      context 'when multiple departments match' do
-        let!(:dept1) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
-        let!(:dept2) { create(:organization, type: 'Department', name: 'Engineering', parent: organization) }
-
+      context 'when multiple department names provided' do
         let(:preview_actions) do
           {
             'assignments' => [
@@ -673,23 +801,63 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
               {
                 'assignment_title' => 'Test Assignment',
                 'position_title' => 'Software Engineer',
-                'department_names' => ['Engineering'],
+                'department_names' => ['Engineering', 'Sales'],
                 'row' => 2
               }
             ]
           }
         end
 
-        it 'sets department_id to nil when multiple departments found' do
+        it 'leaves seat department fields untouched when multiple department names provided' do
+          original_dept1 = seat1.department_id
+          original_dept2 = seat2.department_id
           processor.process
           seat1.reload
           seat2.reload
-          expect(seat1.department_id).to be_nil
-          expect(seat2.department_id).to be_nil
+          expect(seat1.department_id).to eq(original_dept1)
+          expect(seat2.department_id).to eq(original_dept2)
         end
       end
 
-      context 'when no departments match' do
+      context 'when department does not exist' do
+        let(:preview_actions) do
+          {
+            'assignments' => [
+              {
+                'title' => 'Test Assignment',
+                'tagline' => 'Test tagline',
+                'outcomes' => [],
+                'required_activities' => [],
+                'department_names' => [],
+                'row' => 2
+              }
+            ],
+            'abilities' => [],
+            'assignment_abilities' => [],
+            'position_assignments' => [
+              {
+                'assignment_title' => 'Test Assignment',
+                'position_title' => 'Software Engineer',
+                'department_names' => ['New Department'],
+                'row' => 2
+              }
+            ]
+          }
+        end
+
+        it 'creates department and updates seats' do
+          expect { processor.process }.to change(Organization.departments, :count).by(1)
+          new_department = Organization.departments.find_by(name: 'New Department', parent: organization)
+          expect(new_department).to be_present
+          
+          seat1.reload
+          seat2.reload
+          expect(seat1.department_id).to eq(new_department.id)
+          expect(seat2.department_id).to eq(new_department.id)
+        end
+      end
+
+      context 'when department does not exist (single name)' do
         let(:preview_actions) do
           {
             'assignments' => [
@@ -715,12 +883,15 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
           }
         end
 
-        it 'sets department_id to nil when no departments found' do
-          processor.process
+        it 'creates department and updates seats' do
+          expect { processor.process }.to change(Organization.departments, :count).by(1)
+          new_department = Organization.departments.find_by(name: 'Non-existent Department', parent: organization)
+          expect(new_department).to be_present
+          
           seat1.reload
           seat2.reload
-          expect(seat1.department_id).to be_nil
-          expect(seat2.department_id).to be_nil
+          expect(seat1.department_id).to eq(new_department.id)
+          expect(seat2.department_id).to eq(new_department.id)
         end
       end
 

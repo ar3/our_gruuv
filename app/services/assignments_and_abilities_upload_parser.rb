@@ -176,9 +176,8 @@ class AssignmentsAndAbilitiesUploadParser
     position_titles = parse_comma_or_newline_separated(row_hash['Position(s)'] || row_hash['Positions'])
 
     # Extract team/department names (comma or newline separated) - note: column is "Team(s)" but maps to Departments
-    # If multiple departments found, treat as empty string
-    raw_department_names = parse_comma_or_newline_separated(row_hash['Team(s)'] || row_hash['Teams'] || row_hash['Department'] || row_hash['Departments'])
-    department_names = raw_department_names.length > 1 ? [] : raw_department_names
+    # Pass through all department names (processor will handle multiple values by leaving field untouched)
+    department_names = parse_comma_or_newline_separated(row_hash['Team(s)'] || row_hash['Teams'] || row_hash['Department'] || row_hash['Departments'])
 
     # Extract tagline
     tagline = row_hash['Tagline']&.strip
@@ -283,8 +282,10 @@ class AssignmentsAndAbilitiesUploadParser
         {
           'title' => assignment_title,
           'tagline' => assignment['tagline'],
+          'outcomes' => assignment['outcomes'] || [],
           'outcomes_count' => assignment['outcomes']&.length || 0,
           'required_activities' => assignment['required_activities']&.join("\n"),
+          'department_names' => assignment['department_names'] || [],
           'row' => assignment['row'],
           'action' => 'update',
           'existing_id' => existing_assignment.id,
@@ -295,8 +296,10 @@ class AssignmentsAndAbilitiesUploadParser
         {
           'title' => assignment_title,
           'tagline' => assignment['tagline'],
+          'outcomes' => assignment['outcomes'] || [],
           'outcomes_count' => assignment['outcomes']&.length || 0,
           'required_activities' => assignment['required_activities']&.join("\n"),
+          'department_names' => assignment['department_names'] || [],
           'row' => assignment['row'],
           'action' => 'create',
           'existing_id' => nil,

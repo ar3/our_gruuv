@@ -94,11 +94,13 @@ RSpec.describe AssignmentsAndAbilitiesUploadParser, type: :service do
         parser_mixed.parse
         position_assignments = parser_mixed.parsed_data[:position_assignments]
         
-        # Multiple departments should result in empty array
-        expect(position_assignments.first['department_names']).to eq([])
+        # Multiple departments should be passed through (processor will handle leaving field untouched)
+        expect(position_assignments.first['department_names']).to include('Engineering')
+        expect(position_assignments.first['department_names']).to include('Sales')
+        expect(position_assignments.first['department_names'].length).to eq(2)
       end
 
-      it 'treats multiple departments as empty string' do
+      it 'treats multiple departments as multiple values' do
         csv_with_multiple_depts = <<~CSV
           Assignment,Position(s),Team(s),Tagline,Outcomes,Abilities,Required Activities
           Test Assignment,Position,"Engineering, Sales",Tagline,Outcome,Ability,Activity
@@ -107,8 +109,10 @@ RSpec.describe AssignmentsAndAbilitiesUploadParser, type: :service do
         parser_multiple.parse
         position_assignments = parser_multiple.parsed_data[:position_assignments]
         
-        # Multiple departments should result in empty array
-        expect(position_assignments.first['department_names']).to eq([])
+        # Multiple departments should be passed through (processor will handle leaving field untouched)
+        expect(position_assignments.first['department_names']).to include('Engineering')
+        expect(position_assignments.first['department_names']).to include('Sales')
+        expect(position_assignments.first['department_names'].length).to eq(2)
       end
 
       it 'parses outcomes as multiline' do
@@ -292,6 +296,89 @@ RSpec.describe AssignmentsAndAbilitiesUploadParser, type: :service do
         expect(pa).to have_key('will_update_seat_department')
         expect(pa['position_type_title']).to be_nil
         expect(pa['seats_count']).to eq(0)
+      end
+    end
+
+    context 'enhanced_preview_actions includes department_names and outcomes' do
+      let(:csv_with_dept_and_outcomes) do
+        <<~CSV
+          Assignment,Position(s),Team(s),Tagline,Outcomes,Abilities,Required Activities
+          Test Assignment,Position,Partner Services,Tagline,"-Outcome 1
+          -Outcome 2
+          Squad-mates agree: We are learning",Ability,Activity
+        CSV
+      end
+      let(:parser) { described_class.new(csv_with_dept_and_outcomes, organization) }
+
+      before do
+        expect(parser.parse).to be true
+      end
+
+      it 'includes department_names in enhanced preview' do
+        enhanced = parser.enhanced_preview_actions
+        expect(enhanced).to have_key('assignments')
+        expect(enhanced['assignments']).not_to be_empty
+        assignment = enhanced['assignments'].first
+        
+        expect(assignment).to have_key('department_names')
+        expect(assignment['department_names']).to eq(['Partner Services'])
+      end
+
+      it 'includes outcomes in enhanced preview' do
+        enhanced = parser.enhanced_preview_actions
+        expect(enhanced).to have_key('assignments')
+        expect(enhanced['assignments']).not_to be_empty
+        assignment = enhanced['assignments'].first
+        
+        expect(assignment).to have_key('outcomes')
+        expect(assignment['outcomes']).to be_an(Array)
+        expect(assignment['outcomes'].length).to eq(3)
+        expect(assignment['outcomes']).to include('-Outcome 1')
+        expect(assignment['outcomes']).to include('-Outcome 2')
+        expect(assignment['outcomes']).to include('Squad-mates agree: We are learning')
+      end
+
+      it 'includes both outcomes_count and outcomes array' do
+        enhanced = parser.enhanced_preview_actions
+        expect(enhanced).to have_key('assignments')
+        expect(enhanced['assignments']).not_to be_empty
+        assignment = enhanced['assignments'].first
+        
+        expect(assignment).to have_key('outcomes_count')
+        expect(assignment).to have_key('outcomes')
+        expect(assignment['outcomes_count']).to eq(3)
+        expect(assignment['outcomes'].length).to eq(3)
+      end
+
+      it 'handles assignments without department_names' do
+        csv_no_dept = <<~CSV
+          Assignment,Position(s),Team(s),Tagline,Outcomes,Abilities,Required Activities
+          Test Assignment,Position,,Tagline,Outcome,Ability,Activity
+        CSV
+        parser_no_dept = described_class.new(csv_no_dept, organization)
+        parser_no_dept.parse
+        enhanced = parser_no_dept.enhanced_preview_actions
+        expect(enhanced['assignments']).to be_present
+        assignment = enhanced['assignments'].first
+        
+        expect(assignment).to have_key('department_names')
+        expect(assignment['department_names']).to eq([])
+      end
+
+      it 'handles assignments without outcomes' do
+        csv_no_outcomes = <<~CSV
+          Assignment,Position(s),Team(s),Tagline,Outcomes,Abilities,Required Activities
+          Test Assignment,Position,Partner Services,Tagline,,Ability,Activity
+        CSV
+        parser_no_outcomes = described_class.new(csv_no_outcomes, organization)
+        parser_no_outcomes.parse
+        enhanced = parser_no_outcomes.enhanced_preview_actions
+        expect(enhanced['assignments']).to be_present
+        assignment = enhanced['assignments'].first
+        
+        expect(assignment).to have_key('outcomes')
+        expect(assignment['outcomes']).to eq([])
+        expect(assignment['outcomes_count']).to eq(0)
       end
     end
   end

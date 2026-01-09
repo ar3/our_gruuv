@@ -410,13 +410,18 @@ class AssignmentsAndAbilitiesUploadProcessor
     outcomes.each do |outcome_description|
       next if outcome_description.blank?
       
-      # Check if exact match exists
+      outcome_description = outcome_description.strip
+      
+      # Find or create outcome with exact match
       existing = AssignmentOutcome.find_by(
         assignment: assignment,
-        description: outcome_description.strip
+        description: outcome_description
       )
       
-      next if existing # Skip if already exists
+      if existing
+        Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found existing outcome: #{outcome_description}"
+        next
+      end
       
       # Determine type
       outcome_type = if outcome_description.downcase.match?(/agree:|agrees:/)
@@ -428,9 +433,10 @@ class AssignmentsAndAbilitiesUploadProcessor
       # Create new outcome
       AssignmentOutcome.create!(
         assignment: assignment,
-        description: outcome_description.strip,
+        description: outcome_description,
         outcome_type: outcome_type
       )
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created new outcome: #{outcome_description} (type: #{outcome_type})"
     end
   end
 
@@ -489,40 +495,40 @@ class AssignmentsAndAbilitiesUploadProcessor
       return
     end
     
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Processing department association for assignment #{assignment.title} with departments: #{department_names.inspect}"
+    # If multiple department names provided, leave department field untouched
+    if department_names.length > 1
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Multiple department names provided (#{department_names.inspect}), leaving department field untouched for assignment #{assignment.title}"
+      return
+    end
     
-    # Find departments using flexible matching
+    dept_name = department_names.first
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Processing department association for assignment #{assignment.title} with department: #{dept_name}"
+    
+    # Find or create department by exact name match
     # Get organization IDs from hierarchy (self_and_descendants returns an array)
     org_ids = organization.self_and_descendants.map(&:id)
     base_scope = Organization.where(id: org_ids, type: 'Department')
     Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Searching in #{org_ids.length} organizations"
     
-    departments = []
-    department_names.each do |dept_name|
-      next if dept_name.blank?
-      
-      # Find ALL departments matching this name (not just the first one)
-      # Generate name variations and find all matches
-      variations = name_variations(dept_name)
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Searching for department '#{dept_name}' with variations: #{variations.inspect}"
-      matching_depts = base_scope.where(name: variations).to_a
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found #{matching_depts.length} departments matching '#{dept_name}'"
-      departments.concat(matching_depts)
-    end
+    # Find department by exact name match (case-insensitive)
+    department = base_scope.find_by("LOWER(name) = ?", dept_name.downcase)
     
-    # Remove duplicates
-    departments.uniq!
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Total unique departments found: #{departments.length}"
-    
-    # Set department_id based on matches
-    if departments.length == 1
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Setting assignment #{assignment.title} department_id to #{departments.first.id} (#{departments.first.name})"
-      assignment.update!(department_id: departments.first.id)
+    if department
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found existing department: #{department.name} (id: #{department.id})"
     else
-      # Multiple or none: attach to company
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: #{departments.length == 0 ? 'No' : 'Multiple'} departments found, attaching assignment #{assignment.title} to company"
-      assignment.update!(department_id: nil)
+      # Create new department
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Creating new department: #{dept_name}"
+      department = Organization.create!(
+        name: dept_name,
+        parent: organization,
+        type: 'Department'
+      )
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created department: #{department.name} (id: #{department.id})"
     end
+    
+    # Set department_id
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Setting assignment #{assignment.title} department_id to #{department.id} (#{department.name})"
+    assignment.update!(department_id: department.id)
   end
 
   def find_assignment_by_title(title)
@@ -557,45 +563,42 @@ class AssignmentsAndAbilitiesUploadProcessor
       return
     end
     
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Processing department association for position type #{position_type.external_title} with departments: #{department_names.inspect}"
+    # If multiple department names provided, leave department field untouched
+    if department_names.length > 1
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Multiple department names provided (#{department_names.inspect}), leaving seat department fields untouched for position type #{position_type.external_title}"
+      return
+    end
     
-    # Find departments using flexible matching (same logic as process_department_association)
+    dept_name = department_names.first
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Processing department association for position type #{position_type.external_title} with department: #{dept_name}"
+    
+    # Find or create department by exact name match
     org_ids = organization.self_and_descendants.map(&:id)
     base_scope = Organization.where(id: org_ids, type: 'Department')
     Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Searching in #{org_ids.length} organizations"
     
-    departments = []
-    department_names.each do |dept_name|
-      next if dept_name.blank?
-      
-      # Find ALL departments matching this name
-      variations = name_variations(dept_name)
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Searching for department '#{dept_name}' with variations: #{variations.inspect}"
-      matching_depts = base_scope.where(name: variations).to_a
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found #{matching_depts.length} departments matching '#{dept_name}'"
-      departments.concat(matching_depts)
-    end
+    # Find department by exact name match (case-insensitive)
+    department = base_scope.find_by("LOWER(name) = ?", dept_name.downcase)
     
-    # Remove duplicates
-    departments.uniq!
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Total unique departments found: #{departments.length}"
-    
-    # Determine department_id to set
-    department_id = if departments.length == 1
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Single department found: #{departments.first.id} (#{departments.first.name})"
-      departments.first.id
+    if department
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found existing department: #{department.name} (id: #{department.id})"
     else
-      # Multiple or none: attach to company (nil)
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: #{departments.length == 0 ? 'No' : 'Multiple'} departments found, attaching seats to company"
-      nil
+      # Create new department
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Creating new department: #{dept_name}"
+      department = Organization.create!(
+        name: dept_name,
+        parent: organization,
+        type: 'Department'
+      )
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created department: #{department.name} (id: #{department.id})"
     end
     
     # Update ALL seats for this position type
     seats = Seat.where(position_type: position_type)
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updating #{seats.count} seats for position type #{position_type.external_title}"
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updating #{seats.count} seats for position type #{position_type.external_title} with department_id: #{department.id}"
     
-    seats.update_all(department_id: department_id)
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updated #{seats.count} seats with department_id: #{department_id || 'nil (company)'}"
+    seats.update_all(department_id: department.id)
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Updated #{seats.count} seats with department_id: #{department.id} (#{department.name})"
   end
 end
 
