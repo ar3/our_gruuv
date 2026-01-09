@@ -456,11 +456,28 @@ class AssignmentsAndAbilitiesUploadProcessor
     )
     
     unless position_type
-      Rails.logger.warn "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: PositionType not found for title: #{position_title} in organization #{organization.id}"
-      return nil, false
+      # PositionType not found - create a new one
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: PositionType not found for title: #{position_title} in organization #{organization.id}, creating new PositionType"
+      
+      # Find PositionMajorLevel with major_level = 1 (raise error if none exists)
+      position_major_level = PositionMajorLevel.where(major_level: 1).first
+      unless position_major_level
+        error_msg = "No PositionMajorLevel with major_level = 1 found. Cannot create PositionType: #{position_title}"
+        Rails.logger.error "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: #{error_msg}"
+        raise error_msg
+      end
+      
+      # Create new PositionType with exact title from CSV
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Creating new PositionType: #{position_title} with PositionMajorLevel: #{position_major_level.set_name} (major_level: #{position_major_level.major_level})"
+      position_type = PositionType.create!(
+        external_title: position_title,
+        organization: organization,
+        position_major_level: position_major_level
+      )
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created PositionType: #{position_type.external_title} (id: #{position_type.id})"
+    else
+      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found PositionType: #{position_type.external_title} (id: #{position_type.id})"
     end
-    
-    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found PositionType: #{position_type.external_title} (id: #{position_type.id})"
     
     # Find existing Position for this PositionType
     position = Position.find_by(position_type: position_type)
