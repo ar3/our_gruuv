@@ -50,6 +50,51 @@ function initializePopovers() {
   } else {
     console.log('Popover not found in bootstrap object')
   }
+  
+  // Initialize status popovers on about me page collapse summaries
+  const statusPopoverList = document.querySelectorAll('[data-status-popover="true"]')
+  console.log('Found status popover elements:', statusPopoverList.length)
+  
+  // Helper function to decode HTML entities
+  function decodeHtmlEntities(html) {
+    const textarea = document.createElement('textarea')
+    textarea.innerHTML = html
+    return textarea.value
+  }
+  
+  if (bootstrap.Popover) {
+    const statusPopoverInstances = [...statusPopoverList].map(popoverEl => {
+      const escapedContent = popoverEl.getAttribute('data-bs-content')
+      const content = escapedContent ? decodeHtmlEntities(escapedContent) : ''
+      const trigger = popoverEl.getAttribute('data-bs-trigger') || 'hover'
+      const placement = popoverEl.getAttribute('data-bs-placement') || 'top'
+      
+      return new bootstrap.Popover(popoverEl, {
+        html: true,
+        sanitize: false,
+        trigger: trigger,
+        placement: placement,
+        content: content
+      })
+    })
+    console.log('Initialized status popovers:', statusPopoverInstances.length)
+  } else if (window.bootstrap && window.bootstrap.Popover) {
+    const statusPopoverInstances = [...statusPopoverList].map(popoverEl => {
+      const escapedContent = popoverEl.getAttribute('data-bs-content')
+      const content = escapedContent ? decodeHtmlEntities(escapedContent) : ''
+      const trigger = popoverEl.getAttribute('data-bs-trigger') || 'hover'
+      const placement = popoverEl.getAttribute('data-bs-placement') || 'top'
+      
+      return new window.bootstrap.Popover(popoverEl, {
+        html: true,
+        sanitize: false,
+        trigger: trigger,
+        placement: placement,
+        content: content
+      })
+    })
+    console.log('Initialized status popovers:', statusPopoverInstances.length)
+  }
 }
 
 // Initialize Bootstrap toasts

@@ -11,7 +11,7 @@
            status_indicator: prompts_indicator
 
   -# Summary view (shown when collapsed)
-  %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(prompts_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#promptsSection", "aria-expanded" => "false", "aria-controls" => "promptsSection", style: "cursor: pointer;"}
+  %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(prompts_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#promptsSection", "aria-expanded" => "false", "aria-controls" => "promptsSection", "data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => status_conditions_popover_content(:prompts), style: "cursor: pointer;"}
     %p.mb-0
       %i{class: "#{status_indicator_icon(prompts_indicator)} #{status_indicator_badge_class(prompts_indicator)} me-2"}
       %span.inline-sentence-highlight= pluralize(@prompts_available_count, company_label_for('prompt', 'Prompt'))

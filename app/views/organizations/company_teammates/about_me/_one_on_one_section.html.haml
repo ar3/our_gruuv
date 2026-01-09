@@ -15,7 +15,7 @@
 -# Summary view (shown when collapsed)
 - sections_count = cache ? cache.sections_data.length : 0
 - incomplete_tasks_count = cache ? cache.incomplete_items.length : 0
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(one_on_one_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#oneOnOneSection", "aria-expanded" => "false", "aria-controls" => "oneOnOneSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(one_on_one_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#oneOnOneSection", "aria-expanded" => "false", "aria-controls" => "oneOnOneSection", "data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => status_conditions_popover_content(:one_on_one), style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(one_on_one_indicator)} #{status_indicator_badge_class(one_on_one_indicator)} me-2"}
     = "#{@teammate.person.casual_name}'s 1:1 document is ".html_safe

@@ -8,7 +8,7 @@
          status_indicator: abilities_indicator
 
 -# Summary view (shown when collapsed)
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(abilities_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#abilitiesSection", "aria-expanded" => "false", "aria-controls" => "abilitiesSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(abilities_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#abilitiesSection", "aria-expanded" => "false", "aria-controls" => "abilitiesSection", "data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => status_conditions_popover_content(:abilities), style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(abilities_indicator)} #{status_indicator_badge_class(abilities_indicator)} me-2"}
     - if @required_assignments.any?

@@ -9,7 +9,7 @@
 
 -# Summary view (shown when collapsed)
 - all_goals = @now_goals + @next_goals + @later_goals
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(goals_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#goalsSection", "aria-expanded" => "false", "aria-controls" => "goalsSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(goals_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#goalsSection", "aria-expanded" => "false", "aria-controls" => "goalsSection", "data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => status_conditions_popover_content(:goals), style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(goals_indicator)} #{status_indicator_badge_class(goals_indicator)} me-2"}
     - if all_goals.any?

@@ -261,5 +261,84 @@ module AboutMeHelper
       'alert-secondary'
     end
   end
+
+  # Returns HTML content for popover explaining status conditions for each section
+  def status_conditions_popover_content(section_type)
+    case section_type
+    when :stories
+      content_tag(:div) do
+        content_tag(:strong, "Stories Status Conditions:") +
+        content_tag(:ul, class: "mb-0 mt-2") do
+          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "No observations given or received in the past 30 days") +
+          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "Only observations given OR only observations received (but not both)") +
+          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "Both observations given and received, OR 2+ observations given")
+        end
+      end
+    when :goals
+      content_tag(:div) do
+        content_tag(:strong, "Active Goals Status Conditions:") +
+        content_tag(:ul, class: "mb-0 mt-2") do
+          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "No active goals") +
+          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "Has active goals but not all have check-ins in the past 2 weeks") +
+          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "Any goal completed in last 90 days, OR all active goals have check-ins in past 2 weeks")
+        end
+      end
+    when :prompts
+      content_tag(:div) do
+        content_tag(:strong, "Prompts Status Conditions:") +
+        content_tag(:ul, class: "mb-0 mt-2") do
+          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "No prompts started or no responses provided") +
+          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "Has prompts with responses but no active goals associated") +
+          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "Has prompts with responses AND at least one active goal associated")
+        end
+      end
+    when :one_on_one
+      content_tag(:div) do
+        content_tag(:strong, "1:1 Area Status Conditions:") +
+        content_tag(:ul, class: "mb-0 mt-2") do
+          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "No 1:1 link URL defined") +
+          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "1:1 link URL is present")
+        end
+      end
+    when :position_check_in
+      content_tag(:div) do
+        content_tag(:strong, "Position/Overall Status Conditions:") +
+        content_tag(:ul, class: "mb-0 mt-2") do
+          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "No finalized check-in exists") +
+          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "Last finalized check-in was more than 90 days ago") +
+          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "Last finalized check-in was within the last 90 days")
+        end
+      end
+    when :assignments_check_in
+      content_tag(:div) do
+        content_tag(:strong, "Assignments/Outcomes Status Conditions:") +
+        content_tag(:ul, class: "mb-0 mt-2") do
+          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "No position or no required assignments") +
+          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "None of the required assignments have check-ins within the last 90 days") +
+          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "All required assignments have check-ins within the last 90 days")
+        end
+      end
+    when :aspirations_check_in
+      content_tag(:div) do
+        content_tag(:strong, "Aspirational Values Status Conditions:") +
+        content_tag(:ul, class: "mb-0 mt-2") do
+          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "No company aspirational values exist") +
+          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "None of the company aspirational values have check-ins within the last 90 days") +
+          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "All company aspirational values have check-ins within the last 90 days")
+        end
+      end
+    when :abilities
+      content_tag(:div) do
+        content_tag(:strong, "Abilities/Skills/Knowledge Status Conditions:") +
+        content_tag(:ul, class: "mb-0 mt-2") do
+          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "No position or no required assignments with ability milestones") +
+          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "More than 50% of required ability milestones are not met") +
+          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "All required ability milestones are met")
+        end
+      end
+    else
+      ""
+    end
+  end
 end
 

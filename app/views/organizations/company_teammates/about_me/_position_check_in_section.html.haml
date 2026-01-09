@@ -8,7 +8,7 @@
          status_indicator: position_indicator
 
 -# Summary view (shown when collapsed)
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(position_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#positionCheckInSection", "aria-expanded" => "false", "aria-controls" => "positionCheckInSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(position_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#positionCheckInSection", "aria-expanded" => "false", "aria-controls" => "positionCheckInSection", "data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => status_conditions_popover_content(:position_check_in), style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(position_indicator)} #{status_indicator_badge_class(position_indicator)} me-2"}
     = "#{@teammate.person.casual_name} is ".html_safe

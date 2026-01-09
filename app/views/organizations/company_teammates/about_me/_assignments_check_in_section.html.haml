@@ -8,7 +8,7 @@
          status_indicator: assignments_indicator
 
 -# Summary view (shown when collapsed)
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(assignments_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#assignmentsCheckInSection", "aria-expanded" => "false", "aria-controls" => "assignmentsCheckInSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(assignments_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#assignmentsCheckInSection", "aria-expanded" => "false", "aria-controls" => "assignmentsCheckInSection", "data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => status_conditions_popover_content(:assignments_check_in), style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(assignments_indicator)} #{status_indicator_badge_class(assignments_indicator)} me-2"}
     - if @required_assignments.any?

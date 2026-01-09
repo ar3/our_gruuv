@@ -8,7 +8,7 @@
          status_indicator: stories_indicator
 
 -# Summary view (shown when collapsed)
-%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(stories_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#storiesSection", "aria-expanded" => "false", "aria-controls" => "storiesSection", style: "cursor: pointer;"}
+%div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(stories_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#storiesSection", "aria-expanded" => "false", "aria-controls" => "storiesSection", "data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => status_conditions_popover_content(:stories), style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(stories_indicator)} #{status_indicator_badge_class(stories_indicator)} me-2"}
     = "#{@teammate.person.casual_name} has given ".html_safe
