@@ -42,7 +42,14 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         it 'generates CSV with correct headers' do
           get :download, params: { organization_id: organization.id, type: 'company_teammates' }
           csv = CSV.parse(response.body, headers: true)
-          expect(csv.headers).to include('First Name', 'Middle Name', 'Last Name', 'Suffix', 'Preferred Name', 'External Title')
+          expect(csv.headers).to include(
+            'First Name', 'Middle Name', 'Last Name', 'Suffix', 'Preferred Name', 'External Title',
+            'Email', 'Slack User Name',
+            'Last PageVisit Created At', 'First PageVisit Created At', 'PageVisit Count',
+            'Last Position Finalized Check-In', 'Last Assignment Finalized Check-In', 'Last Aspiration Finalized Check-In',
+            'Number of Milestones Attained', 'Manager Email',
+            'Number of Published Observations (as Observee)', '1:1 Document Link', 'Public Page Link'
+          )
         end
       end
 
@@ -303,7 +310,11 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         it 'generates CSV with correct headers' do
           get :download, params: { organization_id: organization.id, type: 'positions' }
           csv = CSV.parse(response.body, headers: true)
-          expect(csv.headers).to include('External Title', 'Level', 'Company')
+          expect(csv.headers).to include(
+            'External Title', 'Level', 'Company', 'Semantic Version', 'Created At', 'Updated At',
+            'Public Position URL', 'Number of Active Employment Tenures', 'Assignments', 'Version Count',
+            'Position Type Summary', 'Position Summary', 'Seats'
+          )
         end
       end
 
