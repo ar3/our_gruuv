@@ -53,8 +53,8 @@
       = hidden_field_tag :return_url, @return_url
       = hidden_field_tag :return_text, @return_text
       = hidden_field_tag :show_observations_for, params[:show_observations_for]
-      - if @observable_moment
-        = hidden_field_tag "observation[observable_moment_id]", @observable_moment.id
+      - if @observable_moment || @observation.observable_moment_id.present? || params[:observable_moment_id].present?
+        = hidden_field_tag "observation[observable_moment_id]", (@observable_moment&.id || @observation.observable_moment_id || params[:observable_moment_id])
       -# Preserve observee_ids through form submissions
       - @observation.observees.each do |observee|
         = hidden_field_tag "observee_ids[]", observee.teammate_id

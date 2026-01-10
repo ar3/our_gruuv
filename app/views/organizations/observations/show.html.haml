@@ -330,6 +330,67 @@
                 %code= slack_mentions[:observed].join(', ')
 
   .col-md-4
+    / Observable Moment and Trigger details (only for observer)
+    - if current_person == @observation.observer
+      - if @observation.observable_moment.present?
+        .card.mb-4
+          .card-header
+            %h6.mb-0
+              %i.bi.bi-clock-history.me-2
+              Observable Moment
+          .card-body
+            %p.mb-2
+              %strong= @observation.observable_moment.display_name
+            %p.mb-2
+              %small.text-muted= @observation.observable_moment.description
+            %p.mb-2
+              %small
+                %strong Occurred: 
+                = format_time_in_user_timezone(@observation.observable_moment.occurred_at)
+            - if @observation.observable_moment.processed?
+              %p.mb-2
+                %small
+                  %strong Processed: 
+                  = format_time_in_user_timezone(@observation.observable_moment.processed_at)
+            - other_observations = @observation.observable_moment.observations.where.not(id: @observation.id)
+            - if other_observations.any?
+              %hr.my-2
+              %p.mb-2
+                %small
+                  %strong Other Observations: 
+                  %br
+                  - other_observations.each do |obs|
+                    = link_to "Observation ##{obs.id}", organization_observation_path(@organization, obs), class: "text-decoration-none me-2"
+                    %small.text-muted
+                      (#{format_date_in_user_timezone(obs.observed_at)})
+                    %br
+      
+      - if @observation.observation_trigger.present?
+        .card.mb-4
+          .card-header
+            %h6.mb-0
+              %i.bi.bi-lightning-charge.me-2
+              Observation Trigger
+          .card-body
+            %p.mb-2
+              %strong= @observation.observation_trigger.display_text
+            - if @observation.observation_trigger.trigger_data.present?
+              %p.mb-2
+                %small.text-muted
+                  = render_markdown(@observation.observation_trigger.formatted_trigger_data)
+            - other_trigger_observations = @observation.observation_trigger.observations.where.not(id: @observation.id)
+            - if other_trigger_observations.any?
+              %hr.my-2
+              %p.mb-2
+                %small
+                  %strong Other Observations: 
+                  %br
+                  - other_trigger_observations.each do |obs|
+                    = link_to "Observation ##{obs.id}", organization_observation_path(@organization, obs), class: "text-decoration-none me-2"
+                    %small.text-muted
+                      (#{format_date_in_user_timezone(obs.observed_at)})
+                    %br
+    
     / Spotlight section with analytics and interesting tidbits
     .card.mb-4
       .card-header

@@ -18,6 +18,8 @@
       = hidden_field_tag :return_url, params[:return_url]
       = hidden_field_tag :return_text, params[:return_text]
       = hidden_field_tag :rateable_type, 'Ability'
+      - if @observation.observable_moment_id.present?
+        = hidden_field_tag "observation[observable_moment_id]", @observation.observable_moment_id
 
       .mb-3
         %label.form-label Select Abilities

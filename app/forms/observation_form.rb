@@ -49,31 +49,6 @@ class ObservationForm < Reform::Form
   def save
     return false unless valid?
     
-    # Load and pre-fill from observable moment if present
-    if observable_moment_id.present?
-      observable_moment = ObservableMoment.find_by(id: observable_moment_id)
-      if observable_moment
-        # Pre-fill from moment context
-        template_service = ObservableMoments::ObservationStoryTemplateService.new(observable_moment)
-        
-        # Pre-fill story if not already set
-        self.story ||= template_service.template
-        
-        # Pre-fill observees if not already set
-        if observees.empty?
-          suggested_observees = template_service.suggested_observees
-          suggested_observees.each do |teammate|
-            observees << Observee.new(teammate: teammate)
-          end
-        end
-        
-        # Pre-fill privacy level if not already set
-        self.privacy_level ||= template_service.suggested_privacy_level
-        
-        # Associate with observable moment
-        model.observable_moment = observable_moment
-      end
-    end
     
     # Story can be nil for drafts (migration allows it)
     # Validation only requires it for published observations
@@ -182,6 +157,20 @@ class ObservationForm < Reform::Form
     
     # Save model with other attributes
     model.save!
+    
+    # Associate with observable moment and mark as processed if observable_moment_id is present
+    # Use form's observable_moment_id or fall back to model's existing one (check both persisted and in-memory)
+    moment_id_to_use = observable_moment_id || 
+                       model.observable_moment_id || 
+                       (model.observable_moment&.id)
+    if moment_id_to_use.present?
+      ObservableMoments::AssociateAndProcessService.call(
+        observation: model,
+        observable_moment_id: moment_id_to_use
+      )
+    end
+    
+    true
   end
 
   def publishing?

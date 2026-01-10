@@ -72,7 +72,6 @@ class Observation < ApplicationRecord
   scope :not_soft_deleted, -> { where(deleted_at: nil) }
   
   before_validation :set_observed_at_default
-  after_save :mark_observable_moment_as_processed, if: -> { observable_moment.present? && saved_change_to_published_at? && published? }
   after_update :update_channel_notifications_if_needed
   
   def permalink_id
@@ -166,20 +165,6 @@ class Observation < ApplicationRecord
     end
   end
   
-  def mark_observable_moment_as_processed
-    return unless observable_moment
-    return if observable_moment.processed?
-    
-    # Get current user's teammate for processed_by_teammate
-    current_teammate = if observer
-      observer.teammates.find_by(organization: company)
-    end
-    
-    observable_moment.update!(
-      processed_at: Time.current,
-      processed_by_teammate: current_teammate
-    )
-  end
 
   def update_channel_notifications_if_needed
     # Only update if observation is still public (company or world) and published

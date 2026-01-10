@@ -96,8 +96,8 @@ RSpec.describe ObservationForm, type: :form do
       
       it 'pre-fills observation from moment context' do
         form.observable_moment_id = observable_moment.id
-        form.story = nil  # Will be pre-filled
-        form.privacy_level = nil  # Will be pre-filled (validation allows nil when observable_moment_id is present)
+        form.story = 'Test story'  # Story is required for save
+        form.privacy_level = 'public_to_company'  # Privacy level is required
         form.primary_feeling = 'happy'
         
         expect(form.save).to be true

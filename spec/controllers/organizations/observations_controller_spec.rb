@@ -851,13 +851,14 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(observation.observable_moment).to eq(observable_moment)
       end
       
-      it 'marks moment as processed when observation is published' do
+      it 'marks moment as processed immediately upon association' do
+        expect(observable_moment.processed?).to be false
+        
         post :create, params: params_with_moment
-        observation = Observation.last
-        observation.update!(published_at: Time.current)
         
         expect(observable_moment.reload.processed?).to be true
         expect(observable_moment.processed_by_teammate).to eq(observer_teammate)
+        expect(observable_moment.processed_at).to be_present
       end
     end
   end
@@ -1567,6 +1568,81 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         draft_with_na_ratings.reload
         expect(ObservationRating.find_by(id: agree_rating.id)).to be_present
         expect(draft_with_na_ratings.observation_ratings.pluck(:rating)).to eq(['agree'])
+      end
+    end
+
+    context 'with observable_moment_id' do
+      let(:observable_moment) { create(:observable_moment, :new_hire, company: company, primary_potential_observer: observer_teammate) }
+      let(:draft_with_moment) do
+        obs = build(:observation, observer: observer, company: company, published_at: nil, story: 'Test story')
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      it 'associates observation with observable moment when publishing new observation' do
+        post :publish, params: {
+          organization_id: company.id,
+          id: 'new',
+          observation: {
+            story: 'Test story',
+            privacy_level: 'public_to_company',
+            observable_moment_id: observable_moment.id,
+            observees_attributes: {
+              '0' => { teammate_id: observee_teammate.id }
+            }
+          }
+        }
+        
+        observation = Observation.last
+        expect(observation.observable_moment).to eq(observable_moment)
+      end
+
+      it 'marks moment as processed when publishing new observation' do
+        expect(observable_moment.processed?).to be false
+        
+        post :publish, params: {
+          organization_id: company.id,
+          id: 'new',
+          observation: {
+            story: 'Test story',
+            privacy_level: 'public_to_company',
+            observable_moment_id: observable_moment.id,
+            observees_attributes: {
+              '0' => { teammate_id: observee_teammate.id }
+            }
+          }
+        }
+        
+        expect(observable_moment.reload.processed?).to be true
+        expect(observable_moment.processed_by_teammate).to eq(observer_teammate)
+      end
+
+      it 'associates observation with observable moment when publishing existing draft' do
+        post :publish, params: {
+          organization_id: company.id,
+          id: draft_with_moment.id,
+          observation: {
+            observable_moment_id: observable_moment.id
+          }
+        }
+        
+        expect(draft_with_moment.reload.observable_moment).to eq(observable_moment)
+      end
+
+      it 'marks moment as processed when publishing existing draft' do
+        expect(observable_moment.processed?).to be false
+        
+        post :publish, params: {
+          organization_id: company.id,
+          id: draft_with_moment.id,
+          observation: {
+            observable_moment_id: observable_moment.id
+          }
+        }
+        
+        expect(observable_moment.reload.processed?).to be true
+        expect(observable_moment.processed_by_teammate).to eq(observer_teammate)
       end
     end
   end

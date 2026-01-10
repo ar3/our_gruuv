@@ -395,39 +395,36 @@ RSpec.describe Observation, type: :model do
     let(:observer_teammate) { CompanyTeammate.find_or_create_by!(person: observer, organization: company) }
     let(:observable_moment) { create(:observable_moment, :new_hire, company: company, primary_observer_person: observer) }
     
-    describe '#mark_observable_moment_as_processed' do
-      it 'marks moment as processed when observation is published' do
-        observation.observable_moment = observable_moment
+    describe 'AssociateAndProcessService integration' do
+      it 'marks moment as processed immediately when associated' do
         observation.observees.build(teammate: teammate1)
         observation.save!
         
         expect(observable_moment.reload.processed?).to be false
         
-        observation.update!(published_at: Time.current)
+        ObservableMoments::AssociateAndProcessService.call(
+          observation: observation,
+          observable_moment_id: observable_moment.id
+        )
         
+        expect(observation.reload.observable_moment).to eq(observable_moment)
         expect(observable_moment.reload.processed?).to be true
         expect(observable_moment.processed_by_teammate).to eq(observer_teammate)
         expect(observable_moment.processed_at).to be_present
         expect(observable_moment.processed_by_teammate.person).to eq(observer)
       end
       
-      it 'does not mark moment as processed for drafts' do
-        observation.observable_moment = observable_moment
-        observation.observees.build(teammate: teammate1)
-        observation.save!
-        
-        expect(observable_moment.reload.processed?).to be false
-      end
-      
       it 'does not process moment if already processed' do
-        observation.observable_moment = observable_moment
         observation.observees.build(teammate: teammate1)
         observation.save!
         
         original_processed_at = 1.hour.ago
         observable_moment.update!(processed_at: original_processed_at, processed_by_teammate: observer_teammate)
         
-        observation.update!(published_at: Time.current)
+        ObservableMoments::AssociateAndProcessService.call(
+          observation: observation,
+          observable_moment_id: observable_moment.id
+        )
         
         expect(observable_moment.reload.processed_at).to be_within(1.second).of(original_processed_at)
       end

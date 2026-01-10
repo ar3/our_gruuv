@@ -324,7 +324,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     else
       # If coming from observable moment, return to dashboard
       if @observable_moment
-        @return_url = params[:return_url] || get_shit_done_organization_path(organization)
+        @return_url = params[:return_url] || organization_get_shit_done_path(organization)
         @return_text = params[:return_text] || 'Back to Get Shit Done Dashboard'
       else
         @return_url = params[:return_url] || organization_observations_path(organization)
@@ -827,6 +827,17 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       # Set created_as_type only if it doesn't exist (preserve existing value if present)
       @observation.created_as_type ||= observation_type
       
+      # If observable_moment_id is in URL params but not in form params, add it
+      if params[:observable_moment_id].present? && permitted_params[:observable_moment_id].blank?
+        permitted_params[:observable_moment_id] = params[:observable_moment_id]
+      end
+      
+      # Also set the association directly on the observation if observable_moment_id is present
+      if permitted_params[:observable_moment_id].present?
+        observable_moment = ObservableMoment.find_by(id: permitted_params[:observable_moment_id])
+        @observation.observable_moment = observable_moment if observable_moment
+      end
+      
       # Set observees from params if provided
       observee_ids = params[:observee_ids] || []
       observee_ids = [observee_ids] unless observee_ids.is_a?(Array)
@@ -837,6 +848,15 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       
       # Use Reform to handle nested attributes properly and avoid duplicates
       @form = ObservationForm.new(@observation)
+      
+      # Set observable_moment_id if provided in params, or use existing from observation (check both persisted and in-memory)
+      # Also check URL params in case it wasn't in form submission
+      observable_moment_id = permitted_params[:observable_moment_id] || 
+                             params[:observable_moment_id] ||
+                             @observation.observable_moment_id || 
+                             (@observation.observable_moment&.id)
+      @form.observable_moment_id = observable_moment_id if observable_moment_id.present?
+      
       if @form.validate(permitted_params)
         @form.save
         @observation.observed_at ||= Time.current
@@ -848,6 +868,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
         end
       else
+        Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: Failed to save: #{@form.errors}"
+        Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: Failed to save: #{@form}"
         flash[:alert] = "Failed to save: #{@form.errors.full_messages.join(', ')}"
         @return_url = params[:return_url] || organization_observations_path(organization)
         @return_text = params[:return_text] || 'Back'
@@ -871,7 +893,18 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     # Use Reform in draft mode (no story requirement)
     @form = ObservationForm.new(@observation)
     @form.publishing = false
-    saved = @form.validate(permitted_params) && @form.save
+    
+    # Set observable_moment_id if provided in params, or use existing from observation (check both persisted and in-memory)
+    observable_moment_id = permitted_params[:observable_moment_id] || 
+                           @observation.observable_moment_id || 
+                           (@observation.observable_moment&.id)
+    @form.observable_moment_id = observable_moment_id if observable_moment_id.present?
+    
+    Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: permitted_params: #{permitted_params}"
+    ready_to_save = @form.validate(permitted_params)
+    Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: ready_to_save: #{ready_to_save}"
+    saved = ready_to_save ? @form.save : false
+    Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: saved: #{saved}"
     
     if saved
       # Enforce privacy level if public observation has negative ratings
@@ -1212,7 +1245,12 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     # Save any form data from add_assignments page first
     if params[:observation].present?
-      @observation.update(draft_params)
+      # Preserve existing observable_moment_id if not in params
+      params_to_update = draft_params.dup
+      if @observation.observable_moment_id.present? && params_to_update[:observable_moment_id].blank?
+        params_to_update[:observable_moment_id] = @observation.observable_moment_id
+      end
+      @observation.update(params_to_update)
     end
     
     rateable_type = params[:rateable_type]
@@ -1349,6 +1387,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       
       # Use Reform form to handle nested attributes properly
       @form = ObservationForm.new(@observation)
+      
+      # Set observable_moment_id if provided
+      @form.observable_moment_id = params[:observation][:observable_moment_id] if params[:observation] && params[:observation][:observable_moment_id].present?
+      
       Rails.logger.debug "Form observation_ratings before validate: #{@form.observation_ratings.map { |r| "#{r.rateable_type}:#{r.rateable_id}=>#{r.rating}" }.inspect}"
       
       if @form.validate(permitted)
@@ -1376,6 +1418,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         # Use Reform form to handle nested attributes properly
         @form = ObservationForm.new(@observation)
         @form.publishing = true
+        
+        # Set observable_moment_id if provided
+        @form.observable_moment_id = params[:observation][:observable_moment_id] if params[:observation][:observable_moment_id].present?
+        
         if @form.validate(draft_params)
           @form.save
         else
@@ -2064,7 +2110,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     return {} unless params[:observation].present?
     permitted = params.require(:observation).permit(
       :story, :primary_feeling, :secondary_feeling, :privacy_level,
-      :observation_type, :created_as_type,
+      :observation_type, :created_as_type, :observable_moment_id,
       observation_ratings_attributes: {},
       story_extras: { gif_urls: [] }
     )
