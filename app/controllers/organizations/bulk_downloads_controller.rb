@@ -73,20 +73,40 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
 
   def download_assignments_csv
     CSV.generate(headers: true) do |csv|
-      csv << ['Title', 'Tagline', 'Company', 'Department', 'Required Activities', 'Handbook', 'Semantic Version', 'Created At', 'Updated At']
+      csv << ['Title', 'Tagline', 'Department', 'Positions', 'Milestones', 'Outcomes', 'Required Activities', 'Handbook', 'Version', 'Changes Count', 'Public URL', 'Created At', 'Updated At']
       
-      Assignment.includes(:company, :department)
+      Assignment.includes(:company, :department, :published_external_reference, positions: [:position_type, :position_level], assignment_abilities: :ability, assignment_outcomes: [])
                 .where(company: company.self_and_descendants)
                 .order(:title)
                 .find_each do |assignment|
+        # Department or company name
+        department_or_company = assignment.department&.display_name || assignment.company&.display_name || ''
+        
+        # Positions: "External Title - Level" separated by newlines
+        positions = assignment.positions.map do |position|
+          "#{position.position_type.external_title} - #{position.position_level.level}"
+        end.join("\n")
+        
+        # Milestones: "Ability Name - Milestone X" separated by newlines
+        milestones = assignment.assignment_abilities.by_milestone_level.map do |aa|
+          "#{aa.ability.name} - Milestone #{aa.milestone_level}"
+        end.join("\n")
+        
+        # Outcomes: descriptions separated by newlines
+        outcomes = assignment.assignment_outcomes.ordered.map(&:description).join("\n")
+        
         csv << [
           assignment.title || '',
           assignment.tagline || '',
-          assignment.company&.display_name || '',
-          assignment.department&.display_name || '',
+          department_or_company,
+          positions,
+          milestones,
+          outcomes,
           assignment.required_activities || '',
           assignment.handbook || '',
           assignment.semantic_version || '',
+          assignment.changes_count,
+          assignment.published_url || '',
           assignment.created_at&.to_s || '',
           assignment.updated_at&.to_s || ''
         ]

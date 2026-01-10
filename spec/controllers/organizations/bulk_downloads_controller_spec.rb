@@ -65,6 +65,13 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         before do
           employed_teammate
           sign_in_as_teammate(employed_person, organization)
+          # Enable PaperTrail for assignments CSV tests
+          PaperTrail.enabled = true
+        end
+
+        after do
+          # Disable PaperTrail after tests
+          PaperTrail.enabled = false
         end
 
         it 'allows download' do
@@ -76,7 +83,159 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         it 'generates CSV with correct headers' do
           get :download, params: { organization_id: organization.id, type: 'assignments' }
           csv = CSV.parse(response.body, headers: true)
-          expect(csv.headers).to include('Title', 'Tagline', 'Company', 'Department')
+          expect(csv.headers).to include('Title', 'Tagline', 'Department', 'Positions', 'Milestones', 'Outcomes', 'Version', 'Changes Count', 'Public URL')
+        end
+
+        it 'includes assignment data with department in CSV' do
+          department = create(:organization, :department, parent: organization)
+          assignment = create(:assignment, company: organization, department: department, title: 'Test Assignment', semantic_version: '1.0.0')
+          # Make 3 updates to create version history
+          assignment.update!(semantic_version: '1.1.0')
+          assignment.update!(semantic_version: '1.2.0')
+          assignment.update!(semantic_version: '2.1.3')
+          
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+          csv = CSV.parse(response.body, headers: true)
+          
+          row = csv.find { |r| r['Title'] == 'Test Assignment' }
+          expect(row).to be_present
+          expect(row['Department']).to eq(department.display_name)
+          expect(row['Version']).to eq('2.1.3')
+          expect(row['Changes Count']).to eq('3') # 3 updates after creation
+        end
+
+        it 'uses company name when no department' do
+          assignment = create(:assignment, company: organization, department: nil, title: 'No Dept Assignment')
+          
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+          csv = CSV.parse(response.body, headers: true)
+          
+          row = csv.find { |r| r['Title'] == 'No Dept Assignment' }
+          expect(row).to be_present
+          expect(row['Department']).to eq(organization.display_name)
+        end
+
+        it 'includes positions data in CSV' do
+          assignment = create(:assignment, company: organization, title: 'Position Test')
+          position_major_level = create(:position_major_level)
+          position_type = create(:position_type, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level)
+          position_level = create(:position_level, position_major_level: position_major_level)
+          position = create(:position, position_type: position_type, position_level: position_level)
+          create(:position_assignment, position: position, assignment: assignment)
+          
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+          csv = CSV.parse(response.body, headers: true)
+          
+          row = csv.find { |r| r['Title'] == 'Position Test' }
+          expect(row).to be_present
+          expect(row['Positions']).to include('Software Engineer')
+          expect(row['Positions']).to include(position_level.level)
+        end
+
+        it 'includes multiple positions separated by newlines' do
+          assignment = create(:assignment, company: organization, title: 'Multi Position Test')
+          position_major_level1 = create(:position_major_level)
+          position_major_level2 = create(:position_major_level)
+          position_type1 = create(:position_type, organization: organization, external_title: 'Backend Engineer', position_major_level: position_major_level1)
+          position_type2 = create(:position_type, organization: organization, external_title: 'Frontend Engineer', position_major_level: position_major_level2)
+          position_level1 = create(:position_level, level: '1.0', position_major_level: position_major_level1)
+          position_level2 = create(:position_level, level: '3.0', position_major_level: position_major_level2)
+          position1 = create(:position, position_type: position_type1, position_level: position_level1)
+          position2 = create(:position, position_type: position_type2, position_level: position_level2)
+          create(:position_assignment, position: position1, assignment: assignment)
+          create(:position_assignment, position: position2, assignment: assignment)
+          
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+          csv = CSV.parse(response.body, headers: true)
+          
+          row = csv.find { |r| r['Title'] == 'Multi Position Test' }
+          expect(row).to be_present
+          expect(row['Positions']).to include("Backend Engineer - 1.0")
+          expect(row['Positions']).to include("Frontend Engineer - 3.0")
+          expect(row['Positions'].split("\n").size).to eq(2)
+        end
+
+        it 'includes milestones data in CSV' do
+          assignment = create(:assignment, company: organization, title: 'Milestone Test')
+          ability = create(:ability, organization: organization, name: 'Ruby Programming')
+          create(:assignment_ability, assignment: assignment, ability: ability, milestone_level: 3)
+          
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+          csv = CSV.parse(response.body, headers: true)
+          
+          row = csv.find { |r| r['Title'] == 'Milestone Test' }
+          expect(row).to be_present
+          expect(row['Milestones']).to eq('Ruby Programming - Milestone 3')
+        end
+
+        it 'includes multiple milestones separated by newlines' do
+          assignment = create(:assignment, company: organization, title: 'Multi Milestone Test')
+          ability1 = create(:ability, organization: organization, name: 'Ruby Programming')
+          ability2 = create(:ability, organization: organization, name: 'JavaScript')
+          create(:assignment_ability, assignment: assignment, ability: ability1, milestone_level: 2)
+          create(:assignment_ability, assignment: assignment, ability: ability2, milestone_level: 4)
+          
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+          csv = CSV.parse(response.body, headers: true)
+          
+          row = csv.find { |r| r['Title'] == 'Multi Milestone Test' }
+          expect(row).to be_present
+          expect(row['Milestones']).to include('Ruby Programming - Milestone 2')
+          expect(row['Milestones']).to include('JavaScript - Milestone 4')
+          expect(row['Milestones'].split("\n").size).to eq(2)
+        end
+
+        it 'includes outcomes data in CSV' do
+          assignment = create(:assignment, company: organization, title: 'Outcome Test')
+          create(:assignment_outcome, assignment: assignment, description: 'Reduce bugs by 50%')
+          create(:assignment_outcome, assignment: assignment, description: 'Improve performance')
+          
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+          csv = CSV.parse(response.body, headers: true)
+          
+          row = csv.find { |r| r['Title'] == 'Outcome Test' }
+          expect(row).to be_present
+          expect(row['Outcomes']).to include('Reduce bugs by 50%')
+          expect(row['Outcomes']).to include('Improve performance')
+          expect(row['Outcomes'].split("\n").size).to eq(2)
+        end
+
+        it 'calculates changes count correctly based on PaperTrail versions' do
+          assignment = create(:assignment, company: organization, title: 'Version Test', semantic_version: '1.0.0')
+          # Make 5 updates to test version counting
+          5.times do |i|
+            assignment.update!(tagline: "Updated tagline #{i + 1}")
+          end
+          
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+          csv = CSV.parse(response.body, headers: true)
+          
+          row = csv.find { |r| r['Title'] == 'Version Test' }
+          expect(row).to be_present
+          expect(row['Changes Count']).to eq('5') # 5 updates after creation
+        end
+
+        it 'includes public URL when available' do
+          assignment = create(:assignment, company: organization, title: 'Public URL Test')
+          create(:external_reference, referable: assignment, reference_type: 'published', url: 'https://example.com/public-assignment')
+          
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+          csv = CSV.parse(response.body, headers: true)
+          
+          row = csv.find { |r| r['Title'] == 'Public URL Test' }
+          expect(row).to be_present
+          expect(row['Public URL']).to eq('https://example.com/public-assignment')
+        end
+
+        it 'includes empty string for public URL when not available' do
+          assignment = create(:assignment, company: organization, title: 'No Public URL Test')
+          
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+          csv = CSV.parse(response.body, headers: true)
+          
+          row = csv.find { |r| r['Title'] == 'No Public URL Test' }
+          expect(row).to be_present
+          expect(row['Public URL']).to eq('')
         end
       end
 

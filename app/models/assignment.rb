@@ -57,6 +57,12 @@ class Assignment < ApplicationRecord
     company&.display_name
   end
 
+  # Calculate number of changes based on PaperTrail versions
+  def changes_count
+    # PaperTrail creates a version on create and on each update
+    # Subtract 1 to get the number of changes (not counting the initial creation)
+    [versions.count - 1, 0].max
+  end
 
   # Ability-related methods
   def required_abilities

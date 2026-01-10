@@ -120,7 +120,7 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         it 'generates CSV with correct headers' do
           get download_organization_bulk_downloads_path(organization, type: 'assignments')
           csv = CSV.parse(response.body, headers: true)
-          expect(csv.headers).to include('Title', 'Tagline', 'Company', 'Department')
+          expect(csv.headers).to include('Title', 'Tagline', 'Department', 'Positions', 'Milestones', 'Outcomes', 'Version', 'Changes Count', 'Public URL')
         end
 
         it 'includes assignment data in CSV' do

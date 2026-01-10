@@ -180,6 +180,62 @@ RSpec.describe Assignment, type: :model do
     end
   end
 
+  describe '#changes_count' do
+    before do
+      # Enable PaperTrail for these tests
+      PaperTrail.enabled = true
+    end
+
+    after do
+      # Disable PaperTrail after tests to not affect other tests
+      PaperTrail.enabled = false
+    end
+
+    it 'returns 0 for newly created assignment' do
+      # Fresh assignment should have 1 version (creation) but 0 changes
+      assignment = create(:assignment, company: organization)
+      expect(assignment.versions.count).to eq(1)
+      expect(assignment.changes_count).to eq(0)
+    end
+
+    it 'returns 1 after first update' do
+      assignment = create(:assignment, company: organization)
+      assignment.update!(title: 'Updated Title')
+      # Should have 2 versions: creation + 1 update
+      expect(assignment.versions.count).to eq(2)
+      expect(assignment.changes_count).to eq(1)
+    end
+
+    it 'returns 3 after three updates' do
+      assignment = create(:assignment, company: organization)
+      assignment.update!(title: 'Updated Title 1')
+      assignment.update!(tagline: 'Updated Tagline')
+      assignment.update!(semantic_version: '1.1.0')
+      # Should have 4 versions: creation + 3 updates
+      expect(assignment.versions.count).to eq(4)
+      expect(assignment.changes_count).to eq(3)
+    end
+
+    it 'returns correct count after multiple version bumps' do
+      assignment = create(:assignment, company: organization, semantic_version: '1.0.0')
+      assignment.bump_minor_version  # 1.1.0
+      assignment.bump_minor_version  # 1.2.0
+      assignment.bump_patch_version  # 1.2.1
+      assignment.bump_major_version  # 2.0.0
+      # Should have 5 versions: creation + 4 version bumps
+      expect(assignment.versions.count).to eq(5)
+      expect(assignment.changes_count).to eq(4)
+    end
+
+    it 'returns 0 when PaperTrail is disabled and no versions exist' do
+      PaperTrail.enabled = false
+      assignment = Assignment.new(title: 'Test', tagline: 'Test', company: organization)
+      assignment.save!(validate: false)
+      expect(assignment.versions.count).to eq(0)
+      expect(assignment.changes_count).to eq(0)
+    end
+  end
+
   describe '#create_outcomes_from_textarea' do
     it 'creates outcomes from textarea input' do
       text = "Increase customer satisfaction by 20%\nReduce response time to under 2 hours\nTeam agrees: We communicate clearly"
