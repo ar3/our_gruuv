@@ -222,27 +222,28 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
           expect(row['Changes Count']).to eq('5') # 5 updates after creation
         end
 
-        it 'includes public URL when available' do
+        it 'includes public URL for assignment' do
           assignment = create(:assignment, company: organization, title: 'Public URL Test')
-          create(:external_reference, referable: assignment, reference_type: 'published', url: 'https://example.com/public-assignment')
           
           get :download, params: { organization_id: organization.id, type: 'assignments' }
           csv = CSV.parse(response.body, headers: true)
           
           row = csv.find { |r| r['Title'] == 'Public URL Test' }
           expect(row).to be_present
-          expect(row['Public URL']).to eq('https://example.com/public-assignment')
-        end
-
-        it 'includes empty string for public URL when not available' do
-          assignment = create(:assignment, company: organization, title: 'No Public URL Test')
-          
-          get :download, params: { organization_id: organization.id, type: 'assignments' }
-          csv = CSV.parse(response.body, headers: true)
-          
-          row = csv.find { |r| r['Title'] == 'No Public URL Test' }
-          expect(row).to be_present
-          expect(row['Public URL']).to eq('')
+          # The controller generates the URL using the configured default_url_options
+          # So we generate it the same way to match
+          expected_url = begin
+            Rails.application.routes.url_helpers.organization_public_maap_assignment_url(
+              assignment.company,
+              assignment
+            )
+          rescue
+            Rails.application.routes.url_helpers.organization_public_maap_assignment_path(
+              assignment.company,
+              assignment
+            )
+          end
+          expect(row['Public URL']).to eq(expected_url)
         end
       end
 

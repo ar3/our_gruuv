@@ -264,6 +264,21 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           get download_organization_bulk_downloads_path(organization, type: 'assignments')
           expect(response.body).to include('Test Assignment')
         end
+
+        it 'includes public assignment URL in CSV' do
+          assignment = create(:assignment, company: organization, title: 'Test Assignment')
+          get download_organization_bulk_downloads_path(organization, type: 'assignments')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Title'] == 'Test Assignment' }
+          expect(row).to be_present
+          # Try to get full URL, fallback to path if URL generation fails (e.g., in test environment)
+          expected_url = begin
+            Rails.application.routes.url_helpers.organization_public_maap_assignment_url(organization, assignment)
+          rescue
+            Rails.application.routes.url_helpers.organization_public_maap_assignment_path(organization, assignment)
+          end
+          expect(row['Public URL']).to eq(expected_url)
+        end
       end
 
       context 'without active teammate (not employed)' do

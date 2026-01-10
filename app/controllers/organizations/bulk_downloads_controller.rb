@@ -180,6 +180,21 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         # Outcomes: descriptions separated by newlines
         outcomes = assignment.assignment_outcomes.ordered.map(&:description).join("\n")
         
+        # Public assignment URL (full URL)
+        public_url = begin
+          Rails.application.routes.url_helpers.organization_public_maap_assignment_url(
+            assignment.company,
+            assignment
+          )
+        rescue => e
+          # Fallback to path if URL generation fails
+          Rails.logger.warn "Failed to generate full URL for assignment #{assignment.id}: #{e.message}"
+          Rails.application.routes.url_helpers.organization_public_maap_assignment_path(
+            assignment.company,
+            assignment
+          )
+        end
+        
         csv << [
           assignment.title || '',
           assignment.tagline || '',
@@ -191,7 +206,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
           assignment.handbook || '',
           assignment.semantic_version || '',
           assignment.changes_count,
-          assignment.published_url || '',
+          public_url,
           assignment.created_at&.to_s || '',
           assignment.updated_at&.to_s || ''
         ]
