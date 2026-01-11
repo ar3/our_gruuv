@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_08_115924) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_11_152642) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -199,6 +199,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_08_115924) do
     t.string "change_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "comments", force: :cascade do |t|
+    t.string "commentable_type", null: false
+    t.bigint "commentable_id", null: false
+    t.bigint "organization_id", null: false
+    t.text "body", null: false
+    t.bigint "creator_id", null: false
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
+    t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable_type_and_commentable_id"
+    t.index ["creator_id"], name: "index_comments_on_creator_id"
+    t.index ["organization_id"], name: "index_comments_on_organization_id"
+    t.index ["resolved_at"], name: "index_comments_on_resolved_at"
   end
 
   create_table "company_label_preferences", force: :cascade do |t|
@@ -1027,6 +1043,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_08_115924) do
   add_foreign_key "bulk_sync_events", "organizations"
   add_foreign_key "bulk_sync_events", "people", column: "creator_id"
   add_foreign_key "bulk_sync_events", "people", column: "initiator_id"
+  add_foreign_key "comments", "organizations"
+  add_foreign_key "comments", "people", column: "creator_id"
   add_foreign_key "company_label_preferences", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "organizations", column: "company_id"
   add_foreign_key "employment_tenures", "positions"

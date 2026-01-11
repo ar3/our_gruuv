@@ -206,6 +206,14 @@ get '/login', to: 'auth#login', as: :login
       resources :assignment_outcomes, only: [:edit, :update], module: :assignments
     end
     
+    # Comments management
+    resources :comments, module: :organizations, only: [:index, :show, :create, :update] do
+      member do
+        patch :resolve
+        patch :unresolve
+      end
+    end
+    
     # Company teammates management
     resources :company_teammates, module: :organizations, only: [:show, :update] do
       member do

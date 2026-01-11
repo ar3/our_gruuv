@@ -43,3 +43,6 @@
         %div.card.mt-4
           %div.card-body.text-center.py-5
             %p.text-muted.mb-0 No public observations yet.
+      
+      / Comments Section
+      = render 'shared/comment_summary', commentable: @aspiration, organization: @organization

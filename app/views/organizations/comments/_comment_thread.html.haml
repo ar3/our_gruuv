@@ -1,0 +1,89 @@
+- comment = local_assigns[:comment]
+- comments_by_parent = local_assigns[:comments_by_parent]
+- organization = local_assigns[:organization]
+- depth = local_assigns[:depth] || 0
+- can_edit = policy(comment).update?
+- can_resolve = policy(comment).resolve?
+- can_unresolve = policy(comment).unresolve?
+
+.card.mb-3{class: "ms-#{depth * 3}"}
+  .card-body
+    .d-flex.justify-content-between.align-items-start.mb-2
+      .flex-grow-1
+        .d-flex.align-items-center.mb-2
+          %strong.me-2= comment.creator.display_name
+          %small.text-muted
+            = time_ago_in_words(comment.created_at)
+            ago
+          - if comment.resolved?
+            %span.badge.bg-success.ms-2 Resolved
+      .d-flex.gap-2
+        - if can_edit
+          %button.btn.btn-sm.btn-outline-secondary{type: "button",
+              "data-bs-toggle" => "modal", 
+              "data-bs-target" => "#editCommentModal#{comment.id}"}
+            %i.bi.bi-pencil.me-1
+            Edit
+        - if can_resolve && !comment.resolved?
+          = link_to resolve_organization_comment_path(organization, comment),
+              method: :patch,
+              class: "btn btn-sm btn-outline-success",
+              data: { confirm: "Are you sure you want to resolve this comment and all its replies?" } do
+            %i.bi.bi-check-circle.me-1
+            Resolve
+        - if can_unresolve && comment.resolved?
+          = link_to unresolve_organization_comment_path(organization, comment),
+              method: :patch,
+              class: "btn btn-sm btn-outline-warning" do
+            %i.bi.bi-x-circle.me-1
+            Unresolve
+    
+    .markdown-content.mb-3
+      = render_markdown(comment.body)
+    
+    / Reply Form
+    - if policy(Comment.new(commentable: comment, organization: organization)).create?
+      .reply-form.mt-3{style: "display: none;", id: "replyForm#{comment.id}"}
+        = form_with model: [organization, Comment.new], 
+            url: organization_comments_path(organization),
+            local: true do |f|
+          = f.hidden_field :commentable_type, value: 'Comment'
+          = f.hidden_field :commentable_id, value: comment.id
+          .mb-2
+            = f.text_area :body, class: "form-control", rows: 3, placeholder: "Write your reply here (markdown supported)"
+          .d-flex.justify-content-end.gap-2
+            = button_tag "Cancel", type: "button", class: "btn btn-sm btn-outline-secondary", 
+                onclick: "document.getElementById('replyForm#{comment.id}').style.display='none';"
+            = f.submit "Post Reply", class: "btn btn-sm btn-primary"
+      
+      = link_to "#", class: "btn btn-sm btn-outline-primary", 
+          onclick: "document.getElementById('replyForm#{comment.id}').style.display='block'; this.style.display='none'; return false;" do
+        %i.bi.bi-reply.me-1
+        Reply
+    
+    / Nested Comments
+    - child_comments = comments_by_parent[comment.id] || []
+    - if child_comments.any?
+      .mt-3
+        - child_comments.each do |child_comment|
+          = render 'organizations/comments/comment_thread', comment: child_comment, comments_by_parent: comments_by_parent, organization: organization, depth: depth + 1
+
+/ Edit Modal
+- if can_edit
+  .modal.fade{id: "editCommentModal#{comment.id}", tabindex: "-1"}
+    .modal-dialog
+      .modal-content
+        .modal-header
+          %h5.modal-title Edit Comment
+          %button.btn-close{type: "button", "data-bs-dismiss" => "modal"}
+        .modal-body
+          = form_with model: [organization, comment], 
+              url: organization_comment_path(organization, comment),
+              method: :patch,
+              local: true do |f|
+            .mb-3
+              = f.label :body, "Comment", class: "form-label"
+              = f.text_area :body, class: "form-control", rows: 4, value: comment.body
+            .d-flex.justify-content-end.gap-2
+              %button.btn.btn-secondary{type: "button", "data-bs-dismiss" => "modal"} Cancel
+              = f.submit "Update Comment", class: "btn btn-primary"

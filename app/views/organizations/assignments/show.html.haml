@@ -175,4 +175,7 @@
                   %span.text-muted No alignments available
               - else
                 %span.text-muted These analytics will be available once 5 or more teammates have had a finalized check-in.
+
+    / Comments Section
+    = render 'shared/comment_summary', commentable: @assignment, organization: @organization
               

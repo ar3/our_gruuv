@@ -1,0 +1,57 @@
+- content_for :title, "Comments - #{@commentable.class.name}"
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-chat-dots.me-2
+    Comments
+    - if @commentable.respond_to?(:title)
+      for #{@commentable.title}
+    - elsif @commentable.respond_to?(:name)
+      for #{@commentable.name}
+
+- content_for :go_back_link do
+  - if @commentable.is_a?(Assignment)
+    = link_to organization_assignment_path(@organization, @commentable), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Back to Assignment
+  - elsif @commentable.is_a?(Ability)
+    = link_to organization_ability_path(@organization, @commentable), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Back to Ability
+  - elsif @commentable.is_a?(Aspiration)
+    = link_to organization_aspiration_path(@organization, @commentable), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Back to Aspiration
+
+.row.justify-content-center
+  .col-lg-10
+    - if @root_comments.any?
+      - @root_comments.each do |comment|
+        = render 'organizations/comments/comment_thread', comment: comment, comments_by_parent: @comments_by_parent, organization: @organization, depth: 0
+    - else
+      .card.mb-4
+        .card-body.text-center.py-5
+          %i.bi.bi-chat-dots.text-muted{style: "font-size: 3rem;"}
+          %p.mt-3.text-muted No comments yet. Be the first to comment!
+
+    / New Comment Form
+    .card.mt-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-plus-circle.me-2
+          Add Comment
+      .card-body
+        = form_with model: [@organization, Comment.new], 
+            url: organization_comments_path(@organization),
+            local: true,
+            class: "comment-form" do |f|
+          = f.hidden_field :commentable_type, value: @commentable.class.name
+          = f.hidden_field :commentable_id, value: @commentable.id
+          .mb-3
+            = f.label :body, "Comment", class: "form-label"
+            = f.text_area :body, class: "form-control", rows: 4, placeholder: "Write your comment here (markdown supported)"
+            - if @form&.errors&.[](:body)&.any?
+              .invalid-feedback.d-block
+                = @form.errors[:body].join(', ')
+          .d-flex.justify-content-end
+            = f.submit "Post Comment", class: "btn btn-primary"

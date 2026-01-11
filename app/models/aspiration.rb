@@ -4,6 +4,7 @@ class Aspiration < ApplicationRecord
   belongs_to :organization
   has_many :observation_ratings, as: :rateable, dependent: :destroy
   has_many :observations, through: :observation_ratings
+  has_many :comments, as: :commentable, dependent: :destroy
 
   validates :name, presence: true, uniqueness: { scope: :organization_id }
   validates :sort_order, presence: true, numericality: { greater_than_or_equal_to: 0 }

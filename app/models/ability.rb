@@ -11,6 +11,7 @@ class Ability < ApplicationRecord
   has_many :people, through: :teammate_milestones
   has_many :observation_ratings, as: :rateable, dependent: :destroy
   has_many :observations, through: :observation_ratings
+  has_many :comments, as: :commentable, dependent: :destroy
 
   # Validations
   validates :name, presence: true, uniqueness: { scope: :organization_id }

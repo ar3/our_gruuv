@@ -1,0 +1,45 @@
+- commentable = local_assigns[:commentable]
+- organization = local_assigns[:organization]
+- comments = commentable.comments.includes(:creator).ordered
+- unresolved_count = comments.unresolved.count
+- total_count = comments.count
+- latest_comment = comments.last
+
+- if total_count > 0
+  .card.mb-4
+    .card-header
+      %h5.mb-0
+        %i.bi.bi-chat-dots.me-2
+        Comments
+    .card-body
+      .d-flex.justify-content-between.align-items-start
+        .flex-grow-1
+          %p.mb-2
+            %strong= pluralize(total_count, 'comment')
+            - if unresolved_count > 0
+              %span.text-warning.ms-2
+                (#{pluralize(unresolved_count, 'unresolved')})
+          - if latest_comment
+            .mb-2
+              %small.text-muted
+                Latest: 
+                = truncate(latest_comment.body, length: 100)
+                - if latest_comment.resolved?
+                  %span.badge.bg-success.ms-2 Resolved
+        .ms-3
+          = link_to organization_comments_path(organization, commentable_type: commentable.class.name, commentable_id: commentable.id), 
+              class: "btn btn-primary" do
+            %i.bi.bi-chat-dots.me-2
+            View Comments
+- else
+  .card.mb-4
+    .card-header
+      %h5.mb-0
+        %i.bi.bi-chat-dots.me-2
+        Comments
+    .card-body
+      %p.text-muted.mb-0 No comments yet.
+      = link_to organization_comments_path(organization, commentable_type: commentable.class.name, commentable_id: commentable.id), 
+          class: "btn btn-primary btn-sm mt-2" do
+        %i.bi.bi-plus-circle.me-2
+        Add Comment
