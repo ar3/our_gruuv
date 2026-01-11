@@ -311,13 +311,87 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
         it 'generates CSV with correct headers' do
           get download_organization_bulk_downloads_path(organization, type: 'abilities')
           csv = CSV.parse(response.body, headers: true)
-          expect(csv.headers).to include('Name', 'Description', 'Organization')
+          expect(csv.headers).to include(
+            'Name', 'Description', 'Organization', 'Assignments',
+            'Milestone 1 Description', 'Milestone 2 Description', 'Milestone 3 Description',
+            'Milestone 4 Description', 'Milestone 5 Description'
+          )
         end
 
         it 'includes ability data in CSV' do
           ability = create(:ability, organization: organization, name: 'Test Ability')
           get download_organization_bulk_downloads_path(organization, type: 'abilities')
           expect(response.body).to include('Test Ability')
+        end
+
+        it 'includes assignments with milestone requirements in CSV' do
+          ability = create(:ability, organization: organization, name: 'Test Ability')
+          assignment1 = create(:assignment, company: organization, title: 'Assignment One')
+          assignment2 = create(:assignment, company: organization, title: 'Assignment Two')
+          create(:assignment_ability, :same_organization, assignment: assignment1, ability: ability, milestone_level: 2)
+          create(:assignment_ability, :same_organization, assignment: assignment2, ability: ability, milestone_level: 3)
+          
+          get download_organization_bulk_downloads_path(organization, type: 'abilities')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Name'] == 'Test Ability' }
+          
+          expect(row).to be_present
+          expect(row['Assignments']).to include('Assignment One - Milestone 2')
+          expect(row['Assignments']).to include('Assignment Two - Milestone 3')
+        end
+
+        it 'handles abilities with no assignments' do
+          ability = create(:ability, organization: organization, name: 'Test Ability')
+          
+          get download_organization_bulk_downloads_path(organization, type: 'abilities')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Name'] == 'Test Ability' }
+          
+          expect(row).to be_present
+          expect(row['Assignments']).to eq('')
+        end
+
+        it 'includes milestone descriptions in CSV' do
+          ability = create(:ability,
+            organization: organization,
+            name: 'Test Ability',
+            milestone_1_description: 'Basic understanding',
+            milestone_2_description: 'Intermediate skills',
+            milestone_3_description: 'Advanced proficiency',
+            milestone_4_description: 'Expert level',
+            milestone_5_description: 'Master level'
+          )
+          
+          get download_organization_bulk_downloads_path(organization, type: 'abilities')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Name'] == 'Test Ability' }
+          
+          expect(row).to be_present
+          expect(row['Milestone 1 Description']).to eq('Basic understanding')
+          expect(row['Milestone 2 Description']).to eq('Intermediate skills')
+          expect(row['Milestone 3 Description']).to eq('Advanced proficiency')
+          expect(row['Milestone 4 Description']).to eq('Expert level')
+          expect(row['Milestone 5 Description']).to eq('Master level')
+        end
+
+        it 'handles abilities with partial milestone descriptions' do
+          ability = create(:ability,
+            organization: organization,
+            name: 'Test Ability',
+            milestone_1_description: 'Basic understanding',
+            milestone_2_description: 'Intermediate skills'
+          )
+          
+          get download_organization_bulk_downloads_path(organization, type: 'abilities')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Name'] == 'Test Ability' }
+          
+          expect(row).to be_present
+          expect(row['Milestone 1 Description']).to eq('Basic understanding')
+          expect(row['Milestone 2 Description']).to eq('Intermediate skills')
+          expect(row['Milestone 3 Description']).to eq('')
+          expect(row['Milestone 4 Description']).to eq('')
+          expect(row['Milestone 5 Description']).to eq('')
         end
       end
 
@@ -420,14 +494,23 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           csv = CSV.parse(response.body, headers: true)
           row = csv.first
           assignments = row['Assignments']
-          expect(assignments).to include('Assignment 1')
-          expect(assignments).to include('Assignment 2')
-          expect(assignments).to include('min: 20%')
-          expect(assignments).to include('max: 40%')
-          expect(assignments).to include('min: 10%')
-          expect(assignments).to include('max: 30%')
-          expect(assignments).to include('type: required')
-          expect(assignments).to include('type: suggested')
+          expect(assignments).to include('Assignment 1 (required, 20%-40%)')
+          expect(assignments).to include('Assignment 2 (suggested, 10%-30%)')
+          expect(assignments.split("\n").size).to eq(2)
+        end
+
+        it 'handles assignments with missing energy values in CSV' do
+          position_major_level = create(:position_major_level)
+          position_level = create(:position_level, position_major_level: position_major_level)
+          position_type = create(:position_type, organization: organization, position_major_level: position_major_level, external_title: 'Software Engineer')
+          position = create(:position, position_type: position_type, position_level: position_level)
+          assignment = create(:assignment, company: organization, title: 'Assignment No Energy')
+          create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required', min_estimated_energy: nil, max_estimated_energy: nil)
+          get download_organization_bulk_downloads_path(organization, type: 'positions')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.first
+          assignments = row['Assignments']
+          expect(assignments).to eq('Assignment No Energy (required)')
         end
 
         it 'includes version count in CSV' do

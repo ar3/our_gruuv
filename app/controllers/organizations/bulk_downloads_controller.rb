@@ -160,16 +160,32 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
     CSV.generate(headers: true) do |csv|
       csv << ['Title', 'Tagline', 'Department', 'Positions', 'Milestones', 'Outcomes', 'Required Activities', 'Handbook', 'Version', 'Changes Count', 'Public URL', 'Created At', 'Updated At']
       
-      Assignment.includes(:company, :department, :published_external_reference, positions: [:position_type, :position_level], assignment_abilities: :ability, assignment_outcomes: [])
+      Assignment.includes(:company, :department, :published_external_reference, position_assignments: { position: [:position_type, :position_level] }, assignment_abilities: :ability, assignment_outcomes: [])
                 .where(company: company.self_and_descendants)
                 .order(:title)
                 .find_each do |assignment|
         # Department or company name
         department_or_company = assignment.department&.display_name || assignment.company&.display_name || ''
         
-        # Positions: "External Title - Level" separated by newlines
-        positions = assignment.positions.map do |position|
-          "#{position.position_type.external_title} - #{position.position_level.level}"
+        # Positions: "External Title - Level (assignment_type, min%-max%)" separated by newlines
+        positions = assignment.position_assignments.map do |position_assignment|
+          position = position_assignment.position
+          parts = [
+            "#{position.position_type.external_title} - #{position.position_level.level}",
+            " (#{position_assignment.assignment_type}"
+          ]
+          
+          # Add energy range if present
+          if position_assignment.min_estimated_energy.present? && position_assignment.max_estimated_energy.present?
+            parts << ", #{position_assignment.min_estimated_energy}%-#{position_assignment.max_estimated_energy}%"
+          elsif position_assignment.min_estimated_energy.present?
+            parts << ", #{position_assignment.min_estimated_energy}%+"
+          elsif position_assignment.max_estimated_energy.present?
+            parts << ", up to #{position_assignment.max_estimated_energy}%"
+          end
+          
+          parts << ")"
+          parts.join
         end.join("\n")
         
         # Milestones: "Ability Name - Milestone X" separated by newlines
@@ -216,17 +232,33 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
 
   def download_abilities_csv
     CSV.generate(headers: true) do |csv|
-      csv << ['Name', 'Description', 'Organization', 'Semantic Version', 'Created At', 'Updated At']
+      csv << [
+        'Name', 'Description', 'Organization', 'Semantic Version', 'Assignments',
+        'Milestone 1 Description', 'Milestone 2 Description', 'Milestone 3 Description',
+        'Milestone 4 Description', 'Milestone 5 Description',
+        'Created At', 'Updated At'
+      ]
       
-      Ability.includes(:organization)
+      Ability.includes(:organization, assignment_abilities: :assignment)
              .where(organization: company.self_and_descendants)
              .order(:name)
              .find_each do |ability|
+        # Format assignments: "<assignment name> - Milestone <milestone level>" separated by newlines
+        assignments = ability.assignment_abilities.map do |assignment_ability|
+          "#{assignment_ability.assignment.title} - Milestone #{assignment_ability.milestone_level}"
+        end.join("\n")
+        
         csv << [
           ability.name || '',
           ability.description || '',
           ability.organization&.display_name || '',
           ability.semantic_version || '',
+          assignments,
+          ability.milestone_1_description || '',
+          ability.milestone_2_description || '',
+          ability.milestone_3_description || '',
+          ability.milestone_4_description || '',
+          ability.milestone_5_description || '',
           ability.created_at&.to_s || '',
           ability.updated_at&.to_s || ''
         ]
@@ -269,13 +301,24 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         # Number of active employment tenures
         active_tenures_count = EmploymentTenure.active.where(position: position).count
         
-        # Assignments: newline-separated list with min, max, and required/suggested
+        # Assignments: "<assignment name> (<required|suggested>, <min>%-<max>%)" separated by newlines
         assignments_list = position.position_assignments.map do |pa|
-          parts = [pa.assignment.title]
-          parts << "min: #{pa.min_estimated_energy}%" if pa.min_estimated_energy.present?
-          parts << "max: #{pa.max_estimated_energy}%" if pa.max_estimated_energy.present?
-          parts << "type: #{pa.assignment_type}"
-          parts.join(', ')
+          parts = [
+            pa.assignment.title,
+            " (#{pa.assignment_type}"
+          ]
+          
+          # Add energy range if present
+          if pa.min_estimated_energy.present? && pa.max_estimated_energy.present?
+            parts << ", #{pa.min_estimated_energy}%-#{pa.max_estimated_energy}%"
+          elsif pa.min_estimated_energy.present?
+            parts << ", #{pa.min_estimated_energy}%+"
+          elsif pa.max_estimated_energy.present?
+            parts << ", up to #{pa.max_estimated_energy}%"
+          end
+          
+          parts << ")"
+          parts.join
         end.join("\n")
         
         # PaperTrail versions count

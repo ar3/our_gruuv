@@ -128,15 +128,14 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
           position_type = create(:position_type, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level)
           position_level = create(:position_level, position_major_level: position_major_level)
           position = create(:position, position_type: position_type, position_level: position_level)
-          create(:position_assignment, position: position, assignment: assignment)
+          create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required', min_estimated_energy: 10, max_estimated_energy: 20)
           
           get :download, params: { organization_id: organization.id, type: 'assignments' }
           csv = CSV.parse(response.body, headers: true)
           
           row = csv.find { |r| r['Title'] == 'Position Test' }
           expect(row).to be_present
-          expect(row['Positions']).to include('Software Engineer')
-          expect(row['Positions']).to include(position_level.level)
+          expect(row['Positions']).to eq("Software Engineer - #{position_level.level} (required, 10%-20%)")
         end
 
         it 'includes multiple positions separated by newlines' do
@@ -149,17 +148,35 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
           position_level2 = create(:position_level, level: '3.0', position_major_level: position_major_level2)
           position1 = create(:position, position_type: position_type1, position_level: position_level1)
           position2 = create(:position, position_type: position_type2, position_level: position_level2)
-          create(:position_assignment, position: position1, assignment: assignment)
-          create(:position_assignment, position: position2, assignment: assignment)
+          create(:position_assignment, position: position1, assignment: assignment, assignment_type: 'required', min_estimated_energy: 10, max_estimated_energy: 20)
+          create(:position_assignment, position: position2, assignment: assignment, assignment_type: 'suggested', min_estimated_energy: 5, max_estimated_energy: 15)
           
           get :download, params: { organization_id: organization.id, type: 'assignments' }
           csv = CSV.parse(response.body, headers: true)
           
           row = csv.find { |r| r['Title'] == 'Multi Position Test' }
           expect(row).to be_present
-          expect(row['Positions']).to include("Backend Engineer - 1.0")
-          expect(row['Positions']).to include("Frontend Engineer - 3.0")
+          expect(row['Positions']).to include("Backend Engineer - 1.0 (required, 10%-20%)")
+          expect(row['Positions']).to include("Frontend Engineer - 3.0 (suggested, 5%-15%)")
           expect(row['Positions'].split("\n").size).to eq(2)
+        end
+
+        it 'handles positions with missing energy values' do
+          assignment = create(:assignment, company: organization, title: 'Energy Edge Cases')
+          position_major_level = create(:position_major_level)
+          position_type = create(:position_type, organization: organization, external_title: 'Software Engineer', position_major_level: position_major_level)
+          position_level = create(:position_level, level: '1.0', position_major_level: position_major_level)
+          position = create(:position, position_type: position_type, position_level: position_level)
+          
+          # No energy values
+          create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required', min_estimated_energy: nil, max_estimated_energy: nil)
+          
+          get :download, params: { organization_id: organization.id, type: 'assignments' }
+          csv = CSV.parse(response.body, headers: true)
+          
+          row = csv.find { |r| r['Title'] == 'Energy Edge Cases' }
+          expect(row).to be_present
+          expect(row['Positions']).to eq("Software Engineer - 1.0 (required)")
         end
 
         it 'includes milestones data in CSV' do
@@ -277,7 +294,81 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
         it 'generates CSV with correct headers' do
           get :download, params: { organization_id: organization.id, type: 'abilities' }
           csv = CSV.parse(response.body, headers: true)
-          expect(csv.headers).to include('Name', 'Description', 'Organization')
+          expect(csv.headers).to include(
+            'Name', 'Description', 'Organization', 'Assignments',
+            'Milestone 1 Description', 'Milestone 2 Description', 'Milestone 3 Description',
+            'Milestone 4 Description', 'Milestone 5 Description'
+          )
+        end
+
+        it 'includes assignments with milestone requirements in CSV' do
+          ability = create(:ability, organization: organization, name: 'Test Ability')
+          assignment1 = create(:assignment, company: organization, title: 'Assignment One')
+          assignment2 = create(:assignment, company: organization, title: 'Assignment Two')
+          create(:assignment_ability, :same_organization, assignment: assignment1, ability: ability, milestone_level: 2)
+          create(:assignment_ability, :same_organization, assignment: assignment2, ability: ability, milestone_level: 3)
+          
+          get :download, params: { organization_id: organization.id, type: 'abilities' }
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Name'] == 'Test Ability' }
+          
+          expect(row).to be_present
+          expect(row['Assignments']).to include('Assignment One - Milestone 2')
+          expect(row['Assignments']).to include('Assignment Two - Milestone 3')
+        end
+
+        it 'handles abilities with no assignments' do
+          ability = create(:ability, organization: organization, name: 'Test Ability')
+          
+          get :download, params: { organization_id: organization.id, type: 'abilities' }
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Name'] == 'Test Ability' }
+          
+          expect(row).to be_present
+          expect(row['Assignments']).to eq('')
+        end
+
+        it 'includes milestone descriptions in CSV' do
+          ability = create(:ability,
+            organization: organization,
+            name: 'Test Ability',
+            milestone_1_description: 'Basic understanding',
+            milestone_2_description: 'Intermediate skills',
+            milestone_3_description: 'Advanced proficiency',
+            milestone_4_description: 'Expert level',
+            milestone_5_description: 'Master level'
+          )
+          
+          get :download, params: { organization_id: organization.id, type: 'abilities' }
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Name'] == 'Test Ability' }
+          
+          expect(row).to be_present
+          expect(row['Milestone 1 Description']).to eq('Basic understanding')
+          expect(row['Milestone 2 Description']).to eq('Intermediate skills')
+          expect(row['Milestone 3 Description']).to eq('Advanced proficiency')
+          expect(row['Milestone 4 Description']).to eq('Expert level')
+          expect(row['Milestone 5 Description']).to eq('Master level')
+        end
+
+        it 'handles abilities with partial milestone descriptions' do
+          ability = create(:ability,
+            organization: organization,
+            name: 'Test Ability',
+            milestone_1_description: 'Basic understanding',
+            milestone_2_description: 'Intermediate skills'
+          )
+          
+          get :download, params: { organization_id: organization.id, type: 'abilities' }
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Name'] == 'Test Ability' }
+          
+          expect(row).to be_present
+          expect(row['Milestone 1 Description']).to eq('Basic understanding')
+          expect(row['Milestone 2 Description']).to eq('Intermediate skills')
+          expect(row['Milestone 3 Description']).to eq('')
+          expect(row['Milestone 4 Description']).to eq('')
+          expect(row['Milestone 5 Description']).to eq('')
         end
       end
 
