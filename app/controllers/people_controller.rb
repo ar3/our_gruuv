@@ -8,9 +8,8 @@ class PeopleController < ApplicationController
     authorize person, policy_class: PersonPolicy
     # Public view - showcase public observations and milestones across all organizations
     # Use unauthenticated layout
-    render layout: 'application'
     
-    # Get all public observations where this person is observed
+    # Get all world-public observations where this person is observed (across all organizations)
     teammate_ids = person.teammates.pluck(:id)
     @public_observations = if teammate_ids.any?
       Observation.public_observations
@@ -24,15 +23,18 @@ class PeopleController < ApplicationController
       Observation.none.decorate
     end
     
-    # Get all milestones across all organizations
+    # Get all milestones with public_profile_published_at across all organizations
     @milestones = if person.teammates.exists?
       TeammateMilestone.joins(:teammate)
         .where(teammates: { person: person })
+        .public_profile_published
         .includes(:ability, certifying_teammate: :person)
         .order(attained_at: :desc)
     else
       TeammateMilestone.none
     end
+    
+    render layout: 'application'
   end
 
   def connect_google_identity

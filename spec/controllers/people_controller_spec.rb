@@ -61,7 +61,8 @@ RSpec.describe PeopleController, type: :controller do
         teammate: teammate, 
         ability: ability,
         milestone_level: 3,
-        attained_at: 1.month.ago
+        attained_at: 1.month.ago,
+        public_profile_published_at: 1.week.ago
       )
     end
     
@@ -71,7 +72,8 @@ RSpec.describe PeopleController, type: :controller do
         teammate: other_teammate,
         ability: ability,
         milestone_level: 2,
-        attained_at: 2.months.ago
+        attained_at: 2.months.ago,
+        public_profile_published_at: 1.week.ago
       )
     end
 
@@ -106,6 +108,25 @@ RSpec.describe PeopleController, type: :controller do
       milestone_ids = milestones.map(&:id)
       expect(milestone_ids).to include(milestone.id)
       expect(milestone_ids).to include(other_milestone.id)
+    end
+
+    it 'only loads milestones with public_profile_published_at' do
+      # Create a milestone without public_profile_published_at
+      ability = create(:ability, organization: organization)
+      unpublished_milestone = create(:teammate_milestone,
+        teammate: teammate,
+        ability: ability,
+        milestone_level: 1,
+        attained_at: 3.months.ago,
+        public_profile_published_at: nil
+      )
+      
+      get :public, params: { id: person.id }
+      milestones = assigns(:milestones)
+      milestone_ids = milestones.map(&:id)
+      expect(milestone_ids).to include(milestone.id)
+      expect(milestone_ids).to include(other_milestone.id)
+      expect(milestone_ids).not_to include(unpublished_milestone.id)
     end
 
     it 'orders observations by observed_at desc' do

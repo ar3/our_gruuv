@@ -19,6 +19,76 @@
     %i.bi.bi-sliders.me-2
     Customize View
 
+/ Spotlight Section
+- if @current_spotlight && @current_spotlight != 'none'
+  .row.justify-content-center.mb-4
+    .col-lg-12
+      .card.border-0.shadow-sm
+        .card-body
+          - case @current_spotlight
+          - when 'by_department'
+            = render partial: 'organizations/assignments/spotlights/by_organization'
+          - else
+            .row
+              .col-md-8
+                .row.text-center
+                  .col-3
+                    .h3.text-primary= @assignments.count
+                    %small.text-muted Total Assignments
+        .card-footer.bg-light
+          .row.align-items-center
+            .col-md-6
+              %small.text-muted
+                %i.bi.bi-funnel.me-1
+                Filters: 
+                - filter_parts = []
+                - if params[:company].present?
+                  - company_params = params[:company].is_a?(Array) ? params[:company] : [params[:company]]
+                  - selected_companies = Organization.where(id: company_params.map(&:to_i).reject(&:zero?))
+                  - if selected_companies.any?
+                    - filter_parts << "#{selected_companies.count} organization#{'s' if selected_companies.count != 1}"
+                - else
+                  - filter_parts << 'All organizations'
+                - if params[:outcomes_filter].present? && params[:outcomes_filter] != 'all'
+                  - filter_parts << "Outcomes: #{params[:outcomes_filter] == 'with' ? 'W/' : 'W/o'}"
+                - if params[:abilities_filter].present? && params[:abilities_filter] != 'all'
+                  - filter_parts << "Abilities: #{params[:abilities_filter] == 'with' ? 'W/' : 'W/o'}"
+                - if params[:major_version].present?
+                  - filter_parts << "v#{params[:major_version]}.x.x"
+                = filter_parts.any? ? filter_parts.join(' / ') : 'All'
+                %br
+                %i.bi.bi-sort-down.me-1
+                Sort: 
+                - sort_display = case params[:sort]
+                - when 'department_and_title'
+                  - 'Department and Title'
+                - when 'title'
+                  - 'Title (A-Z)'
+                - when 'title_desc'
+                  - 'Title (Z-A)'
+                - when 'company'
+                  - 'Company (A-Z)'
+                - when 'company_desc'
+                  - 'Company (Z-A)'
+                - when 'outcomes'
+                  - 'Most Outcomes'
+                - when 'outcomes_desc'
+                  - 'Fewest Outcomes'
+                - when 'abilities'
+                  - 'Most Abilities'
+                - when 'abilities_desc'
+                  - 'Fewest Abilities'
+                - else
+                  - 'Department and Title'
+                = sort_display
+            .col-md-6.text-end
+              %small.text-muted
+                %i.bi.bi-table.me-1
+                View: Table
+                %br
+                %i.bi.bi-eye.me-1
+                Spotlight: #{@current_spotlight&.humanize || 'None'}
+
 .row.justify-content-center
   .col-lg-12
     - if @assignments.any?
@@ -27,10 +97,9 @@
           %thead
             %tr
               %th Assignment
-              %th Version
               %th Outcomes
               %th Abilities
-              %th External References
+              %th Positions
           %tbody
             - @assignments.each do |assignment|
               %tr
@@ -42,39 +111,51 @@
                     %br
                   %strong
                     = link_to assignment.title, organization_assignment_path(@organization, assignment), class: "text-decoration-none"
+                    %small.text-muted.ms-2
+                      v#{assignment.semantic_version}
                   %br
                   %small.text-muted= assignment.tagline
-                %td= assignment.semantic_version
                 %td
                   - if assignment.assignment_outcomes.any?
-                    %span.badge.bg-info.me-1
-                      = assignment.assignment_outcomes.count
-                    - outcome_types = assignment.assignment_outcomes.group(:outcome_type).count
-                    - outcome_types.each do |type, count|
-                      %span.badge.me-1{class: type == 'sentiment' ? 'bg-warning' : 'bg-secondary'}
-                        = "#{type.titleize}: #{count}"
+                    - assignment.assignment_outcomes.each do |outcome|
+                      = link_to edit_organization_assignment_assignment_outcome_path(@organization, assignment, outcome), class: "badge bg-light me-1 mb-1 text-decoration-none text-spice-#{outcome.outcome_type == 'sentiment' ? '1' : '2'}", data: {bs_toggle: 'tooltip', bs_title: outcome.description} do
+                        = outcome.outcome_type.titleize
+                      %br
                   - else
                     %span.text-muted
                       %i.bi.bi-exclamation-triangle.me-1
                       None
                 %td
                   - if assignment.abilities.any?
-                    %span.badge.bg-primary.me-1
+                    = link_to organization_abilities_path(@organization), class: "badge bg-light text-spice-3 me-1 text-decoration-none" do
                       = assignment.abilities.count
-                    - assignment.abilities.limit(3).each do |ability|
-                      %span.badge.bg-light.text-dark.me-1
-                        = ability.name
-                    - if assignment.abilities.count > 3
-                      %span.text-muted +#{assignment.abilities.count - 3} more
+                    %br
+                    - assignment.assignment_abilities.includes(:ability).each do |assignment_ability|
+                      - ability = assignment_ability.ability
+                      - milestone_level = assignment_ability.milestone_level
+                      = link_to organization_ability_path(@organization, ability), class: "badge bg-light text-spice-4 me-1 mb-1 text-decoration-none" do
+                        = "#{ability.name} (M#{milestone_level})"
+                      %br
                   - else
                     %span.text-muted
                       %i.bi.bi-exclamation-triangle.me-1
                       None
                 %td
-                  - if assignment.published_url.present? || assignment.draft_url.present?
-                    %span.badge.bg-success.me-1
-                      %i.bi.bi-link-45deg.me-1
-                      Available
+                  - if assignment.position_assignments.any?
+                    - assignment.position_assignments.includes(:position).each do |position_assignment|
+                      - position = position_assignment.position
+                      - min_pct = position_assignment.min_estimated_energy
+                      - max_pct = position_assignment.max_estimated_energy
+                      %small
+                        = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
+                          = position.display_name
+                        - if min_pct.present? && max_pct.present?
+                          = " (#{min_pct}%-#{max_pct}%)"
+                        - elsif min_pct.present?
+                          = " (#{min_pct}%+)"
+                        - elsif max_pct.present?
+                          = " (up to #{max_pct}%)"
+                      %br
                   - else
                     %span.text-muted
                       %i.bi.bi-dash.me-1

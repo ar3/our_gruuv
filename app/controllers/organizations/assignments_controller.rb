@@ -9,28 +9,48 @@ class Organizations::AssignmentsController < ApplicationController
   def index
     company = @organization.root_company || @organization
     authorize company, :view_assignments?
-    @assignments = policy_scope(Assignment).where(company: company.self_and_descendants).includes(:assignment_outcomes, :published_external_reference, :draft_external_reference, :abilities)
+    
+    # Set default spotlight
+    @current_spotlight = params[:spotlight].presence || 'by_department'
+    
+    @assignments = policy_scope(Assignment).where(company: company.self_and_descendants).includes(
+      :assignment_outcomes, 
+      :published_external_reference, 
+      :draft_external_reference, 
+      :abilities,
+      assignment_abilities: :ability,
+      position_assignments: { position: [:position_type, :position_level] }
+    )
     
     # Apply filters
     if params[:company].present?
-      company = Organization.find(params[:company])
-      @assignments = @assignments.where(company: company.self_and_descendants)
+      company_params = params[:company].is_a?(Array) ? params[:company] : [params[:company]]
+      selected_company_ids = company_params.map(&:to_i).reject(&:zero?)
+      if selected_company_ids.any?
+        selected_companies = Organization.where(id: selected_company_ids)
+        company_ids = selected_companies.flat_map { |c| c.self_and_descendants.pluck(:id) }.uniq
+        @assignments = @assignments.where(company_id: company_ids)
+      end
     end
     
-    if params[:has_outcomes] == '1'
+    # Apply outcomes filter (tri-state: all, with, without)
+    case params[:outcomes_filter]
+    when 'with'
       @assignments = @assignments.joins(:assignment_outcomes).distinct
+    when 'without'
+      @assignments = @assignments.left_joins(:assignment_outcomes)
+                                 .where(assignment_outcomes: { id: nil })
+    # when 'all' or blank/nil - no filter applied
     end
     
-    if params[:has_abilities] == '1'
+    # Apply abilities filter (tri-state: all, with, without)
+    case params[:abilities_filter]
+    when 'with'
       @assignments = @assignments.joins(:abilities).distinct
-    end
-    
-    if params[:has_references] == '1'
-      @assignments = @assignments.left_joins(:published_external_reference, :draft_external_reference)
-                                 .where.not(published_external_references: { id: nil })
-                                 .or(@assignments.left_joins(:published_external_reference, :draft_external_reference)
-                                     .where.not(draft_external_references: { id: nil }))
-                                 .distinct
+    when 'without'
+      @assignments = @assignments.left_joins(:abilities)
+                                 .where(assignment_abilities: { id: nil })
+    # when 'all' or blank/nil - no filter applied
     end
     
     # Filter by major version (using SQL LIKE for efficiency)
@@ -39,18 +59,40 @@ class Organizations::AssignmentsController < ApplicationController
       @assignments = @assignments.where("semantic_version LIKE ?", "#{major_version}.%")
     end
     
-    # Apply sorting
+    # Calculate spotlight stats for by_department (after filters, before sorting)
+    if @current_spotlight == 'by_department'
+      # Use filtered assignments for spotlight stats (load into array to preserve filters)
+      filtered_assignments_array = @assignments.to_a
+      @spotlight_stats = calculate_by_department_stats(filtered_assignments_array)
+    end
+    
+    # Apply sorting - need to handle distinct queries properly
+    # Check if we're using distinct (from joins)
+    using_distinct = @assignments.to_sql.include?('DISTINCT')
+    
     case params[:sort]
     when 'department_and_title'
-      @assignments = @assignments.left_joins(:department).order(Arel.sql('COALESCE(organizations.name, \'\')'), :title)
+      if using_distinct
+        @assignments = @assignments.reorder('assignments.title')
+      else
+        @assignments = @assignments.left_joins(:department).order(Arel.sql('COALESCE(organizations.name, \'\')'), 'assignments.title')
+      end
     when 'title'
-      @assignments = @assignments.order(:title)
+      @assignments = @assignments.order('assignments.title')
     when 'title_desc'
-      @assignments = @assignments.order(title: :desc)
+      @assignments = @assignments.order('assignments.title DESC')
     when 'company'
-      @assignments = @assignments.joins(:company).order('organizations.display_name')
+      if using_distinct
+        @assignments = @assignments.reorder('assignments.title')
+      else
+        @assignments = @assignments.joins(:company).order('organizations.display_name')
+      end
     when 'company_desc'
-      @assignments = @assignments.joins(:company).order('organizations.display_name DESC')
+      if using_distinct
+        @assignments = @assignments.reorder('assignments.title DESC')
+      else
+        @assignments = @assignments.joins(:company).order('organizations.display_name DESC')
+      end
     when 'outcomes'
       @assignments = @assignments.left_joins(:assignment_outcomes).group('assignments.id').order('COUNT(assignment_outcomes.id) DESC')
     when 'outcomes_desc'
@@ -60,7 +102,11 @@ class Organizations::AssignmentsController < ApplicationController
     when 'abilities_desc'
       @assignments = @assignments.left_joins(:abilities).group('assignments.id').order('COUNT(assignment_abilities.id) ASC')
     else
-      @assignments = @assignments.left_joins(:department).order(Arel.sql('COALESCE(organizations.name, \'\')'), :title)
+      if using_distinct
+        @assignments = @assignments.reorder('assignments.title')
+      else
+        @assignments = @assignments.left_joins(:department).order(Arel.sql('COALESCE(organizations.name, \'\')'), 'assignments.title')
+      end
     end
     
     render layout: determine_layout
@@ -164,15 +210,14 @@ class Organizations::AssignmentsController < ApplicationController
     
     # Load current state from params
     @current_filters = {
-      company: params[:company],
-      has_outcomes: params[:has_outcomes],
-      has_abilities: params[:has_abilities],
-      has_references: params[:has_references],
+      company: params[:company] || [],
+      outcomes_filter: params[:outcomes_filter] || 'all',
+      abilities_filter: params[:abilities_filter] || 'all',
       major_version: params[:major_version],
       sort: params[:sort] || 'department_and_title',
       direction: params[:direction] || 'asc',
       view: params[:view] || 'table',
-      spotlight: params[:spotlight] || 'none'
+      spotlight: params[:spotlight] || 'by_department'
     }
     
     @current_sort = @current_filters[:sort]
@@ -191,7 +236,17 @@ class Organizations::AssignmentsController < ApplicationController
     authorize @organization, :show?
     
     # Build redirect URL with all view customization params
-    redirect_params = params.except(:controller, :action, :utf8, :_method, :commit).permit!.to_h
+    # Handle array params (company[]) properly
+    redirect_params = {}
+    redirect_params[:company] = params[:company] if params[:company].present?
+    redirect_params[:outcomes_filter] = params[:outcomes_filter] if params[:outcomes_filter].present?
+    redirect_params[:abilities_filter] = params[:abilities_filter] if params[:abilities_filter].present?
+    redirect_params[:major_version] = params[:major_version] if params[:major_version].present?
+    redirect_params[:sort] = params[:sort] if params[:sort].present?
+    redirect_params[:direction] = params[:direction] if params[:direction].present?
+    redirect_params[:view] = params[:view] if params[:view].present?
+    redirect_params[:spotlight] = params[:spotlight] if params[:spotlight].present?
+    
     redirect_to organization_assignments_path(@organization, redirect_params)
   end
 
@@ -203,6 +258,35 @@ class Organizations::AssignmentsController < ApplicationController
 
   def set_assignment
     @assignment = @organization.assignments.find(params[:id])
+  end
+
+  def calculate_by_department_stats(assignments)
+    # Group assignments by their department (or "No Department" if nil)
+    assignments_by_dept = assignments.group_by(&:department)
+    
+    # Build stats hash with department display names and counts
+    stats = {}
+    assignments_by_dept.each do |dept, dept_assignments|
+      if dept.nil?
+        stats[nil] = {
+          department: nil,
+          display_name: 'No Department',
+          count: dept_assignments.count
+        }
+      else
+        stats[dept.id] = {
+          department: dept,
+          display_name: dept.display_name,
+          count: dept_assignments.count
+        }
+      end
+    end
+    
+    {
+      departments: stats,
+      total_assignments: assignments.count,
+      total_departments: stats.count
+    }
   end
 
   def assignment_params

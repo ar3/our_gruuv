@@ -1,0 +1,70 @@
+- content_for :title, "Edit Outcome"
+
+- content_for :header do
+  Edit Outcome
+
+- content_for :return_url do
+  = @return_url || organization_assignments_path(@organization)
+
+- content_for :return_text do
+  = @return_text || 'Back to Assignments'
+
+= form_with model: [@organization, @assignment, @assignment_outcome], url: organization_assignment_assignment_outcome_path(@organization, @assignment, @assignment_outcome), local: true do |form|
+  .row
+    .col-md-8
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-bullseye.me-2
+            Outcome Details
+        .card-body
+          - if @assignment_outcome.errors.any?
+            .alert.alert-danger
+              %h6= "#{pluralize(@assignment_outcome.errors.count, 'error')} prohibited this outcome from being saved:"
+              %ul.mb-0
+                - @assignment_outcome.errors.full_messages.each do |message|
+                  %li= message
+          
+          .mb-3
+            = form.label :description, class: 'form-label' do
+              Description
+              %span.text-danger *
+            = form.text_area :description, class: 'form-control', rows: 3, required: true
+          
+          .mb-3
+            = form.label :outcome_type, class: 'form-label' do
+              Type
+              %span.text-danger *
+            = form.select :outcome_type, options_for_select([['Quantitative', 'quantitative'], ['Sentiment', 'sentiment']], @assignment_outcome.outcome_type), {}, { class: 'form-select', required: true }
+          
+          .d-flex.align-items-center.gap-2.mt-4
+            - can_update = policy(@assignment_outcome).update?
+            - if can_update
+              = form.submit 'Save Outcome', class: 'btn btn-primary'
+            - else
+              .d-flex.align-items-center.gap-2.w-100
+                .flex-grow-1
+                  = form.submit 'Save Outcome', class: 'btn btn-primary', disabled: true, style: 'opacity: 0.6; cursor: not-allowed;'
+                %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: 'tooltip', bs_title: 'Requires MAAP management permission'}}
+            = link_to 'Cancel', @return_url || organization_assignments_path(@organization), class: 'btn btn-outline-secondary'
+      
+      - if @assignment_outcome.outcome_type == 'quantitative'
+        .card.mb-4
+          .card-header.bg-info.text-white
+            %h5.mb-0
+              %i.bi.bi-graph-up-arrow.me-2
+              Coming Soon: Real Metrics
+          .card-body
+            %p
+              In the future, quantitative outcomes will be associated with real metrics and data sources.
+              This will allow you to track actual performance against these outcomes over time.
+      - elsif @assignment_outcome.outcome_type == 'sentiment'
+        .card.mb-4
+          .card-header.bg-info.text-white
+            %h5.mb-0
+              %i.bi.bi-chat-heart.me-2
+              Coming Soon: Sentiment Questions
+          .card-body
+            %p
+              In the future, sentiment-based outcomes will automatically ask the right people the appropriate sentiment questions.
+              This will help you gather feedback and insights about how people feel about this outcome.

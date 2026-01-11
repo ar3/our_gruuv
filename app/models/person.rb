@@ -81,6 +81,28 @@ class Person < ApplicationRecord
   def google_profile_image_url
     google_identity&.profile_image_url
   end
+
+  def latest_profile_image_url
+    # Check all person_identities and teammate_identities for profile images
+    # Return the most recently updated one
+    all_identities = []
+    
+    # Get all person_identities with profile images
+    person_identities.where.not(profile_image_url: nil).find_each do |identity|
+      all_identities << { url: identity.profile_image_url, updated_at: identity.updated_at }
+    end
+    
+    # Get all teammate_identities with profile images through all teammates
+    teammates.includes(:teammate_identities).find_each do |teammate|
+      teammate.teammate_identities.where.not(profile_image_url: nil).find_each do |identity|
+        all_identities << { url: identity.profile_image_url, updated_at: identity.updated_at }
+      end
+    end
+    
+    # Return the most recently updated profile image
+    return nil if all_identities.empty?
+    all_identities.max_by { |i| i[:updated_at] }[:url]
+  end
   
   def timezone_or_default
     timezone.present? ? timezone : 'Eastern Time (US & Canada)'

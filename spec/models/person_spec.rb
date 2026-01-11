@@ -162,6 +162,84 @@ RSpec.describe Person, type: :model do
     end
   end
 
+  describe '#latest_profile_image_url' do
+    let(:person) { create(:person) }
+
+    context 'when person has no profile images' do
+      it 'returns nil' do
+        expect(person.latest_profile_image_url).to be_nil
+      end
+    end
+
+    context 'when person has person_identity with profile image' do
+      let!(:person_identity) { create(:person_identity, person: person, profile_image_url: 'https://example.com/person.jpg') }
+
+      it 'returns person_identity profile image URL' do
+        expect(person.latest_profile_image_url).to eq('https://example.com/person.jpg')
+      end
+    end
+
+    context 'when person has teammate_identity with profile image' do
+      let(:organization) { create(:organization, :company) }
+      let(:teammate) { create(:teammate, person: person, organization: organization) }
+      let!(:teammate_identity) { create(:teammate_identity, teammate: teammate, profile_image_url: 'https://example.com/teammate.jpg') }
+
+      it 'returns teammate_identity profile image URL' do
+        expect(person.latest_profile_image_url).to eq('https://example.com/teammate.jpg')
+      end
+    end
+
+    context 'when person has both person_identity and teammate_identity with images' do
+      let(:organization) { create(:organization, :company) }
+      let(:teammate) { create(:teammate, person: person, organization: organization) }
+      let!(:person_identity) { create(:person_identity, person: person, profile_image_url: 'https://example.com/person.jpg') }
+      let!(:teammate_identity) { create(:teammate_identity, teammate: teammate, profile_image_url: 'https://example.com/teammate.jpg') }
+
+      it 'returns the most recently updated profile image URL' do
+        # Set updated_at to ensure teammate_identity is newer
+        teammate_identity.update_column(:updated_at, 1.day.ago)
+        person_identity.update_column(:updated_at, 2.days.ago)
+        
+        expect(person.latest_profile_image_url).to eq('https://example.com/teammate.jpg')
+      end
+
+      it 'returns person_identity when it is more recently updated' do
+        # Set updated_at to ensure person_identity is newer
+        person_identity.update_column(:updated_at, 1.day.ago)
+        teammate_identity.update_column(:updated_at, 2.days.ago)
+        
+        expect(person.latest_profile_image_url).to eq('https://example.com/person.jpg')
+      end
+    end
+
+    context 'when person has multiple identities with images across organizations' do
+      let(:org1) { create(:organization, :company) }
+      let(:org2) { create(:organization, :company) }
+      let(:teammate1) { create(:teammate, person: person, organization: org1) }
+      let(:teammate2) { create(:teammate, person: person, organization: org2) }
+      let!(:identity1) { create(:teammate_identity, teammate: teammate1, profile_image_url: 'https://example.com/org1.jpg') }
+      let!(:identity2) { create(:teammate_identity, teammate: teammate2, profile_image_url: 'https://example.com/org2.jpg') }
+
+      it 'returns the most recently updated profile image URL' do
+        identity1.update_column(:updated_at, 2.days.ago)
+        identity2.update_column(:updated_at, 1.day.ago)
+        
+        expect(person.latest_profile_image_url).to eq('https://example.com/org2.jpg')
+      end
+    end
+
+    context 'when identities exist but have no profile_image_url' do
+      let!(:person_identity) { create(:person_identity, person: person, profile_image_url: nil) }
+      let(:organization) { create(:organization, :company) }
+      let(:teammate) { create(:teammate, person: person, organization: organization) }
+      let!(:teammate_identity) { create(:teammate_identity, teammate: teammate, profile_image_url: nil) }
+
+      it 'returns nil' do
+        expect(person.latest_profile_image_url).to be_nil
+      end
+    end
+  end
+
   describe 'full name parsing' do
     it 'parses single name as first name' do
       person.first_name = nil

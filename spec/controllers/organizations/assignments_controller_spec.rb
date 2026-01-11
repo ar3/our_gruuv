@@ -50,14 +50,37 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
       expect(assigns(:assignments)).to be_empty
     end
 
-    it 'combines major_version filter with company filter' do
+    it 'filters by multiple companies' do
       other_company = create(:organization, :company)
       other_assignment = create(:assignment, company: other_company, semantic_version: '1.0.0')
 
-      get :index, params: { organization_id: organization.id, major_version: 1, company: organization.id }
+      get :index, params: { organization_id: organization.id, company: [organization.id] }
       assignments = assigns(:assignments)
-      expect(assignments).to include(assignment_v1, assignment_v1_2)
-      expect(assignments).not_to include(other_assignment, assignment_v2, assignment_v0)
+      expect(assignments).to include(assignment_v1, assignment_v1_2, assignment_v2, assignment_v0)
+      expect(assignments).not_to include(other_assignment)
+    end
+
+    it 'filters by outcomes with tri-state filter' do
+      assignment_with_outcomes = create(:assignment, company: organization)
+      create(:assignment_outcome, assignment: assignment_with_outcomes)
+      assignment_without_outcomes = create(:assignment, company: organization)
+
+      get :index, params: { organization_id: organization.id, outcomes_filter: 'with' }
+      assignments = assigns(:assignments)
+      expect(assignments).to include(assignment_with_outcomes)
+      expect(assignments).not_to include(assignment_without_outcomes)
+    end
+
+    it 'filters by abilities with tri-state filter' do
+      ability = create(:ability, organization: organization)
+      assignment_with_abilities = create(:assignment, company: organization)
+      create(:assignment_ability, assignment: assignment_with_abilities, ability: ability, milestone_level: 1)
+      assignment_without_abilities = create(:assignment, company: organization)
+
+      get :index, params: { organization_id: organization.id, abilities_filter: 'with' }
+      assignments = assigns(:assignments)
+      expect(assignments).to include(assignment_with_abilities)
+      expect(assignments).not_to include(assignment_without_abilities)
     end
 
     it 'combines major_version filter with sorting' do
@@ -65,6 +88,57 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
       assignments = assigns(:assignments)
       expect(assignments).to include(assignment_v1, assignment_v1_2)
       expect(assignments.length).to eq(2)
+    end
+
+    it 'defaults to by_department spotlight when no spotlight parameter is provided' do
+      get :index, params: { organization_id: organization.id }
+      expect(assigns(:current_spotlight)).to eq('by_department')
+    end
+
+    it 'calculates spotlight stats for by_department spotlight' do
+      get :index, params: { organization_id: organization.id, spotlight: 'by_department' }
+      expect(assigns(:spotlight_stats)).to be_a(Hash)
+      expect(assigns(:spotlight_stats)).to have_key(:departments)
+      expect(assigns(:spotlight_stats)).to have_key(:total_assignments)
+      expect(assigns(:spotlight_stats)).to have_key(:total_departments)
+      expect(assigns(:spotlight_stats)[:total_assignments]).to eq(4)
+      expect(assigns(:spotlight_stats)[:total_departments]).to eq(1)
+    end
+
+    it 'groups assignments by department in spotlight stats' do
+      department = create(:organization, :department, parent: organization)
+      assignment_with_dept = create(:assignment, company: organization, department: department)
+      
+      get :index, params: { organization_id: organization.id, spotlight: 'by_department' }
+      stats = assigns(:spotlight_stats)
+      expect(stats[:departments]).to have_key(nil) # assignments without departments
+      expect(stats[:departments]).to have_key(department.id) # assignments with department
+      expect(stats[:departments][department.id][:count]).to eq(1)
+      expect(stats[:departments][nil][:count]).to eq(4) # the 4 original assignments without departments
+    end
+
+    it 'calculates spotlight stats using filtered assignments' do
+      department = create(:organization, :department, parent: organization)
+      assignment_with_dept_v1 = create(:assignment, company: organization, department: department, semantic_version: '1.0.0')
+      assignment_with_dept_v2 = create(:assignment, company: organization, department: department, semantic_version: '2.0.0')
+      
+      # Filter by major version 1
+      get :index, params: { organization_id: organization.id, spotlight: 'by_department', major_version: 1 }
+      stats = assigns(:spotlight_stats)
+      # Should only count assignments with version 1.x.x (assignment_v1, assignment_v1_2, assignment_with_dept_v1)
+      expect(stats[:total_assignments]).to eq(3)
+      expect(stats[:departments][department.id][:count]).to eq(1) # Only the v1 assignment
+    end
+
+    it 'calculates spotlight stats using outcomes filter' do
+      assignment_with_outcomes = create(:assignment, company: organization)
+      create(:assignment_outcome, assignment: assignment_with_outcomes)
+      assignment_without_outcomes = create(:assignment, company: organization)
+      
+      get :index, params: { organization_id: organization.id, spotlight: 'by_department', outcomes_filter: 'with' }
+      stats = assigns(:spotlight_stats)
+      # Should only count assignments with outcomes
+      expect(stats[:total_assignments]).to eq(1)
     end
   end
 

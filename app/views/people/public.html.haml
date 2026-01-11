@@ -4,8 +4,11 @@
   .row
     .col-12
       .d-flex.justify-content-between.align-items-center.mb-4
-        %h1.mb-0
-          %i.bi.bi-person-badge.me-2
+        %h1.mb-0.d-flex.align-items-center
+          - if @person.latest_profile_image_url
+            = image_tag @person.latest_profile_image_url, class: "rounded-circle me-2", style: "width: 48px; height: 48px; object-fit: cover;", alt: @person.display_name
+          - else
+            %i.bi.bi-person-badge.me-2
           = "#{@person.first_name}#{' ' + @person.last_name[0] + '.' if @person.last_name.present?}"
         - if current_person && current_organization && current_company_teammate && policy(current_company_teammate).internal?
           - person_teammate = @person.teammates.find_by(organization: current_organization)

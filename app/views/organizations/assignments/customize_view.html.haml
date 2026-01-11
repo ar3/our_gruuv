@@ -20,28 +20,35 @@
           %label.form-label.fw-bold Select What Assignments You See
           
           .mb-3
-            %label.form-label Company
+            %label.form-label Organizations
             - companies = @organization.root_company.self_and_descendants
-            - company_options = [['All Companies', '']] + companies.map { |c| [c.display_name, c.id] }
-            = select_tag 'company', options_for_select(company_options, @current_filters[:company]), class: 'form-select'
+            - selected_companies = Array(@current_filters[:company] || [])
+            .row.g-2
+              - companies.each do |company|
+                .col-md-6
+                  .form-check
+                    = check_box_tag 'company[]', company.id, selected_companies.include?(company.id.to_s) || selected_companies.include?(company.id), class: 'form-check-input', id: "company_#{company.id}"
+                    = label_tag "company_#{company.id}", company.display_name, class: 'form-check-label'
           
           .mb-3
-            %label.form-label Has Outcomes
-            .form-check
-              = check_box_tag 'has_outcomes', '1', @current_filters[:has_outcomes] == '1', class: 'form-check-input', id: 'has_outcomes'
-              = label_tag 'has_outcomes', 'Only assignments with outcomes', class: 'form-check-label'
+            %label.form-label Outcomes
+            .btn-group.w-100{role: "group", "aria-label": "Outcomes filter"}
+              = radio_button_tag 'outcomes_filter', 'all', (@current_filters[:outcomes_filter].blank? || @current_filters[:outcomes_filter] == 'all'), class: 'btn-check', id: 'outcomes_filter_all'
+              = label_tag 'outcomes_filter_all', 'W/ or w/o outcomes', class: 'btn btn-outline-secondary', for: 'outcomes_filter_all'
+              = radio_button_tag 'outcomes_filter', 'with', @current_filters[:outcomes_filter] == 'with', class: 'btn-check', id: 'outcomes_filter_with'
+              = label_tag 'outcomes_filter_with', 'W/ outcomes', class: 'btn btn-outline-secondary', for: 'outcomes_filter_with'
+              = radio_button_tag 'outcomes_filter', 'without', @current_filters[:outcomes_filter] == 'without', class: 'btn-check', id: 'outcomes_filter_without'
+              = label_tag 'outcomes_filter_without', 'W/o outcomes', class: 'btn btn-outline-secondary', for: 'outcomes_filter_without'
           
           .mb-3
-            %label.form-label Has Abilities
-            .form-check
-              = check_box_tag 'has_abilities', '1', @current_filters[:has_abilities] == '1', class: 'form-check-input', id: 'has_abilities'
-              = label_tag 'has_abilities', 'Only assignments with ability requirements', class: 'form-check-label'
-          
-          .mb-3
-            %label.form-label External References
-            .form-check
-              = check_box_tag 'has_references', '1', @current_filters[:has_references] == '1', class: 'form-check-input', id: 'has_references'
-              = label_tag 'has_references', 'Only assignments with external references', class: 'form-check-label'
+            %label.form-label Abilities
+            .btn-group.w-100{role: "group", "aria-label": "Abilities filter"}
+              = radio_button_tag 'abilities_filter', 'all', (@current_filters[:abilities_filter].blank? || @current_filters[:abilities_filter] == 'all'), class: 'btn-check', id: 'abilities_filter_all'
+              = label_tag 'abilities_filter_all', 'W/ or w/o abilities', class: 'btn btn-outline-secondary', for: 'abilities_filter_all'
+              = radio_button_tag 'abilities_filter', 'with', @current_filters[:abilities_filter] == 'with', class: 'btn-check', id: 'abilities_filter_with'
+              = label_tag 'abilities_filter_with', 'W/ abilities', class: 'btn btn-outline-secondary', for: 'abilities_filter_with'
+              = radio_button_tag 'abilities_filter', 'without', @current_filters[:abilities_filter] == 'without', class: 'btn-check', id: 'abilities_filter_without'
+              = label_tag 'abilities_filter_without', 'W/o abilities', class: 'btn btn-outline-secondary', for: 'abilities_filter_without'
           
           .mb-3
             %label.form-label Major Version
@@ -70,32 +77,6 @@
   .row
     .col-md-4
       .mb-4
-        %h2 Select How They Appear
-    
-    .col-md-8
-      / View Style Section
-      .card.mb-4
-        .card-body
-          %label.form-label.fw-bold Select How They Appear
-          .form-check
-            = radio_button_tag 'view', 'table', @current_view == 'table', class: 'form-check-input', id: 'view_table'
-            = label_tag 'view_table', class: 'form-check-label' do
-              %i.bi.bi-table.me-2
-              Table View
-          .form-check
-            = radio_button_tag 'view', 'cards', @current_view == 'cards', class: 'form-check-input', id: 'view_cards'
-            = label_tag 'view_cards', class: 'form-check-label' do
-              %i.bi.bi-grid.me-2
-              Card View
-          .form-check
-            = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
-            = label_tag 'view_list', class: 'form-check-label' do
-              %i.bi.bi-list.me-2
-              List View
-
-  .row
-    .col-md-4
-      .mb-4
         %h2 Select the Spotlight for Them
     
     .col-md-8
@@ -104,17 +85,8 @@
         .card-body
           %label.form-label.fw-bold Select the Spotlight for Them
           .form-check
-            = radio_button_tag 'spotlight', 'most_popular', @current_spotlight == 'most_popular', class: 'form-check-input', id: 'spotlight_most_popular'
-            = label_tag 'spotlight_most_popular', 'Most Popular Assignments', class: 'form-check-label'
-          .form-check
-            = radio_button_tag 'spotlight', 'recently_created', @current_spotlight == 'recently_created', class: 'form-check-input', id: 'spotlight_recently_created'
-            = label_tag 'spotlight_recently_created', 'Recently Created', class: 'form-check-label'
-          .form-check
-            = radio_button_tag 'spotlight', 'high_impact', @current_spotlight == 'high_impact', class: 'form-check-input', id: 'spotlight_high_impact'
-            = label_tag 'spotlight_high_impact', 'High-Impact Assignments', class: 'form-check-label'
-          .form-check
-            = radio_button_tag 'spotlight', 'none', (@current_spotlight.blank? || @current_spotlight == 'none'), class: 'form-check-input', id: 'spotlight_none'
-            = label_tag 'spotlight_none', 'No Spotlight', class: 'form-check-label'
+            = radio_button_tag 'spotlight', 'by_department', (@current_spotlight.blank? || @current_spotlight == 'by_department'), class: 'form-check-input', id: 'spotlight_by_department'
+            = label_tag 'spotlight_by_department', 'By Department', class: 'form-check-label'
 
   .row
     .col-12

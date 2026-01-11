@@ -203,6 +203,7 @@ get '/login', to: 'auth#login', as: :login
         patch :update_view
       end
       resource :ability_milestones, only: [:show, :update], module: :assignments
+      resources :assignment_outcomes, only: [:edit, :update], module: :assignments
     end
     
     # Company teammates management
