@@ -96,11 +96,15 @@ class GoalForm < Reform::Form
   def owner_selection
     # If owner_id is provided as a string like "Teammate_123" or "Company_456", parse it
     # Otherwise, validate that both owner_type and owner_id are present
+    # Note: parse_owner_selection is called before this validation, so if owner was nil/blank,
+    # it should have been set to current_teammate already
     if owner_id.is_a?(String) && owner_id.include?('_')
       # Already being parsed in parse_owner_selection
       return
     end
     
+    # If owner is still not set after parse_owner_selection, that means current_teammate is nil
+    # In that case, we can't automatically set it, so we need to show an error
     unless owner_type.present? && owner_id.present?
       errors.add(:owner_id, "must be selected")
     end
@@ -118,6 +122,13 @@ class GoalForm < Reform::Form
       end
       self.owner_type = parsed_type
       self.owner_id = parts[1]
+    end
+    
+    # If owner is nil or blank, automatically set it to current_teammate
+    # Check both nil and blank (empty string) cases
+    if (owner_type.nil? || owner_type.blank? || owner_id.nil? || owner_id.blank?) && current_teammate
+      self.owner_type = 'CompanyTeammate'
+      self.owner_id = current_teammate.id.to_s
     end
   end
   

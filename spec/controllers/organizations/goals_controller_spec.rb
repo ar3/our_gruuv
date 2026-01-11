@@ -237,6 +237,48 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:form).current_person).to eq(person)
       expect(assigns(:form).current_teammate).to eq(creator_teammate)
     end
+    
+    it 'defaults privacy level to only_creator_owner_and_managers' do
+      get :new, params: { organization_id: company.id }
+      expect(assigns(:form).privacy_level).to eq('only_creator_owner_and_managers')
+    end
+    
+    it 'defaults owner to current teammate when no query params provided' do
+      get :new, params: { organization_id: company.id }
+      expect(assigns(:form).owner_id).to eq("CompanyTeammate_#{creator_teammate.id}")
+    end
+    
+    it 'uses owner from query string params when provided' do
+      other_person = create(:person)
+      other_teammate = other_person.teammates.find_or_create_by!(organization: company) do |t|
+        t.type = 'CompanyTeammate'
+        t.first_employed_at = nil
+        t.last_terminated_at = nil
+      end
+      
+      get :new, params: { 
+        organization_id: company.id, 
+        owner_id: "CompanyTeammate_#{other_teammate.id}" 
+      }
+      expect(assigns(:form).owner_id).to eq("CompanyTeammate_#{other_teammate.id}")
+    end
+    
+    it 'uses owner_type and owner_id from query string params when provided separately' do
+      other_person = create(:person)
+      other_teammate = other_person.teammates.find_or_create_by!(organization: company) do |t|
+        t.type = 'CompanyTeammate'
+        t.first_employed_at = nil
+        t.last_terminated_at = nil
+      end
+      
+      get :new, params: { 
+        organization_id: company.id, 
+        owner_type: 'CompanyTeammate',
+        owner_id: other_teammate.id.to_s
+      }
+      expect(assigns(:form).owner_type).to eq('CompanyTeammate')
+      expect(assigns(:form).owner_id).to eq(other_teammate.id.to_s)
+    end
   end
   
   describe 'POST #create' do
@@ -283,6 +325,31 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response).to render_template(:new)
       expect(assigns(:form).errors).to be_present
+    end
+    
+    it 'automatically sets owner to current teammate if owner is nil' do
+      attributes_without_owner = valid_attributes.except(:owner_type, :owner_id)
+      
+      expect {
+        post :create, params: { organization_id: company.id, goal: attributes_without_owner }
+      }.to change(Goal, :count).by(1)
+      
+      goal = Goal.last
+      expect(goal.owner).to eq(creator_teammate)
+      expect(goal.owner_type).to eq('CompanyTeammate')
+    end
+    
+    it 'automatically sets owner to current teammate if owner is nil or blank' do
+      # Test that when owner_type and owner_id are missing (nil), they're automatically set
+      attributes_without_owner = valid_attributes.except(:owner_type, :owner_id)
+      
+      expect {
+        post :create, params: { organization_id: company.id, goal: attributes_without_owner }
+      }.to change(Goal, :count).by(1)
+      
+      goal = Goal.last
+      expect(goal.owner).to eq(creator_teammate)
+      expect(goal.owner_type).to eq('CompanyTeammate')
     end
     
     context 'with invalid owner types' do

@@ -232,11 +232,24 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @form.current_teammate = current_teammate.is_a?(CompanyTeammate) ? current_teammate : nil
     # Set defaults
     @form.goal_type = 'inspirational_objective' # Default to objective
-    @form.privacy_level = 'everyone_in_company'
+    @form.privacy_level = 'only_creator_owner_and_managers'
     # Default owner to current teammate if they have a CompanyTeammate record
-    # Use unified format for the select dropdown
-    if @form.current_teammate
-      @form.owner_id = "CompanyTeammate_#{@form.current_teammate.id}"
+    # Only set default if not provided in query string params
+    unless params[:owner_id].present? || params[:owner_type].present?
+      if @form.current_teammate
+        @form.owner_id = "CompanyTeammate_#{@form.current_teammate.id}"
+      end
+    else
+      # Parse owner from query string if provided
+      if params[:owner_id].present?
+        if params[:owner_id].include?('_')
+          # Already in unified format
+          @form.owner_id = params[:owner_id]
+        elsif params[:owner_type].present?
+          @form.owner_type = params[:owner_type]
+          @form.owner_id = params[:owner_id]
+        end
+      end
     end
     authorize @goal
   end
@@ -244,10 +257,16 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
   def create
     authorize Goal.new
     
-    @goal = Goal.new
+    company = @organization.root_company || @organization
+    @goal = Goal.new(company: company)
     @form = GoalForm.new(@goal)
     @form.current_person = current_person
-    @form.current_teammate = current_person.teammates.find_by(organization: @organization)
+    # Find teammate in the company or any descendant organization
+    # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
+    company_descendant_ids = company.self_and_descendants.pluck(:id)
+    current_teammate = current_person.teammates.find_by(organization_id: company_descendant_ids)
+    # Ensure it's a CompanyTeammate
+    @form.current_teammate = current_teammate.is_a?(CompanyTeammate) ? current_teammate : nil
     
     goal_params = params[:goal] || {}
     

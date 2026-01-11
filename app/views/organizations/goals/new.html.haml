@@ -38,18 +38,19 @@
             / Timeframe Selection - Large Button Group (shown when advanced settings is closed)
             .mb-4#timeframe-selection
               %label.form-label Timeframe
+              #timeframe-target-date-info.small.text-muted.mb-2{style: "display: none;"}
               .btn-group.w-100{role: "group", "aria-label": "Timeframe selection"}
-                = form.radio_button :timeframe, 'near_term', class: 'btn-check', id: 'timeframe_near_term', checked: false
-                = form.label :timeframe, 'Near-term goal', value: 'near_term', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_near_term'
-                
-                = form.radio_button :timeframe, 'medium_term', class: 'btn-check', id: 'timeframe_medium_term', checked: false
-                = form.label :timeframe, 'Medium-term goal', value: 'medium_term', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_medium_term'
+                = form.radio_button :timeframe, 'vision', class: 'btn-check', id: 'timeframe_vision', checked: true
+                = form.label :timeframe, 'Vision (no timeframe)', value: 'vision', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_vision'
                 
                 = form.radio_button :timeframe, 'long_term', class: 'btn-check', id: 'timeframe_long_term', checked: false
                 = form.label :timeframe, 'Long-term goal', value: 'long_term', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_long_term'
                 
-                = form.radio_button :timeframe, 'vision', class: 'btn-check', id: 'timeframe_vision', checked: false
-                = form.label :timeframe, 'Vision', value: 'vision', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_vision'
+                = form.radio_button :timeframe, 'medium_term', class: 'btn-check', id: 'timeframe_medium_term', checked: false
+                = form.label :timeframe, 'Medium-term goal', value: 'medium_term', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_medium_term'
+                
+                = form.radio_button :timeframe, 'near_term', class: 'btn-check', id: 'timeframe_near_term', checked: false
+                = form.label :timeframe, 'Near-term goal', value: 'near_term', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_near_term'
               
               %small.form-text.text-muted.mt-2.d-block
                 Select a timeframe to automatically set the target date, or customize in Advanced Settings below.
@@ -100,7 +101,7 @@
                     %span.text-danger *
                   - Goal.privacy_levels.each do |privacy_level, value|
                     .form-check
-                      = form.radio_button :privacy_level, privacy_level, class: 'form-check-input', required: true, checked: (@form.privacy_level == privacy_level || (@form.privacy_level.blank? && privacy_level == 'everyone_in_company'))
+                      = form.radio_button :privacy_level, privacy_level, class: 'form-check-input', required: true, checked: (@form.privacy_level == privacy_level || (@form.privacy_level.blank? && privacy_level == 'only_creator_owner_and_managers'))
                       = form.label :privacy_level, privacy_level.humanize, value: privacy_level, class: 'form-check-label'
                       - if privacy_level == 'only_creator'
                         %small.text-muted.d-block.ms-4 Only you can view this goal
@@ -116,6 +117,56 @@
               = link_to 'Cancel', organization_goals_path(@organization), class: 'btn btn-outline-secondary ms-2'
 
 :javascript
+  function formatDate(date) {
+    var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+  }
+  
+  function calculateTargetDate(timeframe) {
+    var today = new Date();
+    var targetDate = new Date();
+    
+    switch(timeframe) {
+      case 'near_term':
+        targetDate.setDate(today.getDate() + 90);
+        break;
+      case 'medium_term':
+        targetDate.setDate(today.getDate() + 270);
+        break;
+      case 'long_term':
+        targetDate.setFullYear(today.getFullYear() + 3);
+        break;
+      case 'vision':
+        return null;
+      default:
+        return null;
+    }
+    
+    return targetDate;
+  }
+  
+  function updateTargetDateDisplay() {
+    var timeframeInfo = document.getElementById('timeframe-target-date-info');
+    if (!timeframeInfo) return;
+    
+    var selectedTimeframe = document.querySelector('input[name="goal[timeframe]"]:checked');
+    
+    if (!selectedTimeframe) {
+      timeframeInfo.style.display = 'none';
+      return;
+    }
+    
+    var targetDate = calculateTargetDate(selectedTimeframe.value);
+    
+    if (targetDate) {
+      var formattedDate = formatDate(targetDate);
+      timeframeInfo.textContent = 'Target date: ' + formattedDate + '. This date can be changed later.';
+      timeframeInfo.style.display = 'block';
+    } else {
+      timeframeInfo.style.display = 'none';
+    }
+  }
+  
   function setupTimeframeToggle() {
     var advancedSettings = document.getElementById('advancedSettings');
     var timeframeSelection = document.getElementById('timeframe-selection');
@@ -133,5 +184,21 @@
     }
   }
   
-  document.addEventListener('DOMContentLoaded', setupTimeframeToggle);
-  document.addEventListener('turbo:load', setupTimeframeToggle);
+  function setupTimeframeListeners() {
+    var timeframeRadios = document.querySelectorAll('input[name="goal[timeframe]"]');
+    timeframeRadios.forEach(function(radio) {
+      radio.addEventListener('change', updateTargetDateDisplay);
+    });
+    
+    // Initial check in case a timeframe is pre-selected
+    updateTargetDateDisplay();
+  }
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    setupTimeframeToggle();
+    setupTimeframeListeners();
+  });
+  document.addEventListener('turbo:load', function() {
+    setupTimeframeToggle();
+    setupTimeframeListeners();
+  });

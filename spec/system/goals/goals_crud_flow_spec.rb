@@ -143,6 +143,59 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       expect(has_errors || page.has_field?('goal_title')).to be true
     end
     
+    it 'displays target date when timeframe is selected' do
+      visit new_organization_goal_path(organization)
+      
+      # Initially, target date info should not be visible
+      expect(page).to have_css('#timeframe-target-date-info', visible: false)
+      
+      # Select near-term timeframe
+      find('label[for="timeframe_near_term"]').click
+      
+      # Should show target date info with near-term date (90 days from today)
+      expect(page).to have_css('#timeframe-target-date-info', visible: true)
+      near_term_date = Date.today + 90.days
+      expect(page).to have_content('Target date:')
+      # Check for month name and year (flexible on day format)
+      expect(page).to have_content(near_term_date.strftime('%B'))
+      expect(page).to have_content(near_term_date.year.to_s)
+      expect(page).to have_content('This date can be changed later.')
+      
+      # Select medium-term timeframe
+      find('label[for="timeframe_medium_term"]').click
+      
+      # Should show medium-term date (270 days from today)
+      medium_term_date = Date.today + 270.days
+      expect(page).to have_content(medium_term_date.strftime('%B'))
+      expect(page).to have_content(medium_term_date.year.to_s)
+      
+      # Select long-term timeframe
+      find('label[for="timeframe_long_term"]').click
+      
+      # Should show long-term date (3 years from today)
+      long_term_date = Date.today + 3.years
+      expect(page).to have_content(long_term_date.strftime('%B'))
+      expect(page).to have_content(long_term_date.year.to_s)
+      
+      # Select vision timeframe
+      find('label[for="timeframe_vision"]').click
+      
+      # Vision goals don't have a target date, so info should be hidden
+      expect(page).to have_css('#timeframe-target-date-info', visible: false)
+    end
+    
+    it 'defaults privacy level to only_creator_owner_and_managers' do
+      visit new_organization_goal_path(organization)
+      
+      # Open Advanced Settings to see privacy level
+      find('button', text: 'Advanced Settings').click
+      expect(page).to have_css('#advancedSettings.show', wait: 2)
+      
+      # Check that only_creator_owner_and_managers is selected by default
+      expect(page).to have_checked_field('goal_privacy_level_only_creator_owner_and_managers')
+      expect(page).not_to have_checked_field('goal_privacy_level_everyone_in_company')
+    end
+    
     it 'validates date ordering' do
       visit new_organization_goal_path(organization)
       
