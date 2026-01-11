@@ -163,10 +163,8 @@
                               - position = position_assignment.position
                               %small.d-block.ms-3.mt-1
                                 %i.bi.bi-arrow-right.me-1
-                                = position.position_level.level
-                                = " - "
                                 = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
-                                  = position.display_name
+                                  = position.position_level.level
                                 - if position_assignment.energy_percentage_suffix.present?
                                   = " #{position_assignment.energy_percentage_suffix}"
                       - else

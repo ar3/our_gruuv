@@ -8,7 +8,7 @@ class PositionLevel < ApplicationRecord
   
   # Instance methods
   def display_name
-    level_name
+    "#{position_major_level.major_level}.#{level}"
   end
   
   def level_name

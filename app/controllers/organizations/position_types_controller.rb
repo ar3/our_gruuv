@@ -29,26 +29,37 @@ class Organizations::PositionTypesController < Organizations::OrganizationNamesp
     @position_type = PositionType.new(position_type_params)
     @position_type.organization = @organization
 
-    if @position_type.save
+    result = PositionTypeSaveService.create(position_type: @position_type, params: position_type_params)
+    
+    if result.ok?
       redirect_to organization_position_type_path(@organization, @position_type), notice: 'Position type was successfully created.'
     else
+      @position_type.errors.add(:base, result.error) if result.error.is_a?(String)
       render :new, status: :unprocessable_entity
     end
   end
 
   def update
     authorize @position_type
-    if @position_type.update(position_type_params)
+    result = PositionTypeSaveService.update(position_type: @position_type, params: position_type_params)
+    
+    if result.ok?
       redirect_to organization_position_type_path(@organization, @position_type), notice: 'Position type was successfully updated.'
     else
+      @position_type.errors.add(:base, result.error) if result.error.is_a?(String)
       render :edit, status: :unprocessable_entity
     end
   end
 
   def destroy
     authorize @position_type
-    @position_type.destroy
-    redirect_to organization_position_types_path(@organization), notice: 'Position type was successfully deleted.'
+    result = PositionTypeSaveService.delete(position_type: @position_type)
+    
+    if result.ok?
+      redirect_to organization_position_types_path(@organization), notice: 'Position type was successfully deleted.'
+    else
+      redirect_to organization_position_types_path(@organization), alert: result.error
+    end
   end
 
   def clone_positions
