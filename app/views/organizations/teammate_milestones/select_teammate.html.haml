@@ -2,26 +2,49 @@
 - content_for :return_text, @return_text
 - content_for :header, "Select Teammate"
 
+:css
+  .teammate-columns {
+    column-count: 1;
+    column-gap: 1rem;
+  }
+  
+  @media (min-width: 576px) {
+    .teammate-columns {
+      column-count: 2;
+    }
+  }
+  
+  @media (min-width: 992px) {
+    .teammate-columns {
+      column-count: 3;
+    }
+  }
+  
+  .teammate-columns > * {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+
 - if @eligible_teammates.any?
-  .row
+  .teammate-columns
     - @eligible_teammates.each do |teammate|
-      .col-md-4.mb-3
-        = link_to new_organization_teammate_milestone_path(organization, teammate_id: teammate.id),
-                 class: "card text-decoration-none h-100" do
-          .card-body
-            .d-flex.align-items-center.mb-2
-              .me-3
-                = teammate_profile_image(teammate, size: 48)
-              .flex-grow-1
-                %h6.mb-1= teammate.person.display_name
-            - manager = teammate.current_manager
-            - if manager
-              %p.text-muted.mb-1
-                %small Manager: #{manager.display_name}
-            - active_tenure = teammate.active_employment_tenure
-            - if active_tenure&.position&.position_type
-              %p.text-muted.mb-0
-                %small Position: #{active_tenure.position.position_type.external_title}
+      = link_to new_organization_teammate_milestone_path(organization, teammate_id: teammate.id),
+               class: "card text-decoration-none h-100" do
+        .card-body
+          .d-flex.align-items-center.mb-2
+            .me-3
+              = teammate_profile_image(teammate, size: 48)
+            .flex-grow-1
+              %h6.mb-1= teammate.person.preferred_first_then_last_display_name
+          - manager = teammate.current_manager
+          - if manager
+            %p.text-muted.mb-1
+              %small Manager: #{manager.preferred_first_then_last_display_name}
+          - active_tenure = teammate.active_employment_tenure
+          - if active_tenure&.position&.position_type
+            %p.text-muted.mb-0
+              %small Position: #{active_tenure.position.position_type.external_title}
 - else
   .alert.alert-warning
     %h6.mb-2
@@ -40,5 +63,5 @@
             %strong People with manage employment permission:
             %ul.mt-2
               - administrators.each do |admin|
-                %li= admin.person.display_name
+                %li= admin.person.preferred_first_then_last_display_name
 

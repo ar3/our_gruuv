@@ -44,7 +44,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
   def select_ability
     authorize TeammateMilestone, :new?
     
-    @teammate = organization.teammates.find_by(id: params[:teammate_id])
+    @teammate = CompanyTeammate.where(organization: organization).find_by(id: params[:teammate_id])
     unless @teammate
       redirect_to new_organization_teammate_milestone_path(organization), alert: 'Teammate not found.'
       return
@@ -207,7 +207,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
   private
 
   def set_teammate
-    @teammate = organization.teammates.find_by(id: params[:teammate_id]) if params[:teammate_id].present?
+    @teammate = CompanyTeammate.where(organization: organization).find_by(id: params[:teammate_id]) if params[:teammate_id].present?
   end
 
   def set_ability
@@ -224,7 +224,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     # If user has manage_employment permission on their own company_teammate
     if current_teammate.can_manage_employment?
       # Show all active company teammates except current user
-      organization.teammates
+      CompanyTeammate.where(organization: organization)
         .where.not(id: current_teammate.id)
         .where(last_terminated_at: nil)
         .includes(:person, :employment_tenures)
@@ -239,7 +239,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
       if reports.any?
         # Get teammates for all reports
         report_person_ids = reports.map { |r| r[:person_id] }
-        organization.teammates
+        CompanyTeammate.where(organization: organization)
           .where(person_id: report_person_ids, last_terminated_at: nil)
           .includes(:person, :employment_tenures)
           .order('people.last_name, people.first_name')
@@ -445,7 +445,7 @@ class Organizations::TeammateMilestonesController < Organizations::OrganizationN
     end
     
     # Add people with manage_employment permission in the organization
-    employment_managers = organization.teammates
+    employment_managers = CompanyTeammate.where(organization: organization)
                                   .where(can_manage_employment: true, last_terminated_at: nil)
                                   .includes(:person)
     

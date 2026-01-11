@@ -78,6 +78,30 @@ class Person < ApplicationRecord
     return "#{email}"
   end
 
+  def government_first_then_last_display_name
+    return "#{first_name} #{last_name_with_suffix} (#{preferred_name})" if last_name.present? && first_name.present? && preferred_name.present? && preferred_name != first_name
+    return "#{first_name} #{last_name_with_suffix}" if last_name.present? && first_name.present?
+    return "#{preferred_name} #{last_name_with_suffix}" if last_name.present? && preferred_name.present?
+    return "#{last_name_with_suffix}" if last_name.present?
+    return "#{first_name}" if first_name.present?
+    return "#{preferred_name}" if preferred_name.present?
+    return "#{email}"
+  end
+
+  def preferred_first_then_last_display_name
+    return "#{preferred_name} #{last_name_with_suffix}" if last_name.present? && preferred_name.present?
+    return "#{first_name} #{last_name_with_suffix}" if last_name.present? && first_name.present?
+    return "#{last_name_with_suffix}" if last_name.present?
+    return "#{preferred_name}" if preferred_name.present?
+    return "#{first_name}" if first_name.present?
+    return "#{email}"
+  end
+
+  def last_name_with_suffix
+    return "#{last_name} #{suffix}" if suffix.present?
+    return "#{last_name}"
+  end
+
   def google_profile_image_url
     google_identity&.profile_image_url
   end
