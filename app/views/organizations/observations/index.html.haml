@@ -7,7 +7,7 @@
       Culture of Feedback and Recognition – 360•365
     .d-flex.align-items-center
       - if policy(Observation).create?
-        = link_to select_type_organization_observations_path(@organization, return_url: organization_observations_path(@organization), return_text: 'Back to Culture of Feedback and Recognition'), class: "btn btn-primary ml-2" do
+        = link_to select_type_organization_observations_path(@organization), class: "btn btn-primary ml-2" do
           %i.bi.bi-plus
           New Observation
       - else

@@ -861,7 +861,6 @@ RSpec.describe Organizations::ObservationsController, type: :controller do
         expect(observable_moment.processed_at).to be_present
       end
     end
-  end
 
     context 'with public privacy level but only positive ratings' do
       let(:ability) { create(:ability, organization: company) }

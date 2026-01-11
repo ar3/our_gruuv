@@ -59,8 +59,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     authorize Observation, :create?
     
     # Store return context if provided
-    @return_url = params[:return_url] || organization_observations_path(organization)
-    @return_text = params[:return_text] || 'Back to Observations'
+    @return_url = params[:return_url]
+    @return_text = params[:return_text]
     
     render layout: 'overlay'
   end
@@ -863,6 +863,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       
       if @form.validate(permitted_params)
         @form.save
+        @observation = @form.model
         @observation.observed_at ||= Time.current
         @observation.save! if @observation.changed? || @observation.new_record?
         authorize @observation, :update?
@@ -875,7 +876,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: Failed to save: #{@form.errors}"
         Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: Failed to save: #{@form}"
         flash[:alert] = "Failed to save: #{@form.errors.full_messages.join(', ')}"
-        @return_url = params[:return_url] || organization_observations_path(organization)
+        @return_url = determine_return_url
         @return_text = params[:return_text] || 'Back'
         @assignments = organization.assignments.ordered
         @aspirations = organization.aspirations
@@ -904,11 +905,11 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
                            (@observation.observable_moment&.id)
     @form.observable_moment_id = observable_moment_id if observable_moment_id.present?
     
-    Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: permitted_params: #{permitted_params}"
     ready_to_save = @form.validate(permitted_params)
-    Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: ready_to_save: #{ready_to_save}"
     saved = ready_to_save ? @form.save : false
-    Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: saved: #{saved}"
+    
+    # Ensure @observation is set to the form's model after save
+    @observation = @form.model if saved
     
     if saved
       # Enforce privacy level if public observation has negative ratings
@@ -917,42 +918,35 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       end
       
       # Check if we should save and navigate to an add-* picker
+      return_url_value = determine_return_url
+      Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: @observation: #{@observation.inspect}"
+      Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: return_url_value: #{return_url_value}"
       if params[:save_and_add_assignments].present?
-        redirect_to add_assignments_organization_observation_path(
-          organization, 
-          @observation,
-          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: params[:return_text] || 'Observation'
-        )
+        redirect_params = {}
+        redirect_params[:return_url] = return_url_value if return_url_value.present?
+        redirect_params[:return_text] = params[:return_text] if params[:return_text].present?
+        redirect_to add_assignments_organization_observation_path(organization, @observation, redirect_params)
       elsif params[:save_and_add_aspirations].present?
-        redirect_to add_aspirations_organization_observation_path(
-          organization,
-          @observation,
-          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: params[:return_text] || 'Observation'
-        )
+        redirect_params = {}
+        redirect_params[:return_url] = return_url_value if return_url_value.present?
+        redirect_params[:return_text] = params[:return_text] if params[:return_text].present?
+        redirect_to add_aspirations_organization_observation_path(organization, @observation, redirect_params)
       elsif params[:save_and_add_abilities].present?
-        redirect_to add_abilities_organization_observation_path(
-          organization,
-          @observation,
-          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: params[:return_text] || 'Observation'
-        )
+        redirect_params = {}
+        redirect_params[:return_url] = return_url_value if return_url_value.present?
+        redirect_params[:return_text] = params[:return_text] if params[:return_text].present?
+        redirect_to add_abilities_organization_observation_path(organization, @observation, redirect_params)
       elsif params[:save_and_manage_observees].present?
-        redirect_to manage_observees_organization_observation_path(
-          organization,
-          @observation,
-          return_url: params[:return_url] || typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text]),
-          return_text: params[:return_text] || 'Observation'
-        )
+        redirect_params = {}
+        redirect_params[:return_url] = return_url_value if return_url_value.present?
+        redirect_params[:return_text] = params[:return_text] if params[:return_text].present?
+        redirect_to manage_observees_organization_observation_path(organization, @observation, redirect_params)
       elsif params[:save_and_convert_to_generic].present?
         @observation.update!(observation_type: 'generic')
-        redirect_to new_organization_observation_path(
-          organization,
-          draft_id: @observation.id,
-          return_url: params[:return_url],
-          return_text: params[:return_text]
-        ), notice: 'Converted to generic observation. All features are now available.'
+        redirect_params = { draft_id: @observation.id }
+        redirect_params[:return_url] = return_url_value if return_url_value.present?
+        redirect_params[:return_text] = params[:return_text] if params[:return_text].present?
+        redirect_to new_organization_observation_path(organization, redirect_params), notice: 'Converted to generic observation. All features are now available.'
       elsif params[:save_draft_and_return].present?
         # Convert published observation to draft if it was published
         if @observation.published_at.present?
@@ -963,19 +957,20 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           redirect_to organization_observation_path(organization, @observation), 
                       notice: 'Successfully saved this note. Now close this and go back to check-ins page.'
         else
-          # Save draft and return to the specified return_url
-          redirect_url = params[:return_url] || organization_observations_path(organization)
+          # Save draft and return to the specified return_url, observation show page, or observations index
+          redirect_url = return_url_value || (@observation.present? ? organization_observation_path(organization, @observation) : organization_observations_path(organization))
           redirect_to redirect_url, notice: 'Draft saved successfully.'
         end
       else
-        redirect_to typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text])
+        redirect_to organization_observation_path(organization, @observation), 
+                    notice: 'Observation was successfully saved.'
       end
     else
       Rails.logger.error "Failed to update: #{@observation.errors.full_messages.join(', ')}"
       Rails.logger.error "Attempted params: #{permitted_params.inspect}"
       flash[:alert] = "Failed to update: #{@observation.errors.full_messages.join(', ')}"
-      @return_url = params[:return_url] || organization_observations_path(organization)
-      @return_text = params[:return_text] || 'Back'
+      @return_url = determine_return_url
+      @return_text = params[:return_text]
       @assignments = organization.assignments.ordered
       @aspirations = organization.aspirations
       @abilities = organization.abilities.order(:name)
@@ -1362,8 +1357,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       @teammates = organization.teammates
         .joins(:person)
         .includes(:person)
-        .to_a
-        .sort_by { |teammate| teammate.person.casual_name }
+        .order(Arel.sql('people.last_name, COALESCE(people.preferred_name, people.first_name)'))
       @return_url = params[:return_url] || typed_observation_path_for(@observation)
       @return_text = params[:return_text] || 'Back'
       render layout: 'overlay'
@@ -2177,6 +2171,15 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     else
       new_organization_observation_path(organization, path_options)
     end
+  end
+
+  # Helper to determine return_url: params first, then observation show page, then nil
+  def determine_return_url
+    Rails.logger.info "❌❌❌❌❌❌ ObservationsController::determine_return_url: params[:return_url]: #{params[:return_url]}"
+    return params[:return_url] if params[:return_url].present? && params[:return_url] != organization_observations_path(organization)
+    Rails.logger.info "❌❌❌❌❌❌ ObservationsController::determine_return_url: @observation: #{@observation&.inspect}"
+    return organization_observation_path(organization, @observation) if @observation.present?
+    nil
   end
 
   def apply_preset_if_selected

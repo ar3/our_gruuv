@@ -305,7 +305,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
         observation = Observation.last
         expect(observation.observation_type).to eq('kudos')
         expect(observation.created_as_type).to eq('kudos')
-        expect(response).to redirect_to(new_kudos_organization_observations_path(organization, draft_id: observation.id))
+        expect(response).to redirect_to(organization_observation_path(organization, observation))
       end
     end
 
@@ -322,7 +322,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
         observation = Observation.last
         expect(observation.observation_type).to eq('feedback')
         expect(observation.created_as_type).to eq('feedback')
-        expect(response).to redirect_to(new_feedback_organization_observations_path(organization, draft_id: observation.id))
+        expect(response).to redirect_to(organization_observation_path(organization, observation))
       end
     end
 
@@ -339,7 +339,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
         observation = Observation.last
         expect(observation.observation_type).to eq('quick_note')
         expect(observation.created_as_type).to eq('quick_note')
-        expect(response).to redirect_to(new_quick_note_organization_observations_path(organization, draft_id: observation.id))
+        expect(response).to redirect_to(organization_observation_path(organization, observation))
       end
     end
 
@@ -356,7 +356,7 @@ RSpec.describe 'Organizations::Observations', type: :request do
         observation = Observation.last
         expect(observation.observation_type).to eq('generic')
         expect(observation.created_as_type).to eq('generic')
-        expect(response).to redirect_to(new_organization_observation_path(organization, draft_id: observation.id))
+        expect(response).to redirect_to(organization_observation_path(organization, observation))
       end
     end
 

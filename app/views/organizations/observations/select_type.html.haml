@@ -5,8 +5,12 @@
 
 .container-fluid.py-4
   .row.g-4
+    - return_params = {}
+    - return_params[:return_url] = @return_url if @return_url.present?
+    - return_params[:return_text] = @return_text if @return_text.present?
+
     .col-md-6
-      .card.h-100.hover-lift{style: "cursor: pointer;", onclick: "window.location='#{new_kudos_organization_observations_path(@organization, return_url: @return_url, return_text: @return_text)}'"}
+      .card.h-100.hover-lift{style: "cursor: pointer;", onclick: "window.location='#{new_kudos_organization_observations_path(@organization, return_params)}'"}
         .card-body.text-center.p-4
           %i.bi.bi-trophy.display-1.text-success.mb-3
           %h3 Kudos / Recognition
@@ -20,7 +24,7 @@
             GIFs enabled
     
     .col-md-6
-      .card.h-100.hover-lift{style: "cursor: pointer;", onclick: "window.location='#{new_feedback_organization_observations_path(@organization, return_url: @return_url, return_text: @return_text)}'"}
+      .card.h-100.hover-lift{style: "cursor: pointer;", onclick: "window.location='#{new_feedback_organization_observations_path(@organization, return_params)}'"}
         .card-body.text-center.p-4
           %i.bi.bi-chat-left-text.display-1.text-warning.mb-3
           %h3 Feedback
@@ -34,7 +38,7 @@
             MAAP template included
     
     .col-md-6
-      .card.h-100.hover-lift{style: "cursor: pointer;", onclick: "window.location='#{new_quick_note_organization_observations_path(@organization, return_url: @return_url, return_text: @return_text)}'"}
+      .card.h-100.hover-lift{style: "cursor: pointer;", onclick: "window.location='#{new_quick_note_organization_observations_path(@organization, return_params)}'"}
         .card-body.text-center.p-4
           %i.bi.bi-sticky.display-1.text-info.mb-3
           %h3 Quick Note
@@ -48,7 +52,7 @@
             Simplified form
     
     .col-md-6
-      .card.h-100.hover-lift{style: "cursor: pointer;", onclick: "window.location='#{new_organization_observation_path(@organization, return_url: @return_url, return_text: @return_text)}'"}
+      .card.h-100.hover-lift{style: "cursor: pointer;", onclick: "window.location='#{new_organization_observation_path(@organization, return_params)}'"}
         .card-body.text-center.p-4
           %i.bi.bi-eye.display-1.text-secondary.mb-3
           %h3 Generic Observation
