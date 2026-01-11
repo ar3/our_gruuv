@@ -29,16 +29,23 @@ RSpec.  describe 'organizations/observations/show', type: :view do
         assign(:organization, company)
         assign(:observation, observation_with_trigger)
         
+        # Make current_person available
+        obs_observer = observation_with_trigger.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
+        
         allow(view).to receive(:policy) do |obj|
           if obj == observation_with_trigger
             double(
               post_to_slack?: true,
               publish?: false,
               view_permalink?: false,
-              update?: false
+              update?: false,
+              destroy?: false,
+              restore?: false
             )
           else
-            double(post_to_slack?: false, update?: false, view_permalink?: false)
+            double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
           end
         end
         
@@ -74,16 +81,23 @@ RSpec.  describe 'organizations/observations/show', type: :view do
         assign(:organization, company)
         assign(:observation, observation)
         
+        # Make current_person available
+        obs_observer = observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
+        
         allow(view).to receive(:policy) do |obj|
           if obj == observation
             double(
               post_to_slack?: true,
               publish?: false,
               view_permalink?: false,
-              update?: false
+              update?: false,
+              destroy?: false,
+              restore?: false
             )
           else
-            double(post_to_slack?: false, update?: false, view_permalink?: false)
+            double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
           end
         end
         
@@ -117,6 +131,12 @@ RSpec.  describe 'organizations/observations/show', type: :view do
     assign(:organization, company)
     assign(:observation, observation)
     
+    # Make current_person available - ViewHelpers provides it via @current_person
+    obs_observer = observer
+    view.instance_variable_set(:@current_person, obs_observer)
+    # Define method directly on view for content_for blocks
+    view.define_singleton_method(:current_person) { obs_observer }
+    
     # Mock policy - return different doubles based on what's being checked
     allow(view).to receive(:policy) do |obj|
       if obj == observation
@@ -124,10 +144,12 @@ RSpec.  describe 'organizations/observations/show', type: :view do
           post_to_slack?: true,
           publish?: false,
           view_permalink?: false,
-          update?: false
+          update?: false,
+          destroy?: false,
+          restore?: false
         )
       else
-        double(post_to_slack?: false, update?: false, view_permalink?: false)
+        double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
       end
     end
     
@@ -154,6 +176,203 @@ RSpec.  describe 'organizations/observations/show', type: :view do
     allow(observation).to receive(:format_ratings_by_type_and_level).and_return([])
   end
 
+  describe 'share prompt section' do
+    context 'when observation is published, has no notifications, and is not journal' do
+      before do
+        # Ensure observation has no notifications
+        observation.notifications.destroy_all
+        # Make current_person available
+        obs_observer = observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
+        render
+      end
+
+      it 'displays the share prompt section' do
+        expect(rendered).to have_content('Great observation 🎉')
+        expect(rendered).to have_content('This is fuel for continuous improvement')
+        expect(rendered).to have_content('Select share publicly or privately')
+      end
+
+      it 'displays Share Publicly and Share Privately buttons' do
+        expect(rendered).to have_link('Share Publicly', href: "/organizations/#{company.id}/observations/#{observation.id}/share_publicly")
+        expect(rendered).to have_link('Share Privately', href: "/organizations/#{company.id}/observations/#{observation.id}/share_privately")
+      end
+
+      it 'has large button styling' do
+        expect(rendered).to have_css('a.btn-lg', text: 'Share Publicly')
+        expect(rendered).to have_css('a.btn-lg', text: 'Share Privately')
+      end
+    end
+
+    context 'when observation is not public (cannot share publicly)' do
+      let(:private_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observed_only)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      before do
+        assign(:observation, private_observation)
+        # Ensure observation has no notifications
+        private_observation.notifications.destroy_all
+        # Make current_person available
+        obs_observer = private_observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
+        # Mock route helpers
+        allow(view).to receive(:share_publicly_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{private_observation.id}/share_publicly")
+        allow(view).to receive(:share_privately_organization_observation_path).and_return("/organizations/#{company.id}/observations/#{private_observation.id}/share_privately")
+        # Ensure policy allows post_to_slack for observer
+        allow(view).to receive(:policy) do |obj|
+          if obj == private_observation
+            double(
+              post_to_slack?: true,
+              publish?: false,
+              view_permalink?: false,
+              update?: false,
+              destroy?: false,
+              restore?: false
+            )
+          else
+            double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
+          end
+        end
+        render
+      end
+
+      it 'displays the share prompt section' do
+        expect(rendered).to have_content('Great observation 🎉')
+      end
+
+      it 'disables Share Publicly button with warning icon' do
+        expect(rendered).to have_css('button.btn-outline-secondary.btn-lg.disabled[disabled]', text: 'Share Publicly')
+        expect(rendered).to have_css('i.bi-exclamation-triangle.text-warning[data-bs-toggle="tooltip"][data-bs-title="Only public observations can be shared publicly"]')
+      end
+
+      it 'enables Share Privately button' do
+        expect(rendered).to have_link('Share Privately', href: "/organizations/#{company.id}/observations/#{private_observation.id}/share_privately")
+      end
+    end
+
+    context 'when observation has notifications' do
+      let!(:notification) do
+        Notification.create!(
+          notifiable: observation,
+          notification_type: 'observation_channel',
+          status: 'sent_successfully',
+          metadata: { 'organization_id' => company.id.to_s }
+        )
+      end
+
+      before do
+        # Make current_person available
+        obs_observer = observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
+        render
+      end
+
+      it 'does not display the share prompt section' do
+        expect(rendered).not_to have_content('Great observation 🎉')
+      end
+    end
+
+    context 'when observation is a draft' do
+      let(:draft_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :public_to_company, published_at: nil)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs
+      end
+
+      before do
+        assign(:observation, draft_observation)
+        # Make current_person available
+        obs_observer = draft_observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
+        allow(view).to receive(:policy) do |obj|
+          if obj == draft_observation
+            double(
+              post_to_slack?: true,
+              publish?: false,
+              view_permalink?: false,
+              update?: false,
+              destroy?: false,
+              restore?: false
+            )
+          else
+            double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
+          end
+        end
+        render
+      end
+
+      it 'does not display the share prompt section' do
+        expect(rendered).not_to have_content('Great observation 🎉')
+      end
+    end
+
+    context 'when observation is journal (observer_only)' do
+      let(:journal_observation) do
+        obs = build(:observation, observer: observer, company: company, privacy_level: :observer_only)
+        obs.observees.build(teammate: observee_teammate)
+        obs.save!
+        obs.publish!
+        obs
+      end
+
+      before do
+        assign(:observation, journal_observation)
+        # Make current_person available
+        obs_observer = journal_observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
+        allow(view).to receive(:policy) do |obj|
+          if obj == journal_observation
+            double(
+              post_to_slack?: true,
+              publish?: false,
+              view_permalink?: false,
+              update?: false,
+              destroy?: false,
+              restore?: false
+            )
+          else
+            double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
+          end
+        end
+        render
+      end
+
+      it 'does not display the share prompt section' do
+        expect(rendered).not_to have_content('Great observation 🎉')
+      end
+    end
+
+    context 'when user is not the observer' do
+      let(:other_person) { create(:person) }
+      let!(:other_teammate) { create(:teammate, person: other_person, organization: company) }
+
+      before do
+        # Ensure observation has no notifications
+        observation.notifications.destroy_all
+        # Make current_person available as someone other than the observer
+        other = other_person
+        view.instance_variable_set(:@current_person, other)
+        view.define_singleton_method(:current_person) { other }
+        render
+      end
+
+      it 'does not display the share prompt section' do
+        expect(rendered).not_to have_content('Great observation 🎉')
+      end
+    end
+  end
+
   describe 'notifications section' do
     context 'when user is observer and observation is public' do
       before do
@@ -176,8 +395,11 @@ RSpec.  describe 'organizations/observations/show', type: :view do
 
     context 'when user is not observer' do
       before do
+        # Make current_person available
+        view.instance_variable_set(:@current_person, nil)
+        view.define_singleton_method(:current_person) { nil }
         allow(view).to receive(:policy) do |obj|
-          double(post_to_slack?: false, update?: false, view_permalink?: false)
+          double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
         end
         render
       end
@@ -200,6 +422,10 @@ RSpec.  describe 'organizations/observations/show', type: :view do
 
       before do
         assign(:observation, journal_observation)
+        # Make current_person available
+        obs_observer = journal_observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
         render
       end
 
@@ -221,6 +447,10 @@ RSpec.  describe 'organizations/observations/show', type: :view do
 
       before do
         assign(:observation, private_observation)
+        # Make current_person available
+        obs_observer = private_observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
         # Ensure policy allows post_to_slack for observer
         allow(view).to receive(:policy) do |obj|
           if obj == private_observation
@@ -228,10 +458,12 @@ RSpec.  describe 'organizations/observations/show', type: :view do
               post_to_slack?: true,
               publish?: false,
               view_permalink?: false,
-              update?: false
+              update?: false,
+              destroy?: false,
+              restore?: false
             )
           else
-            double(post_to_slack?: false, update?: false, view_permalink?: false)
+            double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
           end
         end
         render
@@ -257,6 +489,10 @@ RSpec.  describe 'organizations/observations/show', type: :view do
 
       before do
         assign(:observation, draft_observation)
+        # Make current_person available
+        obs_observer = observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
         # Ensure policy allows post_to_slack for observer
         allow(view).to receive(:policy) do |obj|
           if obj == draft_observation
@@ -264,10 +500,12 @@ RSpec.  describe 'organizations/observations/show', type: :view do
               post_to_slack?: true,
               publish?: false,
               view_permalink?: false,
-              update?: false
+              update?: false,
+              destroy?: false,
+              restore?: false
             )
           else
-            double(post_to_slack?: false, update?: false, view_permalink?: false)
+            double(post_to_slack?: false, update?: false, view_permalink?: false, destroy?: false, restore?: false)
           end
         end
         render
@@ -303,6 +541,10 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       before do
         company.kudos_channel_id = kudos_channel.third_party_id
         company.save!
+        # Make current_person available
+        obs_observer = observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
         # Mock slack_url
         allow_any_instance_of(Notification).to receive(:slack_url).and_return('https://slack.com/archives/C123456/p1234567890123456')
         render
@@ -331,6 +573,10 @@ RSpec.  describe 'organizations/observations/show', type: :view do
       end
 
       before do
+        # Make current_person available
+        obs_observer = observation.observer
+        view.instance_variable_set(:@current_person, obs_observer)
+        view.define_singleton_method(:current_person) { obs_observer }
         # Mock slack_url
         allow_any_instance_of(Notification).to receive(:slack_url).and_return('https://slack.com/archives/D123456/p9876543210987654')
         render

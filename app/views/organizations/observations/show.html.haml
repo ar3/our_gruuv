@@ -31,6 +31,58 @@
 
 .row
   .col-md-8
+    / Share prompt section - shown when observation is published, has no notifications, is not journal, and user is the observer
+    - if @observation.published? && @observation.notifications.none? && @observation.privacy_level != 'observer_only' && current_person == @observation.observer
+      .card.mb-4.border-success{ role: "region", "aria-labelledby": "share-prompt" }
+        .card-body.bg-light
+          .text-center.py-4
+            %h4.mb-3{ id: "share-prompt" }
+              Great observation 🎉
+            %p.mb-4.lead
+              This is fuel for continuous improvement. Select share publicly or privately, and it will take you to a page where you can choose where it is shared.
+            - can_send_public = !@observation.draft? && policy(@observation).post_to_slack? && @observation.privacy_level != 'observer_only' && (@observation.privacy_level == 'public_to_company' || @observation.privacy_level == 'public_to_world')
+            - can_send_private = !@observation.draft? && policy(@observation).post_to_slack? && @observation.privacy_level != 'observer_only'
+            - send_public_disabled = !can_send_public
+            - send_private_disabled = !can_send_private
+            
+            / Determine tooltip messages
+            - public_tooltip = ''
+            - if @observation.draft?
+              - public_tooltip = 'Draft observations cannot be shared'
+            - elsif @observation.privacy_level == 'observer_only'
+              - public_tooltip = 'Journal entries cannot be shared publicly'
+            - elsif @observation.privacy_level != 'public_to_company' && @observation.privacy_level != 'public_to_world'
+              - public_tooltip = 'Only public observations can be shared publicly'
+            - elsif !policy(@observation).post_to_slack?
+              - public_tooltip = 'Only the observer can send notifications'
+            
+            - private_tooltip = ''
+            - if @observation.draft?
+              - private_tooltip = 'Draft observations cannot be shared'
+            - elsif @observation.privacy_level == 'observer_only'
+              - private_tooltip = 'Journal entries cannot be shared privately'
+            - elsif !policy(@observation).post_to_slack?
+              - private_tooltip = 'Only the observer can send notifications'
+            
+            .d-flex.justify-content-center.gap-3
+              - if send_public_disabled
+                .d-flex.align-items-center.gap-2
+                  %button.btn.btn-outline-secondary.btn-lg.disabled{disabled: true}
+                    Share Publicly
+                  - if public_tooltip.present?
+                    %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => public_tooltip}
+              - else
+                = link_to 'Share Publicly', share_publicly_organization_observation_path(@organization, @observation), class: 'btn btn-primary btn-lg'
+              
+              - if send_private_disabled
+                .d-flex.align-items-center.gap-2
+                  %button.btn.btn-outline-secondary.btn-lg.disabled{disabled: true}
+                    Share Privately
+                  - if private_tooltip.present?
+                    %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => private_tooltip}
+              - else
+                = link_to 'Share Privately', share_privately_organization_observation_path(@organization, @observation), class: 'btn btn-outline-primary btn-lg'
+    
     / Main content sections
     - if @observation.observation_trigger.present?
       .card.mb-4{ role: "region", "aria-labelledby": "observation-trigger" }
