@@ -152,6 +152,51 @@ RSpec.describe 'Organizations::Assignments', type: :request do
     end
   end
 
+  describe 'GET /organizations/:organization_id/assignments with department filters' do
+    let!(:department1) { create(:organization, type: 'Department', parent: organization) }
+    let!(:department2) { create(:organization, type: 'Department', parent: organization) }
+    let!(:department3) { create(:organization, type: 'Department', parent: organization) }
+    let!(:assignment_dept1) { create(:assignment, company: organization, department: department1) }
+    let!(:assignment_dept2) { create(:assignment, company: organization, department: department2) }
+    let!(:assignment_no_dept) { create(:assignment, company: organization, department: nil) }
+    let!(:other_assignment) { create(:assignment, company: organization, department: department3) }
+
+    before do
+      person_teammate
+      sign_in_as_teammate_for_request(person, organization)
+    end
+
+    it 'returns assignments from selected departments' do
+      get organization_assignments_path(organization, departments: "#{department1.id},#{department2.id}")
+      
+      expect(response).to have_http_status(:success)
+      assignments = assigns(:assignments).to_a
+      
+      expect(assignments).to include(assignment_dept1, assignment_dept2)
+      expect(assignments).not_to include(assignment_no_dept, other_assignment)
+    end
+
+    it 'returns assignments from company (nil department) when "none" is selected' do
+      get organization_assignments_path(organization, departments: 'none')
+      
+      expect(response).to have_http_status(:success)
+      assignments = assigns(:assignments).to_a
+      
+      expect(assignments).to include(assignment_no_dept)
+      expect(assignments).not_to include(assignment_dept1, assignment_dept2)
+    end
+
+    it 'returns assignments from both company and departments when both are selected' do
+      get organization_assignments_path(organization, departments: "none,#{department1.id}")
+      
+      expect(response).to have_http_status(:success)
+      assignments = assigns(:assignments).to_a
+      
+      expect(assignments).to include(assignment_no_dept, assignment_dept1)
+      expect(assignments).not_to include(assignment_dept2, other_assignment)
+    end
+  end
+
   describe 'POST /organizations/:organization_id/assignments' do
     let(:valid_params) do
       {

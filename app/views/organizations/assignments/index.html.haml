@@ -42,13 +42,19 @@
                 %i.bi.bi-funnel.me-1
                 Filters: 
                 - filter_parts = []
-                - if params[:company].present?
-                  - company_params = params[:company].is_a?(Array) ? params[:company] : [params[:company]]
-                  - selected_companies = Organization.where(id: company_params.map(&:to_i).reject(&:zero?))
-                  - if selected_companies.any?
-                    - filter_parts << "#{selected_companies.count} organization#{'s' if selected_companies.count != 1}"
+                - if params[:departments].present?
+                  - department_params = params[:departments].to_s.split(',').map(&:strip).reject(&:blank?)
+                  - department_ids = department_params.reject { |p| p == 'none' || p == '' }.map(&:to_i).reject(&:zero?)
+                  - selected_departments = Organization.where(id: department_ids) if department_ids.any?
+                  - has_none = department_params.include?('none') || department_params.include?('')
+                  - if has_none && selected_departments&.any?
+                    - filter_parts << "#{selected_departments.count + 1} department#{'s' if selected_departments.count + 1 != 1} (including no department)"
+                  - elsif has_none
+                    - filter_parts << 'No department'
+                  - elsif selected_departments&.any?
+                    - filter_parts << "#{selected_departments.count} department#{'s' if selected_departments.count != 1}"
                 - else
-                  - filter_parts << 'All organizations'
+                  - filter_parts << 'All departments'
                 - if params[:outcomes_filter].present? && params[:outcomes_filter] != 'all'
                   - filter_parts << "Outcomes: #{params[:outcomes_filter] == 'with' ? 'W/' : 'W/o'}"
                 - if params[:abilities_filter].present? && params[:abilities_filter] != 'all'

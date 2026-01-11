@@ -60,6 +60,42 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
       expect(assignments).not_to include(other_assignment)
     end
 
+    it 'filters by company shows only assignments with nil department' do
+      department = create(:organization, :department, parent: organization)
+      assignment_in_dept = create(:assignment, company: organization, department: department, semantic_version: '1.0.0')
+      assignment_no_dept = create(:assignment, company: organization, department: nil, semantic_version: '1.0.0')
+
+      get :index, params: { organization_id: organization.id, departments: 'none' }
+      assignments = assigns(:assignments)
+      # Should only include assignments with nil department (directly on company)
+      expect(assignments).to include(assignment_v1, assignment_v1_2, assignment_v2, assignment_v0, assignment_no_dept)
+      expect(assignments).not_to include(assignment_in_dept)
+    end
+
+    it 'filters by department' do
+      department = create(:organization, :department, parent: organization)
+      assignment_in_dept = create(:assignment, company: organization, department: department, semantic_version: '1.0.0')
+      assignment_no_dept = create(:assignment, company: organization, department: nil, semantic_version: '1.0.0')
+
+      get :index, params: { organization_id: organization.id, departments: department.id.to_s }
+      assignments = assigns(:assignments)
+      expect(assignments).to include(assignment_in_dept)
+      expect(assignments).not_to include(assignment_no_dept)
+    end
+
+    it 'filters by both company and department' do
+      department = create(:organization, :department, parent: organization)
+      assignment_in_dept = create(:assignment, company: organization, department: department, semantic_version: '1.0.0')
+      assignment_no_dept = create(:assignment, company: organization, department: nil, semantic_version: '1.0.0')
+
+      get :index, params: { organization_id: organization.id, departments: "none,#{department.id}" }
+      assignments = assigns(:assignments)
+      # Should include assignments with nil department (from company) OR in the department
+      expect(assignments).to include(assignment_v1, assignment_v1_2, assignment_v2, assignment_v0, assignment_no_dept, assignment_in_dept)
+      # assignment_no_dept should be included because it's in the company with nil department
+      expect(assignments).to include(assignment_no_dept)
+    end
+
     it 'filters by outcomes with tri-state filter' do
       assignment_with_outcomes = create(:assignment, company: organization)
       create(:assignment_outcome, assignment: assignment_with_outcomes)

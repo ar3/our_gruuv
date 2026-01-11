@@ -10,103 +10,27 @@ class Organizations::AssignmentsController < ApplicationController
     company = @organization.root_company || @organization
     authorize company, :view_assignments?
     
-    # Set default spotlight
-    @current_spotlight = params[:spotlight].presence || 'by_department'
-    
-    @assignments = policy_scope(Assignment).where(company: company.self_and_descendants).includes(
-      :assignment_outcomes, 
-      :published_external_reference, 
-      :draft_external_reference, 
-      :abilities,
-      assignment_abilities: :ability,
-      position_assignments: { position: [:position_type, :position_level] }
+    # Use query object for filtering and sorting
+    query = AssignmentsQuery.new(
+      @organization,
+      params,
+      current_person: current_person,
+      policy_scope: policy_scope(Assignment)
     )
     
-    # Apply filters
-    if params[:company].present?
-      company_params = params[:company].is_a?(Array) ? params[:company] : [params[:company]]
-      selected_company_ids = company_params.map(&:to_i).reject(&:zero?)
-      if selected_company_ids.any?
-        selected_companies = Organization.where(id: selected_company_ids)
-        company_ids = selected_companies.flat_map { |c| c.self_and_descendants.pluck(:id) }.uniq
-        @assignments = @assignments.where(company_id: company_ids)
-      end
-    end
+    @assignments = query.call
     
-    # Apply outcomes filter (tri-state: all, with, without)
-    case params[:outcomes_filter]
-    when 'with'
-      @assignments = @assignments.joins(:assignment_outcomes).distinct
-    when 'without'
-      @assignments = @assignments.left_joins(:assignment_outcomes)
-                                 .where(assignment_outcomes: { id: nil })
-    # when 'all' or blank/nil - no filter applied
-    end
-    
-    # Apply abilities filter (tri-state: all, with, without)
-    case params[:abilities_filter]
-    when 'with'
-      @assignments = @assignments.joins(:abilities).distinct
-    when 'without'
-      @assignments = @assignments.left_joins(:abilities)
-                                 .where(assignment_abilities: { id: nil })
-    # when 'all' or blank/nil - no filter applied
-    end
-    
-    # Filter by major version (using SQL LIKE for efficiency)
-    if params[:major_version].present?
-      major_version = params[:major_version].to_i
-      @assignments = @assignments.where("semantic_version LIKE ?", "#{major_version}.%")
-    end
+    # Set current filters, sort, view, and spotlight for view
+    @current_filters = query.current_filters
+    @current_sort = query.current_sort
+    @current_view = query.current_view
+    @current_spotlight = query.current_spotlight
     
     # Calculate spotlight stats for by_department (after filters, before sorting)
     if @current_spotlight == 'by_department'
       # Use filtered assignments for spotlight stats (load into array to preserve filters)
       filtered_assignments_array = @assignments.to_a
       @spotlight_stats = calculate_by_department_stats(filtered_assignments_array)
-    end
-    
-    # Apply sorting - need to handle distinct queries properly
-    # Check if we're using distinct (from joins)
-    using_distinct = @assignments.to_sql.include?('DISTINCT')
-    
-    case params[:sort]
-    when 'department_and_title'
-      if using_distinct
-        @assignments = @assignments.reorder('assignments.title')
-      else
-        @assignments = @assignments.left_joins(:department).order(Arel.sql('COALESCE(organizations.name, \'\')'), 'assignments.title')
-      end
-    when 'title'
-      @assignments = @assignments.order('assignments.title')
-    when 'title_desc'
-      @assignments = @assignments.order('assignments.title DESC')
-    when 'company'
-      if using_distinct
-        @assignments = @assignments.reorder('assignments.title')
-      else
-        @assignments = @assignments.joins(:company).order('organizations.display_name')
-      end
-    when 'company_desc'
-      if using_distinct
-        @assignments = @assignments.reorder('assignments.title DESC')
-      else
-        @assignments = @assignments.joins(:company).order('organizations.display_name DESC')
-      end
-    when 'outcomes'
-      @assignments = @assignments.left_joins(:assignment_outcomes).group('assignments.id').order('COUNT(assignment_outcomes.id) DESC')
-    when 'outcomes_desc'
-      @assignments = @assignments.left_joins(:assignment_outcomes).group('assignments.id').order('COUNT(assignment_outcomes.id) ASC')
-    when 'abilities'
-      @assignments = @assignments.left_joins(:abilities).group('assignments.id').order('COUNT(assignment_abilities.id) DESC')
-    when 'abilities_desc'
-      @assignments = @assignments.left_joins(:abilities).group('assignments.id').order('COUNT(assignment_abilities.id) ASC')
-    else
-      if using_distinct
-        @assignments = @assignments.reorder('assignments.title')
-      else
-        @assignments = @assignments.left_joins(:department).order(Arel.sql('COALESCE(organizations.name, \'\')'), 'assignments.title')
-      end
     end
     
     render layout: determine_layout
@@ -208,21 +132,12 @@ class Organizations::AssignmentsController < ApplicationController
   def customize_view
     authorize @organization, :show?
     
-    # Load current state from params
-    @current_filters = {
-      company: params[:company] || [],
-      outcomes_filter: params[:outcomes_filter] || 'all',
-      abilities_filter: params[:abilities_filter] || 'all',
-      major_version: params[:major_version],
-      sort: params[:sort] || 'department_and_title',
-      direction: params[:direction] || 'asc',
-      view: params[:view] || 'table',
-      spotlight: params[:spotlight] || 'by_department'
-    }
-    
-    @current_sort = @current_filters[:sort]
-    @current_view = @current_filters[:view]
-    @current_spotlight = @current_filters[:spotlight]
+    # Use query object to get current state
+    query = AssignmentsQuery.new(@organization, params, current_person: current_person)
+    @current_filters = query.current_filters
+    @current_sort = query.current_sort
+    @current_view = query.current_view
+    @current_spotlight = query.current_spotlight
     
     # Preserve current params for return URL
     return_params = params.except(:controller, :action, :page).permit!.to_h
@@ -236,9 +151,17 @@ class Organizations::AssignmentsController < ApplicationController
     authorize @organization, :show?
     
     # Build redirect URL with all view customization params
-    # Handle array params (company[]) properly
+    # Handle departments as comma-separated list
     redirect_params = {}
-    redirect_params[:company] = params[:company] if params[:company].present?
+    if params[:departments].present?
+      # Convert array to comma-separated string if needed
+      departments_value = if params[:departments].is_a?(Array)
+        params[:departments].reject(&:blank?).join(',')
+      else
+        params[:departments].to_s
+      end
+      redirect_params[:departments] = departments_value if departments_value.present?
+    end
     redirect_params[:outcomes_filter] = params[:outcomes_filter] if params[:outcomes_filter].present?
     redirect_params[:abilities_filter] = params[:abilities_filter] if params[:abilities_filter].present?
     redirect_params[:major_version] = params[:major_version] if params[:major_version].present?

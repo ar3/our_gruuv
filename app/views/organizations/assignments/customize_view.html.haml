@@ -20,15 +20,22 @@
           %label.form-label.fw-bold Select What Assignments You See
           
           .mb-3
-            %label.form-label Organizations
-            - companies = @organization.root_company.self_and_descendants
-            - selected_companies = Array(@current_filters[:company] || [])
+            %label.form-label Departments
+            - root_company = @organization.root_company || @organization
+            - departments = root_company.descendants.select { |org| org.department? }
+            - selected_departments = (@current_filters[:departments] || []).map(&:to_s)
             .row.g-2
-              - companies.each do |company|
+              / Add "No Department" option for assignments with nil department
+              .col-md-6
+                .form-check
+                  = check_box_tag 'departments[]', 'none', selected_departments.include?('none'), class: 'form-check-input', id: 'department_none'
+                  = label_tag 'department_none', "#{root_company.display_name} (No Department)", class: 'form-check-label'
+              / Add all departments
+              - departments.each do |department|
                 .col-md-6
                   .form-check
-                    = check_box_tag 'company[]', company.id, selected_companies.include?(company.id.to_s) || selected_companies.include?(company.id), class: 'form-check-input', id: "company_#{company.id}"
-                    = label_tag "company_#{company.id}", company.display_name, class: 'form-check-label'
+                    = check_box_tag 'departments[]', department.id, selected_departments.include?(department.id.to_s), class: 'form-check-input', id: "department_#{department.id}"
+                    = label_tag "department_#{department.id}", department.display_name, class: 'form-check-label'
           
           .mb-3
             %label.form-label Outcomes
