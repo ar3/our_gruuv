@@ -87,9 +87,10 @@ RSpec.describe Comment, type: :model do
       let!(:newer_comment) { create(:comment, :on_assignment, organization: organization, creator: person, commentable: assignment, created_at: 1.day.ago) }
 
       it 'orders comments by created_at ascending' do
-        ordered = Comment.ordered
-        expect(ordered.first).to eq(older_comment)
-        expect(ordered.last).to eq(newer_comment)
+        ordered = Comment.for_commentable(assignment).ordered.to_a
+        older_index = ordered.index(older_comment)
+        newer_index = ordered.index(newer_comment)
+        expect(older_index).to be < newer_index
       end
     end
   end

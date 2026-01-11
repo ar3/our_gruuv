@@ -14,6 +14,7 @@ RSpec.describe Organizations::CommentsController, type: :controller do
   describe 'GET #index' do
     let!(:root_comment1) { create(:comment, :on_assignment, organization: organization, creator: person, commentable: assignment) }
     let!(:root_comment2) { create(:comment, :on_assignment, organization: organization, creator: person, commentable: assignment) }
+    let!(:resolved_comment) { create(:comment, :resolved, :on_assignment, organization: organization, creator: person, commentable: assignment) }
 
     it 'renders the index template' do
       get :index, params: { organization_id: organization.id, commentable_type: 'Assignment', commentable_id: assignment.id }
@@ -29,6 +30,23 @@ RSpec.describe Organizations::CommentsController, type: :controller do
     it 'builds comments tree' do
       get :index, params: { organization_id: organization.id, commentable_type: 'Assignment', commentable_id: assignment.id }
       expect(assigns(:comments_by_parent)).to be_a(Hash)
+    end
+
+    context 'with show_resolved=false (default)' do
+      it 'excludes resolved comments' do
+        get :index, params: { organization_id: organization.id, commentable_type: 'Assignment', commentable_id: assignment.id }
+        expect(assigns(:root_comments)).to include(root_comment1, root_comment2)
+        expect(assigns(:root_comments)).not_to include(resolved_comment)
+        expect(assigns(:show_resolved)).to be false
+      end
+    end
+
+    context 'with show_resolved=true' do
+      it 'includes resolved comments' do
+        get :index, params: { organization_id: organization.id, commentable_type: 'Assignment', commentable_id: assignment.id, show_resolved: 'true' }
+        expect(assigns(:root_comments)).to include(root_comment1, root_comment2, resolved_comment)
+        expect(assigns(:show_resolved)).to be true
+      end
     end
   end
 
@@ -102,19 +120,22 @@ RSpec.describe Organizations::CommentsController, type: :controller do
 
     context 'creating nested comment' do
       it 'creates a reply to a comment' do
+        # Ensure parent comment exists before counting
+        parent_comment = comment
+        
         expect {
           post :create, params: {
             organization_id: organization.id,
             comment: {
               body: 'Reply comment',
               commentable_type: 'Comment',
-              commentable_id: comment.id
+              commentable_id: parent_comment.id
             }
           }
         }.to change(Comment, :count).by(1)
         
         reply = Comment.last
-        expect(reply.commentable).to eq(comment)
+        expect(reply.commentable).to eq(parent_comment)
       end
     end
   end
@@ -180,6 +201,11 @@ RSpec.describe Organizations::CommentsController, type: :controller do
       patch :resolve, params: { organization_id: organization.id, id: comment.id }
       expect(response).to redirect_to(organization_comments_path(organization, commentable_type: 'Assignment', commentable_id: assignment.id))
     end
+
+    it 'preserves show_resolved parameter in redirect' do
+      patch :resolve, params: { organization_id: organization.id, id: comment.id, show_resolved: 'true' }
+      expect(response).to redirect_to(organization_comments_path(organization, commentable_type: 'Assignment', commentable_id: assignment.id, show_resolved: 'true'))
+    end
   end
 
   describe 'PATCH #unresolve' do
@@ -199,6 +225,11 @@ RSpec.describe Organizations::CommentsController, type: :controller do
     it 'redirects to comments index' do
       patch :unresolve, params: { organization_id: organization.id, id: resolved_comment.id }
       expect(response).to redirect_to(organization_comments_path(organization, commentable_type: 'Assignment', commentable_id: assignment.id))
+    end
+
+    it 'preserves show_resolved parameter in redirect' do
+      patch :unresolve, params: { organization_id: organization.id, id: resolved_comment.id, show_resolved: 'true' }
+      expect(response).to redirect_to(organization_comments_path(organization, commentable_type: 'Assignment', commentable_id: assignment.id, show_resolved: 'true'))
     end
   end
 end

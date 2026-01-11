@@ -1,13 +1,29 @@
 - content_for :title, "Comments - #{@commentable.class.name}"
 
 - content_for :header do
-  %h1.mb-0
-    %i.bi.bi-chat-dots.me-2
-    Comments
-    - if @commentable.respond_to?(:title)
-      for #{@commentable.title}
-    - elsif @commentable.respond_to?(:name)
-      for #{@commentable.name}
+  .d-flex.justify-content-between.align-items-center
+    %h1.mb-0
+      %i.bi.bi-chat-dots.me-2
+      Comments
+      - if @commentable.respond_to?(:title)
+        for #{@commentable.title}
+      - elsif @commentable.respond_to?(:name)
+        for #{@commentable.name}
+    .form-check.form-switch
+      = form_with url: organization_comments_path(@organization, commentable_type: @commentable.class.name, commentable_id: @commentable.id), 
+          method: :get, 
+          local: true, 
+          class: "d-inline" do |f|
+        = f.hidden_field :commentable_type, value: @commentable.class.name
+        = f.hidden_field :commentable_id, value: @commentable.id
+        = f.check_box :show_resolved, 
+            { checked: @show_resolved, 
+              class: "form-check-input", 
+              id: "show_resolved_toggle",
+              onchange: "this.form.submit();" }, 
+            "true", 
+            "false"
+        = f.label :show_resolved, "Show resolved", class: "form-check-label", for: "show_resolved_toggle"
 
 - content_for :go_back_link do
   - if @commentable.is_a?(Assignment)
@@ -27,7 +43,7 @@
   .col-lg-10
     - if @root_comments.any?
       - @root_comments.each do |comment|
-        = render 'organizations/comments/comment_thread', comment: comment, comments_by_parent: @comments_by_parent, organization: @organization, depth: 0
+        = render 'organizations/comments/comment_thread', comment: comment, comments_by_parent: @comments_by_parent, organization: @organization, depth: 0, show_resolved: @show_resolved
     - else
       .card.mb-4
         .card-body.text-center.py-5

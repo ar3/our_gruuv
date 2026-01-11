@@ -11,15 +11,21 @@ class Organizations::CommentsController < Organizations::OrganizationNamespaceBa
     # Authorize based on the commentable object - if you can view it, you can view its comments
     authorize @commentable, :show?
     
+    # Get filter parameter for showing resolved comments
+    @show_resolved = params[:show_resolved] == 'true'
+    
     # Get all root comments for this commentable
-    @root_comments = Comment
+    root_comments_scope = Comment
       .for_commentable(@commentable)
       .root_comments
       .ordered
       .includes(:creator, :organization)
     
+    # Filter out resolved comments if toggle is off
+    @root_comments = @show_resolved ? root_comments_scope : root_comments_scope.unresolved
+    
     # Build nested structure for display
-    @comments_by_parent = build_comments_tree(@root_comments)
+    @comments_by_parent = build_comments_tree(@root_comments, show_resolved: @show_resolved)
   end
 
   def show
@@ -55,17 +61,21 @@ class Organizations::CommentsController < Organizations::OrganizationNamespaceBa
     if @form.validate(comment_params) && @form.save
       # Always redirect to the root commentable's comments page
       root_commentable = @form.model.root_commentable
-      redirect_to organization_comments_path(@organization, commentable_type: root_commentable.class.name, commentable_id: root_commentable.id), 
+      redirect_params = { commentable_type: root_commentable.class.name, commentable_id: root_commentable.id }
+      redirect_params[:show_resolved] = 'true' if params[:show_resolved] == 'true'
+      redirect_to organization_comments_path(@organization, redirect_params), 
                   notice: 'Comment was successfully created.'
     else
       # Re-fetch commentable for re-render
       set_commentable
-      @root_comments = Comment
+      @show_resolved = params[:show_resolved] == 'true'
+      root_comments_scope = Comment
         .for_commentable(@commentable)
         .root_comments
         .ordered
         .includes(:creator, :organization)
-      @comments_by_parent = build_comments_tree(@root_comments)
+      @root_comments = @show_resolved ? root_comments_scope : root_comments_scope.unresolved
+      @comments_by_parent = build_comments_tree(@root_comments, show_resolved: @show_resolved)
       render :index, status: :unprocessable_entity
     end
   end
@@ -82,18 +92,22 @@ class Organizations::CommentsController < Organizations::OrganizationNamespaceBa
     if @form.validate(comment_params) && @form.save
       # Get root commentable for redirect
       root_commentable = @comment.root_commentable
-      redirect_to organization_comments_path(@comment.organization, commentable_type: root_commentable.class.name, commentable_id: root_commentable.id), 
+      redirect_params = { commentable_type: root_commentable.class.name, commentable_id: root_commentable.id }
+      redirect_params[:show_resolved] = 'true' if params[:show_resolved] == 'true'
+      redirect_to organization_comments_path(@comment.organization, redirect_params), 
                   notice: 'Comment was successfully updated.'
     else
       # Get root commentable for re-render
       root_commentable = @comment.root_commentable
       @commentable = root_commentable
-      @root_comments = Comment
+      @show_resolved = params[:show_resolved] == 'true'
+      root_comments_scope = Comment
         .for_commentable(root_commentable)
         .root_comments
         .ordered
         .includes(:creator, :organization)
-      @comments_by_parent = build_comments_tree(@root_comments)
+      @root_comments = @show_resolved ? root_comments_scope : root_comments_scope.unresolved
+      @comments_by_parent = build_comments_tree(@root_comments, show_resolved: @show_resolved)
       render :index, status: :unprocessable_entity
     end
   end
@@ -103,7 +117,9 @@ class Organizations::CommentsController < Organizations::OrganizationNamespaceBa
     
     @comment.resolve!
     root_commentable = @comment.root_commentable
-    redirect_to organization_comments_path(@comment.organization, commentable_type: root_commentable.class.name, commentable_id: root_commentable.id), 
+    redirect_params = { commentable_type: root_commentable.class.name, commentable_id: root_commentable.id }
+    redirect_params[:show_resolved] = 'true' if params[:show_resolved] == 'true'
+    redirect_to organization_comments_path(@comment.organization, redirect_params), 
                 notice: 'Comment was successfully resolved.'
   end
 
@@ -112,7 +128,9 @@ class Organizations::CommentsController < Organizations::OrganizationNamespaceBa
     
     @comment.unresolve!
     root_commentable = @comment.root_commentable
-    redirect_to organization_comments_path(@comment.organization, commentable_type: root_commentable.class.name, commentable_id: root_commentable.id), 
+    redirect_params = { commentable_type: root_commentable.class.name, commentable_id: root_commentable.id }
+    redirect_params[:show_resolved] = 'true' if params[:show_resolved] == 'true'
+    redirect_to organization_comments_path(@comment.organization, redirect_params), 
                 notice: 'Comment was successfully unresolved.'
   end
 
@@ -136,7 +154,7 @@ class Organizations::CommentsController < Organizations::OrganizationNamespaceBa
     params.require(:comment).permit(:body, :commentable_type, :commentable_id)
   end
 
-  def build_comments_tree(root_comments)
+  def build_comments_tree(root_comments, show_resolved: false)
     # Build a hash mapping parent comment id to array of child comments
     comments_by_parent = {}
     
@@ -150,10 +168,12 @@ class Organizations::CommentsController < Organizations::OrganizationNamespaceBa
     # Keep loading nested comments until no more are found
     while current_level_ids.any?
       # Find direct children of current level
-      child_comments = Comment.where(commentable_type: 'Comment', commentable_id: current_level_ids)
-                             .ordered
-                             .includes(:creator, :organization)
-                             .to_a
+      child_comments_scope = Comment.where(commentable_type: 'Comment', commentable_id: current_level_ids)
+                                   .ordered
+                                   .includes(:creator, :organization)
+      
+      # Filter resolved comments if toggle is off
+      child_comments = show_resolved ? child_comments_scope.to_a : child_comments_scope.unresolved.to_a
       
       # Group by parent and track IDs for next iteration
       next_level_ids = []

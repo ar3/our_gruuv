@@ -2,6 +2,7 @@
 - comments_by_parent = local_assigns[:comments_by_parent]
 - organization = local_assigns[:organization]
 - depth = local_assigns[:depth] || 0
+- show_resolved = local_assigns.fetch(:show_resolved, false)
 - can_edit = policy(comment).update?
 - can_resolve = policy(comment).resolve?
 - can_unresolve = policy(comment).unresolve?
@@ -25,16 +26,18 @@
             %i.bi.bi-pencil.me-1
             Edit
         - if can_resolve && !comment.resolved?
-          = link_to resolve_organization_comment_path(organization, comment),
+          = button_to resolve_organization_comment_path(organization, comment, show_resolved: show_resolved),
               method: :patch,
               class: "btn btn-sm btn-outline-success",
+              form: { style: "display: inline-block;" },
               data: { confirm: "Are you sure you want to resolve this comment and all its replies?" } do
             %i.bi.bi-check-circle.me-1
             Resolve
         - if can_unresolve && comment.resolved?
-          = link_to unresolve_organization_comment_path(organization, comment),
+          = button_to unresolve_organization_comment_path(organization, comment, show_resolved: show_resolved),
               method: :patch,
-              class: "btn btn-sm btn-outline-warning" do
+              class: "btn btn-sm btn-outline-warning",
+              form: { style: "display: inline-block;" } do
             %i.bi.bi-x-circle.me-1
             Unresolve
     
@@ -66,7 +69,7 @@
     - if child_comments.any?
       .mt-3
         - child_comments.each do |child_comment|
-          = render 'organizations/comments/comment_thread', comment: child_comment, comments_by_parent: comments_by_parent, organization: organization, depth: depth + 1
+          = render 'organizations/comments/comment_thread', comment: child_comment, comments_by_parent: comments_by_parent, organization: organization, depth: depth + 1, show_resolved: show_resolved
 
 / Edit Modal
 - if can_edit
