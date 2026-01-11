@@ -45,7 +45,7 @@
                                       data: { bs_toggle: 'tooltip', bs_title: tooltip_text }
                         = label_tag "teammate_#{teammate.id}", class: 'form-check-label',
                                     data: { bs_toggle: 'tooltip', bs_title: tooltip_text } do
-                          %strong= person.casual_name
+                          %strong= person.preferred_first_then_last_display_name
 
       .d-flex.gap-2.mt-3
         = form.submit 'Save Changes', class: 'btn btn-primary'
