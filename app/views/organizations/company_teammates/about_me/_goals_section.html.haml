@@ -27,6 +27,14 @@
 .collapse#goalsSection
   .card.mb-4
     .card-body
+      - if @draft_goals_count > 0
+        .d-grid.mb-3
+          = link_to "Start or Archive your #{pluralize(@draft_goals_count, 'draft goal')}",
+                    organization_goals_path(organization,
+                      owner_type: 'CompanyTeammate',
+                      owner_id: @teammate.id,
+                      status: 'draft'),
+                    class: "btn btn-outline-secondary"
       - if all_goals.any?
         .table-responsive
           %table.table.table-hover

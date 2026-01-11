@@ -606,6 +606,12 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         .where(deleted_at: nil)
         .count
       
+      # Calculate draft goals count
+      @draft_goals_count = Goal.for_teammate(@teammate)
+        .draft
+        .where(deleted_at: nil)
+        .count
+      
       @goals_check_in_url = organization_goals_path(
         organization,
         owner_type: 'CompanyTeammate',
@@ -618,6 +624,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       @later_goals = []
       @goals_with_recent_check_ins_count = 0
       @goals_completed_count = 0
+      @draft_goals_count = 0
       @goals_check_in_url = organization_goals_path(organization)
     end
   end

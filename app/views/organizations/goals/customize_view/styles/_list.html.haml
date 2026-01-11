@@ -32,6 +32,10 @@
               - links << pluralize(goal.incoming_links.count, 'parent') if goal.incoming_links.any?
               = links.join(', ')
         .ms-3
+          - if goal.started_at.nil? && policy(goal).update?
+            = button_to start_organization_goal_path(@organization, goal), method: :patch, class: "btn btn-primary btn-sm me-2", form: { style: "display: inline-block;" } do
+              %i.bi.bi-play-circle.me-1
+              Start
           = link_to organization_goal_path(@organization, goal), class: "btn btn-outline-primary btn-sm" do
             %i.bi.bi-eye
 

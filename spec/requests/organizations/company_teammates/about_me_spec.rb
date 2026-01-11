@@ -584,6 +584,61 @@ RSpec.describe 'About Me Page', type: :request do
         expect(response.body).to include("with a check-in in the past two weeks")
         expect(response.body).to include("completed in the last 90 days")
       end
+
+      it 'shows draft goals button when draft goals exist' do
+        draft_goal1 = create(:goal,
+                           owner: teammate,
+                           creator: teammate,
+                           company: organization,
+                           started_at: nil,
+                           deleted_at: nil)
+        draft_goal2 = create(:goal,
+                           owner: teammate,
+                           creator: teammate,
+                           company: organization,
+                           started_at: nil,
+                           deleted_at: nil)
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include("start or archive")
+        expect(response.body).to include("2 draft goals")
+        # Check for URL components
+        expect(response.body).to include("owner_type=CompanyTeammate")
+        expect(response.body).to include("owner_id=#{teammate.id}")
+        expect(response.body).to include("status=draft")
+      end
+
+      it 'does not show draft goals button when no draft goals exist' do
+        active_goal = create(:goal,
+                           owner: teammate,
+                           creator: teammate,
+                           company: organization,
+                           started_at: 1.day.ago,
+                           deleted_at: nil)
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).not_to include("start or archive")
+        expect(response.body).not_to include("draft goal")
+      end
+
+      it 'does not count deleted draft goals' do
+        draft_goal = create(:goal,
+                           owner: teammate,
+                           creator: teammate,
+                           company: organization,
+                           started_at: nil,
+                           deleted_at: 1.day.ago)
+        active_draft_goal = create(:goal,
+                                 owner: teammate,
+                                 creator: teammate,
+                                 company: organization,
+                                 started_at: nil,
+                                 deleted_at: nil)
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include("1 draft goal")
+        expect(response.body).not_to include("2 draft goals")
+      end
     end
 
     context '1:1 section' do

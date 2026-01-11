@@ -486,6 +486,124 @@ RSpec.describe 'Organizations::Goals', type: :request do
     end
   end
   
+  describe 'GET /organizations/:organization_id/goals with list view' do
+    let(:draft_goal) do
+      create(:goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Draft Goal',
+        started_at: nil
+      )
+    end
+    
+    let(:active_goal) do
+      create(:goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Active Goal',
+        started_at: 1.day.ago
+      )
+    end
+    
+    it 'shows start button for draft goals when user can edit' do
+      draft_goal
+      active_goal
+      
+      get organization_goals_path(organization), params: {
+        view: 'list',
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Start')
+      expect(response.body).to include(start_organization_goal_path(organization, draft_goal))
+      # Active goal should not have start button
+      expect(response.body).not_to include(start_organization_goal_path(organization, active_goal))
+    end
+    
+    it 'does not show start button for draft goals when user cannot edit' do
+      other_person = create(:person)
+      other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+      draft_goal = create(:goal,
+        creator: other_teammate,
+        owner: other_teammate,
+        title: 'Other Draft Goal',
+        started_at: nil,
+        privacy_level: 'only_creator'
+      )
+      
+      get organization_goals_path(organization), params: {
+        view: 'list',
+        owner_type: 'CompanyTeammate',
+        owner_id: other_teammate.id
+      }
+      
+      expect(response).to have_http_status(:success)
+      # Should not show start button if user can't edit
+      expect(response.body).not_to include(start_organization_goal_path(organization, draft_goal))
+    end
+  end
+  
+  describe 'GET /organizations/:organization_id/goals with hierarchical-indented view' do
+    let(:draft_goal) do
+      create(:goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Draft Goal',
+        started_at: nil
+      )
+    end
+    
+    let(:active_goal) do
+      create(:goal,
+        creator: teammate,
+        owner: teammate,
+        title: 'Active Goal',
+        started_at: 1.day.ago
+      )
+    end
+    
+    it 'shows start button for draft goals when user can edit' do
+      draft_goal
+      active_goal
+      
+      get organization_goals_path(organization), params: {
+        view: 'hierarchical-indented',
+        owner_type: 'CompanyTeammate',
+        owner_id: teammate.id
+      }
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Start')
+      expect(response.body).to include(start_organization_goal_path(organization, draft_goal))
+      # Active goal should not have start button
+      expect(response.body).not_to include(start_organization_goal_path(organization, active_goal))
+    end
+    
+    it 'does not show start button for draft goals when user cannot edit' do
+      other_person = create(:person)
+      other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+      draft_goal = create(:goal,
+        creator: other_teammate,
+        owner: other_teammate,
+        title: 'Other Draft Goal',
+        started_at: nil,
+        privacy_level: 'only_creator'
+      )
+      
+      get organization_goals_path(organization), params: {
+        view: 'hierarchical-indented',
+        owner_type: 'CompanyTeammate',
+        owner_id: other_teammate.id
+      }
+      
+      expect(response).to have_http_status(:success)
+      # Should not show start button if user can't edit
+      expect(response.body).not_to include(start_organization_goal_path(organization, draft_goal))
+    end
+  end
+  
   describe 'POST /organizations/:organization_id/goals/:id/complete' do
     context 'with valid data' do
       it 'creates final check-in with 100% confidence for hit' do

@@ -351,7 +351,19 @@ module GoalsHelper
           end
           title + badges + check_in_sentence
         end
-        flex_grow
+        actions = content_tag(:div, class: 'ms-3') do
+          start_button = ''.html_safe
+          if goal.started_at.nil? && policy(goal)&.update?
+            start_button = button_to(start_organization_goal_path(organization, goal), method: :patch, class: 'btn btn-primary btn-sm me-2', form: { style: 'display: inline-block;' }) do
+              content_tag(:i, '', class: 'bi bi-play-circle me-1') + 'Start'.html_safe
+            end
+          end
+          view_button = link_to(organization_goal_path(organization, goal), class: 'btn btn-outline-primary btn-sm') do
+            content_tag(:i, '', class: 'bi bi-eye')
+          end
+          start_button + view_button
+        end
+        flex_grow + actions
       end
     end
     
