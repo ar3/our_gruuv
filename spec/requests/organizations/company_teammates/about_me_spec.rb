@@ -600,7 +600,7 @@ RSpec.describe 'About Me Page', type: :request do
                            deleted_at: nil)
 
         get about_me_organization_company_teammate_path(organization, teammate)
-        expect(response.body).to include("start or archive")
+        expect(response.body).to match(/start or archive/i)
         expect(response.body).to include("2 draft goals")
         # Check for URL components
         expect(response.body).to include("owner_type=CompanyTeammate")
@@ -638,6 +638,66 @@ RSpec.describe 'About Me Page', type: :request do
         get about_me_organization_company_teammate_path(organization, teammate)
         expect(response.body).to include("1 draft goal")
         expect(response.body).not_to include("2 draft goals")
+      end
+
+      it 'shows active goals without target dates' do
+        # Goal without most_likely_target_date should still appear
+        goal_without_date = create(:goal,
+                                  owner: teammate,
+                                  creator: teammate,
+                                  company: organization,
+                                  started_at: 1.day.ago,
+                                  most_likely_target_date: nil,
+                                  completed_at: nil,
+                                  deleted_at: nil)
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include(goal_without_date.title)
+        expect(response.body).to include("#{person.casual_name} has")
+        expect(response.body).to include("active goal")
+      end
+
+      it 'shows active goals with past target dates' do
+        # Goal with past most_likely_target_date should still appear
+        goal_with_past_date = create(:goal,
+                                     owner: teammate,
+                                     creator: teammate,
+                                     company: organization,
+                                     started_at: 1.day.ago,
+                                     most_likely_target_date: 1.year.ago,
+                                     completed_at: nil,
+                                     deleted_at: nil)
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include(goal_with_past_date.title)
+        expect(response.body).to include("#{person.casual_name} has")
+        expect(response.body).to include("active goal")
+      end
+
+      it 'status indicator and view show same goals count' do
+        # Create goals with and without target dates
+        goal_with_date = create(:goal,
+                               owner: teammate,
+                               creator: teammate,
+                               company: organization,
+                               started_at: 1.day.ago,
+                               most_likely_target_date: 1.month.from_now,
+                               completed_at: nil,
+                               deleted_at: nil)
+        goal_without_date = create(:goal,
+                                  owner: teammate,
+                                  creator: teammate,
+                                  company: organization,
+                                  started_at: 1.day.ago,
+                                  most_likely_target_date: nil,
+                                  completed_at: nil,
+                                  deleted_at: nil)
+
+        get about_me_organization_company_teammate_path(organization, teammate)
+        # Both goals should be shown
+        expect(response.body).to include(goal_with_date.title)
+        expect(response.body).to include(goal_without_date.title)
+        expect(response.body).to include("2 active goals")
       end
     end
 

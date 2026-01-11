@@ -560,12 +560,29 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   # Data loading methods for about_me page
   def load_goals_for_about_me
     if @teammate
+      # Get ALL active goals (not filtered by timeframe scopes)
+      # This ensures status indicator and view use the same query
       base_goals = Goal.for_teammate(@teammate).active.includes(:goal_check_ins)
-      @now_goals = base_goals.timeframe_now
-      @next_goals = base_goals.timeframe_next
-      @later_goals = base_goals.timeframe_later
+      all_active_goals = base_goals.to_a
       
-      all_active_goals = @now_goals + @next_goals + @later_goals
+      # Categorize goals by timeframe using instance method (includes goals without target dates)
+      @now_goals = []
+      @next_goals = []
+      @later_goals = []
+      
+      all_active_goals.each do |goal|
+        case goal.timeframe
+        when :now
+          @now_goals << goal
+        when :next
+          @next_goals << goal
+        when :later
+          @later_goals << goal
+        else
+          # Goals without target dates or with past dates go into :later for display
+          @later_goals << goal
+        end
+      end
       
       goal_ids = all_active_goals.map(&:id)
       current_week_start = Date.current.beginning_of_week(:monday)
