@@ -127,9 +127,6 @@
                       None
                 %td
                   - if assignment.abilities.any?
-                    = link_to organization_abilities_path(@organization), class: "badge bg-light text-spice-3 me-1 text-decoration-none" do
-                      = assignment.abilities.count
-                    %br
                     - assignment.assignment_abilities.includes(:ability).each do |assignment_ability|
                       - ability = assignment_ability.ability
                       - milestone_level = assignment_ability.milestone_level
