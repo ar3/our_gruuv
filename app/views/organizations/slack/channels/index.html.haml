@@ -42,22 +42,40 @@
                   Edit
               .card-body
                 - company_record = @organization.becomes(Company)
-                .row.align-items-center
-                  .col-md-8
-                    %label.form-label Huddle Review Channel
-                    - if company_record.huddle_review_notification_channel_id.present?
-                      - channel = @slack_channels.find { |c| c.third_party_id == company_record.huddle_review_notification_channel_id }
-                      %p.mb-1
-                        = channel&.display_name || company_record.huddle_review_notification_channel_id
-                    - else
-                      %p.mb-1.text-muted None
-                    %small.form-text.text-muted
-                      Channel where weekly huddle review summaries will be posted
-                  .col-md-4.text-end
-                    - if company_record.huddle_review_notification_channel_id.present?
-                      %span.badge.bg-success
-                        %i.bi.bi-check-circle.me-1
-                        Configured
+                .mb-3
+                  .row.align-items-center
+                    .col-md-8
+                      %label.form-label Huddle Review Channel
+                      - if company_record.huddle_review_notification_channel_id.present?
+                        - channel = @slack_channels.find { |c| c.third_party_id == company_record.huddle_review_notification_channel_id }
+                        %p.mb-1
+                          = channel&.display_name || company_record.huddle_review_notification_channel_id
+                      - else
+                        %p.mb-1.text-muted None
+                      %small.form-text.text-muted
+                        Channel where weekly huddle review summaries will be posted
+                    .col-md-4.text-end
+                      - if company_record.huddle_review_notification_channel_id.present?
+                        %span.badge.bg-success
+                          %i.bi.bi-check-circle.me-1
+                          Configured
+                .mb-3
+                  .row.align-items-center
+                    .col-md-8
+                      %label.form-label MAAP Object Comment Channel
+                      - if company_record.maap_object_comment_channel_id.present?
+                        - channel = @slack_channels.find { |c| c.third_party_id == company_record.maap_object_comment_channel_id }
+                        %p.mb-1
+                          = channel&.display_name || company_record.maap_object_comment_channel_id
+                      - else
+                        %p.mb-1.text-muted None
+                      %small.form-text.text-muted
+                        Channel where notifications for new root-level comments will be posted
+                    .col-md-4.text-end
+                      - if company_record.maap_object_comment_channel_id.present?
+                        %span.badge.bg-success
+                          %i.bi.bi-check-circle.me-1
+                          Configured
 
           / Section 2: Organization-Wide Channels (Kudos & Groups)
           .card.mb-4

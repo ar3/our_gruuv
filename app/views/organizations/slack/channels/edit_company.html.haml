@@ -42,6 +42,15 @@
             %small.form-text.text-muted
               Channel where weekly huddle review summaries will be posted
 
+          .mb-4
+            = form.label :maap_object_comment_channel_id, "MAAP Object Comment Channel", class: "form-label"
+            = form.select :maap_object_comment_channel_id,
+                          options_from_collection_for_select(@slack_channels, :third_party_id, :display_name, company_record.maap_object_comment_channel_id),
+                          { prompt: 'Select channel', include_blank: 'None' },
+                          { class: 'form-select' }
+            %small.form-text.text-muted
+              Channel where notifications for new root-level comments on assignments, abilities, and aspirations will be posted
+
           .d-flex.justify-content-between.mt-4
             = link_to 'Cancel', channels_organization_slack_path(@organization), class: 'btn btn-outline-secondary'
             = form.submit 'Save Settings', class: 'btn btn-primary'

@@ -10,6 +10,14 @@ class Company < Organization
   has_one :huddle_review_notification_channel, 
           through: :huddle_review_notification_channel_association,
           source: :third_party_object
+  
+  has_one :maap_object_comment_channel_association,
+          -> { where(association_type: 'maap_object_comment_channel') },
+          class_name: 'ThirdPartyObjectAssociation',
+          as: :associatable
+  has_one :maap_object_comment_channel,
+          through: :maap_object_comment_channel_association,
+          source: :third_party_object
 
   def display_name
     name
@@ -34,6 +42,28 @@ class Company < Organization
       end
     else
       huddle_review_notification_channel_association&.destroy
+    end
+  end
+
+  def maap_object_comment_channel_id
+    maap_object_comment_channel&.third_party_id
+  end
+
+  def maap_object_comment_channel_id=(channel_id)
+    if channel_id.present?
+      channel = third_party_objects.slack_channels.find_by(third_party_id: channel_id)
+      if channel
+        # Remove existing association
+        maap_object_comment_channel_association&.destroy
+        
+        # Create new association
+        third_party_object_associations.create!(
+          third_party_object: channel,
+          association_type: 'maap_object_comment_channel'
+        )
+      end
+    else
+      maap_object_comment_channel_association&.destroy
     end
   end
 

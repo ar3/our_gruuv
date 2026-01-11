@@ -108,6 +108,48 @@ RSpec.describe Comment, type: :model do
       end
     end
 
+    describe '#root_comment?' do
+      it 'returns true for root comments' do
+        expect(comment.root_comment?).to be true
+      end
+
+      it 'returns false for nested comments' do
+        nested_comment = create(:comment, commentable: comment, organization: organization, creator: person)
+        expect(nested_comment.root_comment?).to be false
+      end
+    end
+
+    describe '#slack_url' do
+      let(:slack_channel) { create(:third_party_object, :slack_channel, organization: organization) }
+      
+      before do
+        # Create the association on the company (organization is already a Company)
+        company_record = organization.becomes(Company)
+        company_record.third_party_object_associations.create!(
+          third_party_object: slack_channel,
+          association_type: 'maap_object_comment_channel'
+        )
+        # Reload to ensure association is loaded
+        organization.reload
+        # Stub calculated_slack_config
+        allow_any_instance_of(Organization).to receive(:calculated_slack_config).and_return(double(workspace_url: 'https://workspace.slack.com'))
+        comment.update_column(:slack_message_id, '1234567890.123456')
+      end
+
+      it 'returns Slack URL when slack_message_id is present' do
+        # The organization should be a Company and have the association
+        company = comment.organization.root_company || comment.organization
+        expect(company.is_a?(Company) || company.company?).to be true
+        expect(comment.slack_url).to be_present
+        expect(comment.slack_url).to include('slack.com')
+      end
+
+      it 'returns nil when slack_message_id is not present' do
+        comment.update_column(:slack_message_id, nil)
+        expect(comment.slack_url).to be_nil
+      end
+    end
+
     describe '#resolve!' do
       let!(:child_comment) { create(:comment, commentable: comment, organization: organization, creator: person) }
       let!(:grandchild_comment) { create(:comment, commentable: child_comment, organization: organization, creator: person) }
@@ -156,6 +198,7 @@ RSpec.describe Comment, type: :model do
         expect(comment.descendants).to be_a(ActiveRecord::Relation)
       end
     end
+
 
     describe '#root_commentable' do
       let(:root_comment) { create(:comment, :on_assignment, organization: organization, creator: person, commentable: assignment) }

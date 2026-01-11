@@ -13,6 +13,9 @@ class Comment < ApplicationRecord
   validates :creator, presence: true
   validates :commentable, presence: true
 
+  # Associations
+  has_many :notifications, as: :notifiable, dependent: :destroy
+
   # Scopes
   scope :unresolved, -> { where(resolved_at: nil) }
   scope :resolved, -> { where.not(resolved_at: nil) }
@@ -61,5 +64,27 @@ class Comment < ApplicationRecord
       current = current.commentable
     end
     current
+  end
+
+  def root_comment?
+    !commentable.is_a?(Comment)
+  end
+
+  def slack_url
+    return nil unless slack_message_id.present?
+    
+    company = organization.root_company || organization
+    return nil unless company.company?
+    
+    company_record = company.becomes(Company)
+    return nil unless company_record.maap_object_comment_channel_id.present?
+    
+    channel = company_record.maap_object_comment_channel
+    channel_name = channel.display_name.gsub('#', '')
+    
+    slack_config = company.calculated_slack_config
+    return nil unless slack_config&.workspace_url.present?
+    
+    "#{slack_config.workspace_url}/archives/#{channel_name}/p#{slack_message_id.gsub('.', '')}"
   end
 end

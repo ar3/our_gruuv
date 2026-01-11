@@ -64,10 +64,11 @@ class Organizations::Slack::ChannelsController < Organizations::OrganizationName
       redirect_to channels_organization_slack_path(@organization), alert: 'Company-only settings are only available for companies.' and return
     end
 
-    attrs = params.require(:organization).permit(:huddle_review_channel_id)
+    attrs = params.require(:organization).permit(:huddle_review_channel_id, :maap_object_comment_channel_id)
 
     company = Company.find(@target_organization.id)
-    company.huddle_review_notification_channel_id = attrs[:huddle_review_channel_id].presence
+    company.huddle_review_notification_channel_id = attrs[:huddle_review_channel_id].presence if attrs.key?(:huddle_review_channel_id)
+    company.maap_object_comment_channel_id = attrs[:maap_object_comment_channel_id].presence if attrs.key?(:maap_object_comment_channel_id)
     company.save!
 
     redirect_to channels_organization_slack_path(@organization), notice: 'Company-only channels updated successfully.'
