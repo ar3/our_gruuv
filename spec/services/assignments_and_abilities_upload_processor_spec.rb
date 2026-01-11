@@ -344,6 +344,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
     end
 
     context 'when position type not found' do
+      let!(:position_major_level) { create(:position_major_level, major_level: 1) }
       let(:preview_actions) do
         {
           'assignments' => [
@@ -369,7 +370,7 @@ RSpec.describe AssignmentsAndAbilitiesUploadProcessor, type: :service do
         }
       end
 
-      it 'skips position assignment and logs warning' do
+      it 'skips position assignment and logs warning when no position level exists' do
         expect(Rails.logger).to receive(:warn).at_least(:once)
         processor.process
         expect(PositionAssignment.count).to eq(0)

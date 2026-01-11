@@ -45,6 +45,18 @@ class PositionAssignment < ApplicationRecord
     end
   end
 
+  def energy_percentage_suffix
+    if min_estimated_energy.present? && max_estimated_energy.present?
+      "(#{min_estimated_energy}%-#{max_estimated_energy}%)"
+    elsif min_estimated_energy.present?
+      "(#{min_estimated_energy}%+)"
+    elsif max_estimated_energy.present?
+      "(up to #{max_estimated_energy}%)"
+    else
+      "(??%)"
+    end
+  end
+
   private
 
   def max_energy_greater_than_min_energy

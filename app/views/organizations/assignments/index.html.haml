@@ -145,20 +145,41 @@
                       None
                 %td
                   - if assignment.position_assignments.any?
-                    - assignment.position_assignments.includes(:position).each do |position_assignment|
-                      - position = position_assignment.position
-                      - min_pct = position_assignment.min_estimated_energy
-                      - max_pct = position_assignment.max_estimated_energy
-                      %small
-                        = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
-                          = position.display_name
-                        - if min_pct.present? && max_pct.present?
-                          = " (#{min_pct}%-#{max_pct}%)"
-                        - elsif min_pct.present?
-                          = " (#{min_pct}%+)"
-                        - elsif max_pct.present?
-                          = " (up to #{max_pct}%)"
-                      %br
+                    - # Group position_assignments by position_type
+                    - position_assignments_by_type = assignment.position_assignments.group_by { |pa| pa.position.position_type }
+                    - position_assignments_by_type.each_with_index do |(position_type, position_assignments), index|
+                      - if position_assignments.count > 1
+                        - # Multiple positions in this type - show collapsible section
+                        - collapse_id = "assignment_#{assignment.id}_position_type_#{position_type.id}"
+                        %small
+                          %a.text-decoration-none{"data-bs-toggle" => "collapse", "data-bs-target" => "##{collapse_id}", "aria-expanded" => "false", "aria-controls" => collapse_id, style: "cursor: pointer;"}
+                            %span.not-collapsed
+                              %i.bi.bi-chevron-up.me-1
+                            %span.collapsed
+                              %i.bi.bi-chevron-down.me-1
+                            = position_type.external_title
+                          .collapse{id: collapse_id}
+                            - position_assignments.each do |position_assignment|
+                              - position = position_assignment.position
+                              %small.d-block.ms-3.mt-1
+                                %i.bi.bi-arrow-right.me-1
+                                = position.position_level.level
+                                = " - "
+                                = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
+                                  = position.display_name
+                                - if position_assignment.energy_percentage_suffix.present?
+                                  = " #{position_assignment.energy_percentage_suffix}"
+                      - else
+                        - # Single position in this type - show normally
+                        - position_assignment = position_assignments.first
+                        - position = position_assignment.position
+                        %small
+                          = link_to organization_position_path(@organization, position), class: "text-decoration-none" do
+                            = position.display_name
+                          - if position_assignment.energy_percentage_suffix.present?
+                            = " #{position_assignment.energy_percentage_suffix}"
+                      - unless index == position_assignments_by_type.size - 1
+                        %br
                   - else
                     %span.text-muted
                       %i.bi.bi-dash.me-1

@@ -107,7 +107,9 @@ class Organizations::PositionTypesController < Organizations::OrganizationNamesp
           source_position.position_assignments.each do |pa|
             new_position.position_assignments.create!(
               assignment: pa.assignment,
-              assignment_type: pa.assignment_type
+              assignment_type: pa.assignment_type,
+              min_estimated_energy: pa.min_estimated_energy,
+              max_estimated_energy: pa.max_estimated_energy
             )
           end
           

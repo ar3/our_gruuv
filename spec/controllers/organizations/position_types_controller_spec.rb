@@ -101,6 +101,59 @@ RSpec.describe Organizations::PositionTypesController, type: :controller do
         expect(response).to redirect_to(organization_position_type_path(organization, position_type))
         expect(flash[:alert]).to include('No new positions were created')
       end
+
+      it 'clones position assignments with min, max, and type attributes' do
+        # Create a different position level for the target
+        target_level = create(:position_level, position_major_level: position_major_level)
+        
+        # Create source position assignments with min, max, and type
+        assignment1 = create(:assignment)
+        assignment2 = create(:assignment)
+        
+        source_pa1 = create(:position_assignment,
+          position: source_position,
+          assignment: assignment1,
+          assignment_type: 'required',
+          min_estimated_energy: 20,
+          max_estimated_energy: 40
+        )
+        source_pa2 = create(:position_assignment,
+          position: source_position,
+          assignment: assignment2,
+          assignment_type: 'suggested',
+          min_estimated_energy: 10,
+          max_estimated_energy: 30
+        )
+        
+        post :clone_positions, params: { 
+          organization_id: organization.id,
+          id: position_type.id, 
+          source_position_id: source_position.id, 
+          target_level_ids: [target_level.id] 
+        }
+        
+        # Find the cloned position
+        cloned_position = Position.find_by(position_type: position_type, position_level: target_level)
+        expect(cloned_position).to be_present
+        
+        # Verify the cloned position assignments
+        cloned_assignments = cloned_position.position_assignments.order(:id)
+        expect(cloned_assignments.count).to eq(2)
+        
+        # Verify first assignment
+        cloned_pa1 = cloned_assignments.find_by(assignment: assignment1)
+        expect(cloned_pa1).to be_present
+        expect(cloned_pa1.assignment_type).to eq('required')
+        expect(cloned_pa1.min_estimated_energy).to eq(20)
+        expect(cloned_pa1.max_estimated_energy).to eq(40)
+        
+        # Verify second assignment
+        cloned_pa2 = cloned_assignments.find_by(assignment: assignment2)
+        expect(cloned_pa2).to be_present
+        expect(cloned_pa2.assignment_type).to eq('suggested')
+        expect(cloned_pa2.min_estimated_energy).to eq(10)
+        expect(cloned_pa2.max_estimated_energy).to eq(30)
+      end
     end
 
     context 'when position_type is not found' do

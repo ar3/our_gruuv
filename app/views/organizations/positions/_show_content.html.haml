@@ -5,7 +5,7 @@
   
   .card-body
     .row
-      .col-md-8.col-sm-12
+      .col-md-4.col-sm-12
         %h5.mb-2
           %i.bi.bi-building.me-2
           Company
@@ -33,7 +33,7 @@
             Eligibility Requirements
           %p.text-pre-wrap= @position.eligibility_requirements_summary
 
-      .col-md-4.col-sm-12
+      .col-md-8.col-sm-12
         - if @position.required_assignments.any? || @position.suggested_assignments.any?
           %h5.mb-2
             %i.bi.bi-list-check.me-2
@@ -43,13 +43,17 @@
             %ul
               - @position.required_assignments.each do |pa|
                 %li
-                  = link_to pa.decorate.display_title, organization_assignment_path(@position.company, pa.assignment), class: "text-decoration-none"
+                  = link_to pa.assignment.title, organization_assignment_path(@position.company, pa.assignment), class: "text-decoration-none"
+                  - if pa.energy_percentage_suffix.present?
+                    = " #{pa.energy_percentage_suffix}"
           - if @position.suggested_assignments.any?
             %h6.text-info.mt-3 Suggested Assignments (#{@position.suggested_assignments_count})
             %ul
               - @position.suggested_assignments.each do |pa|
                 %li
-                  = link_to pa.decorate.display_title, organization_assignment_path(@position.company, pa.assignment), class: "text-decoration-none"
+                  = link_to pa.assignment.title, organization_assignment_path(@position.company, pa.assignment), class: "text-decoration-none"
+                  - if pa.energy_percentage_suffix.present?
+                    = " #{pa.energy_percentage_suffix}"
         - else
           .alert.alert-warning
             %h6.mb-2
