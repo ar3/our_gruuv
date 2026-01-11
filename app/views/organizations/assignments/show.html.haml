@@ -115,4 +115,64 @@
                      public_view: false,
                      show_milestone_parentheticals: true,
                      include_prefix: true
+
+    .card.mb-4{ role: "region", "aria-labelledby": "current-holders" }
+      .card-header
+        %h5.mb-0{ id: "current-holders" }
+          %i.bi.bi-people.me-2
+          Current Holders of This Assignment
+      .card-body
+        - if @current_holders.any?
+          .row
+            - @current_holders.each_slice((@current_holders.count.to_f / 3).ceil) do |slice|
+              .col-md-4
+                - slice.each do |teammate|
+                  .mb-2
+                    = link_to teammate.person.display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none"
+        - else
+          %p.text-muted.mb-0 No current holders
+
+    .card.mb-4{ role: "region", "aria-labelledby": "analytics" }
+      .card-header
+        %h5.mb-0{ id: "analytics" }
+          %i.bi.bi-graph-up.me-2
+          Analytics
+      .card-body
+        .row
+          .col-md-6.mb-3
+            %h6.text-muted Teammates with Tenure
+            %p.mb-0= @teammates_with_tenure_count
+          .col-md-6.mb-3
+            %h6.text-muted Total Finalized Check-ins
+            %p.mb-0= @finalized_check_ins_count
+          .col-md-6.mb-3
+            %h6.text-muted Active Assignment Tenures
+            %p.mb-0= @active_tenures_count
+          .col-md-6.mb-3
+            %h6.text-muted Average Anticipated Energy
+            %p.mb-0
+              - if @average_energy_percentage.present?
+                = "#{@average_energy_percentage}%"
+              - else
+                %span.text-muted Not available
+          .col-md-6.mb-3
+            %h6.text-muted Most Popular Official Rating
+            %p.mb-0
+              - if @teammates_with_finalized_check_ins_count > 5
+                - if @most_popular_official_rating.present?
+                  = @most_popular_official_rating.humanize
+                - else
+                  %span.text-muted No ratings available
+              - else
+                %span.text-muted These analytics will be available once 5 or more teammates have had a finalized check-in.
+          .col-md-6.mb-3
+            %h6.text-muted Most Popular Personal Alignment
+            %p.mb-0
+              - if @teammates_with_finalized_check_ins_count > 5
+                - if @most_popular_personal_alignment.present?
+                  = @most_popular_personal_alignment.humanize
+                - else
+                  %span.text-muted No alignments available
+              - else
+                %span.text-muted These analytics will be available once 5 or more teammates have had a finalized check-in.
               

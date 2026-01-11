@@ -38,6 +38,77 @@ class Organizations::AssignmentsController < ApplicationController
 
   def show
     authorize @assignment
+    
+    # Load current holders (teammates with active assignment tenures)
+    @current_holders = Teammate
+      .joins(:assignment_tenures)
+      .where(assignment_tenures: { assignment: @assignment, ended_at: nil })
+      .includes(:person)
+      .distinct
+    
+    # Analytics data
+    # Number of teammates who have ever had a tenure of this assignment
+    @teammates_with_tenure_count = @assignment.assignment_tenures
+      .select(:teammate_id)
+      .distinct
+      .count
+    
+    # Number of total finalized check-ins of this assignment
+    @finalized_check_ins_count = AssignmentCheckIn
+      .joins(:teammate)
+      .where(assignment: @assignment)
+      .closed
+      .count
+    
+    # Number of active assignment_tenures
+    @active_tenures_count = @assignment.assignment_tenures.active.count
+    
+    # Anticipated_energy_percentage based on all active assignment_tenures
+    active_tenures = @assignment.assignment_tenures.active
+    if active_tenures.any?
+      energy_values = active_tenures.where.not(anticipated_energy_percentage: nil).pluck(:anticipated_energy_percentage)
+      @average_energy_percentage = energy_values.any? ? (energy_values.sum.to_f / energy_values.count).round(1) : nil
+    else
+      @average_energy_percentage = nil
+    end
+    
+    # Number of teammates with finalized check-ins
+    @teammates_with_finalized_check_ins_count = AssignmentCheckIn
+      .joins(:teammate)
+      .where(assignment: @assignment)
+      .closed
+      .select(:teammate_id)
+      .distinct
+      .count
+    
+    # Most popular official_rating (if >5 teammates with finalized check-ins)
+    if @teammates_with_finalized_check_ins_count > 5
+      finalized_check_ins = AssignmentCheckIn
+        .joins(:teammate)
+        .where(assignment: @assignment)
+        .closed
+        .where.not(official_rating: nil)
+      
+      rating_counts = finalized_check_ins.group(:official_rating).count
+      @most_popular_official_rating = rating_counts.max_by { |_k, v| v }&.first
+    else
+      @most_popular_official_rating = nil
+    end
+    
+    # Most popular employee_personal_alignment (if >5 teammates with finalized check-ins)
+    if @teammates_with_finalized_check_ins_count > 5
+      finalized_check_ins = AssignmentCheckIn
+        .joins(:teammate)
+        .where(assignment: @assignment)
+        .closed
+        .where.not(employee_personal_alignment: nil)
+      
+      alignment_counts = finalized_check_ins.group(:employee_personal_alignment).count
+      @most_popular_personal_alignment = alignment_counts.max_by { |_k, v| v }&.first
+    else
+      @most_popular_personal_alignment = nil
+    end
+    
     render layout: determine_layout
   end
 

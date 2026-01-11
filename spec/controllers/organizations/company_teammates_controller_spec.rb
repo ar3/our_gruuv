@@ -104,6 +104,41 @@ RSpec.describe Organizations::CompanyTeammatesController, type: :controller do
         last_check_in = assigned_goal.instance_variable_get(:@last_check_in)
         expect(last_check_in).to eq(check_in)
       end
+
+      it 'assigns active assignment tenures' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        assignment = create(:assignment, company: organization)
+        active_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 1.month.ago, ended_at: nil)
+        # Create an inactive tenure to ensure only active ones are returned
+        inactive_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 3.months.ago, ended_at: 2.months.ago)
+        
+        get :internal, params: { organization_id: organization.id, id: employee_teammate.id }
+        
+        expect(assigns(:active_assignment_tenures)).to include(active_tenure)
+        expect(assigns(:active_assignment_tenures)).not_to include(inactive_tenure)
+      end
+
+      it 'only assigns assignment tenures for assignments in the current organization' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        other_organization = create(:organization, :company)
+        assignment_in_org = create(:assignment, company: organization)
+        assignment_in_other_org = create(:assignment, company: other_organization)
+        tenure_in_org = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_in_org, started_at: 1.month.ago, ended_at: nil)
+        tenure_in_other_org = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_in_other_org, started_at: 1.month.ago, ended_at: nil)
+        
+        get :internal, params: { organization_id: organization.id, id: employee_teammate.id }
+        
+        expect(assigns(:active_assignment_tenures)).to include(tenure_in_org)
+        expect(assigns(:active_assignment_tenures)).not_to include(tenure_in_other_org)
+      end
+
+      it 'assigns empty array when no active assignment tenures exist' do
+        employee_teammate = employee.teammates.find_by(organization: organization)
+        
+        get :internal, params: { organization_id: organization.id, id: employee_teammate.id }
+        
+        expect(assigns(:active_assignment_tenures)).to eq([])
+      end
     end
 
     context 'when viewing inactive teammate (no active employment)' do

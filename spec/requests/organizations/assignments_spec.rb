@@ -73,6 +73,112 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         expect(response.body).to include('Edit Assignment')
         expect(response.body).to include('Delete Assignment')
       end
+
+      it 'shows current holders section when there are active tenures' do
+        teammate1 = create(:teammate, person: create(:person), organization: organization)
+        teammate2 = create(:teammate, person: create(:person), organization: organization)
+        create(:assignment_tenure, teammate: teammate1, assignment: assignment, started_at: 1.month.ago, ended_at: nil)
+        create(:assignment_tenure, teammate: teammate2, assignment: assignment, started_at: 2.months.ago, ended_at: nil)
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Current Holders of This Assignment')
+        expect(response.body).to include(teammate1.person.display_name)
+        expect(response.body).to include(teammate2.person.display_name)
+      end
+
+      it 'shows no current holders message when there are no active tenures' do
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Current Holders of This Assignment')
+        expect(response.body).to include('No current holders')
+      end
+
+      it 'shows analytics section with all metrics' do
+        teammate1 = create(:teammate, person: create(:person), organization: organization)
+        teammate2 = create(:teammate, person: create(:person), organization: organization)
+        teammate3 = create(:teammate, person: create(:person), organization: organization)
+        
+        # Create some tenures
+        create(:assignment_tenure, teammate: teammate1, assignment: assignment, started_at: 3.months.ago, ended_at: 1.month.ago)
+        create(:assignment_tenure, teammate: teammate2, assignment: assignment, started_at: 2.months.ago, ended_at: nil, anticipated_energy_percentage: 50)
+        create(:assignment_tenure, teammate: teammate3, assignment: assignment, started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 75)
+        
+        # Create some finalized check-ins
+        check_in1 = create(:assignment_check_in, teammate: teammate1, assignment: assignment, check_in_started_on: 2.months.ago, official_check_in_completed_at: 2.months.ago, official_rating: 'meeting', employee_personal_alignment: 'like')
+        check_in2 = create(:assignment_check_in, teammate: teammate2, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'exceeding', employee_personal_alignment: 'love')
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Analytics')
+        expect(response.body).to include('Teammates with Tenure')
+        expect(response.body).to include('Total Finalized Check-ins')
+        expect(response.body).to include('Active Assignment Tenures')
+        expect(response.body).to include('Average Anticipated Energy')
+        expect(response.body).to include('Most Popular Official Rating')
+        expect(response.body).to include('Most Popular Personal Alignment')
+      end
+
+      it 'shows message for popular ratings when less than 5 teammates have finalized check-ins' do
+        teammate1 = create(:teammate, person: create(:person), organization: organization)
+        teammate2 = create(:teammate, person: create(:person), organization: organization)
+        
+        check_in1 = create(:assignment_check_in, teammate: teammate1, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'meeting')
+        check_in2 = create(:assignment_check_in, teammate: teammate2, assignment: assignment, check_in_started_on: 2.months.ago, official_check_in_completed_at: 2.months.ago, official_rating: 'exceeding')
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('These analytics will be available once 5 or more teammates have had a finalized check-in.')
+      end
+
+      it 'shows most popular rating when 6 or more teammates have finalized check-ins' do
+        teammates = 6.times.map { create(:teammate, person: create(:person), organization: organization) }
+        
+        # Create 4 check-ins with 'meeting' rating and 2 with 'exceeding'
+        teammates[0..3].each do |teammate|
+          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'meeting')
+        end
+        teammates[4..5].each do |teammate|
+          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, official_rating: 'exceeding')
+        end
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Meeting')
+        expect(response.body).not_to include('These analytics will be available once 5 or more teammates have had a finalized check-in.')
+      end
+
+      it 'shows most popular personal alignment when 6 or more teammates have finalized check-ins' do
+        teammates = 6.times.map { create(:teammate, person: create(:person), organization: organization) }
+        
+        # Create 4 check-ins with 'love' alignment and 2 with 'like'
+        teammates[0..3].each do |teammate|
+          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, employee_personal_alignment: 'love')
+        end
+        teammates[4..5].each do |teammate|
+          create(:assignment_check_in, teammate: teammate, assignment: assignment, check_in_started_on: 1.month.ago, official_check_in_completed_at: 1.month.ago, employee_personal_alignment: 'like')
+        end
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Love')
+        expect(response.body).not_to include('These analytics will be available once 5 or more teammates have had a finalized check-in.')
+      end
+
+      it 'calculates average anticipated energy correctly' do
+        teammate1 = create(:teammate, person: create(:person), organization: organization)
+        teammate2 = create(:teammate, person: create(:person), organization: organization)
+        teammate3 = create(:teammate, person: create(:person), organization: organization)
+        
+        create(:assignment_tenure, teammate: teammate1, assignment: assignment, started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 50)
+        create(:assignment_tenure, teammate: teammate2, assignment: assignment, started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 75)
+        create(:assignment_tenure, teammate: teammate3, assignment: assignment, started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 25)
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        # Average should be (50 + 75 + 25) / 3 = 50.0
+        expect(response.body).to include('50.0%')
+      end
     end
 
     context 'when user is admin' do

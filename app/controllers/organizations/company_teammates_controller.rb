@@ -96,6 +96,13 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       nil
     end
 
+    # Active assignment tenures for this teammate in this organization
+    @active_assignment_tenures = @teammate&.assignment_tenures&.active
+                                      &.joins(:assignment)
+                                      &.where(assignments: { company: organization })
+                                      &.includes(:assignment)
+                                      &.order('assignments.title') || []
+
     # Active departments/teams within this company
     company_descendant_ids = organization.self_and_descendants.map(&:id)
     @active_departments_and_teams = @teammate.person.teammates

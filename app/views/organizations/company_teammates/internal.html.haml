@@ -312,6 +312,37 @@
         - else
           %p.text-muted No active employment tenure in this organization.
 
+/ Active Assignment Tenures Section
+.row.mb-4
+  .col-12
+    .card
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-clipboard-check.me-2
+          Active Assignment Tenures
+      .card-body
+        - if @active_assignment_tenures.any?
+          .list-group
+            - @active_assignment_tenures.each do |tenure|
+              .list-group-item
+                .d-flex.justify-content-between.align-items-start
+                  .flex-grow-1
+                    %h6.mb-1
+                      = link_to tenure.assignment.title, organization_assignment_path(@current_organization, tenure.assignment), class: "text-decoration-none"
+                    - if tenure.assignment.tagline.present?
+                      %p.mb-1.text-muted.small= tenure.assignment.tagline
+                    %small.text-muted
+                      Started: #{tenure.started_at.strftime("%B %d, %Y")}
+                      - if tenure.anticipated_energy_percentage.present?
+                        %span.ms-2
+                          | Energy: 
+                          %strong= "#{tenure.anticipated_energy_percentage}%"
+                  .ms-3
+                    = link_to organization_assignment_path(@current_organization, tenure.assignment), class: "btn btn-sm btn-outline-primary" do
+                      %i.bi.bi-eye
+        - else
+          %p.text-muted No active assignment tenures.
+
 / Departments & Teams Section
 .row.mb-4
   .col-12
