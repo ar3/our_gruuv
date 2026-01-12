@@ -10,7 +10,7 @@
                 - person = teammate.person
                 .me-2
                   .rounded-circle.bg-primary.text-white.d-flex.align-items-center.justify-content-center{style: "width: 40px; height: 40px; font-size: 0.9rem;"}
-                    = (person.preferred_name || person.first_name || '?')[0].upcase
+                    = (person.preferred_name || person.first_name || '?')[0]&.upcase
             - else
               .me-2
                 .rounded-circle.bg-secondary.text-white.d-flex.align-items-center.justify-content-center{style: "width: 40px; height: 40px; font-size: 0.9rem;"}
