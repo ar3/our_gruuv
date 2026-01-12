@@ -38,6 +38,14 @@
     = link_to organization_aspiration_path(@organization, @commentable), class: "go-back-link" do
       %i.bi.bi-arrow-left.me-2
       Back to Aspiration
+  - elsif @commentable.is_a?(Position)
+    = link_to organization_position_path(@organization, @commentable), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Back to Position
+  - elsif @commentable.is_a?(PositionType)
+    = link_to organization_position_type_path(@organization, @commentable), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Back to Position Type
 
 .row.justify-content-center
   .col-lg-10

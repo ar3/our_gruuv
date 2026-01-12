@@ -82,6 +82,9 @@
                 .alert.alert-info
                   %p.mb-0= "#{@position_type.external_title} is not currently available at #{@position_type.organization.display_name}"
 
+      / Comments Section
+      = render 'shared/comment_summary', commentable: @position_type, organization: @organization
+
       - if @position_type.positions.any?
         - available_levels = @position_type.position_major_level.position_levels
         - existing_level_ids = @position_type.positions.map(&:position_level_id)
@@ -118,6 +121,7 @@
               .mt-3
                 - if @position_type.positions.any?
                   %p.mb-3 You can clone an existing position to create the missing ones with the same assignments and settings.
+                  - can_clone = policy(@position_type).clone_positions?
                   = form_with url: clone_positions_organization_position_type_path(@organization, @position_type), method: :post, local: true do |form|
                     .row
                       .col-md-6
@@ -125,15 +129,21 @@
                         = form.select :source_position_id, 
                           options_from_collection_for_select(@position_type.positions, :id, :display_name), 
                           { prompt: 'Select a position to clone from' }, 
-                          { class: "form-select", required: true }
+                          { class: "form-select", required: true, disabled: !can_clone }
                       .col-md-6
                         = form.label :target_level_ids, "Create for levels:", class: "form-label"
                         = form.select :target_level_ids, 
                           options_from_collection_for_select(missing_levels, :id, :level_name), 
                           { prompt: 'Select levels to create' }, 
-                          { class: "form-select", required: true, multiple: true }
+                          { class: "form-select", required: true, multiple: true, disabled: !can_clone }
                     .mt-3
-                      = form.submit "Clone Positions", class: "btn btn-warning"
+                      - if can_clone
+                        = form.submit "Clone Positions", class: "btn btn-warning"
+                      - else
+                        .d-flex.align-items-center.gap-2
+                          .flex-grow-1
+                            = form.submit "Clone Positions", class: "btn btn-outline-secondary w-100", disabled: true
+                          %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "Requires MAAP management permission"}}
                 - else
                   %p.mb-3 Create the first position manually, then you can clone it for the remaining levels.
                   = link_to "Create First Position", new_organization_position_path(@position_type.organization, position_type_id: @position_type.id), class: "btn btn-primary"

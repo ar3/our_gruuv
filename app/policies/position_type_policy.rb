@@ -1,6 +1,6 @@
 class PositionTypePolicy < ApplicationPolicy
   def show?
-    admin_bypass? || user_has_maap_permission_for_record?
+    admin_bypass? || user_has_maap_permission_for_record? || user_is_active_company_teammate_in_same_company?
   end
 
   def create?
@@ -29,10 +29,17 @@ class PositionTypePolicy < ApplicationPolicy
         viewing_teammate_org = viewing_teammate.organization
         return scope.none unless viewing_teammate_org
         
-        if viewing_teammate.can_manage_maap?
-          # Include position types from viewing_teammate's organization and all its descendants
+        # Get root company for viewing teammate
+        root_company = viewing_teammate_org.root_company
+        return scope.none unless root_company
+        
+        # Include position types if:
+        # 1. User can manage MAAP (existing behavior)
+        # 2. User is actively employed company teammate in the same company
+        if viewing_teammate.can_manage_maap? || viewing_teammate.assigned_employee?
+          # Include position types from root company and all its descendants
           # This allows viewing department position types when signed in to company
-          org_ids = viewing_teammate_org.self_and_descendants.map(&:id)
+          org_ids = root_company.self_and_descendants.map(&:id)
           scope.where(organization_id: org_ids)
         else
           scope.none
@@ -62,6 +69,24 @@ class PositionTypePolicy < ApplicationPolicy
     return false unless orgs.include?(record.organization)
     
     viewing_teammate.can_manage_maap?
+  end
+
+  def user_is_active_company_teammate_in_same_company?
+    return false unless viewing_teammate
+    return false unless record&.organization
+    
+    # Check if viewing teammate is actively employed (assigned employee)
+    return false unless viewing_teammate.assigned_employee?
+    
+    # Get root companies for both organizations
+    viewing_teammate_root_company = viewing_teammate.organization.root_company
+    position_type_root_company = record.organization.root_company
+    
+    return false unless viewing_teammate_root_company
+    return false unless position_type_root_company
+    
+    # Check if they're in the same company
+    viewing_teammate_root_company.id == position_type_root_company.id
   end
 end
 

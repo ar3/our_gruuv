@@ -63,7 +63,7 @@ class Organizations::PositionTypesController < Organizations::OrganizationNamesp
   end
 
   def clone_positions
-    authorize @position_type
+    authorize @position_type, :clone_positions?
     Rails.logger.info "Clone positions called with params: #{params.inspect}"
     
     source_position = Position.find(params[:source_position_id])

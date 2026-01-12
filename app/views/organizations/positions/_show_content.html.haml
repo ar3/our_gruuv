@@ -76,3 +76,6 @@
               = link_to @position.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm" do
                 %i.bi.bi-file-earmark-text.me-1
                 Draft Version
+
+    / Comments Section
+    = render 'shared/comment_summary', commentable: @position, organization: @organization

@@ -7,6 +7,7 @@ class Position < ApplicationRecord
   belongs_to :position_level
   has_many :position_assignments, dependent: :destroy
   has_many :assignments, through: :position_assignments
+  has_many :comments, as: :commentable, dependent: :destroy
   has_one :published_external_reference, -> { where(reference_type: 'published') }, 
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
   has_one :draft_external_reference, -> { where(reference_type: 'draft') }, 

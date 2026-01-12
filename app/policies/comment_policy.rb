@@ -50,6 +50,10 @@ class CommentPolicy < ApplicationPolicy
       Pundit.policy(pundit_user, commentable).show?
     when Aspiration
       Pundit.policy(pundit_user, commentable).show?
+    when Position
+      Pundit.policy(pundit_user, commentable).show?
+    when PositionType
+      Pundit.policy(pundit_user, commentable).show?
     when Comment
       # For nested comments, check if user can view the root commentable
       root = record.root_commentable
@@ -61,6 +65,10 @@ class CommentPolicy < ApplicationPolicy
       when Ability
         Pundit.policy(pundit_user, root).show?
       when Aspiration
+        Pundit.policy(pundit_user, root).show?
+      when Position
+        Pundit.policy(pundit_user, root).show?
+      when PositionType
         Pundit.policy(pundit_user, root).show?
       else
         false

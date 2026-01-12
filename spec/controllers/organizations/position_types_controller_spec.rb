@@ -223,9 +223,9 @@ RSpec.describe Organizations::PositionTypesController, type: :controller do
         source_position # Create the source position
       end
 
-      it 'authorizes the position_type' do
+      it 'authorizes the position_type with clone_positions? action' do
         allow(controller).to receive(:authorize).and_call_original
-        expect(controller).to receive(:authorize).with(position_type)
+        expect(controller).to receive(:authorize).with(position_type, :clone_positions?)
         post :clone_positions, params: { 
           organization_id: organization.id,
           id: position_type.id, 
