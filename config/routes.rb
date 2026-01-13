@@ -225,6 +225,8 @@ get '/login', to: 'auth#login', as: :login
         post :update_permissions
         get :assignment_selection
         post :update_assignments
+        get :assignment_tenure_check_in_bypass
+        patch :update_assignment_tenure_check_in_bypass
       end
       
       # Unified check-ins page (spreadsheet-style giant form)

@@ -143,4 +143,79 @@ module OrganizationsHelper
       content_tag(:i, '', class: "#{readiness[:icon]} me-1") + readiness[:label]
     end
   end
+
+  # Get full name for assignment including company and department hierarchy
+  def assignment_full_name(assignment)
+    path = []
+    
+    # Start with company
+    company = assignment.company
+    path << company.name if company
+    
+    # Add department hierarchy if present (excluding the company which is already included)
+    if assignment.department
+      current = assignment.department
+      dept_path = []
+      while current
+        # Stop before including the company (which is already in the path)
+        break if current.company?
+        dept_path.unshift(current.name)
+        current = current.parent
+      end
+      path.concat(dept_path)
+    end
+    
+    # Add assignment title
+    path << assignment.title
+    
+    path.join(' > ')
+  end
+
+  # Get department hierarchy display string
+  def department_hierarchy_display(department)
+    return '' unless department
+    
+    path = []
+    current = department
+    while current
+      path.unshift(current.name)
+      current = current.parent
+    end
+    path.join(' > ')
+  end
+
+  # Determine table row class based on assignment tenure status
+  # latest_tenure: nil = no tenure, ended_at present = ended (info), ended_at nil = active (success)
+  def assignment_row_class(latest_tenure)
+    return '' unless latest_tenure
+    
+    if latest_tenure.ended_at.nil?
+      'table-success' # Active tenure
+    else
+      'table-info' # Ended tenure
+    end
+  end
+
+  # Get last active tenure information
+  def last_active_tenure_info(assignment, teammate)
+    last_tenure = teammate.assignment_tenures
+                          .where(assignment: assignment)
+                          .where.not(ended_at: nil)
+                          .order(started_at: :desc)
+                          .first
+    
+    return nil unless last_tenure
+    
+    {
+      started_at: last_tenure.started_at,
+      ended_at: last_tenure.ended_at,
+      anticipated_energy_percentage: last_tenure.anticipated_energy_percentage
+    }
+  end
+
+  # Check if assignment has any check-ins or tenures
+  def has_check_in_or_tenure_history?(assignment, teammate)
+    teammate.assignment_tenures.where(assignment: assignment).exists? ||
+      AssignmentCheckIn.where(teammate: teammate, assignment: assignment).exists?
+  end
 end

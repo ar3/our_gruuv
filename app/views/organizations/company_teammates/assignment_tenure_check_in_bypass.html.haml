@@ -1,0 +1,88 @@
+- content_for :title, "Assignment Tenure Check-in Bypass - #{@teammate.person.full_name}"
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-clipboard-check.me-2
+    Assignment Tenure Check-in Bypass
+  %small.text-muted= @teammate.person.full_name
+
+- content_for :go_back_link do
+  = link_to internal_organization_company_teammate_path(@current_organization, @teammate), class: "text-muted text-decoration-none" do
+    %i.bi.bi-arrow-left.me-2
+    Back to Teammate View
+
+.row
+  .col-12
+    .card.mb-4
+      .card-header
+        %h5.mb-0
+          %i.bi.bi-info-circle.me-2
+          Instructions
+      .card-body
+        %p
+          Use this page to update assignment tenure energy percentages without going through the normal check-in flow.
+          Changes will be recorded in a MAAP snapshot for audit purposes.
+        %p.mb-0
+          %strong Note:
+          Setting energy percentage to 0% will end the active tenure. Setting it to any other value will update or create a tenure as needed.
+
+= form_with url: update_assignment_tenure_check_in_bypass_organization_company_teammate_path(@current_organization, @teammate), method: :patch, local: true do |form|
+  .row
+    .col-12
+      .card
+        .card-body
+          %table.table.table-hover
+            %thead
+              %tr
+                %th Assignment Name
+                %th Latest Tenure
+                %th Anticipated Energy %
+                %th Status
+            %tbody
+              - @assignments.each do |assignment|
+                - data = @assignment_data[assignment.id]
+                - latest_tenure = data[:latest_tenure]
+                - row_class = assignment_row_class(latest_tenure)
+                - active_tenure = latest_tenure&.ended_at.nil? ? latest_tenure : nil
+                
+                %tr{class: row_class}
+                  %td
+                    - if latest_tenure
+                      - assignment_org = assignment.company
+                      - teammate_for_assignment = @teammate.person.teammates.find_by(organization: assignment_org)
+                      - if teammate_for_assignment
+                        = link_to assignment_full_name(assignment), organization_teammate_assignment_path(assignment_org, teammate_for_assignment, assignment), class: "text-decoration-none"
+                      - else
+                        = assignment_full_name(assignment)
+                    - else
+                      = assignment_full_name(assignment)
+                  %td
+                    - if latest_tenure
+                      %small
+                        = latest_tenure.started_at.strftime("%B %d, %Y")
+                        to
+                        - if latest_tenure.ended_at.present?
+                          = latest_tenure.ended_at.strftime("%B %d, %Y")
+                        - else
+                          Now
+                        - if latest_tenure.anticipated_energy_percentage.present?
+                          |  (#{latest_tenure.anticipated_energy_percentage}%)
+                    - else
+                      %span.text-muted -
+                  %td
+                    - options = (0..20).map { |i| ["#{i * 5}%", i * 5] }
+                    = form.select "assignment_tenures[#{assignment.id}]",
+                                  options_for_select(options, active_tenure&.anticipated_energy_percentage),
+                                  {},
+                                  { class: "form-select form-select-sm" }
+                  %td
+                    - if active_tenure
+                      %span.badge.bg-success Active Tenure
+                    - elsif latest_tenure
+                      %span.badge.bg-info Previous Tenure
+
+  .row.mt-4
+    .col-12
+      .d-flex.justify-content-end
+        = form.submit "Save Changes", class: "btn btn-primary"
+        = link_to "Cancel", internal_organization_company_teammate_path(@current_organization, @teammate), class: "btn btn-secondary ms-2"

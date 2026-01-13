@@ -245,6 +245,12 @@
                       = link_to organization_company_teammate_check_ins_path(organization, @teammate), class: "btn btn-outline-secondary" do
                         %i.bi.bi-list.me-2
                         Manage Tenures
+              
+              - if policy(@teammate).manager? || policy(organization).manage_employment?
+                .mt-3
+                  = link_to assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, @teammate), class: "btn btn-sm btn-outline-secondary" do
+                    %i.bi.bi-lightning-charge.me-1
+                    Assignment Tenure Check-in Bypass
 
 / Milestones Section
 - if @teammate_milestones.any?

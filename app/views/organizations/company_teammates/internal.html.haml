@@ -342,6 +342,12 @@
                       %i.bi.bi-eye
         - else
           %p.text-muted No active assignment tenures.
+        
+        - if policy(@teammate).manager? || policy(@current_organization).manage_employment?
+          .mt-3
+            = link_to assignment_tenure_check_in_bypass_organization_company_teammate_path(@current_organization, @teammate), class: "btn btn-sm btn-outline-secondary" do
+              %i.bi.bi-lightning-charge.me-1
+              Assignment Tenure Check-in Bypass
 
 / Departments & Teams Section
 .row.mb-4

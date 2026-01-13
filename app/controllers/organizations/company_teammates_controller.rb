@@ -285,6 +285,158 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     redirect_to organization_company_teammate_check_ins_path(organization, @teammate), notice: 'Assignments updated successfully.'
   end
 
+  def assignment_tenure_check_in_bypass
+    # Authorize: manager or has manage_employment permission
+    # This action should NOT be accessible when viewing yourself (must be a manager of someone else)
+    if current_company_teammate == @teammate
+      raise Pundit::NotAuthorizedError
+    end
+    
+    # Check if user is a manager of this teammate OR has manage_employment permission
+    is_manager = policy(@teammate).manager?
+    has_manage_employment = policy(organization).manage_employment?
+    
+    unless is_manager || has_manage_employment
+      authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
+    else
+      skip_authorization
+    end
+    
+    @current_organization = organization
+    
+    # Load all assignments for the organization
+    company = organization.root_company || organization
+    @assignments = Assignment.where(company: company.self_and_descendants)
+                            .includes(:department, :company)
+                            .ordered
+    
+    # For each assignment, load tenure data
+    @assignment_data = {}
+    @assignments.each do |assignment|
+      # Get the latest tenure (most recent by started_at)
+      latest_tenure = @teammate.assignment_tenures
+                                .where(assignment: assignment)
+                                .order(started_at: :desc)
+                                .first
+      
+      @assignment_data[assignment.id] = {
+        assignment: assignment,
+        latest_tenure: latest_tenure
+      }
+    end
+    
+    # Sort all assignments by full name (company > department hierarchy > assignment name)
+    # Use the helper method's logic to ensure consistent sorting with display
+    @assignments = @assignments.sort_by do |assignment|
+      path = []
+      
+      # Start with company
+      company = assignment.company
+      path << company.name if company
+      
+      # Add department hierarchy if present (excluding the company which is already included)
+      if assignment.department
+        current = assignment.department
+        dept_path = []
+        while current
+          # Stop before including the company (which is already in the path)
+          break if current.company?
+          dept_path.unshift(current.name)
+          current = current.parent
+        end
+        path.concat(dept_path)
+      end
+      
+      # Add assignment title
+      path << assignment.title
+      
+      path.join(' > ')
+    end
+  end
+
+  def update_assignment_tenure_check_in_bypass
+    # Authorize: manager or has manage_employment permission
+    # This action should NOT be accessible when viewing yourself (must be a manager of someone else)
+    if current_company_teammate == @teammate
+      raise Pundit::NotAuthorizedError
+    end
+    
+    # Check if user is a manager of this teammate OR has manage_employment permission
+    is_manager = policy(@teammate).manager?
+    has_manage_employment = policy(organization).manage_employment?
+    
+    unless is_manager || has_manage_employment
+      authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
+    else
+      skip_authorization
+    end
+    
+    assignment_tenures_params = params[:assignment_tenures] || {}
+    changes_made = false
+    
+    ActiveRecord::Base.transaction do
+      assignment_tenures_params.each do |assignment_id_str, energy_percentage_str|
+        assignment_id = assignment_id_str.to_i
+        energy_percentage = energy_percentage_str.to_i
+        
+        company = organization.root_company || organization
+        assignment = Assignment.find_by(id: assignment_id, company: company.self_and_descendants)
+        next unless assignment
+        
+        active_tenure = @teammate.assignment_tenures.where(assignment: assignment).active.first
+        
+        if active_tenure
+          if energy_percentage == 0
+            # End the tenure
+            active_tenure.update!(
+              ended_at: Date.current,
+              anticipated_energy_percentage: 0
+            )
+            changes_made = true
+          elsif active_tenure.anticipated_energy_percentage != energy_percentage
+            # Update the energy percentage
+            active_tenure.update!(anticipated_energy_percentage: energy_percentage)
+            changes_made = true
+          end
+        elsif energy_percentage > 0
+          # Create new tenure
+          @teammate.assignment_tenures.create!(
+            assignment: assignment,
+            started_at: Date.current,
+            anticipated_energy_percentage: energy_percentage
+          )
+          changes_made = true
+        end
+      end
+      
+      # Create MAAP snapshot if changes were made
+      if changes_made
+        request_info = build_request_info
+        snapshot = MaapSnapshot.build_for_employee(
+          employee: @teammate.person,
+          created_by: current_person,
+          change_type: 'assignment_management',
+          reason: 'Check-in Bypass',
+          request_info: request_info
+        )
+        snapshot.save!
+      end
+    end
+    
+    if changes_made
+      redirect_to assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, @teammate),
+                  notice: 'Assignment tenures updated successfully.'
+    else
+      redirect_to assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, @teammate),
+                  alert: 'No changes were made.'
+    end
+  rescue => e
+    Rails.logger.error("Error updating assignment tenures: #{e.message}")
+    Rails.logger.error(e.backtrace.join("\n"))
+    redirect_to assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, @teammate),
+                alert: "Error updating assignment tenures: #{e.message}"
+  end
+
   def update
     authorize @teammate, :update?, policy_class: CompanyTeammatePolicy
     if @teammate.person.update(person_params)
@@ -893,6 +1045,14 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     @aspirations_with_recent_check_ins_count = @aspiration_check_ins_data.count do |data|
       data[:latest_finalized] && data[:latest_finalized].official_check_in_completed_at >= cutoff_date
     end
+  end
+
+  def build_request_info
+    {
+      ip_address: request.remote_ip,
+      user_agent: request.user_agent,
+      timestamp: Time.current.iso8601
+    }
   end
 
   def load_abilities_data
