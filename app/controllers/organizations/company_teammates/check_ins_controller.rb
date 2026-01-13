@@ -401,5 +401,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     
     permitted_params
   end
+  
 end
 
