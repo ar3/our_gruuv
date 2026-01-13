@@ -35,12 +35,6 @@
 
 = render 'shared/check_in_wizard_header', organization: organization, teammate: @teammate, current_step: 1
 
--# Show pending acknowledgement banner if applicable
-- if @view_mode == :employee && @teammate.person.maap_snapshots.executed.where(employee_acknowledged_at: nil).any?
-  .alert.alert-warning
-    %strong ⚠️ Your manager has finalized check-ins.
-    = link_to 'Review and Acknowledge', organization_company_teammate_finalization_path(organization, @teammate), class: 'btn btn-sm btn-warning'
-
 -# Mobile warning for table view
 - if @view_mode_param == 'table'
   .alert.alert-info.d-md-none
@@ -268,10 +262,13 @@
   = render 'shared/section_header', 
            title: 'Abilities/Skills/Knowledge', 
            icon: 'bi-briefcase', 
-           description: 'View abilities relevant to your role and assignments'
+           description: 'View abilities relevant to your role and assignments',
+           collapsible: true,
+           collapse_target: 'abilities-section'
   
-  = render 'abilities_table',
-           relevant_abilities: @relevant_abilities,
-           view_mode: @view_mode,
-           person: @person
+  .collapse#abilities-section
+    = render 'abilities_table',
+             relevant_abilities: @relevant_abilities,
+             view_mode: @view_mode,
+             person: @person
     

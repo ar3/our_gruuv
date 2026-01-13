@@ -730,5 +730,66 @@ module EmployeesHelper
     date = parse_date(date_value)
     date ? date.strftime('%Y-%m-%d') : 'None'
   end
+
+  def executed_popover_content(snapshot)
+    return '' unless snapshot.executed? && snapshot.manager_request_info.present?
+    
+    content = []
+    request_info = snapshot.manager_request_info
+    
+    # Get who executed it
+    if request_info['finalized_by_id'].present?
+      executed_by = Person.find_by(id: request_info['finalized_by_id'])
+      content << "<strong>Executed by:</strong> #{executed_by&.display_name || 'Unknown'}"
+    end
+    
+    # Add details from manager_request_info
+    if request_info.present?
+      content << '<br><br><strong>Details:</strong>'
+      if request_info['timestamp'].present?
+        begin
+          timestamp = request_info['timestamp'].is_a?(String) ? Time.parse(request_info['timestamp']) : request_info['timestamp']
+          content << "<strong>Timestamp:</strong> #{format_time_in_user_timezone(timestamp, format: '%Y-%m-%d %I:%M %p')}"
+        rescue ArgumentError, TypeError
+          content << "<strong>Timestamp:</strong> #{request_info['timestamp']}"
+        end
+      end
+      content << "<strong>IP Address:</strong> #{request_info['ip_address']}" if request_info['ip_address'].present?
+      content << "<strong>User Agent:</strong> #{truncate(request_info['user_agent'], length: 50)}" if request_info['user_agent'].present?
+      content << "<strong>Session ID:</strong> #{truncate(request_info['session_id'], length: 20)}" if request_info['session_id'].present?
+      content << "<strong>Request ID:</strong> #{request_info['request_id']}" if request_info['request_id'].present?
+    end
+    
+    content.join('<br>')
+  end
+
+  def acknowledged_popover_content(snapshot)
+    return '' unless snapshot.acknowledged? && snapshot.employee_acknowledgement_request_info.present?
+    
+    content = []
+    request_info = snapshot.employee_acknowledgement_request_info
+    
+    # Get who acknowledged it
+    if request_info['acknowledged_by'].present?
+      acknowledged_by = Person.find_by(id: request_info['acknowledged_by'])
+      content << "<strong>Acknowledged by:</strong> #{acknowledged_by&.display_name || 'Unknown'}"
+    end
+    
+    # Add details from employee_acknowledgement_request_info
+    if request_info.present?
+      content << '<br><br><strong>Details:</strong>'
+      if request_info['acknowledged_at'].present?
+        begin
+          acknowledged_at = request_info['acknowledged_at'].is_a?(String) ? Time.parse(request_info['acknowledged_at']) : request_info['acknowledged_at']
+          content << "<strong>Timestamp:</strong> #{format_time_in_user_timezone(acknowledged_at, format: '%Y-%m-%d %I:%M %p')}"
+        rescue ArgumentError, TypeError
+          content << "<strong>Timestamp:</strong> #{request_info['acknowledged_at']}"
+        end
+      end
+      content << "<strong>Request Source:</strong> #{request_info['request_source']}" if request_info['request_source'].present?
+    end
+    
+    content.join('<br>')
+  end
 end
 
