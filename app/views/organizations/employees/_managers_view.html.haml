@@ -1,0 +1,58 @@
+.list-group
+  - @filtered_and_paginated_teammates.each do |teammate|
+    .list-group-item
+      .d-flex.align-items-start.mb-3
+        .flex-shrink-0.me-3
+          = teammate_profile_image(teammate, size: 48)
+        .flex-grow-1
+          .d-flex.align-items-center.gap-2.mb-2
+            %h6.mb-0
+              = link_to teammate.person.display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none fw-bold"
+            = link_to about_me_organization_company_teammate_path(@organization, teammate), class: "btn btn-lg btn-primary" do
+              About #{teammate.person.casual_name}
+            -# .d-flex.flex-column
+            = link_to organization_company_teammate_check_ins_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm text-start" do
+              #{teammate.person.casual_name}'s Check-in
+              - latest_finalized = PositionCheckIn.latest_finalized_for(teammate)
+              - if latest_finalized&.official_check_in_completed_at
+                %br
+                %small.text-muted.mt-0
+                  Latest: #{format_date_in_user_timezone(latest_finalized.official_check_in_completed_at, current_person)}
+      
+      .row.mt-2
+        - active_tenure = teammate.is_a?(CompanyTeammate) ? teammate.active_employment_tenure : nil
+        - if active_tenure
+          - if active_tenure.seat
+            .col-auto.mb-2
+              = link_to organization_seat_path(@organization, active_tenure.seat), class: "btn btn-outline-secondary btn-sm" do
+                = active_tenure.seat.display_name
+          - if active_tenure.position
+            .col-auto.mb-2
+              = link_to job_description_organization_position_path(@organization, active_tenure.position), class: "btn btn-outline-secondary btn-sm text-start" do
+                = active_tenure.position.position_type.external_title
+                %br
+                %small.text-muted.mt-1
+                  #{active_tenure.position.required_assignments_count} required, #{active_tenure.position.suggested_assignments_count} suggested Assignments
+
+          - else
+            .col-auto.mb-2
+              %button.btn.btn-outline-secondary.btn-sm.disabled{disabled: true}
+                need to define position
+        - else
+          .col-auto.mb-2
+            %button.btn.btn-outline-secondary.btn-sm.disabled{disabled: true}
+              need to define position
+        .col-auto.mb-2
+          = link_to complete_picture_organization_company_teammate_path(@organization, teammate), class: "btn btn-outline-secondary btn-sm text-start" do
+            #{teammate.person.casual_name}'s Unique Job Description
+            %br
+            %small.text-muted.mt-1
+              - if teammate.is_a?(CompanyTeammate)
+                - total_energy = teammate.active_assignment_tenures.sum { |t| t.anticipated_energy_percentage || 0 }
+                - if total_energy == 0
+                  Total Energy: 0% - Recommend finalizing check-ins for all assignments
+                - else
+                  Total Energy: #{total_energy}%
+              - else
+                Total Energy: 0%
+

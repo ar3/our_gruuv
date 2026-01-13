@@ -88,6 +88,8 @@
       - case @current_view
       - when 'check_in_status'
         = render 'organizations/employees/displays/check_in_status'
+      - when 'managers_view'
+        = render 'organizations/employees/managers_view'
       - when 'cards'
         = render 'organizations/employees/card_view'
       - when 'list'

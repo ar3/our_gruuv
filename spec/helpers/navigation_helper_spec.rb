@@ -88,12 +88,16 @@ RSpec.describe NavigationHelper, type: :helper do
       end
 
       def helper.policy(record)
-        double(view_prompts?: true)
+        policy_double = double(view_prompts?: true, show?: true)
+        # Return the same double for any record type
+        policy_double
       end
 
       helper.instance_variable_set(:@current_organization, company)
       helper.instance_variable_set(:@current_person, person)
-      helper.instance_variable_set(:@current_company_teammate, teammate)
+      # Ensure teammate is a CompanyTeammate for has_direct_reports? method
+      company_teammate = teammate.is_a?(CompanyTeammate) ? teammate : CompanyTeammate.find(teammate.id)
+      helper.instance_variable_set(:@current_company_teammate, company_teammate)
       helper.instance_variable_set(:@current_company, company)
     end
 
@@ -122,6 +126,75 @@ RSpec.describe NavigationHelper, type: :helper do
         prompts_item = structure.find { |item| item[:path]&.include?('prompts') }
         expect(prompts_item).to be_present
         expect(prompts_item[:label]).to eq('Reflections')
+      end
+    end
+
+    it 'has "View Teammates" instead of "My Teammates"' do
+      structure = helper.navigation_structure
+      teammates_item = structure.find { |item| item[:label] == 'View Teammates' }
+      expect(teammates_item).to be_present
+      expect(teammates_item[:label]).to eq('View Teammates')
+    end
+
+    context 'when teammate has direct reports' do
+      let(:manager_person) { create(:person) }
+      let(:manager_teammate) { CompanyTeammate.find(create(:teammate, person: manager_person, organization: company, first_employed_at: 1.year.ago).id) }
+      let(:direct_report) { create(:person) }
+      let(:direct_report_teammate) { CompanyTeammate.find(create(:teammate, person: direct_report, organization: company, first_employed_at: 6.months.ago).id) }
+      let(:position_major_level) { create(:position_major_level, major_level: 1, set_name: 'Engineering') }
+      let(:position_type) { create(:position_type, organization: company, position_major_level: position_major_level) }
+      let(:position_level) { create(:position_level, position_major_level: position_major_level, level: '1.1') }
+      let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+      let!(:employment_tenure) do
+        create(:employment_tenure,
+          teammate: direct_report_teammate,
+          company: company,
+          position: position,
+          manager_teammate: manager_teammate,
+          started_at: 6.months.ago
+        )
+      end
+
+      before do
+        helper.instance_variable_set(:@current_company_teammate, manager_teammate)
+        # Verify manager has direct reports
+        expect(manager_teammate.has_direct_reports?).to be true
+      end
+
+      it 'includes "My Employees" in navigation' do
+        structure = helper.visible_navigation_structure
+        my_employees_item = structure.find { |item| item[:label] == 'My Employees' }
+        expect(my_employees_item).to be_present
+        expect(my_employees_item[:path]).to include('managers_view')
+        expect(my_employees_item[:path]).to include("manager_teammate_id=#{manager_teammate.id}")
+      end
+
+      it 'places "My Employees" after "View Teammates"' do
+        structure = helper.visible_navigation_structure
+        view_teammates_index = structure.find_index { |item| item[:label] == 'View Teammates' }
+        my_employees_index = structure.find_index { |item| item[:label] == 'My Employees' }
+        expect(my_employees_index).to be > view_teammates_index
+      end
+    end
+
+    context 'when teammate has no direct reports' do
+      let(:teammate_without_reports) do
+        teammate_without = CompanyTeammate.find(create(:teammate, person: create(:person), organization: company, first_employed_at: 1.year.ago).id)
+        # Ensure no direct reports exist
+        EmploymentTenure.where(manager_teammate: teammate_without, ended_at: nil).update_all(ended_at: Time.current)
+        teammate_without
+      end
+
+      before do
+        helper.instance_variable_set(:@current_company_teammate, teammate_without_reports)
+      end
+
+      it 'does not include "My Employees" in navigation' do
+        # Verify teammate has no direct reports
+        expect(teammate_without_reports.has_direct_reports?).to be false
+        structure = helper.visible_navigation_structure
+        my_employees_item = structure.find { |item| item[:label] == 'My Employees' }
+        expect(my_employees_item).to be_nil
       end
     end
   end

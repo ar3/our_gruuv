@@ -138,6 +138,9 @@
           .form-check
             = radio_button_tag 'view', 'list', @current_view == 'list', class: 'form-check-input', id: 'view_list'
             = label_tag 'view_list', 'List View', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'view', 'managers_view', @current_view == 'managers_view', class: 'form-check-input', id: 'view_managers_view'
+            = label_tag 'view_managers_view', "Manager's View", class: 'form-check-label'
           - can_manage_employment = policy(@organization).manage_employment?
           - if can_manage_employment
             .form-check

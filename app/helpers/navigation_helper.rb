@@ -25,12 +25,6 @@ module NavigationHelper
         policy_check: -> { current_company_teammate && policy(current_company_teammate).view_check_ins? }
       },
       {
-        label: 'Dashboard',
-        icon: 'bi-house',
-        path: dashboard_organization_path(current_organization),
-        section: nil
-      },
-      {
         label: 'My Check-In',
         icon: 'bi-clipboard-check',
         path: organization_company_teammate_check_ins_path(current_organization, current_company_teammate),
@@ -59,6 +53,27 @@ module NavigationHelper
         policy_check: -> { policy(current_company).view_goals? }
       },
       {
+        label: 'View Teammates',
+        icon: 'bi-people',
+        path: organization_employees_path(current_organization),
+        section: nil,
+        policy_check: -> { policy(Organization).show? }
+      },
+      {
+        label: 'My Employees',
+        icon: 'bi-person-badge',
+        path: organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, view: 'managers_view', spotlight: 'teammates_overview'),
+        section: nil,
+        policy_check: -> { current_company_teammate&.has_direct_reports? && policy(Organization).show? }
+      },
+      {
+        label: 'Celebrate Milestones',
+        icon: 'bi-trophy',
+        path: celebrate_milestones_organization_path(current_organization),
+        section: nil,
+        policy_check: -> { policy(current_organization).show? }
+      },
+      {
         label: 'Huddles',
         icon: 'bi-chat-dots',
         section: 'huddles',
@@ -85,20 +100,6 @@ module NavigationHelper
             coming_soon: false
           }
         ]
-      },
-      {
-        label: 'My Teammates',
-        icon: 'bi-people',
-        path: organization_employees_path(current_organization),
-        section: nil,
-        policy_check: -> { policy(Organization).show? }
-      },
-      {
-        label: 'Celebrate Milestones',
-        icon: 'bi-trophy',
-        path: celebrate_milestones_organization_path(current_organization),
-        section: nil,
-        policy_check: -> { policy(current_organization).show? }
       },
       {
         label: 'Admin',

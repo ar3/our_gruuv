@@ -18,6 +18,11 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     # This allows the UI to explicitly request other statuses
     params[:status] = 'active' if params[:status].nil?
     
+    # Set default view to managers_view when manager_teammate_id is present and no view is explicitly set
+    if params[:manager_teammate_id].present? && params[:view].blank? && params[:display].blank?
+      params[:view] = 'managers_view'
+    end
+    
     # Determine spotlight type
     @current_spotlight = determine_spotlight
     

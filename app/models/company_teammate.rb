@@ -67,6 +67,12 @@ class CompanyTeammate < Teammate
                      .count
   end
 
+  def active_assignment_tenures
+    assignment_tenures.
+      where(ended_at: nil).
+      where('anticipated_energy_percentage > 0')
+  end
+
   def active_assignments
     assignments.joins(:assignment_tenures)
                .where(assignment_tenures: { 

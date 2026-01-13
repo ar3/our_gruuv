@@ -147,6 +147,36 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
         end
       end
     end
+
+    describe 'managers_view' do
+      let(:manager_person) { create(:person) }
+      let(:manager_teammate) { CompanyTeammate.find(create(:teammate, person: manager_person, organization: company, first_employed_at: 1.year.ago).id) }
+
+      before do
+        # Update existing employment_tenure1 to have the manager
+        employment_tenure1.update!(manager_teammate: manager_teammate)
+        session[:current_company_teammate_id] = manager_teammate.id
+        @current_company_teammate = nil if defined?(@current_company_teammate)
+      end
+
+      it 'renders managers_view when view is explicitly set' do
+        get :index, params: { organization_id: company.id, manager_teammate_id: manager_teammate.id, view: 'managers_view' }
+        expect(response).to have_http_status(:success)
+        expect(assigns(:current_view)).to eq('managers_view')
+      end
+
+      it 'defaults to managers_view when manager_teammate_id is present and no view is set' do
+        get :index, params: { organization_id: company.id, manager_teammate_id: manager_teammate.id }
+        expect(response).to have_http_status(:success)
+        expect(assigns(:current_view)).to eq('managers_view')
+      end
+
+      it 'does not default to managers_view when view is explicitly set to something else' do
+        get :index, params: { organization_id: company.id, manager_teammate_id: manager_teammate.id, view: 'list' }
+        expect(response).to have_http_status(:success)
+        expect(assigns(:current_view)).to eq('list')
+      end
+    end
   end
 
   describe 'GET #audit' do
