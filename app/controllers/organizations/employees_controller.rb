@@ -445,8 +445,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       # If spotlight param is set, use it
       return params[:spotlight] if params[:spotlight].present?
       
-      # Auto-select manager_overview if manager filter is active
-      return 'manager_overview' if params[:manager_teammate_id].present?
+      # Auto-select manager_lite if manager filter is active
+      return 'manager_lite' if params[:manager_teammate_id].present?
       
       # Default to teammates_overview (matches CompanyTeammatesQuery default)
       'teammates_overview'
@@ -492,6 +492,8 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         calculate_manager_overview_stats(teammates, teammates_for_joins)
       when 'manager_distribution'
         calculate_manager_distribution_stats(teammates, teammates_for_joins)
+      when 'manager_lite'
+        calculate_manager_lite_stats(teammates, teammates_for_joins)
       else # 'teammates_overview' or default
         calculate_teammates_overview_stats(teammates, teammates_for_joins)
       end
@@ -735,6 +737,87 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         management_levels: management_levels,
         max_level: max_level,
         total_teammates: teammates_array.count
+      }
+    end
+
+    def calculate_manager_lite_stats(teammates, teammates_for_joins = nil)
+      teammates_for_joins ||= teammates
+      
+      # Ensure we have an ActiveRecord relation for proper joins
+      if teammates_for_joins.is_a?(Array)
+        teammate_ids = teammates_for_joins.map(&:id)
+        teammates_relation = Teammate.where(id: teammate_ids)
+      else
+        teammates_relation = teammates_for_joins
+      end
+      
+      # Total teammates
+      total_teammates = teammates.count
+      
+      # Teammates with finalized position check-in in last 90 days
+      position_check_in_cutoff = 90.days.ago
+      teammates_with_position_check_in = teammates_relation
+        .joins(:position_check_ins)
+        .where(position_check_ins: { official_check_in_completed_at: position_check_in_cutoff.. })
+        .unscope(:order)
+        .select('teammates.id')
+        .distinct
+        .count
+      
+      # Teammates with finalized assignment check-in in last 90 days
+      teammates_with_assignment_check_in = teammates_relation
+        .joins(:assignment_check_ins)
+        .where(assignment_check_ins: { official_check_in_completed_at: position_check_in_cutoff.. })
+        .unscope(:order)
+        .select('teammates.id')
+        .distinct
+        .count
+      
+      # Teammates with finalized aspiration check-in in last 90 days
+      teammates_with_aspiration_check_in = teammates_relation
+        .joins(:aspiration_check_ins)
+        .where(aspiration_check_ins: { official_check_in_completed_at: position_check_in_cutoff.. })
+        .unscope(:order)
+        .select('teammates.id')
+        .distinct
+        .count
+      
+      # Teammates with an active goal
+      teammate_ids = teammates_relation.unscope(:order).select('teammates.id').distinct.pluck(:id)
+      teammates_with_active_goal = Goal
+        .where(owner_type: 'CompanyTeammate', owner_id: teammate_ids, company: @organization)
+        .active
+        .select(:owner_id)
+        .distinct
+        .count
+      
+      # Teammates who have given a published observation in last 30 days
+      observation_cutoff = 30.days.ago
+      person_ids = teammates_relation.unscope(:order).select('teammates.person_id').distinct.pluck(:person_id)
+      teammates_given_observation = Observation
+        .where(observer_id: person_ids, company: @organization, published_at: observation_cutoff.., deleted_at: nil)
+        .where.not(privacy_level: 'observer_only')
+        .select(:observer_id)
+        .distinct
+        .count
+      
+      # Teammates who have received a published observation in last 30 days
+      teammates_received_observation = Observation
+        .joins(:observees)
+        .where(observees: { teammate_id: teammate_ids }, company: @organization, published_at: observation_cutoff.., deleted_at: nil)
+        .where.not(privacy_level: 'observer_only')
+        .select('observees.teammate_id')
+        .distinct
+        .count
+      
+      {
+        total_teammates: total_teammates,
+        teammates_with_position_check_in: teammates_with_position_check_in,
+        teammates_with_assignment_check_in: teammates_with_assignment_check_in,
+        teammates_with_aspiration_check_in: teammates_with_aspiration_check_in,
+        teammates_with_active_goal: teammates_with_active_goal,
+        teammates_given_observation: teammates_given_observation,
+        teammates_received_observation: teammates_received_observation
       }
     end
 

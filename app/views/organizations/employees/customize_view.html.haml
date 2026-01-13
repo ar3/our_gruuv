@@ -185,6 +185,9 @@
           .form-check
             = radio_button_tag 'spotlight', 'manager_distribution', @current_spotlight == 'manager_distribution', class: 'form-check-input', id: 'spotlight_manager_distribution'
             = label_tag 'spotlight_manager_distribution', 'Manager Distribution', class: 'form-check-label'
+          .form-check
+            = radio_button_tag 'spotlight', 'manager_lite', @current_spotlight == 'manager_lite', class: 'form-check-input', id: 'spotlight_manager_lite'
+            = label_tag 'spotlight_manager_lite', 'Manager Lite', class: 'form-check-label'
           - can_manage_employment = policy(@organization).manage_employment?
           - if can_manage_employment
             .form-check

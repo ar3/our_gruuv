@@ -62,7 +62,7 @@ module NavigationHelper
       {
         label: 'My Employees',
         icon: 'bi-person-badge',
-        path: organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, view: 'managers_view', spotlight: 'teammates_overview'),
+        path: organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, view: 'managers_view', spotlight: 'manager_lite'),
         section: nil,
         policy_check: -> { current_company_teammate&.has_direct_reports? && policy(Organization).show? }
       },

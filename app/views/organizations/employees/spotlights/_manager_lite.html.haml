@@ -1,0 +1,57 @@
+/ Manager Lite Spotlight
+.row.justify-content-center.mb-4
+  .col-lg-12
+    .card.border-0.shadow-sm
+      .card-body
+        .row.text-center
+          .col-3
+            .h3.text-spice-1= @spotlight_stats[:total_teammates]
+            %small.text-muted Total Teammates
+          .col-3
+            .h3.text-spice-2= @spotlight_stats[:teammates_with_position_check_in]
+            %small.text-muted Finalized Position Check-in (90 days)
+          .col-3
+            .h3.text-spice-3= @spotlight_stats[:teammates_with_assignment_check_in]
+            %small.text-muted Finalized Assignment Check-in (90 days)
+          .col-3
+            .h3.text-spice-4= @spotlight_stats[:teammates_with_aspiration_check_in]
+            %small.text-muted Finalized Aspiration Check-in (90 days)
+        
+        .row.text-center.mt-3
+          .col-3
+            / Leave blank
+          .col-3
+            .h3.text-spice-5= @spotlight_stats[:teammates_with_active_goal]
+            %small.text-muted Active Goal
+          .col-3
+            .h3.text-spice-1= @spotlight_stats[:teammates_given_observation]
+            %small.text-muted Given Published Observation (30 days)
+          .col-3
+            .h3.text-spice-2= @spotlight_stats[:teammates_received_observation]
+            %small.text-muted Received Published Observation (30 days)
+      
+      .card-footer.bg-light
+        .row.align-items-center
+          .col-md-6
+            %small.text-muted
+              %i.bi.bi-people.me-1
+              Manager Lite View
+              - if @has_active_filters
+                %br
+                %i.bi.bi-funnel.me-1
+                Filters: 
+                - filter_parts = []
+                - @current_filters.each do |filter_name, filter_value|
+                  - Array(filter_value).each do |value|
+                    - filter_parts << filter_display_name(filter_name, value)
+                = filter_parts.join(', ')
+          .col-md-6.text-end
+            %small.text-muted
+              %i.bi.bi-sort-down.me-1
+              Sort: #{@current_sort.humanize}
+              %br
+              %i.bi.bi-table.me-1
+              View: #{@current_view.humanize}
+              %br
+              %i.bi.bi-eye.me-1
+              Spotlight: Manager Lite
