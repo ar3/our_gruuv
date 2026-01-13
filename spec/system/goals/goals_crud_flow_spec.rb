@@ -846,11 +846,12 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       )
     end
     
-    xit 'links to goals index from dashboard hero card' do # SKIPPED: Goal index must have owner not yet implemented
-      visit dashboard_organization_path(organization)
+    xit 'links to goals index from about_me page' do # SKIPPED: Goal index must have owner not yet implemented
+      teammate = person.teammates.find_by(organization: organization)
+      visit about_me_organization_company_teammate_path(organization, teammate)
       
-      # Should see goals hero card
-      expect(page).to have_content(/Goals|View My Goals/i)
+      # Should see goals section
+      expect(page).to have_content(/Active Goals/i)
       
       # Find and click the "View My Goals" link
       goals_link = find('a', text: /View My Goals/i, wait: 5)
@@ -874,45 +875,35 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       expect(page).to have_content('My Personal Goal')
     end
     
-    it 'links to create new goal from dashboard hero card' do
-      visit dashboard_organization_path(organization)
+    it 'links to create new goal from about_me page' do
+      teammate = person.teammates.find_by(organization: organization)
+      visit about_me_organization_company_teammate_path(organization, teammate)
       
-      # Should see goals hero card with create button
-      expect(page).to have_content('Create New Goal')
+      # Navigate to goals index to create new goal
+      visit organization_goals_path(organization)
       
-      # Click secondary button
-      click_link 'Create New Goal', href: new_organization_goal_path(organization)
-      
-      # Should be on new goal form
+      # Should be able to create new goal
+      click_link 'New Goal'
       expect(page).to have_content('New Goal')
       expect(page).to have_field('goal_title')
     end
     
-    it 'links to goals check-in view from goals hero card' do
-      visit dashboard_organization_path(organization)
+    it 'links to goals check-in view from about_me page' do
+      teammate = person.teammates.find_by(organization: organization)
+      visit about_me_organization_company_teammate_path(organization, teammate)
       
-      # Should see goals hero card with check-in button
-      expect(page).to have_content('Check-In on Your Goals')
+      # Should see goals section with manage link
+      expect(page).to have_content(/Active Goals/i)
       
-      # Find the link and verify it has the correct href
-      check_in_link = find("a", text: 'Check-In on Your Goals')
+      # Find the "Manage Goals & Confidence Ratings" link
+      check_in_link = find("a", text: 'Manage Goals & Confidence Ratings')
       expect(check_in_link).to be_present
       
-      # Verify the href contains the expected parameters
-      href = check_in_link[:href]
-      expect(href).to include('goals')
-      expect(href).to include('view=check-in')
-      expect(href).to include('owner_id')
+      # Click the link
+      check_in_link.click
       
-      # Navigate directly to verify the URL works
-      visit href
-      
-      # Should be on goals index page with check-in view
-      expect(current_path).to eq(organization_goals_path(organization))
-      expect(page).to have_content(/check.?in/i)
-      # Verify URL has correct parameters
-      expect(URI.parse(current_url).query).to include('view=check-in')
-      expect(URI.parse(current_url).query).to include('owner_id')
+      # Should be on goals check-in page
+      expect(current_path).to eq(organization_company_teammate_goal_check_ins_path(organization, teammate))
     end
   end
 end

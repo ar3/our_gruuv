@@ -53,17 +53,17 @@ class OrganizationsController < Organizations::OrganizationNamespaceBaseControll
   end
   
   def dashboard
-    @current_person = current_company_teammate.person
-    @recent_huddles = Huddle.joins(huddle_participants: :teammate)
-                            .where(teammates: { person: @current_person })
-                            .recent
-                            .limit(5)
-    
-    # Load check-ins data for hero cards
-    load_check_ins_dashboard_stats
-    
-    # Organization-specific dashboard content will go here
-    load_organization_dashboard_stats
+    # Redirect to about_me page instead of rendering dashboard
+    if current_company_teammate && current_organization
+      redirect_to about_me_organization_company_teammate_path(current_organization, current_company_teammate)
+    elsif current_organization
+      # If we have an organization but no teammate, redirect to root
+      flash[:alert] = "Unable to access dashboard. Please log in again."
+      redirect_to root_path
+    else
+      # No organization context, redirect to root
+      redirect_to root_path
+    end
   end
   
   def follow

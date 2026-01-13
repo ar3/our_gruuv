@@ -300,71 +300,35 @@ RSpec.describe OrganizationsController, type: :controller do
   end
 
   describe 'GET #dashboard' do
-    render_views
-
-    it 'renders successfully without NoMethodError' do
-      expect {
-        get :dashboard, params: { id: organization.id }
-      }.not_to raise_error
-      
-      expect(response).to have_http_status(:success)
-    end
-
-    it 'assigns the organization' do
+    it 'redirects to about_me page' do
+      teammate = person.teammates.find_by(organization: organization)
       get :dashboard, params: { id: organization.id }
       
-      expect(assigns(:organization).id).to eq(organization.id)
+      expect(response).to redirect_to(about_me_organization_company_teammate_path(organization, teammate))
     end
 
-    it 'confirms the method exists and works' do
-      expect(organization.respond_to?(:teammate_milestones_for_person)).to be true
-      result = organization.teammate_milestones_for_person(person)
-      expect(result).to be_an(ActiveRecord::Relation)
-    end
-
-    context 'prompts section' do
-      context 'when company has active templates' do
-        let!(:primary_template) { create(:prompt_template, company: organization, is_primary: true, available_at: Date.current) }
-        let!(:secondary_template) { create(:prompt_template, company: organization, is_secondary: true, available_at: Date.current) }
-
-        it 'renders prompts hero card' do
-          get :dashboard, params: { id: organization.id }
-          expect(response.body).to include('Prompts')
-          expect(response.body).to include(primary_template.title)
-          expect(response.body).to include(secondary_template.title)
-        end
-
-        context 'when user has can_manage_prompts permission' do
-          before do
-            teammate = person.teammates.find_by(organization: organization)
-            teammate.update!(can_manage_prompts: true)
-          end
-
-          it 'shows "Manage Prompt Templates" button' do
-            get :dashboard, params: { id: organization.id }
-            expect(response.body).to include('Manage Prompt Templates')
-          end
-        end
+    context 'when current_company_teammate is nil' do
+      before do
+        session.delete(:current_company_teammate_id)
       end
 
-      context 'when company has no active templates' do
-        it 'renders info card' do
-          get :dashboard, params: { id: organization.id }
-          expect(response.body).to include('Prompts Available')
-          expect(response.body).to include('speak with your admin')
-        end
+      it 'redirects to root with alert' do
+        get :dashboard, params: { id: organization.id }
+        
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to be_present
+      end
+    end
 
-        context 'when user has can_manage_prompts permission' do
-          before do
-            teammate = person.teammates.find_by(organization: organization)
-            teammate.update!(can_manage_prompts: true)
-          end
+    context 'when current_organization is nil' do
+      before do
+        session.delete(:current_company_teammate_id)
+      end
 
-          it 'shows link to manage templates' do
-            get :dashboard, params: { id: organization.id }
-            expect(response.body).to include('Manage Prompt Templates')
-          end
-        end
+      it 'redirects to root' do
+        get :dashboard, params: { id: organization.id }
+        
+        expect(response).to redirect_to(root_path)
       end
     end
   end

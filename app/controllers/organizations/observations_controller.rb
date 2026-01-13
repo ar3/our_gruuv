@@ -873,8 +873,6 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
         end
       else
-        Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: Failed to save: #{@form.errors}"
-        Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: Failed to save: #{@form}"
         flash[:alert] = "Failed to save: #{@form.errors.full_messages.join(', ')}"
         @return_url = determine_return_url
         @return_text = params[:return_text] || 'Back'
@@ -919,8 +917,6 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       
       # Check if we should save and navigate to an add-* picker
       return_url_value = determine_return_url
-      Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: @observation: #{@observation.inspect}"
-      Rails.logger.info "❌❌❌❌❌❌ ObservationsController::update_draft: return_url_value: #{return_url_value}"
       if params[:save_and_add_assignments].present?
         redirect_params = {}
         redirect_params[:return_url] = return_url_value if return_url_value.present?
@@ -2175,9 +2171,7 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
 
   # Helper to determine return_url: params first, then observation show page, then nil
   def determine_return_url
-    Rails.logger.info "❌❌❌❌❌❌ ObservationsController::determine_return_url: params[:return_url]: #{params[:return_url]}"
     return params[:return_url] if params[:return_url].present? && params[:return_url] != organization_observations_path(organization)
-    Rails.logger.info "❌❌❌❌❌❌ ObservationsController::determine_return_url: @observation: #{@observation&.inspect}"
     return organization_observation_path(organization, @observation) if @observation.present?
     nil
   end
