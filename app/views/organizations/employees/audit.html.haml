@@ -76,8 +76,7 @@
                   %th Created By
                   %th Reason
                   %th Status
-                  - if current_person == @person
-                    %th Acknowledgement
+                  %th Acknowledgement
                   %th Details
               %tbody
                 - @maap_snapshots.each_with_index do |snapshot, index|

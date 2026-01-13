@@ -242,9 +242,11 @@
                         %i.bi.bi-eye.me-2
                         View Assignment
                       
-                      = link_to organization_company_teammate_check_ins_path(current_organization, @person), class: "btn btn-outline-secondary" do
-                        %i.bi.bi-list.me-2
-                        Manage Tenures
+                      - teammate_for_org = @person.teammates.find_by(organization: current_organization)
+                      - if teammate_for_org
+                        = link_to organization_company_teammate_check_ins_path(current_organization, teammate_for_org), class: "btn btn-outline-secondary" do
+                          %i.bi.bi-list.me-2
+                          Manage Tenures
 
 / Milestones Section
 - if @teammate_milestones.any?

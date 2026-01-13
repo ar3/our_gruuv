@@ -1,7 +1,7 @@
 - content_for :title, "Assignments - #{@teammate.person.display_name}"
 
 - content_for :go_back_link do
-  = link_to organization_company_teammate_check_ins_path(@organization, @teammate.person), class: "go-back-link" do
+  = link_to organization_company_teammate_check_ins_path(@organization, @teammate), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     Back to Check-ins
 
@@ -239,9 +239,9 @@
                       - if check_in.officially_completed?
                         = link_to "View Details", "#", class: "btn btn-sm btn-outline-primary", "data-bs-toggle" => "modal", "data-bs-target" => "#checkInModal#{check_in.id}"
                       - elsif check_in.ready_for_finalization?
-                        = link_to "Finalize", organization_company_teammate_check_ins_path(@organization, @teammate.person), class: "btn btn-sm btn-warning"
+                        = link_to "Finalize", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-warning"
                       - else
-                        = link_to "Continue", organization_company_teammate_check_ins_path(@organization, @teammate.person), class: "btn btn-sm btn-primary"
+                        = link_to "Continue", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-primary"
 
           - @check_ins.each do |check_in|
             / Modal for each check-in
@@ -302,7 +302,7 @@
         .card-header
           %h5.mb-0 Current Check-in
         .card-body
-          = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate.person), method: :patch, scope: :check_ins, local: true do |form|
+          = form_with url: organization_company_teammate_check_ins_path(@organization, @teammate), method: :patch, scope: :check_ins, local: true do |form|
             = form.fields_for :assignment_check_ins, @open_check_in, index: @open_check_in.id do |af|
               .row
                 .col-12
@@ -354,5 +354,5 @@
                 
                 .col-12.text-end
                   = form.submit "Update Check-in", class: "btn btn-primary me-2"
-                  = link_to "Back to All Check-ins", organization_company_teammate_check_ins_path(@organization, @teammate.person), class: "btn btn-outline-secondary"
+                  = link_to "Back to All Check-ins", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-outline-secondary"
 

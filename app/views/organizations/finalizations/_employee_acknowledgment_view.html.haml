@@ -8,4 +8,5 @@
       %p.text-success
         %i.bi.bi-check-circle.me-2
         Your position check-in has been finalized on #{@finalized_position_check_in.official_check_in_completed_at.to_date}.
-        = link_to 'View details', organization_company_teammate_check_ins_path(@organization, @person), class: 'btn btn-sm btn-outline-primary ms-2'
+        - if @teammate
+          = link_to 'View details', organization_company_teammate_check_ins_path(@organization, @teammate), class: 'btn btn-sm btn-outline-primary ms-2'

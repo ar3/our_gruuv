@@ -43,7 +43,7 @@
                     .btn-group.btn-group-sm
                       = link_to "View Details", person_assignment_path(@person, data[:assignment]), class: "btn btn-outline-info"
                       - if data[:tenure]
-                        = link_to "Check-In", organization_company_teammate_check_ins_path(@organization, @person, anchor: "assignment_#{data[:assignment].id}"), class: "btn btn-outline-success"
+                        = link_to "Check-In", organization_company_teammate_check_ins_path(@organization, @teammate, anchor: "assignment_#{data[:assignment].id}"), class: "btn btn-outline-success"
         
         .row.mt-3
           .col-6

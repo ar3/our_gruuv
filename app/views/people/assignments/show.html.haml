@@ -1,9 +1,11 @@
 - content_for :title, "Assignments - #{@person.display_name}"
+- teammate_for_org = @person.teammates.find_by(organization: current_organization)
 
 - content_for :go_back_link do
-  = link_to organization_company_teammate_check_ins_path(current_organization, @person), class: "go-back-link" do
-    %i.bi.bi-arrow-left.me-2
-    Back to #{@person.display_name}'s Assignments
+  - if teammate_for_org
+    = link_to organization_company_teammate_check_ins_path(current_organization, teammate_for_org), class: "go-back-link" do
+      %i.bi.bi-arrow-left.me-2
+      Back to #{@person.display_name}'s Assignments
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center
@@ -189,60 +191,62 @@
           .col-12
             %h6 Edit Assignment
             - if @open_check_in
-              = form_with url: organization_company_teammate_check_ins_path(current_organization, @person), method: :patch, scope: :check_ins, local: true do |form|
-                = form.fields_for :assignment_check_ins, @open_check_in, index: @open_check_in.id do |af|
-                  .row
-                    .col-12
-                      .mb-1
-                        Reflect on the past
-                    - if current_person == @person
-                      .col-md-6
-                        .mb-3
-                          %label.form-label Actual Energy
-                          = af.select :actual_energy_percentage, energy_percentage_options, { include_blank: 'Select percentage...', selected: @open_check_in.actual_energy_percentage }, { class: "form-select" }
-                    
-                    - if current_person == @person
-                      .col-md-6
-                        .mb-3
-                          %label.form-label Personal Alignment
-                          = af.select :employee_personal_alignment, options_for_select([['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Only If Necessary', 'only_if_necessary']], @open_check_in.employee_personal_alignment), { include_blank: 'Select alignment' }, { class: "form-select" }
-                    
-                    - if current_person == @person
-                      .col-md-6
-                        .mb-3
-                          %label.form-label My Rating
-                          = af.select :employee_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
-                    
-                    - if current_person == @person
-                      .col-md-6
-                        .mb-3
-                          %label.form-label Private Notes
-                          = af.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-                    
-                    - if current_person != @person
-                      .col-md-6
-                        .mb-3
-                          %label.form-label Manager Rating
-                          = af.select :manager_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
-                    
-                    - if current_person != @person
-                      .col-md-6
-                        .mb-3
-                          %label.form-label Manager Notes
-                          = af.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
-                    
-                    = af.hidden_field :assignment_id, value: @assignment.id
-                    
-                    .col-12
-                      .mb-3
-                        - is_complete = (current_person == @person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
-                        .form-check
-                          = af.radio_button :status, 'draft', checked: !is_complete, class: 'form-check-input'
-                          = af.label :status_draft, 'Draft', class: 'form-check-label'
-                        .form-check
-                          = af.radio_button :status, 'complete', checked: is_complete, class: 'form-check-input'
-                          = af.label :status_complete, 'Complete', class: 'form-check-label'
-                    
-                    .col-12.text-end
-                      = form.submit "Update Assignment", class: "btn btn-primary me-2"
-                      = link_to "Back to All Assignments", organization_company_teammate_check_ins_path(current_organization, @person), class: "btn btn-outline-secondary"
+              - teammate_for_org = @person.teammates.find_by(organization: current_organization)
+              - if teammate_for_org
+                = form_with url: organization_company_teammate_check_ins_path(current_organization, teammate_for_org), method: :patch, scope: :check_ins, local: true do |form|
+                  = form.fields_for :assignment_check_ins, @open_check_in, index: @open_check_in.id do |af|
+                    .row
+                      .col-12
+                        .mb-1
+                          Reflect on the past
+                      - if current_person == @person
+                        .col-md-6
+                          .mb-3
+                            %label.form-label Actual Energy
+                            = af.select :actual_energy_percentage, energy_percentage_options, { include_blank: 'Select percentage...', selected: @open_check_in.actual_energy_percentage }, { class: "form-select" }
+                        
+                        - if current_person == @person
+                          .col-md-6
+                            .mb-3
+                              %label.form-label Personal Alignment
+                              = af.select :employee_personal_alignment, options_for_select([['Love', 'love'], ['Like', 'like'], ['Neutral', 'neutral'], ['Only If Necessary', 'only_if_necessary']], @open_check_in.employee_personal_alignment), { include_blank: 'Select alignment' }, { class: "form-select" }
+                        
+                        - if current_person == @person
+                          .col-md-6
+                            .mb-3
+                              %label.form-label My Rating
+                              = af.select :employee_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
+                        
+                        - if current_person == @person
+                          .col-md-6
+                            .mb-3
+                              %label.form-label Private Notes
+                              = af.text_area :employee_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+                        
+                        - if current_person != @person
+                          .col-md-6
+                            .mb-3
+                              %label.form-label Manager Rating
+                              = af.select :manager_rating, assignment_rating_options, { include_blank: 'Select rating' }, { class: "form-select" }
+                        
+                        - if current_person != @person
+                          .col-md-6
+                            .mb-3
+                              %label.form-label Manager Notes
+                              = af.text_area :manager_private_notes, rows: 3, class: "form-control", placeholder: "Notes..."
+                        
+                        = af.hidden_field :assignment_id, value: @assignment.id
+                        
+                        .col-12
+                          .mb-3
+                            - is_complete = (current_person == @person ? @open_check_in.employee_completed? : @open_check_in.manager_completed?)
+                            .form-check
+                              = af.radio_button :status, 'draft', checked: !is_complete, class: 'form-check-input'
+                              = af.label :status_draft, 'Draft', class: 'form-check-label'
+                            .form-check
+                              = af.radio_button :status, 'complete', checked: is_complete, class: 'form-check-input'
+                              = af.label :status_complete, 'Complete', class: 'form-check-label'
+                        
+                        .col-12.text-end
+                          = form.submit "Update Assignment", class: "btn btn-primary me-2"
+                          = link_to "Back to All Assignments", organization_company_teammate_check_ins_path(current_organization, teammate_for_org), class: "btn btn-outline-secondary"

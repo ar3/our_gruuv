@@ -52,7 +52,7 @@
       
       .d-grid
         = button_to "View All #{company_label_plural('prompt', 'Prompt')}", 
-                    save_and_redirect_organization_company_teammate_check_ins_path(@organization, @person), 
+                    save_and_redirect_organization_company_teammate_check_ins_path(@organization, @teammate), 
                     method: :post,
                     params: { redirect_url: @prompts_url },
                     class: "btn btn-outline-primary"

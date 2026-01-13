@@ -1,7 +1,7 @@
 - content_for :title, "Aspirations - #{@teammate.person.display_name}"
 
 - content_for :go_back_link do
-  = link_to organization_company_teammate_check_ins_path(@organization, @teammate.person), class: "go-back-link" do
+  = link_to organization_company_teammate_check_ins_path(@organization, @teammate), class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
     Back to Check-ins
 
@@ -92,9 +92,9 @@
                       - if check_in.officially_completed?
                         = link_to "View Details", "#", class: "btn btn-sm btn-outline-primary", "data-bs-toggle" => "modal", "data-bs-target" => "#checkInModal#{check_in.id}"
                       - elsif check_in.ready_for_finalization?
-                        = link_to "Finalize", organization_company_teammate_check_ins_path(@organization, @teammate.person), class: "btn btn-sm btn-warning"
+                        = link_to "Finalize", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-warning"
                       - else
-                        = link_to "Continue", organization_company_teammate_check_ins_path(@organization, @teammate.person), class: "btn btn-sm btn-primary"
+                        = link_to "Continue", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-sm btn-primary"
 
           - @check_ins.each do |check_in|
             / Modal for each check-in
@@ -142,7 +142,7 @@
               %i.bi.bi-info-circle.me-2
               No Check-ins Found
             %p.mb-0 No check-ins have been created for this aspiration yet.
-            = link_to "Start First Check-in", organization_company_teammate_check_ins_path(@organization, @teammate.person), class: "btn btn-primary btn-sm mt-2"
+            = link_to "Start First Check-in", organization_company_teammate_check_ins_path(@organization, @teammate), class: "btn btn-primary btn-sm mt-2"
 
     / Current Check-in Form (if open check-in exists)
     - if @open_check_in
