@@ -41,6 +41,13 @@ class Organizations::Assignments::AssignmentOutcomesController < Organizations::
   end
 
   def assignment_outcome_params
-    params.require(:assignment_outcome).permit(:description, :outcome_type)
+    params.require(:assignment_outcome).permit(
+      :description, 
+      :outcome_type,
+      :progress_report_url,
+      :management_relationship_filter,
+      :team_relationship_filter,
+      :consumer_assignment_filter
+    )
   end
 end

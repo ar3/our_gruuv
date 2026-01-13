@@ -2,8 +2,9 @@
 - is_teammate_view = @teammate.present? && request.path.include?('/teammates/')
 - is_person_view = @person.present? && !@teammate.present? && request.path.include?('/people/')
 - is_ability_milestones_view = request.path.include?('/ability_milestones')
+- is_consumer_assignments_view = request.path.include?('/consumer_assignments')
 - is_edit_view = action_name == 'edit' && controller_name == 'assignments'
-- is_organization_view = !is_public_view && !is_teammate_view && !is_person_view && !is_ability_milestones_view && !is_edit_view && (@organization.present? || (@assignment && @assignment.company.present?))
+- is_organization_view = !is_public_view && !is_teammate_view && !is_person_view && !is_ability_milestones_view && !is_consumer_assignments_view && !is_edit_view && (@organization.present? || (@assignment && @assignment.company.present?))
 - assignment_org = @organization || (@assignment&.company)
 
 .dropdown
@@ -89,6 +90,22 @@
             %i.bi.bi-link-45deg.me-2
             Manage Ability Milestones
             %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "You need employment management permissions or admin access to manage ability milestones"}
+      
+      %li
+        - if is_consumer_assignments_view
+          .dropdown-item.text-muted
+            %i.bi.bi-arrow-down-circle.me-2
+            Manage Consumer Assignments (Active)
+            %i.bi.bi-check-circle.text-success.ms-2
+        - elsif @assignment && assignment_org && policy(@assignment).manage_consumer_assignments?
+          = link_to organization_assignment_consumer_assignments_path(assignment_org, @assignment), class: 'dropdown-item' do
+            %i.bi.bi-arrow-down-circle.me-2
+            Manage Consumer Assignments
+        - else
+          .dropdown-item.text-muted.disabled
+            %i.bi.bi-arrow-down-circle.me-2
+            Manage Consumer Assignments
+            %i.bi.bi-exclamation-triangle.text-warning.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires manage MAAP permission"}
       
       %li
         - if is_edit_view

@@ -68,6 +68,32 @@ RSpec.describe Assignment, type: :model do
     it 'has one draft external reference' do
       expect(assignment.draft_external_reference).to be_nil
     end
+
+    it 'has many supplier_supply_relationships' do
+      expect(assignment.supplier_supply_relationships).to be_empty
+    end
+
+    it 'has many consumer_supply_relationships' do
+      expect(assignment.consumer_supply_relationships).to be_empty
+    end
+
+    it 'has many consumer_assignments through supplier_supply_relationships' do
+      consumer = create(:assignment, company: organization)
+      AssignmentSupplyRelationship.create!(
+        supplier_assignment: assignment,
+        consumer_assignment: consumer
+      )
+      expect(assignment.consumer_assignments).to include(consumer)
+    end
+
+    it 'has many supplier_assignments through consumer_supply_relationships' do
+      supplier = create(:assignment, company: organization)
+      AssignmentSupplyRelationship.create!(
+        supplier_assignment: supplier,
+        consumer_assignment: assignment
+      )
+      expect(assignment.supplier_assignments).to include(supplier)
+    end
   end
 
   describe 'instance methods' do
@@ -194,6 +220,7 @@ RSpec.describe Assignment, type: :model do
     it 'returns 0 for newly created assignment' do
       # Fresh assignment should have 1 version (creation) but 0 changes
       assignment = create(:assignment, company: organization)
+      assignment.reload
       expect(assignment.versions.count).to eq(1)
       expect(assignment.changes_count).to eq(0)
     end
@@ -201,6 +228,7 @@ RSpec.describe Assignment, type: :model do
     it 'returns 1 after first update' do
       assignment = create(:assignment, company: organization)
       assignment.update!(title: 'Updated Title')
+      assignment.reload
       # Should have 2 versions: creation + 1 update
       expect(assignment.versions.count).to eq(2)
       expect(assignment.changes_count).to eq(1)
@@ -211,6 +239,7 @@ RSpec.describe Assignment, type: :model do
       assignment.update!(title: 'Updated Title 1')
       assignment.update!(tagline: 'Updated Tagline')
       assignment.update!(semantic_version: '1.1.0')
+      assignment.reload
       # Should have 4 versions: creation + 3 updates
       expect(assignment.versions.count).to eq(4)
       expect(assignment.changes_count).to eq(3)
@@ -222,6 +251,7 @@ RSpec.describe Assignment, type: :model do
       assignment.bump_minor_version  # 1.2.0
       assignment.bump_patch_version  # 1.2.1
       assignment.bump_major_version  # 2.0.0
+      assignment.reload
       # Should have 5 versions: creation + 4 version bumps
       expect(assignment.versions.count).to eq(5)
       expect(assignment.changes_count).to eq(4)

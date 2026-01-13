@@ -109,6 +109,9 @@ class Organizations::AssignmentsController < ApplicationController
       @most_popular_personal_alignment = nil
     end
     
+    # Load consumer assignments (assignments that benefit from this assignment)
+    @consumer_assignments = @assignment.consumer_assignments.includes(:department, :company).order(:title)
+    
     render layout: determine_layout
   end
 

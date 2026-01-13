@@ -204,6 +204,7 @@ get '/login', to: 'auth#login', as: :login
       end
       resource :ability_milestones, only: [:show, :update], module: :assignments
       resources :assignment_outcomes, only: [:edit, :update], module: :assignments
+      resource :consumer_assignments, only: [:show, :update], module: :assignments
     end
     
     # Comments management

@@ -227,6 +227,36 @@ RSpec.describe Organizations::AssignmentsController, type: :controller do
     end
   end
 
+  describe 'GET #show' do
+    let!(:assignment) { create(:assignment, company: organization) }
+    let!(:consumer1) { create(:assignment, company: organization, title: 'Consumer 1') }
+    let!(:consumer2) { create(:assignment, company: organization, title: 'Consumer 2') }
+
+    context 'when user has permission' do
+      before do
+        sign_in_as_teammate(person, organization)
+      end
+
+      it 'loads consumer assignments' do
+        AssignmentSupplyRelationship.create!(
+          supplier_assignment: assignment,
+          consumer_assignment: consumer1
+        )
+        
+        get :show, params: { organization_id: organization.id, id: assignment.id }
+        
+        expect(assigns(:consumer_assignments)).to include(consumer1)
+        expect(assigns(:consumer_assignments)).not_to include(consumer2)
+      end
+
+      it 'loads empty consumer assignments when none exist' do
+        get :show, params: { organization_id: organization.id, id: assignment.id }
+        
+        expect(assigns(:consumer_assignments)).to be_empty
+      end
+    end
+  end
+
   describe 'PATCH #update' do
     let!(:assignment) { create(:assignment, company: organization, title: 'Original Title') }
 

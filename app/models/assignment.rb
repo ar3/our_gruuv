@@ -18,6 +18,10 @@ class Assignment < ApplicationRecord
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
   has_one :draft_external_reference, -> { where(reference_type: 'draft') }, 
           class_name: 'ExternalReference', as: :referable, dependent: :destroy
+  has_many :supplier_supply_relationships, class_name: 'AssignmentSupplyRelationship', foreign_key: 'supplier_assignment_id', dependent: :destroy
+  has_many :consumer_supply_relationships, class_name: 'AssignmentSupplyRelationship', foreign_key: 'consumer_assignment_id', dependent: :destroy
+  has_many :consumer_assignments, through: :supplier_supply_relationships, source: :consumer_assignment
+  has_many :supplier_assignments, through: :consumer_supply_relationships, source: :supplier_assignment
   
   # Validations
   validates :title, presence: true, uniqueness: { scope: :company_id }

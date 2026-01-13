@@ -37,6 +37,26 @@
               %span.text-danger *
             = form.select :outcome_type, options_for_select([['Quantitative', 'quantitative'], ['Sentiment', 'sentiment']], @assignment_outcome.outcome_type), {}, { class: 'form-select', required: true }
           
+          .mb-3
+            = form.label :progress_report_url, 'Progress Report URL', class: 'form-label'
+            = form.url_field :progress_report_url, class: 'form-control', placeholder: 'https://example.com/report'
+            %small.form-text.text-muted Where can we find the data for this outcome?
+          
+          .mb-3
+            = form.label :management_relationship_filter, 'Who to Ask: Management Relationship', class: 'form-label'
+            = form.select :management_relationship_filter, options_for_select([['Doesn\'t matter', ''], ['Actively a direct employee of the Assignment holder', 'direct_employee'], ['Actively the direct manager of the Assignment holder', 'direct_manager'], ['No managerial relationship with assignment holder', 'no_relationship']], @assignment_outcome.management_relationship_filter), {}, { class: 'form-select' }
+            %small.form-text.text-muted Filter who should be asked based on management relationship
+          
+          .mb-3
+            = form.label :team_relationship_filter, 'Who to Ask: Team Relationship', class: 'form-label'
+            = form.select :team_relationship_filter, options_for_select([['Doesn\'t matter', ''], ['On the same team as the Assignment holder', 'same_team'], ['Not on the same team as the Assignment holder', 'different_team']], @assignment_outcome.team_relationship_filter), {}, { class: 'form-select' }
+            %small.form-text.text-muted Filter who should be asked based on team relationship
+          
+          .mb-3
+            = form.label :consumer_assignment_filter, 'Who to Ask: Consumer Assignment Relationship', class: 'form-label'
+            = form.select :consumer_assignment_filter, options_for_select([['Doesn\'t matter', ''], ['Teammate is currently an active ConsumerAssignment holder to this SupplierAssignment', 'active_consumer'], ['Teammate is not currently an active ConsumerAssignment holder to this SupplierAssignment', 'not_consumer']], @assignment_outcome.consumer_assignment_filter), {}, { class: 'form-select' }
+            %small.form-text.text-muted Filter who should be asked based on consumer assignment relationship
+          
           .d-flex.align-items-center.gap-2.mt-4
             - can_update = policy(@assignment_outcome).update?
             - if can_update
@@ -48,23 +68,3 @@
                 %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: 'tooltip', bs_title: 'Requires MAAP management permission'}}
             = link_to 'Cancel', @return_url || organization_assignments_path(@organization), class: 'btn btn-outline-secondary'
       
-      - if @assignment_outcome.outcome_type == 'quantitative'
-        .card.mb-4
-          .card-header.bg-info.text-white
-            %h5.mb-0
-              %i.bi.bi-graph-up-arrow.me-2
-              Coming Soon: Real Metrics
-          .card-body
-            %p
-              In the future, quantitative outcomes will be associated with real metrics and data sources.
-              This will allow you to track actual performance against these outcomes over time.
-      - elsif @assignment_outcome.outcome_type == 'sentiment'
-        .card.mb-4
-          .card-header.bg-info.text-white
-            %h5.mb-0
-              %i.bi.bi-chat-heart.me-2
-              Coming Soon: Sentiment Questions
-          .card-body
-            %p
-              In the future, sentiment-based outcomes will automatically ask the right people the appropriate sentiment questions.
-              This will help you gather feedback and insights about how people feel about this outcome.

@@ -1,0 +1,64 @@
+- content_for :title, "Manage Consumer Assignments - #{@assignment.title}"
+
+- content_for :header do
+  %h1.mb-0
+    %i.bi.bi-arrow-down-circle.me-2
+    Manage Consumer Assignments - #{@assignment.title}
+
+- content_for :return_url do
+  = @return_url || organization_assignment_path(@organization, @assignment)
+
+- content_for :return_text do
+  = @return_text || "Back to #{@assignment.title}"
+
+= form_with url: organization_assignment_consumer_assignments_path(@organization, @assignment), method: :patch, local: true do |form|
+  .row
+    .col-12
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-list-check.me-2
+            Select Consumer Assignments
+        .card-body
+          %p.text-muted.mb-3
+            Select which assignments benefit from or consume the results of 
+            %strong= @assignment.title
+            = ". These assignments will be able to reference this assignment's outcomes."
+          
+          - if @assignments.any?
+            .row
+              - @assignments.each_slice((@assignments.count.to_f / 3).ceil) do |slice|
+                .col-md-4
+                  - slice.each do |assignment|
+                    .mb-2
+                      .form-check
+                        = check_box_tag "consumer_assignment_ids[]", 
+                                        assignment.id, 
+                                        @existing_consumer_assignment_ids.include?(assignment.id),
+                                        class: "form-check-input",
+                                        id: "consumer_assignment_#{assignment.id}",
+                                        disabled: !policy(@assignment).manage_consumer_assignments?
+                        = label_tag "consumer_assignment_#{assignment.id}", class: "form-check-label" do
+                          %strong= assignment.title
+                          - if assignment.department
+                            %br
+                            %small.text-muted= assignment.department.display_name
+                          - else
+                            %br
+                            %small.text-muted= assignment.company.name
+          - else
+            .alert.alert-info
+              %i.bi.bi-info-circle.me-2
+              No assignments found in this organization hierarchy.
+
+      .card.mb-4
+        .card-body
+          - can_manage = policy(@assignment).manage_consumer_assignments?
+          - if can_manage
+            = form.submit "Save Consumer Assignments", class: "btn btn-primary btn-lg"
+          - else
+            .d-flex.align-items-center.gap-2
+              .flex-grow-1
+                %button.btn.btn-primary.btn-lg.w-100.disabled{disabled: true, type: "button"}
+                  Save Consumer Assignments
+              %i.bi.bi-exclamation-triangle.text-warning{"data-bs-toggle" => "tooltip", "data-bs-title" => "Requires manage MAAP permission"}

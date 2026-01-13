@@ -37,6 +37,14 @@ class AssignmentPolicy < ApplicationPolicy
     viewing_teammate.person.admin? || user_has_maap_permission_for_record?
   end
 
+  def manage_consumer_assignments?
+    return true if admin_bypass?
+    return false unless viewing_teammate
+    
+    # Only admins or users with MAAP permissions can manage consumer assignments
+    viewing_teammate.person.admin? || user_has_maap_permission_for_record?
+  end
+
   private
 
   def user_has_maap_permission?

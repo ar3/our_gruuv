@@ -116,6 +116,26 @@
                      show_milestone_parentheticals: true,
                      include_prefix: true
 
+    - if @consumer_assignments.any? || policy(@assignment).show?
+      .card.mb-4{ role: "region", "aria-labelledby": "consumer-assignments" }
+        .card-header
+          %h5.mb-0{ id: "consumer-assignments" }
+            %i.bi.bi-arrow-down-circle.me-2
+            Assignments that benefit from / consume the results of #{@assignment.title}
+        .card-body
+          - if @consumer_assignments.any?
+            .row
+              - @consumer_assignments.each_slice((@consumer_assignments.count.to_f / 3).ceil) do |slice|
+                .col-md-4
+                  - slice.each do |consumer_assignment|
+                    .mb-2
+                      = link_to consumer_assignment.title, organization_assignment_path(@organization, consumer_assignment), class: "text-decoration-none"
+                      - if consumer_assignment.department
+                        %br
+                        %small.text-muted= consumer_assignment.department.display_name
+          - else
+            %p.text-muted.mb-0 No assignments currently benefit from this assignment.
+
     .card.mb-4{ role: "region", "aria-labelledby": "current-holders" }
       .card-header
         %h5.mb-0{ id: "current-holders" }

@@ -45,10 +45,12 @@ RSpec.describe 'Organizations::Assignments::AssignmentOutcomes', type: :request 
         expect(response.body).to include(assignment_outcome.description)
       end
 
-      it 'shows coming soon section for quantitative outcomes' do
+      it 'shows measurement fields' do
         get edit_organization_assignment_assignment_outcome_path(organization, assignment, assignment_outcome)
-        expect(response.body).to include('Coming Soon: Real Metrics')
-        expect(response.body).to include('quantitative outcomes will be associated with real metrics')
+        expect(response.body).to include('Progress Report URL')
+        expect(response.body).to include('Who to Ask: Management Relationship')
+        expect(response.body).to include('Who to Ask: Team Relationship')
+        expect(response.body).to include('Who to Ask: Consumer Assignment Relationship')
       end
     end
 
@@ -90,10 +92,12 @@ RSpec.describe 'Organizations::Assignments::AssignmentOutcomes', type: :request 
         sign_in_as_teammate_for_request(admin, organization)
       end
 
-      it 'shows coming soon section for sentiment outcomes' do
+      it 'shows measurement fields for sentiment outcomes' do
         get edit_organization_assignment_assignment_outcome_path(organization, assignment, sentiment_outcome)
-        expect(response.body).to include('Coming Soon: Sentiment Questions')
-        expect(response.body).to include('sentiment-based outcomes will automatically ask')
+        expect(response.body).to include('Progress Report URL')
+        expect(response.body).to include('Who to Ask: Management Relationship')
+        expect(response.body).to include('Who to Ask: Team Relationship')
+        expect(response.body).to include('Who to Ask: Consumer Assignment Relationship')
       end
     end
   end
@@ -103,7 +107,11 @@ RSpec.describe 'Organizations::Assignments::AssignmentOutcomes', type: :request 
       {
         assignment_outcome: {
           description: 'Updated Outcome Description',
-          outcome_type: 'sentiment'
+          outcome_type: 'sentiment',
+          progress_report_url: 'https://example.com/report',
+          management_relationship_filter: 'direct_employee',
+          team_relationship_filter: 'same_team',
+          consumer_assignment_filter: 'active_consumer'
         }
       }
     end
@@ -120,6 +128,10 @@ RSpec.describe 'Organizations::Assignments::AssignmentOutcomes', type: :request 
         assignment_outcome.reload
         expect(assignment_outcome.description).to eq('Updated Outcome Description')
         expect(assignment_outcome.outcome_type).to eq('sentiment')
+        expect(assignment_outcome.progress_report_url).to eq('https://example.com/report')
+        expect(assignment_outcome.management_relationship_filter).to eq('direct_employee')
+        expect(assignment_outcome.team_relationship_filter).to eq('same_team')
+        expect(assignment_outcome.consumer_assignment_filter).to eq('active_consumer')
       end
 
       it 'redirects to assignments index' do

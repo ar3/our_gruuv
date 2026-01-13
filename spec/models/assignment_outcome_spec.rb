@@ -39,6 +39,60 @@ RSpec.describe AssignmentOutcome, type: :model do
       outcome.outcome_type = 'sentiment'
       expect(outcome).to be_valid
     end
+
+    it 'validates management_relationship_filter inclusion' do
+      outcome.management_relationship_filter = 'invalid'
+      expect(outcome).not_to be_valid
+      expect(outcome.errors[:management_relationship_filter]).to include('is not included in the list')
+    end
+
+    it 'accepts valid management_relationship_filter values' do
+      %w[direct_employee direct_manager no_relationship].each do |value|
+        outcome.management_relationship_filter = value
+        expect(outcome).to be_valid
+      end
+    end
+
+    it 'allows nil management_relationship_filter' do
+      outcome.management_relationship_filter = nil
+      expect(outcome).to be_valid
+    end
+
+    it 'validates team_relationship_filter inclusion' do
+      outcome.team_relationship_filter = 'invalid'
+      expect(outcome).not_to be_valid
+      expect(outcome.errors[:team_relationship_filter]).to include('is not included in the list')
+    end
+
+    it 'accepts valid team_relationship_filter values' do
+      %w[same_team different_team].each do |value|
+        outcome.team_relationship_filter = value
+        expect(outcome).to be_valid
+      end
+    end
+
+    it 'allows nil team_relationship_filter' do
+      outcome.team_relationship_filter = nil
+      expect(outcome).to be_valid
+    end
+
+    it 'validates consumer_assignment_filter inclusion' do
+      outcome.consumer_assignment_filter = 'invalid'
+      expect(outcome).not_to be_valid
+      expect(outcome.errors[:consumer_assignment_filter]).to include('is not included in the list')
+    end
+
+    it 'accepts valid consumer_assignment_filter values' do
+      %w[active_consumer not_consumer].each do |value|
+        outcome.consumer_assignment_filter = value
+        expect(outcome).to be_valid
+      end
+    end
+
+    it 'allows nil consumer_assignment_filter' do
+      outcome.consumer_assignment_filter = nil
+      expect(outcome).to be_valid
+    end
   end
 
   describe 'associations' do
@@ -56,6 +110,33 @@ RSpec.describe AssignmentOutcome, type: :model do
   describe 'instance methods' do
     it 'returns display name' do
       expect(outcome.display_name).to eq(outcome.description)
+    end
+
+    describe '#extract_quoted_content' do
+      it 'extracts content from double quotes' do
+        outcome.description = 'Team agrees: "We communicate clearly and frequently"'
+        expect(outcome.extract_quoted_content).to eq('We communicate clearly and frequently')
+      end
+
+      it 'extracts content from single quotes' do
+        outcome.description = "Team agrees: 'We communicate clearly and frequently'"
+        expect(outcome.extract_quoted_content).to eq('We communicate clearly and frequently')
+      end
+
+      it 'returns nil if no quotes found' do
+        outcome.description = 'Team agrees: We communicate clearly and frequently'
+        expect(outcome.extract_quoted_content).to be_nil
+      end
+
+      it 'returns nil if description is blank' do
+        outcome.description = nil
+        expect(outcome.extract_quoted_content).to be_nil
+      end
+
+      it 'returns first quoted content if multiple quotes exist' do
+        outcome.description = 'First: "First quote" and second: "Second quote"'
+        expect(outcome.extract_quoted_content).to eq('First quote')
+      end
     end
   end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_11_211836) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_12_073048) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -140,7 +140,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_11_211836) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "outcome_type"
+    t.string "progress_report_url"
+    t.string "management_relationship_filter"
+    t.string "team_relationship_filter"
+    t.string "consumer_assignment_filter"
     t.index ["assignment_id"], name: "index_assignment_outcomes_on_assignment_id"
+  end
+
+  create_table "assignment_supply_relationships", force: :cascade do |t|
+    t.bigint "supplier_assignment_id", null: false
+    t.bigint "consumer_assignment_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["consumer_assignment_id"], name: "idx_on_consumer_assignment_id_792c1cb225"
+    t.index ["supplier_assignment_id", "consumer_assignment_id"], name: "index_assignment_supply_relationships_on_supplier_and_consumer", unique: true
+    t.index ["supplier_assignment_id"], name: "idx_on_supplier_assignment_id_815beca5be"
+    t.check_constraint "supplier_assignment_id <> consumer_assignment_id", name: "check_no_self_referential_supply_relationships"
   end
 
   create_table "assignment_tenures", force: :cascade do |t|
@@ -1037,6 +1052,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_11_211836) do
   add_foreign_key "assignment_check_ins", "people", column: "finalized_by_id"
   add_foreign_key "assignment_check_ins", "teammates"
   add_foreign_key "assignment_outcomes", "assignments"
+  add_foreign_key "assignment_supply_relationships", "assignments", column: "consumer_assignment_id"
+  add_foreign_key "assignment_supply_relationships", "assignments", column: "supplier_assignment_id"
   add_foreign_key "assignment_tenures", "assignments"
   add_foreign_key "assignment_tenures", "teammates"
   add_foreign_key "assignments", "organizations", column: "company_id"

@@ -74,7 +74,11 @@ RSpec.describe Organizations::Assignments::AssignmentOutcomesController, type: :
       {
         assignment_outcome: {
           description: 'Updated Description',
-          outcome_type: 'sentiment'
+          outcome_type: 'sentiment',
+          progress_report_url: 'https://example.com/report',
+          management_relationship_filter: 'direct_employee',
+          team_relationship_filter: 'same_team',
+          consumer_assignment_filter: 'active_consumer'
         }
       }
     end
@@ -95,6 +99,10 @@ RSpec.describe Organizations::Assignments::AssignmentOutcomesController, type: :
         assignment_outcome.reload
         expect(assignment_outcome.description).to eq('Updated Description')
         expect(assignment_outcome.outcome_type).to eq('sentiment')
+        expect(assignment_outcome.progress_report_url).to eq('https://example.com/report')
+        expect(assignment_outcome.management_relationship_filter).to eq('direct_employee')
+        expect(assignment_outcome.team_relationship_filter).to eq('same_team')
+        expect(assignment_outcome.consumer_assignment_filter).to eq('active_consumer')
       end
 
       it 'redirects to assignments index with notice' do
