@@ -112,6 +112,9 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
       when 'BulkSyncEvent::UploadAssignmentsAndAbilities'
         Rails.logger.debug "❌❌❌ BulkSyncEventsController: Using AssignmentsAndAbilitiesUploadProcessorJob"
         AssignmentsAndAbilitiesUploadProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
+      when 'BulkSyncEvent::UploadAssignmentsBulk'
+        Rails.logger.debug "❌❌❌ BulkSyncEventsController: Using AssignmentsBulkUploadProcessorJob"
+        AssignmentsBulkUploadProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
       when 'BulkSyncEvent::RefreshNamesSync'
         Rails.logger.debug "❌❌❌ BulkSyncEventsController: Using RefreshNamesSyncProcessorJob"
         RefreshNamesSyncProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)

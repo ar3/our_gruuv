@@ -48,7 +48,8 @@ RSpec.describe Organizations::BulkDownloadsController, type: :controller do
             'Last PageVisit Created At', 'First PageVisit Created At', 'PageVisit Count',
             'Last Position Finalized Check-In', 'Last Assignment Finalized Check-In', 'Last Aspiration Finalized Check-In',
             'Number of Milestones Attained', 'Manager Email',
-            'Number of Published Observations (as Observee)', '1:1 Document Link', 'Public Page Link'
+            'Number of Published Observations (as Observee)', '1:1 Document Link', 'Public Page Link',
+            'Active Assignments'
           )
         end
       end

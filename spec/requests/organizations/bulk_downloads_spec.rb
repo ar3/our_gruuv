@@ -84,7 +84,8 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
             'Last PageVisit Created At', 'First PageVisit Created At', 'PageVisit Count',
             'Last Position Finalized Check-In', 'Last Assignment Finalized Check-In', 'Last Aspiration Finalized Check-In',
             'Number of Milestones Attained', 'Manager Email',
-            'Number of Published Observations (as Observee)', '1:1 Document Link', 'Public Page Link'
+            'Number of Published Observations (as Observee)', '1:1 Document Link', 'Public Page Link',
+            'Active Assignments'
           )
         end
 
@@ -223,6 +224,77 @@ RSpec.describe 'Organizations::BulkDownloads', type: :request do
           expect(row['Last Position Finalized Check-In']).to be_present
           expect(row['Last Assignment Finalized Check-In']).to be_present
           expect(row['Last Aspiration Finalized Check-In']).to be_present
+        end
+
+        it 'includes active assignments in CSV' do
+          person = create(:person, email: 'assignments@example.com')
+          teammate = CompanyTeammate.create!(person: person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
+          
+          assignment1 = create(:assignment, company: organization, title: 'Assignment One')
+          assignment2 = create(:assignment, company: organization, title: 'Assignment Two')
+          
+          # Create active assignment tenures
+          create(:assignment_tenure, teammate: teammate, assignment: assignment1, started_at: 2.weeks.ago, ended_at: nil, anticipated_energy_percentage: 50, official_rating: 'Exceeds')
+          create(:assignment_tenure, teammate: teammate, assignment: assignment2, started_at: 1.week.ago, ended_at: nil, anticipated_energy_percentage: 30)
+          
+          get download_organization_bulk_downloads_path(organization, type: 'company_teammates')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Email'] == 'assignments@example.com' }
+          expect(row).to be_present
+          
+          active_assignments = row['Active Assignments']
+          expect(active_assignments).to include('Assignment One')
+          expect(active_assignments).to include('Assignment Two')
+          expect(active_assignments).to include('ID:')
+          expect(active_assignments).to include('Started:')
+          expect(active_assignments).to include('Energy: 50%')
+          expect(active_assignments).to include('Energy: 30%')
+          expect(active_assignments).to include('Rating: Exceeds')
+          expect(active_assignments.split("\n").size).to eq(2)
+        end
+
+        it 'excludes inactive assignment tenures from active assignments' do
+          person = create(:person, email: 'inactive@example.com')
+          teammate = CompanyTeammate.create!(person: person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
+          
+          assignment1 = create(:assignment, company: organization, title: 'Active Assignment')
+          assignment2 = create(:assignment, company: organization, title: 'Inactive Assignment')
+          
+          # Create one active and one inactive tenure
+          create(:assignment_tenure, teammate: teammate, assignment: assignment1, started_at: 2.weeks.ago, ended_at: nil, anticipated_energy_percentage: 50)
+          create(:assignment_tenure, teammate: teammate, assignment: assignment2, started_at: 1.month.ago, ended_at: 1.week.ago, anticipated_energy_percentage: 30)
+          
+          get download_organization_bulk_downloads_path(organization, type: 'company_teammates')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Email'] == 'inactive@example.com' }
+          expect(row).to be_present
+          
+          active_assignments = row['Active Assignments']
+          expect(active_assignments).to include('Active Assignment')
+          expect(active_assignments).not_to include('Inactive Assignment')
+          expect(active_assignments.split("\n").size).to eq(1)
+        end
+
+        it 'excludes assignment tenures with zero energy from active assignments' do
+          person = create(:person, email: 'zeroenergy@example.com')
+          teammate = CompanyTeammate.create!(person: person, organization: organization, first_employed_at: 1.month.ago, last_terminated_at: nil)
+          
+          assignment1 = create(:assignment, company: organization, title: 'Active Assignment')
+          assignment2 = create(:assignment, company: organization, title: 'Zero Energy Assignment')
+          
+          # Create one with energy and one without
+          create(:assignment_tenure, teammate: teammate, assignment: assignment1, started_at: 2.weeks.ago, ended_at: nil, anticipated_energy_percentage: 50)
+          create(:assignment_tenure, teammate: teammate, assignment: assignment2, started_at: 1.week.ago, ended_at: nil, anticipated_energy_percentage: 0)
+          
+          get download_organization_bulk_downloads_path(organization, type: 'company_teammates')
+          csv = CSV.parse(response.body, headers: true)
+          row = csv.find { |r| r['Email'] == 'zeroenergy@example.com' }
+          expect(row).to be_present
+          
+          active_assignments = row['Active Assignments']
+          expect(active_assignments).to include('Active Assignment')
+          expect(active_assignments).not_to include('Zero Energy Assignment')
+          expect(active_assignments.split("\n").size).to eq(1)
         end
       end
 

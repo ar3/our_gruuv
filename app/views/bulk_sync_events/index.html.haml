@@ -20,6 +20,8 @@
             - if policy(current_organization).manage_maap?
               %li
                 = link_to "Upload Assignments and Abilities", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::UploadAssignmentsAndAbilities'}), class: 'dropdown-item'
+              %li
+                = link_to "Upload Assignments (Bulk)", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::UploadAssignmentsBulk'}), class: 'dropdown-item'
             %li
               %hr.dropdown-divider
             %li.dropdown-header Syncs

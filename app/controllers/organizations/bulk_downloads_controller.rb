@@ -56,7 +56,8 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         'Last PageVisit Created At', 'First PageVisit Created At', 'PageVisit Count',
         'Last Position Finalized Check-In', 'Last Assignment Finalized Check-In', 'Last Aspiration Finalized Check-In',
         'Number of Milestones Attained', 'Manager Email',
-        'Number of Published Observations (as Observee)', '1:1 Document Link', 'Public Page Link'
+        'Number of Published Observations (as Observee)', '1:1 Document Link', 'Public Page Link',
+        'Active Assignments'
       ]
       
       CompanyTeammate.includes(
@@ -65,6 +66,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
           position: :position_type,
           manager_teammate: :person
         },
+        assignment_tenures: :assignment,
         teammate_identities: [],
         teammate_milestones: [],
         one_on_one_link: []
@@ -131,6 +133,34 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         # Public page link
         public_page_url = Rails.application.routes.url_helpers.public_person_url(person)
         
+        # Active assignments: serialize as "Title | ID: 123 | Started: 2024-01-01 | Energy: 50% | Rating: Exceeds"
+        # Each assignment on a new line, separated by "\n"
+        company_ids = company.self_and_descendants.map(&:id)
+        active_assignments = teammate.assignment_tenures
+          .joins(:assignment)
+          .where(assignments: { company_id: company_ids })
+          .where(ended_at: nil)
+          .where('anticipated_energy_percentage > 0')
+          .order(started_at: :asc)
+          .map do |tenure|
+            assignment = tenure.assignment
+            parts = [
+              assignment.title || '',
+              "ID: #{assignment.id}",
+              "Started: #{tenure.started_at&.strftime('%Y-%m-%d') || ''}"
+            ]
+            
+            if tenure.anticipated_energy_percentage.present?
+              parts << "Energy: #{tenure.anticipated_energy_percentage}%"
+            end
+            
+            if tenure.official_rating.present?
+              parts << "Rating: #{tenure.official_rating}"
+            end
+            
+            parts.join(' | ')
+          end.join("\n")
+        
         csv << [
           person.first_name || '',
           person.middle_name || '',
@@ -150,7 +180,8 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
           manager_email,
           published_observations_count,
           one_on_one_url,
-          public_page_url
+          public_page_url,
+          active_assignments
         ]
       end
     end
@@ -158,7 +189,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
 
   def download_assignments_csv
     CSV.generate(headers: true) do |csv|
-      csv << ['Title', 'Tagline', 'Department', 'Positions', 'Milestones', 'Outcomes', 'Required Activities', 'Handbook', 'Version', 'Changes Count', 'Public URL', 'Created At', 'Updated At']
+      csv << ['Assignment ID', 'Title', 'Tagline', 'Department', 'Positions', 'Milestones', 'Outcomes', 'Required Activities', 'Handbook', 'Version', 'Changes Count', 'Public URL', 'Created At', 'Updated At']
       
       Assignment.includes(:company, :department, :published_external_reference, position_assignments: { position: [:position_type, :position_level] }, assignment_abilities: :ability, assignment_outcomes: [])
                 .where(company: company.self_and_descendants)
@@ -212,6 +243,7 @@ class Organizations::BulkDownloadsController < Organizations::OrganizationNamesp
         end
         
         csv << [
+          assignment.id,
           assignment.title || '',
           assignment.tagline || '',
           department_or_company,

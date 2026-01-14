@@ -13,6 +13,7 @@ class BulkSyncEventForm
     BulkSyncEvent::UploadAssignmentCheckins
     BulkSyncEvent::UploadEmployees
     BulkSyncEvent::UploadAssignmentsAndAbilities
+    BulkSyncEvent::UploadAssignmentsBulk
     BulkSyncEvent::RefreshNamesSync
     BulkSyncEvent::RefreshSlackSync
   ].freeze
@@ -105,7 +106,7 @@ class BulkSyncEventForm
   end
 
   def is_upload_type?
-    type.in?(['BulkSyncEvent::UploadAssignmentCheckins', 'BulkSyncEvent::UploadEmployees', 'BulkSyncEvent::UploadAssignmentsAndAbilities'])
+    type.in?(['BulkSyncEvent::UploadAssignmentCheckins', 'BulkSyncEvent::UploadEmployees', 'BulkSyncEvent::UploadAssignmentsAndAbilities', 'BulkSyncEvent::UploadAssignmentsBulk'])
   end
 
   def is_sync_type?
@@ -205,21 +206,23 @@ class BulkSyncEventForm
   def determine_parser
     return nil unless @bulk_sync_event
     
-    begin
-      case @bulk_sync_event
-      when BulkSyncEvent::UploadAssignmentCheckins
-        EmploymentDataUploadParser.new(@bulk_sync_event.source_contents) if @bulk_sync_event.source_contents.present?
-      when BulkSyncEvent::UploadEmployees
-        UnassignedEmployeeUploadParser.new(@bulk_sync_event.source_contents) if @bulk_sync_event.source_contents.present?
-      when BulkSyncEvent::UploadAssignmentsAndAbilities
-        AssignmentsAndAbilitiesUploadParser.new(@bulk_sync_event.source_contents) if @bulk_sync_event.source_contents.present?
-      when BulkSyncEvent::RefreshNamesSync
-        RefreshNamesSyncParser.new(@bulk_sync_event.organization)
-      when BulkSyncEvent::RefreshSlackSync
-        RefreshSlackSyncParser.new(@bulk_sync_event.organization)
-      else
-        nil
-      end
+      begin
+        case @bulk_sync_event
+        when BulkSyncEvent::UploadAssignmentCheckins
+          EmploymentDataUploadParser.new(@bulk_sync_event.source_contents) if @bulk_sync_event.source_contents.present?
+        when BulkSyncEvent::UploadEmployees
+          UnassignedEmployeeUploadParser.new(@bulk_sync_event.source_contents) if @bulk_sync_event.source_contents.present?
+        when BulkSyncEvent::UploadAssignmentsAndAbilities
+          AssignmentsAndAbilitiesUploadParser.new(@bulk_sync_event.source_contents) if @bulk_sync_event.source_contents.present?
+        when BulkSyncEvent::UploadAssignmentsBulk
+          AssignmentsBulkUploadParser.new(@bulk_sync_event.source_contents, @bulk_sync_event.organization) if @bulk_sync_event.source_contents.present?
+        when BulkSyncEvent::RefreshNamesSync
+          RefreshNamesSyncParser.new(@bulk_sync_event.organization)
+        when BulkSyncEvent::RefreshSlackSync
+          RefreshSlackSyncParser.new(@bulk_sync_event.organization)
+        else
+          nil
+        end
     rescue => e
       errors.add(:base, "Error creating parser: #{e.message}")
       nil
