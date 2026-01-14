@@ -48,6 +48,15 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def show
+    # Load employees with this position if current user is a manager
+    if current_company_teammate&.has_direct_reports?
+      @employees_with_position = EmploymentTenure
+        .active
+        .where(position: @position, company: @position.company)
+        .joins(teammate: :person)
+        .includes(teammate: :person)
+        .order('people.last_name, people.first_name')
+    end
     render layout: determine_layout
   end
 

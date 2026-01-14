@@ -23,7 +23,8 @@
         %tbody
           - assignments.each do |assignment|
             - existing_pa = existing_position_assignments[assignment.id]
-            %tr
+            - has_value = existing_pa && (existing_pa.min_estimated_energy.to_i != 0 || existing_pa.max_estimated_energy.to_i != 0)
+            %tr{class: has_value ? 'table-info' : nil}
               %td
                 %strong= assignment.title
                 - if assignment.department

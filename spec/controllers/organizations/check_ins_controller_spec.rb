@@ -478,7 +478,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'includes abilities where employee has milestone attainments' do
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 2)
         
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
@@ -505,7 +506,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'includes abilities with both milestones and assignment requirements' do
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_both, certifying_teammate: certifier_teammate, milestone_level: 1)
         assignment_with_ability = create(:assignment, company: organization, title: 'Test Assignment')
         active_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_with_ability, ended_at: nil)
@@ -521,7 +523,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'deduplicates abilities that appear in both milestone and assignment lists' do
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_both, certifying_teammate: certifier_teammate, milestone_level: 2)
         assignment_with_ability = create(:assignment, company: organization, title: 'Test Assignment')
         active_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment_with_ability, ended_at: nil)
@@ -537,7 +540,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'only includes abilities from organization hierarchy' do
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone_outside = create(:teammate_milestone, teammate: employee_teammate, ability: ability_outside_hierarchy, certifying_teammate: certifier_teammate, milestone_level: 1)
         milestone_inside = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 1)
         
@@ -552,7 +556,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       it 'includes abilities from departments within the organization hierarchy' do
         department = create(:organization, type: 'Department', parent: organization, name: 'Engineering Department')
         ability_in_department = create(:ability, name: 'Department Ability', organization: department)
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone = create(:teammate_milestone, teammate: employee_teammate, ability: ability_in_department, certifying_teammate: certifier_teammate, milestone_level: 2)
         
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
@@ -567,7 +572,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         ability_a = create(:ability, name: 'A Ability', organization: organization)
         ability_m = create(:ability, name: 'M Ability', organization: organization)
         
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         create(:teammate_milestone, teammate: employee_teammate, ability: ability_z, certifying_teammate: certifier_teammate, milestone_level: 1)
         create(:teammate_milestone, teammate: employee_teammate, ability: ability_a, certifying_teammate: certifier_teammate, milestone_level: 1)
         create(:teammate_milestone, teammate: employee_teammate, ability: ability_m, certifying_teammate: certifier_teammate, milestone_level: 1)
@@ -580,7 +586,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
       end
 
       it 'includes all milestone attainments for each ability' do
-        certifier_teammate = create(:teammate, person: certifier, organization: organization)
+        certifier_teammate = create(:teammate, type: 'CompanyTeammate', person: certifier, organization: organization)
+        certifier_teammate = CompanyTeammate.find(certifier_teammate.id) # Ensure it's a CompanyTeammate instance
         milestone1 = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 1, attained_at: 6.months.ago)
         milestone2 = create(:teammate_milestone, teammate: employee_teammate, ability: ability_with_milestone, certifying_teammate: certifier_teammate, milestone_level: 3, attained_at: 1.month.ago)
         
@@ -622,6 +629,79 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
         
         expect(assigns(:relevant_abilities)).to be_empty
+      end
+    end
+
+    context 'load_or_build_assignment_check_ins' do
+      let(:required_assignment) { create(:assignment, company: organization, title: 'Required Assignment') }
+      let(:suggested_assignment) { create(:assignment, company: organization, title: 'Suggested Assignment') }
+      let(:other_assignment) { create(:assignment, company: organization, title: 'Other Assignment') }
+
+      before do
+        sign_in_as_teammate(manager, organization)
+        # Ensure employment_tenure is active and has the position
+        employment_tenure.update!(ended_at: nil, company: organization, position: position)
+        
+        # Create position assignments
+        create(:position_assignment, position: position, assignment: required_assignment, assignment_type: 'required')
+        create(:position_assignment, position: position, assignment: suggested_assignment, assignment_type: 'suggested')
+        
+        # Don't create assignment_tenure for these tests - we want to test position-based loading
+        AssignmentTenure.where(teammate: employee_teammate, assignment: [required_assignment, suggested_assignment]).destroy_all
+      end
+
+      it 'loads check-ins for required assignments' do
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+        
+        assignment_check_ins = assigns(:assignment_check_ins)
+        expect(assignment_check_ins).to be_present
+        
+        required_check_in = assignment_check_ins.find { |ci| ci.assignment_id == required_assignment.id }
+        
+        expect(required_check_in).to be_present, "Expected check-in for required assignment #{required_assignment.id}, but found: #{assignment_check_ins.map { |ci| ci.assignment_id }}"
+        expect(required_check_in.assignment).to eq(required_assignment)
+      end
+
+      it 'loads check-ins for suggested assignments' do
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+        
+        assignment_check_ins = assigns(:assignment_check_ins)
+        expect(assignment_check_ins).to be_present
+        
+        suggested_check_in = assignment_check_ins.find { |ci| ci.assignment_id == suggested_assignment.id }
+        
+        expect(suggested_check_in).to be_present
+        expect(suggested_check_in.assignment).to eq(suggested_assignment)
+      end
+
+      it 'does not load check-ins for assignments not in position' do
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+        
+        assignment_check_ins = assigns(:assignment_check_ins)
+        other_check_in = assignment_check_ins.find { |ci| ci.assignment_id == other_assignment.id }
+        
+        expect(other_check_in).to be_nil
+      end
+
+      it 'creates blank check-ins for suggested assignments without tenure' do
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+        
+        assignment_check_ins = assigns(:assignment_check_ins)
+        suggested_check_in = assignment_check_ins.find { |ci| ci.assignment_id == suggested_assignment.id }
+        
+        expect(suggested_check_in).to be_present
+        expect(suggested_check_in.actual_energy_percentage).to be_nil
+        expect(suggested_check_in.check_in_started_on).to eq(Date.current)
+      end
+
+      it 'includes both required and suggested assignments in check-ins list' do
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+        
+        assignment_check_ins = assigns(:assignment_check_ins)
+        assignment_ids = assignment_check_ins.map(&:assignment_id)
+        
+        expect(assignment_ids).to include(required_assignment.id)
+        expect(assignment_ids).to include(suggested_assignment.id)
       end
     end
 

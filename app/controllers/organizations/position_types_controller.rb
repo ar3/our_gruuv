@@ -13,6 +13,20 @@ class Organizations::PositionTypesController < Organizations::OrganizationNamesp
 
   def show
     authorize @position_type
+    
+    # Load teammates with active employment tenures on any position with this position type
+    # Get all tenures, then group by teammate and take the first one for each, preserving order
+    all_tenures = EmploymentTenure
+      .active
+      .joins(:position, teammate: :person)
+      .where(positions: { position_type_id: @position_type.id })
+      .includes(teammate: :person, position: [:position_type, :position_level])
+      .order('people.last_name, people.first_name, employment_tenures.started_at DESC')
+    
+    # Group by teammate_id and take the first (most recent) tenure for each teammate
+    # Preserve the order by sorting the grouped results by the original order
+    grouped = all_tenures.to_a.group_by(&:teammate_id)
+    @teammates_with_position_type = all_tenures.to_a.uniq(&:teammate_id)
   end
 
   def new

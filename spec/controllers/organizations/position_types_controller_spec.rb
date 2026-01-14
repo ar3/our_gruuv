@@ -343,5 +343,110 @@ RSpec.describe Organizations::PositionTypesController, type: :controller do
       end
     end
   end
+
+  describe 'GET #show' do
+    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:employee_person) { create(:person) }
+    let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
+
+    it 'loads teammates with active employment tenures on positions with this position type' do
+      tenure = build(:employment_tenure, 
+        teammate: employee_teammate, 
+        company: organization, 
+        ended_at: nil
+      )
+      tenure.position = position
+      tenure.save!
+
+      get :show, params: { organization_id: organization.id, id: position_type.id }
+      
+      expect(response).to have_http_status(:success)
+      expect(assigns(:teammates_with_position_type)).to be_present
+      expect(assigns(:teammates_with_position_type).count).to eq(1)
+      expect(assigns(:teammates_with_position_type).first.teammate.id).to eq(employee_teammate.id)
+    end
+
+    it 'orders teammates by last name, first name' do
+      employee_person2 = create(:person, first_name: 'Alice', last_name: 'Zebra')
+      employee_teammate2 = create(:teammate, person: employee_person2, organization: organization)
+      position2 = create(:position, position_type: position_type, position_level: create(:position_level, position_major_level: position_type.position_major_level))
+      
+      tenure1 = build(:employment_tenure, 
+        teammate: employee_teammate, 
+        company: organization, 
+        ended_at: nil
+      )
+      tenure1.position = position
+      tenure1.save!
+      
+      tenure2 = build(:employment_tenure, 
+        teammate: employee_teammate2, 
+        company: organization, 
+        ended_at: nil
+      )
+      tenure2.position = position2
+      tenure2.save!
+
+      get :show, params: { organization_id: organization.id, id: position_type.id }
+      
+      teammates = assigns(:teammates_with_position_type)
+      expect(teammates.count).to eq(2)
+      # Should be ordered by last name
+      expect(teammates.first.teammate.person.last_name).to be < teammates.last.teammate.person.last_name
+    end
+
+    it 'only includes active employment tenures' do
+      inactive_employee_person = create(:person)
+      inactive_employee_teammate = create(:teammate, person: inactive_employee_person, organization: organization)
+      inactive_tenure = build(:employment_tenure, 
+        teammate: inactive_employee_teammate, 
+        company: organization, 
+        ended_at: 1.day.ago
+      )
+      inactive_tenure.position = position
+      inactive_tenure.save!
+
+      get :show, params: { organization_id: organization.id, id: position_type.id }
+      
+      teammates = assigns(:teammates_with_position_type)
+      expect(teammates).to be_empty
+    end
+
+    it 'only includes teammates with positions of this position type' do
+      other_position_type = create(:position_type, organization: organization)
+      other_position = create(:position, position_type: other_position_type, position_level: create(:position_level, position_major_level: other_position_type.position_major_level))
+      other_employee_person = create(:person)
+      other_employee_teammate = create(:teammate, person: other_employee_person, organization: organization)
+      
+      tenure1 = build(:employment_tenure, 
+        teammate: employee_teammate, 
+        company: organization, 
+        ended_at: nil
+      )
+      tenure1.position = position
+      tenure1.save!
+      
+      tenure2 = build(:employment_tenure, 
+        teammate: other_employee_teammate, 
+        company: organization, 
+        ended_at: nil
+      )
+      tenure2.position = other_position
+      tenure2.save!
+
+      get :show, params: { organization_id: organization.id, id: position_type.id }
+      
+      teammates = assigns(:teammates_with_position_type)
+      expect(teammates.count).to eq(1)
+      expect(teammates.first.teammate.id).to eq(employee_teammate.id)
+    end
+
+    it 'returns empty array when no teammates have this position type' do
+      get :show, params: { organization_id: organization.id, id: position_type.id }
+      
+      expect(response).to have_http_status(:success)
+      expect(assigns(:teammates_with_position_type)).to be_empty
+    end
+  end
 end
 

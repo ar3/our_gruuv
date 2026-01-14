@@ -113,14 +113,16 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       check_ins << check_in if check_in
     end
     
-    # Get required assignments from the teammate's current position
+    # Get required and suggested assignments from the teammate's current position
     active_employment = @teammate.employment_tenures.active.where(company: organization).first
     if active_employment&.position
       position = active_employment.position
       required_assignments = position.required_assignments.map(&:assignment)
+      suggested_assignments = position.suggested_assignments.map(&:assignment)
+      position_assignments = required_assignments + suggested_assignments
       
-      # For each required assignment, ensure we have a check-in
-      required_assignments.each do |assignment|
+      # For each position assignment (required or suggested), ensure we have a check-in
+      position_assignments.each do |assignment|
         # Check if we already have a check-in for this assignment (from active tenure above)
         existing_check_in = check_ins.find { |ci| ci.assignment_id == assignment.id }
         next if existing_check_in

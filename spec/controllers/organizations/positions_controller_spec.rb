@@ -72,6 +72,112 @@ RSpec.describe Organizations::PositionsController, type: :controller do
     end
   end
 
+  describe 'GET #show' do
+    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:manager_teammate) { CompanyTeammate.find_by(person: person, organization: organization) }
+    let(:employee_person) { create(:person) }
+    let(:employee_teammate) { create(:teammate, person: employee_person, organization: organization) }
+
+    context 'when current user is a manager' do
+      before do
+        # Make the manager have direct reports (any employee, not necessarily with this position)
+        other_employee_person = create(:person)
+        other_employee_teammate = create(:teammate, person: other_employee_person, organization: organization)
+        other_position = create(:position, position_type: position_type, position_level: create(:position_level, position_major_level: position_type.position_major_level))
+        create(:employment_tenure, 
+          teammate: other_employee_teammate, 
+          company: organization, 
+          position: other_position,
+          manager_teammate: manager_teammate,
+          ended_at: nil
+        )
+        # Also create an employee with this specific position
+        tenure = build(:employment_tenure, 
+          teammate: employee_teammate, 
+          company: organization, 
+          manager_teammate: nil, # This employee doesn't need to be managed by the current user
+          ended_at: nil
+        )
+        tenure.position = position
+        tenure.save!
+        # Verify manager has direct reports
+        manager_teammate.reload
+        expect(manager_teammate.has_direct_reports?).to be true
+      end
+
+      it 'loads employees with this position' do
+        get :show, params: { organization_id: organization.id, id: position.id }
+        
+        expect(response).to have_http_status(:success)
+        expect(assigns(:employees_with_position)).to be_present
+        expect(assigns(:employees_with_position).count).to eq(1)
+        expect(assigns(:employees_with_position).first.teammate.id).to eq(employee_teammate.id)
+      end
+
+      it 'orders employees by last name, first name' do
+        employee_person2 = create(:person, first_name: 'Alice', last_name: 'Zebra')
+        employee_teammate2 = create(:teammate, person: employee_person2, organization: organization)
+        tenure2 = build(:employment_tenure, 
+          teammate: employee_teammate2, 
+          company: organization, 
+          manager_teammate: nil,
+          ended_at: nil
+        )
+        tenure2.position = position
+        tenure2.save!
+
+        get :show, params: { organization_id: organization.id, id: position.id }
+        
+        employees = assigns(:employees_with_position)
+        expect(employees.count).to eq(2)
+        # Should be ordered by last name, so employee_person should come before employee_person2
+        expect(employees.first.teammate.person.last_name).to be < employees.last.teammate.person.last_name
+      end
+
+      it 'only includes active employment tenures' do
+        inactive_employee_person = create(:person)
+        inactive_employee_teammate = create(:teammate, person: inactive_employee_person, organization: organization)
+        inactive_tenure = build(:employment_tenure, 
+          teammate: inactive_employee_teammate, 
+          company: organization, 
+          manager_teammate: nil,
+          ended_at: 1.day.ago
+        )
+        inactive_tenure.position = position
+        inactive_tenure.save!
+
+        get :show, params: { organization_id: organization.id, id: position.id }
+        
+        employees = assigns(:employees_with_position)
+        expect(employees.count).to eq(1)
+        expect(employees.first.teammate.id).to eq(employee_teammate.id)
+      end
+    end
+
+    context 'when current user is not a manager' do
+      before do
+        # Ensure manager has no direct reports
+        manager_teammate.reload
+        expect(manager_teammate.has_direct_reports?).to be false
+        # Create an employee but don't make the current user their manager
+        create(:employment_tenure, 
+          teammate: employee_teammate, 
+          company: organization, 
+          position: position,
+          manager_teammate: nil,
+          ended_at: nil
+        )
+      end
+
+      it 'does not load employees with this position' do
+        get :show, params: { organization_id: organization.id, id: position.id }
+        
+        expect(response).to have_http_status(:success)
+        expect(assigns(:employees_with_position)).to be_nil
+      end
+    end
+  end
+
   describe 'GET #manage_assignments' do
     let(:position) { create(:position, position_type: position_type, position_level: position_level) }
     let(:assignment) { create(:assignment, company: organization) }
