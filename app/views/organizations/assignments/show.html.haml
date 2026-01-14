@@ -136,6 +136,38 @@
           - else
             %p.text-muted.mb-0 No assignments currently benefit from this assignment.
 
+    - if @position_assignments.any?
+      .card.mb-4{ role: "region", "aria-labelledby": "positions" }
+        .card-header
+          %h5.mb-0{ id: "positions" }
+            %i.bi.bi-briefcase.me-2
+            Positions that Require or Suggest This Assignment
+        .card-body
+          - required_positions = @position_assignments.select { |pa| pa.assignment_type == 'required' }
+          - suggested_positions = @position_assignments.select { |pa| pa.assignment_type == 'suggested' }
+          
+          - if required_positions.any?
+            %h6.text-primary.mb-3 Required Positions (#{required_positions.count})
+            .row
+              - required_positions.each_slice((required_positions.count.to_f / 3).ceil) do |slice|
+                .col-md-4
+                  - slice.each do |position_assignment|
+                    .mb-2
+                      = link_to position_assignment.position.display_name, organization_position_path(position_assignment.position.company, position_assignment.position), class: "text-decoration-none"
+                      - if position_assignment.energy_percentage_suffix.present?
+                        = " #{position_assignment.energy_percentage_suffix}"
+          
+          - if suggested_positions.any?
+            %h6.text-info.mb-3{class: required_positions.any? ? 'mt-3' : ''} Suggested Positions (#{suggested_positions.count})
+            .row
+              - suggested_positions.each_slice((suggested_positions.count.to_f / 3).ceil) do |slice|
+                .col-md-4
+                  - slice.each do |position_assignment|
+                    .mb-2
+                      = link_to position_assignment.position.display_name, organization_position_path(position_assignment.position.company, position_assignment.position), class: "text-decoration-none"
+                      - if position_assignment.energy_percentage_suffix.present?
+                        = " #{position_assignment.energy_percentage_suffix}"
+
     .card.mb-4{ role: "region", "aria-labelledby": "current-holders" }
       .card-header
         %h5.mb-0{ id: "current-holders" }

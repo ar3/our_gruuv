@@ -179,6 +179,92 @@ RSpec.describe 'Organizations::Assignments', type: :request do
         # Average should be (50 + 75 + 25) / 3 = 50.0
         expect(response.body).to include('50.0%')
       end
+
+      it 'shows positions section when there are position assignments' do
+        position_major_level = create(:position_major_level)
+        position_type = create(:position_type, organization: organization, position_major_level: position_major_level)
+        position_level = create(:position_level, position_major_level: position_major_level)
+        position = create(:position, position_type: position_type, position_level: position_level)
+        create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required', min_estimated_energy: 20, max_estimated_energy: 40)
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Positions that Require or Suggest This Assignment')
+        expect(response.body).to include(position.display_name)
+        expect(response.body).to include('(20%-40%)')
+      end
+
+      it 'shows required positions with energy percentage suffix' do
+        position_major_level = create(:position_major_level)
+        position_type = create(:position_type, organization: organization, position_major_level: position_major_level)
+        position_level1 = create(:position_level, position_major_level: position_major_level, level: '1.0')
+        position_level2 = create(:position_level, position_major_level: position_major_level, level: '2.0')
+        position1 = create(:position, position_type: position_type, position_level: position_level1)
+        position2 = create(:position, position_type: position_type, position_level: position_level2)
+        
+        create(:position_assignment, position: position1, assignment: assignment, assignment_type: 'required', min_estimated_energy: 10, max_estimated_energy: 30)
+        create(:position_assignment, position: position2, assignment: assignment, assignment_type: 'required', min_estimated_energy: 25)
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Required Positions (2)')
+        expect(response.body).to include(position1.display_name)
+        expect(response.body).to include('(10%-30%)')
+        expect(response.body).to include(position2.display_name)
+        expect(response.body).to include('(25%+)')
+      end
+
+      it 'shows suggested positions with energy percentage suffix' do
+        position_major_level = create(:position_major_level)
+        position_type = create(:position_type, organization: organization, position_major_level: position_major_level)
+        position_level = create(:position_level, position_major_level: position_major_level)
+        position = create(:position, position_type: position_type, position_level: position_level)
+        create(:position_assignment, position: position, assignment: assignment, assignment_type: 'suggested', max_estimated_energy: 50)
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Suggested Positions (1)')
+        expect(response.body).to include(position.display_name)
+        expect(response.body).to include('(up to 50%)')
+      end
+
+      it 'shows both required and suggested positions when both exist' do
+        position_major_level = create(:position_major_level)
+        position_type = create(:position_type, organization: organization, position_major_level: position_major_level)
+        position_level1 = create(:position_level, position_major_level: position_major_level, level: '1.0')
+        position_level2 = create(:position_level, position_major_level: position_major_level, level: '2.0')
+        required_position = create(:position, position_type: position_type, position_level: position_level1)
+        suggested_position = create(:position, position_type: position_type, position_level: position_level2)
+        
+        create(:position_assignment, position: required_position, assignment: assignment, assignment_type: 'required', min_estimated_energy: 20, max_estimated_energy: 40)
+        create(:position_assignment, position: suggested_position, assignment: assignment, assignment_type: 'suggested', min_estimated_energy: 10, max_estimated_energy: 20)
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Required Positions (1)')
+        expect(response.body).to include('Suggested Positions (1)')
+        expect(response.body).to include(required_position.display_name)
+        expect(response.body).to include(suggested_position.display_name)
+      end
+
+      it 'does not show positions section when there are no position assignments' do
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).not_to include('Positions that Require or Suggest This Assignment')
+      end
+
+      it 'links positions to their show pages' do
+        position_major_level = create(:position_major_level)
+        position_type = create(:position_type, organization: organization, position_major_level: position_major_level)
+        position_level = create(:position_level, position_major_level: position_major_level)
+        position = create(:position, position_type: position_type, position_level: position_level)
+        create(:position_assignment, position: position, assignment: assignment, assignment_type: 'required')
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        # Position's company is the position_type's organization
+        expect(response.body).to include(organization_position_path(position.company, position))
+      end
     end
 
     context 'when user is admin' do

@@ -112,6 +112,12 @@ class Organizations::AssignmentsController < ApplicationController
     # Load consumer assignments (assignments that benefit from this assignment)
     @consumer_assignments = @assignment.consumer_assignments.includes(:department, :company).order(:title)
     
+    # Load positions that require or suggest this assignment
+    @position_assignments = @assignment.position_assignments
+      .includes(position: [:position_type, :position_level])
+      .joins(position: [:position_type, :position_level])
+      .order('position_assignments.assignment_type, position_types.external_title, position_levels.level')
+    
     render layout: determine_layout
   end
 
