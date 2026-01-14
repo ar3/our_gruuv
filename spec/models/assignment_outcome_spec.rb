@@ -58,6 +58,11 @@ RSpec.describe AssignmentOutcome, type: :model do
       expect(outcome).to be_valid
     end
 
+    it 'allows empty string management_relationship_filter' do
+      outcome.management_relationship_filter = ''
+      expect(outcome).to be_valid
+    end
+
     it 'validates team_relationship_filter inclusion' do
       outcome.team_relationship_filter = 'invalid'
       expect(outcome).not_to be_valid
@@ -76,6 +81,11 @@ RSpec.describe AssignmentOutcome, type: :model do
       expect(outcome).to be_valid
     end
 
+    it 'allows empty string team_relationship_filter' do
+      outcome.team_relationship_filter = ''
+      expect(outcome).to be_valid
+    end
+
     it 'validates consumer_assignment_filter inclusion' do
       outcome.consumer_assignment_filter = 'invalid'
       expect(outcome).not_to be_valid
@@ -91,6 +101,11 @@ RSpec.describe AssignmentOutcome, type: :model do
 
     it 'allows nil consumer_assignment_filter' do
       outcome.consumer_assignment_filter = nil
+      expect(outcome).to be_valid
+    end
+
+    it 'allows empty string consumer_assignment_filter' do
+      outcome.consumer_assignment_filter = ''
       expect(outcome).to be_valid
     end
   end

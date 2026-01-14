@@ -134,10 +134,35 @@ RSpec.describe 'Organizations::Assignments::AssignmentOutcomes', type: :request 
         expect(assignment_outcome.consumer_assignment_filter).to eq('active_consumer')
       end
 
-      it 'redirects to assignments index' do
+      it 'redirects to assignment show page' do
         patch organization_assignment_assignment_outcome_path(organization, assignment, assignment_outcome), params: update_params
         expect(response).to have_http_status(:redirect)
-        expect(response.location).to include(organization_assignments_path(organization))
+        expect(response).to redirect_to(organization_assignment_path(organization, assignment))
+      end
+
+      it 'normalizes empty strings to nil for filter fields' do
+        # Set some filter values first
+        assignment_outcome.update!(
+          management_relationship_filter: 'direct_employee',
+          team_relationship_filter: 'same_team',
+          consumer_assignment_filter: 'active_consumer'
+        )
+        
+        # Update with empty strings
+        patch organization_assignment_assignment_outcome_path(organization, assignment, assignment_outcome), params: {
+          assignment_outcome: {
+            description: assignment_outcome.description,
+            outcome_type: assignment_outcome.outcome_type,
+            management_relationship_filter: '',
+            team_relationship_filter: '',
+            consumer_assignment_filter: ''
+          }
+        }
+        
+        assignment_outcome.reload
+        expect(assignment_outcome.management_relationship_filter).to be_nil
+        expect(assignment_outcome.team_relationship_filter).to be_nil
+        expect(assignment_outcome.consumer_assignment_filter).to be_nil
       end
 
       it 'shows success notice' do

@@ -30,4 +30,52 @@ module AssignmentsHelper
     # Default to Organization View
     'Organization View'
   end
+
+  def assignment_outcome_management_relationship_label(filter_value)
+    return nil unless filter_value.present?
+    
+    case filter_value
+    when 'direct_employee'
+      'Actively a direct employee of the Assignment holder'
+    when 'direct_manager'
+      'Actively the direct manager of the Assignment holder'
+    when 'no_relationship'
+      'No managerial relationship with assignment holder'
+    else
+      filter_value.humanize
+    end
+  end
+
+  def assignment_outcome_team_relationship_label(filter_value)
+    return nil unless filter_value.present?
+    
+    case filter_value
+    when 'same_team'
+      'On the same team as the Assignment holder'
+    when 'different_team'
+      'Not on the same team as the Assignment holder'
+    else
+      filter_value.humanize
+    end
+  end
+
+  def assignment_outcome_consumer_assignment_label(filter_value, assignment)
+    return nil unless filter_value.present?
+    
+    consumer_assignments = assignment.consumer_assignments.order(:title)
+    assignment_list = if consumer_assignments.any?
+      consumer_assignments.map(&:title).join(', ')
+    else
+      'associated assignment that can be defined'
+    end
+    
+    case filter_value
+    when 'active_consumer'
+      "Teammates who ARE taking on: #{assignment_list}"
+    when 'not_consumer'
+      "Teammates who ARE NOT taking on: #{assignment_list}"
+    else
+      filter_value.humanize
+    end
+  end
 end

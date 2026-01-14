@@ -111,21 +111,8 @@ class Assignment < ApplicationRecord
   end
   
   def create_outcomes_from_textarea(text)
-    return if text.blank?
-    
-    # Split by newlines, strip whitespace, and filter out empty lines
-    descriptions = text.split("\n").map(&:strip).reject(&:blank?)
-    
-    descriptions.each do |description|
-      # Determine type based on content
-      type = if description.downcase.match?(/agree:|agrees:/)
-        'sentiment'
-      else
-        'quantitative'
-      end
-      
-      assignment_outcomes.create!(description: description, outcome_type: type)
-    end
+    processor = AssignmentOutcomesProcessor.new(self, text)
+    processor.process
   end
   
   # pg_search configuration

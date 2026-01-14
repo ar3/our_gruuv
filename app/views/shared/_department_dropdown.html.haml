@@ -9,11 +9,14 @@
 - sorted_departments = departments.sort_by { |dept| dept.display_name }
 - # Build options: only departments (no company)
 - department_options = sorted_departments.map { |dept| [dept.display_name, dept.id] }
+- # Add company option if include_root_option is true (for parent selection, indicates root/company level)
+- if include_root_option && company
+  - department_options = [[company.name, company.id]] + department_options
 - # Add "No Department" option if include_blank is true (for seats where department is optional)
 - # "No Department" should be first and the default when no selection is provided
 - if include_blank
   - department_options = [['No Department', '']] + department_options
-- # Default to "No Department" (empty string) if no selection provided
+- # Default to empty string if no selection provided (for blank option), otherwise use selected value
 - default_selected_id = selected_department_id || ''
 .mb-3
   = form.label field_name, label_text, class: "form-label"

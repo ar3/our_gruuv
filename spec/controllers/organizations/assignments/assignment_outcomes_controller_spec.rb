@@ -105,15 +105,43 @@ RSpec.describe Organizations::Assignments::AssignmentOutcomesController, type: :
         expect(assignment_outcome.consumer_assignment_filter).to eq('active_consumer')
       end
 
-      it 'redirects to assignments index with notice' do
+      it 'redirects to assignment show page with notice' do
         patch :update, params: {
           organization_id: organization.id,
           assignment_id: assignment.id,
           id: assignment_outcome.id
         }.merge(update_params)
         
-        expect(response).to redirect_to(organization_assignments_path(organization))
+        expect(response).to redirect_to(organization_assignment_path(organization, assignment))
         expect(flash[:notice]).to eq('Outcome was successfully updated.')
+      end
+
+      it 'normalizes empty strings to nil for filter fields' do
+        # Set some filter values first
+        assignment_outcome.update!(
+          management_relationship_filter: 'direct_employee',
+          team_relationship_filter: 'same_team',
+          consumer_assignment_filter: 'active_consumer'
+        )
+        
+        # Update with empty strings
+        patch :update, params: {
+          organization_id: organization.id,
+          assignment_id: assignment.id,
+          id: assignment_outcome.id,
+          assignment_outcome: {
+            description: assignment_outcome.description,
+            outcome_type: assignment_outcome.outcome_type,
+            management_relationship_filter: '',
+            team_relationship_filter: '',
+            consumer_assignment_filter: ''
+          }
+        }
+        
+        assignment_outcome.reload
+        expect(assignment_outcome.management_relationship_filter).to be_nil
+        expect(assignment_outcome.team_relationship_filter).to be_nil
+        expect(assignment_outcome.consumer_assignment_filter).to be_nil
       end
     end
 

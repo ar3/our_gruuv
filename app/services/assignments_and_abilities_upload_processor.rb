@@ -407,37 +407,15 @@ class AssignmentsAndAbilitiesUploadProcessor
   def process_outcomes(assignment, outcomes)
     return if outcomes.blank?
     
-    outcomes.each do |outcome_description|
-      next if outcome_description.blank?
-      
-      outcome_description = outcome_description.strip
-      
-      # Find or create outcome with exact match
-      existing = AssignmentOutcome.find_by(
-        assignment: assignment,
-        description: outcome_description
-      )
-      
-      if existing
-        Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Found existing outcome: #{outcome_description}"
-        next
-      end
-      
-      # Determine type
-      outcome_type = if outcome_description.downcase.match?(/agree:|agrees:/)
-        'sentiment'
-      else
-        'quantitative'
-      end
-      
-      # Create new outcome
-      AssignmentOutcome.create!(
-        assignment: assignment,
-        description: outcome_description,
-        outcome_type: outcome_type
-      )
-      Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Created new outcome: #{outcome_description} (type: #{outcome_type})"
-    end
+    # Convert array to newline-separated string for the processor
+    outcomes_text = outcomes.map(&:strip).reject(&:blank?).join("\n")
+    
+    # Use AssignmentOutcomesProcessor to handle outcomes
+    # This will skip existing outcomes with exact same description
+    processor = AssignmentOutcomesProcessor.new(assignment, outcomes_text)
+    processor.process
+    
+    Rails.logger.debug "❌❌❌ AssignmentsAndAbilitiesUploadProcessor: Processed outcomes - Created: #{processor.created_count}, Skipped: #{processor.skipped_count}"
   end
 
   def find_or_create_position(position_title)

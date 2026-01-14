@@ -51,14 +51,49 @@
             
             - if @assignment.assignment_outcomes.any?
               .mb-3
-                %h6.text-muted Outcomes
+                %h6.text-muted
+                  = link_to "Outcomes", edit_organization_assignment_path(@organization, @assignment), class: "text-muted text-decoration-none"
                 - @assignment.assignment_outcomes.ordered.each do |outcome|
                   .card.mb-2
                     .card-body.py-2
                       .d-flex.justify-content-between.align-items-start
                         .flex-grow-1
                           .markdown-content
-                            = render_markdown(outcome.description)
+                            - if policy(outcome).edit?
+                              = link_to edit_organization_assignment_assignment_outcome_path(@organization, @assignment, outcome), class: "text-decoration-none" do
+                                = render_markdown(outcome.description)
+                            - else
+                              = render_markdown(outcome.description)
+                          
+                          - if outcome.progress_report_url.present? || outcome.management_relationship_filter.present? || outcome.team_relationship_filter.present? || outcome.consumer_assignment_filter.present?
+                            .mt-2.pt-2.border-top
+                              - if outcome.progress_report_url.present?
+                                .mb-1
+                                  %small.text-muted
+                                    %strong Progress Report:
+                                  %br
+                                  = link_to outcome.progress_report_url, outcome.progress_report_url, target: "_blank", class: "text-decoration-none"
+                              
+                              - if outcome.management_relationship_filter.present?
+                                .mb-1
+                                  %small.text-muted
+                                    %strong Who to Ask (Management):
+                                  %br
+                                  %small= assignment_outcome_management_relationship_label(outcome.management_relationship_filter)
+                              
+                              - if outcome.team_relationship_filter.present?
+                                .mb-1
+                                  %small.text-muted
+                                    %strong Who to Ask (Team):
+                                  %br
+                                  %small= assignment_outcome_team_relationship_label(outcome.team_relationship_filter)
+                              
+                              - if outcome.consumer_assignment_filter.present?
+                                .mb-1
+                                  %small.text-muted
+                                    %strong Who to Ask (Consumer Assignment):
+                                  %br
+                                  %small= assignment_outcome_consumer_assignment_label(outcome.consumer_assignment_filter, @assignment)
                         %span.badge{class: outcome.outcome_type == 'sentiment' ? 'bg-warning' : 'bg-info'}
                           = outcome.outcome_type.titleize
             - else

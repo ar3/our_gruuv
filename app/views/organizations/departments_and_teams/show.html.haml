@@ -68,22 +68,21 @@
               - else
                 %span.text-muted= @organization.name
 
-    - if @descendants.any?
+    - if @child_departments.any?
       .card.mb-4
         .card-header
           %h5.mb-0
             %i.bi.bi-diagram-3.me-2
-            Departments & Teams (#{@descendants.count})
+            Child Departments (#{@child_departments.count})
         .card-body
           .table-responsive
             %table.table.table-hover
               %thead
                 %tr
                   %th Name
-                  %th Type
                   %th Children
               %tbody
-                - @descendants.each do |descendant|
+                - @child_departments.each do |descendant|
                   %tr
                     %td
                       - if policy(descendant).show?
@@ -92,8 +91,35 @@
                       - else
                         %span= descendant.name
                     %td
-                      %span.badge{class: descendant.department? ? "bg-primary" : "bg-info"}
-                        = descendant.type
+                      - child_count = descendant.children.active.count
+                      - if child_count > 0
+                        %span.text-muted
+                          = pluralize(child_count, 'department/team')
+                      - else
+                        %span.text-muted —
+
+    - if @child_teams.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-people.me-2
+            Teams (#{@child_teams.count})
+        .card-body
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Name
+                  %th Children
+              %tbody
+                - @child_teams.each do |descendant|
+                  %tr
+                    %td
+                      - if policy(descendant).show?
+                        = link_to organization_departments_and_team_path(@organization, descendant), class: "text-decoration-none" do
+                          = descendant.name
+                      - else
+                        %span= descendant.name
                     %td
                       - child_count = descendant.children.active.count
                       - if child_count > 0
@@ -101,6 +127,29 @@
                           = pluralize(child_count, 'department/team')
                       - else
                         %span.text-muted —
+
+    - if @teammates.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-person-check.me-2
+            Teammates (#{@teammates.count})
+        .card-body
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Name
+                  %th Type
+              %tbody
+                - @teammates.each do |teammate|
+                  %tr
+                    %td
+                      = link_to internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none" do
+                        = teammate.person.display_name
+                    %td
+                      %span.badge.bg-secondary
+                        = teammate.type
 
     - if @seats.any?
       .card.mb-4
@@ -120,6 +169,41 @@
                   %th Filled By
               %tbody
                 - @seats.each do |seat|
+                  - active_tenure = seat.employment_tenures.active.first
+                  %tr
+                    %td
+                      = link_to organization_seat_path(@organization, seat), class: "text-decoration-none" do
+                        = seat.display_name
+                    %td= seat.position_type.external_title
+                    %td= seat.seat_needed_by.strftime('%B %d, %Y')
+                    %td
+                      %span.badge{class: seat_state_badge_class(seat.state)}
+                        = seat.state.titleize
+                    %td
+                      - if active_tenure&.teammate&.person
+                        = link_to internal_organization_company_teammate_path(@organization, active_tenure.teammate), class: "text-decoration-none" do
+                          = active_tenure.teammate.person.display_name
+                      - else
+                        %span.text-muted —
+
+    - if @seats_as_department.any?
+      .card.mb-4
+        .card-header
+          %h5.mb-0
+            %i.bi.bi-person-badge.me-2
+            Seats (Directly Linked) (#{@seats_as_department.count})
+        .card-body
+          .table-responsive
+            %table.table.table-hover
+              %thead
+                %tr
+                  %th Seat
+                  %th Position Type
+                  %th Needed By
+                  %th State
+                  %th Filled By
+              %tbody
+                - @seats_as_department.each do |seat|
                   - active_tenure = seat.employment_tenures.active.first
                   %tr
                     %td

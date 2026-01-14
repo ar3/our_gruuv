@@ -173,22 +173,19 @@ class AssignmentsBulkUploadProcessor
     
     Rails.logger.debug "❌❌❌ AssignmentsBulkUploadProcessor: Processing department for assignment #{assignment.title}: #{department_name}"
     
-    # Find or create department
-    org_ids = organization.self_and_descendants.map(&:id)
-    department = Organization.where(id: org_ids, type: 'Department')
-                            .find_by("LOWER(name) = ?", department_name.downcase)
+    # Use DepartmentNameInterpreter to handle hierarchical department names
+    interpreter = DepartmentNameInterpreter.new(department_name, organization)
+    department = interpreter.interpret
     
-    unless department
-      # Create new department
-      Rails.logger.debug "❌❌❌ AssignmentsBulkUploadProcessor: Creating new department: #{department_name}"
-      department = Organization.create!(
-        name: department_name,
-        parent: organization,
-        type: 'Department'
-      )
+    # If department is nil, it means the name matched the company exactly
+    # Set department_id to nil (assignment belongs to company, not a department)
+    assignment.update!(department_id: department&.id)
+    
+    if department
+      Rails.logger.debug "❌❌❌ AssignmentsBulkUploadProcessor: Set assignment #{assignment.title} department to #{department.name} (id: #{department.id})"
+    else
+      Rails.logger.debug "❌❌❌ AssignmentsBulkUploadProcessor: Department name matches company - assignment #{assignment.title} belongs to company directly (department_id: nil)"
     end
-    
-    assignment.update!(department_id: department.id)
   end
 
   def process_position_assignments(assignment, positions_data)
@@ -308,25 +305,14 @@ class AssignmentsBulkUploadProcessor
   end
 
   def process_outcomes(assignment, outcomes_data)
-    # Delete existing outcomes
-    assignment.assignment_outcomes.destroy_all
+    return if outcomes_data.blank?
     
-    outcomes_data.each do |outcome_description|
-      next if outcome_description.blank?
-      
-      # Determine type
-      outcome_type = if outcome_description.downcase.match?(/agree:|agrees:/)
-        'sentiment'
-      else
-        'quantitative'
-      end
-      
-      # Create new outcome
-      AssignmentOutcome.create!(
-        assignment: assignment,
-        description: outcome_description.strip,
-        outcome_type: outcome_type
-      )
-    end
+    # Convert array to newline-separated string for the processor
+    outcomes_text = outcomes_data.map(&:strip).reject(&:blank?).join("\n")
+    
+    # Use AssignmentOutcomesProcessor to handle outcomes
+    # This will skip existing outcomes with exact same description
+    processor = AssignmentOutcomesProcessor.new(assignment, outcomes_text)
+    processor.process
   end
 end

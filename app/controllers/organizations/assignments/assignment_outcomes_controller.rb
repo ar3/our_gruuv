@@ -7,9 +7,8 @@ class Organizations::Assignments::AssignmentOutcomesController < Organizations::
     authorize @assignment_outcome
     
     # Set return URL and text for overlay
-    return_params = params.except(:controller, :action, :id, :assignment_id).permit!.to_h
-    @return_url = organization_assignments_path(@organization, return_params)
-    @return_text = "Back to Assignments"
+    @return_url = organization_assignment_path(@organization, @assignment)
+    @return_text = "Back to Assignment"
     
     render layout: 'overlay'
   end
@@ -18,14 +17,11 @@ class Organizations::Assignments::AssignmentOutcomesController < Organizations::
     authorize @assignment_outcome
     
     if @assignment_outcome.update(assignment_outcome_params)
-      # Build return URL with preserved params (excluding organization_id which is in the path)
-      return_params = params.except(:controller, :action, :id, :assignment_id, :organization_id, :assignment_outcome, :utf8, :_method, :commit).permit!.to_h
-      redirect_to organization_assignments_path(@organization, return_params), notice: 'Outcome was successfully updated.'
+      redirect_to organization_assignment_path(@organization, @assignment), notice: 'Outcome was successfully updated.'
     else
       # Set return URL and text for overlay
-      return_params = params.except(:controller, :action, :id, :assignment_id, :organization_id, :assignment_outcome, :utf8, :_method, :commit).permit!.to_h
-      @return_url = organization_assignments_path(@organization, return_params)
-      @return_text = "Back to Assignments"
+      @return_url = organization_assignment_path(@organization, @assignment)
+      @return_text = "Back to Assignment"
       render :edit, status: :unprocessable_entity, layout: 'overlay'
     end
   end
@@ -41,7 +37,7 @@ class Organizations::Assignments::AssignmentOutcomesController < Organizations::
   end
 
   def assignment_outcome_params
-    params.require(:assignment_outcome).permit(
+    permitted = params.require(:assignment_outcome).permit(
       :description, 
       :outcome_type,
       :progress_report_url,
@@ -49,5 +45,12 @@ class Organizations::Assignments::AssignmentOutcomesController < Organizations::
       :team_relationship_filter,
       :consumer_assignment_filter
     )
+    
+    # Normalize empty strings to nil for optional filter fields
+    permitted[:management_relationship_filter] = nil if permitted[:management_relationship_filter].blank?
+    permitted[:team_relationship_filter] = nil if permitted[:team_relationship_filter].blank?
+    permitted[:consumer_assignment_filter] = nil if permitted[:consumer_assignment_filter].blank?
+    
+    permitted
   end
 end

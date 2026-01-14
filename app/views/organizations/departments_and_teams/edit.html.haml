@@ -33,8 +33,9 @@
             label_text: "Parent Organization", 
             selected_department_id: @department_or_team.parent_id,
             include_blank: false,
+            include_root_option: true,
             exclude_ids: [@department_or_team.id] + @department_or_team.descendants.map(&:id),
-            help_text: "Select the parent organization for this #{@department_or_team.type.downcase}."
+            help_text: "Select the parent organization for this #{@department_or_team.type.downcase}. Choose the company name to place this #{@department_or_team.type.downcase} at the root level."
           
           .d-flex.justify-content-between
             = link_to "Cancel", organization_departments_and_team_path(@organization, @department_or_team), class: "btn btn-secondary"

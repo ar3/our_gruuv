@@ -323,6 +323,27 @@ RSpec.describe Assignment, type: :model do
       )
     end
 
+    it 'skips existing outcomes with exact same description' do
+      # Create an existing outcome with attributes
+      existing = create(:assignment_outcome,
+        assignment: assignment,
+        description: 'Increase customer satisfaction by 20%',
+        outcome_type: 'quantitative',
+        management_relationship_filter: 'direct_employee'
+      )
+
+      # Process outcomes including the existing one
+      text = "Increase customer satisfaction by 20%\nReduce response time to under 2 hours"
+      assignment.create_outcomes_from_textarea(text)
+
+      # Should only create the new one, skip the existing
+      expect(assignment.assignment_outcomes.count).to eq(2)
+      
+      # Verify existing outcome was not modified
+      existing.reload
+      expect(existing.management_relationship_filter).to eq('direct_employee')
+    end
+
     it 'does nothing with blank text' do
       assignment.create_outcomes_from_textarea("")
       assignment.create_outcomes_from_textarea(nil)
