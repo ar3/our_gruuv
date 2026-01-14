@@ -37,6 +37,9 @@
   - create_slack_associations_data = Array(preview_actions&.dig('create_slack_associations'))
   - suggest_terminations_data = Array(preview_actions&.dig('suggest_terminations'))
   
+  -# EnsureAssignmentTenuresSync data
+  - assignment_tenures_data = Array(preview_actions&.dig('assignment_tenures'))
+  
   -# UploadAssignmentsAndAbilities data
   - assignments_upload_data = Array(preview_actions&.dig('assignments'))
   - abilities_upload_data = Array(preview_actions&.dig('abilities'))
@@ -214,7 +217,7 @@
                               %span.text-muted None
                           %td= assignment['row']
               
-              - if tenures_data.present?
+              - if tenures_data.present? && @bulk_sync_event.type != 'BulkSyncEvent::EnsureAssignmentTenuresSync'
                 %h6 Assignment Tenures (#{tenures_data.length})
                 .table-responsive.mb-3
                   %table.table.table-sm
@@ -709,6 +712,68 @@
                             %span.badge.bg-warning= termination['termination_reason']
                           %td= termination['suggested_termination_date']
                           %td= termination['row']
+              
+              -# EnsureAssignmentTenuresSync sections
+              - if assignment_tenures_data.present? && @bulk_sync_event.type == 'BulkSyncEvent::EnsureAssignmentTenuresSync'
+                - create_count = assignment_tenures_data.count { |t| t['will_create'] }
+                - skip_count = assignment_tenures_data.count { |t| t['will_skip'] }
+                %h6 Assignment Tenures (#{assignment_tenures_data.length} total: #{create_count} to create, #{skip_count} to skip)
+                .table-responsive.mb-3
+                  %table.table.table-sm
+                    %thead
+                      %tr
+                        %th
+                          = check_box_tag 'select_all_assignment_tenures', '1', true, class: 'form-check-input', data: { target: 'assignment-tenures-checkbox' }
+                          %label.form-check-label.ms-1 Select All
+                        %th Teammate
+                        %th Assignment
+                        %th Position
+                        %th Anticipated Energy %
+                        %th Action
+                        %th Row
+                    %tbody
+                      - assignment_tenures_data.each do |tenure|
+                        - teammate = Teammate.find_by(id: tenure['teammate_id'])
+                        - assignment = Assignment.find_by(id: tenure['assignment_id'])
+                        - position = Position.find_by(id: tenure['position_id'])
+                        %tr
+                          %td
+                            = check_box_tag "selected_assignment_tenures[]", tenure['row'], true, class: 'form-check-input assignment-tenures-checkbox'
+                          %td
+                            - if teammate
+                              = link_to tenure['teammate_name'], internal_organization_company_teammate_path(current_organization, teammate), class: 'text-decoration-none'
+                            - else
+                              = tenure['teammate_name']
+                          %td
+                            - if assignment
+                              = link_to tenure['assignment_title'], organization_assignment_path(current_organization, assignment), class: 'text-decoration-none'
+                            - else
+                              = tenure['assignment_title']
+                          %td
+                            - if position
+                              = link_to tenure['position_display_name'], organization_position_path(current_organization, position), class: 'text-decoration-none'
+                            - else
+                              = tenure['position_display_name']
+                          %td
+                            - if position
+                              = link_to manage_assignments_organization_position_path(current_organization, position), class: 'text-decoration-none', title: 'Manage assignments for this position' do
+                                %strong= "#{tenure['anticipated_energy_percentage']}%"
+                                %small.text-muted
+                                  (min: #{tenure['min_estimated_energy'] || 'N/A'}%, max: #{tenure['max_estimated_energy'] || 'N/A'}%)
+                            - else
+                              %strong= "#{tenure['anticipated_energy_percentage']}%"
+                              %small.text-muted
+                                (min: #{tenure['min_estimated_energy'] || 'N/A'}%, max: #{tenure['max_estimated_energy'] || 'N/A'}%)
+                          %td
+                            - if tenure['will_create']
+                              %span.badge.bg-success New
+                            - elsif tenure['will_skip']
+                              %span.badge.bg-secondary Skipped
+                              %small.text-muted.d-block
+                                (already exists)
+                            - else
+                              %span.badge.bg-warning Unknown
+                          %td= tenure['row']
               
               -# UploadAssignmentsAndAbilities preview sections
               - if assignments_upload_data.present?

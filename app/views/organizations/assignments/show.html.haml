@@ -216,6 +216,9 @@
                 - slice.each do |teammate|
                   .mb-2
                     = link_to teammate.person.display_name, internal_organization_company_teammate_path(@organization, teammate), class: "text-decoration-none"
+                    - if @holder_energy_percentages[teammate.id].present?
+                      %span.text-muted.ms-2
+                        (#{@holder_energy_percentages[teammate.id]}%)
         - else
           %p.text-muted.mb-0 No current holders
 

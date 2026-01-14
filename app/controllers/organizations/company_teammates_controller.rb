@@ -289,6 +289,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     # Authorize: manager or has manage_employment permission
     # This action should NOT be accessible when viewing yourself (must be a manager of someone else)
     if current_company_teammate == @teammate
+      skip_authorization
       raise Pundit::NotAuthorizedError
     end
     
@@ -296,11 +297,14 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     is_manager = policy(@teammate).manager?
     has_manage_employment = policy(organization).manage_employment?
     
+    # If user doesn't have either permission, explicitly deny access
     unless is_manager || has_manage_employment
-      authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
-    else
       skip_authorization
+      raise Pundit::NotAuthorizedError
     end
+    
+    # User has permission - perform authorization for Pundit verification
+    authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
     
     @current_organization = organization
     
@@ -358,6 +362,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     # Authorize: manager or has manage_employment permission
     # This action should NOT be accessible when viewing yourself (must be a manager of someone else)
     if current_company_teammate == @teammate
+      skip_authorization
       raise Pundit::NotAuthorizedError
     end
     
@@ -365,11 +370,14 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     is_manager = policy(@teammate).manager?
     has_manage_employment = policy(organization).manage_employment?
     
+    # If user doesn't have either permission, explicitly deny access
     unless is_manager || has_manage_employment
-      authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
-    else
       skip_authorization
+      raise Pundit::NotAuthorizedError
     end
+    
+    # User has permission - perform authorization for Pundit verification
+    authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
     
     assignment_tenures_params = params[:assignment_tenures] || {}
     changes_made = false
@@ -424,12 +432,15 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     end
     
     if changes_made
-      redirect_to assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, @teammate),
+      redirect_to complete_picture_organization_company_teammate_path(organization, @teammate),
                   notice: 'Assignment tenures updated successfully.'
     else
       redirect_to assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, @teammate),
                   alert: 'No changes were made.'
     end
+  rescue Pundit::NotAuthorizedError
+    # Re-raise authorization errors so they're handled by ApplicationController's rescue_from
+    raise
   rescue => e
     Rails.logger.error("Error updating assignment tenures: #{e.message}")
     Rails.logger.error(e.backtrace.join("\n"))

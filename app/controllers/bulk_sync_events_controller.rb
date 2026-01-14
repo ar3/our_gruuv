@@ -21,7 +21,8 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
       employee_uploads: @bulk_sync_events.where(type: ['UploadEmployees', 'BulkSyncEvent::UploadEmployees']).count,
       assignments_and_abilities: @bulk_sync_events.where(type: 'BulkSyncEvent::UploadAssignmentsAndAbilities').count,
       refresh_names: @bulk_sync_events.where(type: 'BulkSyncEvent::RefreshNamesSync').count,
-      refresh_slack: @bulk_sync_events.where(type: 'BulkSyncEvent::RefreshSlackSync').count
+      refresh_slack: @bulk_sync_events.where(type: 'BulkSyncEvent::RefreshSlackSync').count,
+      ensure_assignment_tenures: @bulk_sync_events.where(type: 'BulkSyncEvent::EnsureAssignmentTenuresSync').count
     }
   end
 
@@ -99,8 +100,6 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
     @bulk_sync_event.update!(preview_actions: filtered_preview_actions)
 
     # Process the sync inline and get the result
-    Rails.logger.info "❌❌❌ BulkSyncEventsController: Processing sync for bulk_sync_event #{@bulk_sync_event.id} (type: #{@bulk_sync_event.type})"
-    
     begin
       result = case @bulk_sync_event.type
       when 'BulkSyncEvent::UploadEmployees', 'UploadEvent::UploadEmployees'
@@ -121,16 +120,17 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
       when 'BulkSyncEvent::RefreshSlackSync'
         Rails.logger.debug "❌❌❌ BulkSyncEventsController: Using RefreshSlackSyncProcessorJob"
         RefreshSlackSyncProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
+      when 'BulkSyncEvent::EnsureAssignmentTenuresSync'
+        Rails.logger.debug "❌❌❌ BulkSyncEventsController: Using EnsureAssignmentTenuresSyncProcessorJob"
+        EnsureAssignmentTenuresSyncProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
       else
         Rails.logger.warn "❌❌❌ BulkSyncEventsController: Unknown type #{@bulk_sync_event.type}, using EmploymentDataUploadProcessorJob"
         EmploymentDataUploadProcessorJob.perform_and_get_result(@bulk_sync_event.id, current_organization.id)
       end
       
       if result
-        Rails.logger.info "❌❌❌ BulkSyncEventsController: Sync processed successfully for bulk_sync_event #{@bulk_sync_event.id}"
         redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event), notice: 'Sync processed successfully!'
       else
-        Rails.logger.error "❌❌❌ BulkSyncEventsController: Sync processing returned false for bulk_sync_event #{@bulk_sync_event.id}"
         redirect_to organization_bulk_sync_event_path(current_organization, @bulk_sync_event), alert: 'Sync processing failed. Please check the logs for details.'
       end
     rescue => e
@@ -246,6 +246,12 @@ class BulkSyncEventsController < Organizations::OrganizationNamespaceBaseControl
     if preview_actions['suggest_terminations'].present?
       selected_termination_rows = Array(params[:selected_suggest_terminations]).map(&:to_i)
       filtered['suggest_terminations'] = preview_actions['suggest_terminations'].select { |t| selected_termination_rows.include?(t['row']) }
+    end
+
+    # Filter ensure assignment tenures sync fields
+    if preview_actions['assignment_tenures'].present?
+      selected_assignment_tenure_rows = Array(params[:selected_assignment_tenures]).map(&:to_i)
+      filtered['assignment_tenures'] = preview_actions['assignment_tenures'].select { |at| selected_assignment_tenure_rows.include?(at['row']) }
     end
 
     # Filter assignments and abilities upload fields

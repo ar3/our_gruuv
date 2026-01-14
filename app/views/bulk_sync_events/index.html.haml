@@ -29,6 +29,8 @@
               = link_to "Refresh People Names", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::RefreshNamesSync'}), class: 'dropdown-item'
             %li
               = link_to "Refresh Slack Identities", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::RefreshSlackSync'}), class: 'dropdown-item'
+            %li
+              = link_to "Ensure Assignment Tenures", new_organization_bulk_sync_event_path(current_organization, bulk_sync_event: {type: 'BulkSyncEvent::EnsureAssignmentTenuresSync'}), class: 'dropdown-item'
       - else
         .btn.btn-primary.disabled.ml-2{style: "opacity: 0.6; cursor: not-allowed;"}
           %i.bi.bi-plus
@@ -68,7 +70,7 @@
                   - else
                     %span.text-muted.small= bulk_sync_event.source_info
                 %td
-                  %span{class: "badge bg-#{bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentCheckins' ? 'primary' : bulk_sync_event.type == 'BulkSyncEvent::UploadEmployees' ? 'success' : bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsAndAbilities' ? 'info' : bulk_sync_event.type == 'BulkSyncEvent::RefreshNamesSync' ? 'info' : 'warning'}"}
+                  %span{class: "badge bg-#{bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentCheckins' ? 'primary' : bulk_sync_event.type == 'BulkSyncEvent::UploadEmployees' ? 'success' : bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsAndAbilities' ? 'info' : bulk_sync_event.type == 'BulkSyncEvent::RefreshNamesSync' ? 'info' : bulk_sync_event.type == 'BulkSyncEvent::EnsureAssignmentTenuresSync' ? 'info' : 'warning'}"}
                     = bulk_sync_event.display_name
                 %td
                   %span{class: "badge bg-#{bulk_sync_event.status == 'completed' ? 'success' : bulk_sync_event.status == 'failed' ? 'danger' : bulk_sync_event.status == 'processing' ? 'warning' : 'secondary'}"}

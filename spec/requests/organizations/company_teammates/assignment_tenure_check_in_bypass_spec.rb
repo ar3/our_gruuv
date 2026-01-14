@@ -166,9 +166,10 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
       end
 
       it 'denies access' do
-        expect {
-          get assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate)
-        }.to raise_error(Pundit::NotAuthorizedError)
+        get assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate)
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(root_path)
       end
     end
 
@@ -205,6 +206,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
               params: { assignment_tenures: { assignment1.id.to_s => '75' } }
         
         expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(complete_picture_organization_company_teammate_path(organization, employee_teammate))
         active_tenure.reload
         expect(active_tenure.anticipated_energy_percentage).to eq(75)
       end
@@ -214,6 +216,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
               params: { assignment_tenures: { assignment1.id.to_s => '0' } }
         
         expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(complete_picture_organization_company_teammate_path(organization, employee_teammate))
         active_tenure.reload
         expect(active_tenure.ended_at).to eq(Date.current)
         expect(active_tenure.anticipated_energy_percentage).to eq(0)
@@ -226,6 +229,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
               params: { assignment_tenures: { assignment1.id.to_s => '50' } }
         
         expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate))
         active_tenure.reload
         # Should still update due to transaction, but the values remain the same
         expect(active_tenure.anticipated_energy_percentage).to eq(50)
@@ -239,6 +243,8 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
                 params: { assignment_tenures: { assignment1.id.to_s => '60' } }
         }.to change(AssignmentTenure, :count).by(1)
         
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(complete_picture_organization_company_teammate_path(organization, employee_teammate))
         new_tenure = AssignmentTenure.last
         expect(new_tenure.teammate.id).to eq(employee_teammate.id)
         expect(new_tenure.assignment).to eq(assignment1)
@@ -252,6 +258,9 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
           patch update_assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate),
                 params: { assignment_tenures: { assignment1.id.to_s => '0' } }
         }.not_to change(AssignmentTenure, :count)
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate))
       end
     end
 
@@ -318,6 +327,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
               }
         
         expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(complete_picture_organization_company_teammate_path(organization, employee_teammate))
         tenure1.reload
         expect(tenure1.anticipated_energy_percentage).to eq(75)
         
@@ -349,10 +359,15 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
       end
 
       it 'denies access' do
+        # Verify no changes are made when access is denied
         expect {
           patch update_assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate),
                 params: { assignment_tenures: { assignment1.id.to_s => '75' } }
-        }.to raise_error(Pundit::NotAuthorizedError)
+        }.not_to change(AssignmentTenure, :count)
+        
+        expect(response).to have_http_status(:redirect)
+        # Authorization error should redirect to root_path
+        expect(response).to redirect_to(root_path)
       end
     end
 

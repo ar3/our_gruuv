@@ -77,14 +77,81 @@ RSpec.describe 'Organizations::Assignments', type: :request do
       it 'shows current holders section when there are active tenures' do
         teammate1 = create(:teammate, person: create(:person), organization: organization)
         teammate2 = create(:teammate, person: create(:person), organization: organization)
-        create(:assignment_tenure, teammate: teammate1, assignment: assignment, started_at: 1.month.ago, ended_at: nil)
-        create(:assignment_tenure, teammate: teammate2, assignment: assignment, started_at: 2.months.ago, ended_at: nil)
+        create(:assignment_tenure, teammate: teammate1, assignment: assignment, started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: 50)
+        create(:assignment_tenure, teammate: teammate2, assignment: assignment, started_at: 2.months.ago, ended_at: nil, anticipated_energy_percentage: 75)
 
         get organization_assignment_path(organization, assignment)
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Current Holders of This Assignment')
         expect(response.body).to include(teammate1.person.display_name)
         expect(response.body).to include(teammate2.person.display_name)
+        expect(response.body).to include('(50%)')
+        expect(response.body).to include('(75%)')
+      end
+
+      it 'shows current holders without percentage when anticipated_energy_percentage is nil' do
+        teammate1 = create(:teammate, person: create(:person), organization: organization)
+        create(:assignment_tenure, teammate: teammate1, assignment: assignment, started_at: 1.month.ago, ended_at: nil, anticipated_energy_percentage: nil)
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Current Holders of This Assignment')
+        expect(response.body).to include(teammate1.person.display_name)
+        expect(response.body).not_to match(/\(nil%\)/)
+      end
+
+      it 'sorts current holders by last name, preferred name, first name' do
+        # Create teammates with different names to test sorting
+        # Test that sorting works by last name first, then preferred name, then first name
+        person1 = create(:person, last_name: 'Zebra', first_name: 'Alice')
+        person2 = create(:person, last_name: 'Apple', first_name: 'Robert')
+        person3 = create(:person, last_name: 'Apple', first_name: 'Charles')
+        person4 = create(:person, last_name: 'Apple', first_name: 'David')
+        
+        # Set preferred names directly in database to avoid validation issues
+        Person.where(id: person2.id).update_all(preferred_name: 'Bob')
+        Person.where(id: person3.id).update_all(preferred_name: 'Charlie')
+        Person.where(id: person1.id).update_all(preferred_name: nil)
+        Person.where(id: person4.id).update_all(preferred_name: nil)
+        
+        # Reload to get updated values
+        person1.reload
+        person2.reload
+        person3.reload
+        person4.reload
+        
+        teammate1 = create(:teammate, person: person1, organization: organization)
+        teammate2 = create(:teammate, person: person2, organization: organization)
+        teammate3 = create(:teammate, person: person3, organization: organization)
+        teammate4 = create(:teammate, person: person4, organization: organization)
+        
+        create(:assignment_tenure, teammate: teammate1, assignment: assignment, started_at: 1.month.ago, ended_at: nil)
+        create(:assignment_tenure, teammate: teammate2, assignment: assignment, started_at: 1.month.ago, ended_at: nil)
+        create(:assignment_tenure, teammate: teammate3, assignment: assignment, started_at: 1.month.ago, ended_at: nil)
+        create(:assignment_tenure, teammate: teammate4, assignment: assignment, started_at: 1.month.ago, ended_at: nil)
+
+        get organization_assignment_path(organization, assignment)
+        expect(response).to have_http_status(:success)
+        
+        # Get the actual order from the controller
+        holders = assigns(:current_holders)
+        expect(holders.length).to eq(4)
+        
+        # Get sorted keys for verification
+        sorted_keys = holders.map do |h|
+          p = h.person
+          [p.last_name.to_s.downcase, p.preferred_name.to_s.downcase, p.first_name.to_s.downcase]
+        end
+        
+        # Verify the list is sorted correctly
+        expect(sorted_keys).to eq(sorted_keys.sort)
+        
+        # Verify specific order: Apple/Bob, Apple/Charlie, Apple/David, Zebra/Alice
+        # Apple should come before Zebra
+        apple_indices = holders.each_with_index.select { |h, _| h.person.last_name == 'Apple' }.map(&:last)
+        zebra_index = holders.each_with_index.find { |h, _| h.person.last_name == 'Zebra' }&.last
+        
+        expect(apple_indices.max).to be < zebra_index
       end
 
       it 'shows no current holders message when there are no active tenures' do

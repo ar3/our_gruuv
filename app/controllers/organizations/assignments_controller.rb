@@ -40,11 +40,24 @@ class Organizations::AssignmentsController < ApplicationController
     authorize @assignment
     
     # Load current holders (teammates with active assignment tenures)
-    @current_holders = Teammate
-      .joins(:assignment_tenures)
-      .where(assignment_tenures: { assignment: @assignment, ended_at: nil })
-      .includes(:person)
-      .distinct
+    active_tenures = @assignment.assignment_tenures.active.includes(teammate: :person)
+    @current_holders = active_tenures.map(&:teammate).uniq
+    
+    # Sort by last name, preferred name, first name
+    @current_holders.sort_by! do |teammate|
+      person = teammate.person
+      [
+        person.last_name.to_s.downcase,
+        person.preferred_name.to_s.downcase,
+        person.first_name.to_s.downcase
+      ]
+    end
+    
+    # Build a hash mapping teammate_id to their active tenure's anticipated_energy_percentage
+    @holder_energy_percentages = {}
+    active_tenures.each do |tenure|
+      @holder_energy_percentages[tenure.teammate_id] = tenure.anticipated_energy_percentage
+    end
     
     # Analytics data
     # Number of teammates who have ever had a tenure of this assignment

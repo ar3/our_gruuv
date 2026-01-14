@@ -232,6 +232,35 @@ class BulkSyncEvent < ApplicationRecord
       else
         "#{position_title} (#{position_type_title})"
       end
+    when 'assignment_tenure_creation'
+      teammate_name = success_record['teammate_name'] || 'Unknown teammate'
+      assignment_title = success_record['assignment_title'] || 'Unknown assignment'
+      action = success_record['action'] || 'created'
+      
+      teammate_link = if success_record['teammate_id']
+        teammate = Teammate.find_by(id: success_record['teammate_id'])
+        if teammate
+          "<a href='#{routes.internal_organization_company_teammate_path(org, teammate)}' class='text-decoration-none'>#{teammate_name}</a>"
+        else
+          teammate_name
+        end
+      else
+        teammate_name
+      end
+      
+      assignment_link = if success_record['assignment_id']
+        "<a href='#{routes.organization_assignment_path(org, success_record['assignment_id'])}' class='text-decoration-none'>#{assignment_title}</a>"
+      else
+        assignment_title
+      end
+      
+      result = "#{teammate_link} - #{assignment_link}"
+      if success_record['action'] == 'skipped'
+        result += " <span class='badge bg-secondary'>Skipped (already exists)</span>"
+      elsif success_record['assignment_tenure_id']
+        result += " <span class='badge bg-success'>Created</span>"
+      end
+      result
     when 'position_assignment'
       assignment_title = success_record['assignment_title'] || 'Unknown assignment'
       position_title = success_record['position_title'] || 'Unknown position'

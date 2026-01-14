@@ -16,6 +16,7 @@ class BulkSyncEventForm
     BulkSyncEvent::UploadAssignmentsBulk
     BulkSyncEvent::RefreshNamesSync
     BulkSyncEvent::RefreshSlackSync
+    BulkSyncEvent::EnsureAssignmentTenuresSync
   ].freeze
 
   validates :type, presence: true, inclusion: { in: VALID_TYPES }
@@ -110,7 +111,7 @@ class BulkSyncEventForm
   end
 
   def is_sync_type?
-    type.in?(['BulkSyncEvent::RefreshNamesSync', 'BulkSyncEvent::RefreshSlackSync'])
+    type.in?(['BulkSyncEvent::RefreshNamesSync', 'BulkSyncEvent::RefreshSlackSync', 'BulkSyncEvent::EnsureAssignmentTenuresSync'])
   end
 
   def sync_source_type
@@ -119,6 +120,8 @@ class BulkSyncEventForm
       'database_sync'
     when 'BulkSyncEvent::RefreshSlackSync'
       'slack_sync'
+    when 'BulkSyncEvent::EnsureAssignmentTenuresSync'
+      'database_sync'
     else
       'unknown'
     end
@@ -220,6 +223,8 @@ class BulkSyncEventForm
           RefreshNamesSyncParser.new(@bulk_sync_event.organization)
         when BulkSyncEvent::RefreshSlackSync
           RefreshSlackSyncParser.new(@bulk_sync_event.organization)
+        when BulkSyncEvent::EnsureAssignmentTenuresSync
+          EnsureAssignmentTenuresSyncParser.new(@bulk_sync_event.organization)
         else
           nil
         end

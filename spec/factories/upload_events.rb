@@ -30,6 +30,14 @@ FactoryBot.define do
       source_contents { "test csv content" }
       source_data { { type: 'file_upload', filename: "test_upload.csv", file_size: 100, uploaded_at: Time.current } }
     end
+
+    factory :bulk_sync_event, class: 'BulkSyncEvent' do
+      type { 'BulkSyncEvent::EnsureAssignmentTenuresSync' }
+      source_data { { type: 'database_sync', fetched_at: Time.current } }
+      preview_actions { {} }
+      results { { successes: [], failures: [] } }
+      status { 'preview' }
+    end
     
     trait :processing do
       status { 'processing' }
