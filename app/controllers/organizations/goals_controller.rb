@@ -274,6 +274,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       redirect_to organization_goal_path(@organization, @goal), 
                   notice: 'Goal was successfully created.'
     else
+      flash.now[:alert] = @form.errors.full_messages.join(', ')
       render :new, status: :unprocessable_entity
     end
   end
@@ -807,7 +808,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
                                      .where(organization_id: company_descendant_ids)
                                      .where(type: 'CompanyTeammate')
                                      .first
-    if current_teammate
+    if current_teammate && current_person&.display_name.present?
       options << ["Teammate: #{current_person.display_name}", "CompanyTeammate_#{current_teammate.id}"]
     end
     
@@ -832,6 +833,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     end
     
     managed_teammates.each do |teammate|
+      next unless teammate.person&.display_name.present? && teammate.id.present?
       options << ["Teammate: #{teammate.person.display_name}", "CompanyTeammate_#{teammate.id}"]
     end
     
@@ -850,17 +852,19 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     associated_orgs.each do |org|
       # Explicitly check for valid types only
       next unless org.type.in?(['Department', 'Team', 'Company'])
+      next unless org.display_name.present? && org.id.present?
       
       type_label = org.company? ? 'Company' : (org.department? ? 'Department' : 'Team')
       options << ["#{type_label}: #{org.display_name}", "#{org.type}_#{org.id}"]
     end
     
     # Add company at the end
-    if company.company?
+    if company.company? && company.display_name.present? && company.id.present?
       options << ["Company: #{company.display_name}", "Company_#{company.id}"]
     end
     
-    options
+    # Filter out any options with blank/nil values or labels
+    options.reject { |label, value| label.blank? || value.blank? || value.nil? }
   end
   helper_method :available_goal_owners
 end

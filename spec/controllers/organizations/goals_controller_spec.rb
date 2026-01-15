@@ -325,6 +325,8 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response).to render_template(:new)
       expect(assigns(:form).errors).to be_present
+      expect(flash[:alert]).to be_present
+      expect(flash[:alert]).to include('Title')
     end
     
     it 'automatically sets owner to current teammate if owner is nil' do

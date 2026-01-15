@@ -23,6 +23,74 @@ RSpec.describe 'Organizations::Goals', type: :request do
     PaperTrail.enabled = true
   end
   
+  describe 'GET /organizations/:organization_id/goals/new' do
+    it 'renders the new goal form' do
+      get new_organization_goal_path(organization)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('New Goal')
+      expect(response.body).to include('Title')
+      expect(response.body).to include('Create Goal')
+    end
+    
+    it 'defaults owner to viewing teammate' do
+      get new_organization_goal_path(organization)
+      
+      expect(response).to have_http_status(:success)
+      # Should include the teammate in the owner dropdown options
+      expect(response.body).to include("Teammate: #{person.display_name}")
+      # Should have the owner select field
+      expect(response.body).to include('goal[owner_id]')
+      # Should not include a blank/prompt option
+      expect(response.body).not_to include('Select an owner')
+    end
+    
+    it 'does not include blank option in owner dropdown' do
+      get new_organization_goal_path(organization)
+      
+      expect(response).to have_http_status(:success)
+      # Check that there's no prompt or blank option
+      expect(response.body).not_to match(/<option[^>]*>Select an owner/i)
+      # Verify no blank option with empty value
+      expect(response.body).not_to match(/<option[^>]*value=""[^>]*><\/option>/)
+      expect(response.body).not_to match(/<option[^>]*value=""><\/option>/)
+      # Verify that all options have non-empty values
+      option_matches = response.body.scan(/<option[^>]*value="([^"]+)"[^>]*>/)
+      option_matches.each do |match|
+        expect(match[0]).not_to be_blank, "Found blank option value in dropdown"
+      end
+    end
+    
+    it 'allows setting owner via query params' do
+      # Create a teammate that would be in available_goal_owners (the company itself)
+      get new_organization_goal_path(organization), params: {
+        owner_id: "Company_#{organization.id}"
+      }
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Company: #{organization.display_name}")
+      # Verify the owner select has the company option
+      expect(response.body).to include("value=\"Company_#{organization.id}\"")
+    end
+    
+    it 'displays validation errors in flash when create fails' do
+      post organization_goals_path(organization), params: {
+        goal: {
+          title: '', # Invalid - blank title
+          description: 'Test description',
+          goal_type: 'inspirational_objective',
+          privacy_level: 'only_creator_owner_and_managers'
+        }
+      }
+      
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to render_template(:new)
+      # Should have flash alert with validation errors
+      expect(flash[:alert]).to be_present
+      expect(flash[:alert]).to include('Title')
+    end
+  end
+  
   describe 'GET /organizations/:organization_id/goals/:id/done' do
     it 'renders the done page' do
       get done_organization_goal_path(organization, goal)

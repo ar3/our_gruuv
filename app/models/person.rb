@@ -59,13 +59,7 @@ class Person < ApplicationRecord
   
   
   def display_name
-    if preferred_name.present?
-      preferred_name
-    elsif full_name.present?
-      full_name
-    else
-      email
-    end
+    preferred_first_then_last_display_name
   end
   
   def last_first_display_name
