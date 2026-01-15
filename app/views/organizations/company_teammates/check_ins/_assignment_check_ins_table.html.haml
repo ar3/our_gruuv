@@ -46,6 +46,10 @@
                              class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start" do
                   = check_in.assignment.title
                   %i.bi.bi-clock-history.ms-1.text-muted
+                - if check_in.assignment_tenure&.active?
+                  %div.mt-1
+                    %span.badge.bg-success
+                      Active Assignment - #{check_in.assignment_tenure.anticipated_energy_percentage}%
               = render partial_name, check_in: check_in, form: af, view_mode: view_mode
 - else
   .alert.alert-info

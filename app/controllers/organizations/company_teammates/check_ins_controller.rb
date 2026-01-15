@@ -152,7 +152,32 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       end
     end
     
-    check_ins.compact
+    check_ins = check_ins.compact
+    
+    # Separate check-ins into active tenure and non-active tenure groups
+    active_tenure_check_ins = []
+    non_active_tenure_check_ins = []
+    
+    check_ins.each do |check_in|
+      tenure = check_in.assignment_tenure
+      if tenure&.active?
+        active_tenure_check_ins << check_in
+      else
+        non_active_tenure_check_ins << check_in
+      end
+    end
+    
+    # Sort active tenure check-ins by anticipated_energy_percentage (descending, largest first)
+    # Place nil values at the end
+    active_tenure_check_ins.sort_by! do |check_in|
+      energy = check_in.assignment_tenure&.anticipated_energy_percentage
+      # Use -1 * energy for descending order, but handle nil by using a very large number
+      # so nil values sort to the end
+      energy.nil? ? [1, 0] : [0, -energy]
+    end
+    
+    # Combine: active tenure check-ins first, then others
+    active_tenure_check_ins + non_active_tenure_check_ins
   end
 
   def load_or_build_aspiration_check_ins

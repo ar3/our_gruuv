@@ -1,6 +1,10 @@
 .card.mb-4{data: {assignment_id: check_in.assignment.id}}
   .card-header
     %h3 Assignment: #{check_in.assignment.title}
+    - if check_in.assignment_tenure&.active?
+      %div.mt-1
+        %span.badge.bg-success
+          Active Assignment - #{check_in.assignment_tenure.anticipated_energy_percentage}%
     = check_in_status_badge(check_in)
 
   .card-body
