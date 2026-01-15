@@ -33,7 +33,7 @@ RSpec.describe 'Organizations::Prompts::PromptGoals', type: :request do
 
         created_goal = Goal.last
         expect(created_goal.title).to eq('New Stepping Stone Goal')
-        expect(created_goal.description).to eq('New Stepping Stone Goal')
+        expect(created_goal.description).to eq('')
         expect(created_goal.goal_type).to eq('stepping_stone_activity')
         expect(created_goal.most_likely_target_date).to eq(Date.current + 90.days)
         expect(created_goal.earliest_target_date).to be_nil

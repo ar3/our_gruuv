@@ -46,7 +46,7 @@ module Goals
     def create_goal_from_title(title)
       goal = Goal.new(
         title: title.strip,
-        description: title.strip,
+        description: '',
         goal_type: determine_goal_type,
         privacy_level: linking_goal.privacy_level,
         creator: current_teammate

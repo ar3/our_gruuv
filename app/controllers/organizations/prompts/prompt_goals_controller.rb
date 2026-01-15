@@ -48,7 +48,7 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
     bulk_goal_titles.each do |title|
       goal = Goal.new(
         title: title,
-        description: title,
+        description: '',
         goal_type: 'stepping_stone_activity',
         most_likely_target_date: Date.current + 90.days,
         earliest_target_date: nil,

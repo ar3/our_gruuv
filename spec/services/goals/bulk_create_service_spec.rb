@@ -128,7 +128,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
         end
       end
       
-      it 'sets title and description to the same value' do
+      it 'sets title and description to blank string' do
         service = described_class.new(
           organization, person, teammate, linking_goal, :outgoing, goal_titles
         )
@@ -138,7 +138,7 @@ RSpec.describe Goals::BulkCreateService, type: :service do
         created_goals = Goal.last(3)
         created_goals.each_with_index do |goal, index|
           expect(goal.title).to eq(goal_titles[index])
-          expect(goal.description).to eq(goal_titles[index])
+          expect(goal.description).to eq('')
         end
       end
     end
