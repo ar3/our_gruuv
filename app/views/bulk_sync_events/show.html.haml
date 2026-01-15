@@ -136,6 +136,65 @@
                 %br
                 %span.text-danger= "#{@bulk_sync_event.failure_count} failed"
       
+      .card.mb-4
+        .card-header
+          %h5.card-title.mb-0 Format Requirements
+        .card-body
+          .alert.alert-info.mb-0
+            %h6.mb-2= "#{@bulk_sync_event.display_name} Format Requirements:"
+            - if @bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentCheckins'
+              %p.mb-1
+                %strong Required columns:
+                %code email
+                and 
+                %code assignment_name
+              %p.mb-0
+                %strong Optional columns:
+                check_in_date, energy_percentage, manager_rating, employee_rating, official_rating, manager_private_notes, employee_private_notes
+            - elsif @bulk_sync_event.type == 'BulkSyncEvent::UploadEmployees'
+              %p.mb-1
+                %strong Required columns:
+                %code Name
+                , 
+                %code Email
+                , and 
+                %code Start Date
+              %p.mb-0
+                %strong Optional columns:
+                Preferred Name, Location, Gender, Department, Employment Type, Manager, Country, Manager Email, Job Title, Job Title Level
+            - elsif @bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsAndAbilities'
+              %p.mb-1
+                %strong Required columns:
+                %code Assignment
+              %p.mb-0
+                %strong Optional columns:
+                Position(s), Team(s), Tagline, Outcomes, Abilities, Required Activities
+            - elsif @bulk_sync_event.type == 'BulkSyncEvent::UploadAssignmentsBulk'
+              %p.mb-1
+                %strong Required columns:
+                %code Assignment ID
+                or 
+                %code Title
+              %p.mb-0
+                %strong Optional columns:
+                Tagline, Department, Positions, Milestones, Outcomes, Required Activities, Handbook, Version, Changes Count, Public URL, Created At, Updated At
+            - elsif @bulk_sync_event.type == 'BulkSyncEvent::RefreshNamesSync'
+              %p.mb-0
+                This sync operation does not require a file upload. It will find all active company teammates where preferred_name is nil or empty, and set it to their first_name.
+            - elsif @bulk_sync_event.type == 'BulkSyncEvent::RefreshSlackSync'
+              %p.mb-0
+                This sync operation does not require a file upload. It will:
+                %ul.mb-0
+                  %li Update existing Slack identities with latest data from Slack
+                  %li Match unassociated company teammates to available Slack users
+                  %li Suggest terminations for teammates whose Slack accounts are deleted, bots, or disabled
+            - elsif @bulk_sync_event.type == 'BulkSyncEvent::EnsureAssignmentTenuresSync'
+              %p.mb-0
+                This sync operation does not require a file upload. It will ensure all active teammates have assignment tenures for all required assignments of their active employment tenure's position. Missing assignment tenures will be created with calculated energy percentages based on the position's assignment requirements.
+            - else
+              %p.mb-0.text-muted
+                Format requirements not specified for this bulk event type.
+      
       - if @bulk_sync_event.preview? && @bulk_sync_event.preview_actions.present?
         .card.mb-4
           .card-header
