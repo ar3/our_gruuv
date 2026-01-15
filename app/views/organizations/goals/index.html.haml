@@ -84,7 +84,15 @@
                 
               %br
               %i.bi.bi-sort-down.me-1
-              Sort: #{@current_filters[:sort] || 'Most Likely Date'} (#{@current_filters[:direction] || 'asc'})
+              - sort_display = case @current_filters[:sort]
+              - when 'smart_sort' then 'Smart Sort'
+              - when 'most_likely_target_date' then 'Most Likely Date'
+              - when 'earliest_target_date' then 'Earliest Date'
+              - when 'latest_target_date' then 'Latest Date'
+              - when 'created_at' then 'Created Date'
+              - when 'title' then 'Title (A-Z)'
+              - else 'Smart Sort'
+              Sort: #{sort_display} (#{@current_filters[:direction] || 'asc'})
           .col-md-6.text-end
             %small.text-muted
               %i.bi.bi-table.me-1

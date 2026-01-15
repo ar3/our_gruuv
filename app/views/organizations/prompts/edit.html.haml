@@ -131,17 +131,27 @@
       - grouped_goals = @prompt.goals.group_by(&:goal_type)
       - goal_types = ['stepping_stone_activity', 'quantitative_key_result', 'qualitative_key_result', 'inspirational_objective']
       - goal_type_labels = { 'stepping_stone_activity' => 'Stepping Stones/Activities', 'quantitative_key_result' => 'Measurable Outcomes', 'qualitative_key_result' => 'Sentiment Outcomes', 'inspirational_objective' => 'Objectives' }
+      - all_goals = @prompt.goals.includes(:linking_goals).to_a
+      - parent_goals_cache = {}
+      - all_goals.each do |goal|
+        - first_parent = goal.linking_goals.sort_by(&:title).first
+        - parent_goals_cache[goal.id] = first_parent&.title&.downcase || ''
       
       - goal_types.each do |goal_type|
         - goals_for_type = grouped_goals[goal_type] || []
         - if goals_for_type.any?
+          - sorted_goals = goals_for_type.sort_by do |goal|
+            - parent_goal_title = parent_goals_cache[goal.id] || ''
+            - date_day = goal.most_likely_target_date&.day || 99
+            - goal_title = goal.title&.downcase || ''
+            - [parent_goal_title, date_day, goal_title]
           .mb-4
             %h6.mb-2
               = goal_type_labels[goal_type]
               %span.badge{class: goal_badge_class(goal_type), style: "font-size: 0.75em;"}
                 = pluralize(goals_for_type.count, 'goal')
             %ul.list-unstyled
-              - goals_for_type.each do |goal|
+              - sorted_goals.each do |goal|
                 - prompt_goal = @prompt.prompt_goals.find_by(goal: goal)
                 = render 'organizations/goals/goal_list_item', 
                     goal: goal, 

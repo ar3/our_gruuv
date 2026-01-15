@@ -22,13 +22,21 @@
 - goal_types.each do |goal_type|
   - links_for_type = grouped_links[goal_type] || []
   - if links_for_type.any?
+    - sorted_links = links_for_type.sort_by do |link|
+      - linked_goal = linked_goals[link.child_id] || linked_goals[link.parent_id] || link.child || link.parent
+      - parent_goal = linked_goals[link.parent_id] || link.parent
+      - parent_goal_title = parent_goal&.title&.downcase || ''
+      - date_day = linked_goal&.most_likely_target_date&.day || 99
+      - goal_title = linked_goal&.title&.downcase || ''
+      - [parent_goal_title, date_day, goal_title]
+    end
     .mb-4
       %h6.mb-2
         = goal_type_labels[goal_type]
         %span.badge{class: goal_badge_class(goal_type), style: "font-size: 0.75em;"}
           = pluralize(links_for_type.count, 'goal')
       %ul.list-unstyled
-        - links_for_type.each do |link|
+        - sorted_links.each do |link|
           - linked_goal = linked_goals[link.child_id] || linked_goals[link.parent_id] || link.child || link.parent
           - next unless linked_goal.present?
           = render 'goal_list_item', goal: linked_goal, link: link, linked_goal_check_ins: linked_goal_check_ins, organization: organization, show_unlink: show_unlink, parent_goal: parent_goal, parent_goal_id: parent_goal.id, return_url: return_url, return_text: return_text

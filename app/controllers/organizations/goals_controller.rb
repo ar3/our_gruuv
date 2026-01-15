@@ -125,7 +125,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       timeframe: params[:timeframe],
       goal_type: params[:goal_type],
       status: params[:status],
-      sort: params[:sort],
+      sort: params[:sort] || 'smart_sort',
       direction: params[:direction],
       view: @view_style,
       spotlight: spotlight_param,
@@ -562,7 +562,7 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
       timeframe: params[:timeframe],
       goal_type: params[:goal_type],
       status: params[:status],
-      sort: params[:sort] || 'most_likely_target_date',
+      sort: params[:sort] || 'smart_sort',
       direction: params[:direction] || 'asc',
       view: params[:view] || 'hierarchical-indented',
       spotlight: params[:spotlight] || 'goals_overview',
@@ -778,6 +778,37 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     direction = direction == 'desc' ? :desc : :asc
     
     case sort
+    when 'smart_sort'
+      # Smart sort: by parent goal, then day of most_likely_target_date, then alphabetically by name
+      # Need to load goals with parent goals and sort in Ruby
+      goals_array = goals.includes(:linking_goals).to_a
+      
+      # Build cache of first parent goal for each goal
+      parent_goals_cache = {}
+      goals_array.each do |goal|
+        first_parent = goal.linking_goals.sort_by(&:title).first
+        parent_goals_cache[goal.id] = first_parent&.title&.downcase || ''
+      end
+      
+      # Sort by parent goal title, then day of most_likely_target_date, then goal title
+      sorted_goals = goals_array.sort_by do |goal|
+        parent_goal_title = parent_goals_cache[goal.id] || ''
+        date_day = goal.most_likely_target_date&.day || 99
+        goal_title = goal.title&.downcase || ''
+        [parent_goal_title, date_day, goal_title]
+      end
+      
+      # Reverse if descending direction
+      sorted_goals = sorted_goals.reverse if direction == :desc
+      
+      # Return as ActiveRecord relation with proper ordering using CASE statement
+      goal_ids = sorted_goals.map(&:id)
+      if goal_ids.any?
+        order_clause = goal_ids.map.with_index { |id, i| "WHEN #{id} THEN #{i}" }.join(' ')
+        Goal.where(id: goal_ids).order(Arel.sql("CASE goals.id #{order_clause} END"))
+      else
+        Goal.none
+      end
     when 'most_likely_target_date'
       goals.order(most_likely_target_date: direction)
     when 'earliest_target_date'
@@ -789,7 +820,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     when 'title'
       goals.order(title: direction)
     else
-      goals.order(most_likely_target_date: :asc)
+      # Default to smart_sort if sort is nil or unknown
+      apply_sorting(goals, 'smart_sort', direction)
     end
   end
   

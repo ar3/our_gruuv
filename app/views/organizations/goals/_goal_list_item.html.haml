@@ -19,6 +19,9 @@
       = link_to organization_goal_path(organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
         %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
         %strong= linked_goal.title
+        - if linked_goal.calculated_target_date.present?
+          %span.text-muted.ms-1
+            by #{linked_goal.calculated_target_date.strftime('%b %d, %Y')}
       - if link && link.metadata.present? && link.metadata['notes'].present?
         %i.bi.bi-file-text.text-muted.ms-2{"data-bs-toggle" => "tooltip", "data-bs-title" => link.metadata['notes'], style: "cursor: help;"}
       - if show_category_badge

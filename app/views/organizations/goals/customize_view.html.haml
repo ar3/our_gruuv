@@ -82,8 +82,8 @@
           %label.form-label.fw-bold Select What Order You See Them In
           .mb-3
             %label.form-label Sort By
-            - sort_options = [['Most Likely Date', 'most_likely_target_date'], ['Earliest Date', 'earliest_target_date'], ['Latest Date', 'latest_target_date'], ['Created Date', 'created_at'], ['Title (A-Z)', 'title']]
-            = select_tag 'sort', options_for_select(sort_options, @current_sort), class: 'form-select', id: 'sort_select'
+            - sort_options = [['Smart Sort', 'smart_sort'], ['Most Likely Date', 'most_likely_target_date'], ['Earliest Date', 'earliest_target_date'], ['Latest Date', 'latest_target_date'], ['Created Date', 'created_at'], ['Title (A-Z)', 'title']]
+            = select_tag 'sort', options_for_select(sort_options, @current_sort || 'smart_sort'), class: 'form-select', id: 'sort_select'
           .mb-3
             %label.form-label Direction
             - direction_options = [['Ascending', 'asc'], ['Descending', 'desc']]
