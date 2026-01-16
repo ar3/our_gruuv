@@ -191,6 +191,64 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include(completed_goal.title)
     end
+    
+    context 'when goal is started' do
+      let(:started_goal) { create(:goal, creator: teammate, owner: teammate, title: 'Started Goal', started_at: 1.week.ago) }
+      
+      it 'displays check-in button for users who can edit' do
+        get organization_goal_path(organization, started_goal)
+        
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Check-In')
+        expect(response.body).to include(weekly_update_organization_goal_path(organization, started_goal))
+        # Check that the button is a link (not disabled)
+        expect(response.body).to include('btn-primary')
+        expect(response.body).not_to include('aria-disabled="true"')
+      end
+      
+      it 'displays disabled check-in button with warning icon for users who cannot edit' do
+        other_person = create(:person)
+        other_teammate = create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate')
+        # Create a goal that the current user can view but not edit
+        # Use 'everyone_in_company' privacy level which allows viewing by everyone in company
+        # but editing only by creator/owner
+        other_goal = create(:goal, creator: other_teammate, owner: other_teammate, title: 'Other Goal', started_at: 1.week.ago, privacy_level: 'everyone_in_company')
+        
+        get organization_goal_path(organization, other_goal)
+        
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Check-In')
+        expect(response.body).to include('disabled')
+        expect(response.body).to include('aria-disabled="true"')
+        expect(response.body).to include('bi-exclamation-triangle')
+        expect(response.body).to include('You need permission to edit this goal to access check-ins')
+      end
+      
+      it 'displays last check-in in sentence form when present' do
+        last_week_start = Date.current.beginning_of_week(:monday) - 1.week
+        last_check_in = create(:goal_check_in, 
+          goal: started_goal, 
+          check_in_week_start: last_week_start, 
+          confidence_percentage: 75, 
+          confidence_reporter: person)
+        
+        get organization_goal_path(organization, started_goal)
+        
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('checked in on')
+        expect(response.body).to include(person.display_name)
+        expect(response.body).to include('75%')
+        expect(response.body).to match(/confident we.*ll accomplish this goal/)
+      end
+      
+      it 'displays alert when no check-ins exist' do
+        get organization_goal_path(organization, started_goal)
+        
+        expect(response).to have_http_status(:success)
+        expect(response.body).to include('Add first check-in')
+        expect(response.body).to include('alert-info')
+      end
+    end
   end
   
   describe 'GET /organizations/:organization_id/goals/:id/weekly_update' do

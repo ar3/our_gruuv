@@ -220,48 +220,39 @@
                 %i.bi.bi-trash.me-2
                 Delete Goal
         - else
-          / Started goal - show weekly check-in form
-          - current_week_start = @current_week_start || Date.current.beginning_of_week(:monday)
-          - current_week_end = current_week_start.end_of_week(:sunday)
+          / Started goal - show check-in button
+          - can_edit = policy(@goal).update?
+          - return_url = request.url
+          - return_text = 'Goal'
           
-          %h6.mb-3 Weekly Check-In
-          %p.small.text-muted.mb-3
-            Week of #{current_week_start.strftime('%B %d')} - #{current_week_end.strftime('%B %d, %Y')}
+          / Last check-in display
+          - last_check_in = @goal.goal_check_ins.includes(:confidence_reporter).recent.first
+          - if last_check_in.present?
+            - check_in_date = format_date_in_user_timezone(last_check_in.created_at)
+            - teammate_name = last_check_in.confidence_reporter.display_name
+            - confidence = last_check_in.confidence_percentage
+            - calculated_due_date = @goal.calculated_target_date
+            %p.mb-3
+              = "#{teammate_name} checked in on #{check_in_date}, and we are #{confidence}% confident we'll accomplish this goal"
+              - if calculated_due_date.present?
+                = " by #{calculated_due_date.strftime('%B %d, %Y')}"
+              = "."
+          - else
+            .alert.alert-info.mb-3
+              %i.bi.bi-info-circle.me-2
+              Add first check-in
           
-          - if @current_check_in.present?
-            %p.small.text-muted.mb-3
-              Filled out by #{@current_check_in.confidence_reporter.display_name} on #{format_time_in_user_timezone(@current_check_in.created_at)}
-          
-          = form_with url: check_in_organization_goal_path(@organization, @goal), method: :post, local: true do |f|
-            .mb-3
-              = f.label :confidence_percentage, "Confidence", class: "form-label"
-              = f.select :confidence_percentage, 
-                  options_for_select(confidence_percentage_options, @current_check_in&.confidence_percentage),
-                  { include_blank: 'Select confidence...' },
-                  { class: 'form-select', required: true }
-            
-            .mb-3
-              = f.label :confidence_reason, "Notes", class: "form-label"
-              = f.text_area :confidence_reason, value: @current_check_in&.confidence_reason, class: 'form-control', rows: 3, placeholder: 'Optional notes...'
-            
-            .d-grid
-              = f.submit "Save Check-In", class: "btn btn-primary"
-          
-          - if @last_check_in.present?
-            .mt-4.pt-3.border-top
-              %h6.mb-2 Last Check-In
-              %p.small.mb-1
-                %strong Week:
-                = @last_check_in.week_display
-              %p.small.mb-1
-                %strong Confidence:
-                = "#{@last_check_in.confidence_percentage}%"
-              - if @last_check_in.confidence_reason.present?
-                %p.small.mb-1
-                  %strong Notes:
-                  = @last_check_in.confidence_reason
-              %p.small.text-muted.mb-0
-                By #{@last_check_in.confidence_reporter.display_name} on #{format_date_in_user_timezone(@last_check_in.created_at)}
+          .d-grid.gap-2.mb-3
+            - if can_edit
+              = link_to weekly_update_organization_goal_path(@organization, @goal, return_url: return_url, return_text: return_text), class: "btn btn-primary w-100" do
+                %i.bi.bi-calendar-check.me-2
+                Add/Edit & View All Check-In
+            - else
+              .position-relative
+                = link_to "#", class: "btn btn-primary w-100 disabled", "aria-disabled" => "true", tabindex: "-1", "data-bs-toggle" => "tooltip", "data-bs-title" => "You need permission to edit this goal to access check-ins" do
+                  %i.bi.bi-calendar-check.me-2
+                  Check-In
+                  %i.bi.bi-exclamation-triangle.text-warning.ms-2
           
           .mt-3.pt-3.border-top
             .d-grid.gap-2
@@ -274,29 +265,6 @@
                   %i.bi.bi-trash.me-2
                   Delete Goal
           
-          - if @all_check_ins.any?
-            .mt-4.pt-3.border-top
-              %h6.mb-3 All Check-Ins
-              .table-responsive
-                %table.table.table-sm
-                  %thead
-                    %tr
-                      %th Date
-                      %th Reporter
-                      %th Confidence
-                      %th Learnings/Notes
-                  %tbody
-                    - @all_check_ins.each do |check_in|
-                      %tr
-                        %td= check_in.check_in_week_start.strftime("%B %d, %Y")
-                        %td= check_in.confidence_reporter.display_name
-                        %td= "#{check_in.confidence_percentage}%"
-                        %td
-                          - if check_in.confidence_reason.present?
-                            = simple_format(check_in.confidence_reason)
-                          - else
-                            %em.text-muted No notes
-        
         - if @goal.goal_type != 'inspirational_objective' && @goal.most_likely_target_date.nil?
           .mt-3.pt-3.border-top
             %p.small.text-muted.mb-3
