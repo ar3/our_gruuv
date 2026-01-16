@@ -215,7 +215,7 @@
               = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary" do
                 %i.bi.bi-pencil.me-2
                 Edit Goal
-            - if policy(@goal).destroy?
+            - if policy(@goal).destroy? && @goal.status != :deleted
               = button_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger w-100", data: { confirm: "Are you sure you want to delete this goal?" } do
                 %i.bi.bi-trash.me-2
                 Delete Goal
@@ -260,7 +260,7 @@
                 = link_to edit_organization_goal_path(@organization, @goal), class: "btn btn-outline-secondary btn-sm" do
                   %i.bi.bi-pencil.me-2
                   Edit Goal
-              - if policy(@goal).destroy?
+              - if policy(@goal).destroy? && @goal.status != :deleted
                 = button_to organization_goal_path(@organization, @goal), method: :delete, class: "btn btn-outline-danger btn-sm w-100", data: { confirm: "Are you sure you want to delete this goal?" } do
                   %i.bi.bi-trash.me-2
                   Delete Goal

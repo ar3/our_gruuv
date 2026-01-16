@@ -428,6 +428,61 @@ RSpec.describe Goals::BulkUpdateCheckInsService, type: :service do
         expect(goal.reload.completed_at).to be_present
       end
     end
+
+    context 'when goal has not been started' do
+      let(:unstarted_goal) do
+        create(:goal,
+          creator: teammate,
+          owner: teammate,
+          company: organization,
+          started_at: nil,
+          most_likely_target_date: Date.today + 1.month
+        )
+      end
+
+      it 'starts the goal after successful check-in save' do
+        expect(unstarted_goal.started_at).to be_nil
+
+        params = {
+          unstarted_goal.id => {
+            confidence_percentage: '75',
+            confidence_reason: 'Starting work'
+          }
+        }
+
+        result = described_class.call(
+          organization: organization,
+          current_person: person,
+          goal_check_ins_params: params,
+          week_start: week_start
+        )
+
+        expect(result.ok?).to be true
+        unstarted_goal.reload
+        expect(unstarted_goal.started_at).to be_present
+      end
+
+      it 'starts the goal even when only reason is provided' do
+        expect(unstarted_goal.started_at).to be_nil
+
+        params = {
+          unstarted_goal.id => {
+            confidence_reason: 'Starting work'
+          }
+        }
+
+        result = described_class.call(
+          organization: organization,
+          current_person: person,
+          goal_check_ins_params: params,
+          week_start: week_start
+        )
+
+        expect(result.ok?).to be true
+        unstarted_goal.reload
+        expect(unstarted_goal.started_at).to be_present
+      end
+    end
     
     context 'when updating most_likely_target_date' do
       it 'updates most_likely_target_date when provided' do

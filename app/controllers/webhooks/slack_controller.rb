@@ -242,29 +242,16 @@ class Webhooks::SlackController < ApplicationController
       }
     end
     
-    # Get current week start (Monday)
-    week_start = Date.current.beginning_of_week(:monday)
-    
-    # Set PaperTrail whodunnit for version tracking
-    PaperTrail.request.whodunnit = teammate.person.id.to_s
-    
-    # Find or initialize check-in for current week
-    check_in = GoalCheckIn.find_or_initialize_by(
+    # Use the CheckInService to handle the check-in
+    result = Goals::CheckInService.call(
       goal: goal,
-      check_in_week_start: week_start
-    )
-    
-    check_in.assign_attributes(
+      current_person: teammate.person,
       confidence_percentage: confidence_percentage,
-      confidence_reason: confidence_reason,
-      confidence_reporter: teammate.person
+      confidence_reason: confidence_reason
     )
     
-    if check_in.save
-      # Auto-complete goal if confidence is 0% or 100%
-      if (confidence_percentage == 0 || confidence_percentage == 100) && goal.completed_at.nil?
-        goal.update(completed_at: Time.current)
-      end
+    if result.ok?
+      check_in = result.value[:check_in]
       
       # Link the webhook to the created check-in
       incoming_webhook.update!(resultable: check_in)
@@ -279,15 +266,22 @@ class Webhooks::SlackController < ApplicationController
       # Return success response to close the modal
       { response_action: 'clear' }
     else
-      error_message = "Failed to save check-in: #{check_in.errors.full_messages.join(', ')}"
+      error_message = "Failed to save check-in: #{result.error}"
       Rails.logger.error "Slack webhook: #{error_message}"
       incoming_webhook.mark_failed!(error_message)
       
       # Return errors to show in modal
+      # Parse the error message to extract field-specific errors if possible
       errors_hash = {}
-      check_in.errors.each do |error|
-        field = error.attribute.to_s
-        errors_hash[field] = error.message
+      if result.error.include?('confidence_percentage')
+        errors_hash['confidence_percentage'] = result.error
+      end
+      if result.error.include?('confidence_reason')
+        errors_hash['confidence_reason'] = result.error
+      end
+      # If no specific field errors, show general error
+      if errors_hash.empty?
+        errors_hash['base'] = result.error
       end
       
       { response_action: 'errors', errors: errors_hash }

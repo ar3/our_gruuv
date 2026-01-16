@@ -386,80 +386,27 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     check_in_record = GoalCheckIn.new(goal: @goal)
     authorize check_in_record, :create?
     
-    week_start = Date.current.beginning_of_week(:monday)
-    confidence_percentage = params[:confidence_percentage]&.to_i
-    confidence_reason = params[:confidence_reason]&.strip
-    
-    # Handle target date update if provided
-    target_date_updated = false
+    # Check authorization for goal update if target date is being updated
     if params[:most_likely_target_date].present?
       authorize @goal, :update?
-      new_target_date = Date.parse(params[:most_likely_target_date])
-      
-      # Ensure earliest date is not after the new target date if earliest is set
-      if @goal.earliest_target_date.present? && @goal.earliest_target_date > new_target_date
-        @goal.earliest_target_date = new_target_date
-      end
-      
-      # Ensure latest date is at least one day after the new target date if latest is set
-      if @goal.latest_target_date.present? && new_target_date >= @goal.latest_target_date
-        @goal.latest_target_date = new_target_date + 1.day
-      end
-      
-      @goal.most_likely_target_date = new_target_date
-      target_date_updated = true
     end
     
-    # Set PaperTrail whodunnit for version tracking
-    PaperTrail.request.whodunnit = current_person.id.to_s
-    
-    # Find or initialize check-in for current week
-    check_in = GoalCheckIn.find_or_initialize_by(
+    result = Goals::CheckInService.call(
       goal: @goal,
-      check_in_week_start: week_start
+      current_person: current_person,
+      confidence_percentage: params[:confidence_percentage],
+      confidence_reason: params[:confidence_reason],
+      most_likely_target_date: params[:most_likely_target_date]
     )
     
-    check_in.assign_attributes(
-      confidence_percentage: confidence_percentage,
-      confidence_reason: confidence_reason,
-      confidence_reporter: current_person
-    )
+    return_url = params[:return_url] || organization_goal_path(@organization, @goal)
     
-    # Save both check-in and goal (if target date was updated)
-    success = true
-    if target_date_updated
-      Goal.transaction do
-        success = check_in.save && @goal.save
-        unless success
-          raise ActiveRecord::Rollback
-        end
-      end
-    else
-      success = check_in.save
-    end
-    
-    if success
-      # Auto-complete goal if confidence is 0% or 100%
-      if (confidence_percentage == 0 || confidence_percentage == 100) && @goal.completed_at.nil?
-        @goal.update(completed_at: Time.current)
-      end
-      
-      # Create observable moment if confidence changed significantly
-      ObservableMoments::CreateGoalCheckInMomentService.call(
-        goal_check_in: check_in,
-        created_by: current_person
-      )
-      
-      # Use return_url if provided, otherwise default to goal show page
-      return_url = params[:return_url] || organization_goal_path(@organization, @goal)
+    if result.ok?
       notice = 'Check-in saved successfully.'
-      notice += ' Target date updated.' if target_date_updated
+      notice += ' Target date updated.' if result.value[:target_date_updated]
       redirect_to return_url, notice: notice
     else
-      return_url = params[:return_url] || organization_goal_path(@organization, @goal)
-      errors = check_in.errors.full_messages
-      errors += @goal.errors.full_messages if target_date_updated && @goal.errors.any?
-      redirect_to return_url, alert: "Failed to save check-in: #{errors.join(', ')}"
+      redirect_to return_url, alert: "Failed to save check-in: #{result.error}"
     end
   end
   

@@ -805,6 +805,23 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       }
       expect(flash[:notice]).to eq('Check-in saved successfully.')
     end
+
+    context 'when goal has not been started' do
+      let(:unstarted_goal) { create(:goal, creator: creator_teammate, owner: creator_teammate, started_at: nil) }
+
+      it 'starts the goal after successful check-in save' do
+        expect(unstarted_goal.started_at).to be_nil
+
+        post :check_in, params: { 
+          organization_id: company.id, 
+          id: unstarted_goal.id,
+          confidence_percentage: 75
+        }
+
+        unstarted_goal.reload
+        expect(unstarted_goal.started_at).to be_present
+      end
+    end
     
     it 'handles validation errors' do
       post :check_in, params: { 

@@ -47,37 +47,6 @@ module Goals
       confidence_percentage = check_in_data[:confidence_percentage].present? ? check_in_data[:confidence_percentage].to_i : nil
       confidence_reason = check_in_data[:confidence_reason]&.strip.presence
       
-      # Handle target date update if provided
-      target_date_updated = false
-      if check_in_data[:most_likely_target_date].present?
-        # Check authorization for goal update using Pundit
-        teammate = current_person.teammates.find_by(organization: organization)
-        unless teammate
-          return add_error(goal_id, "You don't have permission to update this goal")
-        end
-        
-        pundit_user = OpenStruct.new(user: teammate, impersonating_teammate: nil)
-        policy = GoalPolicy.new(pundit_user, goal)
-        unless policy.update?
-          return add_error(goal_id, "You don't have permission to update this goal")
-        end
-        
-        new_target_date = Date.parse(check_in_data[:most_likely_target_date])
-        
-        # Ensure earliest date is not after the new target date if earliest is set
-        if goal.earliest_target_date.present? && goal.earliest_target_date > new_target_date
-          goal.earliest_target_date = new_target_date
-        end
-        
-        # Ensure latest date is at least one day after the new target date if latest is set
-        if goal.latest_target_date.present? && new_target_date >= goal.latest_target_date
-          goal.latest_target_date = new_target_date + 1.day
-        end
-        
-        goal.most_likely_target_date = new_target_date
-        target_date_updated = true
-      end
-
       # If both fields are empty, delete existing check-in if it exists
       if confidence_percentage.nil? && confidence_reason.nil?
         existing_check_in = GoalCheckIn.find_by(
@@ -94,6 +63,20 @@ module Goals
         return
       end
 
+      # Check authorization for goal update if target date is being updated
+      if check_in_data[:most_likely_target_date].present?
+        teammate = current_person.teammates.find_by(organization: organization)
+        unless teammate
+          return add_error(goal_id, "You don't have permission to update this goal")
+        end
+        
+        pundit_user = OpenStruct.new(user: teammate, impersonating_teammate: nil)
+        policy = GoalPolicy.new(pundit_user, goal)
+        unless policy.update?
+          return add_error(goal_id, "You don't have permission to update this goal")
+        end
+      end
+
       # If only reason is provided without confidence, use last check-in's confidence or default to 5%
       if confidence_percentage.nil? && confidence_reason.present?
         # Get the most recent check-in, excluding the current week (if it exists)
@@ -105,52 +88,21 @@ module Goals
         confidence_percentage = (last_check_in&.confidence_percentage || 5)
       end
 
-      # Set PaperTrail whodunnit for version tracking
-      PaperTrail.request.whodunnit = current_person.id.to_s
-
-      # Find or initialize check-in for current week
-      check_in = GoalCheckIn.find_or_initialize_by(
+      # Use the CheckInService to handle the check-in
+      result = CheckInService.call(
         goal: goal,
-        check_in_week_start: week_start
+        current_person: current_person,
+        confidence_percentage: confidence_percentage,
+        confidence_reason: confidence_reason,
+        most_likely_target_date: check_in_data[:most_likely_target_date],
+        week_start: week_start
       )
 
-      # Update fields
-      check_in.confidence_percentage = confidence_percentage
-      check_in.confidence_reason = confidence_reason
-      check_in.confidence_reporter = current_person
-
-      # Save both check-in and goal (if target date was updated)
-      success = true
-      if target_date_updated
-        Goal.transaction do
-          success = check_in.save && goal.save
-          unless success
-            raise ActiveRecord::Rollback
-          end
-        end
-      else
-        success = check_in.save
-      end
-
-      if success
-        # Auto-complete goal if confidence is 0% or 100%
-        if confidence_percentage.present? && (confidence_percentage == 0 || confidence_percentage == 100) && goal.completed_at.nil?
-          goal.update(completed_at: Time.current)
-        end
-        
-        # Create observable moment if confidence changed significantly
-        ObservableMoments::CreateGoalCheckInMomentService.call(
-          goal_check_in: check_in,
-          created_by: current_person
-        )
-        
+      if result.ok?
         @success_count += 1
       else
         @failure_count += 1
-        error_messages = []
-        error_messages.concat(check_in.errors.full_messages) if check_in.errors.any?
-        error_messages.concat(goal.errors.full_messages) if goal.errors.any?
-        add_error(goal_id, error_messages.join(', '))
+        add_error(goal_id, result.error)
       end
     rescue => e
       @failure_count += 1
