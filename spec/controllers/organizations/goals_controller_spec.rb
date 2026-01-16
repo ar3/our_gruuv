@@ -243,6 +243,12 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:form).privacy_level).to eq('only_creator_owner_and_managers')
     end
     
+    it 'defaults earliest_target_date and latest_target_date to nil' do
+      get :new, params: { organization_id: company.id }
+      expect(assigns(:form).earliest_target_date).to be_nil
+      expect(assigns(:form).latest_target_date).to be_nil
+    end
+    
     it 'defaults owner to current teammate when no query params provided' do
       get :new, params: { organization_id: company.id }
       expect(assigns(:form).owner_id).to eq("CompanyTeammate_#{creator_teammate.id}")
@@ -308,9 +314,9 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(goal.creator).to eq(creator_teammate)
     end
     
-    it 'redirects to the created goal' do
+    it 'redirects to the goal check-in mode' do
       post :create, params: { organization_id: company.id, goal: valid_attributes }
-      expect(response).to redirect_to(organization_goal_path(company, Goal.last))
+      expect(response).to redirect_to(weekly_update_organization_goal_path(company, Goal.last))
     end
     
     it 'shows flash notice on success' do

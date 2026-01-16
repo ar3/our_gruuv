@@ -233,6 +233,8 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     # Set defaults
     @form.goal_type = 'inspirational_objective' # Default to objective
     @form.privacy_level = 'only_creator_owner_and_managers'
+    @form.earliest_target_date = nil
+    @form.latest_target_date = nil
     # Default owner to current teammate if they have a CompanyTeammate record
     # Only set default if not provided in query string params
     unless params[:owner_id].present? || params[:owner_type].present?
@@ -271,8 +273,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     goal_params = params[:goal] || {}
     
     if @form.validate(goal_params) && @form.save
-      redirect_to organization_goal_path(@organization, @goal), 
-                  notice: 'Goal was successfully created.'
+      redirect_to weekly_update_organization_goal_path(@organization, @goal), 
+        return_text: 'Edit Goal / Add Child Goals',          
+        notice: 'Goal was successfully created.'
     else
       flash.now[:alert] = @form.errors.full_messages.join(', ')
       render :new, status: :unprocessable_entity

@@ -22,6 +22,9 @@
                   - @form.errors.full_messages.each do |message|
                     %li= message
             
+            / Hidden field for privacy_level (defaulted in controller)
+            = form.hidden_field :privacy_level, value: @form.privacy_level || 'only_creator_owner_and_managers'
+            
             .mb-3
               = form.label :title, class: 'form-label' do
                 Title
@@ -35,7 +38,7 @@
             .mb-4 
               = render 'goal_type_selection', form: form
               
-            / Timeframe Selection - Large Button Group (shown when advanced settings is closed)
+            / Timeframe Selection - Large Button Group
             .mb-4#timeframe-selection
               %label.form-label Timeframe
               #timeframe-target-date-info.small.text-muted.mb-2{style: "display: none;"}
@@ -53,67 +56,25 @@
                 = form.label :timeframe, 'Near-term goal', value: 'near_term', class: 'btn btn-outline-primary btn-lg', for: 'timeframe_near_term'
               
               %small.form-text.text-muted.mt-2.d-block
-                Select a timeframe to automatically set the target date, or customize in Advanced Settings below.
+                Select a timeframe to automatically set the target date.
             
-            / Advanced Settings Collapse
             .mb-3
-              %button.btn.btn-link.p-0.text-decoration-none{type: "button", "data-bs-toggle": "collapse", "data-bs-target": "#advancedSettings", "aria-expanded": "false", "aria-controls": "advancedSettings"}
-                %i.bi.bi-chevron-down.me-2
-                Advanced Settings
+              = form.label :owner_id, class: 'form-label' do
+                Owner
+                %span.text-danger *
+              - viewing_teammate_id = current_company_teammate&.id || @form.current_teammate&.id
+              - default_owner_id = @form.owner_id || (viewing_teammate_id ? "CompanyTeammate_#{viewing_teammate_id}" : nil)
+              - raise "MAJOR ISSUE WITH GOALS... SOMEHOW THE CURRENT TEAMMATE IS NIL?!?!" if default_owner_id.blank?
+              = form.select :owner_id, 
+                available_goal_owners,
+                { selected: default_owner_id },
+                { class: 'form-select' }
+              %small.form-text.text-muted
+                Choose who this goal belongs to: yourself, an employee, a team, department, or company
             
-            .collapse#advancedSettings
-              .card.card-body.bg-light.mt-3
-                
-                
-                .mb-3
-                  %label.form-label
-                    Target Dates
-                    %small.text-muted (Optional)
-                  %small.form-text.text-muted.mb-2.d-block
-                    If you set dates here, they will override the timeframe selection above.
-                  .row
-                    .col-md-4.mb-2
-                      = form.label :earliest_target_date, 'Earliest Target Date', class: 'form-label small'
-                      = form.date_field :earliest_target_date, class: 'form-control'
-                    .col-md-4.mb-2
-                      = form.label :most_likely_target_date, 'Most Likely Target Date', class: 'form-label small'
-                      = form.date_field :most_likely_target_date, class: 'form-control'
-                    .col-md-4.mb-2
-                      = form.label :latest_target_date, 'Latest Target Date', class: 'form-label small'
-                      = form.date_field :latest_target_date, class: 'form-control'
-                  %small.form-text.text-muted
-                    All dates are optional. If provided, Earliest ≤ Most Likely ≤ Latest
-                
-                .mb-3
-                  = form.label :owner_id, class: 'form-label' do
-                    Owner
-                    %span.text-danger *
-                  - viewing_teammate_id = current_company_teammate&.id || @form.current_teammate&.id
-                  - default_owner_id = @form.owner_id || (viewing_teammate_id ? "CompanyTeammate_#{viewing_teammate_id}" : nil)
-                  - raise "MAJOR ISSUE WITH GOALS... SOMEHOW THE CURRENT TEAMMATE IS NIL?!?!" if default_owner_id.blank?
-                  = form.select :owner_id, 
-                    available_goal_owners,
-                    { selected: default_owner_id },
-                    { class: 'form-select' }
-                  %small.form-text.text-muted
-                    Choose who this goal belongs to: yourself, an employee, a team, department, or company
-                
-                .mb-3
-                  = form.label :privacy_level, class: 'form-label' do
-                    Privacy Level
-                    %span.text-danger *
-                  - Goal.privacy_levels.each do |privacy_level, value|
-                    .form-check
-                      = form.radio_button :privacy_level, privacy_level, class: 'form-check-input', required: true, checked: (@form.privacy_level == privacy_level || (@form.privacy_level.blank? && privacy_level == 'only_creator_owner_and_managers'))
-                      = form.label :privacy_level, privacy_level.humanize, value: privacy_level, class: 'form-check-label'
-                      - if privacy_level == 'only_creator'
-                        %small.text-muted.d-block.ms-4 Only you can view this goal
-                      - elsif privacy_level == 'only_creator_and_owner'
-                        %small.text-muted.d-block.ms-4 You and the goal owner can view this goal
-                      - elsif privacy_level == 'only_creator_owner_and_managers'
-                        %small.text-muted.d-block.ms-4 You, the owner, and their managers can view this goal
-                      - elsif privacy_level == 'everyone_in_company'
-                        %small.text-muted.d-block.ms-4 Everyone in your company can view this goal
+            .alert.alert-info.mb-4
+              %i.bi.bi-info-circle.me-2
+              You can customize privacy settings and target dates after creating the goal.
             
             .d-flex
               = form.submit 'Create Goal', class: 'btn btn-primary'
@@ -163,27 +124,10 @@
     
     if (targetDate) {
       var formattedDate = formatDate(targetDate);
-      timeframeInfo.textContent = 'Target date: ' + formattedDate + '. This date can be changed later.';
+      timeframeInfo.textContent = 'Target date: ' + formattedDate + '. This date can be changed after creating the goal.';
       timeframeInfo.style.display = 'block';
     } else {
       timeframeInfo.style.display = 'none';
-    }
-  }
-  
-  function setupTimeframeToggle() {
-    var advancedSettings = document.getElementById('advancedSettings');
-    var timeframeSelection = document.getElementById('timeframe-selection');
-    
-    if (advancedSettings && timeframeSelection && !advancedSettings.dataset.timeframeToggleSetup) {
-      advancedSettings.dataset.timeframeToggleSetup = 'true';
-      
-      advancedSettings.addEventListener('shown.bs.collapse', function() {
-        timeframeSelection.style.display = 'none';
-      });
-      
-      advancedSettings.addEventListener('hidden.bs.collapse', function() {
-        timeframeSelection.style.display = '';
-      });
     }
   }
   
@@ -198,10 +142,8 @@
   }
   
   document.addEventListener('DOMContentLoaded', function() {
-    setupTimeframeToggle();
     setupTimeframeListeners();
   });
   document.addEventListener('turbo:load', function() {
-    setupTimeframeToggle();
     setupTimeframeListeners();
   });

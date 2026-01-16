@@ -50,21 +50,17 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       # Select timeframe (button group) - click on label instead of radio button
       find('label[for="timeframe_near_term"]').click
       
-      # Open Advanced Settings to set additional fields
-      find('button', text: 'Advanced Settings').click
-      expect(page).to have_css('#advancedSettings.show')
-      
       # Goal type defaults to inspirational_objective, but let's verify it's selected
-      # Privacy level defaults to everyone_in_company
+      # Privacy level defaults to only_creator_owner_and_managers
       # Select owner from dropdown
       select "Teammate: #{person.display_name}", from: 'goal[owner_id]'
       
       click_button 'Create Goal'
       
-      # Step 4: Should be redirected to show page with success message
+      # Step 4: Should be redirected to check-in mode with success message
       expect(page).to have_success_flash('Goal was successfully created')
       expect(page).to have_content('Test Goal')
-      expect(page).to have_content('This is a test goal for our system test')
+      expect(page).to have_content('Weekly Update')
       
       # Step 5: Click edit
       click_link 'Edit'
@@ -159,7 +155,7 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       # Check for month name and year (flexible on day format)
       expect(page).to have_content(near_term_date.strftime('%B'))
       expect(page).to have_content(near_term_date.year.to_s)
-      expect(page).to have_content('This date can be changed later.')
+      expect(page).to have_content('This date can be changed after creating the goal.')
       
       # Select medium-term timeframe
       find('label[for="timeframe_medium_term"]').click
@@ -187,16 +183,12 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
     it 'defaults privacy level to only_creator_owner_and_managers' do
       visit new_organization_goal_path(organization)
       
-      # Open Advanced Settings to see privacy level
-      find('button', text: 'Advanced Settings').click
-      expect(page).to have_css('#advancedSettings.show', wait: 2)
-      
-      # Check that only_creator_owner_and_managers is selected by default
-      expect(page).to have_checked_field('goal_privacy_level_only_creator_owner_and_managers')
-      expect(page).not_to have_checked_field('goal_privacy_level_everyone_in_company')
+      # Privacy level is now defaulted in the controller and not shown on the form
+      # The form should show a message that privacy can be customized after creation
+      expect(page).to have_content('You can customize privacy settings and target dates after creating the goal')
     end
     
-    it 'validates date ordering' do
+    it 'allows creating goal without target dates' do
       visit new_organization_goal_path(organization)
       
       fill_in 'goal_title', with: 'Test Goal'
@@ -204,30 +196,22 @@ RSpec.describe 'Goals CRUD Flow', type: :system do
       # Select a timeframe - click on label instead of radio button
       find('label[for="timeframe_near_term"]').click
       
-      # Open Advanced Settings to set dates
-      find('button', text: 'Advanced Settings').click
-      expect(page).to have_css('#advancedSettings.show', wait: 2)
-      
-      # Set invalid dates (earliest after latest)
-      fill_in 'goal_earliest_target_date', with: (Date.today + 3.months).strftime('%Y-%m-%d')
-      fill_in 'goal_most_likely_target_date', with: (Date.today + 2.months).strftime('%Y-%m-%d')
-      fill_in 'goal_latest_target_date', with: (Date.today + 1.month).strftime('%Y-%m-%d')
-      
-      # Select owner
+      # Select owner (should be pre-selected, but ensure it's set)
       select "Teammate: #{person.display_name}", from: 'goal[owner_id]'
+      
+      # Verify privacy_level hidden field exists
+      expect(page).to have_field('goal_privacy_level', type: 'hidden', with: 'only_creator_owner_and_managers', visible: false)
       
       click_button 'Create Goal'
       
-      # Should show validation error or stay on form
-      expect(page).to have_content('New Goal')
-      # Check if validation prevented submission
-      error_text = page.text.downcase
-      has_errors = error_text.include?('error') || 
-                   error_text.include?('after') ||
-                   error_text.include?('before') ||
-                   error_text.include?('earliest') ||
-                   error_text.include?('latest')
-      expect(has_errors || page.has_field?('goal_earliest_target_date')).to be true
+      # Should successfully create and redirect to check-in mode
+      # Wait for the redirect to complete - check for "Check-in Mode" which is the page title
+      expect(page).to have_content('Check-in Mode', wait: 10)
+      
+      created_goal = Goal.find_by(title: 'Test Goal')
+      expect(created_goal).to be_present, "Goal was not created."
+      expect(page).to have_current_path(weekly_update_organization_goal_path(organization, created_goal))
+      expect(page).to have_content('Test Goal')
     end
     
     xit 'filters goals by timeframe' do # SKIPPED: Goal index must have owner not yet implemented
