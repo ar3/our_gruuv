@@ -128,25 +128,34 @@
           Manage Goals
   .card-body
     - if @prompt.goals.any?
-      - # Create adapter links for prompts (prompts don't use GoalLink, so we create simple adapters)
-      - prompt_goals_by_goal_id = @prompt.prompt_goals.index_by(&:goal_id)
-      - prompt_links = @prompt.goals.map do |goal|
-        - OpenStruct.new(child_id: goal.id, parent_id: nil, child: goal, parent: nil, metadata: nil)
-      = render 'organizations/goals/grouped_goal_list',
-          links: prompt_links,
-          linked_goals: @linked_goals,
-          linked_goal_check_ins: @linked_goal_check_ins,
-          organization: @organization,
-          show_unlink: false,
-          parent_goal: nil,
-          return_url: request.url,
-          return_text: 'Edit Prompt',
-          display_children_goal_hierarchy: true,
-          prompt: @prompt,
-          can_edit_prompt: @can_edit,
-          show_category_badge: true,
-          show_disassociate: true,
-          prompt_goals_by_goal_id: prompt_goals_by_goal_id
+      - # Get all descendant goal IDs (includes children, grandchildren, etc.)
+      - all_descendant_goal_ids = @linked_goals.keys.to_set
+      - prompt_goal_ids = @prompt.goals.pluck(:id).to_set
+      
+      - # Group goals by type
+      - goals_by_type = @prompt.goals.group_by(&:goal_type)
+      - goal_types = ['stepping_stone_activity', 'quantitative_key_result', 'qualitative_key_result', 'inspirational_objective']
+      - goal_type_labels = { 'stepping_stone_activity' => 'Stepping Stones/Activities', 'quantitative_key_result' => 'Measurable Outcomes', 'qualitative_key_result' => 'Sentiment Outcomes', 'inspirational_objective' => 'Objectives' }
+      
+      - # Find root goals (goals with no incoming links from other prompt goals or their descendants)
+      - goals_that_are_children = Set.new
+      - GoalLink.where(parent_id: all_descendant_goal_ids, child_id: all_descendant_goal_ids).each do |link|
+        - goals_that_are_children.add(link.child_id)
+      - root_goals = @prompt.goals.reject { |goal| goals_that_are_children.include?(goal.id) }
+      
+      - goal_types.each do |goal_type|
+        - goals_for_type = (goals_by_type[goal_type] || []).select { |g| root_goals.include?(g) }
+        - if goals_for_type.any?
+          - sorted_goals = goals_for_type.sort_by do |goal|
+            - [goal.most_likely_target_date&.day || 99, goal.title.downcase]
+          .mb-4
+            %h6.mb-2
+              = goal_type_labels[goal_type]
+              %span.badge{class: goal_badge_class(goal_type), style: "font-size: 0.75em;"}
+                = pluralize(goals_for_type.count, 'goal')
+            %ul.list-unstyled
+              - sorted_goals.each do |goal|
+                = render 'organizations/prompts/goal_hierarchy_item', goal: goal, indent_level: 0, all_descendant_goal_ids: all_descendant_goal_ids
     - else
       %em.text-muted No goals associated with this prompt.
       - if @can_edit

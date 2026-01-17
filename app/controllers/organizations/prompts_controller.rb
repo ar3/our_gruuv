@@ -189,7 +189,7 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
       end
       
       if all_descendant_ids.any?
-        @linked_goals = Goal.where(id: all_descendant_ids).index_by(&:id)
+        @linked_goals = Goal.where(id: all_descendant_ids).includes(outgoing_links: :child).index_by(&:id)
         @linked_goal_check_ins = GoalCheckIn
           .where(goal_id: all_descendant_ids)
           .includes(:confidence_reporter, :goal)

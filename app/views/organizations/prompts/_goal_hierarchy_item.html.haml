@@ -1,0 +1,26 @@
+- goal = local_assigns[:goal]
+- indent_level = local_assigns.fetch(:indent_level, 0)
+- all_descendant_goal_ids = local_assigns[:all_descendant_goal_ids]
+
+- indent_px = indent_level * 30
+- status_icon = goal_status_icon(goal)
+- is_struck_through = goal_should_be_struck_through?(goal)
+
+%li.mb-2{style: indent_level > 0 ? "margin-left: #{indent_px}px;" : ""}
+  - if indent_level > 0
+    %i.bi.bi-arrow-90deg-down.rotate-270{style: "margin-right: 0.5rem;"}
+  %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
+  %strong{class: is_struck_through ? 'text-decoration-line-through' : ''}= goal.title
+  - if goal.calculated_target_date.present?
+    %span.text-muted.ms-1
+      by #{goal.calculated_target_date.strftime('%b %d, %Y')}
+  %br
+  %small.text-muted
+    %span.badge{class: goal_category_badge_class(goal), style: "font-size: 0.75em;"}
+      = goal_category_label(goal)
+  - # Render children recursively
+  - child_goals = goal.outgoing_links.includes(:child).map(&:child).compact.select { |g| all_descendant_goal_ids.include?(g.id) }
+  - if child_goals.any?
+    %ul.list-unstyled.mt-2
+      - child_goals.each do |child_goal|
+        = render 'organizations/prompts/goal_hierarchy_item', goal: child_goal, indent_level: indent_level + 1, all_descendant_goal_ids: all_descendant_goal_ids
