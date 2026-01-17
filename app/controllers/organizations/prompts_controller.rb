@@ -246,7 +246,11 @@ class Organizations::PromptsController < Organizations::OrganizationNamespaceBas
     end
     
     # Determine redirect based on button clicked
-    if params[:save_and_next].present?
+    if params[:save_and_manage_goals].present?
+      # Save and go to manage goals page
+      redirect_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: edit_organization_prompt_path(@organization, @prompt), return_text: @prompt.prompt_template.title),
+                  notice: 'Prompt answers saved successfully.'
+    elsif params[:save_and_next].present?
       # Save and go to next prompt
       next_prompt = @prompt.next_prompt_for_teammate(current_teammate)
       if next_prompt

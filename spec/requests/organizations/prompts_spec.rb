@@ -134,6 +134,28 @@ RSpec.describe 'Organizations::Prompts', type: :request do
       }
       expect(response).to redirect_to(edit_organization_prompt_path(organization, open_prompt))
     end
+
+    it 'Manage Goals button (save_and_manage_goals) saves answers and redirects to manage_goals to add/link goals' do
+      patch organization_prompt_path(organization, open_prompt), params: {
+        save_and_manage_goals: '1',
+        prompt_answers: {
+          question.id.to_s => { text: 'My answer' }
+        }
+      }
+
+      expect(response).to have_http_status(:redirect)
+      redirect_url = response.redirect_url
+      expect(redirect_url).to include(manage_goals_organization_prompt_path(organization, open_prompt))
+      expect(redirect_url).to include('return_url=')
+      expect(redirect_url).to include('return_text=')
+      expect(flash[:notice]).to eq('Prompt answers saved successfully.')
+
+      # Ensure we land on the page where we can add or link goals to the prompt
+      follow_redirect!
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Associate Goals')
+      expect(response.body).to include('Select one or more goals to associate with this prompt')
+    end
   end
 
   describe 'PATCH /organizations/:organization_id/prompts/:id/close' do

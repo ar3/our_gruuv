@@ -123,7 +123,7 @@
     .d-flex.align-items-center.gap-2
       %span.text-muted.text-decoration-none{style: "cursor: pointer;", "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => quote_popover_content}= "Why associate goals with #{@prompt_template.title}?"
       - if @can_edit
-        = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: close_tab_path(return_text: 'close tab when done'), return_text: 'close tab when done'), class: "btn btn-sm btn-primary", target: '_blank' do
+        = button_tag type: 'submit', form: 'prompt-edit-form', name: 'save_and_manage_goals', value: '1', class: "btn btn-sm btn-primary" do
           %i.bi.bi-plus.me-1
           Manage Goals
   .card-body
@@ -155,9 +155,9 @@
                 = pluralize(goals_for_type.count, 'goal')
             %ul.list-unstyled
               - sorted_goals.each do |goal|
-                = render 'organizations/prompts/goal_hierarchy_item', goal: goal, indent_level: 0, all_descendant_goal_ids: all_descendant_goal_ids
+                = render 'organizations/prompts/goal_hierarchy_item', goal: goal, indent_level: 0, all_descendant_goal_ids: all_descendant_goal_ids, linked_goal_check_ins: @linked_goal_check_ins
     - else
       %em.text-muted No goals associated with this prompt.
       - if @can_edit
-        = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: close_tab_path(return_text: 'close tab when done'), return_text: 'close tab when done'), class: "text-decoration-none", target: '_blank' do
+        = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: edit_organization_prompt_path(@organization, @prompt), return_text: @prompt_template.title), class: "text-decoration-none", target: '_blank' do
           Associate goals

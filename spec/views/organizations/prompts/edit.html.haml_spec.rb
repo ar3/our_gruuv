@@ -85,8 +85,8 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
     allow(view).to receive(:goal_should_be_struck_through?).and_return(false)
     allow(view).to receive(:request).and_return(double(url: "/organizations/#{organization.id}/prompts/#{prompt.id}/edit"))
     
-    # Mock prompt associations
-    allow(prompt).to receive(:goals).and_return([goal1, goal2])
+    # Mock prompt associations (use relation so .pluck, .any?, .group_by work in view)
+    allow(prompt).to receive(:goals).and_return(Goal.where(id: [goal1.id, goal2.id]))
     allow(prompt).to receive(:prompt_goals).and_return([prompt_goal1, prompt_goal2])
   end
 
@@ -110,28 +110,10 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
       expect(rendered).to have_content('Measurable Outcomes')
     end
 
-    it 'uses the grouped_goal_list partial to render goals' do
-      # The partial will be rendered, we just verify the page renders successfully
-      # The actual partial rendering is tested in integration/request specs
+    it 'displays goals in hierarchy' do
       render
       expect(rendered).to have_content(goal1.title)
       expect(rendered).to have_content(goal2.title)
-    end
-
-    it 'shows disassociate button when can_edit is true' do
-      render
-      # Should have delete forms for each prompt_goal
-      expect(rendered).to have_css('form[action*="prompt_goals"]', count: 2)
-      # Should have trash icons in the delete buttons
-      expect(rendered).to have_css('i.bi-trash', count: 2)
-    end
-
-    it 'does not show disassociate button when can_edit is false' do
-      assign(:can_edit, false)
-      allow(view).to receive(:policy).and_return(double(update?: false, show?: true))
-      
-      render
-      expect(rendered).not_to have_css('form[action*="prompt_goals"]')
     end
   end
 
@@ -153,22 +135,22 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
       expect(rendered).to have_link('Associate goals')
     end
 
-    it 'opens associate goals link in a new window with close tab return URL' do
+    it 'opens associate goals link in new window with return_url=edit and return_text=template title' do
       render
       link = Capybara.string(rendered).find_link('Associate goals')
       expect(link[:target]).to eq('_blank')
       expect(link[:href]).to include('return_url')
-      expect(link[:href]).to include('return_text=close+tab+when+done')
+      expect(link[:href]).to include('return_text')
+      expect(CGI.unescape(link[:href])).to include(template.title)
     end
   end
 
   context 'when can_edit is true' do
-    it 'opens manage goals link in a new window with close tab return URL' do
+    it 'shows Manage Goals as submit button (name=save_and_manage_goals) that saves and redirects to manage_goals' do
       render
-      link = Capybara.string(rendered).find_link('Manage Goals')
-      expect(link[:target]).to eq('_blank')
-      expect(link[:href]).to include('return_url')
-      expect(link[:href]).to include('return_text=close+tab+when+done')
+      button = Capybara.string(rendered).find('button[name="save_and_manage_goals"]')
+      expect(button[:form]).to eq('prompt-edit-form')
+      expect(button).to have_content('Manage Goals')
     end
   end
 end

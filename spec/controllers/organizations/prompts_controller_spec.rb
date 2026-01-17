@@ -1,4 +1,5 @@
 require 'rails_helper'
+require 'cgi'
 
 RSpec.describe Organizations::PromptsController, type: :controller do
   let(:person) { create(:person) }
@@ -361,7 +362,35 @@ RSpec.describe Organizations::PromptsController, type: :controller do
         }
         expect(response).to redirect_to(edit_organization_prompt_path(organization, open_prompt))
       end
+    end
 
+    context 'with save_and_manage_goals (name attribute determines redirect, like observations)' do
+      it 'saves answers and redirects to manage_goals with return_url=edit and return_text=template title' do
+        patch :update, params: {
+          organization_id: organization.id,
+          id: open_prompt.id,
+          save_and_manage_goals: '1',
+          prompt_answers: {
+            question.id.to_s => { text: 'My answer' }
+          }
+        }
+
+        answer = open_prompt.reload.prompt_answers.find_by(prompt_question: question)
+        expect(answer.text).to eq('My answer')
+
+        expect(response).to have_http_status(:redirect)
+        redirect_location = response.headers['Location']
+        expect(redirect_location).to include('manage_goals')
+        expect(redirect_location).to include('return_url=')
+        expect(redirect_location).to include('return_text=')
+        expect(redirect_location).to include(organization.id.to_s)
+        expect(redirect_location).to include(open_prompt.id.to_s)
+        expect(CGI.unescape(redirect_location)).to include(open_prompt.prompt_template.title)
+        expect(flash[:notice]).to eq('Prompt answers saved successfully.')
+      end
+    end
+
+    context 'with valid params' do
       skip 'switch_to_view parameter not implemented' do
       it 'redirects to edit page with new view when switch_to_view parameter is present' do
         patch :update, params: {
@@ -623,11 +652,16 @@ RSpec.describe Organizations::PromptsController, type: :controller do
     end
 
     context 'when user is not a CompanyTeammate' do
-      let(:team) { create(:organization, :team, parent: organization) }
-      let(:team_teammate) { create(:teammate, person: person, organization: team) }
+      # Use a CompanyTeammate from another company so current_company_teammate loads
+      # (ApplicationController includes organization: :company_label_preferences, which Team lacks).
+      # ensure_teammate_matches_organization sees org mismatch and redirects with the same alert.
+      let(:other_company) { create(:organization, :company, name: 'Other Company') }
+      let(:other_company_teammate) do
+        CompanyTeammate.find_or_create_by!(person: person, organization: other_company)
+      end
 
       before do
-        session[:current_company_teammate_id] = team_teammate.id
+        session[:current_company_teammate_id] = other_company_teammate.id
       end
 
       it 'redirects to dashboard with alert (org access denied)' do
