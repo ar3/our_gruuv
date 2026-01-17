@@ -23,6 +23,8 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
     assign(:archived_answers, {})
     assign(:can_edit, true)
     assign(:prompt_goals, [prompt_goal1, prompt_goal2])
+    assign(:linked_goals, { goal1.id => goal1, goal2.id => goal2 })
+    assign(:linked_goal_check_ins, {})
     
     # Mock policy
     allow(view).to receive(:policy) do |obj|
@@ -47,6 +49,13 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
       "/organizations/#{args[0].id}/prompts/#{args[1].id}/prompt_goals/#{args[2].id}"
     end
     
+    # Define helper methods that are available in views
+    def view.current_organization
+      @current_organization
+    end
+    
+    view.instance_variable_set(:@current_organization, organization)
+    
     # Mock helper methods
     allow(view).to receive(:format_time_in_user_timezone).and_return("Jan 1, 2024 12:00 PM")
     allow(view).to receive(:goal_category_badge_class).and_return("bg-primary")
@@ -57,6 +66,10 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
     allow(view).to receive(:goal_status_icon).and_return("bi-circle")
     allow(view).to receive(:goal_should_be_struck_through?).and_return(false)
     allow(view).to receive(:request).and_return(double(url: "/organizations/#{organization.id}/prompts/#{prompt.id}/edit"))
+    
+    # Mock prompt associations
+    allow(prompt).to receive(:goals).and_return([goal1, goal2])
+    allow(prompt).to receive(:prompt_goals).and_return([prompt_goal1, prompt_goal2])
   end
 
   it 'renders the edit form' do
@@ -79,7 +92,7 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
       expect(rendered).to have_content('Measurable Outcomes')
     end
 
-    it 'uses the goal_list_item partial for each goal' do
+    it 'uses the grouped_goal_list partial to render goals' do
       # The partial will be rendered, we just verify the page renders successfully
       # The actual partial rendering is tested in integration/request specs
       render
@@ -106,8 +119,10 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
 
   context 'when prompt has no associated goals' do
     before do
-      prompt.prompt_goals.destroy_all
+      PromptGoal.where(prompt: prompt).destroy_all
       prompt.reload
+      allow(prompt).to receive(:goals).and_return([])
+      allow(prompt).to receive(:prompt_goals).and_return([])
     end
 
     it 'shows message about no goals' do

@@ -35,6 +35,10 @@
         %label.form-label.fw-bold
           Create New #{goal_type_label.humanize}
           %small.text-muted (Optional)
+          %i.bi.bi-info-circle.text-muted.ms-2{
+            "data-bs-toggle" => "tooltip",
+            "data-bs-title" => "Create nested goals: Regular lines create goals. Lines starting with numbers, *, •, -, –, or .. create sub-goals linked to the previous goal. A goal followed by sub-goals becomes an objective."
+          }
         %small.text-muted.d-block.mb-2
           Enter one goal title per line. Each will become a new #{goal_type_singular_label} goal linked to this goal.
         = text_area_tag "bulk_goal_titles", "", rows: 5, class: "form-control", placeholder: "Goal 1\nGoal 2\nGoal 3"

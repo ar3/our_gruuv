@@ -916,31 +916,33 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       end
       
       # Check if we should save and navigate to an add-* picker
-      return_url_value = determine_return_url
+      # For save_and_add_* actions, use typed_observation_path_for to get the correct return_url
+      typed_return_url = typed_observation_path_for(@observation, return_url: params[:return_url], return_text: params[:return_text])
       if params[:save_and_add_assignments].present?
         redirect_params = {}
-        redirect_params[:return_url] = return_url_value if return_url_value.present?
+        redirect_params[:return_url] = typed_return_url
         redirect_params[:return_text] = params[:return_text] if params[:return_text].present?
         redirect_to add_assignments_organization_observation_path(organization, @observation, redirect_params)
       elsif params[:save_and_add_aspirations].present?
         redirect_params = {}
-        redirect_params[:return_url] = return_url_value if return_url_value.present?
+        redirect_params[:return_url] = typed_return_url
         redirect_params[:return_text] = params[:return_text] if params[:return_text].present?
         redirect_to add_aspirations_organization_observation_path(organization, @observation, redirect_params)
       elsif params[:save_and_add_abilities].present?
         redirect_params = {}
-        redirect_params[:return_url] = return_url_value if return_url_value.present?
+        redirect_params[:return_url] = typed_return_url
         redirect_params[:return_text] = params[:return_text] if params[:return_text].present?
         redirect_to add_abilities_organization_observation_path(organization, @observation, redirect_params)
       elsif params[:save_and_manage_observees].present?
         redirect_params = {}
-        redirect_params[:return_url] = return_url_value if return_url_value.present?
+        redirect_params[:return_url] = typed_return_url
         redirect_params[:return_text] = params[:return_text] if params[:return_text].present?
         redirect_to manage_observees_organization_observation_path(organization, @observation, redirect_params)
       elsif params[:save_and_convert_to_generic].present?
         @observation.update!(observation_type: 'generic')
         redirect_params = { draft_id: @observation.id }
-        redirect_params[:return_url] = return_url_value if return_url_value.present?
+        # Use the provided return_url or default to observations index
+        redirect_params[:return_url] = params[:return_url] if params[:return_url].present?
         redirect_params[:return_text] = params[:return_text] if params[:return_text].present?
         redirect_to new_organization_observation_path(organization, redirect_params), notice: 'Converted to generic observation. All features are now available.'
       elsif params[:save_draft_and_return].present?
@@ -953,8 +955,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           redirect_to organization_observation_path(organization, @observation), 
                       notice: 'Successfully saved this note. Now close this and go back to check-ins page.'
         else
-          # Save draft and return to the specified return_url, observation show page, or observations index
-          redirect_url = return_url_value || (@observation.present? ? organization_observation_path(organization, @observation) : organization_observations_path(organization))
+          # Save draft and return to the specified return_url, or observation show page, or observations index
+          redirect_url = params[:return_url].presence || (@observation.present? ? organization_observation_path(organization, @observation) : organization_observations_path(organization))
           redirect_to redirect_url, notice: 'Draft saved successfully.'
         end
       else

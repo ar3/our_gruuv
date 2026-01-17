@@ -68,15 +68,37 @@ class GoalLinkForm < Reform::Form
       metadata_hash = { 'notes' => metadata_notes }
     end
     
+    # Determine default goal type for parsing
+    default_goal_type = if goal_type.present?
+      goal_type
+    elsif link_direction == 'incoming'
+      'inspirational_objective'
+    else # outgoing
+      'stepping_stone_activity'
+    end
+    
+    # Parse goals using ParseService
+    parse_service = Goals::ParseService.new(bulk_goal_titles, default_goal_type)
+    parse_result = parse_service.call
+    
+    if parse_result[:errors].any?
+      parse_result[:errors].each { |error| errors.add(:base, error) }
+      return false
+    end
+    
+    parsed_goals = parse_result[:goals]
+    return false if parsed_goals.empty?
+    
     @bulk_create_service = Goals::BulkCreateService.new(
       organization,
       current_person,
       current_teammate,
       linking_goal,
       link_direction.to_sym,
-      titles,
+      [], # Empty titles array since we're using parsed_goals
       goal_type,
-      metadata_hash
+      metadata_hash,
+      parsed_goals: parsed_goals
     )
     
     if @bulk_create_service.call

@@ -3,7 +3,7 @@
 - if active_prompts.any?
   - prompts_indicator = prompts_status_indicator(@teammate)
   = render 'shared/section_header', 
-           title: company_label_plural('prompt', 'Prompts'), 
+           title: "#{company_label_plural('prompt', 'Prompt')} / #{company_label_plural('reflection', 'Reflection')}", 
            icon: 'bi-file-text', 
            description: "Recent #{company_label_for('prompt', 'prompt').pluralize}",
            collapsible: true,

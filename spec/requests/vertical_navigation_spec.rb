@@ -30,6 +30,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
     context 'when on dashboard page' do
       it 'renders vertical navigation with all sections closed' do
         get dashboard_organization_path(organization)
+        follow_redirect! if response.redirect?
         
         expect(response).to have_http_status(:success)
         expect(response.body).to include('vertical-nav')
@@ -193,6 +194,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
     context 'when there are no recent visits' do
       it 'does not render the recently visited section' do
         get dashboard_organization_path(organization)
+        follow_redirect! if response.redirect?
         
         expect(response).to have_http_status(:success)
         expect(response.body).to_not include('navSectionRecentlyVisited')
@@ -218,6 +220,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
       it 'expands the recently visited section when on a visited page' do
         # Visit the dashboard which should be in recent visits
         get dashboard_organization_path(organization)
+        follow_redirect! if response.redirect?
         
         expect(response).to have_http_status(:success)
         # Since we're on the dashboard, which is in recent visits, it should be expanded
@@ -236,6 +239,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
   describe 'header links' do
     it 'links top bar header to about me page' do
       get dashboard_organization_path(organization)
+      follow_redirect! if response.redirect?
       
       expect(response).to have_http_status(:success)
       about_me_path = about_me_organization_company_teammate_path(organization, teammate)
@@ -248,6 +252,7 @@ RSpec.describe 'Vertical Navigation', type: :request do
     
     it 'links vertical nav sidebar header to about me page' do
       get dashboard_organization_path(organization)
+      follow_redirect! if response.redirect?
       
       expect(response).to have_http_status(:success)
       about_me_path = about_me_organization_company_teammate_path(organization, teammate)

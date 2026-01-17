@@ -225,33 +225,38 @@ RSpec.describe 'User Preferences', type: :request do
       user_preference.update_preference(:layout, 'vertical')
       
       get dashboard_organization_path(organization)
+      follow_redirect! if response.redirect?
       
       expect(response).to have_http_status(:success)
       # Verify preference is actually set
       expect(UserPreference.for_person(person).layout).to eq('vertical')
-      # The vertical layout should be selected - verify by checking response renders successfully
-      # The actual HTML content check may vary, but preference should be respected
-      # We verify the preference is set correctly, which is the key behavior
+      # Verify vertical layout is used by checking for vertical nav elements
+      expect(response.body).to include('vertical-nav-top-bar')
+      expect(response.body).to include('vertical-nav')
     end
     
     it 'uses horizontal layout when preference is set to horizontal' do
       user_preference.update_preference(:layout, 'horizontal')
       
       get dashboard_organization_path(organization)
+      follow_redirect! if response.redirect?
       
       expect(response).to have_http_status(:success)
-      # Horizontal layout should not have vertical nav
-      # Note: This test may need adjustment based on actual rendered content
+      # Horizontal layout should have navbar, not vertical nav
+      expect(response.body).to include('navbar navbar-expand-lg')
+      expect(response.body).not_to include('vertical-nav-top-bar')
     end
     
     it 'defaults to vertical layout when no preference exists' do
       user_preference.destroy
       
       get dashboard_organization_path(organization)
+      follow_redirect! if response.redirect?
       
       expect(response).to have_http_status(:success)
-      # Should default to vertical - verify by checking layout helper
-      expect(controller.send(:determine_layout)).to eq('authenticated-vertical-navigation')
+      # Should default to vertical - verify by checking for vertical nav elements
+      expect(response.body).to include('vertical-nav-top-bar')
+      expect(response.body).to include('vertical-nav')
     end
   end
 end

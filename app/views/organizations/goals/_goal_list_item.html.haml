@@ -8,15 +8,21 @@
 - show_disassociate = local_assigns.fetch(:show_disassociate, false)
 - can_edit_prompt = local_assigns.fetch(:can_edit_prompt, false)
 - show_category_badge = local_assigns.fetch(:show_category_badge, false)
+- display_children_goal_hierarchy = local_assigns.fetch(:display_children_goal_hierarchy, false)
+- indent_level = local_assigns.fetch(:indent_level, 0)
+- linked_goals_hash = local_assigns[:linked_goals] || {}
 
 - most_recent_check_in = linked_goal_check_ins[linked_goal.id]
 - status_icon = goal_status_icon(linked_goal)
 - is_struck_through = goal_should_be_struck_through?(linked_goal)
+- indent_px = indent_level * 30
 
-%li.mb-2
+%li.mb-2{style: indent_level > 0 ? "margin-left: #{indent_px}px;" : ""}
   .d-flex.justify-content-between.align-items-start
     .flex-grow-1
       = link_to organization_goal_path(organization, linked_goal), class: "text-decoration-none #{'text-decoration-line-through' if is_struck_through}" do
+        - if indent_level > 0
+          %i.bi.bi-arrow-90deg-down.rotate-270{style: "margin-right: 0.5rem;"}
         %i.bi{class: status_icon, style: "margin-right: 0.5rem;"}
         %strong= linked_goal.title
         - if linked_goal.calculated_target_date.present?
@@ -62,4 +68,15 @@
       - if show_disassociate && prompt_goal && can_edit_prompt && policy(prompt_goal).destroy?
         = button_to organization_prompt_prompt_goal_path(organization, prompt, prompt_goal), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this goal association?" } do
           %i.bi.bi-trash
+- if display_children_goal_hierarchy
+  - child_goals = linked_goal.outgoing_links.includes(:child).map(&:child).compact
+  - if child_goals.any?
+    %ul.list-unstyled.mt-2
+      - child_goals.each do |child_goal|
+        - child_link = linked_goal.outgoing_links.find_by(child_id: child_goal.id)
+        - child_linked_goals = linked_goals_hash.merge(child_goal.id => child_goal)
+        - child_goal.outgoing_links.includes(:child).each do |child_outgoing_link|
+          - child_linked_goals[child_outgoing_link.child_id] = child_outgoing_link.child if child_outgoing_link.child
+        - # Children of prompt goals are not directly associated with the prompt, so pass nil for prompt_goal
+        = render 'organizations/goals/goal_list_item', goal: child_goal, link: child_link, linked_goal_check_ins: linked_goal_check_ins, organization: organization, show_unlink: show_unlink, parent_goal: linked_goal, parent_goal_id: linked_goal.id, return_url: return_url, return_text: return_text, display_children_goal_hierarchy: display_children_goal_hierarchy, indent_level: indent_level + 1, linked_goals: child_linked_goals, prompt: prompt, prompt_goal: nil, show_disassociate: false, can_edit_prompt: can_edit_prompt, show_category_badge: show_category_badge
 

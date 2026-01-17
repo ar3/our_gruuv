@@ -28,6 +28,7 @@ RSpec.describe 'Horizontal Navigation', type: :request do
   describe 'header links' do
     it 'links navbar brand to about me page' do
       get dashboard_organization_path(organization)
+      follow_redirect! if response.redirect?
       
       expect(response).to have_http_status(:success)
       about_me_path = about_me_organization_company_teammate_path(organization, teammate)

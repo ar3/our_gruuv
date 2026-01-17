@@ -6,6 +6,12 @@
 - parent_goal = local_assigns[:parent_goal] || @goal
 - return_url = local_assigns[:return_url] || (defined?(request) ? request.url : '#')
 - return_text = local_assigns[:return_text] || 'Goal'
+- display_children_goal_hierarchy = local_assigns.fetch(:display_children_goal_hierarchy, false)
+- prompt = local_assigns[:prompt]
+- can_edit_prompt = local_assigns.fetch(:can_edit_prompt, false)
+- show_category_badge = local_assigns.fetch(:show_category_badge, false)
+- show_disassociate = local_assigns.fetch(:show_disassociate, false)
+- prompt_goals_by_goal_id = local_assigns[:prompt_goals_by_goal_id] || {}
 
 - valid_links = links.select { |link| (linked_goals[link.child_id] || linked_goals[link.parent_id] || link.child || link.parent).present? }
 - grouped_links = {}
@@ -39,4 +45,5 @@
         - sorted_links.each do |link|
           - linked_goal = linked_goals[link.child_id] || linked_goals[link.parent_id] || link.child || link.parent
           - next unless linked_goal.present?
-          = render 'goal_list_item', goal: linked_goal, link: link, linked_goal_check_ins: linked_goal_check_ins, organization: organization, show_unlink: show_unlink, parent_goal: parent_goal, parent_goal_id: parent_goal.id, return_url: return_url, return_text: return_text
+          - prompt_goal = prompt_goals_by_goal_id[linked_goal.id] || (link.respond_to?(:prompt_goal) ? link.prompt_goal : nil)
+          = render 'organizations/goals/goal_list_item', goal: linked_goal, link: link, linked_goal_check_ins: linked_goal_check_ins, organization: organization, show_unlink: show_unlink, parent_goal: parent_goal, parent_goal_id: parent_goal&.id, return_url: return_url, return_text: return_text, display_children_goal_hierarchy: display_children_goal_hierarchy, linked_goals: linked_goals, prompt: prompt, prompt_goal: prompt_goal, can_edit_prompt: can_edit_prompt, show_category_badge: show_category_badge, show_disassociate: show_disassociate

@@ -45,11 +45,24 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
 
     # Handle bulk goal creation
     owner_teammate = @prompt.company_teammate
-    bulk_goal_titles.each do |title|
+    
+    # Parse goals using ParseService
+    default_goal_type = 'stepping_stone_activity'
+    parse_service = Goals::ParseService.new(bulk_goal_titles.join("\n"), default_goal_type)
+    parse_result = parse_service.call
+    
+    if parse_result[:errors].any?
+      errors.concat(parse_result[:errors])
+    end
+    
+    parsed_goals = parse_result[:goals]
+    created_goal_map = {} # Maps parent_index to created Goal objects
+    
+    parsed_goals.each_with_index do |parsed_goal, index|
       goal = Goal.new(
-        title: title,
+        title: parsed_goal[:title].to_s.strip,
         description: '',
-        goal_type: 'stepping_stone_activity',
+        goal_type: parsed_goal[:goal_type] || default_goal_type,
         most_likely_target_date: Date.current + 90.days,
         earliest_target_date: nil,
         latest_target_date: nil,
@@ -69,16 +82,36 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
       goal.owner_id = owner_teammate.id
       
       if goal.save
-        prompt_goal = @prompt.prompt_goals.build(goal: goal)
-        authorize prompt_goal
+        created_goal_map[index] = goal
         
-        if prompt_goal.save
-          success_count += 1
+        # If this goal has a parent_index, it's a sub - link only to parent dom
+        if parsed_goal[:parent_index].present?
+          parent_goal = created_goal_map[parsed_goal[:parent_index]]
+          if parent_goal
+            parent_link = GoalLink.new(
+              parent: parent_goal,
+              child: goal
+            )
+            parent_link.skip_circular_dependency_check = true
+            unless parent_link.save
+              errors << "Failed to create parent link for goal '#{goal.title}': #{parent_link.errors.full_messages.join(', ')}"
+            end
+          else
+            errors << "Parent goal not found for '#{goal.title}'"
+          end
         else
-          errors.concat(prompt_goal.errors.full_messages)
+          # This is a dom - associate with prompt
+          prompt_goal = @prompt.prompt_goals.build(goal: goal)
+          authorize prompt_goal
+          
+          if prompt_goal.save
+            success_count += 1
+          else
+            errors.concat(prompt_goal.errors.full_messages)
+          end
         end
       else
-        errors.concat(goal.errors.full_messages.map { |msg| "#{title}: #{msg}" })
+        errors.concat(goal.errors.full_messages.map { |msg| "#{parsed_goal[:title]}: #{msg}" })
       end
     end
 

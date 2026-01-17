@@ -58,7 +58,7 @@ RSpec.describe 'Organizations::Seats', type: :request do
       
       expect(response.body).to include('Table')
       expect(response.body).to include('Table with Employee')
-      expect(response.body).to include('Seat - MAAP Health')
+      expect(response.body).to include('MAAP Maturity/Health View')
     end
 
     it 'displays all filter options' do

@@ -20,7 +20,12 @@
     = form_with url: organization_prompt_prompt_goals_path(@organization, @prompt), method: :post, local: true do |f|
       
       .mb-4.mt-4
-        %label.form-label.fw-bold Create New Goals
+        %label.form-label.fw-bold
+          Create New Goals
+          %i.bi.bi-info-circle.text-muted.ms-2{
+            "data-bs-toggle" => "tooltip",
+            "data-bs-title" => "Create nested goals: Regular lines create goals. Lines starting with numbers, *, •, -, –, or .. create sub-goals linked to the previous goal. A goal followed by sub-goals becomes an objective."
+          }
         %small.text-muted.d-block.mb-2
           Enter one goal per line. Each goal will be created as a stepping stone goal with a due date 90 days from now.
         = text_area_tag "bulk_goal_titles", nil, 
