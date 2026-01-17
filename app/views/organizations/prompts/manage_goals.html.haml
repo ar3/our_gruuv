@@ -18,6 +18,8 @@
         Select one or more goals to associate with this prompt.
   .card-body
     = form_with url: organization_prompt_prompt_goals_path(@organization, @prompt), method: :post, local: true do |f|
+      = hidden_field_tag :return_url, @return_url if @return_url.present?
+      = hidden_field_tag :return_text, @return_text if @return_text.present?
       
       .mb-4.mt-4
         %label.form-label.fw-bold

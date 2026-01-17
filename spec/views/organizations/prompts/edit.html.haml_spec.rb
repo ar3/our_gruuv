@@ -1,4 +1,5 @@
 require 'rails_helper'
+require 'cgi'
 
 RSpec.describe 'organizations/prompts/edit', type: :view do
   let(:person) { create(:person) }
@@ -41,7 +42,24 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
     allow(view).to receive(:organization_prompts_path).and_return("/organizations/#{organization.id}/prompts")
     allow(view).to receive(:edit_organization_prompt_path).and_return("/organizations/#{organization.id}/prompts/#{prompt.id}/edit")
     allow(view).to receive(:organization_prompt_path).and_return("/organizations/#{organization.id}/prompts/#{prompt.id}")
-    allow(view).to receive(:manage_goals_organization_prompt_path).and_return("/organizations/#{organization.id}/prompts/#{prompt.id}/manage_goals")
+    allow(view).to receive(:manage_goals_organization_prompt_path) do |org, prompt_obj, options = {}|
+      base_path = "/organizations/#{org.id}/prompts/#{prompt_obj.id}/manage_goals"
+      if options.present?
+        query_params = options.map { |k, v| "#{k}=#{CGI.escape(v.to_s)}" }.join('&')
+        "#{base_path}?#{query_params}"
+      else
+        base_path
+      end
+    end
+    allow(view).to receive(:close_tab_path) do |options = {}|
+      base_path = "/close_tab"
+      if options.present?
+        query_params = options.map { |k, v| "#{k}=#{CGI.escape(v.to_s)}" }.join('&')
+        "#{base_path}?#{query_params}"
+      else
+        base_path
+      end
+    end
     allow(view).to receive(:organization_goal_path).and_wrap_original do |method, *args|
       "/organizations/#{args[0].id}/goals/#{args[1].id}"
     end
@@ -133,6 +151,24 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
     it 'shows link to associate goals when can_edit is true' do
       render
       expect(rendered).to have_link('Associate goals')
+    end
+
+    it 'opens associate goals link in a new window with close tab return URL' do
+      render
+      link = Capybara.string(rendered).find_link('Associate goals')
+      expect(link[:target]).to eq('_blank')
+      expect(link[:href]).to include('return_url')
+      expect(link[:href]).to include('return_text=close+tab+when+done')
+    end
+  end
+
+  context 'when can_edit is true' do
+    it 'opens manage goals link in a new window with close tab return URL' do
+      render
+      link = Capybara.string(rendered).find_link('Manage Goals')
+      expect(link[:target]).to eq('_blank')
+      expect(link[:href]).to include('return_url')
+      expect(link[:href]).to include('return_text=close+tab+when+done')
     end
   end
 end

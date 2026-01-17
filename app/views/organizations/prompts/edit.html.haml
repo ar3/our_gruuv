@@ -123,7 +123,7 @@
     .d-flex.align-items-center.gap-2
       %span.text-muted.text-decoration-none{style: "cursor: pointer;", "data-bs-toggle" => "popover", "data-bs-trigger" => "hover focus", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => quote_popover_content}= "Why associate goals with #{@prompt_template.title}?"
       - if @can_edit
-        = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: request.url, return_text: 'Edit Prompt'), class: "btn btn-sm btn-primary" do
+        = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: close_tab_path(return_text: 'close tab when done'), return_text: 'close tab when done'), class: "btn btn-sm btn-primary", target: '_blank' do
           %i.bi.bi-plus.me-1
           Manage Goals
   .card-body
@@ -150,5 +150,5 @@
     - else
       %em.text-muted No goals associated with this prompt.
       - if @can_edit
-        = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: request.url, return_text: 'Edit Prompt'), class: "text-decoration-none" do
+        = link_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: close_tab_path(return_text: 'close tab when done'), return_text: 'close tab when done'), class: "text-decoration-none", target: '_blank' do
           Associate goals

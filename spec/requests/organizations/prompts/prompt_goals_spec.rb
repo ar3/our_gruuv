@@ -78,6 +78,16 @@ RSpec.describe 'Organizations::Prompts::PromptGoals', type: :request do
         expect(flash[:notice]).to include('successfully associated')
       end
 
+      it 'redirects to return_url when provided' do
+        return_url = '/close_tab?return_text=close+tab+when+done'
+        post organization_prompt_prompt_goals_path(organization, prompt), params: {
+          bulk_goal_titles: "New Goal",
+          return_url: return_url
+        }
+        expect(response).to redirect_to(return_url)
+        expect(flash[:notice]).to include('successfully associated')
+      end
+
       context 'when validation was failing' do
         it 'now succeeds after fixing owner_type assignment' do
           # This test verifies that the validation error has been fixed
@@ -111,6 +121,16 @@ RSpec.describe 'Organizations::Prompts::PromptGoals', type: :request do
         expect(response).to redirect_to(edit_organization_prompt_path(organization, prompt))
         expect(flash[:notice]).to include('successfully associated')
       end
+
+      it 'redirects to return_url when provided' do
+        return_url = '/close_tab?return_text=close+tab+when+done'
+        post organization_prompt_prompt_goals_path(organization, prompt), params: {
+          goal_ids: [goal1.id],
+          return_url: return_url
+        }
+        expect(response).to redirect_to(return_url)
+        expect(flash[:notice]).to include('successfully associated')
+      end
     end
 
     context 'with both goal_ids and bulk_goal_titles' do
@@ -122,6 +142,17 @@ RSpec.describe 'Organizations::Prompts::PromptGoals', type: :request do
           }
         }.to change { Goal.count }.by(2)
           .and change { PromptGoal.count }.by(3)
+      end
+
+      it 'redirects to return_url when provided' do
+        return_url = '/close_tab?return_text=close+tab+when+done'
+        post organization_prompt_prompt_goals_path(organization, prompt), params: {
+          goal_ids: [goal1.id],
+          bulk_goal_titles: "New Goal",
+          return_url: return_url
+        }
+        expect(response).to redirect_to(return_url)
+        expect(flash[:notice]).to include('successfully associated')
       end
     end
 

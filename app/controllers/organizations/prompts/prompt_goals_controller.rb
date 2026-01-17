@@ -23,7 +23,8 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
     current_teammate = current_person.teammates.find_by(organization: company)
     
     unless current_teammate.is_a?(CompanyTeammate)
-      redirect_to edit_organization_prompt_path(@organization, @prompt),
+      redirect_url = params[:return_url].presence || edit_organization_prompt_path(@organization, @prompt)
+      redirect_to redirect_url,
                   alert: 'You must be a company teammate to associate goals.'
       return
     end
@@ -115,11 +116,14 @@ class Organizations::Prompts::PromptGoalsController < Organizations::Organizatio
       end
     end
 
+    # Determine redirect URL - use return_url if provided, otherwise default to edit prompt page
+    redirect_url = params[:return_url].presence || edit_organization_prompt_path(@organization, @prompt)
+    
     if success_count > 0 && errors.empty?
-      redirect_to edit_organization_prompt_path(@organization, @prompt),
+      redirect_to redirect_url,
                   notice: "#{success_count} #{'goal'.pluralize(success_count)} #{success_count == 1 ? 'was' : 'were'} successfully associated."
     elsif success_count > 0 && errors.any?
-      redirect_to edit_organization_prompt_path(@organization, @prompt),
+      redirect_to redirect_url,
                   alert: "Some goals were associated, but there were errors: #{errors.join(', ')}"
     else
       redirect_to manage_goals_organization_prompt_path(@organization, @prompt, return_url: params[:return_url], return_text: params[:return_text]),

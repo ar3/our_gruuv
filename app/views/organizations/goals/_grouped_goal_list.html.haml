@@ -35,7 +35,6 @@
       - date_day = linked_goal&.most_likely_target_date&.day || 99
       - goal_title = linked_goal&.title&.downcase || ''
       - [parent_goal_title, date_day, goal_title]
-    end
     .mb-4
       %h6.mb-2
         = goal_type_labels[goal_type]

@@ -544,6 +544,19 @@ RSpec.describe Organizations::PromptsController, type: :controller do
       expect(goal_status[:already_linked]).to be true
     end
 
+    it 'assigns return_url and return_text from params' do
+      return_url = '/close_tab?return_text=close+tab+when+done'
+      return_text = 'close tab when done'
+      get :manage_goals, params: { 
+        organization_id: organization.id, 
+        id: open_prompt.id,
+        return_url: return_url,
+        return_text: return_text
+      }
+      expect(assigns(:return_url)).to eq(return_url)
+      expect(assigns(:return_text)).to eq(return_text)
+    end
+
     context 'when prompt is closed' do
       let(:closed_prompt) { create(:prompt, :closed, company_teammate: teammate, prompt_template: template) }
 

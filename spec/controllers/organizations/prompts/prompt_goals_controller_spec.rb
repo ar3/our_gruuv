@@ -34,6 +34,18 @@ RSpec.describe Organizations::Prompts::PromptGoalsController, type: :controller 
         expect(response).to redirect_to(edit_organization_prompt_path(organization, prompt))
         expect(flash[:notice]).to include('successfully associated')
       end
+
+      it 'redirects to return_url when provided' do
+        return_url = '/close_tab?return_text=close+tab+when+done'
+        post :create, params: {
+          organization_id: organization.id,
+          prompt_id: prompt.id,
+          goal_ids: [goal1.id],
+          return_url: return_url
+        }
+        expect(response).to redirect_to(return_url)
+        expect(flash[:notice]).to include('successfully associated')
+      end
     end
 
     context 'with empty goal_ids' do
@@ -107,6 +119,18 @@ RSpec.describe Organizations::Prompts::PromptGoalsController, type: :controller 
         expect(prompt.goals).to include(*created_goals)
       end
 
+      it 'redirects to return_url when provided after creating goals' do
+        return_url = '/close_tab?return_text=close+tab+when+done'
+        post :create, params: {
+          organization_id: organization.id,
+          prompt_id: prompt.id,
+          bulk_goal_titles: "New Goal",
+          return_url: return_url
+        }
+        expect(response).to redirect_to(return_url)
+        expect(flash[:notice]).to include('successfully associated')
+      end
+
       it 'handles empty lines and whitespace' do
         expect {
           post :create, params: {
@@ -150,6 +174,21 @@ RSpec.describe Organizations::Prompts::PromptGoalsController, type: :controller 
         expect(new_goals.map(&:goal_type).uniq).to eq(['stepping_stone_activity'])
         expect(new_goals.map(&:most_likely_target_date).uniq).to eq([Date.current + 90.days])
       end
+
+      it 'redirects to return_url when provided with both goal_ids and bulk_goal_titles' do
+        return_url = '/close_tab?return_text=close+tab+when+done'
+        goal1_id = goal1.id
+        
+        post :create, params: {
+          organization_id: organization.id,
+          prompt_id: prompt.id,
+          goal_ids: [goal1_id],
+          bulk_goal_titles: "New Goal",
+          return_url: return_url
+        }
+        expect(response).to redirect_to(return_url)
+        expect(flash[:notice]).to include('successfully associated')
+      end
     end
 
     context 'with empty goal_ids and empty bulk_goal_titles' do
@@ -181,6 +220,17 @@ RSpec.describe Organizations::Prompts::PromptGoalsController, type: :controller 
         expect(Goal.last.title).to eq('Valid Goal')
         expect(response).to redirect_to(edit_organization_prompt_path(organization, prompt))
         expect(flash[:notice]).to be_present
+      end
+
+      it 'redirects to return_url when provided even with partial errors' do
+        return_url = '/close_tab?return_text=close+tab+when+done'
+        post :create, params: {
+          organization_id: organization.id,
+          prompt_id: prompt.id,
+          bulk_goal_titles: "Valid Goal",
+          return_url: return_url
+        }
+        expect(response).to redirect_to(return_url)
       end
     end
   end
