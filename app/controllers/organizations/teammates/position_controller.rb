@@ -60,8 +60,8 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     # Load check-ins for the view (in case validation fails and we render :show)
     @check_ins = PositionCheckIn
                    .where(teammate: @teammate)
-                   .includes(:position_check_in_ratings)
-                   .order(created_at: :desc)
+                   .includes(:finalized_by, :manager_completed_by, :employment_tenure)
+                   .order(check_in_started_on: :desc)
     @employment_tenures = @teammate.employment_tenures
       .includes(:position, :manager_teammate, :seat)
       .order(started_at: :desc)

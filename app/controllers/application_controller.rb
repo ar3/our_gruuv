@@ -424,6 +424,9 @@ class ApplicationController < ActionController::Base
     # Skip tracking if no current person
     return unless current_person
     
+    # Skip tracking when impersonating
+    return if impersonating?
+    
     # Skip tracking for root path
     return if request.path == '/' || request.path == root_path
     

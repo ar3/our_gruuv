@@ -4,6 +4,7 @@ class PositionCheckIn < ApplicationRecord
   belongs_to :teammate
   belongs_to :employment_tenure
   belongs_to :manager_completed_by, class_name: 'Person', optional: true
+  belongs_to :finalized_by, class_name: 'Person', optional: true
   
   # Virtual attribute for form handling
   attr_accessor :status
