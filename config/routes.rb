@@ -529,6 +529,9 @@ end
   get '/milestones', to: 'pages#milestones_overview', as: :milestones_overview
   get '/huddles-overview', to: 'pages#huddles_overview', as: :huddles_overview
   get '/accountability', to: 'pages#accountability', as: :accountability
+  
+  # Close tab page (for operations that open new tabs)
+  get '/close_tab', to: 'pages#close_tab', as: :close_tab
 
   # Public MAAP routes
   get '/public_maap', to: 'public_maap/index#index', as: :public_maap

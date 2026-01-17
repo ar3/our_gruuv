@@ -70,4 +70,9 @@ class PagesController < ApplicationController
   def accountability
     render layout: determine_layout
   end
+
+  def close_tab
+    @return_text = params[:return_text] || 'previous page'
+    render layout: 'overlay'
+  end
 end 
