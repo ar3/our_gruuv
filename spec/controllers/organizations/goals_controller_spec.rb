@@ -406,6 +406,36 @@ RSpec.describe Organizations::GoalsController, type: :controller do
         expect(form_errors[:owner_id].present? || form_errors[:owner].present?).to be true
       end
     end
+    
+    context 'when current_teammate is nil' do
+      let(:person_without_teammate) { create(:person) }
+      let(:department) { create(:organization, :department, parent: company) }
+      let(:department_teammate) { create(:teammate, person: person_without_teammate, organization: department, type: 'DepartmentTeammate') }
+      
+      before do
+        # Create a DepartmentTeammate but no CompanyTeammate for this person in the target company
+        department_teammate
+        # Sign in as person - this will create a CompanyTeammate for the session
+        sign_in_as_teammate(person_without_teammate, company)
+        # The controller will find the CompanyTeammate created by sign_in_as_teammate
+        # To test the nil scenario, we need to stub the form's current_teammate to be nil
+        # after the controller sets it
+        allow_any_instance_of(GoalForm).to receive(:current_teammate=).and_call_original
+        allow_any_instance_of(GoalForm).to receive(:current_teammate).and_return(nil)
+      end
+      
+      it 'fails validation when current_teammate is nil' do
+        expect {
+          post :create, params: { organization_id: company.id, goal: valid_attributes }
+        }.not_to change(Goal, :count)
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:new)
+        form_errors = assigns(:form).errors
+        # Check for the validation error
+        expect(form_errors[:base]).to include('You must be a company teammate to create goals')
+      end
+    end
   end
   
   describe 'GET #edit' do

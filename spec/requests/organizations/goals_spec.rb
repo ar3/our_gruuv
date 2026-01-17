@@ -89,6 +89,66 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(flash[:alert]).to be_present
       expect(flash[:alert]).to include('Title')
     end
+    
+    it 'sets creator to viewing teammate when creating goal' do
+      expect {
+        post organization_goals_path(organization), params: {
+          goal: {
+            title: 'New Goal',
+            description: 'Test description',
+            goal_type: 'inspirational_objective',
+            privacy_level: 'only_creator_owner_and_managers',
+            owner_type: 'CompanyTeammate',
+            owner_id: teammate.id
+          }
+        }
+      }.to change(Goal, :count).by(1)
+      
+      goal = Goal.last
+      expect(goal.creator_id).to eq(teammate.id)
+      expect(goal.creator).to be_a(CompanyTeammate)
+      expect(goal.owner_id).to eq(teammate.id)
+      expect(goal.owner).to be_a(CompanyTeammate)
+    end
+    
+    context 'when current_teammate is missing' do
+      let(:person_without_teammate) { create(:person) }
+      let(:department) { create(:organization, :department, parent: organization) }
+      let(:department_teammate) { create(:teammate, person: person_without_teammate, organization: department, type: 'DepartmentTeammate') }
+      
+      before do
+        # Create a DepartmentTeammate but no CompanyTeammate for this person
+        department_teammate
+        # Sign in as person - this will create a CompanyTeammate, so we need to delete it
+        # to simulate the scenario where person doesn't have a CompanyTeammate
+        signed_in_teammate = sign_in_as_teammate_for_request(person_without_teammate, organization)
+        # Delete the CompanyTeammate that was created by sign_in_as_teammate_for_request
+        # This simulates the scenario where person only has a DepartmentTeammate
+        signed_in_teammate.destroy
+        # Stub current_person to return the person so the controller can find teammates
+        allow_any_instance_of(ApplicationController).to receive(:current_person).and_return(person_without_teammate)
+      end
+      
+      it 'fails with error when current_teammate is missing' do
+        expect {
+          post organization_goals_path(organization), params: {
+            goal: {
+              title: 'New Goal',
+              description: 'Test description',
+              goal_type: 'inspirational_objective',
+              privacy_level: 'only_creator_owner_and_managers',
+              owner_type: 'CompanyTeammate',
+              owner_id: teammate.id
+            }
+          }
+        }.not_to change(Goal, :count)
+        
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to render_template(:new)
+        expect(flash[:alert]).to be_present
+        expect(flash[:alert]).to include('You must be a company teammate to create goals')
+      end
+    end
   end
   
   describe 'GET /organizations/:organization_id/goals/:id/done' do

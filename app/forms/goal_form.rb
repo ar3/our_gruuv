@@ -23,10 +23,12 @@ class GoalForm < Reform::Form
   # Target dates are optional
   validate :date_ordering
   validate :owner_selection
+  validate :owner_exists
   validate :owner_type_valid
   validate :privacy_level_for_owner_type
   validate :goal_type_inclusion
   validate :privacy_level_inclusion
+  validate :current_teammate_present_for_new_goals
   
   # Override validate to parse owner selection before validations run
   def validate(*args)
@@ -45,7 +47,8 @@ class GoalForm < Reform::Form
     super
     
     # Set creator to current_teammate
-    if model.new_record?
+    # Only set if current_teammate is present (validation should catch if it's missing)
+    if model.new_record? && current_teammate.present?
       model.creator = current_teammate
     end
     
@@ -55,7 +58,15 @@ class GoalForm < Reform::Form
     model.owner_id = owner_id
     
     # Save the model
-    model.save
+    if model.save
+      true
+    else
+      # Copy model errors to form errors so they're displayed
+      model.errors.each do |error|
+        errors.add(error.attribute, error.message)
+      end
+      false
+    end
   end
   
   # Helper method to get current person (passed from controller)
@@ -181,6 +192,46 @@ class GoalForm < Reform::Form
     
     unless Goal.privacy_levels.key?(privacy_level)
       errors.add(:privacy_level, 'is not included in the list')
+    end
+  end
+  
+  def current_teammate_present_for_new_goals
+    return unless model.new_record?
+    return if current_teammate.present?
+    
+    errors.add(:base, 'You must be a company teammate to create goals')
+  end
+  
+  def owner_exists
+    return unless owner_type && owner_id
+    
+    # Parse owner if it's in the unified format
+    parse_owner_selection if owner_id.is_a?(String) && owner_id.include?('_')
+    
+    return unless owner_type && owner_id
+    
+    # Reject 'Teammate' - it must be 'CompanyTeammate'
+    if owner_type == 'Teammate'
+      # Error will be added in owner_type_valid
+      return
+    end
+    
+    # Only allow CompanyTeammate, Company, Department, or Team as owner types
+    unless owner_type.in?(['CompanyTeammate', 'Company', 'Department', 'Team', 'Organization'])
+      # Error will be added in owner_type_valid
+      return
+    end
+    
+    # Load the owner to check if it exists
+    owner = case owner_type
+            when 'CompanyTeammate'
+              Teammate.find_by(id: owner_id)
+            when 'Organization', 'Company', 'Department', 'Team'
+              Organization.find_by(id: owner_id)
+            end
+    
+    unless owner
+      errors.add(:owner_id, 'must exist')
     end
   end
   

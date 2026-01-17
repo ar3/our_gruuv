@@ -92,6 +92,64 @@ RSpec.describe GoalForm, type: :form do
       expect(form.errors[:privacy_level]).to include('is not included in the list')
     end
     
+    it 'validates current_teammate is present for new goals' do
+      form.title = "Test Goal"
+      form.goal_type = "inspirational_objective"
+      form.earliest_target_date = Date.today + 1.month
+      form.most_likely_target_date = Date.today + 2.months
+      form.latest_target_date = Date.today + 3.months
+      form.privacy_level = "only_creator"
+      form.owner_type = "CompanyTeammate"
+      form.owner_id = creator_teammate.id
+      form.current_teammate = nil
+      
+      expect(form).not_to be_valid
+      expect(form.errors[:base]).to include('You must be a company teammate to create goals')
+    end
+    
+    it 'does not validate current_teammate for existing goals' do
+      existing_goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
+      existing_form = GoalForm.new(existing_goal)
+      existing_form.current_person = person
+      existing_form.current_teammate = nil
+      existing_form.title = "Updated Goal"
+      existing_form.goal_type = "inspirational_objective"
+      existing_form.privacy_level = "only_creator"
+      existing_form.owner_type = "CompanyTeammate"
+      existing_form.owner_id = creator_teammate.id
+      
+      # Should be valid even without current_teammate for existing goals
+      expect(existing_form).to be_valid
+    end
+    
+    it 'validates owner exists' do
+      form.title = "Test Goal"
+      form.goal_type = "inspirational_objective"
+      form.earliest_target_date = Date.today + 1.month
+      form.most_likely_target_date = Date.today + 2.months
+      form.latest_target_date = Date.today + 3.months
+      form.privacy_level = "only_creator"
+      form.owner_type = "CompanyTeammate"
+      form.owner_id = 999999 # Non-existent ID
+      
+      expect(form).not_to be_valid
+      expect(form.errors[:owner_id]).to include('must exist')
+    end
+    
+    it 'validates owner exists for Organization owner type' do
+      form.title = "Test Goal"
+      form.goal_type = "inspirational_objective"
+      form.earliest_target_date = Date.today + 1.month
+      form.most_likely_target_date = Date.today + 2.months
+      form.latest_target_date = Date.today + 3.months
+      form.privacy_level = "only_creator"
+      form.owner_type = "Company"
+      form.owner_id = 999999 # Non-existent ID
+      
+      expect(form).not_to be_valid
+      expect(form.errors[:owner_id]).to include('must exist')
+    end
+    
     context 'with CompanyTeammate owner' do
       before do
         form.owner_type = 'CompanyTeammate'
