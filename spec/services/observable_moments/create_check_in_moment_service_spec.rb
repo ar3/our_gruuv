@@ -4,7 +4,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
   let(:company) { create(:organization, :company) }
   let(:teammate) { create(:teammate, organization: company) }
   let(:finalized_by) { create(:person) }
-  let(:finalizer_teammate) { create(:teammate, organization: company, person: finalized_by) }
+  let!(:finalizer_teammate) { create(:teammate, organization: company, person: finalized_by) }
   
   describe '.call for PositionCheckIn' do
     let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: company) }
@@ -38,7 +38,8 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
         moment = result.value
         expect(moment.moment_type).to eq('check_in_completed')
         expect(moment.momentable).to eq(current_check_in)
-        expect(moment.primary_potential_observer).to eq(finalizer_teammate)
+        expect(moment.primary_potential_observer).to be_a(Teammate)
+        expect(moment.primary_potential_observer.id).to eq(finalizer_teammate.id)
         expect(moment.metadata['official_rating']).to eq('2')
         expect(moment.metadata['previous_rating']).to eq('1')
       end

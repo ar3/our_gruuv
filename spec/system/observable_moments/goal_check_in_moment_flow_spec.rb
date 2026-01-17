@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Goal Check-In Observable Moment Flow', type: :system do
   let(:company) { create(:organization, :company) }
   let(:person) { create(:person) }
-  let(:teammate) { create(:teammate, organization: company, person: person) }
+  let!(:teammate) { create(:teammate, organization: company, person: person) }
   let(:goal) { create(:goal, owner: teammate, company: company, started_at: Time.current) }
   
   before do
@@ -39,8 +39,8 @@ RSpec.describe 'Goal Check-In Observable Moment Flow', type: :system do
       expect(moment.metadata['confidence_delta']).to eq(25)
       
       # Visit dashboard
-      visit get_shit_done_organization_path(company)
-      expect(page).to have_content('Goal Check-In')
+      visit organization_get_shit_done_path(company)
+      expect(page).to have_content('Goal Check-in', normalize_ws: true)
     end
     
     it 'does not create moment when confidence changed by only 15 points' do

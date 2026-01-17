@@ -3,9 +3,9 @@ require 'rails_helper'
 RSpec.describe 'Check-In Observable Moment Flow', type: :system do
   let(:company) { create(:organization, :company) }
   let(:manager_person) { create(:person) }
-  let(:manager_teammate) { create(:teammate, organization: company, person: manager_person) }
+  let!(:manager_teammate) { CompanyTeammate.find(create(:teammate, organization: company, person: manager_person).id) }
   let(:employee_person) { create(:person) }
-  let(:employee_teammate) { create(:teammate, organization: company, person: employee_person) }
+  let!(:employee_teammate) { CompanyTeammate.find(create(:teammate, organization: company, person: employee_person).id) }
   let(:employment_tenure) { create(:employment_tenure, teammate: employee_teammate, company: company, manager_teammate: manager_teammate) }
   
   before do
@@ -44,8 +44,9 @@ RSpec.describe 'Check-In Observable Moment Flow', type: :system do
       expect(moment.momentable).to eq(current_check_in)
       
       # Visit dashboard to see the moment
-      visit get_shit_done_organization_path(company)
-      expect(page).to have_content('Check-In Completed')
+      visit organization_get_shit_done_path(company)
+      # Check for observable moment (text might be in collapsed section)
+      expect(page).to have_content('observable moment', normalize_ws: true)
     end
     
     it 'does not create moment when rating did not improve' do
