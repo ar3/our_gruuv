@@ -2,9 +2,9 @@ require 'rails_helper'
 
 RSpec.describe Finalizers::AssignmentCheckInFinalizer do
   let(:organization) { create(:organization) }
-  let(:manager) { create(:person) }
+  let(:manager_person) { create(:person) }
   let(:employee) { create(:person) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let(:manager_teammate) { CompanyTeammate.create!(person: manager_person, organization: organization) }
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
   
@@ -110,7 +110,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         expect(assignment_check_in.official_rating).to eq('meeting')
         expect(assignment_check_in.shared_notes).to eq('Great work on this assignment')
         expect(assignment_check_in.official_check_in_completed_at).to be_present
-        expect(assignment_check_in.finalized_by).to eq(manager)
+        expect(assignment_check_in.finalized_by_teammate).to eq(manager_teammate)
       end
       
       it 'returns Result.ok with correct data structure' do
@@ -135,7 +135,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
                  assignment: assignment,
                  official_rating: 'working_to_meet',
                  official_check_in_completed_at: 1.month.ago,
-                 finalized_by: manager)
+                 finalized_by_teammate: manager_teammate)
         end
         
         it 'creates observable moment when rating improved' do
@@ -159,7 +159,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
                  assignment: assignment,
                  official_rating: 'exceeding',
                  official_check_in_completed_at: 1.month.ago,
-                 finalized_by: manager)
+                 finalized_by_teammate: manager_teammate)
         end
         
         it 'does not create observable moment when rating decreased' do
@@ -284,7 +284,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         expect(assignment_check_in.official_rating).to eq('meeting')
         expect(assignment_check_in.shared_notes).to eq('Great work on this assignment')
         expect(assignment_check_in.official_check_in_completed_at).to be_present
-        expect(assignment_check_in.finalized_by).to eq(manager)
+        expect(assignment_check_in.finalized_by_teammate).to eq(manager_teammate)
       end
     end
     

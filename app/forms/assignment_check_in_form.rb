@@ -29,7 +29,7 @@ class AssignmentCheckInForm < Reform::Form
       if view_mode == :employee
         model.complete_employee_side!
       elsif view_mode == :manager
-        model.complete_manager_side!(completed_by: current_person)
+        model.complete_manager_side!(completed_by: current_company_teammate)
       end
     elsif status == 'draft'
       if view_mode == :employee
@@ -43,14 +43,14 @@ class AssignmentCheckInForm < Reform::Form
     model.save
   end
 
-  # Helper method to get current person (passed from controller)
-  def current_person
-    @current_person
+  # Helper method to get current company teammate (passed from controller)
+  def current_company_teammate
+    @current_company_teammate
   end
 
-  # Helper method to set current person
-  def current_person=(person)
-    @current_person = person
+  # Helper method to set current company teammate
+  def current_company_teammate=(teammate)
+    @current_company_teammate = teammate
   end
 
   # Helper method to get view mode (passed from controller)

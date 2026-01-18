@@ -213,7 +213,7 @@ class MaapChangeExecutionService
     )
     
     if manager_data['manager_completed_at']
-      check_in.complete_manager_side!(completed_by: current_user.person)
+      check_in.complete_manager_side!(completed_by: current_user)
     elsif manager_data.key?('manager_completed_at') && manager_data['manager_completed_at'].nil?
       # Explicitly unchecking manager completion
       check_in.uncomplete_manager_side!
@@ -228,7 +228,7 @@ class MaapChangeExecutionService
     )
     
     if official_data['official_check_in_completed_at']
-      check_in.finalize_check_in!(final_rating: official_data['official_rating'], finalized_by: current_user.person)
+      check_in.finalize_check_in!(final_rating: official_data['official_rating'], finalized_by: current_user)
     end
   end
 

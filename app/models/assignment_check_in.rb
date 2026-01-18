@@ -2,7 +2,7 @@ class AssignmentCheckIn < ApplicationRecord
   include CheckInBehavior
   
   belongs_to :assignment
-  belongs_to :manager_completed_by, class_name: 'Person', optional: true
+  belongs_to :manager_completed_by_teammate, class_name: 'CompanyTeammate', optional: true
   belongs_to :maap_snapshot, optional: true
 
   # Enums for ratings
@@ -42,6 +42,8 @@ class AssignmentCheckIn < ApplicationRecord
   validates :manager_rating, inclusion: { in: manager_ratings.keys }, allow_nil: true
   validates :official_rating, inclusion: { in: official_ratings.keys }, allow_nil: true
   validates :employee_personal_alignment, inclusion: { in: employee_personal_alignments.keys }, allow_nil: true
+  validates :manager_completed_by_teammate, presence: true, if: :manager_completed?
+  validates :finalized_by_teammate, presence: true, if: :officially_completed?
   
   # Custom validation to prevent multiple open check-ins per teammate per assignment
   validate :only_one_open_check_in_per_teammate_assignment
@@ -142,7 +144,7 @@ class AssignmentCheckIn < ApplicationRecord
     update!(
       official_check_in_completed_at: Time.current,
       official_rating: final_rating,
-      finalized_by: finalized_by
+      finalized_by_teammate: finalized_by
     )
   end
 

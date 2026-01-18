@@ -4,6 +4,7 @@ RSpec.describe AssignmentCheckInForm, type: :form do
   let(:organization) { create(:organization) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
+  let(:manager_teammate) { CompanyTeammate.create!(person: create(:person), organization: organization) }
   let(:assignment) { create(:assignment, company: organization) }
   let(:assignment_tenure) do
     create(:assignment_tenure,
@@ -17,7 +18,7 @@ RSpec.describe AssignmentCheckInForm, type: :form do
 
   before do
     assignment_tenure
-    form.current_person = person
+    form.current_company_teammate = manager_teammate
     form.view_mode = :manager
   end
 
@@ -73,7 +74,7 @@ RSpec.describe AssignmentCheckInForm, type: :form do
         expect(form).to be_valid
         expect(form.save).to be true
         expect(check_in.reload.manager_completed?).to be true
-        expect(check_in.manager_completed_by).to eq(person)
+        expect(check_in.manager_completed_by_teammate).to eq(manager_teammate)
       end
 
       it 'completes employee side when view_mode is employee' do
@@ -89,7 +90,7 @@ RSpec.describe AssignmentCheckInForm, type: :form do
 
     context 'when status is draft' do
       it 'uncompletes manager side when view_mode is manager' do
-        check_in.update!(manager_completed_at: Time.current, manager_completed_by: person)
+        check_in.update!(manager_completed_at: Time.current, manager_completed_by_teammate: manager_teammate)
         form.view_mode = :manager
         form.status = 'draft'
 
@@ -133,8 +134,8 @@ RSpec.describe AssignmentCheckInForm, type: :form do
       expect(form).to respond_to(:assignment_id)
     end
 
-    it 'sets current_person and view_mode' do
-      expect(form.current_person).to eq(person)
+    it 'sets current_company_teammate and view_mode' do
+      expect(form.current_company_teammate).to eq(manager_teammate)
       expect(form.view_mode).to eq(:manager)
     end
   end

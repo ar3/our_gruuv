@@ -21,7 +21,7 @@ RSpec.describe AssignmentCheckIn, type: :model do
     it 'has required associations from CheckInBehavior' do
       check_in = AssignmentCheckIn.new(teammate: teammate, assignment: assignment)
       expect(check_in).to respond_to(:teammate)
-      expect(check_in).to respond_to(:finalized_by)
+      expect(check_in).to respond_to(:finalized_by_teammate)
       expect(check_in).to respond_to(:maap_snapshot)
     end
 
@@ -232,19 +232,20 @@ RSpec.describe AssignmentCheckIn, type: :model do
     end
 
     it 'tracks manager completion' do
-      manager = create(:person)
+      manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
         expect(check_in.manager_completed?).to be false
 
-      check_in.complete_manager_side!(completed_by: manager)
+      check_in.complete_manager_side!(completed_by: manager_teammate)
         expect(check_in.manager_completed?).to be true
       expect(check_in.manager_completed_at).to be_present
-      expect(check_in.manager_completed_by).to eq(manager)
+      expect(check_in.manager_completed_by_teammate).to eq(manager_teammate)
     end
 
     it 'tracks official completion' do
         expect(check_in.officially_completed?).to be false
 
-        check_in.update!(official_check_in_completed_at: Time.current)
+        manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
+        check_in.update!(official_check_in_completed_at: Time.current, finalized_by_teammate: manager_teammate)
         expect(check_in.officially_completed?).to be true
     end
 
@@ -254,10 +255,11 @@ RSpec.describe AssignmentCheckIn, type: :model do
         check_in.complete_employee_side!
         expect(check_in.ready_for_finalization?).to be false
       
-      check_in.complete_manager_side!(completed_by: create(:person))
+      manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
+      check_in.complete_manager_side!(completed_by: manager_teammate)
         expect(check_in.ready_for_finalization?).to be true
 
-      check_in.update!(official_check_in_completed_at: Time.current)
+      check_in.update!(official_check_in_completed_at: Time.current, finalized_by_teammate: manager_teammate)
         expect(check_in.ready_for_finalization?).to be false
     end
 
@@ -273,9 +275,9 @@ RSpec.describe AssignmentCheckIn, type: :model do
       end
 
       it 'updates ready_for_finalization status when manager completed' do
-        manager = create(:person)
+        manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
         check_in.complete_employee_side!
-        check_in.complete_manager_side!(completed_by: manager)
+        check_in.complete_manager_side!(completed_by: manager_teammate)
         expect(check_in.ready_for_finalization?).to be true
         
         check_in.uncomplete_employee_side!
@@ -286,21 +288,21 @@ RSpec.describe AssignmentCheckIn, type: :model do
 
     describe '#uncomplete_manager_side!' do
       it 'unmarks manager side as completed' do
-        manager = create(:person)
-        check_in.complete_manager_side!(completed_by: manager)
+        manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
+        check_in.complete_manager_side!(completed_by: manager_teammate)
         expect(check_in.manager_completed?).to be true
         
         check_in.uncomplete_manager_side!
         
         expect(check_in.manager_completed?).to be false
         expect(check_in.manager_completed_at).to be_nil
-        expect(check_in.manager_completed_by).to be_nil
+        expect(check_in.manager_completed_by_teammate).to be_nil
       end
 
       it 'updates ready_for_finalization status when employee completed' do
         check_in.complete_employee_side!
-        manager = create(:person)
-        check_in.complete_manager_side!(completed_by: manager)
+        manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
+        check_in.complete_manager_side!(completed_by: manager_teammate)
         expect(check_in.ready_for_finalization?).to be true
         
         check_in.uncomplete_manager_side!
@@ -311,11 +313,11 @@ RSpec.describe AssignmentCheckIn, type: :model do
 
     describe 'completion state transitions' do
       it 'handles multiple complete/uncomplete cycles' do
-        manager = create(:person)
+        manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
         
         # Complete both sides
         check_in.complete_employee_side!
-        check_in.complete_manager_side!(completed_by: manager)
+        check_in.complete_manager_side!(completed_by: manager_teammate)
         expect(check_in.ready_for_finalization?).to be true
         
         # Uncomplete employee side
@@ -335,7 +337,7 @@ RSpec.describe AssignmentCheckIn, type: :model do
         expect(check_in.manager_completed?).to be false
         
         # Complete manager side again
-        check_in.complete_manager_side!(completed_by: manager)
+        check_in.complete_manager_side!(completed_by: manager_teammate)
         expect(check_in.ready_for_finalization?).to be true
       end
     end
@@ -351,13 +353,13 @@ RSpec.describe AssignmentCheckIn, type: :model do
     end
 
     it 'finalizes check-in with rating and finalized_by' do
-      manager = create(:person)
+      manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
       
-      check_in.finalize_check_in!(final_rating: 'exceeding', finalized_by: manager)
+      check_in.finalize_check_in!(final_rating: 'exceeding', finalized_by: manager_teammate)
       
       expect(check_in.officially_completed?).to be true
       expect(check_in.official_rating).to eq('exceeding')
-      expect(check_in.finalized_by).to eq(manager)
+      expect(check_in.finalized_by_teammate).to eq(manager_teammate)
       expect(check_in.official_check_in_completed_at).to be_present
     end
 

@@ -33,7 +33,7 @@ class People::AssignmentsController < ApplicationController
     @open_check_in = teammate ? AssignmentCheckIn.find_or_create_open_for(teammate, @assignment) : nil
     @recent_check_ins = teammate ? AssignmentCheckIn
       .where(teammate: teammate, assignment: @assignment)
-      .includes(:manager_completed_by, :finalized_by)
+      .includes(:manager_completed_by_teammate, :finalized_by_teammate)
       .order(check_in_started_on: :desc)
       .limit(5) : []
     

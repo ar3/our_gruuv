@@ -10,7 +10,7 @@ class Organizations::Teammates::AssignmentsController < Organizations::Organizat
     # Load all check-ins (full history)
     @check_ins = AssignmentCheckIn
       .where(teammate: @teammate, assignment: @assignment)
-      .includes(:manager_completed_by, :finalized_by)
+      .includes(:manager_completed_by_teammate, :finalized_by_teammate)
       .order(check_in_started_on: :desc)
     
     # Load assignment details
