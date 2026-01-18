@@ -18,7 +18,7 @@ module Finalizers
         official_rating: @official_rating,
         shared_notes: @shared_notes,
         official_check_in_completed_at: Time.current,
-        finalized_by: @finalized_by
+        finalized_by_teammate: @finalized_by
       )
       
       # Create observable moment if rating improved

@@ -50,7 +50,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
           expect(check_in.official_rating).to eq(2)
           expect(check_in.shared_notes).to eq('Great work!')
           expect(check_in.official_check_in_completed_at).to eq(Time.current)
-          expect(check_in.finalized_by).to eq(manager)
+          expect(check_in.finalized_by_teammate).to eq(manager_teammate)
         end
       end
 
@@ -126,7 +126,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
     end
 
     context 'when official rating is nil' do
-      let(:finalizer) { described_class.new(check_in: check_in, official_rating: nil, shared_notes: 'Notes', finalized_by: manager) }
+      let(:finalizer) { described_class.new(check_in: check_in, official_rating: nil, shared_notes: 'Notes', finalized_by: manager_teammate) }
 
       it 'returns error' do
         result = finalizer.finalize

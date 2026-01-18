@@ -18,12 +18,12 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
   
   let!(:assignment_check_in) do
     create(:assignment_check_in,
+           :ready_for_finalization,
            teammate: employee_teammate,
            assignment: assignment,
            employee_rating: 'exceeding',
            manager_rating: 'meeting',
-           employee_completed_at: 1.day.ago,
-           manager_completed_at: 1.day.ago)
+           manager_completed_by_teammate: manager_teammate)
   end
   
   let(:finalizer) do
@@ -32,7 +32,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
       official_rating: 'meeting',
       shared_notes: 'Great work on this assignment',
       anticipated_energy_percentage: 80,
-      finalized_by: manager
+      finalized_by: manager_teammate
     )
   end
 
@@ -75,7 +75,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
           official_rating: 'meeting',
           shared_notes: 'Great work',
           anticipated_energy_percentage: nil,
-          finalized_by: manager
+          finalized_by: manager_teammate
         )
         
         expect { finalizer_with_nil.finalize }
@@ -92,7 +92,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
           official_rating: 'meeting',
           shared_notes: 'Great work',
           anticipated_energy_percentage: '',
-          finalized_by: manager
+          finalized_by: manager_teammate
         )
         
         expect { finalizer_with_empty.finalize }
@@ -193,7 +193,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
           official_rating: nil,
           shared_notes: 'Notes',
           anticipated_energy_percentage: 50,
-          finalized_by: manager
+          finalized_by: manager_teammate
         )
       end
       
@@ -234,7 +234,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
           official_rating: 'meeting',
           shared_notes: 'Great work',
           anticipated_energy_percentage: 60,
-          finalized_by: manager
+          finalized_by: manager_teammate
         )
         
         result = finalizer_with_energy.finalize
@@ -250,7 +250,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
           official_rating: 'meeting',
           shared_notes: 'Great work',
           anticipated_energy_percentage: nil,
-          finalized_by: manager
+          finalized_by: manager_teammate
         )
         
         result = finalizer_without_energy.finalize
@@ -266,7 +266,7 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
           official_rating: 'meeting',
           shared_notes: 'Great work',
           anticipated_energy_percentage: '',
-          finalized_by: manager
+          finalized_by: manager_teammate
         )
         
         result = finalizer_with_empty.finalize

@@ -11,8 +11,8 @@ FactoryBot.define do
     shared_notes { nil }
     employee_completed_at { nil }
     manager_completed_at { nil }
-    manager_completed_by { nil }
-    finalized_by { nil }
+    manager_completed_by_teammate { nil }
+    finalized_by_teammate { nil }
     official_check_in_completed_at { nil }
     maap_snapshot { nil }
     
@@ -26,7 +26,7 @@ FactoryBot.define do
       manager_completed_at { 1.day.ago }
       manager_rating { 'meeting' }
       manager_private_notes { 'Manager notes' }
-      manager_completed_by { association(:person) }
+      manager_completed_by_teammate { CompanyTeammate.create!(person: create(:person), organization: teammate.organization) }
     end
     
     trait :ready_for_finalization do
@@ -36,7 +36,7 @@ FactoryBot.define do
       manager_rating { 'meeting' }
       employee_private_notes { 'Employee notes' }
       manager_private_notes { 'Manager notes' }
-      manager_completed_by { association(:person) }
+      manager_completed_by_teammate { CompanyTeammate.create!(person: create(:person), organization: teammate.organization) }
     end
     
     trait :finalized do
@@ -49,8 +49,8 @@ FactoryBot.define do
       employee_private_notes { 'Employee notes' }
       manager_private_notes { 'Manager notes' }
       shared_notes { 'Shared notes' }
-      manager_completed_by { association(:person) }
-      finalized_by { association(:person) }
+      manager_completed_by_teammate { CompanyTeammate.create!(person: create(:person), organization: teammate.organization) }
+      finalized_by_teammate { CompanyTeammate.create!(person: create(:person), organization: teammate.organization) }
     end
   end
 end

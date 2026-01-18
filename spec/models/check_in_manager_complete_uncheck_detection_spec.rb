@@ -19,14 +19,14 @@ RSpec.describe 'Check-In Manager Complete Uncheck Detection', type: :model do
     create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 50)
     
     # Set up check-in that was previously completed by manager
+    manager_ct = manager_teammate.reload.becomes(CompanyTeammate)
     @check_in = create(:assignment_check_in, 
+           :ready_for_finalization,
            teammate: employee_teammate, 
            assignment: assignment, 
-           employee_completed_at: Time.current, 
-           manager_completed_at: Time.current,
-           manager_completed_by_id: manager.id,
            shared_notes: 'Previous shared notes',
-           manager_rating: 'meeting')
+           manager_rating: 'meeting',
+           manager_completed_by_teammate: manager_ct)
   end
 
   describe 'manager complete uncheck change detection' do
@@ -69,9 +69,9 @@ RSpec.describe 'Check-In Manager Complete Uncheck Detection', type: :model do
         expect(manager_check_in).not_to be_nil, "Manager check-in data should be included even when manager_complete is false"
         
         # The manager_completed_at should be nil (not completed by manager)
-        # The manager_completed_by_id should be nil (not completed by manager)
+        # The manager_completed_by_teammate_id should be nil (not completed by manager)
         expect(manager_check_in['manager_completed_at']).to be_nil
-        expect(manager_check_in['manager_completed_by_id']).to be_nil
+        expect(manager_check_in['manager_completed_by_teammate_id']).to be_nil
         
         # The other fields should still be updated
         expect(manager_check_in['manager_rating']).to eq('meeting')

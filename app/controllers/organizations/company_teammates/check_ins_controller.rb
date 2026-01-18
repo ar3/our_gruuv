@@ -233,14 +233,14 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         if @view_mode == :employee
           completion_service.complete_employee_side!
         elsif @view_mode == :manager
-          completion_service.complete_manager_side!(completed_by: current_person)
+          completion_service.complete_manager_side!(completed_by: current_company_teammate)
         elsif @view_mode == :readonly
           # For readonly, determine which side to complete based on what fields are present
           if attrs[:employee_rating].present? || attrs[:employee_private_notes].present?
             completion_service.complete_employee_side!
           end
           if attrs[:manager_rating].present? || attrs[:manager_private_notes].present?
-            completion_service.complete_manager_side!(completed_by: current_person)
+            completion_service.complete_manager_side!(completed_by: current_company_teammate)
           end
         end
 
@@ -295,14 +295,14 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
         if @view_mode == :employee
           completion_service.complete_employee_side!
         elsif @view_mode == :manager
-          completion_service.complete_manager_side!(completed_by: current_person)
+          completion_service.complete_manager_side!(completed_by: current_company_teammate)
         elsif @view_mode == :readonly
           # For readonly, determine which side to complete based on what fields are present
           if attrs[:employee_rating].present? || attrs[:employee_private_notes].present?
             completion_service.complete_employee_side!
           end
           if attrs[:manager_rating].present? || attrs[:manager_private_notes].present?
-            completion_service.complete_manager_side!(completed_by: current_person)
+            completion_service.complete_manager_side!(completed_by: current_company_teammate)
           end
         end
 
@@ -350,7 +350,7 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       if @view_mode == :employee
         completion_service.complete_employee_side!
       elsif @view_mode == :manager
-        completion_service.complete_manager_side!(completed_by: current_person)
+        completion_service.complete_manager_side!(completed_by: current_company_teammate)
       end
 
       # Trigger notification if completion was detected

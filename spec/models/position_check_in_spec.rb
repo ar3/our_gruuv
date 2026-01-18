@@ -106,10 +106,12 @@ RSpec.describe PositionCheckIn, type: :model do
     end
 
     it 'excludes finalized check-ins from open scope' do
+      finalized_by = create(:teammate, person: create(:person), organization: teammate.organization).reload.becomes(CompanyTeammate)
       finalized_check_in = create(:position_check_in,
+        :closed,
         teammate: teammate,
         employment_tenure: employment_tenure,
-        official_check_in_completed_at: 1.day.ago
+        finalized_by_teammate: finalized_by
       )
       
       open_check_ins = PositionCheckIn.where(teammate: teammate).open
@@ -209,7 +211,8 @@ RSpec.describe PositionCheckIn, type: :model do
       end
 
       it 'updates ready_for_finalization status when manager already completed' do
-        manager = create(:person)
+        t = create(:teammate, person: create(:person), organization: teammate.organization)
+        manager = t.reload.becomes(CompanyTeammate)
         check_in.complete_manager_side!(completed_by: manager)
         expect(check_in.ready_for_finalization?).to be false
 
@@ -254,7 +257,8 @@ RSpec.describe PositionCheckIn, type: :model do
       end
 
       it 'updates ready_for_finalization status when manager completed' do
-        manager = create(:person)
+        t = create(:teammate, person: create(:person), organization: teammate.organization)
+        manager = t.reload.becomes(CompanyTeammate)
         check_in.complete_employee_side!
         check_in.complete_manager_side!(completed_by: manager)
         expect(check_in.ready_for_finalization?).to be true
@@ -292,7 +296,8 @@ RSpec.describe PositionCheckIn, type: :model do
 
     describe 'completion state transitions' do
       it 'handles multiple complete/uncomplete cycles' do
-        manager = create(:person)
+        t = create(:teammate, person: create(:person), organization: teammate.organization)
+        manager = t.reload.becomes(CompanyTeammate)
 
         # Complete both sides
         check_in.complete_employee_side!
@@ -390,7 +395,7 @@ RSpec.describe PositionCheckIn, type: :model do
         check_in: ready_check_in,
         official_rating: 2,
         shared_notes: 'Test notes',
-        finalized_by: manager
+        finalized_by: manager_teammate
       )
       
       result = finalizer.finalize

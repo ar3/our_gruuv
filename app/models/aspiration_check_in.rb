@@ -3,7 +3,7 @@ class AspirationCheckIn < ApplicationRecord
   
   belongs_to :teammate
   belongs_to :aspiration
-  belongs_to :manager_completed_by, class_name: 'Person', optional: true
+  belongs_to :manager_completed_by_teammate, class_name: 'CompanyTeammate', optional: true
   
   # Enums for ratings
   enum :employee_rating, {
@@ -29,6 +29,8 @@ class AspirationCheckIn < ApplicationRecord
   validates :employee_rating, inclusion: { in: employee_ratings.keys }, allow_nil: true
   validates :manager_rating, inclusion: { in: manager_ratings.keys }, allow_nil: true
   validates :official_rating, inclusion: { in: official_ratings.keys }, allow_nil: true
+  validates :manager_completed_by_teammate, presence: true, if: :manager_completed?
+  validates :finalized_by_teammate, presence: true, if: :officially_completed?
   
   # Custom validation to prevent multiple open check-ins per teammate per aspiration
   validate :only_one_open_check_in_per_teammate_aspiration

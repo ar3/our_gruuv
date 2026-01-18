@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Check-In Uncomplete Change Detection', type: :model do
-  let(:organization) { create(:organization) }
+  let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
   let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
@@ -19,15 +19,14 @@ RSpec.describe 'Check-In Uncomplete Change Detection', type: :model do
     create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 50)
     
     # Set up check-in that was previously completed by manager
+    manager_ct = manager_teammate.reload.becomes(CompanyTeammate)
     @check_in = create(:assignment_check_in, 
+           :finalized,
            teammate: employee_teammate, 
            assignment: assignment, 
-           employee_completed_at: Time.current, 
-           manager_completed_at: Time.current,
            shared_notes: 'Previous shared notes',
            official_rating: 'meeting',
-           official_check_in_completed_at: Time.current,
-           finalized_by_id: manager.id)
+           finalized_by_teammate: manager_ct)
   end
 
   describe 'uncomplete check-in change detection' do
@@ -70,9 +69,9 @@ RSpec.describe 'Check-In Uncomplete Change Detection', type: :model do
         expect(official_check_in).not_to be_nil, "Official check-in data should be included even when close_rating is false"
         
         # The official_check_in_completed_at should be nil (not completed)
-        # The finalized_by_id should be nil (not finalized)
+        # The finalized_by_teammate_id should be nil (not finalized)
         expect(official_check_in['official_check_in_completed_at']).to be_nil
-        expect(official_check_in['finalized_by_id']).to be_nil
+        expect(official_check_in['finalized_by_teammate_id']).to be_nil
         
         # The other fields should still be updated
         expect(official_check_in['official_rating']).to eq('meeting')

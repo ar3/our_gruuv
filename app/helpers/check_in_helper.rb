@@ -105,7 +105,7 @@ module CheckInHelper
     content = []
     content << "<strong>Finalized:</strong> #{latest.official_check_in_completed_at.strftime('%m/%d/%Y')}"
     content << "<strong>Rating:</strong> #{aspiration_rating_display(latest.official_rating)}"
-    content << "<strong>By:</strong> #{latest.finalized_by.display_name}" if latest.finalized_by
+    content << "<strong>By:</strong> #{latest.finalized_by_teammate&.person&.display_name}" if latest.finalized_by_teammate
     content << "<br><em>#{latest.shared_notes}</em>" if latest.shared_notes.present?
     content.join('<br>')
   end

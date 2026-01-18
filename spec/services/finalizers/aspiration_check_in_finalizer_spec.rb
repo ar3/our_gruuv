@@ -1,19 +1,19 @@
 require 'rails_helper'
 
 RSpec.describe Finalizers::AspirationCheckInFinalizer do
-  let(:organization) { create(:organization) }
+  let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:aspiration) { create(:aspiration, organization: organization) }
-  let(:finalized_by) { create(:person) }
-  let(:finalizer_teammate) { create(:teammate, person: finalized_by, organization: organization) }
+  let(:finalized_by_person) { create(:person) }
+  let(:finalized_by) { create(:teammate, person: finalized_by_person, organization: organization).reload.becomes(CompanyTeammate) }
+  let(:finalizer_teammate) { finalized_by }
   
   let(:check_in) do
     create(:aspiration_check_in,
+           :ready_for_finalization,
            teammate: teammate,
            aspiration: aspiration,
-           employee_completed_at: 1.day.ago,
-           manager_completed_at: 1.day.ago,
            employee_rating: 'meeting',
            manager_rating: 'exceeding',
            employee_private_notes: 'Employee notes',
@@ -45,7 +45,7 @@ RSpec.describe Finalizers::AspirationCheckInFinalizer do
         expect(check_in.official_rating).to eq('exceeding')
         expect(check_in.shared_notes).to eq('Great progress on this aspiration!')
         expect(check_in.official_check_in_completed_at).to be_present
-        expect(check_in.finalized_by).to eq(finalized_by)
+        expect(check_in.finalized_by_teammate).to eq(finalized_by)
       end
       
       it 'returns rating data for snapshot' do
@@ -65,7 +65,7 @@ RSpec.describe Finalizers::AspirationCheckInFinalizer do
                  aspiration: aspiration,
                  official_rating: 'working_to_meet',
                  official_check_in_completed_at: 1.month.ago,
-                 finalized_by: finalized_by)
+                 finalized_by_teammate: finalized_by)
         end
         
         it 'creates observable moment when rating improved' do
@@ -89,7 +89,7 @@ RSpec.describe Finalizers::AspirationCheckInFinalizer do
                  aspiration: aspiration,
                  official_rating: 'exceeding',
                  official_check_in_completed_at: 1.month.ago,
-                 finalized_by: finalized_by)
+                 finalized_by_teammate: finalized_by)
         end
         
         it 'does not create observable moment when rating stayed same' do

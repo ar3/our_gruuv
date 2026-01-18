@@ -55,7 +55,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
           expect(check_in.manager_rating).to eq(2)
           expect(check_in.manager_private_notes).to eq("Draft notes")
           expect(check_in.manager_completed_at).to be_nil
-          expect(check_in.manager_completed_by).to be_nil
+          expect(check_in.manager_completed_by_teammate).to be_nil
           
           # Assert response
           expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, employee_teammate))
@@ -85,7 +85,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
           expect(check_in.manager_private_notes).to eq("Complete notes")
           expect(check_in.manager_completed_at).to be_present
           expect(check_in.manager_completed_at).to be_within(1.second).of(Time.current)
-          expect(check_in.manager_completed_by).to eq(manager_person)
+          expect(check_in.manager_completed_by_teammate_id).to eq(manager_teammate.id)
           
           # Assert response
           expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, employee_teammate))
@@ -123,7 +123,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
           
           check_in.reload
           expect(check_in.manager_completed_at).to be_present
-          expect(check_in.manager_completed_by).to eq(manager_person)
+          expect(check_in.manager_completed_by_teammate_id).to eq(manager_teammate.id)
         end
       end
       
@@ -158,7 +158,7 @@ RSpec.describe "Organizations::CheckIns", type: :request do
           
           check_in.reload
           expect(check_in.manager_completed_at).to be_nil
-          expect(check_in.manager_completed_by).to be_nil
+          expect(check_in.manager_completed_by_teammate).to be_nil
         end
       end
       

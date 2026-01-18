@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_18_215758) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_18_221119) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -66,11 +66,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_18_215758) do
     t.bigint "maap_snapshot_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "manager_completed_by_teammate_id"
+    t.bigint "finalized_by_teammate_id"
     t.index ["aspiration_id"], name: "index_aspiration_check_ins_on_aspiration_id"
     t.index ["check_in_started_on"], name: "index_aspiration_check_ins_on_check_in_started_on"
     t.index ["finalized_by_id"], name: "index_aspiration_check_ins_on_finalized_by_id"
+    t.index ["finalized_by_teammate_id"], name: "index_aspiration_check_ins_on_finalized_by_teammate_id"
     t.index ["maap_snapshot_id"], name: "index_aspiration_check_ins_on_maap_snapshot_id"
     t.index ["manager_completed_by_id"], name: "index_aspiration_check_ins_on_manager_completed_by_id"
+    t.index ["manager_completed_by_teammate_id"], name: "index_aspiration_check_ins_on_manager_completed_by_teammate_id"
     t.index ["teammate_id", "aspiration_id", "official_check_in_completed_at"], name: "index_aspiration_check_ins_on_teammate_aspiration_open"
     t.index ["teammate_id"], name: "index_aspiration_check_ins_on_teammate_id"
   end
@@ -1049,8 +1053,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_18_215758) do
   add_foreign_key "addresses", "people"
   add_foreign_key "aspiration_check_ins", "aspirations"
   add_foreign_key "aspiration_check_ins", "maap_snapshots"
-  add_foreign_key "aspiration_check_ins", "people", column: "finalized_by_id"
-  add_foreign_key "aspiration_check_ins", "people", column: "manager_completed_by_id"
   add_foreign_key "aspiration_check_ins", "teammates"
   add_foreign_key "aspirations", "organizations"
   add_foreign_key "assignment_abilities", "abilities"

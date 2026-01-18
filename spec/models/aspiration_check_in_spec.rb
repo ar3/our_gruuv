@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe AspirationCheckIn, type: :model do
-  let(:organization) { create(:organization) }
+  let(:organization) { create(:organization, :company) }
   let(:person) { create(:person) }
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:aspiration) { create(:aspiration, organization: organization) }
@@ -9,7 +9,8 @@ RSpec.describe AspirationCheckIn, type: :model do
   describe 'associations' do
     it { should belong_to(:teammate) }
     it { should belong_to(:aspiration) }
-    it { should belong_to(:finalized_by).class_name('Person').optional }
+    it { should belong_to(:manager_completed_by_teammate).class_name('CompanyTeammate').optional }
+    it { should belong_to(:finalized_by_teammate).class_name('CompanyTeammate').optional }
     it { should belong_to(:maap_snapshot).optional }
   end
   
@@ -50,7 +51,8 @@ RSpec.describe AspirationCheckIn, type: :model do
   
   describe 'scopes' do
     let!(:open_check_in) { create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, official_check_in_completed_at: nil) }
-    let!(:closed_check_in) { create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, official_check_in_completed_at: 1.day.ago) }
+    let(:finalized_by_teammate) { create(:teammate, person: create(:person), organization: teammate.organization).reload.becomes(CompanyTeammate) }
+    let!(:closed_check_in) { create(:aspiration_check_in, :finalized, teammate: teammate, aspiration: aspiration, official_check_in_completed_at: 1.day.ago, finalized_by_teammate: finalized_by_teammate) }
     
     describe '.open' do
       it 'returns only open check-ins' do
@@ -68,7 +70,8 @@ RSpec.describe AspirationCheckIn, type: :model do
     
     describe '.ready_for_finalization' do
       let(:different_aspiration) { create(:aspiration, organization: organization) }
-      let!(:ready_check_in) { create(:aspiration_check_in, teammate: teammate, aspiration: different_aspiration, employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, official_check_in_completed_at: nil) }
+      let(:manager_teammate) { create(:teammate, person: create(:person), organization: teammate.organization).reload.becomes(CompanyTeammate) }
+      let!(:ready_check_in) { create(:aspiration_check_in, :ready_for_finalization, teammate: teammate, aspiration: different_aspiration, manager_completed_by_teammate: manager_teammate) }
       
       it 'returns check-ins ready for finalization' do
         expect(AspirationCheckIn.ready_for_finalization).to include(ready_check_in)
@@ -87,19 +90,25 @@ RSpec.describe AspirationCheckIn, type: :model do
       end
       
       it 'returns false when official_check_in_completed_at is present' do
-        check_in.update!(official_check_in_completed_at: Time.current)
+        t = create(:teammate, person: create(:person), organization: teammate.organization)
+        finalized_by_teammate = t.reload.becomes(CompanyTeammate)
+        check_in.update!(official_check_in_completed_at: Time.current, finalized_by_teammate: finalized_by_teammate)
         expect(check_in.open?).to be false
       end
     end
     
     describe '#ready_for_finalization?' do
       it 'returns true when both employee and manager completed but not officially' do
-        check_in.update!(employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, official_check_in_completed_at: nil)
+        t = create(:teammate, person: create(:person), organization: teammate.organization)
+        manager_teammate = t.reload.becomes(CompanyTeammate)
+        check_in.update!(employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate, official_check_in_completed_at: nil)
         expect(check_in.ready_for_finalization?).to be true
       end
       
       it 'returns false when employee not completed' do
-        check_in.update!(employee_completed_at: nil, manager_completed_at: 1.day.ago, official_check_in_completed_at: nil)
+        t = create(:teammate, person: create(:person), organization: teammate.organization)
+        manager_teammate = t.reload.becomes(CompanyTeammate)
+        check_in.update!(employee_completed_at: nil, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate, official_check_in_completed_at: nil)
         expect(check_in.ready_for_finalization?).to be false
       end
       
@@ -109,14 +118,19 @@ RSpec.describe AspirationCheckIn, type: :model do
       end
       
       it 'returns false when already officially completed' do
-        check_in.update!(employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, official_check_in_completed_at: 1.day.ago)
+        t1 = create(:teammate, person: create(:person), organization: teammate.organization)
+        t2 = create(:teammate, person: create(:person), organization: teammate.organization)
+        manager_teammate = t1.reload.becomes(CompanyTeammate)
+        finalized_by_teammate = t2.reload.becomes(CompanyTeammate)
+        check_in.update!(employee_completed_at: 1.day.ago, manager_completed_at: 1.day.ago, manager_completed_by_teammate: manager_teammate, official_check_in_completed_at: 1.day.ago, finalized_by_teammate: finalized_by_teammate)
         expect(check_in.ready_for_finalization?).to be false
       end
     end
     
     describe '#previous_finalized_check_in' do
-      let!(:old_check_in) { create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, official_check_in_completed_at: 1.month.ago) }
-      let!(:newer_check_in) { create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, official_check_in_completed_at: 1.week.ago) }
+      let(:finalized_by_teammate) { create(:teammate, person: create(:person), organization: teammate.organization).reload.becomes(CompanyTeammate) }
+      let!(:old_check_in) { create(:aspiration_check_in, :finalized, teammate: teammate, aspiration: aspiration, official_check_in_completed_at: 1.month.ago, finalized_by_teammate: finalized_by_teammate) }
+      let!(:newer_check_in) { create(:aspiration_check_in, :finalized, teammate: teammate, aspiration: aspiration, official_check_in_completed_at: 1.week.ago, finalized_by_teammate: finalized_by_teammate) }
       
       it 'returns the most recent finalized check-in for the same teammate and aspiration' do
         expect(check_in.previous_finalized_check_in).to eq(newer_check_in)
@@ -124,7 +138,8 @@ RSpec.describe AspirationCheckIn, type: :model do
     end
     
     describe '#previous_check_in_summary' do
-      let!(:previous_check_in) { create(:aspiration_check_in, teammate: teammate, aspiration: aspiration, official_check_in_completed_at: 1.week.ago, official_rating: 'meeting') }
+      let(:finalized_by_teammate) { create(:teammate, person: create(:person), organization: teammate.organization).reload.becomes(CompanyTeammate) }
+      let!(:previous_check_in) { create(:aspiration_check_in, :finalized, teammate: teammate, aspiration: aspiration, official_check_in_completed_at: 1.week.ago, official_rating: 'meeting', finalized_by_teammate: finalized_by_teammate) }
       
       it 'returns formatted summary of previous check-in' do
         expect(check_in.previous_check_in_summary).to eq("last finalized on #{previous_check_in.official_check_in_completed_at.to_date} with rating of Meeting")
@@ -149,7 +164,8 @@ RSpec.describe AspirationCheckIn, type: :model do
         end
 
         it 'updates ready_for_finalization status when manager already completed' do
-          manager = create(:person)
+          t = create(:teammate, person: create(:person), organization: teammate.organization)
+          manager = t.reload.becomes(CompanyTeammate)
           check_in.complete_manager_side!(completed_by: manager)
           expect(check_in.ready_for_finalization?).to be false
           
@@ -161,21 +177,23 @@ RSpec.describe AspirationCheckIn, type: :model do
 
       describe '#complete_manager_side!' do
         it 'marks manager side as completed' do
-          manager = create(:person)
+          t = create(:teammate, person: create(:person), organization: teammate.organization)
+          manager = t.reload.becomes(CompanyTeammate)
           expect(check_in.manager_completed?).to be false
 
           check_in.complete_manager_side!(completed_by: manager)
           
           expect(check_in.manager_completed?).to be true
           expect(check_in.manager_completed_at).to be_present
-          expect(check_in.manager_completed_by).to eq(manager)
+          expect(check_in.manager_completed_by_teammate).to eq(manager)
         end
 
         it 'updates ready_for_finalization status when employee already completed' do
           check_in.complete_employee_side!
           expect(check_in.ready_for_finalization?).to be false
           
-          manager = create(:person)
+          t = create(:teammate, person: create(:person), organization: teammate.organization)
+          manager = t.reload.becomes(CompanyTeammate)
           check_in.complete_manager_side!(completed_by: manager)
           
           expect(check_in.ready_for_finalization?).to be true
@@ -194,7 +212,8 @@ RSpec.describe AspirationCheckIn, type: :model do
         end
 
         it 'updates ready_for_finalization status when manager completed' do
-          manager = create(:person)
+          t = create(:teammate, person: create(:person), organization: teammate.organization)
+          manager = t.reload.becomes(CompanyTeammate)
           check_in.complete_employee_side!
           check_in.complete_manager_side!(completed_by: manager)
           expect(check_in.ready_for_finalization?).to be true
@@ -207,7 +226,8 @@ RSpec.describe AspirationCheckIn, type: :model do
 
       describe '#uncomplete_manager_side!' do
         it 'unmarks manager side as completed' do
-          manager = create(:person)
+          t = create(:teammate, person: create(:person), organization: teammate.organization)
+          manager = t.reload.becomes(CompanyTeammate)
           check_in.complete_manager_side!(completed_by: manager)
           expect(check_in.manager_completed?).to be true
           
@@ -215,12 +235,13 @@ RSpec.describe AspirationCheckIn, type: :model do
           
           expect(check_in.manager_completed?).to be false
           expect(check_in.manager_completed_at).to be_nil
-          expect(check_in.manager_completed_by).to be_nil
+          expect(check_in.manager_completed_by_teammate).to be_nil
         end
 
         it 'updates ready_for_finalization status when employee completed' do
           check_in.complete_employee_side!
-          manager = create(:person)
+          t = create(:teammate, person: create(:person), organization: teammate.organization)
+          manager = t.reload.becomes(CompanyTeammate)
           check_in.complete_manager_side!(completed_by: manager)
           expect(check_in.ready_for_finalization?).to be true
           
@@ -232,7 +253,8 @@ RSpec.describe AspirationCheckIn, type: :model do
 
       describe 'completion state transitions' do
         it 'handles multiple complete/uncomplete cycles' do
-          manager = create(:person)
+          t = create(:teammate, person: create(:person), organization: teammate.organization)
+          manager = t.reload.becomes(CompanyTeammate)
           
           # Complete both sides
           check_in.complete_employee_side!

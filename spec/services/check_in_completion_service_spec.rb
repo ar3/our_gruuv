@@ -28,7 +28,7 @@ RSpec.describe CheckInCompletionService, type: :service do
     context 'when manager completes (employee not done)' do
       it 'detects completion and returns manager_only state' do
         service = CheckInCompletionService.new(check_in)
-        service.complete_manager_side!(completed_by: manager)
+        service.complete_manager_side!(completed_by: manager_teammate)
 
         expect(service.completion_detected?).to be true
         expect(service.completion_state).to eq(:manager_only)
@@ -39,7 +39,7 @@ RSpec.describe CheckInCompletionService, type: :service do
 
     context 'when employee completes and manager already completed' do
       before do
-        check_in.update!(manager_completed_at: Time.current, manager_completed_by: manager)
+        check_in.update!(manager_completed_at: Time.current, manager_completed_by_teammate: manager_teammate)
       end
 
       it 'detects completion and returns both_complete state' do
@@ -73,7 +73,7 @@ RSpec.describe CheckInCompletionService, type: :service do
       it 'detects both completions and returns both_complete state' do
         service = CheckInCompletionService.new(check_in)
         service.complete_employee_side!
-        service.complete_manager_side!(completed_by: manager)
+        service.complete_manager_side!(completed_by: manager_teammate)
 
         expect(service.completion_detected?).to be true
         expect(service.completion_state).to eq(:both_complete)
@@ -87,7 +87,7 @@ RSpec.describe CheckInCompletionService, type: :service do
         check_in.update!(
           employee_completed_at: Time.current,
           manager_completed_at: Time.current,
-          manager_completed_by: manager
+          manager_completed_by_teammate: manager_teammate
         )
       end
 

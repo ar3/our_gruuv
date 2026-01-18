@@ -844,19 +844,17 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
 
 
     context 'when check-in has been finalized' do
-      let(:finalized_by) { manager }
+      let(:finalized_by_teammate) { manager_teammate.reload.becomes(CompanyTeammate) }
       let!(:finalized_check_in) do
         create(:position_check_in,
+          :closed,
           teammate: employee_teammate,
           employment_tenure: employment_tenure,
           employee_rating: 1,
           manager_rating: 2,
-          employee_completed_at: 2.days.ago,
-          manager_completed_at: 2.days.ago,
-          official_check_in_completed_at: 1.day.ago,
           official_rating: 2,
           shared_notes: 'Great work overall',
-          finalized_by: finalized_by
+          finalized_by_teammate: finalized_by_teammate
         )
       end
 
@@ -886,7 +884,7 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
           expect(latest_finalized).to eq(finalized_check_in)
           expect(latest_finalized.official_rating).to eq(2)
           expect(latest_finalized.shared_notes).to eq('Great work overall')
-          expect(latest_finalized.finalized_by).to eq(finalized_by)
+          expect(latest_finalized.finalized_by_teammate).to eq(finalized_by_teammate)
         end
       end
 

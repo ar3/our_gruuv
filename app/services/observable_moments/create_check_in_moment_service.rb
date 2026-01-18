@@ -12,7 +12,14 @@ module ObservableMoments
       return Result.err("Rating did not improve") unless rating_improved?
       
       # Primary observer is the manager who finalized
-      primary_observer = @finalized_by.teammates.find_by(organization: @check_in.teammate.organization)
+      # @finalized_by is already a CompanyTeammate, so we can use it directly
+      # But we need to ensure it's in the same organization as the check-in
+      if @finalized_by.organization_id == @check_in.teammate.organization_id
+        primary_observer = @finalized_by
+      else
+        # If they're in different organizations, find the teammate in the check-in's organization
+        primary_observer = @finalized_by.person.teammates.find_by(organization: @check_in.teammate.organization, type: 'CompanyTeammate')
+      end
       return Result.err("Could not find finalizer's teammate in organization") unless primary_observer
       
       # Determine check-in type
@@ -38,7 +45,7 @@ module ObservableMoments
       ObservableMoments::BaseObservableMomentService.new(
         momentable: @check_in,
         company: @check_in.teammate.organization,
-        created_by: @finalized_by,
+        created_by: @finalized_by.person,
         primary_potential_observer: primary_observer,
         moment_type: :check_in_completed,
         occurred_at: @check_in.official_check_in_completed_at || Time.current,

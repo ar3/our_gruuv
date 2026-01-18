@@ -19,12 +19,12 @@ RSpec.describe CheckInFinalizationService, type: :service do
   
   let!(:assignment_check_in) do
     create(:assignment_check_in,
+           :ready_for_finalization,
            teammate: employee_teammate,
            assignment: assignment,
            employee_rating: 'meeting',
            manager_rating: 'exceeding',
-           employee_completed_at: 1.day.ago,
-           manager_completed_at: 1.day.ago)
+           manager_completed_by_teammate: manager_teammate)
   end
   
   let!(:employment_tenure) do
@@ -443,11 +443,11 @@ RSpec.describe CheckInFinalizationService, type: :service do
         it 'creates observable moment when rating improved from previous check-in' do
           # Create previous check-in with lower rating
           create(:position_check_in,
+                 :closed,
                  teammate: employee_teammate,
                  employment_tenure: employment_tenure,
                  official_rating: 1,
-                 official_check_in_completed_at: 1.month.ago,
-                 finalized_by: manager)
+                 finalized_by_teammate: manager_teammate)
           
           expect {
             described_class.new(
@@ -655,12 +655,12 @@ RSpec.describe CheckInFinalizationService, type: :service do
             anticipated_energy_percentage: 30,
             started_at: 1.month.ago)
           assignment_check_in2 = create(:assignment_check_in,
+            :ready_for_finalization,
             teammate: employee_teammate,
             assignment: assignment2,
             employee_rating: 'meeting',
             manager_rating: 'exceeding',
-            employee_completed_at: 1.day.ago,
-            manager_completed_at: 1.day.ago)
+            manager_completed_by_teammate: manager_teammate)
           
           params_with_one_finalized = {
             assignment_check_ins: {
@@ -692,12 +692,12 @@ RSpec.describe CheckInFinalizationService, type: :service do
         let(:aspiration) { create(:aspiration, organization: organization) }
         let!(:aspiration_check_in) do
           create(:aspiration_check_in,
+            :ready_for_finalization,
             teammate: employee_teammate,
             aspiration: aspiration,
             employee_rating: 'meeting',
             manager_rating: 'exceeding',
-            employee_completed_at: 1.day.ago,
-            manager_completed_at: 1.day.ago)
+            manager_completed_by_teammate: manager_teammate)
         end
 
         it 'creates snapshot when position, assignment, and aspiration are all finalized' do
