@@ -1114,8 +1114,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_17_170927) do
   add_foreign_key "position_assignments", "positions"
   add_foreign_key "position_check_ins", "employment_tenures"
   add_foreign_key "position_check_ins", "maap_snapshots"
-  add_foreign_key "position_check_ins", "people", column: "finalized_by_id"
-  add_foreign_key "position_check_ins", "people", column: "manager_completed_by_id"
   add_foreign_key "position_check_ins", "teammates"
   add_foreign_key "position_levels", "position_major_levels"
   add_foreign_key "position_types", "organizations"

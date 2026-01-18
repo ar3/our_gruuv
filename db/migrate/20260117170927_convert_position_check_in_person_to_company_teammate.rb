@@ -1,5 +1,9 @@
 class ConvertPositionCheckInPersonToCompanyTeammate < ActiveRecord::Migration[7.1]
   def up
+    # Remove foreign key constraints that will prevent updating the columns
+    remove_foreign_key :position_check_ins, :people, column: :manager_completed_by_id, name: "fk_rails_d2a710595b" if foreign_key_exists?(:position_check_ins, :people, column: :manager_completed_by_id, name: "fk_rails_d2a710595b")
+    remove_foreign_key :position_check_ins, :people, column: :finalized_by_id, name: "fk_rails_687dd815a1" if foreign_key_exists?(:position_check_ins, :people, column: :finalized_by_id, name: "fk_rails_687dd815a1")
+    
     # Add new columns
     add_column :position_check_ins, :manager_completed_by_teammate_id, :bigint
     add_column :position_check_ins, :finalized_by_teammate_id, :bigint
@@ -70,5 +74,9 @@ class ConvertPositionCheckInPersonToCompanyTeammate < ActiveRecord::Migration[7.
     # Remove columns
     remove_column :position_check_ins, :manager_completed_by_teammate_id
     remove_column :position_check_ins, :finalized_by_teammate_id
+    
+    # Re-add foreign key constraints if rolling back
+    add_foreign_key :position_check_ins, :people, column: :manager_completed_by_id, name: "fk_rails_d2a710595b" unless foreign_key_exists?(:position_check_ins, :people, column: :manager_completed_by_id, name: "fk_rails_d2a710595b")
+    add_foreign_key :position_check_ins, :people, column: :finalized_by_id, name: "fk_rails_687dd815a1" unless foreign_key_exists?(:position_check_ins, :people, column: :finalized_by_id, name: "fk_rails_687dd815a1")
   end
 end
