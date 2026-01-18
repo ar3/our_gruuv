@@ -295,8 +295,8 @@ class MaapChangeDetectionService
         if previous_official_check_in['official_check_in_completed_at'].present? != official_data['official_check_in_completed_at'].present?
           changes << { field: 'official_completion', current: previous_official_check_in['official_check_in_completed_at'].present?, proposed: official_data['official_check_in_completed_at'].present? }
         end
-        if previous_official_check_in['finalized_by_id'].to_s != official_data['finalized_by_id'].to_s
-          changes << { field: 'finalized_by', current: previous_official_check_in['finalized_by_id'], proposed: official_data['finalized_by_id'] }
+        if previous_official_check_in['finalized_by_teammate_id'].to_s != official_data['finalized_by_teammate_id'].to_s
+          changes << { field: 'finalized_by', current: previous_official_check_in['finalized_by_teammate_id'], proposed: official_data['finalized_by_teammate_id'] }
         end
       else
         # New check-in
@@ -494,7 +494,7 @@ class MaapChangeDetectionService
         official_changed = previous_official_check_in['official_rating'] != official_data['official_rating'] ||
           previous_official_check_in['shared_notes'] != official_data['shared_notes'] ||
           previous_official_check_in['official_check_in_completed_at'].present? != official_data['official_check_in_completed_at'].present? ||
-          previous_official_check_in['finalized_by_id'].to_s != official_data['finalized_by_id'].to_s
+          previous_official_check_in['finalized_by_teammate_id'].to_s != official_data['finalized_by_teammate_id'].to_s
         return true if official_changed
       elsif official_data.values.any? { |v| v.present? }
         return true

@@ -144,10 +144,15 @@ module MaapData
       
       if should_complete
         official_check_in['official_check_in_completed_at'] = Time.current.iso8601
-        official_check_in['finalized_by_id'] = @maap_snapshot.created_by_id
+        if @maap_snapshot.created_by
+          company_teammate = CompanyTeammate.find_by(person_id: @maap_snapshot.created_by_id, organization_id: @company.id)
+          official_check_in['finalized_by_teammate_id'] = company_teammate&.id
+        else
+          official_check_in['finalized_by_teammate_id'] = nil
+        end
       else
         official_check_in['official_check_in_completed_at'] = nil
-        official_check_in['finalized_by_id'] = nil
+        official_check_in['finalized_by_teammate_id'] = nil
       end
       
       official_check_in
@@ -165,10 +170,15 @@ module MaapData
       
       if should_complete
         manager_check_in['manager_completed_at'] = Time.current.iso8601
-        manager_check_in['manager_completed_by_id'] = @maap_snapshot.created_by_id
+        if @maap_snapshot.created_by
+          company_teammate = CompanyTeammate.find_by(person_id: @maap_snapshot.created_by_id, organization_id: @company.id)
+          manager_check_in['manager_completed_by_teammate_id'] = company_teammate&.id
+        else
+          manager_check_in['manager_completed_by_teammate_id'] = nil
+        end
       else
         manager_check_in['manager_completed_at'] = nil
-        manager_check_in['manager_completed_by_id'] = nil
+        manager_check_in['manager_completed_by_teammate_id'] = nil
       end
       
       manager_check_in

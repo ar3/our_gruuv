@@ -19,7 +19,7 @@ RSpec.describe PositionCheckIn, type: :model do
 
     it 'has required associations from CheckInBehavior' do
       expect(check_in).to respond_to(:teammate)
-      expect(check_in).to respond_to(:finalized_by)
+      expect(check_in).to respond_to(:finalized_by_teammate)
       expect(check_in).to respond_to(:maap_snapshot)
     end
 
@@ -84,13 +84,13 @@ RSpec.describe PositionCheckIn, type: :model do
     end
 
     it 'creates a new check-in when a finalized one exists' do
-      finalized_by = create(:person)
+      finalized_by_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
       finalized_check_in = create(:position_check_in, 
         teammate: teammate, 
         employment_tenure: employment_tenure,
         official_check_in_completed_at: 1.day.ago,
         official_rating: 2,
-        finalized_by: finalized_by
+        finalized_by_teammate: finalized_by_teammate
       )
       
       expect(finalized_check_in.officially_completed?).to be true
@@ -120,14 +120,14 @@ RSpec.describe PositionCheckIn, type: :model do
 
   describe 'latest_finalized_for' do
     it 'returns the most recent finalized check-in' do
-      finalized_by = create(:person)
+      finalized_by_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
       
       old_finalized = create(:position_check_in,
         teammate: teammate,
         employment_tenure: employment_tenure,
         official_check_in_completed_at: 3.days.ago,
         official_rating: 1,
-        finalized_by: finalized_by
+        finalized_by_teammate: finalized_by_teammate
       )
       
       recent_finalized = create(:position_check_in,
@@ -135,7 +135,7 @@ RSpec.describe PositionCheckIn, type: :model do
         employment_tenure: employment_tenure,
         official_check_in_completed_at: 1.day.ago,
         official_rating: 2,
-        finalized_by: finalized_by
+        finalized_by_teammate: finalized_by_teammate
       )
       
       result = PositionCheckIn.latest_finalized_for(teammate)
@@ -157,13 +157,13 @@ RSpec.describe PositionCheckIn, type: :model do
     end
 
     it 'returns the latest finalized check-in even when open check-ins exist' do
-      finalized_by = create(:person)
+      finalized_by_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
       finalized_check_in = create(:position_check_in,
         teammate: teammate,
         employment_tenure: employment_tenure,
         official_check_in_completed_at: 1.day.ago,
         official_rating: 2,
-        finalized_by: finalized_by
+        finalized_by_teammate: finalized_by_teammate
       )
       
       open_check_in = PositionCheckIn.find_or_create_open_for(teammate)
@@ -221,22 +221,22 @@ RSpec.describe PositionCheckIn, type: :model do
 
     describe '#complete_manager_side!' do
       it 'marks manager side as completed' do
-        manager = create(:person)
+        manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
         expect(check_in.manager_completed?).to be false
 
-        check_in.complete_manager_side!(completed_by: manager)
+        check_in.complete_manager_side!(completed_by: manager_teammate)
 
         expect(check_in.manager_completed?).to be true
         expect(check_in.manager_completed_at).to be_present
-        expect(check_in.manager_completed_by).to eq(manager)
+        expect(check_in.manager_completed_by_teammate).to eq(manager_teammate)
       end
 
       it 'updates ready_for_finalization status when employee already completed' do
         check_in.complete_employee_side!
         expect(check_in.ready_for_finalization?).to be false
 
-        manager = create(:person)
-        check_in.complete_manager_side!(completed_by: manager)
+        manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
+        check_in.complete_manager_side!(completed_by: manager_teammate)
 
         expect(check_in.ready_for_finalization?).to be true
       end
@@ -267,21 +267,21 @@ RSpec.describe PositionCheckIn, type: :model do
 
     describe '#uncomplete_manager_side!' do
       it 'unmarks manager side as completed' do
-        manager = create(:person)
-        check_in.complete_manager_side!(completed_by: manager)
+        manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
+        check_in.complete_manager_side!(completed_by: manager_teammate)
         expect(check_in.manager_completed?).to be true
 
         check_in.uncomplete_manager_side!
 
         expect(check_in.manager_completed?).to be false
         expect(check_in.manager_completed_at).to be_nil
-        expect(check_in.manager_completed_by).to be_nil
+        expect(check_in.manager_completed_by_teammate).to be_nil
       end
 
       it 'updates ready_for_finalization status when employee completed' do
         check_in.complete_employee_side!
-        manager = create(:person)
-        check_in.complete_manager_side!(completed_by: manager)
+        manager_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
+        check_in.complete_manager_side!(completed_by: manager_teammate)
         expect(check_in.ready_for_finalization?).to be true
 
         check_in.uncomplete_manager_side!
@@ -344,7 +344,7 @@ RSpec.describe PositionCheckIn, type: :model do
     end
 
     it 'finalized check-in can be linked to snapshot' do
-      finalized_by = create(:person)
+      finalized_by_teammate = CompanyTeammate.create!(person: create(:person), organization: organization)
       snapshot = create(:maap_snapshot, employee: person)
       
       finalized_check_in = create(:position_check_in,
@@ -352,7 +352,7 @@ RSpec.describe PositionCheckIn, type: :model do
         employment_tenure: employment_tenure,
         official_check_in_completed_at: 1.day.ago,
         official_rating: 2,
-        finalized_by: finalized_by,
+        finalized_by_teammate: finalized_by_teammate,
         maap_snapshot: snapshot
       )
       
@@ -413,7 +413,7 @@ RSpec.describe PositionCheckIn, type: :model do
         employment_tenure: employment_tenure,
         official_check_in_completed_at: 1.day.ago,
         official_rating: 2,
-        finalized_by: manager,
+        finalized_by_teammate: manager_teammate,
         maap_snapshot: snapshot
       )
       
@@ -429,7 +429,7 @@ RSpec.describe PositionCheckIn, type: :model do
         employment_tenure: employment_tenure,
         official_check_in_completed_at: 1.day.ago,
         official_rating: 2,
-        finalized_by: manager,
+        finalized_by_teammate: manager_teammate,
         maap_snapshot: snapshot
       )
       

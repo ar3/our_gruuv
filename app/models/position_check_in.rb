@@ -3,7 +3,7 @@ class PositionCheckIn < ApplicationRecord
   
   belongs_to :teammate
   belongs_to :employment_tenure
-  belongs_to :manager_completed_by, class_name: 'Person', optional: true
+  belongs_to :manager_completed_by_teammate, class_name: 'CompanyTeammate', optional: true
   
   # Virtual attribute for form handling
   attr_accessor :status
@@ -11,6 +11,9 @@ class PositionCheckIn < ApplicationRecord
   validates :employee_rating, inclusion: { in: -3..3 }, allow_nil: true
   validates :manager_rating, inclusion: { in: -3..3 }, allow_nil: true
   validates :official_rating, inclusion: { in: -3..3 }, allow_nil: true
+  
+  validates :manager_completed_by_teammate, presence: true, if: :manager_completed?
+  validates :finalized_by_teammate, presence: true, if: :officially_completed?
   
   validate :only_one_open_check_in_per_teammate
   

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_12_073048) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_17_170927) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -751,12 +751,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_12_073048) do
     t.bigint "maap_snapshot_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "manager_completed_by_teammate_id"
+    t.bigint "finalized_by_teammate_id"
     t.index ["employee_completed_at"], name: "index_position_check_ins_on_employee_completed_at"
     t.index ["employment_tenure_id"], name: "index_position_check_ins_on_employment_tenure_id"
     t.index ["finalized_by_id"], name: "index_position_check_ins_on_finalized_by_id"
+    t.index ["finalized_by_teammate_id"], name: "index_position_check_ins_on_finalized_by_teammate_id"
     t.index ["maap_snapshot_id"], name: "index_position_check_ins_on_maap_snapshot_id"
     t.index ["manager_completed_at"], name: "index_position_check_ins_on_manager_completed_at"
     t.index ["manager_completed_by_id"], name: "index_position_check_ins_on_manager_completed_by_id"
+    t.index ["manager_completed_by_teammate_id"], name: "index_position_check_ins_on_manager_completed_by_teammate_id"
     t.index ["official_check_in_completed_at"], name: "index_position_check_ins_on_official_check_in_completed_at"
     t.index ["teammate_id", "check_in_started_on"], name: "idx_on_teammate_id_check_in_started_on_52d3f0832c"
     t.index ["teammate_id"], name: "index_position_check_ins_on_teammate_id"

@@ -9,7 +9,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
   let(:teammate) { create(:teammate, person: person, organization: organization) }
   let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, manager_teammate: manager_teammate) }
   let(:check_in) { create(:position_check_in, :ready_for_finalization, teammate: teammate, employment_tenure: employment_tenure) }
-  let(:finalizer) { described_class.new(check_in: check_in, official_rating: 2, shared_notes: 'Great work!', finalized_by: manager) }
+  let(:finalizer) { described_class.new(check_in: check_in, official_rating: 2, shared_notes: 'Great work!', finalized_by: manager_teammate) }
 
   describe '#finalize' do
     context 'when check-in is ready for finalization' do
@@ -74,7 +74,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
                  employment_tenure: employment_tenure,
                  official_rating: 1,
                  official_check_in_completed_at: 1.month.ago,
-                 finalized_by: manager)
+                 finalized_by_teammate: manager_teammate)
         end
         
         it 'creates observable moment when rating improved' do
@@ -96,7 +96,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
                  employment_tenure: employment_tenure,
                  official_rating: 3,
                  official_check_in_completed_at: 1.month.ago,
-                 finalized_by: manager)
+                 finalized_by_teammate: manager_teammate)
         end
         
         it 'does not create observable moment when rating decreased' do
@@ -136,7 +136,7 @@ RSpec.describe Finalizers::PositionCheckInFinalizer do
     end
 
     context 'when official rating is 0' do
-      let(:finalizer) { described_class.new(check_in: check_in, official_rating: 0, shared_notes: 'Notes', finalized_by: manager) }
+      let(:finalizer) { described_class.new(check_in: check_in, official_rating: 0, shared_notes: 'Notes', finalized_by: manager_teammate) }
 
       it 'returns error' do
         result = finalizer.finalize

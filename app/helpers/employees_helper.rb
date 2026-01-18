@@ -364,8 +364,18 @@ module EmployeesHelper
             proposed: change[:proposed] ? 'Completed' : 'Not completed'
           }
         when 'finalized_by'
-          current_name = change[:current].present? ? Person.find_by(id: change[:current])&.display_name : 'None'
-          proposed_name = change[:proposed].present? ? Person.find_by(id: change[:proposed])&.display_name : 'None'
+          current_name = if change[:current].present?
+            company_teammate = CompanyTeammate.find_by(id: change[:current])
+            company_teammate ? company_teammate.person.display_name : 'None'
+          else
+            'None'
+          end
+          proposed_name = if change[:proposed].present?
+            company_teammate = CompanyTeammate.find_by(id: change[:proposed])
+            company_teammate ? company_teammate.person.display_name : 'None'
+          else
+            'None'
+          end
           assignment_formatted[:changes] << {
             label: 'Finalized By',
             current: current_name || 'None',
@@ -738,7 +748,17 @@ module EmployeesHelper
     request_info = snapshot.manager_request_info
     
     # Get who executed it
-    if request_info['finalized_by_id'].present?
+    if request_info['finalized_by_teammate_id'].present?
+      executed_by_teammate = CompanyTeammate.find_by(id: request_info['finalized_by_teammate_id'])
+      if executed_by_teammate
+        content << "<strong>Executed by:</strong> #{executed_by_teammate.person.display_name}"
+      elsif request_info['finalized_by_id'].present?
+        # Fallback to person_id for backward compatibility
+        executed_by = Person.find_by(id: request_info['finalized_by_id'])
+        content << "<strong>Executed by:</strong> #{executed_by&.display_name || 'Unknown'}"
+      end
+    elsif request_info['finalized_by_id'].present?
+      # Fallback to person_id for backward compatibility
       executed_by = Person.find_by(id: request_info['finalized_by_id'])
       content << "<strong>Executed by:</strong> #{executed_by&.display_name || 'Unknown'}"
     end

@@ -61,7 +61,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
         service = described_class.new(
           teammate: employee_teammate,
           finalization_params: finalization_params,
-          finalized_by: manager,
+          finalized_by: manager_teammate,
           request_info: request_info,
           maap_snapshot_reason: 'Q4 2024 Performance Review'
         )
@@ -78,7 +78,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
         service = described_class.new(
           teammate: employee_teammate,
           finalization_params: finalization_params,
-          finalized_by: manager,
+          finalized_by: manager_teammate,
           request_info: request_info,
           maap_snapshot_reason: custom_reason
         )
@@ -96,7 +96,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
         service = described_class.new(
           teammate: employee_teammate,
           finalization_params: finalization_params,
-          finalized_by: manager,
+          finalized_by: manager_teammate,
           request_info: request_info,
           maap_snapshot_reason: ''
         )
@@ -114,7 +114,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
         service = described_class.new(
           teammate: employee_teammate,
           finalization_params: finalization_params,
-          finalized_by: manager,
+          finalized_by: manager_teammate,
           request_info: request_info,
           maap_snapshot_reason: nil
         )
@@ -130,7 +130,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
         service = described_class.new(
           teammate: employee_teammate,
           finalization_params: finalization_params,
-          finalized_by: manager,
+          finalized_by: manager_teammate,
           request_info: request_info
         )
         
@@ -178,7 +178,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           service = described_class.new(
             teammate: employee_teammate,
             finalization_params: position_finalization_params,
-            finalized_by: manager,
+            finalized_by: manager_teammate,
             request_info: request_info
           )
           
@@ -203,7 +203,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           service = described_class.new(
             teammate: employee_teammate,
             finalization_params: position_finalization_params,
-            finalized_by: manager,
+            finalized_by: manager_teammate,
             request_info: request_info
           )
           
@@ -230,7 +230,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           service = described_class.new(
             teammate: employee_teammate,
             finalization_params: position_finalization_params,
-            finalized_by: manager,
+            finalized_by: manager_teammate,
             request_info: request_info
           )
           
@@ -250,7 +250,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           service = described_class.new(
             teammate: employee_teammate,
             finalization_params: position_finalization_params,
-            finalized_by: manager,
+            finalized_by: manager_teammate,
             request_info: request_info
           )
           
@@ -275,7 +275,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
                    employment_tenure: employment_tenure,
                    official_rating: 1,
                    official_check_in_completed_at: 1.month.ago,
-                   finalized_by: manager)
+                   finalized_by_teammate: manager_teammate)
           end
           
           it 'creates observable moment when position check-in rating improved' do
@@ -291,7 +291,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
               described_class.new(
                 teammate: employee_teammate,
                 finalization_params: params,
-                finalized_by: manager,
+                finalized_by: manager_teammate,
                 request_info: request_info
               ).call
             }.to change { ObservableMoment.count }.by(1)
@@ -309,7 +309,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
                    employment_tenure: employment_tenure,
                    official_rating: 3,
                    official_check_in_completed_at: 1.month.ago,
-                   finalized_by: manager)
+                   finalized_by_teammate: manager_teammate)
           end
           
           it 'does not create observable moment when rating decreased' do
@@ -325,7 +325,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
               described_class.new(
                 teammate: employee_teammate,
                 finalization_params: params,
-                finalized_by: manager,
+                finalized_by: manager_teammate,
                 request_info: request_info
               ).call
             }.not_to change { ObservableMoment.count }
@@ -336,7 +336,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           service = described_class.new(
             teammate: employee_teammate,
             finalization_params: position_finalization_params,
-            finalized_by: manager,
+            finalized_by: manager_teammate,
             request_info: request_info
           )
           
@@ -381,7 +381,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           service = described_class.new(
             teammate: employee_teammate,
             finalization_params: position_finalization_params,
-            finalized_by: manager,
+            finalized_by: manager_teammate,
             request_info: request_info
           )
           
@@ -418,7 +418,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           service = described_class.new(
             teammate: employee_teammate,
             finalization_params: position_finalization_params,
-            finalized_by: manager,
+            finalized_by: manager_teammate,
             request_info: request_info
           )
           
@@ -453,7 +453,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
             described_class.new(
               teammate: employee_teammate,
               finalization_params: position_finalization_params,
-              finalized_by: manager,
+              finalized_by: manager_teammate,
               request_info: request_info
             ).call
           }.to change { ObservableMoment.count }.by(1)
@@ -467,7 +467,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           service = described_class.new(
             teammate: employee_teammate,
             finalization_params: position_finalization_params,
-            finalized_by: manager,
+            finalized_by: manager_teammate,
             request_info: request_info
           )
           
@@ -485,7 +485,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           service = described_class.new(
             teammate: employee_teammate,
             finalization_params: position_finalization_params,
-            finalized_by: manager,
+            finalized_by: manager_teammate,
             request_info: request_info
           )
           
@@ -504,7 +504,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           service = described_class.new(
             teammate: employee_teammate,
             finalization_params: position_finalization_params,
-            finalized_by: manager,
+            finalized_by: manager_teammate,
             request_info: request_info
           )
           
@@ -556,7 +556,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
             described_class.new(
               teammate: employee_teammate,
               finalization_params: empty_params,
-              finalized_by: manager,
+              finalized_by: manager_teammate,
               request_info: request_info
             ).call
           }.not_to change { MaapSnapshot.count }
@@ -568,7 +568,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
           result = described_class.new(
             teammate: employee_teammate,
             finalization_params: empty_params,
-            finalized_by: manager,
+            finalized_by: manager_teammate,
             request_info: request_info
           ).call
           
@@ -588,7 +588,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
             described_class.new(
               teammate: employee_teammate,
               finalization_params: params_without_finalize,
-              finalized_by: manager,
+              finalized_by: manager_teammate,
               request_info: request_info
             ).call
           }.not_to change { MaapSnapshot.count }
@@ -609,7 +609,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
             described_class.new(
               teammate: employee_teammate,
               finalization_params: params_with_empty_assignments,
-              finalized_by: manager,
+              finalized_by: manager_teammate,
               request_info: request_info
             ).call
           }.not_to change { MaapSnapshot.count }
@@ -630,7 +630,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
             described_class.new(
               teammate: employee_teammate,
               finalization_params: position_params,
-              finalized_by: manager,
+              finalized_by: manager_teammate,
               request_info: request_info
             ).call
           }.to change { MaapSnapshot.count }.by(1)
@@ -641,7 +641,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
             described_class.new(
               teammate: employee_teammate,
               finalization_params: finalization_params,
-              finalized_by: manager,
+              finalized_by: manager_teammate,
               request_info: request_info
             ).call
           }.to change { MaapSnapshot.count }.by(1)
@@ -681,7 +681,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
             described_class.new(
               teammate: employee_teammate,
               finalization_params: params_with_one_finalized,
-              finalized_by: manager,
+              finalized_by: manager_teammate,
               request_info: request_info
             ).call
           }.to change { MaapSnapshot.count }.by(1)
@@ -727,7 +727,7 @@ RSpec.describe CheckInFinalizationService, type: :service do
             described_class.new(
               teammate: employee_teammate,
               finalization_params: all_params,
-              finalized_by: manager,
+              finalized_by: manager_teammate,
               request_info: request_info
             ).call
           }.to change { MaapSnapshot.count }.by(1)

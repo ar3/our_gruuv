@@ -632,7 +632,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         current_check_in.manager_rating != proposed_data['manager_check_in']['manager_rating'] ||
         current_check_in.manager_private_notes != proposed_data['manager_check_in']['manager_private_notes'] ||
         (current_check_in.manager_completed? || false) != proposed_data['manager_check_in']['manager_completed_at'].present? ||
-        current_check_in.manager_completed_by_id.to_s != proposed_data['manager_check_in']['manager_completed_by_id'].to_s
+        current_check_in.manager_completed_by_teammate_id.to_s != proposed_data['manager_check_in']['manager_completed_by_teammate_id'].to_s
       else
         proposed_data['manager_check_in'].values.any? { |v| v.present? }
       end
@@ -645,7 +645,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
         current_check_in.official_rating != proposed_data['official_check_in']['official_rating'] ||
         current_check_in.shared_notes != proposed_data['official_check_in']['shared_notes'] ||
         (current_check_in.officially_completed? || false) != proposed_data['official_check_in']['official_check_in_completed_at'].present? ||
-        current_check_in.finalized_by_id.to_s != proposed_data['official_check_in']['finalized_by_id'].to_s
+        current_check_in.finalized_by_teammate_id.to_s != proposed_data['official_check_in']['finalized_by_teammate_id'].to_s
       else
         proposed_data['official_check_in'].values.any? { |v| v.present? }
       end

@@ -59,9 +59,9 @@
                         %span.badge.bg-success.me-1 ✓ Complete
                         %br
                         %small.text-muted= format_time_in_user_timezone(check_in.manager_completed_at, format: '%m/%d/%Y %I:%M %p')
-                        - if check_in.manager_completed_by
+                        - if check_in.manager_completed_by_teammate
                           %br
-                          %small.text-muted by #{check_in.manager_completed_by.display_name}
+                          %small.text-muted by #{check_in.manager_completed_by_teammate.person.display_name}
                       - else
                         %span.badge.bg-warning Pending
                     
@@ -70,9 +70,9 @@
                         %span.badge.bg-primary.me-1 ✓ Finalized
                         %br
                         %small.text-muted= format_time_in_user_timezone(check_in.official_check_in_completed_at, format: '%m/%d/%Y %I:%M %p')
-                        - if check_in.finalized_by
+                        - if check_in.finalized_by_teammate
                           %br
-                          %small.text-muted by #{check_in.finalized_by.display_name}
+                          %small.text-muted by #{check_in.finalized_by_teammate.person.display_name}
                         %br
                         %small.text-muted Rating: #{aspiration_rating_display(check_in.official_rating)}
                       - elsif check_in.ready_for_finalization?

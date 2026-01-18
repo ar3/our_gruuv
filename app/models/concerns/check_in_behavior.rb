@@ -4,7 +4,7 @@ module CheckInBehavior
   included do
     # Common associations
     belongs_to :teammate
-    belongs_to :finalized_by, class_name: 'Person', optional: true
+    belongs_to :finalized_by_teammate, class_name: 'CompanyTeammate', optional: true
     belongs_to :maap_snapshot, optional: true
     
     # Common validations
@@ -134,7 +134,7 @@ module CheckInBehavior
   def complete_manager_side!(completed_by:)
     update!(
       manager_completed_at: Time.current,
-      manager_completed_by: completed_by
+      manager_completed_by_teammate: completed_by
     )
   end
   
@@ -145,7 +145,7 @@ module CheckInBehavior
   def uncomplete_manager_side!
     update!(
       manager_completed_at: nil,
-      manager_completed_by: nil
+      manager_completed_by_teammate: nil
     )
   end
 end

@@ -45,7 +45,7 @@ class Organizations::CompanyTeammates::FinalizationsController < Organizations::
     result = CheckInFinalizationService.new(
       teammate: @teammate,
       finalization_params: finalization_params,
-      finalized_by: current_person,
+      finalized_by: current_company_teammate,
       request_info: build_request_info,
       maap_snapshot_reason: finalization_params[:maap_snapshot_reason]
     ).call

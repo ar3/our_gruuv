@@ -121,13 +121,14 @@ class CheckInFinalizationService
     
     MaapSnapshot.create!(
       employee: @teammate.person,
-      created_by: @finalized_by,
+      created_by: @finalized_by.person,
       company: @teammate.organization,
       change_type: determine_change_type(results),
       reason: reason,
       effective_date: Time.current,
       manager_request_info: @request_info.merge(
         finalized_by_id: @finalized_by.id,
+        finalized_by_teammate_id: @finalized_by.id,
         timestamp: Time.current.iso8601
       ),
           maap_data: build_ratings_data(results)

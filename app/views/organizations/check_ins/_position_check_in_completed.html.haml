@@ -21,7 +21,7 @@
       .card-header.bg-success.text-white Official Rating
       .card-body
         %h3= position_rating_display(check_in.official_rating)
-        %p.small Finalized by #{check_in.finalized_by.display_name}
+        %p.small Finalized by #{check_in.finalized_by_teammate&.person&.display_name || 'Unknown'}
 
 - if check_in.shared_notes.present?
   .card.mt-3
