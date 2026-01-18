@@ -18,8 +18,13 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
 
   describe 'AssignmentCheckIn' do
     before do
-      # Set up manager relationship for AssignmentCheckIn specs
-      create(:employment_tenure, teammate: employee_teammate, company: organization, manager_teammate: manager_teammate)
+      # Set up manager relationship for AssignmentCheckIn specs - ensure it's active
+      create(:employment_tenure, 
+        teammate: employee_teammate, 
+        company: organization, 
+        manager_teammate: manager_teammate, 
+        started_at: 1.month.ago, 
+        ended_at: nil)
     end
     let(:assignment) { create(:assignment, company: organization) }
     let(:check_in) { create(:assignment_check_in, teammate: employee_teammate, assignment: assignment) }
@@ -66,7 +71,8 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
 
     context 'when manager completes (one side done)' do
       before do
-        check_in.update!(manager_completed_at: Time.current, manager_completed_by: manager)
+        manager_ct = CompanyTeammate.find(manager_teammate.id)
+        check_in.update!(manager_completed_at: Time.current, manager_completed_by_teammate: manager_ct)
       end
 
       it 'sends group DM with manager name in message' do
@@ -88,10 +94,11 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
 
     context 'when both complete' do
       before do
+        manager_ct = CompanyTeammate.find(manager_teammate.id)
         check_in.update!(
           employee_completed_at: Time.current,
           manager_completed_at: Time.current,
-          manager_completed_by: manager
+          manager_completed_by_teammate: manager_ct
         )
       end
 

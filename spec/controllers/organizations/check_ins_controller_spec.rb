@@ -377,7 +377,8 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
 
       it 'handles complete to draft transition' do
         position_check_in = create(:position_check_in, teammate: employee.teammates.first, employment_tenure: employment_tenure)
-        position_check_in.complete_manager_side!(completed_by: manager)
+        manager_ct = CompanyTeammate.find(manager_teammate.id)
+        position_check_in.complete_manager_side!(completed_by: manager_ct)
         
         patch :update, params: {
           organization_id: organization.id,

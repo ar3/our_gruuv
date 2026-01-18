@@ -84,7 +84,7 @@ module CheckIns
       
       case completion_state.to_sym
       when :both_complete
-        completer_name = check_in.manager_completed_by_teammate == manager_teammate ? manager_name : employee_name
+        completer_name = check_in.manager_completed_by_teammate_id == manager_teammate.id ? manager_name : employee_name
         link = Rails.application.routes.url_helpers.organization_company_teammate_finalization_url(
           organization,
           employee_teammate,

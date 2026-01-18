@@ -17,11 +17,13 @@ FactoryBot.define do
 
     trait :manager_completed do
       manager_completed_at { Time.current }
+      manager_completed_by_teammate { CompanyTeammate.create!(person: create(:person), organization: teammate.organization) }
     end
 
     trait :ready_for_finalization do
       employee_completed_at { Time.current }
       manager_completed_at { Time.current }
+      manager_completed_by_teammate { CompanyTeammate.create!(person: create(:person), organization: teammate.organization) }
     end
 
     trait :officially_completed do
@@ -29,6 +31,12 @@ FactoryBot.define do
       manager_completed_at { Time.current }
       official_check_in_completed_at { Time.current }
       official_rating { 'meeting' }
+      manager_completed_by_teammate { CompanyTeammate.create!(person: create(:person), organization: teammate.organization) }
+      finalized_by_teammate { CompanyTeammate.create!(person: create(:person), organization: teammate.organization) }
+    end
+
+    trait :finalized do
+      officially_completed
     end
 
     trait :with_high_energy do

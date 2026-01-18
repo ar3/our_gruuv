@@ -138,12 +138,12 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
       
       let!(:assignment_check_in) do
         create(:assignment_check_in,
+          :ready_for_finalization,
           teammate: employee_teammate,
           assignment: assignment,
           employee_rating: 'meeting',
           manager_rating: 'exceeding',
-          employee_completed_at: 1.day.ago,
-          manager_completed_at: 1.day.ago)
+          manager_completed_by_teammate: manager_teammate.reload.becomes(CompanyTeammate))
       end
 
       context "when no assignment tenure exists (first check-in)" do
@@ -184,7 +184,7 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
           expect(assignment_check_in.official_rating).to eq('exceeding')
           expect(assignment_check_in.shared_notes).to eq('First check-in for this assignment')
           expect(assignment_check_in.official_check_in_completed_at).to be_present
-          expect(assignment_check_in.finalized_by).to eq(manager)
+          expect(assignment_check_in.finalized_by_teammate_id).to eq(manager_teammate.id)
         end
 
         it "creates snapshot with assignment data" do
@@ -290,12 +290,12 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
       it "succeeds when assignment_check_ins exists but finalize flag is not set" do
         assignment = create(:assignment, company: organization)
         assignment_check_in = create(:assignment_check_in,
+          :ready_for_finalization,
           teammate: employee_teammate,
           assignment: assignment,
           employee_rating: 'meeting',
           manager_rating: 'exceeding',
-          employee_completed_at: 1.day.ago,
-          manager_completed_at: 1.day.ago)
+          manager_completed_by_teammate: manager_teammate.reload.becomes(CompanyTeammate))
         
         params_without_finalize = {
           assignment_check_ins: {
@@ -320,12 +320,12 @@ RSpec.describe "Organizations::CompanyTeammates::Finalizations", type: :request 
       let(:assignment) { create(:assignment, company: organization) }
       let!(:assignment_check_in) do
         create(:assignment_check_in,
+          :ready_for_finalization,
           teammate: employee_teammate,
           assignment: assignment,
           employee_rating: 'meeting',
           manager_rating: 'exceeding',
-          employee_completed_at: 1.day.ago,
-          manager_completed_at: 1.day.ago)
+          manager_completed_by_teammate: manager_teammate.reload.becomes(CompanyTeammate))
       end
 
       it "creates snapshot when only position is finalized" do

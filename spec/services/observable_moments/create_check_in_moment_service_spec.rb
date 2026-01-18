@@ -3,8 +3,9 @@ require 'rails_helper'
 RSpec.describe ObservableMoments::CreateCheckInMomentService do
   let(:company) { create(:organization, :company) }
   let(:teammate) { create(:teammate, organization: company) }
-  let(:finalized_by) { create(:person) }
-  let!(:finalizer_teammate) { create(:teammate, organization: company, person: finalized_by) }
+  let(:finalized_by_person) { create(:person) }
+  let!(:finalizer_teammate) { create(:teammate, organization: company, person: finalized_by_person, type: 'CompanyTeammate') }
+  let(:finalized_by) { CompanyTeammate.find(finalizer_teammate.id) }
   
   describe '.call for PositionCheckIn' do
     let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: company) }
@@ -16,7 +17,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
                employment_tenure: employment_tenure,
                official_rating: 1,
                official_check_in_completed_at: 1.month.ago,
-               finalized_by: finalized_by)
+               finalized_by_teammate: finalized_by)
       end
       
       let(:current_check_in) do
@@ -25,7 +26,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
                employment_tenure: employment_tenure,
                official_rating: 2,
                official_check_in_completed_at: Time.current,
-               finalized_by: finalized_by)
+               finalized_by_teammate: finalized_by)
       end
       
       it 'creates observable moment when rating improved' do
@@ -52,7 +53,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
                employment_tenure: employment_tenure,
                official_rating: 2,
                official_check_in_completed_at: 1.month.ago,
-               finalized_by: finalized_by)
+               finalized_by_teammate: finalized_by)
       end
       
       let(:current_check_in) do
@@ -61,7 +62,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
                employment_tenure: employment_tenure,
                official_rating: 1,
                official_check_in_completed_at: Time.current,
-               finalized_by: finalized_by)
+               finalized_by_teammate: finalized_by)
       end
       
       it 'does not create observable moment when rating decreased' do
@@ -94,7 +95,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
                employment_tenure: employment_tenure,
                official_rating: 2,
                official_check_in_completed_at: Time.current,
-               finalized_by: finalized_by)
+               finalized_by_teammate: finalized_by)
       end
       
       it 'creates observable moment for first check-in' do
@@ -118,7 +119,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
                assignment: assignment,
                official_rating: 'working_to_meet',
                official_check_in_completed_at: 1.month.ago,
-               finalized_by: finalized_by)
+               finalized_by_teammate: finalized_by)
       end
       
       let(:current_check_in) do
@@ -127,7 +128,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
                assignment: assignment,
                official_rating: 'meeting',
                official_check_in_completed_at: Time.current,
-               finalized_by: finalized_by)
+               finalized_by_teammate: finalized_by)
       end
       
       it 'creates observable moment when rating improved' do
@@ -150,7 +151,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
                assignment: assignment,
                official_rating: 'exceeding',
                official_check_in_completed_at: 1.month.ago,
-               finalized_by: finalized_by)
+               finalized_by_teammate: finalized_by)
       end
       
       let(:current_check_in) do
@@ -159,7 +160,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
                assignment: assignment,
                official_rating: 'meeting',
                official_check_in_completed_at: Time.current,
-               finalized_by: finalized_by)
+               finalized_by_teammate: finalized_by)
       end
       
       it 'does not create observable moment when rating decreased' do
@@ -183,7 +184,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
                aspiration: aspiration,
                official_rating: 'working_to_meet',
                official_check_in_completed_at: 1.month.ago,
-               finalized_by: finalized_by)
+               finalized_by_teammate: finalized_by)
       end
       
       let(:current_check_in) do
@@ -192,7 +193,7 @@ RSpec.describe ObservableMoments::CreateCheckInMomentService do
                aspiration: aspiration,
                official_rating: 'exceeding',
                official_check_in_completed_at: Time.current,
-               finalized_by: finalized_by)
+               finalized_by_teammate: finalized_by)
       end
       
       it 'creates observable moment when rating improved' do

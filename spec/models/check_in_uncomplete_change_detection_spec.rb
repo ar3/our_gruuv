@@ -4,7 +4,7 @@ RSpec.describe 'Check-In Uncomplete Change Detection', type: :model do
   let(:organization) { create(:organization, :company) }
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
-  let(:manager_teammate) { create(:teammate, person: manager, organization: organization) }
+  let(:manager_teammate) { create(:teammate, person: manager, organization: organization, type: 'CompanyTeammate') }
   let(:employee_teammate) { create(:teammate, person: employee, organization: organization) }
   
   # Create assignments
@@ -19,7 +19,7 @@ RSpec.describe 'Check-In Uncomplete Change Detection', type: :model do
     create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, anticipated_energy_percentage: 50)
     
     # Set up check-in that was previously completed by manager
-    manager_ct = manager_teammate.reload.becomes(CompanyTeammate)
+    manager_ct = CompanyTeammate.find(manager_teammate.id)
     @check_in = create(:assignment_check_in, 
            :finalized,
            teammate: employee_teammate, 

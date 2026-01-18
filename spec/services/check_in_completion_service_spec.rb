@@ -60,7 +60,7 @@ RSpec.describe CheckInCompletionService, type: :service do
 
       it 'detects completion and returns both_complete state' do
         service = CheckInCompletionService.new(check_in)
-        service.complete_manager_side!(completed_by: manager)
+        service.complete_manager_side!(completed_by: manager_teammate)
 
         expect(service.completion_detected?).to be true
         expect(service.completion_state).to eq(:both_complete)
@@ -118,7 +118,7 @@ RSpec.describe CheckInCompletionService, type: :service do
     context 'when manager completes' do
       it 'detects completion and returns manager_only state' do
         service = CheckInCompletionService.new(check_in)
-        service.complete_manager_side!(completed_by: manager)
+        service.complete_manager_side!(completed_by: manager_teammate)
 
         expect(service.completion_detected?).to be true
         expect(service.completion_state).to eq(:manager_only)
@@ -143,7 +143,7 @@ RSpec.describe CheckInCompletionService, type: :service do
     context 'when manager completes' do
       it 'detects completion and returns manager_only state' do
         service = CheckInCompletionService.new(check_in)
-        service.complete_manager_side!(completed_by: manager)
+        service.complete_manager_side!(completed_by: manager_teammate)
 
         expect(service.completion_detected?).to be true
         expect(service.completion_state).to eq(:manager_only)
