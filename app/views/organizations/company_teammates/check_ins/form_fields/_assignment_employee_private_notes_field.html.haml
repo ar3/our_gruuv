@@ -14,17 +14,15 @@
     - observation_count = observations.count
     .d-flex.flex-column.gap-1
       - time_ago = time_ago_in_words(since_date)
-      - filtered_obs_url = filtered_observations_organization_observations_path(@organization, rateable_type: 'Assignment', rateable_id: check_in.assignment_id, observee_ids: [teammate.id], start_date: since_date)
-      = button_to save_and_redirect_organization_company_teammate_check_ins_path(organization, @teammate), method: :post, params: { redirect_url: filtered_obs_url }, class: "btn btn-link text-muted text-decoration-none small p-0 border-0 bg-transparent", form: { class: "d-inline", data: { save_and_redirect: true } } do
-        %i.bi.bi-eye.me-1
-        - if observation_count > 0
-          #{pluralize(observation_count, 'note')} since #{time_ago} ago
-        - else
-          No notes to show since #{time_ago} ago
-      - quick_note_url = new_quick_note_organization_observations_path(@organization, return_url: organization_company_teammate_check_ins_path(organization, @teammate), return_text: "Check-ins", observee_ids: [teammate.id], rateable_type: 'Assignment', rateable_id: check_in.assignment_id, from_check_in: true)
-      = button_to save_and_redirect_organization_company_teammate_check_ins_path(organization, @teammate), method: :post, params: { redirect_url: quick_note_url }, class: "btn btn-link text-muted text-decoration-none small p-0 border-0 bg-transparent", form: { class: "d-inline", data: { save_and_redirect: true } } do
-        %i.bi.bi-plus-circle.me-1
-        Add Win / Challenge
+      = hidden_field_tag "since_date", since_date
+      = hidden_field_tag "teammate_id", teammate.id
+      - button_text = observation_count > 0 ? "#{pluralize(observation_count, 'note')} since #{time_ago} ago" : "No notes to show since #{time_ago} ago"
+      = main_form.submit button_text,
+                         class: "btn btn-link text-muted text-decoration-none small p-0 border-0 bg-transparent",
+                         name: "save_and_view_observations_assignment_#{check_in.assignment.id}"
+      = main_form.submit "Add Win / Challenge",
+                         class: "btn btn-link text-muted text-decoration-none small p-0 border-0 bg-transparent",
+                         name: "save_and_add_quick_note_assignment_#{check_in.assignment.id}"
 
 
 

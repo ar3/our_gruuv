@@ -423,10 +423,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
 
   def new_quick_note
     authorize Observation, :create?
-    @from_check_in = params[:from_check_in].present?
     
-    # Use 'observed_and_managers' as default privacy when coming from check-ins
-    default_privacy = @from_check_in ? 'observed_and_managers' : 'observed_only'
+    # Use 'observed_and_managers' as default privacy when coming from check-ins (detected via return_url)
+    default_privacy = params[:return_url].to_s.include?('check_ins') ? 'observed_and_managers' : 'observed_only'
     setup_typed_observation('quick_note', default_privacy)
     
     @allowed_privacy_levels = [:observer_only, :observed_only, :observed_and_managers]
@@ -950,18 +949,13 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         if @observation.published_at.present?
           @observation.update_column(:published_at, nil)
         end
-        # If from_check_in is present, redirect to show page with special notice
-        if params[:from_check_in].present?
-          redirect_to organization_observation_path(organization, @observation), 
-                      notice: 'Successfully saved this note. Now close this and go back to check-ins page.'
-        else
-          # Save draft and return to the specified return_url, or observation show page, or observations index
-          redirect_url = params[:return_url].presence || (@observation.present? ? organization_observation_path(organization, @observation) : organization_observations_path(organization))
-          redirect_to redirect_url, notice: 'Draft saved successfully.'
-        end
+        # Save draft and return to the specified return_url, or observation show page, or observations index
+        redirect_url = params[:return_url].presence || (@observation.present? ? organization_observation_path(organization, @observation) : organization_observations_path(organization))
+        redirect_to redirect_url, notice: 'Draft saved successfully.'
       else
-        redirect_to organization_observation_path(organization, @observation), 
-                    notice: 'Observation was successfully saved.'
+        # If return_url is provided, redirect there; otherwise go to observation show page
+        redirect_url = params[:return_url].presence || organization_observation_path(organization, @observation)
+        redirect_to redirect_url, notice: 'Observation was successfully saved.'
       end
     else
       Rails.logger.error "Failed to update: #{@observation.errors.full_messages.join(', ')}"
@@ -1449,17 +1443,13 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
       end
       
-      # If from_check_in is present, always redirect to show page with special notice
-      if params[:from_check_in].present?
-        redirect_to organization_observation_path(organization, @observation), 
-                    notice: 'Successfully saved this note. Now close this and go back to check-ins page.'
       # If return_url is provided, use it (from form/new page)
       # Otherwise, redirect to show page (publish from show page)
-      else
-        redirect_url = params[:return_url] || organization_observation_path(organization, @observation)
+      if params[:return_url].present?
+        redirect_url = params[:return_url]
         
         # Add show_observations_for param if provided (only if not already in return_url)
-        if params[:return_url].present? && params[:show_observations_for].present?
+        if params[:show_observations_for].present?
           # Only add if not already in the return_url
           unless redirect_url.include?('show_observations_for=')
             redirect_url += redirect_url.include?('?') ? '&' : '?'
@@ -1467,6 +1457,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
           end
         end
         
+        redirect_to redirect_url, notice: 'Observation was successfully published.'
+      else
+        redirect_url = organization_observation_path(organization, @observation)
         redirect_to redirect_url, notice: 'Observation was successfully published.'
       end
     rescue ActiveRecord::RecordInvalid => e

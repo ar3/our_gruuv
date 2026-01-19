@@ -80,8 +80,9 @@ RSpec.describe 'Organizations::Observations', type: :request do
       # We can verify this by checking the form or the observation instance
     end
 
-    it 'sets default privacy level to observed_and_managers when from_check_in is true' do
-      get new_quick_note_organization_observations_path(organization, from_check_in: true, observee_ids: [teammate.id])
+    it 'sets default privacy level to observed_and_managers when return_url contains check_ins' do
+      return_url = organization_company_teammate_check_ins_path(organization, teammate)
+      get new_quick_note_organization_observations_path(organization, return_url: return_url, observee_ids: [teammate.id])
       expect(response).to have_http_status(:success)
       # Verify the notice is displayed
       expect(response.body).to include('After you save this note, to return to the check-in, close this page')
@@ -89,8 +90,9 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response.body).to match(/value="observed_and_managers"/)
     end
 
-    it 'displays check-in notice when from_check_in is true' do
-      get new_quick_note_organization_observations_path(organization, from_check_in: true)
+    it 'displays check-in notice when return_url contains check_ins' do
+      return_url = organization_company_teammate_check_ins_path(organization, teammate)
+      get new_quick_note_organization_observations_path(organization, return_url: return_url)
       expect(response).to have_http_status(:success)
       expect(response.body).to include('After you save this note, to return to the check-in, close this page')
     end
@@ -515,22 +517,50 @@ RSpec.describe 'Organizations::Observations', type: :request do
         expect(observation.story).to eq('Test story')
       end
 
-      it 'redirects to show page with check-in notice when from_check_in is present' do
+      it 'redirects to return_url when provided with save_draft_and_return' do
         quick_note = create(:observation, observer: person, company: organization, observation_type: 'quick_note', created_as_type: 'quick_note')
+        return_url = organization_company_teammate_check_ins_path(organization, teammate)
         post update_draft_organization_observation_path(organization, quick_note), params: {
           _method: 'patch',
           observation: { privacy_level: 'observed_and_managers', story: 'Test story' },
           save_draft_and_return: '1',
-          return_url: organization_company_teammate_check_ins_path(organization, teammate),
-          from_check_in: 'true'
+          return_url: return_url
         }
         
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_observation_path(organization, quick_note))
-        follow_redirect!
-        expect(response.body).to include('Successfully saved this note. Now close this and go back to check-ins page.')
+        expect(response).to redirect_to(return_url)
         quick_note.reload
         expect(quick_note.story).to eq('Test story')
+      end
+    end
+
+    context 'with default save (no button name)' do
+      let(:observation) { create(:observation, observer: person, company: organization, observation_type: 'quick_note', created_as_type: 'quick_note') }
+
+      it 'saves and redirects to return_url when present' do
+        return_url = organization_company_teammate_check_ins_path(organization, teammate)
+        post update_draft_organization_observation_path(organization, observation), params: {
+          _method: 'patch',
+          observation: { privacy_level: 'observed_and_managers', story: 'Test story' },
+          return_url: return_url
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(return_url)
+        observation.reload
+        expect(observation.story).to eq('Test story')
+      end
+
+      it 'redirects to observation show page when return_url is not present' do
+        post update_draft_organization_observation_path(organization, observation), params: {
+          _method: 'patch',
+          observation: { privacy_level: 'observed_and_managers', story: 'Test story' }
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(organization_observation_path(organization, observation))
+        observation.reload
+        expect(observation.story).to eq('Test story')
       end
     end
   end
@@ -557,6 +587,36 @@ RSpec.describe 'Organizations::Observations', type: :request do
         observation.reload
         expect(observation.published_at).to be_present
       end
+
+      it 'redirects to return_url when provided' do
+        return_url = organization_company_teammate_check_ins_path(organization, teammate)
+        post publish_organization_observation_path(organization, observation), params: {
+          observation: {
+            story: 'Test story',
+            privacy_level: 'observed_and_managers'
+          },
+          return_url: return_url
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(return_url)
+        observation.reload
+        expect(observation.published_at).to be_present
+      end
+
+      it 'redirects to observation show page when return_url is not provided' do
+        post publish_organization_observation_path(organization, observation), params: {
+          observation: {
+            story: 'Test story',
+            privacy_level: 'observed_and_managers'
+          }
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(organization_observation_path(organization, observation))
+        observation.reload
+        expect(observation.published_at).to be_present
+      end
     end
 
     context 'for feedback observation' do
@@ -580,9 +640,25 @@ RSpec.describe 'Organizations::Observations', type: :request do
         observation.reload
         expect(observation.published_at).to be_present
       end
+
+      it 'redirects to return_url when provided' do
+        return_url = organization_company_teammate_check_ins_path(organization, teammate)
+        post publish_organization_observation_path(organization, observation), params: {
+          observation: {
+            story: 'Test story',
+            privacy_level: 'observed_only'
+          },
+          return_url: return_url
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(return_url)
+        observation.reload
+        expect(observation.published_at).to be_present
+      end
     end
 
-    context 'when from_check_in is present' do
+    context 'when return_url is provided' do
       let(:quick_note) do
         obs = build(:observation, observer: person, company: organization, observation_type: 'quick_note', created_as_type: 'quick_note', published_at: nil)
         obs.observees.build(teammate: create(:teammate, person: create(:person), organization: organization))
@@ -590,20 +666,18 @@ RSpec.describe 'Organizations::Observations', type: :request do
         obs
       end
 
-      it 'redirects to show page with check-in notice when publishing' do
+      it 'redirects to return_url when publishing with return_url' do
+        return_url = organization_company_teammate_check_ins_path(organization, teammate)
         post publish_organization_observation_path(organization, quick_note), params: {
           observation: {
             story: 'Test story',
             privacy_level: 'observed_and_managers'
           },
-          return_url: organization_company_teammate_check_ins_path(organization, teammate),
-          from_check_in: 'true'
+          return_url: return_url
         }
         
         expect(response).to have_http_status(:redirect)
-        expect(response).to redirect_to(organization_observation_path(organization, quick_note))
-        follow_redirect!
-        expect(response.body).to include('Successfully saved this note. Now close this and go back to check-ins page.')
+        expect(response).to redirect_to(return_url)
         quick_note.reload
         expect(quick_note.published_at).to be_present
       end
@@ -619,9 +693,35 @@ RSpec.describe 'Organizations::Observations', type: :request do
     end
 
     context 'for kudos observation' do
-      it 'redirects to return_url' do
-        return_url = organization_observations_path(organization)
+      it 'redirects to return_url when provided' do
+        return_url = organization_company_teammate_check_ins_path(organization, teammate)
         post cancel_organization_observation_path(organization, observation), params: {
+          return_url: return_url
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(return_url)
+      end
+
+      it 'redirects to observations index when return_url is not provided' do
+        post cancel_organization_observation_path(organization, observation)
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(organization_observations_path(organization))
+      end
+    end
+
+    context 'for quick_note observation' do
+      let(:quick_note) do
+        obs = build(:observation, observer: person, company: organization, observation_type: 'quick_note', created_as_type: 'quick_note', published_at: nil)
+        obs.observees.build(teammate: create(:teammate, person: create(:person), organization: organization))
+        obs.save!
+        obs
+      end
+
+      it 'redirects to return_url when provided' do
+        return_url = organization_company_teammate_check_ins_path(organization, teammate)
+        post cancel_organization_observation_path(organization, quick_note), params: {
           return_url: return_url
         }
         

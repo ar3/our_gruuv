@@ -185,7 +185,7 @@
            view_mode: @view_mode
   .row.mt-4
     .col-12
-      = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
+      = f.submit 'Save All & Proceed to Review Check-Ins', class: 'btn btn-primary btn-lg'
 
   -# Assignment Section
   = render 'shared/section_header', 
@@ -201,7 +201,7 @@
   
   .row.mt-4
     .col-12
-      = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
+      = f.submit 'Save All & Proceed to Review Check-Ins', class: 'btn btn-primary btn-lg'
   
   -# Aspiration Section
   = render 'shared/section_header', 
@@ -216,7 +216,7 @@
   
   .row.mt-4
     .col-12
-      = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
+      = f.submit 'Save All & Proceed to Review Check-Ins', class: 'btn btn-primary btn-lg'
 
   -# Abilities Section
   = render 'shared/section_header', 
@@ -230,60 +230,6 @@
     = render 'abilities_table',
              relevant_abilities: @relevant_abilities,
              view_mode: @view_mode,
-             person: @person
+             person: @person,
+             main_form: f
 
-:javascript
-  document.addEventListener('DOMContentLoaded', function() {
-    // Handle save-and-redirect forms (created by button_to)
-    document.querySelectorAll('form[data-save-and-redirect]').forEach(function(buttonForm) {
-      buttonForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Find the main check-ins form
-        const mainForm = document.querySelector('form[action*="check_ins"]:not([data-save-and-redirect])');
-        if (!mainForm) {
-          // Fallback: submit the button form normally
-          buttonForm.submit();
-          return;
-        }
-        
-        // Get redirect URL from the button form
-        const redirectUrlInput = buttonForm.querySelector('input[name="redirect_url"]');
-        if (!redirectUrlInput) {
-          buttonForm.submit();
-          return;
-        }
-        
-        const redirectUrl = redirectUrlInput.value;
-        
-        // Create a form data object from the main form
-        const formData = new FormData(mainForm);
-        formData.append('redirect_url', redirectUrl);
-        
-        // Submit to save_and_redirect endpoint
-        const formAction = mainForm.action;
-        // The form action is like /organizations/:id/company_teammates/:id/check_ins
-        // We need to append /save_and_redirect
-        const saveAndRedirectUrl = formAction.endsWith('/check_ins') ? formAction + '/save_and_redirect' : formAction.replace(/\/check_ins$/, '/check_ins/save_and_redirect').replace(/\/update$/, '/save_and_redirect');
-        
-        fetch(saveAndRedirectUrl, {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-          },
-          redirect: 'follow'
-        }).then(function(response) {
-          if (response.redirected) {
-            window.location.href = response.url;
-          } else {
-            window.location.href = redirectUrl;
-          }
-        }).catch(function(error) {
-          console.error('Error saving check-ins:', error);
-          window.location.href = redirectUrl;
-        });
-      });
-    });
-  });
-    

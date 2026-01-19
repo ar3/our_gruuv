@@ -31,18 +31,16 @@
           = form.fields_for :aspiration_check_ins, check_in, index: check_in.id do |af|
             %tr{data: {check_in_id: check_in.id}}
               %td
-                = button_tag type: "submit", 
-                             name: "redirect_to", 
-                             value: organization_teammate_aspiration_path(@organization, check_in.teammate, check_in.aspiration),
-                             "data-bs-toggle" => "popover", 
-                             "data-bs-trigger" => "hover", 
-                             "data-bs-placement" => "right", 
-                             "data-bs-html" => "true", 
-                             "data-bs-content" => latest_aspiration_check_in_popover_content(check_in.teammate, check_in.aspiration),
-                             class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start" do
-                  = check_in.aspiration.name
-                  %i.bi.bi-clock-history.ms-1.text-muted
-              = render partial_name, check_in: check_in, form: af, view_mode: view_mode
+                = form.submit check_in.aspiration.name,
+                              class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start",
+                              name: "save_and_view_aspiration_#{check_in.aspiration.id}",
+                              "data-bs-toggle" => "popover",
+                              "data-bs-trigger" => "hover",
+                              "data-bs-placement" => "right",
+                              "data-bs-html" => "true",
+                              "data-bs-content" => latest_aspiration_check_in_popover_content(check_in.teammate, check_in.aspiration)
+                %i.bi.bi-clock-history.ms-1.text-muted
+              = render partial_name, check_in: check_in, form: af, main_form: form, view_mode: view_mode
 - else
   .alert.alert-info
     %i.bi.bi-info-circle.me-2

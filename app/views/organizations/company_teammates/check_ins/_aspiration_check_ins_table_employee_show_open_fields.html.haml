@@ -4,7 +4,7 @@
 %td
   = render 'organizations/company_teammates/check_ins/form_fields/aspiration_employee_rating_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
 %td
-  = render 'organizations/company_teammates/check_ins/form_fields/aspiration_employee_private_notes_field', form: form, check_in: check_in, css_class: 'form-control form-control-sm'
+  = render 'organizations/company_teammates/check_ins/form_fields/aspiration_employee_private_notes_field', form: form, main_form: main_form, check_in: check_in, css_class: 'form-control form-control-sm'
 %td
   - other_mode = check_in.other_participant_display_mode(:employee)
   - partial_name = "aspiration_check_ins_table_employee_#{other_mode}"

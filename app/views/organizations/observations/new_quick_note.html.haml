@@ -16,7 +16,7 @@
         %i.bi.bi-sticky.me-2
         Quick Note
   .card-body
-    - if @from_check_in
+    - if @return_url&.include?('check_ins')
       .alert.alert-info.mb-3{role: "alert"}
         %i.bi.bi-info-circle.me-2
         After you save this note, to return to the check-in, close this page.
@@ -37,7 +37,6 @@
       = hidden_field_tag :return_url, @return_url
       = hidden_field_tag :return_text, @return_text
       = hidden_field_tag :show_observations_for, params[:show_observations_for]
-      = hidden_field_tag :from_check_in, 'true' if @from_check_in
       = form.hidden_field :observation_type, value: 'quick_note'
       -# Preserve observee_ids through form submissions
       - @observation.observees.each do |observee|
@@ -58,4 +57,3 @@
           = render 'organizations/observations/convert_to_generic_link', form: form, observation: @observation, organization: organization
       
       = render 'organizations/observations/form_sections/form_actions', form: form, observation: @observation, return_text: @return_text, organization: organization
-

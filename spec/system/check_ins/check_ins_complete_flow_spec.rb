@@ -44,8 +44,9 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
       visit organization_company_teammate_check_ins_path(company, employee_teammate)
       
       expect(page).to have_content('Check-Ins for John Doe')
-      expect(page).to have_content('Assignment 1')
-      expect(page).to have_content('Assignment 2')
+      # Assignment titles are now in submit buttons, so check for button or content
+      expect(page.has_button?('Assignment 1') || page.has_content?('Assignment 1')).to be true
+      expect(page.has_button?('Assignment 2') || page.has_content?('Assignment 2')).to be true
       
       # Fill out position check-in
       # Position ratings use numeric values (-3 to 3) with formatted display

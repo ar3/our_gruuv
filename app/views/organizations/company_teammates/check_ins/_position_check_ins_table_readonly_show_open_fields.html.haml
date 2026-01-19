@@ -15,17 +15,24 @@
           %td
             - return_text = "Return to #{check_in.teammate.person.casual_name}'s check-in"
             - return_url = organization_company_teammate_check_ins_path(organization, @teammate)
-            - position_url = organization_teammate_position_path(organization, check_in.teammate, return_text: return_text, return_url: return_url)
-            = button_to save_and_redirect_organization_company_teammate_check_ins_path(organization, @teammate), method: :post, params: { redirect_url: position_url }, class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start", form: { class: "d-inline", data: { save_and_redirect: true } }, "data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "right", "data-bs-html" => "true", "data-bs-content" => latest_position_check_in_popover_content(check_in.teammate) do
-              = check_in.employment_tenure.position.display_name
-              %i.bi.bi-clock-history.ms-1.text-muted
+            = hidden_field_tag "return_text", return_text
+            = hidden_field_tag "return_url", return_url
+            = form.submit check_in.employment_tenure.position.display_name,
+                          class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start",
+                          name: "save_and_view_position",
+                          "data-bs-toggle" => "popover",
+                          "data-bs-trigger" => "hover",
+                          "data-bs-placement" => "right",
+                          "data-bs-html" => "true",
+                          "data-bs-content" => latest_position_check_in_popover_content(check_in.teammate)
+            %i.bi.bi-clock-history.ms-1.text-muted
           %td
             = render 'organizations/company_teammates/check_ins/form_fields/employee_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
           %td
-            = render 'organizations/company_teammates/check_ins/form_fields/employee_private_notes_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+            = render 'organizations/company_teammates/check_ins/form_fields/employee_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
           %td
             = render 'organizations/company_teammates/check_ins/form_fields/manager_rating_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
           %td
-            = render 'organizations/company_teammates/check_ins/form_fields/manager_private_notes_field', form: pf, check_in: check_in, css_class: 'form-control form-control-sm'
+            = render 'organizations/company_teammates/check_ins/form_fields/manager_private_notes_field', form: pf, main_form: form, check_in: check_in, css_class: 'form-control form-control-sm'
           %td
             = render 'organizations/company_teammates/check_ins/form_fields/position_status_field', form: pf, check_in: check_in

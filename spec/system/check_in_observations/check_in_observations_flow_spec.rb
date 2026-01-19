@@ -33,8 +33,9 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
       visit organization_company_teammate_check_ins_path(company, employee_teammate)
       
       # Fill out check-in form in table view
-      # Find the table row by assignment title, then find fields within it
-      row = page.find('tr', text: assignment.title)
+      # Find the table row by assignment title (now in a submit button)
+      # Look for the row containing a button with the assignment title
+      row = page.all('tr').find { |tr| tr.has_button?(assignment.title) || tr.text.include?(assignment.title) }
       within(row) do
         # Find the rating select field by its name attribute
         rating_field_name = find("select[name*='[employee_rating]']")[:name]
@@ -45,31 +46,21 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
         fill_in notes_field_name, with: 'Draft notes'
       end
       
-      # Save the form data first by submitting the main form
-      # This ensures data is persisted before attempting redirect
-      page.click_button('Save All Check-Ins', match: :first)
+      # Click "Add Win / Challenge" button - this should save and redirect in one action
+      # Find the row again to ensure we're in the right context
+      row = page.all('tr').find { |tr| tr.has_button?(assignment.title) || tr.text.include?(assignment.title) }
+      within(row) do
+        # Find the "Add Win / Challenge" button by its name or text
+        click_button 'Add Win / Challenge', match: :first
+      end
       
-      # Wait for save to complete
-      expect(page).to have_content(/Check|Position|Assignment/i, wait: 5)
+      # Wait for redirect to observation creation page
+      expect(page).to have_current_path(/new_quick_note/, wait: 10)
       
-      # Verify check-in was saved
+      # Verify check-in was saved before redirect
       check_in.reload
       expect(check_in.employee_rating).to eq('exceeding')
       expect(check_in.employee_private_notes).to eq('Draft notes')
-      
-      # Now navigate to create observation page directly
-      # Since the save worked, we can navigate to the observation creation page
-      quick_note_url = new_quick_note_organization_observations_path(
-        company, 
-        return_url: organization_company_teammate_check_ins_path(company, employee_teammate), 
-        return_text: "Check-ins", 
-        observee_ids: [employee_teammate.id], 
-        rateable_type: 'Assignment', 
-        rateable_id: assignment.id, 
-        from_check_in: true
-      )
-      
-      visit quick_note_url
       
       # Verify we're on observation creation page
       expect(page).to have_content(/Create.*Observation|Create Quick Note/i)

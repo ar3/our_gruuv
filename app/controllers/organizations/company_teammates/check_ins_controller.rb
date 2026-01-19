@@ -35,19 +35,15 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
     update_aspiration_check_ins(check_ins_params) if check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"]
     
-    # Check for button name to determine redirect
-    redirect_url = params[:redirect_url].presence || params[:redirect_to].presence
-    
-    # If no redirect_url is provided, use default behavior
-    unless redirect_url.present?
-      redirect_url = organization_company_teammate_finalization_path(organization, @teammate)
-    end
+    # Determine redirect URL based on button name
+    redirect_url = determine_redirect_url
     
     redirect_to redirect_url, notice: 'Check-ins saved successfully.'
   end
 
   def save_and_redirect
-    # Save the form using existing update logic
+    # This method is kept for backward compatibility but should not be used with new architecture
+    # Parse giant form and update all check-ins
     # Handle both old and new parameter structures (with and without check_ins scope)
     check_ins_params = params[:check_ins] || params
     
@@ -55,13 +51,8 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
     update_aspiration_check_ins(check_ins_params) if check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"]
     
-    # Determine redirect URL based on button name or redirect_url parameter
-    redirect_url = params[:redirect_url]
-    
-    # If no redirect_url is provided, use default behavior
-    unless redirect_url.present?
-      redirect_url = organization_company_teammate_finalization_path(organization, @teammate)
-    end
+    # Determine redirect URL based on button name
+    redirect_url = determine_redirect_url
     
     redirect_to redirect_url, notice: 'Check-ins saved successfully.'
   end
@@ -430,6 +421,63 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     end
     
     permitted_params
+  end
+
+  def determine_redirect_url
+    # Check for button names in params (new architecture)
+    # Button names follow pattern: save_and_<action>_<type>_<id>
+    button_name = find_button_name_in_params
+    
+    if button_name
+      # Extract parameters needed for the service
+      service_params = extract_service_params_for_button(button_name)
+      
+      CheckIns::RedirectUrlService.call(
+        button_name: button_name,
+        organization: organization,
+        teammate: @teammate,
+        params: service_params
+      )
+    elsif params[:redirect_to].present?
+      # Handle old redirect_to parameter (from button_tag with name="redirect_to")
+      params[:redirect_to]
+    elsif params[:redirect_url].present?
+      # Handle old redirect_url parameter (backward compatibility)
+      params[:redirect_url]
+    else
+      # Default to finalization page
+      organization_company_teammate_finalization_path(organization, @teammate)
+    end
+  end
+
+  def find_button_name_in_params
+    # Look for button names that start with "save_and_"
+    params.each_key do |key|
+      if key.to_s.start_with?('save_and_')
+        return key.to_s
+      end
+    end
+    nil
+  end
+
+  def extract_service_params_for_button(button_name)
+    service_params = {}
+    
+    # Extract return_text and return_url if present
+    service_params[:return_text] = params[:return_text] if params[:return_text].present?
+    service_params[:return_url] = params[:return_url] if params[:return_url].present?
+    
+    # Extract since_date if present (can be a date string or Date object)
+    if params[:since_date].present?
+      service_params[:since_date] = params[:since_date]
+    end
+    
+    # Extract teammate if present (for observations)
+    if params[:teammate_id].present?
+      service_params[:teammate] = organization.teammates.find_by(id: params[:teammate_id])
+    end
+    
+    service_params
   end
   
 end

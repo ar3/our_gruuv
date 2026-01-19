@@ -35,22 +35,20 @@
           = form.fields_for :assignment_check_ins, check_in, index: check_in.id do |af|
             %tr{data: {check_in_id: check_in.id}}
               %td
-                = button_tag type: "submit", 
-                             name: "redirect_to", 
-                             value: organization_teammate_assignment_path(@organization, check_in.teammate, check_in.assignment),
-                             "data-bs-toggle" => "popover", 
-                             "data-bs-trigger" => "hover", 
-                             "data-bs-placement" => "right", 
-                             "data-bs-html" => "true", 
-                             "data-bs-content" => latest_assignment_check_in_popover_content(check_in.teammate, check_in.assignment),
-                             class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start" do
-                  = check_in.assignment.title
-                  %i.bi.bi-clock-history.ms-1.text-muted
+                = form.submit check_in.assignment.title,
+                              class: "btn btn-link text-decoration-none p-0 border-0 bg-transparent text-start",
+                              name: "save_and_view_assignment_#{check_in.assignment.id}",
+                              "data-bs-toggle" => "popover",
+                              "data-bs-trigger" => "hover",
+                              "data-bs-placement" => "right",
+                              "data-bs-html" => "true",
+                              "data-bs-content" => latest_assignment_check_in_popover_content(check_in.teammate, check_in.assignment)
+                %i.bi.bi-clock-history.ms-1.text-muted
                 - if check_in.assignment_tenure&.active?
                   %div.mt-1
                     %span.badge.bg-success
                       Active Assignment - #{check_in.assignment_tenure.anticipated_energy_percentage}%
-              = render partial_name, check_in: check_in, form: af, view_mode: view_mode
+              = render partial_name, check_in: check_in, form: af, main_form: form, view_mode: view_mode
 - else
   .alert.alert-info
     %i.bi.bi-info-circle.me-2
