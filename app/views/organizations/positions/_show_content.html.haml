@@ -5,80 +5,155 @@
   
   .card-body
     .row
-      .col-md-4.col-sm-12
-        %h5.mb-2
-          %i.bi.bi-building.me-2
-          Company
-        %p= link_to @position.company.display_name, organization_path(@organization), class: "text-decoration-none"
-      
-        %h5.mb-2
-          %i.bi.bi-tag.me-2
-          Position Type
-        %p= link_to @position.position_type.external_title, organization_position_type_path(@organization, @position.position_type), class: "text-decoration-none"
-      
-        %h5.mb-2
-          %i.bi.bi-star.me-2
-          Position Level
-        %p= @position.position_level.level_name
-        
-        - if @position.position_summary.present?
-          %h5.mb-2
-            %i.bi.bi-file-text.me-2
-            Summary
-          %p= @position.position_summary
-        
-        - if @position.eligibility_requirements_summary.present?
-          %h5.mb-2.mt-3
-            %i.bi.bi-check-circle.me-2
-            Eligibility Requirements
-          %p.text-pre-wrap= @position.eligibility_requirements_summary
+      .col-lg-9.col-md-12
+        .row
+          .col-md-4.col-sm-12
+            %h5.mb-2
+              %i.bi.bi-building.me-2
+              Company
+            %p= link_to @position.company.display_name, organization_path(@organization), class: "text-decoration-none"
+          
+            %h5.mb-2
+              %i.bi.bi-tag.me-2
+              Position Type
+            %p= link_to @position.position_type.external_title, organization_position_type_path(@organization, @position.position_type), class: "text-decoration-none"
+          
+            %h5.mb-2
+              %i.bi.bi-star.me-2
+              Position Level
+            %p= @position.position_level.level_name
+            
+            - if @position.position_summary.present?
+              %h5.mb-2
+                %i.bi.bi-file-text.me-2
+                Summary
+              %p= @position.position_summary
+            
+            - if @position.eligibility_requirements_summary.present?
+              %h5.mb-2.mt-3
+                %i.bi.bi-check-circle.me-2
+                Eligibility Requirements
+              %p.text-pre-wrap= @position.eligibility_requirements_summary
 
-      .col-md-8.col-sm-12
-        - if @position.required_assignments.any? || @position.suggested_assignments.any?
-          %h5.mb-2
-            %i.bi.bi-list-check.me-2
-            Assignments
-          - if @position.required_assignments.any?
-            %h6.text-primary Required Assignments (#{@position.required_assignments_count})
-            %ul
-              - @position.required_assignments.each do |pa|
-                %li
-                  = link_to pa.assignment.title, organization_assignment_path(@position.company, pa.assignment), class: "text-decoration-none"
-                  - if pa.energy_percentage_suffix.present?
-                    = " #{pa.energy_percentage_suffix}"
-          - if @position.suggested_assignments.any?
-            %h6.text-info.mt-3 Suggested Assignments (#{@position.suggested_assignments_count})
-            %ul
-              - @position.suggested_assignments.each do |pa|
-                %li
-                  = link_to pa.assignment.title, organization_assignment_path(@position.company, pa.assignment), class: "text-decoration-none"
-                  - if pa.energy_percentage_suffix.present?
-                    = " #{pa.energy_percentage_suffix}"
-        - else
-          .alert.alert-warning
-            %h6.mb-2
-              %i.bi.bi-exclamation-triangle.me-2
-              No Assignments Defined
-            %p.mb-2 This position has no required or suggested assignments.
-            = link_to "Manage Assignments", manage_assignments_organization_position_path(@organization, @position), class: "btn btn-warning btn-sm"
-        
-        - if @position.published_url.present? || @position.draft_url.present?
-          %h5.mb-2.mt-3
-            %i.bi.bi-link-45deg.me-2
-            External References
-          - if @position.published_url.present?
-            .mb-2
-              = link_to @position.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm" do
-                %i.bi.bi-file-earmark-text.me-1
-                Published Version
-          - if @position.draft_url.present?
-            .mb-2
-              = link_to @position.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm" do
-                %i.bi.bi-file-earmark-text.me-1
-                Draft Version
+          .col-md-8.col-sm-12
+            - if @position.required_assignments.any? || @position.suggested_assignments.any?
+              %h5.mb-2
+                %i.bi.bi-list-check.me-2
+                Assignments
+              - if @position.required_assignments.any?
+                %h6.text-primary Required Assignments (#{@position.required_assignments_count})
+                %ul
+                  - @position.required_assignments.each do |pa|
+                    %li
+                      = link_to pa.assignment.title, organization_assignment_path(@position.company, pa.assignment), class: "text-decoration-none"
+                      - if pa.energy_percentage_suffix.present?
+                        = " #{pa.energy_percentage_suffix}"
+              - if @position.suggested_assignments.any?
+                %h6.text-info.mt-3 Suggested Assignments (#{@position.suggested_assignments_count})
+                %ul
+                  - @position.suggested_assignments.each do |pa|
+                    %li
+                      = link_to pa.assignment.title, organization_assignment_path(@position.company, pa.assignment), class: "text-decoration-none"
+                      - if pa.energy_percentage_suffix.present?
+                        = " #{pa.energy_percentage_suffix}"
+            - else
+              .alert.alert-warning
+                %h6.mb-2
+                  %i.bi.bi-exclamation-triangle.me-2
+                  No Assignments Defined
+                %p.mb-2 This position has no required or suggested assignments.
+                = link_to "Manage Assignments", manage_assignments_organization_position_path(@organization, @position), class: "btn btn-warning btn-sm"
+            
+            - if @position.published_url.present? || @position.draft_url.present?
+              %h5.mb-2.mt-3
+                %i.bi.bi-link-45deg.me-2
+                External References
+              - if @position.published_url.present?
+                .mb-2
+                  = link_to @position.published_url, target: "_blank", class: "btn btn-outline-primary btn-sm" do
+                    %i.bi.bi-file-earmark-text.me-1
+                    Published Version
+              - if @position.draft_url.present?
+                .mb-2
+                  = link_to @position.draft_url, target: "_blank", class: "btn btn-outline-secondary btn-sm" do
+                    %i.bi.bi-file-earmark-text.me-1
+                    Draft Version
 
-    / Comments Section
-    = render 'shared/comment_summary', commentable: @position, organization: @organization
+            / Comments Section
+            = render 'shared/comment_summary', commentable: @position, organization: @organization
+      
+      / Actions Section
+      .col-lg-3.col-md-12.mt-4.mt-lg-0
+        .card.border
+          .card-header.bg-light
+            %h6.mb-0.text-uppercase.text-muted Actions
+          .card-body
+            .d-grid.gap-2
+              / View Public Version
+              = link_to organization_public_maap_position_path(@organization, @position), target: "_blank", class: "btn btn-outline-primary w-100" do
+                %i.bi.bi-globe.me-2
+                View Public Version
+              
+              / View Job Description Version
+              = link_to job_description_organization_position_path(@organization, @position), class: "btn btn-outline-primary w-100" do
+                %i.bi.bi-file-text.me-2
+                View Job Description Version
+              
+              / Add Comment
+              - can_add_comment = policy(Comment.new(commentable: @position, organization: @organization)).create?
+              - if can_add_comment
+                = link_to organization_comments_path(@organization, commentable_type: 'Position', commentable_id: @position.id), class: "btn btn-outline-primary w-100" do
+                  %i.bi.bi-chat-dots.me-2
+                  Add Comment
+              - else
+                .d-flex.align-items-center.gap-2
+                  .flex-grow-1
+                    = link_to organization_comments_path(@organization, commentable_type: 'Position', commentable_id: @position.id), class: "btn btn-outline-secondary w-100", disabled: true, style: "pointer-events: none;" do
+                      %i.bi.bi-chat-dots.me-2
+                      Add Comment
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need permission to view this position to add comments"}}
+              
+              / Edit
+              - can_edit = policy(@position).update?
+              - if can_edit
+                = link_to edit_organization_position_path(@organization, @position), class: "btn btn-outline-primary w-100" do
+                  %i.bi.bi-pencil.me-2
+                  Edit
+              - else
+                .d-flex.align-items-center.gap-2
+                  .flex-grow-1
+                    = link_to edit_organization_position_path(@organization, @position), class: "btn btn-outline-secondary w-100", disabled: true, style: "pointer-events: none;" do
+                      %i.bi.bi-pencil.me-2
+                      Edit
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need can_manage_maap permission on your company teammate record for this position's company to edit positions"}}
+              
+              / Manage Assignments
+              - can_manage_assignments = policy(@position).manage_assignments?
+              - if can_manage_assignments
+                = link_to manage_assignments_organization_position_path(@organization, @position), class: "btn btn-outline-primary w-100" do
+                  %i.bi.bi-list-check.me-2
+                  Manage Assignments
+              - else
+                .d-flex.align-items-center.gap-2
+                  .flex-grow-1
+                    = link_to manage_assignments_organization_position_path(@organization, @position), class: "btn btn-outline-secondary w-100", disabled: true, style: "pointer-events: none;" do
+                      %i.bi.bi-list-check.me-2
+                      Manage Assignments
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need can_manage_maap permission to manage position assignments"}}
+              
+              / Archive Position
+              - can_archive = policy(@position).destroy?
+              - if can_archive
+                = link_to organization_position_path(@organization, @position), method: :delete, data: { confirm: "Are you sure you want to archive this position? This action cannot be undone." }, class: "btn btn-outline-danger w-100" do
+                  %i.bi.bi-archive.me-2
+                  Archive Position
+              - else
+                .d-flex.align-items-center.gap-2
+                  .flex-grow-1
+                    = link_to organization_position_path(@organization, @position), method: :delete, class: "btn btn-outline-secondary w-100", disabled: true, style: "pointer-events: none;" do
+                      %i.bi.bi-archive.me-2
+                      Archive Position
+                  %i.bi.bi-exclamation-triangle.text-warning{data: {bs_toggle: "tooltip", bs_title: "You need can_manage_maap permission on your company teammate record for this position's company to archive positions"}}
 
 / Employees with this Position Section
 .mt-4

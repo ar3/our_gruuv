@@ -109,6 +109,8 @@ class Organizations::PositionsController < ApplicationController
       return
     end
     
+    authorize @position, :create?
+    
     @position_decorator = PositionDecorator.new(@position)
     @form = PositionForm.new(@position)
     @form.current_person = current_person
@@ -133,6 +135,8 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def update
+    authorize @position, :update?
+    
     @position_decorator = PositionDecorator.new(@position)
     @form = PositionForm.new(@position)
     @form.current_person = current_person
@@ -149,6 +153,8 @@ class Organizations::PositionsController < ApplicationController
   end
 
   def destroy
+    authorize @position, :destroy?
+    
     @position.destroy
     redirect_to organization_positions_path(@organization), notice: 'Position was successfully deleted.'
   end

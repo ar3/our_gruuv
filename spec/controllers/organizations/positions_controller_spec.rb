@@ -329,5 +329,209 @@ RSpec.describe Organizations::PositionsController, type: :controller do
       expect(response).to redirect_to(root_path)
     end
   end
+
+  describe 'POST #create' do
+    let(:position_params) do
+      {
+        position_type_id: position_type.id,
+        position_level_id: position_level.id,
+        version_type: 'ready'
+      }
+    end
+
+    context 'with can_manage_maap permission' do
+      before do
+        teammate = CompanyTeammate.find_by(person: person, organization: organization)
+        teammate.update(can_manage_maap: true)
+      end
+
+      it 'creates a new position' do
+        expect {
+          post :create, params: {
+            organization_id: organization.id,
+            position: position_params,
+            position_type_id: position_type.id
+          }
+        }.to change(Position, :count).by(1)
+        
+        expect(response).to redirect_to(organization_position_path(organization, assigns(:position)))
+        expect(flash[:notice]).to eq('Position was successfully created.')
+      end
+    end
+
+    context 'without can_manage_maap permission' do
+      before do
+        teammate = CompanyTeammate.find_by(person: person, organization: organization)
+        teammate.update(can_manage_maap: false)
+      end
+
+      it 'denies access' do
+        expect {
+          post :create, params: {
+            organization_id: organization.id,
+            position: position_params,
+            position_type_id: position_type.id
+          }
+        }.not_to change(Position, :count)
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(root_path)
+      end
+    end
+
+    context 'as admin' do
+      let(:admin_person) { create(:person, :admin) }
+      
+      before do
+        create(:teammate, person: admin_person, organization: organization, can_manage_maap: false)
+        sign_in_as_teammate(admin_person, organization)
+      end
+
+      it 'allows creation even without can_manage_maap permission' do
+        expect {
+          post :create, params: {
+            organization_id: organization.id,
+            position: position_params,
+            position_type_id: position_type.id
+          }
+        }.to change(Position, :count).by(1)
+        
+        expect(response).to redirect_to(organization_position_path(organization, assigns(:position)))
+      end
+    end
+  end
+
+  describe 'PATCH #update' do
+    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:update_params) do
+      {
+        position_type_id: position_type.id,
+        position_level_id: position_level.id,
+        position_summary: 'Updated summary',
+        version_type: 'insignificant'
+      }
+    end
+
+    context 'with can_manage_maap permission' do
+      before do
+        teammate = CompanyTeammate.find_by(person: person, organization: organization)
+        teammate.update(can_manage_maap: true)
+      end
+
+      it 'updates the position' do
+        patch :update, params: {
+          organization_id: organization.id,
+          id: position.id,
+          position: update_params
+        }
+        
+        expect(response).to redirect_to(organization_position_path(organization, position))
+        expect(flash[:notice]).to eq('Position was successfully updated.')
+      end
+    end
+
+    context 'without can_manage_maap permission' do
+      before do
+        teammate = CompanyTeammate.find_by(person: person, organization: organization)
+        teammate.update(can_manage_maap: false)
+      end
+
+      it 'denies access' do
+        original_summary = position.position_summary
+        
+        patch :update, params: {
+          organization_id: organization.id,
+          id: position.id,
+          position: update_params
+        }
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(root_path)
+        position.reload
+        expect(position.position_summary).to eq(original_summary)
+      end
+    end
+
+    context 'as admin' do
+      let(:admin_person) { create(:person, :admin) }
+      
+      before do
+        create(:teammate, person: admin_person, organization: organization, can_manage_maap: false)
+        sign_in_as_teammate(admin_person, organization)
+      end
+
+      it 'allows update even without can_manage_maap permission' do
+        patch :update, params: {
+          organization_id: organization.id,
+          id: position.id,
+          position: update_params
+        }
+        
+        expect(response).to redirect_to(organization_position_path(organization, position))
+      end
+    end
+  end
+
+  describe 'DELETE #destroy' do
+    let!(:position) { create(:position, position_type: position_type, position_level: position_level) }
+
+    context 'with can_manage_maap permission' do
+      before do
+        teammate = CompanyTeammate.find_by(person: person, organization: organization)
+        teammate.update(can_manage_maap: true)
+      end
+
+      it 'destroys the position' do
+        expect {
+          delete :destroy, params: {
+            organization_id: organization.id,
+            id: position.id
+          }
+        }.to change(Position, :count).by(-1)
+        
+        expect(response).to redirect_to(organization_positions_path(organization))
+        expect(flash[:notice]).to eq('Position was successfully deleted.')
+      end
+    end
+
+    context 'without can_manage_maap permission' do
+      before do
+        teammate = CompanyTeammate.find_by(person: person, organization: organization)
+        teammate.update(can_manage_maap: false)
+      end
+
+      it 'denies access' do
+        expect {
+          delete :destroy, params: {
+            organization_id: organization.id,
+            id: position.id
+          }
+        }.not_to change(Position, :count)
+        
+        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(root_path)
+      end
+    end
+
+    context 'as admin' do
+      let(:admin_person) { create(:person, :admin) }
+      
+      before do
+        create(:teammate, person: admin_person, organization: organization, can_manage_maap: false)
+        sign_in_as_teammate(admin_person, organization)
+      end
+
+      it 'allows deletion even without can_manage_maap permission' do
+        expect {
+          delete :destroy, params: {
+            organization_id: organization.id,
+            id: position.id
+          }
+        }.to change(Position, :count).by(-1)
+        
+        expect(response).to redirect_to(organization_positions_path(organization))
+      end
+    end
+  end
 end
 
