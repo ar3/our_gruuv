@@ -11,7 +11,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     
     @check_ins = PositionCheckIn
       .where(teammate: @teammate)
-      .includes(:finalized_by, :manager_completed_by, :employment_tenure)
+      .includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure)
       .order(check_in_started_on: :desc)
     
     @current_employment = @teammate.employment_tenures.active.first
@@ -60,7 +60,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     # Load check-ins for the view (in case validation fails and we render :show)
     @check_ins = PositionCheckIn
                    .where(teammate: @teammate)
-                   .includes(:finalized_by, :manager_completed_by, :employment_tenure)
+                   .includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure)
                    .order(check_in_started_on: :desc)
     @employment_tenures = @teammate.employment_tenures
       .includes(:position, :manager_teammate, :seat)
@@ -177,7 +177,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @has_inactive_tenures = inactive_tenures.any?
       @latest_inactive_end_date = latest_inactive_end_date
       @person = @teammate.person
-      @check_ins = PositionCheckIn.where(teammate: @teammate).includes(:finalized_by, :manager_completed_by, :employment_tenure).order(check_in_started_on: :desc)
+      @check_ins = PositionCheckIn.where(teammate: @teammate).includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure).order(check_in_started_on: :desc)
       @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
       load_form_data
       @employment_tenure = EmploymentTenure.new
@@ -196,7 +196,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @has_inactive_tenures = inactive_tenures.any?
       @latest_inactive_end_date = latest_inactive_end_date
       @person = @teammate.person
-      @check_ins = PositionCheckIn.where(teammate: @teammate).includes(:finalized_by, :manager_completed_by, :employment_tenure).order(check_in_started_on: :desc)
+      @check_ins = PositionCheckIn.where(teammate: @teammate).includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure).order(check_in_started_on: :desc)
       @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
       load_form_data
       @employment_tenure = EmploymentTenure.new
@@ -239,7 +239,7 @@ class Organizations::Teammates::PositionController < Organizations::Organization
       @has_inactive_tenures = inactive_tenures.any?
       @latest_inactive_end_date = latest_inactive_end_date
       @person = @teammate.person
-      @check_ins = PositionCheckIn.where(teammate: @teammate).includes(:finalized_by, :manager_completed_by, :employment_tenure).order(check_in_started_on: :desc)
+      @check_ins = PositionCheckIn.where(teammate: @teammate).includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure).order(check_in_started_on: :desc)
       @open_check_in = PositionCheckIn.where(teammate: @teammate).open.first
       load_form_data
       render :show, status: :unprocessable_entity
