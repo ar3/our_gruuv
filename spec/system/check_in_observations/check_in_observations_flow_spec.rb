@@ -20,7 +20,7 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
   end
 
   describe 'Creating new observation from check-in' do
-    xit 'saves check-in form before navigating to create observation page' do # SKIPPED: Functionality not yet implemented
+    it 'saves check-in form before navigating to create observation page' do
       # Ensure check-in is in open state (should be by default)
       check_in.reload
       expect(check_in.open?).to be true
@@ -42,28 +42,23 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
         fill_in 'Private Notes', with: 'Draft notes'
       end
       
-      # Save the form first - any "Save All Check-Ins" button will save the entire form
-      click_button 'Save All Check-Ins', match: :first
+      # Click "Add Win / Challenge" - this should save the form and redirect
+      within(card) do
+        # The link is now a button that saves and redirects
+        click_button 'Add Win / Challenge', match: :first
+      end
       
-      # Verify check-in was saved and page reloaded
-      expect(page).to have_success_flash('Check-ins saved successfully')
+      # Wait for the save and redirect to complete
+      # The page should redirect to the new_quick_note page
+      expect(page).to have_current_path(/new_quick_note/, wait: 5)
+      
+      # Verify check-in was saved before redirect
       check_in.reload
       expect(check_in.employee_rating).to eq('exceeding')
       expect(check_in.employee_private_notes).to eq('Draft notes')
-      
-      # Now click to create observation - re-find card after page reload
-      card = page.find('.card', text: assignment.title)
-      within(card) do
-        click_link 'Add Win / Challenge'
-      end
       
       # Verify we're on observation creation page
       expect(page).to have_content('Create Observation')
-      
-      # Verify check-in was saved as draft
-      check_in.reload
-      expect(check_in.employee_rating).to eq('exceeding')
-      expect(check_in.employee_private_notes).to eq('Draft notes')
     end
 
   end

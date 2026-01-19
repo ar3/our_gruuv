@@ -39,8 +39,14 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
     update_aspiration_check_ins(check_ins_params) if check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"]
     
-    # Redirect to specified URL if provided, otherwise redirect to finalization page
-    redirect_url = params[:redirect_to].presence || organization_company_teammate_finalization_path(organization, @teammate)
+    # Check for button name to determine redirect
+    redirect_url = params[:redirect_url].presence || params[:redirect_to].presence
+    
+    # If no redirect_url is provided, use default behavior
+    unless redirect_url.present?
+      redirect_url = organization_company_teammate_finalization_path(organization, @teammate)
+    end
+    
     redirect_to redirect_url, notice: 'Check-ins saved successfully.'
   end
 
@@ -53,14 +59,15 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     update_assignment_check_ins(check_ins_params) if check_ins_params[:assignment_check_ins] || check_ins_params["[assignment_check_ins]"]
     update_aspiration_check_ins(check_ins_params) if check_ins_params[:aspiration_check_ins] || check_ins_params["[aspiration_check_ins]"]
     
-    # After successful save, redirect to the URL provided
+    # Determine redirect URL based on button name or redirect_url parameter
     redirect_url = params[:redirect_url]
-    if redirect_url.present?
-      redirect_to redirect_url, notice: 'Check-ins saved successfully.'
-    else
-      # Fallback to default behavior
-      redirect_to organization_company_teammate_finalization_path(organization, @teammate), notice: 'Check-ins saved successfully.'
+    
+    # If no redirect_url is provided, use default behavior
+    unless redirect_url.present?
+      redirect_url = organization_company_teammate_finalization_path(organization, @teammate)
     end
+    
+    redirect_to redirect_url, notice: 'Check-ins saved successfully.'
   end
   
   private
