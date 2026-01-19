@@ -13,14 +13,11 @@ module CheckIns
       return unless check_in
 
       employee_teammate = check_in.teammate
-      employee = employee_teammate.person
       
       # Get manager from active employment tenure in this organization
       employment_tenure = employee_teammate.employment_tenures.active.where(company: organization).first
       manager_teammate = employment_tenure&.manager_teammate
       return unless manager_teammate
-
-      manager = manager_teammate.person
 
       # Both must have Slack connected for group DM
       return unless employee_teammate.has_slack_identity? && employee_teammate.slack_user_id.present?
@@ -38,7 +35,7 @@ module CheckIns
       end
 
       # Build message
-      message = build_message(check_in, employee, manager, completion_state, organization)
+      message = build_message(check_in, employee_teammate, manager_teammate, completion_state, organization)
 
       # Send message to group DM
       result = slack_service.post_group_dm(channel_id: group_dm_result[:channel_id], text: message)
@@ -73,14 +70,14 @@ module CheckIns
       end
     end
 
-    def build_message(check_in, employee, manager, completion_state, organization)
+    def build_message(check_in, employee_teammate, manager_teammate, completion_state, organization)
       check_in_name = check_in_display_name(check_in)
+      employee = employee_teammate.person
+      manager = manager_teammate.person
       employee_name = employee.display_name || employee.preferred_name || employee.first_name
       manager_name = manager.display_name || manager.preferred_name || manager.first_name
 
       url_options = Rails.application.routes.default_url_options || {}
-      
-      employee_teammate = check_in.teammate
       
       case completion_state.to_sym
       when :both_complete

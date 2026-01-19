@@ -9,6 +9,10 @@ class Organizations::Teammates::PositionController < Organizations::Organization
     # Set @person for view switcher
     @person = @teammate.person
     
+    # Set return URL and text from parameters
+    @return_url = params[:return_url] || organization_company_teammate_check_ins_path(organization, @teammate)
+    @return_text = params[:return_text] || "Back to Check-ins"
+    
     @check_ins = PositionCheckIn
       .where(teammate: @teammate)
       .includes(:finalized_by_teammate, :manager_completed_by_teammate, :employment_tenure)

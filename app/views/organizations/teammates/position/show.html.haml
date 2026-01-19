@@ -1,9 +1,9 @@
 - content_for :title, "Position - #{@teammate.person.display_name}"
 
 - content_for :go_back_link do
-  = link_to organization_company_teammate_check_ins_path(@organization, @teammate), class: "go-back-link" do
+  = link_to @return_url, class: "go-back-link" do
     %i.bi.bi-arrow-left.me-2
-    Back to Check-ins
+    = @return_text
 
 - content_for :header do
   .d-flex.justify-content-between.align-items-center

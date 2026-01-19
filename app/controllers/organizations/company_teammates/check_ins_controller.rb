@@ -19,10 +19,6 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       @debug_data = debug_service.call
     end
     
-    # Determine view mode (card or table)
-    @view_mode_param = params[:view] || 'table'  # Default to table view
-    @view_mode_param = 'table' unless %w[card table].include?(@view_mode_param)
-    
     # Load or build all check-in types (spreadsheet-style)
     @position_check_in = load_or_build_position_check_in
     @assignment_check_ins = load_or_build_assignment_check_ins

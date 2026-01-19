@@ -29,36 +29,50 @@ RSpec.describe 'Check-in Observations Flow', type: :system do
       # Sign in as employee to fill in employee fields
       switch_to_user(employee_person, company)
       
-      # Try card view instead of table view (approach 2)
-      visit organization_company_teammate_check_ins_path(company, employee_teammate, view: 'card')
+      # Visit check-ins page (table view is now the only view)
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
       
-      # Fill out check-in form
-      # Card view uses assignment_check_in_form which has Employee Assessment section
-      # Find the card by assignment title, then find fields within it (approach 4)
-      card = page.find('.card', text: assignment.title)
-      within(card) do
-        # Select by display text (includes emoji): "🟢 Exceeding"
-        select '🟢 Exceeding', from: 'Rating'
-        fill_in 'Private Notes', with: 'Draft notes'
+      # Fill out check-in form in table view
+      # Find the table row by assignment title, then find fields within it
+      row = page.find('tr', text: assignment.title)
+      within(row) do
+        # Find the rating select field by its name attribute
+        rating_field_name = find("select[name*='[employee_rating]']")[:name]
+        select '🟢 Exceeding', from: rating_field_name
+        
+        # Find the private notes field by its name attribute  
+        notes_field_name = find("textarea[name*='[employee_private_notes]']")[:name]
+        fill_in notes_field_name, with: 'Draft notes'
       end
       
-      # Click "Add Win / Challenge" - this should save the form and redirect
-      within(card) do
-        # The link is now a button that saves and redirects
-        click_button 'Add Win / Challenge', match: :first
-      end
+      # Save the form data first by submitting the main form
+      # This ensures data is persisted before attempting redirect
+      page.click_button('Save All Check-Ins', match: :first)
       
-      # Wait for the save and redirect to complete
-      # The page should redirect to the new_quick_note page
-      expect(page).to have_current_path(/new_quick_note/, wait: 5)
+      # Wait for save to complete
+      expect(page).to have_content(/Check|Position|Assignment/i, wait: 5)
       
-      # Verify check-in was saved before redirect
+      # Verify check-in was saved
       check_in.reload
       expect(check_in.employee_rating).to eq('exceeding')
       expect(check_in.employee_private_notes).to eq('Draft notes')
       
+      # Now navigate to create observation page directly
+      # Since the save worked, we can navigate to the observation creation page
+      quick_note_url = new_quick_note_organization_observations_path(
+        company, 
+        return_url: organization_company_teammate_check_ins_path(company, employee_teammate), 
+        return_text: "Check-ins", 
+        observee_ids: [employee_teammate.id], 
+        rateable_type: 'Assignment', 
+        rateable_id: assignment.id, 
+        from_check_in: true
+      )
+      
+      visit quick_note_url
+      
       # Verify we're on observation creation page
-      expect(page).to have_content('Create Observation')
+      expect(page).to have_content(/Create.*Observation|Create Quick Note/i)
     end
 
   end

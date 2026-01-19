@@ -160,7 +160,7 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         employee_completed_at: Time.current,
         manager_rating: 'meeting',
         manager_completed_at: Time.current,
-        manager_completed_by: manager_person
+        manager_completed_by_teammate: manager_teammate
       )
       
       visit organization_company_teammate_check_ins_path(company, employee_teammate)
@@ -239,30 +239,16 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         end
       end
       
-      context 'card view' do
-        it 'shows only employee fields in card view' do
-          visit organization_company_teammate_check_ins_path(company, employee_teammate, view: 'card')
-          
-          # Should see employee section headers
-          expect(page).to have_content('Employee Assessment')
-          
-          # Should NOT see manager section headers
-          expect(page).not_to have_content('Manager Assessment')
-        end
-      end
-      
-      context 'table view' do
-        it 'shows only employee fields in table view' do
-          visit organization_company_teammate_check_ins_path(company, employee_teammate, view: 'table')
-          
-          # Should see employee headers in table
-          expect(page).to have_css('th', text: 'Employee Rating')
-          expect(page).to have_css('th', text: 'Employee Notes')
-          
-          # Should NOT see manager headers in table
-          expect(page).not_to have_css('th', text: 'Manager Rating')
-          expect(page).not_to have_css('th', text: 'Manager Notes')
-        end
+      it 'shows only employee fields' do
+        visit organization_company_teammate_check_ins_path(company, employee_teammate)
+        
+        # Should see employee headers in table
+        expect(page).to have_css('th', text: 'Employee Rating')
+        expect(page).to have_css('th', text: 'Employee Notes')
+        
+        # Should NOT see manager headers in table
+        expect(page).not_to have_css('th', text: 'Manager Rating')
+        expect(page).not_to have_css('th', text: 'Manager Notes')
       end
     end
 
@@ -311,30 +297,16 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         end
       end
       
-      context 'card view' do
-        it 'shows only manager fields in card view' do
-          visit organization_company_teammate_check_ins_path(company, employee_teammate, view: 'card')
-          
-          # Should see manager section headers
-          expect(page).to have_content('Manager Assessment')
-          
-          # Should NOT see employee section headers
-          expect(page).not_to have_content('Employee Assessment')
-        end
-      end
-      
-      context 'table view' do
-        it 'shows only manager fields in table view' do
-          visit organization_company_teammate_check_ins_path(company, employee_teammate, view: 'table')
-          
-          # Should see manager headers in table
-          expect(page).to have_css('th', text: 'Manager Rating')
-          expect(page).to have_css('th', text: 'Manager Notes')
-          
-          # Should NOT see employee headers in table
-          expect(page).not_to have_css('th', text: 'Employee Rating')
-          expect(page).not_to have_css('th', text: 'Employee Notes')
-        end
+      it 'shows only manager fields' do
+        visit organization_company_teammate_check_ins_path(company, employee_teammate)
+        
+        # Should see manager headers in table
+        expect(page).to have_css('th', text: 'Manager Rating')
+        expect(page).to have_css('th', text: 'Manager Notes')
+        
+        # Should NOT see employee headers in table
+        expect(page).not_to have_css('th', text: 'Employee Rating')
+        expect(page).not_to have_css('th', text: 'Employee Notes')
       end
     end
   end

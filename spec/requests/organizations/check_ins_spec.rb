@@ -255,62 +255,27 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         sign_in_as_teammate_for_request(manager_person, organization)
       end
 
-      context "card view" do
-        it "shows only manager fields and hides employee fields" do
-          get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'card')
-          
-          expect(response).to have_http_status(:success)
-          html = response.body
-          
-          # Should see manager section headers
-          expect(html).to include('Manager Assessment')
-          
-          # Should NOT see employee section headers
-          expect(html).not_to include('Employee Assessment')
-          
-          # Should see manager fields for aspirations
-          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_rating\]/)
-          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_private_notes\]/)
-          
-          # Should NOT see employee fields for aspirations
-          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_rating\]/)
-          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_private_notes\]/)
-          
-          # Should see manager fields for assignments
-          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[manager_rating\]/)
-          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[manager_private_notes\]/)
-          
-          # Should NOT see employee fields for assignments
-          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_rating\]/)
-          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_private_notes\]/)
-          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[actual_energy_percentage\]/)
-          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_personal_alignment\]/)
-        end
-      end
-
-      context "table view" do
-        it "shows only manager fields and hides employee fields" do
-          get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'table')
-          
-          expect(response).to have_http_status(:success)
-          html = response.body
-          
-          # Should see manager section headers in table headers
-          expect(html).to include('Manager Rating')
-          expect(html).to include('Manager Notes')
-          
-          # Should NOT see employee section headers in table headers
-          expect(html).not_to include('Employee Rating')
-          expect(html).not_to include('Employee Notes')
-          
-          # Should see manager fields for aspirations
-          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_rating\]/)
-          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_private_notes\]/)
-          
-          # Should NOT see employee fields for aspirations
-          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_rating\]/)
-          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_private_notes\]/)
-        end
+      it "shows only manager fields and hides employee fields" do
+        get organization_company_teammate_check_ins_path(organization, employee_teammate)
+        
+        expect(response).to have_http_status(:success)
+        html = response.body
+        
+        # Should see manager section headers in table headers
+        expect(html).to include('Manager Rating')
+        expect(html).to include('Manager Notes')
+        
+        # Should NOT see employee section headers in table headers
+        expect(html).not_to include('Employee Rating')
+        expect(html).not_to include('Employee Notes')
+        
+        # Should see manager fields for aspirations
+        expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_rating\]/)
+        expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_private_notes\]/)
+        
+        # Should NOT see employee fields for aspirations
+        expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_rating\]/)
+        expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_private_notes\]/)
       end
     end
 
@@ -319,62 +284,27 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         sign_in_as_teammate_for_request(employee_person, organization)
       end
 
-      context "card view" do
-        it "shows only employee fields and hides manager fields" do
-          get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'card')
-          
-          expect(response).to have_http_status(:success)
-          html = response.body
-          
-          # Should see employee section headers
-          expect(html).to include('Employee Assessment')
-          
-          # Should NOT see manager section headers
-          expect(html).not_to include('Manager Assessment')
-          
-          # Should see employee fields for aspirations
-          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_rating\]/)
-          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_private_notes\]/)
-          
-          # Should NOT see manager fields for aspirations
-          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_rating\]/)
-          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_private_notes\]/)
-          
-          # Should see employee fields for assignments
-          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_rating\]/)
-          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_private_notes\]/)
-          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[actual_energy_percentage\]/)
-          expect(html).to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[employee_personal_alignment\]/)
-          
-          # Should NOT see manager fields for assignments
-          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[manager_rating\]/)
-          expect(html).not_to match(/name=["']check_ins\[assignment_check_ins\]\[#{assignment_check_in.id}\]\[manager_private_notes\]/)
-        end
-      end
-
-      context "table view" do
-        it "shows only employee fields and hides manager fields" do
-          get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'table')
-          
-          expect(response).to have_http_status(:success)
-          html = response.body
-          
-          # Should see employee section headers in table headers
-          expect(html).to include('Employee Rating')
-          expect(html).to include('Employee Notes')
-          
-          # Should NOT see manager section headers in table headers
-          expect(html).not_to include('Manager Rating')
-          expect(html).not_to include('Manager Notes')
-          
-          # Should see employee fields for aspirations
-          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_rating\]/)
-          expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_private_notes\]/)
-          
-          # Should NOT see manager fields for aspirations
-          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_rating\]/)
-          expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_private_notes\]/)
-        end
+      it "shows only employee fields and hides manager fields" do
+        get organization_company_teammate_check_ins_path(organization, employee_teammate)
+        
+        expect(response).to have_http_status(:success)
+        html = response.body
+        
+        # Should see employee section headers in table headers
+        expect(html).to include('Employee Rating')
+        expect(html).to include('Employee Notes')
+        
+        # Should NOT see manager section headers in table headers
+        expect(html).not_to include('Manager Rating')
+        expect(html).not_to include('Manager Notes')
+        
+        # Should see employee fields for aspirations
+        expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_rating\]/)
+        expect(html).to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[employee_private_notes\]/)
+        
+        # Should NOT see manager fields for aspirations
+        expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_rating\]/)
+        expect(html).not_to match(/name=["']check_ins\[aspiration_check_ins\]\[#{aspiration_check_in.id}\]\[manager_private_notes\]/)
       end
     end
 
@@ -386,23 +316,8 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         aspiration_check_in.update!(manager_completed_at: nil, employee_completed_at: nil)
       end
 
-      it "does not show both Employee Assessment and Manager Assessment sections in card view" do
-        get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'card')
-        
-        expect(response).to have_http_status(:success)
-        html = response.body
-        
-        # Count occurrences of section headers
-        employee_assessment_count = html.scan(/Employee Assessment/).count
-        manager_assessment_count = html.scan(/Manager Assessment/).count
-        
-        # Manager should only see Manager Assessment sections
-        expect(manager_assessment_count).to be > 0, "Manager should see Manager Assessment sections"
-        expect(employee_assessment_count).to eq(0), "Manager should NOT see Employee Assessment sections (found #{employee_assessment_count})"
-      end
-
-      it "does not show both Employee Assessment and Manager Assessment sections in table view" do
-        get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'table')
+      it "does not show both Employee Assessment and Manager Assessment sections" do
+        get organization_company_teammate_check_ins_path(organization, employee_teammate)
         
         expect(response).to have_http_status(:success)
         html = response.body
@@ -420,33 +335,6 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         expect(html).not_to include('Employee Notes')
       end
       
-      it "does not show both sections when check-in is in progress (not completed)" do
-        # This tests the specific scenario where the bug occurs:
-        # When manager views an incomplete check-in, it should render _aspiration_check_in_manager_view
-        # which then renders _aspiration_check_in_in_progress with view_mode: :manager
-        # The bug is that _aspiration_check_in_in_progress uses two separate 'if' statements
-        # instead of 'if'/'elsif', which could allow both sections to render
-        
-        get organization_company_teammate_check_ins_path(organization, employee_teammate, view: 'card')
-        
-        expect(response).to have_http_status(:success)
-        html = response.body
-        
-        # Extract the aspiration section from the HTML to check for the bug
-        # Look for the pattern where both sections might appear in the same card
-        aspiration_sections = html.scan(/Aspiration:.*?<\/div>/m)
-        
-        # In each aspiration section, we should NOT see both "Employee Assessment" and "Manager Assessment"
-        aspiration_sections.each do |section|
-          has_employee = section.include?('Employee Assessment')
-          has_manager = section.include?('Manager Assessment')
-          
-          # If we're viewing as manager, we should only see Manager Assessment
-          if has_employee && has_manager
-            fail "Found both Employee Assessment and Manager Assessment in the same aspiration section. This is the bug!"
-          end
-        end
-      end
     end
   end
 end

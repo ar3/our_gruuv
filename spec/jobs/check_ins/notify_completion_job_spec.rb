@@ -106,7 +106,9 @@ RSpec.describe CheckIns::NotifyCompletionJob, type: :job do
         expect(slack_service).to receive(:open_or_create_group_dm).and_return({ success: true, channel_id: 'D123456' })
         expect(slack_service).to receive(:post_group_dm) do |args|
           expect(args[:text]).to include('we are now ready to review together')
-          expect(args[:text]).to include(organization_company_teammate_finalization_path(organization, employee_teammate))
+          # The job uses url_helpers which returns a full URL, so check for the path portion
+          finalization_path = organization_company_teammate_finalization_path(organization, employee_teammate)
+          expect(args[:text]).to match(/#{Regexp.escape(finalization_path)}/)
           { success: true }
         end
 

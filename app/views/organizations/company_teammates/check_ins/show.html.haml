@@ -6,21 +6,6 @@
         
 - content_for :header_action do
   .d-flex.align-items-center.gap-2
-    -# View Toggle Buttons
-    .btn-group.me-3{"role" => "group"}
-      = link_to organization_company_teammate_check_ins_path(organization, @teammate, view: 'table'), 
-                class: "btn btn-sm #{'btn-primary' if @view_mode_param == 'table'} #{'btn-outline-primary' if @view_mode_param != 'table'}",
-                "data-view" => "table",
-                title: "Table View" do
-        %i.bi.bi-table.me-1
-        Table
-      = link_to organization_company_teammate_check_ins_path(organization, @teammate, view: 'card'), 
-                class: "btn btn-sm #{'btn-primary' if @view_mode_param == 'card'} #{'btn-outline-primary' if @view_mode_param != 'card'}",
-                "data-view" => "card",
-                title: "Card View" do
-        %i.bi.bi-grid.me-1
-        Card
-    
     = render 'people/view_switcher'
 
 - content_for :go_back_link do
@@ -34,13 +19,6 @@
       Back to Profile
 
 = render 'shared/check_in_wizard_header', organization: organization, teammate: @teammate, current_step: 1
-
--# Mobile warning for table view
-- if @view_mode_param == 'table'
-  .alert.alert-info.d-md-none
-    %strong ℹ️ Mobile Notice:
-    This view performs better on larger screens. 
-    = link_to 'Switch to card view for mobile', organization_company_teammate_check_ins_path(organization, @teammate, view: 'card'), class: 'btn btn-sm btn-outline-primary ms-2'
 
 -# Authorization Debug Section
 - if params[:debug] == 'true' && @debug_data
@@ -201,16 +179,10 @@
            icon: 'bi-briefcase', 
            description: 'Assess role performance and growth'
   
-  - if @view_mode_param == 'table'
-    = render 'position_check_ins_table',
-             position_check_in: @position_check_in,
-             form: f,
-             view_mode: @view_mode
-  - else
-    = render 'position_check_in_card',
-             position_check_in: @position_check_in,
-             form: f,
-             view_mode: @view_mode
+  = render 'position_check_ins_table',
+           position_check_in: @position_check_in,
+           form: f,
+           view_mode: @view_mode
   .row.mt-4
     .col-12
       = f.submit 'Save All Check-Ins', class: 'btn btn-primary btn-lg'
@@ -222,16 +194,10 @@
            description: 'Evaluate project contributions and energy',
            action_link: { url: assignment_selection_organization_company_teammate_path(organization, @teammate), icon: 'bi-plus-circle', text: '', title: 'Manage assignments' }
   
-  - if @view_mode_param == 'table'
-    = render 'assignment_check_ins_table',
-             assignment_check_ins: @assignment_check_ins,
-             form: f,
-             view_mode: @view_mode
-  - else
-    = render 'assignment_check_ins_card',
-             assignment_check_ins: @assignment_check_ins,
-             form: f,
-             view_mode: @view_mode
+  = render 'assignment_check_ins_table',
+           assignment_check_ins: @assignment_check_ins,
+           form: f,
+           view_mode: @view_mode
   
   .row.mt-4
     .col-12
@@ -243,16 +209,10 @@
            icon: 'bi-star', 
            description: 'Track progress toward personal goals'
 
-  - if @view_mode_param == 'table'
-    = render 'aspiration_check_ins_table',
-             aspiration_check_ins: @aspiration_check_ins,
-             form: f,
-             view_mode: @view_mode
-  - else
-    = render 'aspiration_check_ins_card',
-             aspiration_check_ins: @aspiration_check_ins,
-             form: f,
-             view_mode: @view_mode
+  = render 'aspiration_check_ins_table',
+           aspiration_check_ins: @aspiration_check_ins,
+           form: f,
+           view_mode: @view_mode
   
   .row.mt-4
     .col-12

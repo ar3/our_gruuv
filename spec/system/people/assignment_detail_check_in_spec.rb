@@ -130,7 +130,7 @@ RSpec.describe 'Assignment Detail Page Check-In', type: :system do
       expect(check_in.manager_rating).to eq('meeting')
       expect(check_in.manager_private_notes).to eq('Good work!')
       expect(check_in.manager_completed_at).to be_present
-      expect(check_in.manager_completed_by).to eq(manager_person)
+      expect(check_in.manager_completed_by_teammate).to eq(manager_teammate)
     end
   end
 end
