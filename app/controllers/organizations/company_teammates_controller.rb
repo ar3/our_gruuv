@@ -427,6 +427,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
           reason: 'Check-in Bypass',
           request_info: request_info
         )
+        snapshot.effective_date = Date.current
         snapshot.save!
       end
     end

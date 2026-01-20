@@ -286,6 +286,8 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
         expect(snapshot.change_type).to eq('assignment_management')
         expect(snapshot.reason).to eq('Check-in Bypass')
         expect(snapshot.manager_request_info).to include('ip_address', 'user_agent', 'timestamp')
+        expect(snapshot.effective_date).to eq(Date.current)
+        expect(snapshot.executed?).to be true
       end
 
       it 'does not create MAAP snapshot when no changes are made' do
@@ -304,6 +306,8 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
         expect(snapshot.manager_request_info['timestamp']).to be_present
         # user_agent may be nil in test environment
         expect(snapshot.manager_request_info).to have_key('user_agent')
+        expect(snapshot.effective_date).to eq(Date.current)
+        expect(snapshot.executed?).to be true
       end
     end
 
@@ -345,6 +349,10 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
                   }
                 }
         }.to change(MaapSnapshot, :count).by(1)
+        
+        snapshot = MaapSnapshot.last
+        expect(snapshot.effective_date).to eq(Date.current)
+        expect(snapshot.executed?).to be true
       end
     end
 
