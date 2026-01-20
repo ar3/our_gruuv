@@ -7,7 +7,21 @@
         .card-header
           %h3.mb-0 Add New Employee to #{@organization.name}
         .card-body
-          = form_with model: [@organization, @person, @employment_tenure], url: create_employee_organization_employees_path(@organization), local: true do |form|
+          = form_with model: [@organization, @person], url: create_employee_organization_employees_path(@organization), local: true, id: 'new-employee-form' do |form|
+            - if @person&.errors&.any? || @employment_tenure&.errors&.any?
+              .alert.alert-danger.mb-3
+                %h6 Please fix the following errors:
+                %ul.mb-0
+                  - if @person&.errors&.any?
+                    - @person.errors.full_messages.each do |message|
+                      %li= message
+                  - if @employment_tenure&.errors&.any?
+                    - @employment_tenure.errors.full_messages.each do |message|
+                      %li= message
+            - if @error_message.present?
+              .alert.alert-danger.mb-3
+                %h6 Error:
+                %p.mb-0= @error_message
             .row
               .col-md-6
                 %h4.mb-3 Person Information
@@ -36,27 +50,23 @@
               
               .col-md-6
                 %h4.mb-3 Employment Information
-                .mb-3
-                  = form.label :position_id, 'Position', class: 'form-label'
-                  = form.select :position_id,
-                    @positions.map { |position| [position.display_name, position.id] },
-                    { prompt: 'Select a position' },
-                    { class: 'form-select', required: true }
-                
-                .mb-3
-                  = form.label :manager_teammate_id, 'Manager', class: 'form-label'
-                  = form.select :manager_teammate_id,
-                    @managers.map { |manager| [manager.is_a?(CompanyTeammate) ? manager.person.display_name : manager.display_name, manager.is_a?(CompanyTeammate) ? manager.id : manager.id] },
-                    { prompt: 'Select a manager (optional)' },
-                    { class: 'form-select' }
-                
-                .mb-3
-                  = form.label :started_at, 'Start Date', class: 'form-label'
-                  = form.date_field :started_at, value: Date.current, class: 'form-control', required: true
-                
-                .mb-3
-                  = form.label :employment_change_notes, 'Notes', class: 'form-label'
-                  = form.text_area :employment_change_notes, class: 'form-control', rows: 3
+                = fields_for :employment_tenure, @employment_tenure do |et_form|
+                  .mb-3
+                    = et_form.label :position_id, 'Position', class: 'form-label'
+                    = et_form.select :position_id,
+                      @positions.map { |position| [position.display_name, position.id] },
+                      { prompt: 'Select a position' },
+                      { class: 'form-select', required: true }
+                  
+                  = render 'shared/forms/manager_field', form: et_form, managers: @managers, all_employees: @all_employees, disabled: false
+                  
+                  .mb-3
+                    = et_form.label :started_at, 'Start Date', class: 'form-label'
+                    = et_form.date_field :started_at, value: Date.current, class: 'form-control', required: true
+                  
+                  .mb-3
+                    = et_form.label :employment_change_notes, 'Notes', class: 'form-label'
+                    = et_form.text_area :employment_change_notes, class: 'form-control', rows: 3
             
             .d-flex.justify-content-between
               = link_to 'Cancel', organization_employees_path(@organization), class: 'btn btn-secondary'

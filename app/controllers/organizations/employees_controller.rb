@@ -266,7 +266,7 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     @person = Person.new
     @employment_tenure = EmploymentTenure.new
     @positions = @organization.positions.includes(:position_type, :position_level)
-    @managers = @organization.employees
+    load_manager_data
   end
 
   def create_employee
@@ -275,7 +275,12 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
     
     # Create person and employment in a transaction
     ActiveRecord::Base.transaction do
-      @person = Person.new(person_params)
+      person_attrs = person_params.to_h
+      # Map phone_number to unique_textable_phone_number if present
+      if person_attrs.key?('phone_number')
+        person_attrs['unique_textable_phone_number'] = person_attrs.delete('phone_number')
+      end
+      @person = Person.new(person_attrs)
       @person.save!
       
       # Create teammate for this person and organization
@@ -295,11 +300,17 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
         created_by: current_person
       )
       
-      redirect_to organization_person_path(@organization, @person), notice: 'Employee was successfully created.'
+      teammate = @person.teammates.find_by(organization: @organization)
+      redirect_to organization_company_teammate_path(@organization, teammate), notice: 'Employee was successfully created.'
     end
   rescue ActiveRecord::RecordInvalid
     @positions = @organization.positions.includes(:position_type, :position_level)
-    @managers = @organization.employees
+    load_manager_data
+    render :new_employee, status: :unprocessable_entity
+  rescue => e
+    @positions = @organization.positions.includes(:position_type, :position_level)
+    load_manager_data
+    @error_message = "An error occurred: #{e.message}"
     render :new_employee, status: :unprocessable_entity
   end
 
@@ -384,6 +395,33 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
   def active_managers_for_organization
     # Get active managers (for filtering, lenient mode - don't require them to be active teammates)
     ActiveManagersQuery.new(company: @organization, require_active_teammate: false).call
+  end
+
+  def load_manager_data
+    company = @organization.root_company || @organization
+    
+    # Load distinct active managers (CompanyTeammates who are managers in active employment tenures)
+    active_manager_teammates = ActiveManagersQuery.new(company: company, require_active_teammate: true).call
+    @managers = active_manager_teammates
+    
+    # Load all active employees (for manager selection)
+    org_hierarchy = company.company? ? company.self_and_descendants : [company, company.parent].compact
+    
+    # Get all active employees (CompanyTeammates with active employment tenures in the organization hierarchy)
+    all_active_teammate_ids = EmploymentTenure.active
+                                              .joins(:teammate)
+                                              .where(company: org_hierarchy, teammates: { organization: org_hierarchy })
+                                              .distinct
+                                              .pluck('teammates.id')
+    
+    # Exclude managers (to prevent duplicates)
+    manager_teammate_ids = @managers.map { |m| m.is_a?(CompanyTeammate) ? m.id : CompanyTeammate.find_by(organization: company, person: m)&.id }.compact
+    non_manager_teammate_ids = all_active_teammate_ids - manager_teammate_ids
+    
+    # Get CompanyTeammate objects for non-manager employees, ordered by person's last_name, first_name
+    @all_employees = CompanyTeammate.where(id: non_manager_teammate_ids)
+                                    .joins(:person)
+                                    .order('people.last_name, people.first_name')
   end
 
   def active_departments_for_organization

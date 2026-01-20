@@ -354,5 +354,141 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       expect(stats[:max_level]).to be >= 1
     end
   end
+
+  describe 'GET #new_employee' do
+    let(:manager_person) { create(:person) }
+    let(:manager_teammate) { CompanyTeammate.find(create(:teammate, person: manager_person, organization: company, first_employed_at: 1.year.ago).id) }
+    let!(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, company: company, position: position, started_at: 1.year.ago) }
+    let!(:direct_report_employment) do
+      # End the existing employment_tenure1 first to avoid overlap
+      employment_tenure1.update!(ended_at: 7.months.ago)
+      create(:employment_tenure, teammate: employee1_teammate, company: company, position: position, started_at: 6.months.ago, manager_teammate: manager_teammate)
+    end
+
+    before do
+      # Ensure user has manage_employment permission
+      person_teammate = CompanyTeammate.find(session[:current_company_teammate_id])
+      person_teammate.update!(can_manage_employment: true)
+      @current_company_teammate = nil if defined?(@current_company_teammate)
+    end
+
+    it 'returns http success' do
+      get :new_employee, params: { organization_id: company.id }
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'assigns the correct variables' do
+      get :new_employee, params: { organization_id: company.id }
+      
+      expect(assigns(:person)).to be_a(Person)
+      expect(assigns(:person)).to be_new_record
+      expect(assigns(:employment_tenure)).to be_a(EmploymentTenure)
+      expect(assigns(:employment_tenure)).to be_new_record
+      expect(assigns(:positions)).to include(position)
+    end
+
+    it 'loads managers and all_employees for the manager dropdown' do
+      get :new_employee, params: { organization_id: company.id }
+      
+      expect(assigns(:managers)).to be_present
+      expect(assigns(:all_employees)).to be_present
+      # Manager should be in managers list
+      expect(assigns(:managers).map(&:id)).to include(manager_teammate.id)
+      # Non-manager employees should be in all_employees list
+      expect(assigns(:all_employees).map(&:id)).to include(employee2_teammate.id)
+      # Managers should not be in all_employees (no duplicates)
+      expect(assigns(:all_employees).map(&:id)).not_to include(manager_teammate.id)
+    end
+
+    it 'renders the new_employee template' do
+      get :new_employee, params: { organization_id: company.id }
+      expect(response).to render_template(:new_employee)
+    end
+  end
+
+  describe 'POST #create_employee' do
+    let(:manager_person) { create(:person) }
+    let(:manager_teammate) { CompanyTeammate.find(create(:teammate, person: manager_person, organization: company, first_employed_at: 1.year.ago).id) }
+    let!(:manager_employment) { create(:employment_tenure, teammate: manager_teammate, company: company, position: position, started_at: 1.year.ago) }
+    
+    let(:valid_person_params) do
+      {
+        first_name: 'John',
+        last_name: 'Doe',
+        email: 'john.doe@example.com',
+        timezone: 'Eastern Time (US & Canada)'
+      }
+    end
+    
+    let(:valid_employment_params) do
+      {
+        position_id: position.id,
+        manager_teammate_id: manager_teammate.id,
+        started_at: Date.current,
+        employment_change_notes: 'New hire'
+      }
+    end
+
+    before do
+      # Ensure user has manage_employment permission
+      person_teammate = CompanyTeammate.find(session[:current_company_teammate_id])
+      person_teammate.update!(can_manage_employment: true)
+      @current_company_teammate = nil if defined?(@current_company_teammate)
+    end
+
+    it 'creates a new person and employment' do
+      expect {
+        post :create_employee, params: {
+          organization_id: company.id,
+          person: valid_person_params,
+          employment_tenure: valid_employment_params
+        }
+      }.to change { Person.count }.by(1)
+        .and change { EmploymentTenure.count }.by(1)
+        .and change { CompanyTeammate.count }.by(1)
+    end
+
+    it 'redirects to person profile on success' do
+      post :create_employee, params: {
+        organization_id: company.id,
+        person: valid_person_params,
+        employment_tenure: valid_employment_params
+      }
+      
+      new_person = Person.find_by(email: 'john.doe@example.com')
+      new_teammate = new_person.teammates.find_by(organization: company)
+      expect(response).to redirect_to(organization_company_teammate_path(company, new_teammate))
+    end
+
+    it 'handles validation errors and loads manager data' do
+      # Ensure there's a manager for the error case
+      manager_employment
+      
+      post :create_employee, params: {
+        organization_id: company.id,
+        person: { first_name: '' }, # Invalid - missing required fields
+        employment_tenure: valid_employment_params
+      }
+      
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to render_template(:new_employee)
+      # Managers and all_employees should be loaded (may be empty if no managers exist, but should be set)
+      expect(assigns(:managers)).not_to be_nil
+      expect(assigns(:all_employees)).not_to be_nil
+    end
+
+    it 'creates observable moment for new hire' do
+      expect(ObservableMoments::CreateNewHireMomentService).to receive(:call).with(
+        employment_tenure: an_instance_of(EmploymentTenure),
+        created_by: person
+      )
+      
+      post :create_employee, params: {
+        organization_id: company.id,
+        person: valid_person_params,
+        employment_tenure: valid_employment_params
+      }
+    end
+  end
 end
 
