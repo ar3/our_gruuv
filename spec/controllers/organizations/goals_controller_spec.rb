@@ -407,6 +407,42 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       end
     end
     
+    context 'when person has CompanyTeammate and also DepartmentTeammate/TeamTeammate' do
+      let(:person_with_multiple_teammates) { create(:person) }
+      let(:department) { create(:organization, :department, parent: company) }
+      let(:team) { create(:organization, :team, parent: company) }
+      let!(:company_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: company, type: 'CompanyTeammate') }
+      let!(:department_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: department, type: 'DepartmentTeammate') }
+      let!(:team_teammate) { create(:teammate, person: person_with_multiple_teammates, organization: team, type: 'TeamTeammate') }
+      
+      before do
+        sign_in_as_teammate(person_with_multiple_teammates, company)
+      end
+      
+      it 'correctly finds CompanyTeammate when creating a goal' do
+        expect {
+          post :create, params: { organization_id: company.id, goal: valid_attributes }
+        }.to change(Goal, :count).by(1)
+        
+        goal = Goal.last
+        # Reload to get the STI type
+        company_teammate.reload
+        expect(goal.creator.id).to eq(company_teammate.id)
+        expect(goal.creator).to be_a(CompanyTeammate)
+        expect(response).to have_http_status(:redirect)
+      end
+      
+      it 'correctly finds CompanyTeammate when viewing new goal form' do
+        get :new, params: { organization_id: company.id }
+        
+        expect(response).to have_http_status(:success)
+        # Reload to get the STI type
+        company_teammate.reload
+        expect(assigns(:form).current_teammate.id).to eq(company_teammate.id)
+        expect(assigns(:form).current_teammate).to be_a(CompanyTeammate)
+      end
+    end
+    
     context 'when current_teammate is nil' do
       let(:person_without_teammate) { create(:person) }
       let(:department) { create(:organization, :department, parent: company) }

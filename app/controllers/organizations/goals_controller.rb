@@ -224,12 +224,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     
     @form = GoalForm.new(@goal)
     @form.current_person = current_person
-    # Find teammate in the company or any descendant organization
-    # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
-    company_descendant_ids = company.self_and_descendants.pluck(:id)
-    current_teammate = current_person.teammates.find_by(organization_id: company_descendant_ids)
-    # Ensure it's a CompanyTeammate
-    @form.current_teammate = current_teammate.is_a?(CompanyTeammate) ? current_teammate : nil
+    # Find CompanyTeammate at the company level (not DepartmentTeammate or TeamTeammate)
+    current_teammate = CompanyTeammate.find_by(organization: company, person: current_person)
+    @form.current_teammate = current_teammate
     # Set defaults
     @form.goal_type = 'inspirational_objective' # Default to objective
     @form.privacy_level = 'only_creator_owner_and_managers'
@@ -263,12 +260,9 @@ class Organizations::GoalsController < Organizations::OrganizationNamespaceBaseC
     @goal = Goal.new(company: company)
     @form = GoalForm.new(@goal)
     @form.current_person = current_person
-    # Find teammate in the company or any descendant organization
-    # Only allow CompanyTeammate (not DepartmentTeammate or TeamTeammate)
-    company_descendant_ids = company.self_and_descendants.pluck(:id)
-    current_teammate = current_person.teammates.find_by(organization_id: company_descendant_ids)
-    # Ensure it's a CompanyTeammate
-    @form.current_teammate = current_teammate.is_a?(CompanyTeammate) ? current_teammate : nil
+    # Find CompanyTeammate at the company level (not DepartmentTeammate or TeamTeammate)
+    current_teammate = CompanyTeammate.find_by(organization: company, person: current_person)
+    @form.current_teammate = current_teammate
     
     goal_params = params[:goal] || {}
     
