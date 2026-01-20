@@ -489,6 +489,57 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
         employment_tenure: valid_employment_params
       }
     end
+
+    it 'maps phone_number to unique_textable_phone_number' do
+      person_with_phone = valid_person_params.merge(phone_number: '+1234567890')
+      
+      post :create_employee, params: {
+        organization_id: company.id,
+        person: person_with_phone,
+        employment_tenure: valid_employment_params
+      }
+      
+      new_person = Person.find_by(email: 'john.doe@example.com')
+      expect(new_person.unique_textable_phone_number).to eq('+1234567890')
+    end
+
+    it 'displays validation errors when person is invalid' do
+      post :create_employee, params: {
+        organization_id: company.id,
+        person: { first_name: '', last_name: '', email: '' }, # Invalid
+        employment_tenure: valid_employment_params
+      }
+      
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to render_template(:new_employee)
+      expect(assigns(:person).errors).to be_present
+    end
+
+    it 'displays validation errors when employment_tenure is invalid' do
+      post :create_employee, params: {
+        organization_id: company.id,
+        person: valid_person_params,
+        employment_tenure: { position_id: nil, started_at: nil } # Invalid
+      }
+      
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to render_template(:new_employee)
+      expect(assigns(:employment_tenure).errors).to be_present
+    end
+
+    it 'handles other exceptions gracefully' do
+      allow_any_instance_of(Person).to receive(:save!).and_raise(StandardError.new('Database error'))
+      
+      post :create_employee, params: {
+        organization_id: company.id,
+        person: valid_person_params,
+        employment_tenure: valid_employment_params
+      }
+      
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to render_template(:new_employee)
+      expect(assigns(:error_message)).to be_present
+    end
   end
 end
 
