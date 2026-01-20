@@ -917,5 +917,214 @@ RSpec.describe 'About Me Page', type: :request do
       end
     end
   end
+
+  describe 'Onboarding Spotlight' do
+    context 'when viewing own page with no observations and no goals' do
+      it 'shows the onboarding spotlight' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('Welcome to OurGruuv!')
+        expect(response.body).to include('Clarity and Continuous Feedback')
+        expect(assigns(:show_onboarding_spotlight)).to be true
+      end
+
+      it 'shows all three milestones' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('Milestone 1')
+        expect(response.body).to include('Milestone 2')
+        expect(response.body).to include('Milestone 3')
+      end
+
+      it 'shows milestone 1 as complete' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('Logging In')
+        expect(response.body).to include('Complete')
+        expect(response.body).to include('Celebrating!')
+      end
+
+      it 'shows milestone 2 as incomplete with link to create observation' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('Adding a Kudos, Feedback, or Observation')
+        expect(response.body).to include('Add Observation')
+        expect(response.body).to include(select_type_organization_observations_path(organization))
+      end
+
+      it 'shows milestone 3 as incomplete with link to create goal' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('Setting Goals with Weekly Check-ins')
+        expect(response.body).to include('Create Goal')
+        expect(response.body).to include(new_organization_goal_path(organization))
+      end
+    end
+
+    context 'when viewing someone else\'s page' do
+      let(:other_person) { create(:person) }
+      let(:other_teammate) { create(:teammate, person: other_person, organization: organization, type: 'CompanyTeammate') }
+
+      before do
+        create(:employment_tenure, teammate: other_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+        other_teammate.update!(first_employed_at: 1.year.ago)
+        # Give permission to view other teammate's about_me page
+        allow_any_instance_of(CompanyTeammatePolicy).to receive(:view_check_ins?).and_return(true)
+      end
+
+      it 'does not show the onboarding spotlight' do
+        get about_me_organization_company_teammate_path(organization, other_teammate)
+        expect(response.body).not_to include('Welcome to OurGruuv!')
+        expect(assigns(:show_onboarding_spotlight)).to be false
+      end
+    end
+
+    context 'when user has observations but no goals' do
+      let!(:observation) do
+        build(:observation,
+              observer: person,
+              company: organization,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: teammate)
+          obs.save!
+        end
+      end
+
+      it 'shows the onboarding spotlight' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('Welcome to OurGruuv!')
+        expect(assigns(:show_onboarding_spotlight)).to be true
+        expect(assigns(:has_observations)).to be true
+        expect(assigns(:has_goals)).to be false
+      end
+    end
+
+    context 'when user has goals but no observations' do
+      let!(:goal) do
+        create(:goal,
+               owner: teammate,
+               creator: teammate,
+               company: organization,
+               started_at: 1.day.ago,
+               completed_at: nil,
+               deleted_at: nil)
+      end
+
+      it 'shows the onboarding spotlight' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('Welcome to OurGruuv!')
+        expect(assigns(:show_onboarding_spotlight)).to be true
+        expect(assigns(:has_observations)).to be false
+        expect(assigns(:has_goals)).to be true
+      end
+    end
+
+    context 'when user has both observations and goals' do
+      let!(:observation) do
+        build(:observation,
+              observer: person,
+              company: organization,
+              privacy_level: :public_to_company,
+              observed_at: 10.days.ago,
+              published_at: 10.days.ago).tap do |obs|
+          obs.observees.build(teammate: teammate)
+          obs.save!
+        end
+      end
+
+      let!(:goal) do
+        create(:goal,
+               owner: teammate,
+               creator: teammate,
+               company: organization,
+               started_at: 1.day.ago,
+               completed_at: nil,
+               deleted_at: nil)
+      end
+
+      it 'does not show the onboarding spotlight' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).not_to include('Welcome to OurGruuv!')
+        expect(assigns(:show_onboarding_spotlight)).to be false
+        expect(assigns(:has_observations)).to be true
+        expect(assigns(:has_goals)).to be true
+      end
+    end
+
+    context 'when user has draft observation but no goals' do
+      let!(:draft_observation) do
+        create(:observation,
+               observer: person,
+               company: organization,
+               privacy_level: :public_to_company,
+               observed_at: 10.days.ago,
+               published_at: nil)
+      end
+
+      it 'shows the onboarding spotlight' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('Welcome to OurGruuv!')
+        expect(assigns(:show_onboarding_spotlight)).to be true
+        expect(assigns(:has_observations)).to be true
+        expect(assigns(:has_goals)).to be false
+      end
+    end
+
+    context 'when user has draft goal but no observations' do
+      let!(:draft_goal) do
+        create(:goal,
+               owner: teammate,
+               creator: teammate,
+               company: organization,
+               started_at: nil,
+               deleted_at: nil)
+      end
+
+      it 'shows the onboarding spotlight' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('Welcome to OurGruuv!')
+        expect(assigns(:show_onboarding_spotlight)).to be true
+        expect(assigns(:has_observations)).to be false
+        expect(assigns(:has_goals)).to be true
+      end
+    end
+
+    context 'when user has archived observation but no goals' do
+      let!(:archived_observation) do
+        create(:observation,
+               observer: person,
+               company: organization,
+               privacy_level: :public_to_company,
+               observed_at: 10.days.ago,
+               published_at: 10.days.ago,
+               deleted_at: 1.day.ago)
+      end
+
+      it 'shows the onboarding spotlight' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('Welcome to OurGruuv!')
+        expect(assigns(:show_onboarding_spotlight)).to be true
+        expect(assigns(:has_observations)).to be true
+        expect(assigns(:has_goals)).to be false
+      end
+    end
+
+    context 'when user has completed goal but no observations' do
+      let!(:completed_goal) do
+        create(:goal,
+               owner: teammate,
+               creator: teammate,
+               company: organization,
+               started_at: 60.days.ago,
+               completed_at: 30.days.ago,
+               deleted_at: nil)
+      end
+
+      it 'shows the onboarding spotlight' do
+        get about_me_organization_company_teammate_path(organization, teammate)
+        expect(response.body).to include('Welcome to OurGruuv!')
+        expect(assigns(:show_onboarding_spotlight)).to be true
+        expect(assigns(:has_observations)).to be false
+        expect(assigns(:has_goals)).to be true
+      end
+    end
+  end
 end
 

@@ -61,6 +61,13 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     authorize @teammate, :view_check_ins?, policy_class: CompanyTeammatePolicy
     @person = @teammate.person
     
+    # Check if onboarding spotlight should be shown
+    # Only show on viewing teammate's own page and when they don't have BOTH an observation AND a goal
+    viewing_own_page = current_person == @teammate.person
+    @has_observations = current_person ? Observation.by_observer(current_person).exists? : false
+    @has_goals = Goal.where(creator: @teammate).or(Goal.where(owner_type: 'CompanyTeammate', owner_id: @teammate.id)).exists?
+    @show_onboarding_spotlight = viewing_own_page && !(@has_observations && @has_goals)
+    
     # Load data for sections moved from check-ins
     load_goals_for_about_me
     load_stories_for_about_me

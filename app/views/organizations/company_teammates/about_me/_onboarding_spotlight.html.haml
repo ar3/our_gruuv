@@ -1,0 +1,89 @@
+.card.mb-4.border-primary.shadow-lg
+  .card-body.p-4
+    .text-center.mb-4
+      %h2.mb-3
+        %i.bi.bi-star-fill.text-warning.me-2
+        Welcome to OurGruuv!
+      %p.lead.mb-0
+        OurGruuv is all about 
+        %strong Clarity and Continuous Feedback.
+        There are three things that will help ensure you've reached an OurGruuv Milestone.
+
+    .row.mt-4
+      -# Milestone 1: Logging in (always complete)
+      .col-md-4.mb-3
+        .card.h-100.border-success
+          .card-body.text-center
+            %div.mb-3
+              %i.bi.bi-check-circle-fill.text-success{style: "font-size: 3rem;"}
+            %h5.card-title.mb-2
+              %span.badge.bg-success.me-2 Complete
+              Milestone 1
+            %p.card-text.fw-bold Logging In
+            %p.card-text.text-muted.small
+              You're here! You've successfully logged in and are ready to start your OurGruuv journey.
+
+      -# Milestone 2: Creating an observation
+      .col-md-4.mb-3
+        - if @has_observations
+          .card.h-100.border-success
+            .card-body.text-center
+              %div.mb-3
+                %i.bi.bi-check-circle-fill.text-success{style: "font-size: 3rem;"}
+              %h5.card-title.mb-2
+                %span.badge.bg-success.me-2 Complete
+                Milestone 2
+              %p.card-text.fw-bold Adding a Kudos, Feedback, or Observation
+              %p.card-text.text-muted.small
+                Great job! You've shared the key ingredient to continuous improvement: continuous feedback.
+        - else
+          .card.h-100.border-primary
+            .card-body.text-center
+              %div.mb-3
+                %i.bi.bi-circle.text-primary{style: "font-size: 3rem;"}
+              %h5.card-title.mb-2
+                %span.badge.bg-primary.me-2 Next
+                Milestone 2
+              %p.card-text.fw-bold Adding a Kudos, Feedback, or Observation
+              %p.card-text.text-muted.small.mb-3
+                Share the key ingredient to continuous improvement: continuous feedback. Add a Kudos, Feedback, or other observation.
+              = link_to select_type_organization_observations_path(organization, 
+                    return_url: about_me_organization_company_teammate_path(organization, @teammate),
+                    return_text: "Back to About #{@teammate.person.casual_name}"),
+                  class: "btn btn-primary" do
+                %i.bi.bi-plus-circle.me-2
+                Add Observation
+
+      -# Milestone 3: Creating a goal
+      .col-md-4.mb-3
+        - if @has_goals
+          .card.h-100.border-success
+            .card-body.text-center
+              %div.mb-3
+                %i.bi.bi-check-circle-fill.text-success{style: "font-size: 3rem;"}
+              %h5.card-title.mb-2
+                %span.badge.bg-success.me-2 Complete
+                Milestone 3
+              %p.card-text.fw-bold Setting Goals with Weekly Check-ins
+              %p.card-text.text-muted.small
+                Excellent! You've challenged yourself and set goals that you check in on weekly.
+        - else
+          .card.h-100.border-primary
+            .card-body.text-center
+              %div.mb-3
+                %i.bi.bi-circle.text-primary{style: "font-size: 3rem;"}
+              %h5.card-title.mb-2
+                %span.badge.bg-primary.me-2 Next
+                Milestone 3
+              %p.card-text.fw-bold Setting Goals with Weekly Check-ins
+              %p.card-text.text-muted.small.mb-3
+                Challenge yourself and set goals that you check in on weekly.
+              = link_to new_organization_goal_path(organization),
+                  class: "btn btn-primary" do
+                %i.bi.bi-bullseye.me-2
+                Create Goal
+
+    .row.mt-4
+      .col-12
+        %p.lead.mb-0
+          This page is your OurGruuv Health Dashboard.  10 minutes a week – working on one of the suggestions below, will help ensure you have the clairty, continuous feedback and the challenge to create Flow State!
