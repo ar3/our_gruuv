@@ -31,7 +31,9 @@ module PositionsHelper
 
   def energy_percentage_options(selected_value = nil)
     options = (0..20).map { |i| ["#{i * 5}%", i * 5] }
-    options_for_select(options, selected_value)
+    # If a selected_value is provided, return pre-selected HTML options
+    # Otherwise, return the array for use with form helpers
+    selected_value.nil? ? options : options_for_select(options, selected_value)
   end
 
   def build_assignment_hierarchy_tree(assignments_by_org, company)

@@ -251,6 +251,25 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         expect(page).not_to have_css('th', text: 'Manager Rating')
         expect(page).not_to have_css('th', text: 'Manager Notes')
       end
+
+      it 'pre-selects existing actual_energy_percentage value in dropdown' do
+        # Create a check-in with an existing energy percentage value
+        assignment_check_in.update!(actual_energy_percentage: 75)
+        assignment_check_in.reload
+        
+        visit organization_company_teammate_check_ins_path(company, employee_teammate)
+        
+        # Find the actual energy percentage select field
+        select_element = page.find("select[name=\"check_ins[assignment_check_ins][#{assignment_check_in.id}][actual_energy_percentage]\"]")
+        selected_value = select_element.value
+        
+        # The selected value should be "75" (as a string from the select element)
+        expect(selected_value).to eq('75')
+        
+        # Verify the selected option text is "75%"
+        selected_option = select_element.find("option[value='#{selected_value}']")
+        expect(selected_option.text).to eq('75%')
+      end
     end
 
     describe 'Manager view' do

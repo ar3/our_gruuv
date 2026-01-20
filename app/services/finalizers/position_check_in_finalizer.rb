@@ -14,17 +14,31 @@ module Finalizers
       return Result.err("Official rating required") if @official_rating.nil?
       return Result.err("Invalid official rating") unless EmploymentTenure::POSITION_RATINGS.key?(@official_rating)
       
-      # Close current tenure with official rating
+      # Close ALL active tenures for this teammate/company before creating a new one
+      # This ensures there's only one active tenure at a time
       current_tenure = @check_in.employment_tenure
+      company = current_tenure.company
+      close_time = Time.current
+      
+      # Close the current tenure (the one associated with the check-in) with the official rating
       current_tenure.update!(
-        ended_at: Time.current,
+        ended_at: close_time,
         official_position_rating: @official_rating
       )
+      
+      # Close any other active tenures (shouldn't exist, but handle data integrity issues)
+      other_active_tenures = EmploymentTenure
+        .where(teammate: @teammate, company: company, ended_at: nil)
+        .where.not(id: current_tenure.id)
+      
+      if other_active_tenures.exists?
+        other_active_tenures.update_all(ended_at: close_time)
+      end
       
       # Open new tenure (same position/manager, fresh rating period)
       new_tenure = EmploymentTenure.create!(
         teammate: @teammate,
-        company: current_tenure.company,
+        company: company,
         position: current_tenure.position,
         manager_teammate: current_tenure.manager_teammate,
         seat: current_tenure.seat,

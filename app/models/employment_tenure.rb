@@ -97,12 +97,27 @@ class EmploymentTenure < ApplicationRecord
   def no_overlapping_active_tenures_for_same_teammate_and_company
     return unless teammate_id && company_id && started_at
 
-    overlapping_tenures = EmploymentTenure
+    # Skip validation when closing a tenure (setting ended_at)
+    # We should always allow closing a tenure, even if other active tenures exist
+    # The validation should only prevent creating/keeping multiple active tenures
+    if persisted? && ended_at.present? && ended_at_changed?
+      return
+    end
+
+    # Only validate if this tenure is or will be active (ended_at is nil)
+    # This prevents creating multiple active tenures simultaneously
+    return if ended_at.present?
+
+    # The rule is simple: only ONE active tenure per teammate/company at a time
+    # Check if there are any other active tenures (regardless of dates)
+    # If this is a new record (not persisted), we need to check for any active tenures
+    # If this is an update, we've already excluded this record with where.not(id: id)
+    other_active_tenures = EmploymentTenure
       .where(teammate: teammate, company: company)
       .where.not(id: id) # Exclude current record if updating
-      .where('(ended_at IS NULL OR ended_at > ?) AND started_at < ?', started_at, ended_at || Date.current)
+      .where(ended_at: nil) # Only check active tenures
 
-    if overlapping_tenures.exists?
+    if other_active_tenures.exists?
       errors.add(:base, 'Cannot have overlapping active employment tenures for the same teammate and company')
     end
   end
