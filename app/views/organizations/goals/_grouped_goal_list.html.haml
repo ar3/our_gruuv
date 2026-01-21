@@ -17,7 +17,7 @@
 - grouped_links = {}
 - valid_links.each do |link|
   - goal = linked_goals[link.child_id] || linked_goals[link.parent_id] || link.child || link.parent
-  - if goal.present?
+  - if goal.present? && goal.deleted_at.nil?
     - goal_type = goal.goal_type
     - grouped_links[goal_type] ||= []
     - grouped_links[goal_type] << link

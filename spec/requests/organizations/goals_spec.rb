@@ -252,6 +252,19 @@ RSpec.describe 'Organizations::Goals', type: :request do
       expect(response.body).to include(completed_goal.title)
     end
     
+    it 'does not show archived child goals on goal show page' do
+      active_child = create(:goal, creator: teammate, owner: teammate, title: 'Active Child Goal')
+      archived_child = create(:goal, creator: teammate, owner: teammate, title: 'Archived Child Goal', deleted_at: 1.day.ago)
+      create(:goal_link, parent: goal, child: active_child)
+      create(:goal_link, parent: goal, child: archived_child)
+      
+      get organization_goal_path(organization, goal)
+      
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Active Child Goal')
+      expect(response.body).not_to include('Archived Child Goal')
+    end
+    
     context 'when goal is started' do
       let(:started_goal) { create(:goal, creator: teammate, owner: teammate, title: 'Started Goal', started_at: 1.week.ago) }
       

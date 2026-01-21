@@ -115,6 +115,29 @@ RSpec.describe 'organizations/prompts/edit', type: :view do
       expect(rendered).to have_content(goal1.title)
       expect(rendered).to have_content(goal2.title)
     end
+    
+    it 'does not display archived goals' do
+      archived_goal = create(:goal, owner: teammate, creator: teammate, company: organization, goal_type: 'stepping_stone_activity', title: 'Archived Goal', deleted_at: 1.day.ago)
+      archived_prompt_goal = PromptGoal.create!(prompt: prompt, goal: archived_goal)
+      
+      # Reload to ensure deleted_at is set
+      archived_goal.reload
+      
+      # Update the mocked associations to include the archived goal
+      # The view filters archived goals, so we need to ensure the relation includes it
+      goals_relation = Goal.where(id: [goal1.id, goal2.id, archived_goal.id])
+      allow(prompt).to receive(:goals).and_return(goals_relation)
+      allow(prompt).to receive(:prompt_goals).and_return([prompt_goal1, prompt_goal2, archived_prompt_goal])
+      assign(:prompt_goals, [prompt_goal1, prompt_goal2, archived_prompt_goal])
+      # linked_goals should include all descendant goals, but archived ones should be filtered in the view
+      assign(:linked_goals, { goal1.id => goal1, goal2.id => goal2, archived_goal.id => archived_goal })
+      
+      render
+      
+      expect(rendered).to have_content(goal1.title)
+      expect(rendered).to have_content(goal2.title)
+      expect(rendered).not_to have_content('Archived Goal')
+    end
   end
 
   context 'when prompt has no associated goals' do

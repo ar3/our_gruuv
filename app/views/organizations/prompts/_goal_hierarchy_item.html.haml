@@ -21,7 +21,7 @@
       = render 'organizations/goals/goal_check_in_sentence', check_in: most_recent_check_in, goal: goal
   %br
   - # Render children recursively
-  - child_goals = goal.outgoing_links.includes(:child).map(&:child).compact.select { |g| all_descendant_goal_ids.include?(g.id) }
+  - child_goals = goal.outgoing_links.includes(:child).map(&:child).compact.select { |g| all_descendant_goal_ids.include?(g.id) && g.deleted_at.nil? }
   - if child_goals.any?
     %ul.list-unstyled.mt-2
       - child_goals.each do |child_goal|

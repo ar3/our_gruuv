@@ -69,7 +69,7 @@
         = button_to organization_prompt_prompt_goal_path(organization, prompt, prompt_goal), method: :delete, class: "btn btn-sm btn-outline-danger", form: { style: "display: inline-block;" }, data: { confirm: "Are you sure you want to remove this goal association?" } do
           %i.bi.bi-trash
 - if display_children_goal_hierarchy
-  - child_goals = linked_goal.outgoing_links.includes(:child).map(&:child).compact
+  - child_goals = linked_goal.outgoing_links.includes(:child).map(&:child).compact.reject { |g| g.deleted_at.present? }
   - if child_goals.any?
     %ul.list-unstyled.mt-2
       - child_goals.each do |child_goal|

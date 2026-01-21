@@ -129,9 +129,10 @@
                   %li= link_to "... this new sentiment outcome", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'qualitative_key_result', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
                   %li= link_to "... this new objective", new_outgoing_link_organization_goal_goal_links_path(@organization, @goal, goal_type: 'inspirational_objective', return_url: request.url, return_text: 'Goal'), class: "dropdown-item"
 
-        - if @goal.outgoing_links.any?
+        - non_archived_outgoing_links = @goal.outgoing_links.includes(:child).select { |link| link.child&.deleted_at.nil? }
+        - if non_archived_outgoing_links.any?
           = render 'grouped_goal_list', 
-              links: @goal.outgoing_links.includes(:child), 
+              links: non_archived_outgoing_links, 
               linked_goals: @linked_goals, 
               linked_goal_check_ins: @linked_goal_check_ins, 
               organization: @organization, 

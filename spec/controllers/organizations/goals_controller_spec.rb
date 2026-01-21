@@ -167,6 +167,19 @@ RSpec.describe Organizations::GoalsController, type: :controller do
       expect(assigns(:goal).outgoing_links).to include(link)
     end
     
+    it 'loads linked goals including archived ones for display' do
+      active_child = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Active Child')
+      archived_child = create(:goal, creator: creator_teammate, owner: creator_teammate, title: 'Archived Child', deleted_at: 1.day.ago)
+      create(:goal_link, parent: goal, child: active_child)
+      create(:goal_link, parent: goal, child: archived_child)
+      
+      get :show, params: { organization_id: company.id, id: goal.id }
+      
+      expect(response).to have_http_status(:success)
+      # Controller loads all linked goals (including archived) - view filters them
+      expect(assigns(:linked_goals).keys).to include(active_child.id, archived_child.id)
+    end
+    
     it 'includes incoming links' do
       linking_goal = create(:goal, creator: creator_teammate, owner: creator_teammate)
       link = create(:goal_link, parent: linking_goal, child: goal)

@@ -127,13 +127,14 @@
           %i.bi.bi-plus.me-1
           Manage Goals
   .card-body
-    - if @prompt.goals.any?
+    - non_archived_goals = @prompt.goals.reject { |g| g.deleted_at.present? }
+    - if non_archived_goals.any?
       - # Get all descendant goal IDs (includes children, grandchildren, etc.)
       - all_descendant_goal_ids = @linked_goals.keys.to_set
-      - prompt_goal_ids = @prompt.goals.pluck(:id).to_set
+      - prompt_goal_ids = non_archived_goals.map(&:id).to_set
       
       - # Group goals by type
-      - goals_by_type = @prompt.goals.group_by(&:goal_type)
+      - goals_by_type = non_archived_goals.group_by(&:goal_type)
       - goal_types = ['stepping_stone_activity', 'quantitative_key_result', 'qualitative_key_result', 'inspirational_objective']
       - goal_type_labels = { 'stepping_stone_activity' => 'Stepping Stones/Activities', 'quantitative_key_result' => 'Measurable Outcomes', 'qualitative_key_result' => 'Sentiment Outcomes', 'inspirational_objective' => 'Objectives' }
       
@@ -141,7 +142,7 @@
       - goals_that_are_children = Set.new
       - GoalLink.where(parent_id: all_descendant_goal_ids, child_id: all_descendant_goal_ids).each do |link|
         - goals_that_are_children.add(link.child_id)
-      - root_goals = @prompt.goals.reject { |goal| goals_that_are_children.include?(goal.id) }
+      - root_goals = non_archived_goals.reject { |goal| goals_that_are_children.include?(goal.id) }
       
       - goal_types.each do |goal_type|
         - goals_for_type = (goals_by_type[goal_type] || []).select { |g| root_goals.include?(g) }
