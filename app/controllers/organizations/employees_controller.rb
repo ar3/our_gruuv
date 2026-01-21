@@ -283,11 +283,19 @@ class Organizations::EmployeesController < Organizations::OrganizationNamespaceB
       @person = Person.new(person_attrs)
       @person.save!
       
+      # Extract started_at from employment_tenure_params for first_employed_at
+      employment_params = employment_tenure_params.to_h
+      start_date = employment_params['started_at']
+      
       # Create teammate for this person and organization
-      teammate = @person.teammates.create!(
+      teammate_attrs = {
         organization: @organization,
         type: 'CompanyTeammate'
-      )
+      }
+      # Set first_employed_at to the start date if provided
+      teammate_attrs[:first_employed_at] = start_date if start_date.present?
+      
+      teammate = @person.teammates.create!(teammate_attrs)
       
       @employment_tenure = teammate.employment_tenures.build(employment_tenure_params)
       @employment_tenure.company = @organization

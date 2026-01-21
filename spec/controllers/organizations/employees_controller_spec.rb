@@ -540,6 +540,36 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       expect(response).to render_template(:new_employee)
       expect(assigns(:error_message)).to be_present
     end
+
+    it 'sets first_employed_at on teammate to the start date' do
+      start_date = 1.month.ago.to_date
+      employment_params_with_date = valid_employment_params.merge(started_at: start_date)
+      
+      post :create_employee, params: {
+        organization_id: company.id,
+        person: valid_person_params,
+        employment_tenure: employment_params_with_date
+      }
+      
+      new_person = Person.find_by(email: 'john.doe@example.com')
+      new_teammate = new_person.teammates.find_by(organization: company)
+      expect(new_teammate.first_employed_at.to_date).to eq(start_date)
+    end
+
+    it 'sets first_employed_at even when start date is in the future' do
+      future_date = 1.month.from_now.to_date
+      employment_params_with_date = valid_employment_params.merge(started_at: future_date)
+      
+      post :create_employee, params: {
+        organization_id: company.id,
+        person: valid_person_params,
+        employment_tenure: employment_params_with_date
+      }
+      
+      new_person = Person.find_by(email: 'john.doe@example.com')
+      new_teammate = new_person.teammates.find_by(organization: company)
+      expect(new_teammate.first_employed_at.to_date).to eq(future_date)
+    end
   end
 end
 
