@@ -87,10 +87,22 @@ RSpec.describe NavigationHelper, type: :helper do
         @current_company
       end
 
-      def helper.policy(record)
-        policy_double = double(view_prompts?: true, show?: true)
-        # Return the same double for any record type
-        policy_double
+      # Stub the policy method to return appropriate policy doubles
+      allow(helper).to receive(:policy) do |record|
+        # Handle Organization class or instance
+        if record == Organization || record.is_a?(Organization) || (record.is_a?(Class) && record <= Organization)
+          # For Organization class or instance, return a policy that allows show? for "My Employees" and "View Teammates"
+          double(show?: true, view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true, manage_employment?: true)
+        elsif record == Company || record.is_a?(Company) || (record.is_a?(Class) && record <= Company)
+          double(view_prompts?: true, view_prompt_templates?: true, view_observations?: true, view_seats?: true, view_goals?: true, view_abilities?: true, view_assignments?: true, view_aspirations?: true, view_bulk_sync_events?: true, customize_company?: true)
+        elsif record.is_a?(CompanyTeammate)
+          double(view_check_ins?: true)
+        elsif record.is_a?(Huddle)
+          double(show?: true)
+        else
+          # For other records, return a policy that allows show?
+          double(show?: true, view_prompts?: true)
+        end
       end
 
       helper.instance_variable_set(:@current_organization, company)
@@ -157,12 +169,18 @@ RSpec.describe NavigationHelper, type: :helper do
 
       before do
         helper.instance_variable_set(:@current_company_teammate, manager_teammate)
+        helper.instance_variable_set(:@current_organization, company)
+        helper.instance_variable_set(:@current_company, company)
         # Verify manager has direct reports
         expect(manager_teammate.has_direct_reports?).to be true
       end
 
       it 'includes "My Employees" in navigation' do
         structure = helper.visible_navigation_structure
+        # Debug: print all labels to see what's in the structure
+        labels = structure.map { |item| item[:label] }
+        expect(labels).to include('My Employees'), "Expected 'My Employees' in navigation, but found: #{labels.inspect}"
+        
         my_employees_item = structure.find { |item| item[:label] == 'My Employees' }
         expect(my_employees_item).to be_present
         expect(my_employees_item[:path]).to include('managers_view')
@@ -173,6 +191,8 @@ RSpec.describe NavigationHelper, type: :helper do
         structure = helper.visible_navigation_structure
         view_teammates_index = structure.find_index { |item| item[:label] == 'View Teammates' }
         my_employees_index = structure.find_index { |item| item[:label] == 'My Employees' }
+        expect(view_teammates_index).to be_present, "Expected 'View Teammates' in navigation"
+        expect(my_employees_index).to be_present, "Expected 'My Employees' in navigation"
         expect(my_employees_index).to be > view_teammates_index
       end
     end

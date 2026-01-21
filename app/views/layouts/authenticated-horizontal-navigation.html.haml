@@ -25,44 +25,116 @@
         
         .collapse.navbar-collapse#navbarMain
           %ul.navbar-nav.me-auto  
-            - if params[:show_navigation] == 'true'
+            - if current_organization && current_person
+              / Clarity dropdown
               %li.nav-item.dropdown
                 %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
-                  Align
+                  Clarity
                 %ul.dropdown-menu
-                  - if current_organization
-                    -#%li= link_to "Observations", organization_observations_path(current_organization), class: "dropdown-item"
-                    %li= link_to "Milestones", organization_abilities_path(current_organization), class: "dropdown-item"
-                    %li= link_to "Accountability", accountability_path, class: "dropdown-item"
+                  - if current_organization.present? && policy(current_organization).show?
                     %li= link_to "Positions", organization_positions_path(current_organization), class: "dropdown-item"
-              
+                  - if policy(current_company).view_assignments?
+                    %li= link_to "Assignments", organization_assignments_path(current_organization), class: "dropdown-item"
+                  - if policy(Organization).show?
+                    %li= link_to "View Teammates", organization_employees_path(current_organization), class: "dropdown-item"
+                  - if current_company_teammate&.has_direct_reports? && policy(Organization).show?
+                    %li= link_to "My Employees", organization_employees_path(current_organization, manager_teammate_id: current_company_teammate&.id, view: 'managers_view', spotlight: 'manager_lite'), class: "dropdown-item"
+                  - if policy(current_organization).show?
+                    %li= link_to "Departments & Teams", organization_departments_and_teams_path(current_organization), class: "dropdown-item"
+                  - if policy(current_company).view_goals?
+                    %li= link_to "Goals", organization_goals_path(current_organization), class: "dropdown-item"
+                  - if policy(current_company).view_abilities?
+                    %li= link_to "Abilities", organization_abilities_path(current_organization), class: "dropdown-item"
+                  - if policy(current_company).view_aspirations?
+                    %li= link_to "Aspirational Values", organization_aspirations_path(current_organization), class: "dropdown-item"
+                  - if policy(current_company).view_prompt_templates?
+                    %li= link_to "Prompt Templates", organization_prompt_templates_path(current_organization), class: "dropdown-item"
+                  - if policy(current_company).view_seats?
+                    %li= link_to "Seats", organization_seats_path(current_organization), class: "dropdown-item"
+                  %li= link_to "Accountability", accountability_path, class: "dropdown-item"
+            
+              / Challenge dropdown
               %li.nav-item.dropdown
                 %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
-                  Collab
+                  Challenge
                 %ul.dropdown-menu
-                  %li= link_to "Oppties", good_issues_coming_soon_path, class: "dropdown-item"
-                  %li= link_to "D<=>C", diverge_converge_coming_soon_path, class: "dropdown-item"
-                  %li= link_to "Huddles", huddles_path, class: "dropdown-item"
+                  - if policy(current_organization).show?
+                    %li= link_to "Celebrate Milestones", celebrate_milestones_organization_path(current_organization), class: "dropdown-item"
+                  %li
+                    = link_to hypothesis_management_coming_soon_path, class: "dropdown-item" do
+                      Hypotheses
+                      %span.badge.bg-secondary.ms-2 Coming Soon
+                  %li
+                    = link_to okr3_management_coming_soon_path, class: "dropdown-item" do
+                      OKR3s
+                      %span.badge.bg-secondary.ms-2 Coming Soon
+                  %li
+                    = link_to team_signals_coming_soon_path, class: "dropdown-item" do
+                      Signals
+                      %span.badge.bg-secondary.ms-2 Coming Soon
+                  %li
+                    = link_to good_issues_coming_soon_path, class: "dropdown-item" do
+                      Oppties
+                      %span.badge.bg-secondary.ms-2 Coming Soon
+                  %li
+                    = link_to diverge_converge_coming_soon_path, class: "dropdown-item" do
+                      D<=>C
+                      %span.badge.bg-secondary.ms-2 Coming Soon
+            
+              / Continuous Feedback dropdown
+              %li.nav-item.dropdown
+                %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                  Continuous Feedback
+                %ul.dropdown-menu
+                  - if current_company_teammate && policy(current_company_teammate).view_check_ins?
+                    %li= link_to "About Me", about_me_organization_company_teammate_path(current_organization, current_company_teammate), class: "dropdown-item"
+                  - if current_company_teammate && policy(current_company_teammate).view_check_ins?
+                    %li= link_to "My Check-In", organization_company_teammate_check_ins_path(current_organization, current_company_teammate), class: "dropdown-item"
+                  - if policy(current_company).view_observations?
+                    %li= link_to "Observations", organization_observations_path(current_organization), class: "dropdown-item"
+                  - if policy(current_company).view_prompts?
+                    %li= link_to company_label_plural('prompt', 'Prompts'), organization_prompts_path(current_organization), class: "dropdown-item"
+                  - if policy(current_organization).show?
+                    %li= link_to "Huddle Review", huddles_review_organization_path(current_organization), class: "dropdown-item"
+                  - if policy(Huddle).show?
+                    %li= link_to "My Huddles", my_huddles_path, class: "dropdown-item"
+                  - if policy(Huddle).show?
+                    %li= link_to "Today's Huddles", huddles_path, class: "dropdown-item"
+            
+              / Admin dropdown
+              %li.nav-item.dropdown
+                %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                  Admin
+                %ul.dropdown-menu
+                  - if policy(current_organization).manage_employment?
+                    %li= link_to "Slack Settings", organization_slack_path(current_organization), class: "dropdown-item"
+                  - if policy(current_organization).show?
+                    %li= link_to "Huddle Playbooks", organization_huddle_playbooks_path(current_organization), class: "dropdown-item"
+                  - if policy(current_company).customize_company?
+                    %li= link_to "#{current_company.name} Preferences", edit_organization_company_preference_path(current_organization), class: "dropdown-item"
+                  - if policy(current_company).view_bulk_sync_events?
+                    %li= link_to "Bulk Events", organization_bulk_sync_events_path(current_organization), class: "dropdown-item"
+                  - if policy(current_company).view_bulk_sync_events?
+                    %li= link_to "Bulk Downloads", organization_bulk_downloads_path(current_organization), class: "dropdown-item"
+                  - if policy(current_organization).manage_employment?
+                    %li= link_to "Check-ins Health", organization_check_ins_health_path(current_organization), class: "dropdown-item"
+                  - if current_company_teammate
+                    - about_me_path = about_me_organization_company_teammate_path(current_organization, current_company_teammate)
+                    - company_name = current_company&.name || current_organization&.name || 'OurGruuv'
+                    - help_improve_path = interest_submissions_path(return_url: about_me_path, return_text: "back to #{company_name}'s Gruuv")
+                    %li= link_to "Help Improve OG", help_improve_path, class: "dropdown-item"
 
-              %li.nav-item.dropdown
-                %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
-                  Transform
-                %ul.dropdown-menu
-                  %li= link_to "Signals", team_signals_coming_soon_path, class: "dropdown-item"
-                  %li= link_to "Hypotheses", hypothesis_management_coming_soon_path, class: "dropdown-item"
-                  %li= link_to "OKR3s", okr3_management_coming_soon_path, class: "dropdown-item"
-            - else
-              %li.nav-item.dropdown
-                %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
-                  Recently Visited
-                %ul.dropdown-menu
-                  - if recent_page_visits.any?
-                    - recent_page_visits.each do |visit|
-                      %li= link_to visit.page_title, visit.url, class: "dropdown-item"
-                  - elsif current_organization
-                    %li= link_to "Dashboard", dashboard_organization_path(current_organization), class: "dropdown-item"
-                  - else
-                    %li.dropdown-item.text-muted No recent visits
+            %li.nav-item.dropdown
+              %a.nav-link.dropdown-toggle{href: "#", role: "button", "data-bs-toggle": "dropdown", "aria-expanded": "false"}
+                Recently Visited
+              %ul.dropdown-menu
+                - if recent_page_visits.any?
+                  - recent_page_visits.each do |visit|
+                    %li= link_to visit.page_title, visit.url, class: "dropdown-item"
+                - elsif current_organization
+                  %li= link_to "Dashboard", dashboard_organization_path(current_organization), class: "dropdown-item"
+                - else
+                  %li.dropdown-item.text-muted No recent visits
               
           %ul.navbar-nav
             - if current_person
