@@ -123,6 +123,156 @@ RSpec.describe 'About Me Page', type: :request do
       expect(response.body).to match(/Assignments\/Outcomes/i)
     end
 
+    context 'assignment check-in data loading' do
+      let(:position_type) { create(:position_type, organization: organization) }
+      let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
+      let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+
+      before do
+        # End the existing employment_tenure from the main before block and create a new one with position
+        EmploymentTenure.where(teammate: teammate, company: organization, ended_at: nil).update_all(ended_at: 2.years.ago)
+        create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil)
+        teammate.reload
+      end
+
+      context 'when position has required assignments' do
+        let(:required_assignment) { create(:assignment, company: organization) }
+
+        before do
+          # Get the actual position from the employment tenure
+          company_teammate = CompanyTeammate.find(teammate.id)
+          actual_position = company_teammate.active_employment_tenure.position
+          create(:position_assignment, position: actual_position, assignment: required_assignment, assignment_type: 'required')
+        end
+
+        it 'loads required assignments' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          expect(assigns(:required_assignments)).to include(required_assignment)
+          expect(assigns(:assignment_check_ins_data).map { |d| d[:assignment] }).to include(required_assignment)
+        end
+
+        it 'includes position_assignment in data' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          data = assigns(:assignment_check_ins_data).find { |d| d[:assignment] == required_assignment }
+          expect(data[:position_assignment]).to be_present
+          expect(data[:position_assignment].assignment).to eq(required_assignment)
+        end
+      end
+
+      context 'when teammate has active assignments with energy > 0' do
+        let(:active_assignment) { create(:assignment, company: organization) }
+        let!(:assignment_tenure) { create(:assignment_tenure, teammate: teammate, assignment: active_assignment, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil) }
+
+        it 'loads active assignments with energy > 0' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          expect(assigns(:required_assignments)).to include(active_assignment)
+          expect(assigns(:assignment_check_ins_data).map { |d| d[:assignment] }).to include(active_assignment)
+        end
+
+        it 'includes assignment_tenure in data' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          data = assigns(:assignment_check_ins_data).find { |d| d[:assignment] == active_assignment }
+          expect(data[:assignment_tenure]).to be_present
+          expect(data[:assignment_tenure].assignment).to eq(active_assignment)
+        end
+      end
+
+      context 'when teammate has both required and active assignments' do
+        let(:required_assignment) { create(:assignment, company: organization) }
+        let(:active_assignment) { create(:assignment, company: organization) }
+
+        before do
+          # Get the actual position from the employment tenure
+          company_teammate = CompanyTeammate.find(teammate.id)
+          actual_position = company_teammate.active_employment_tenure.position
+          create(:position_assignment, position: actual_position, assignment: required_assignment, assignment_type: 'required')
+          create(:assignment_tenure, teammate: teammate, assignment: active_assignment, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil)
+        end
+
+        it 'loads both types of assignments' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          expect(assigns(:required_assignments)).to include(required_assignment, active_assignment)
+          expect(assigns(:assignment_check_ins_data).map { |d| d[:assignment] }).to include(required_assignment, active_assignment)
+        end
+      end
+
+      context 'when assignment is both required and active with energy > 0' do
+        let(:shared_assignment) { create(:assignment, company: organization) }
+
+        before do
+          # Get the actual position from the employment tenure
+          company_teammate = CompanyTeammate.find(teammate.id)
+          actual_position = company_teammate.active_employment_tenure.position
+          create(:position_assignment, position: actual_position, assignment: shared_assignment, assignment_type: 'required')
+          create(:assignment_tenure, teammate: teammate, assignment: shared_assignment, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil)
+        end
+
+        it 'includes the assignment only once' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          expect(assigns(:required_assignments).count).to eq(1)
+          expect(assigns(:assignment_check_ins_data).count).to eq(1)
+          expect(assigns(:assignment_check_ins_data).first[:assignment]).to eq(shared_assignment)
+        end
+
+        it 'includes both position_assignment and assignment_tenure in data' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          data = assigns(:assignment_check_ins_data).first
+          expect(data[:position_assignment]).to be_present
+          expect(data[:position_assignment].assignment).to eq(shared_assignment)
+          expect(data[:assignment_tenure]).to be_present
+          expect(data[:assignment_tenure].assignment).to eq(shared_assignment)
+        end
+      end
+
+      context 'when active assignment has energy = 0' do
+        let(:assignment) { create(:assignment, company: organization) }
+        let!(:assignment_tenure) { create(:assignment_tenure, teammate: teammate, assignment: assignment, anticipated_energy_percentage: 0, started_at: 1.month.ago, ended_at: nil) }
+
+        it 'does not include it' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          expect(assigns(:required_assignments)).not_to include(assignment)
+          expect(assigns(:assignment_check_ins_data).map { |d| d[:assignment] }).not_to include(assignment)
+        end
+      end
+
+      context 'when counting assignments with recent check-ins' do
+        let(:assignment1) { create(:assignment, company: organization) }
+        let(:assignment2) { create(:assignment, company: organization) }
+        let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+        let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+
+        before do
+          # Get the actual position from the employment tenure
+          company_teammate = CompanyTeammate.find(teammate.id)
+          actual_position = company_teammate.active_employment_tenure.position
+          create(:position_assignment, position: actual_position, assignment: assignment1, assignment_type: 'required')
+          create(:position_assignment, position: actual_position, assignment: assignment2, assignment_type: 'required')
+          
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment1,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment2,
+                 employee_completed_at: 100.days.ago,
+                 manager_completed_at: 100.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 100.days.ago,
+                 finalized_by_teammate: finalized_by)
+        end
+
+        it 'counts only assignments with check-ins in last 90 days' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          expect(assigns(:assignments_with_recent_check_ins_count)).to eq(1)
+        end
+      end
+    end
+
     it 'renders aspirations check-in section' do
       get about_me_organization_company_teammate_path(organization, teammate)
       expect(response.body).to match(/Aspirational Values/i)

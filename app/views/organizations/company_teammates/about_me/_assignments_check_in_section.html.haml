@@ -14,12 +14,12 @@
     - if @required_assignments.any?
       %span.inline-sentence-highlight= @position_display_name_for_assignments
       = " has ".html_safe
-      %span.inline-sentence-highlight= pluralize(@required_assignments.count, 'required assignment')
-      = ", and #{@teammate.person.casual_name} has had a check-in conversation about ".html_safe
+      %span.inline-sentence-highlight= pluralize(@required_assignments.count, 'assignment')
+      = " (required assignments and active assignments with energy > 0), and #{@teammate.person.casual_name} has had a check-in conversation about ".html_safe
       %span.inline-sentence-highlight= pluralize(@assignments_with_recent_check_ins_count, 'assignment')
-      = " of these assignment in the last 90 days.".html_safe
+      = " of these assignments in the last 90 days.".html_safe
     - else
-      No required assignments
+      No assignments
 
 -# Collapsible content
 .collapse#assignmentsCheckInSection
@@ -68,7 +68,7 @@
                     - else
                       %span.text-muted Check-in not started
       - else
-        %p.text-muted.mb-3 No required assignments found.
+        %p.text-muted.mb-3 No assignments found.
       
       .d-grid.mt-3
         = link_to "Go to Check-In Mode", 

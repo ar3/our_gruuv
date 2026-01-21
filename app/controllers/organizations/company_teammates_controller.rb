@@ -1024,40 +1024,60 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   def load_assignment_check_in_data
-    # Get required assignments for current position
+    # Use the shared helper method to ensure consistency across:
+    # - The collapsed alert sentence
+    # - The status indicator color  
+    # - The expanded assignment list
     active_tenure = @teammate.active_employment_tenure
+    @position_display_name_for_assignments = active_tenure&.position&.display_name || "undefined position"
     
-    if active_tenure&.position
-      @required_assignments = active_tenure.position.required_assignments.includes(:assignment)
-      @position_display_name_for_assignments = active_tenure.position.display_name
-      
-      cutoff_date = 90.days.ago
-      @assignment_check_ins_data = @required_assignments.map do |position_assignment|
-        assignment = position_assignment.assignment
-        check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
-        latest_finalized = AssignmentCheckIn
-          .where(teammate: @teammate, assignment: assignment)
-          .closed
-          .order(official_check_in_completed_at: :desc)
-          .first
-        
-        {
-          assignment: assignment,
-          position_assignment: position_assignment,
-          check_in: check_in,
-          latest_finalized: latest_finalized
-        }
-      end
-      
-      # Count assignments with finalized check-ins in the last 90 days
-      @assignments_with_recent_check_ins_count = @assignment_check_ins_data.count do |data|
-        data[:latest_finalized] && data[:latest_finalized].official_check_in_completed_at >= cutoff_date
-      end
+    # Get the relevant assignments using the shared method
+    relevant_assignments = helpers.relevant_assignments_for_about_me(@teammate, organization)
+    @required_assignments = relevant_assignments.to_a # Used in view for summary sentence
+    
+    # Build maps for position_assignment and assignment_tenure lookups
+    required_position_assignments = if active_tenure&.position
+      active_tenure.position.required_assignments.includes(:assignment)
     else
-      @required_assignments = []
-      @assignment_check_ins_data = []
-      @position_display_name_for_assignments = "undefined position"
-      @assignments_with_recent_check_ins_count = 0
+      []
+    end
+    
+    active_assignment_tenures = @teammate.assignment_tenures
+      .active_and_given_energy
+      .includes(:assignment)
+      .where(assignments: { company: @teammate.organization })
+    
+    required_assignments_map = {}
+    required_position_assignments.each do |position_assignment|
+      required_assignments_map[position_assignment.assignment_id] = position_assignment
+    end
+    
+    active_tenures_map = {}
+    active_assignment_tenures.each do |assignment_tenure|
+      active_tenures_map[assignment_tenure.assignment_id] = assignment_tenure
+    end
+    
+    cutoff_date = 90.days.ago
+    @assignment_check_ins_data = relevant_assignments.map do |assignment|
+      check_in = AssignmentCheckIn.find_or_create_open_for(@teammate, assignment)
+      latest_finalized = AssignmentCheckIn
+        .where(teammate: @teammate, assignment: assignment)
+        .closed
+        .order(official_check_in_completed_at: :desc)
+        .first
+      
+      {
+        assignment: assignment,
+        position_assignment: required_assignments_map[assignment.id], # May be nil for active-only assignments
+        assignment_tenure: active_tenures_map[assignment.id], # May be nil for required-only assignments
+        check_in: check_in,
+        latest_finalized: latest_finalized
+      }
+    end
+    
+    # Count assignments with finalized check-ins in the last 90 days
+    @assignments_with_recent_check_ins_count = @assignment_check_ins_data.count do |data|
+      data[:latest_finalized] && data[:latest_finalized].official_check_in_completed_at >= cutoff_date
     end
   end
 
@@ -1101,12 +1121,12 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     active_tenure = @teammate.active_employment_tenure
     
     if active_tenure&.position
-      @required_assignments = active_tenure.position.required_assignments.includes(assignment: :assignment_abilities)
+      @required_assignments_for_abilities = active_tenure.position.required_assignments.includes(assignment: :assignment_abilities)
       @position_display_name_for_abilities = active_tenure.position.display_name
       
       # Collect all ability milestones
       all_ability_milestones = []
-      @abilities_data = @required_assignments.map do |position_assignment|
+      @abilities_data = @required_assignments_for_abilities.map do |position_assignment|
         assignment = position_assignment.assignment
         assignment_abilities = assignment.assignment_abilities.includes(:ability)
         
@@ -1145,7 +1165,7 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
       @total_ability_milestones_count = all_ability_milestones.count
       @ability_milestones_met_count = all_ability_milestones.count { |m| m[:met] }
     else
-      @required_assignments = []
+      @required_assignments_for_abilities = []
       @abilities_data = []
       @position_display_name_for_abilities = "undefined position"
       @total_ability_milestones_count = 0

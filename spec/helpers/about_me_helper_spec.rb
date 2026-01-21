@@ -529,5 +529,462 @@ RSpec.describe AboutMeHelper, type: :helper do
       end
     end
   end
+
+  describe '#relevant_assignments_for_about_me' do
+    let(:organization) { create(:organization, :company) }
+    let(:person) { create(:person) }
+    let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
+    let(:position_type) { create(:position_type, organization: organization) }
+    let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
+    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let!(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil) }
+
+    context 'when no position exists' do
+      before do
+        employment_tenure.update!(ended_at: 1.day.ago)
+      end
+
+      it 'returns empty collection' do
+        result = helper.relevant_assignments_for_about_me(teammate, organization)
+        expect(result).to be_empty
+      end
+    end
+
+    context 'when position has required assignments' do
+      let(:assignment1) { create(:assignment, company: organization) }
+      let(:assignment2) { create(:assignment, company: organization) }
+
+      before do
+        # Ensure employment_tenure is set up first
+        employment_tenure
+        teammate.reload
+        
+        # Get the actual position from the employment tenure
+        actual_position = teammate.active_employment_tenure.position
+        
+        # Create position assignments using the actual position from the tenure
+        create(:position_assignment, position: actual_position, assignment: assignment1, assignment_type: 'required')
+        create(:position_assignment, position: actual_position, assignment: assignment2, assignment_type: 'required')
+      end
+
+      it 'returns required assignments' do
+        result = helper.relevant_assignments_for_about_me(teammate, organization)
+        assignment_ids = result.pluck(:id)
+        expect(assignment_ids).to include(assignment1.id, assignment2.id)
+        expect(assignment_ids.count).to eq(2)
+      end
+    end
+
+    context 'when teammate has active assignments with energy > 0' do
+      let(:assignment1) { create(:assignment, company: organization) }
+      let(:assignment2) { create(:assignment, company: organization) }
+      let!(:assignment_tenure1) { create(:assignment_tenure, teammate: teammate, assignment: assignment1, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil) }
+      let!(:assignment_tenure2) { create(:assignment_tenure, teammate: teammate, assignment: assignment2, anticipated_energy_percentage: 30, started_at: 1.month.ago, ended_at: nil) }
+
+      it 'returns active assignments with energy > 0' do
+        result = helper.relevant_assignments_for_about_me(teammate, organization)
+        expect(result).to include(assignment1, assignment2)
+        expect(result.count).to eq(2)
+      end
+    end
+
+    context 'when teammate has both required and active assignments' do
+      let(:required_assignment) { create(:assignment, company: organization) }
+      let(:active_assignment) { create(:assignment, company: organization) }
+
+      before do
+        # Ensure employment_tenure is set up first
+        employment_tenure
+        teammate.reload
+        
+        # Get the actual position from the employment tenure
+        actual_position = teammate.active_employment_tenure.position
+        
+        # Create position assignment using the actual position from the tenure
+        create(:position_assignment, position: actual_position, assignment: required_assignment, assignment_type: 'required')
+        create(:assignment_tenure, teammate: teammate, assignment: active_assignment, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil)
+      end
+
+      it 'returns both types of assignments' do
+        result = helper.relevant_assignments_for_about_me(teammate, organization)
+        assignment_ids = result.pluck(:id)
+        expect(assignment_ids).to include(required_assignment.id, active_assignment.id)
+        expect(assignment_ids.count).to eq(2)
+      end
+    end
+
+    context 'when assignment is both required and active with energy > 0' do
+      let(:shared_assignment) { create(:assignment, company: organization) }
+
+      before do
+        # Ensure employment_tenure is set up first
+        employment_tenure
+        teammate.reload
+        
+        # Get the actual position from the employment tenure
+        actual_position = teammate.active_employment_tenure.position
+        
+        # Create position assignment using the actual position from the tenure
+        create(:position_assignment, position: actual_position, assignment: shared_assignment, assignment_type: 'required')
+        create(:assignment_tenure, teammate: teammate, assignment: shared_assignment, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil)
+      end
+
+      it 'includes the assignment only once' do
+        result = helper.relevant_assignments_for_about_me(teammate, organization)
+        assignment_ids = result.pluck(:id)
+        expect(assignment_ids.count).to eq(1)
+        expect(assignment_ids).to include(shared_assignment.id)
+      end
+    end
+
+    context 'when active assignment has energy = 0' do
+      let(:assignment) { create(:assignment, company: organization) }
+      let!(:assignment_tenure) { create(:assignment_tenure, teammate: teammate, assignment: assignment, anticipated_energy_percentage: 0, started_at: 1.month.ago, ended_at: nil) }
+
+      it 'does not include it' do
+        result = helper.relevant_assignments_for_about_me(teammate, organization)
+        assignment_ids = result.pluck(:id)
+        expect(assignment_ids).not_to include(assignment.id)
+      end
+    end
+  end
+
+  describe '#assignments_check_in_status_indicator' do
+    let(:organization) { create(:organization, :company) }
+    let(:person) { create(:person) }
+    let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
+    let(:position_type) { create(:position_type, organization: organization) }
+    let(:position_level) { create(:position_level, position_major_level: position_type.position_major_level) }
+    let(:position) { create(:position, position_type: position_type, position_level: position_level) }
+    let(:employment_tenure) { create(:employment_tenure, teammate: teammate, company: organization, position: position, started_at: 1.year.ago, ended_at: nil) }
+
+    before do
+      employment_tenure
+    end
+
+    context 'when no active employment tenure exists' do
+      before do
+        employment_tenure.update!(ended_at: 1.day.ago)
+      end
+
+      it 'returns :yellow' do
+        result = helper.assignments_check_in_status_indicator(teammate, organization)
+        expect(result).to eq(:yellow)
+      end
+    end
+
+    context 'when position has no required assignments and no active assignments with energy > 0' do
+      it 'returns :yellow' do
+        result = helper.assignments_check_in_status_indicator(teammate, organization)
+        expect(result).to eq(:yellow)
+      end
+    end
+
+    context 'when position has required assignments' do
+      let(:assignment1) { create(:assignment, company: organization) }
+      let(:assignment2) { create(:assignment, company: organization) }
+
+      before do
+        # Ensure employment_tenure is set up first
+        employment_tenure
+        teammate.reload
+        
+        # Get the actual position from the employment tenure
+        actual_position = teammate.active_employment_tenure.position
+        
+        # Create position assignments using the actual position from the tenure
+        create(:position_assignment, position: actual_position, assignment: assignment1, assignment_type: 'required')
+        create(:position_assignment, position: actual_position, assignment: assignment2, assignment_type: 'required')
+      end
+
+      context 'when all required assignments have recent check-ins' do
+        let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+        let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+
+        before do
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment1,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment2,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+        end
+
+        it 'returns :green' do
+          result = helper.assignments_check_in_status_indicator(teammate, organization)
+          expect(result).to eq(:green)
+        end
+      end
+
+      context 'when none of the required assignments have recent check-ins' do
+        let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+        let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+
+        before do
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment1,
+                 employee_completed_at: 100.days.ago,
+                 manager_completed_at: 100.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 100.days.ago,
+                 finalized_by_teammate: finalized_by)
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment2,
+                 employee_completed_at: 100.days.ago,
+                 manager_completed_at: 100.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 100.days.ago,
+                 finalized_by_teammate: finalized_by)
+        end
+
+        it 'returns :red' do
+          result = helper.assignments_check_in_status_indicator(teammate, organization)
+          expect(result).to eq(:red)
+        end
+      end
+
+      context 'when some required assignments have recent check-ins' do
+        let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+        let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+
+        before do
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment1,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment2,
+                 employee_completed_at: 100.days.ago,
+                 manager_completed_at: 100.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 100.days.ago,
+                 finalized_by_teammate: finalized_by)
+        end
+
+        it 'returns :yellow' do
+          result = helper.assignments_check_in_status_indicator(teammate, organization)
+          expect(result).to eq(:yellow)
+        end
+      end
+    end
+
+    context 'when teammate has active assignments with energy > 0' do
+      let(:assignment1) { create(:assignment, company: organization) }
+      let(:assignment2) { create(:assignment, company: organization) }
+      let!(:assignment_tenure1) { create(:assignment_tenure, teammate: teammate, assignment: assignment1, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil) }
+      let!(:assignment_tenure2) { create(:assignment_tenure, teammate: teammate, assignment: assignment2, anticipated_energy_percentage: 30, started_at: 1.month.ago, ended_at: nil) }
+
+      context 'when all active assignments have recent check-ins' do
+        let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+        let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+
+        before do
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment1,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment2,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+        end
+
+        it 'returns :green' do
+          result = helper.assignments_check_in_status_indicator(teammate, organization)
+          expect(result).to eq(:green)
+        end
+      end
+
+      context 'when none of the active assignments have recent check-ins' do
+        let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+        let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+
+        before do
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment1,
+                 employee_completed_at: 100.days.ago,
+                 manager_completed_at: 100.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 100.days.ago,
+                 finalized_by_teammate: finalized_by)
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: assignment2,
+                 employee_completed_at: 100.days.ago,
+                 manager_completed_at: 100.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 100.days.ago,
+                 finalized_by_teammate: finalized_by)
+        end
+
+        it 'returns :red' do
+          result = helper.assignments_check_in_status_indicator(teammate, organization)
+          expect(result).to eq(:red)
+        end
+      end
+    end
+
+    context 'when teammate has both required assignments and active assignments with energy > 0' do
+      let(:required_assignment) { create(:assignment, company: organization) }
+      let(:active_assignment) { create(:assignment, company: organization) }
+
+      before do
+        # Ensure employment_tenure is set up first
+        employment_tenure
+        teammate.reload
+        
+        # Get the actual position from the employment tenure
+        actual_position = teammate.active_employment_tenure.position
+        
+        # Create position assignment using the actual position from the tenure
+        create(:position_assignment, position: actual_position, assignment: required_assignment, assignment_type: 'required')
+        create(:assignment_tenure, teammate: teammate, assignment: active_assignment, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil)
+      end
+
+      context 'when all assignments have recent check-ins' do
+        let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+        let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+
+        before do
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: required_assignment,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: active_assignment,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+        end
+
+        it 'returns :green' do
+          result = helper.assignments_check_in_status_indicator(teammate, organization)
+          expect(result).to eq(:green)
+        end
+      end
+
+      context 'when some assignments have recent check-ins' do
+        let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+        let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+
+        before do
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: required_assignment,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: active_assignment,
+                 employee_completed_at: 100.days.ago,
+                 manager_completed_at: 100.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 100.days.ago,
+                 finalized_by_teammate: finalized_by)
+        end
+
+        it 'returns :yellow' do
+          result = helper.assignments_check_in_status_indicator(teammate, organization)
+          expect(result).to eq(:yellow)
+        end
+      end
+
+      context 'when assignment is both required and active with energy > 0' do
+        let(:shared_assignment) { create(:assignment, company: organization) }
+        let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+        let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+
+        before do
+          # Ensure employment_tenure is set up first
+          employment_tenure
+          teammate.reload
+          
+          # Get the actual position from the employment tenure
+          actual_position = teammate.active_employment_tenure.position
+          
+          # Create position assignment using the actual position from the tenure
+          create(:position_assignment, position: actual_position, assignment: shared_assignment, assignment_type: 'required')
+          create(:assignment_tenure, teammate: teammate, assignment: shared_assignment, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil)
+          
+          # Create check-in with explicit dates to ensure they're set correctly
+          check_in_date = 30.days.ago
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: shared_assignment,
+                 employee_completed_at: check_in_date,
+                 manager_completed_at: check_in_date,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: check_in_date,
+                 finalized_by_teammate: finalized_by)
+          
+          # Reload to ensure associations are fresh
+          teammate.reload
+          shared_assignment.reload
+        end
+
+        it 'counts the assignment only once and returns :green' do
+          # Verify the assignment is included only once
+          relevant_assignments = helper.relevant_assignments_for_about_me(teammate, organization)
+          assignment_ids = relevant_assignments.pluck(:id)
+          expect(assignment_ids.count(shared_assignment.id)).to eq(1)
+          
+          # Verify the check-in exists and is recent
+          check_in = AssignmentCheckIn.where(teammate: teammate, assignment: shared_assignment).closed.order(official_check_in_completed_at: :desc).first
+          expect(check_in).to be_present
+          cutoff_date = 90.days.ago
+          expect(check_in.official_check_in_completed_at).to be >= cutoff_date
+          
+          result = helper.assignments_check_in_status_indicator(teammate, organization)
+          expect(result).to eq(:green)
+        end
+      end
+    end
+
+    context 'when active assignment has energy = 0' do
+      let(:assignment) { create(:assignment, company: organization) }
+      let!(:assignment_tenure) { create(:assignment_tenure, teammate: teammate, assignment: assignment, anticipated_energy_percentage: 0, started_at: 1.month.ago, ended_at: nil) }
+
+      it 'does not include it and returns :yellow' do
+        result = helper.assignments_check_in_status_indicator(teammate, organization)
+        expect(result).to eq(:yellow)
+      end
+    end
+  end
 end
 

@@ -70,20 +70,55 @@ module AboutMeHelper
     end
   end
 
-  def assignments_check_in_status_indicator(teammate, organization)
+  # Returns the collection of assignments that should be shown in the about_me assignments section.
+  # This includes:
+  # 1. Required assignments from the teammate's current position
+  # 2. Active assignment tenures with anticipated_energy_percentage > 0
+  # 
+  # This method ensures consistency across:
+  # - The collapsed alert sentence
+  # - The status indicator color
+  # - The expanded assignment list
+  # 
+  # Note: Uses teammate.organization to ensure consistency with active_employment_tenure filtering
+  def relevant_assignments_for_about_me(teammate, organization)
     active_tenure = teammate.active_employment_tenure
     
-    return :yellow unless active_tenure&.position
+    # Get required assignments from position
+    required_position_assignments = if active_tenure&.position
+      active_tenure.position.required_assignments.includes(:assignment)
+    else
+      []
+    end
     
-    required_assignments = active_tenure.position.required_assignments.includes(:assignment)
-    return :yellow if required_assignments.empty?
+    # Get active assignment tenures with anticipated energy > 0
+    # Use teammate.organization to match the filtering in active_employment_tenure
+    active_assignment_tenures = teammate.assignment_tenures
+      .active_and_given_energy
+      .includes(:assignment)
+      .where(assignments: { company: teammate.organization })
+    
+    # Build a set of all relevant assignment IDs (required OR active with energy > 0)
+    relevant_assignment_ids = Set.new
+    required_position_assignments.each { |pa| relevant_assignment_ids.add(pa.assignment_id) }
+    active_assignment_tenures.each { |at| relevant_assignment_ids.add(at.assignment_id) }
+    
+    # Return the assignments
+    Assignment.where(id: relevant_assignment_ids.to_a).includes(:company)
+  end
+
+  def assignments_check_in_status_indicator(teammate, organization)
+    relevant_assignments = relevant_assignments_for_about_me(teammate, organization)
+    
+    return :yellow if relevant_assignments.empty?
     
     cutoff_date = 90.days.ago
+    # Convert to array to ensure we have the IDs
+    relevant_assignment_ids = relevant_assignments.to_a.map(&:id)
     
-    all_recent = required_assignments.all? do |position_assignment|
-      assignment = position_assignment.assignment
+    all_recent = relevant_assignment_ids.all? do |assignment_id|
       latest_finalized = AssignmentCheckIn
-        .where(teammate: teammate, assignment: assignment)
+        .where(teammate: teammate, assignment_id: assignment_id)
         .closed
         .order(official_check_in_completed_at: :desc)
         .first
@@ -91,10 +126,9 @@ module AboutMeHelper
       latest_finalized && latest_finalized.official_check_in_completed_at >= cutoff_date
     end
     
-    none_recent = required_assignments.none? do |position_assignment|
-      assignment = position_assignment.assignment
+    none_recent = relevant_assignment_ids.none? do |assignment_id|
       latest_finalized = AssignmentCheckIn
-        .where(teammate: teammate, assignment: assignment)
+        .where(teammate: teammate, assignment_id: assignment_id)
         .closed
         .order(official_check_in_completed_at: :desc)
         .first
@@ -313,9 +347,9 @@ module AboutMeHelper
       content_tag(:div) do
         content_tag(:strong, "Assignments/Outcomes Status Conditions:") +
         content_tag(:ul, class: "mb-0 mt-2") do
-          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "No position or no required assignments") +
-          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "None of the required assignments have check-ins within the last 90 days") +
-          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "All required assignments have check-ins within the last 90 days")
+          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "No required assignments or active assignments with energy > 0") +
+          content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "None of the relevant assignments (required or active with energy > 0) have check-ins within the last 90 days") +
+          content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "All relevant assignments (required or active with energy > 0) have check-ins within the last 90 days")
         end
       end
     when :aspirations_check_in

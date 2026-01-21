@@ -11,11 +11,11 @@
 %div{class: "alert mb-4 collapse-summary #{status_indicator_alert_class(abilities_indicator)}", "data-bs-toggle" => "collapse", "data-bs-target" => "#abilitiesSection", "aria-expanded" => "false", "aria-controls" => "abilitiesSection", "data-status-popover" => "true", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => status_conditions_popover_content(:abilities), style: "cursor: pointer;"}
   %p.mb-0
     %i{class: "#{status_indicator_icon(abilities_indicator)} #{status_indicator_badge_class(abilities_indicator)} me-2"}
-    - if @required_assignments.any?
+    - if @required_assignments_for_abilities.any?
       = "there are ".html_safe
       %span.inline-sentence-highlight= pluralize(@total_ability_milestones_count, 'ability milestone')
       = " associated with the ".html_safe
-      %span.inline-sentence-highlight= pluralize(@required_assignments.count, 'required assignment')
+      %span.inline-sentence-highlight= pluralize(@required_assignments_for_abilities.count, 'required assignment')
       = " for ".html_safe
       %span.inline-sentence-highlight= @position_display_name_for_abilities
       = ", and #{@teammate.person.casual_name} is meeting the required milestone for ".html_safe
