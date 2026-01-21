@@ -293,25 +293,36 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   def assignment_tenure_check_in_bypass
-    # Authorize: manager or has manage_employment permission
-    # This action should NOT be accessible when viewing yourself (must be a manager of someone else)
-    if current_company_teammate == @teammate
-      skip_authorization
-      raise Pundit::NotAuthorizedError
-    end
-    
     # Check if user is a manager of this teammate OR has manage_employment permission
     is_manager = policy(@teammate).manager?
     has_manage_employment = policy(organization).manage_employment?
     
-    # If user doesn't have either permission, explicitly deny access
-    unless is_manager || has_manage_employment
-      skip_authorization
-      raise Pundit::NotAuthorizedError
+    # Authorize: manager or has manage_employment permission
+    # If viewing yourself, only allow if you have manage_employment permission (admin/HR role)
+    # Otherwise, allow if you're a manager of this teammate OR have manage_employment permission
+    viewing_self = current_company_teammate == @teammate
+    
+    if viewing_self
+      # When viewing yourself, require manage_employment permission (admin/HR can bypass their own check-ins)
+      unless has_manage_employment
+        skip_authorization
+        raise Pundit::NotAuthorizedError
+      end
+    else
+      # When viewing someone else, require either manager relationship OR manage_employment permission
+      unless is_manager || has_manage_employment
+        skip_authorization
+        raise Pundit::NotAuthorizedError
+      end
     end
     
     # User has permission - perform authorization for Pundit verification
-    authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
+    # Use manager? for manager relationships, or skip if they have manage_employment (which is checked above)
+    if has_manage_employment
+      skip_authorization
+    else
+      authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
+    end
     
     @current_organization = organization
     
@@ -366,25 +377,36 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
   end
 
   def update_assignment_tenure_check_in_bypass
-    # Authorize: manager or has manage_employment permission
-    # This action should NOT be accessible when viewing yourself (must be a manager of someone else)
-    if current_company_teammate == @teammate
-      skip_authorization
-      raise Pundit::NotAuthorizedError
-    end
-    
     # Check if user is a manager of this teammate OR has manage_employment permission
     is_manager = policy(@teammate).manager?
     has_manage_employment = policy(organization).manage_employment?
     
-    # If user doesn't have either permission, explicitly deny access
-    unless is_manager || has_manage_employment
-      skip_authorization
-      raise Pundit::NotAuthorizedError
+    # Authorize: manager or has manage_employment permission
+    # If viewing yourself, only allow if you have manage_employment permission (admin/HR role)
+    # Otherwise, allow if you're a manager of this teammate OR have manage_employment permission
+    viewing_self = current_company_teammate == @teammate
+    
+    if viewing_self
+      # When viewing yourself, require manage_employment permission (admin/HR can bypass their own check-ins)
+      unless has_manage_employment
+        skip_authorization
+        raise Pundit::NotAuthorizedError
+      end
+    else
+      # When viewing someone else, require either manager relationship OR manage_employment permission
+      unless is_manager || has_manage_employment
+        skip_authorization
+        raise Pundit::NotAuthorizedError
+      end
     end
     
     # User has permission - perform authorization for Pundit verification
-    authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
+    # Use manager? for manager relationships, or skip if they have manage_employment (which is checked above)
+    if has_manage_employment
+      skip_authorization
+    else
+      authorize @teammate, :manager?, policy_class: CompanyTeammatePolicy
+    end
     
     assignment_tenures_params = params[:assignment_tenures] || {}
     changes_made = false

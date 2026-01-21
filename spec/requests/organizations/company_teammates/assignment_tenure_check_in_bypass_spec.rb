@@ -6,15 +6,16 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
   let(:manager) { create(:person) }
   let(:employee) { create(:person) }
   
-  let!(:manager_teammate) { create(:teammate, person: manager, organization: organization, can_manage_employment: true) }
-  let!(:employee_teammate) { create(:teammate, person: employee, organization: organization, type: 'CompanyTeammate') }
+  let!(:manager_teammate) { CompanyTeammate.find(create(:teammate, person: manager, organization: organization, can_manage_employment: true, type: 'CompanyTeammate').id) }
+  let!(:employee_teammate) { CompanyTeammate.find(create(:teammate, person: employee, organization: organization, type: 'CompanyTeammate').id) }
   
   let!(:employment_tenure) do
     create(:employment_tenure,
       teammate: employee_teammate,
       company: organization,
       started_at: 1.month.ago,
-      ended_at: nil)
+      ended_at: nil,
+      manager_teammate: manager_teammate)
   end
   
   let!(:assignment1) { create(:assignment, company: organization, department: department, title: 'Backend Development') }
@@ -170,6 +171,44 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
         
         expect(response).to have_http_status(:redirect)
         expect(response).to redirect_to(root_path)
+      end
+    end
+
+    context 'when user is viewing themselves' do
+      context 'with manage_employment permission' do
+        let!(:admin_user) { create(:person) }
+        let!(:admin_teammate) do
+          CompanyTeammate.find(create(:teammate, person: admin_user, organization: organization, can_manage_employment: true, type: 'CompanyTeammate').id)
+        end
+
+        before do
+          create(:employment_tenure, teammate: admin_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+          admin_teammate.update!(first_employed_at: 1.year.ago)
+          sign_in_as_teammate_for_request(admin_user, organization)
+        end
+
+        it 'allows access when viewing themselves with manage_employment permission' do
+          get assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, admin_teammate)
+          expect(response).to have_http_status(:success)
+          expect(response).to render_template(:assignment_tenure_check_in_bypass)
+        end
+      end
+
+      context 'without manage_employment permission' do
+        let!(:regular_user) { create(:person) }
+        let!(:regular_teammate) { CompanyTeammate.find(create(:teammate, person: regular_user, organization: organization, can_manage_employment: false, type: 'CompanyTeammate').id) }
+
+        before do
+          create(:employment_tenure, teammate: regular_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+          regular_teammate.update!(first_employed_at: 1.year.ago)
+          sign_in_as_teammate_for_request(regular_user, organization)
+        end
+
+        it 'denies access when viewing themselves without manage_employment permission' do
+          get assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, regular_teammate)
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to(root_path)
+        end
       end
     end
 
@@ -366,7 +405,7 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
         sign_in_as_teammate_for_request(regular_user, organization)
       end
 
-      it 'denies access' do
+      it 'denies access when viewing someone else' do
         # Verify no changes are made when access is denied
         expect {
           patch update_assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, employee_teammate),
@@ -376,6 +415,57 @@ RSpec.describe 'Assignment Tenure Check-in Bypass', type: :request do
         expect(response).to have_http_status(:redirect)
         # Authorization error should redirect to root_path
         expect(response).to redirect_to(root_path)
+      end
+    end
+
+    context 'when user is viewing themselves' do
+      context 'with manage_employment permission' do
+        let!(:admin_user) { create(:person) }
+        let!(:admin_teammate) do
+          CompanyTeammate.find(create(:teammate, person: admin_user, organization: organization, can_manage_employment: true, type: 'CompanyTeammate').id)
+        end
+        let!(:admin_assignment) { create(:assignment, company: organization, title: 'Admin Assignment') }
+
+        before do
+          create(:employment_tenure, teammate: admin_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+          admin_teammate.update!(first_employed_at: 1.year.ago)
+          sign_in_as_teammate_for_request(admin_user, organization)
+        end
+
+        it 'allows updating their own assignment tenures' do
+          expect {
+            patch update_assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, admin_teammate),
+                  params: { assignment_tenures: { admin_assignment.id.to_s => '50' } }
+          }.to change(AssignmentTenure, :count).by(1)
+          
+          expect(response).to have_http_status(:redirect)
+          new_tenure = AssignmentTenure.last
+          expect(new_tenure.teammate).to eq(admin_teammate)
+          expect(new_tenure.assignment).to eq(admin_assignment)
+          expect(new_tenure.anticipated_energy_percentage).to eq(50)
+        end
+      end
+
+      context 'without manage_employment permission' do
+        let!(:regular_user) { create(:person) }
+        let!(:regular_teammate) { CompanyTeammate.find(create(:teammate, person: regular_user, organization: organization, can_manage_employment: false, type: 'CompanyTeammate').id) }
+        let!(:regular_assignment) { create(:assignment, company: organization, title: 'Regular Assignment') }
+
+        before do
+          create(:employment_tenure, teammate: regular_teammate, company: organization, started_at: 1.year.ago, ended_at: nil)
+          regular_teammate.update!(first_employed_at: 1.year.ago)
+          sign_in_as_teammate_for_request(regular_user, organization)
+        end
+
+        it 'denies access when viewing themselves without manage_employment permission' do
+          expect {
+            patch update_assignment_tenure_check_in_bypass_organization_company_teammate_path(organization, regular_teammate),
+                  params: { assignment_tenures: { regular_assignment.id.to_s => '50' } }
+          }.not_to change(AssignmentTenure, :count)
+          
+          expect(response).to have_http_status(:redirect)
+          expect(response).to redirect_to(root_path)
+        end
       end
     end
 
