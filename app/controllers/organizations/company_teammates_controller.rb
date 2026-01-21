@@ -63,10 +63,16 @@ class Organizations::CompanyTeammatesController < Organizations::OrganizationNam
     
     # Check if onboarding spotlight should be shown
     # Only show on viewing teammate's own page and when they don't have BOTH an observation AND a goal
+    # Also check company preference to see if onboarding encouragement is enabled
     viewing_own_page = current_person == @teammate.person
     @has_observations = current_person ? Observation.by_observer(current_person).exists? : false
     @has_goals = Goal.where(creator: @teammate).or(Goal.where(owner_type: 'CompanyTeammate', owner_id: @teammate.id)).exists?
-    @show_onboarding_spotlight = viewing_own_page && !(@has_observations && @has_goals)
+    
+    # Check company preference - default to 'true' if not set (backward compatibility)
+    company_preference = company.company_label_preferences.find_by(label_key: 'encourage_goal_and_observation')
+    encouragement_enabled = company_preference.nil? || company_preference.label_value == 'true'
+    
+    @show_onboarding_spotlight = viewing_own_page && !(@has_observations && @has_goals) && encouragement_enabled
     
     # Load data for sections moved from check-ins
     load_goals_for_about_me

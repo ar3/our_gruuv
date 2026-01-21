@@ -680,6 +680,37 @@ RSpec.describe AboutMeHelper, type: :helper do
       end
     end
 
+    context 'when teammate has never had any assignment check-in finalized' do
+      let(:assignment1) { create(:assignment, company: organization) }
+      let(:assignment2) { create(:assignment, company: organization) }
+
+      before do
+        # Ensure employment_tenure is set up first
+        employment_tenure
+        teammate.reload
+        
+        # Get the actual position from the employment tenure
+        actual_position = teammate.active_employment_tenure.position
+        
+        # Create position assignments using the actual position from the tenure
+        create(:position_assignment, position: actual_position, assignment: assignment1, assignment_type: 'required')
+        create(:position_assignment, position: actual_position, assignment: assignment2, assignment_type: 'required')
+        
+        # Create open check-ins (not finalized)
+        create(:assignment_check_in,
+               teammate: teammate,
+               assignment: assignment1,
+               employee_completed_at: nil,
+               manager_completed_at: nil,
+               official_check_in_completed_at: nil)
+      end
+
+      it 'returns :yellow even when there are relevant assignments' do
+        result = helper.assignments_check_in_status_indicator(teammate, organization)
+        expect(result).to eq(:yellow)
+      end
+    end
+
     context 'when position has required assignments' do
       let(:assignment1) { create(:assignment, company: organization) }
       let(:assignment2) { create(:assignment, company: organization) }
@@ -942,11 +973,36 @@ RSpec.describe AboutMeHelper, type: :helper do
           create(:position_assignment, position: actual_position, assignment: shared_assignment, assignment_type: 'required')
           create(:assignment_tenure, teammate: teammate, assignment: shared_assignment, anticipated_energy_percentage: 50, started_at: 1.month.ago, ended_at: nil)
           
-          # Create check-in with explicit dates to ensure they're set correctly
+          # Create check-ins for ALL relevant assignments (including those from parent context)
           check_in_date = 30.days.ago
+          
+          # Check-in for required_assignment (from parent context)
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: required_assignment,
+                 check_in_started_on: check_in_date.to_date,
+                 employee_completed_at: check_in_date,
+                 manager_completed_at: check_in_date,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: check_in_date,
+                 finalized_by_teammate: finalized_by)
+          
+          # Check-in for active_assignment (from parent context)
+          create(:assignment_check_in,
+                 teammate: teammate,
+                 assignment: active_assignment,
+                 check_in_started_on: check_in_date.to_date,
+                 employee_completed_at: check_in_date,
+                 manager_completed_at: check_in_date,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: check_in_date,
+                 finalized_by_teammate: finalized_by)
+          
+          # Check-in for shared_assignment
           create(:assignment_check_in,
                  teammate: teammate,
                  assignment: shared_assignment,
+                 check_in_started_on: check_in_date.to_date,
                  employee_completed_at: check_in_date,
                  manager_completed_at: check_in_date,
                  manager_completed_by_teammate: manager_completed_by,
@@ -959,12 +1015,15 @@ RSpec.describe AboutMeHelper, type: :helper do
         end
 
         it 'counts the assignment only once and returns :green' do
-          # Verify the assignment is included only once
+          # Verify the shared assignment is included only once (not duplicated)
           relevant_assignments = helper.relevant_assignments_for_about_me(teammate, organization)
           assignment_ids = relevant_assignments.pluck(:id)
           expect(assignment_ids.count(shared_assignment.id)).to eq(1)
           
-          # Verify the check-in exists and is recent
+          # Verify we have all 3 assignments (required_assignment, active_assignment, shared_assignment)
+          expect(assignment_ids.count).to eq(3)
+          
+          # Verify all check-ins exist and are recent
           check_in = AssignmentCheckIn.where(teammate: teammate, assignment: shared_assignment).closed.order(official_check_in_completed_at: :desc).first
           expect(check_in).to be_present
           cutoff_date = 90.days.ago
@@ -983,6 +1042,124 @@ RSpec.describe AboutMeHelper, type: :helper do
       it 'does not include it and returns :yellow' do
         result = helper.assignments_check_in_status_indicator(teammate, organization)
         expect(result).to eq(:yellow)
+      end
+    end
+  end
+
+  describe '#aspirations_check_in_status_indicator' do
+    let(:organization) { create(:organization, :company) }
+    let(:person) { create(:person) }
+    let(:teammate) { CompanyTeammate.create!(person: person, organization: organization) }
+
+    context 'when teammate has never had any aspiration check-in finalized' do
+      let!(:aspiration1) { create(:aspiration, organization: organization) }
+      let!(:aspiration2) { create(:aspiration, organization: organization) }
+
+      before do
+        # Create open check-ins (not finalized)
+        create(:aspiration_check_in,
+               teammate: teammate,
+               aspiration: aspiration1,
+               employee_completed_at: nil,
+               manager_completed_at: nil,
+               official_check_in_completed_at: nil)
+      end
+
+      it 'returns :yellow even when there are company aspirations' do
+        result = helper.aspirations_check_in_status_indicator(teammate, organization)
+        expect(result).to eq(:yellow)
+      end
+    end
+
+    context 'when no company aspirations exist' do
+      it 'returns :yellow' do
+        result = helper.aspirations_check_in_status_indicator(teammate, organization)
+        expect(result).to eq(:yellow)
+      end
+    end
+
+    context 'when company has aspirations and teammate has finalized check-ins' do
+      let!(:aspiration1) { create(:aspiration, organization: organization) }
+      let!(:aspiration2) { create(:aspiration, organization: organization) }
+      let(:finalized_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+      let(:manager_completed_by) { CompanyTeammate.create!(person: create(:person), organization: organization) }
+
+      context 'when all aspirations have recent check-ins' do
+        before do
+          create(:aspiration_check_in,
+                 teammate: teammate,
+                 aspiration: aspiration1,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+          create(:aspiration_check_in,
+                 teammate: teammate,
+                 aspiration: aspiration2,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+        end
+
+        it 'returns :green' do
+          result = helper.aspirations_check_in_status_indicator(teammate, organization)
+          expect(result).to eq(:green)
+        end
+      end
+
+      context 'when none of the aspirations have recent check-ins' do
+        before do
+          create(:aspiration_check_in,
+                 teammate: teammate,
+                 aspiration: aspiration1,
+                 employee_completed_at: 100.days.ago,
+                 manager_completed_at: 100.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 100.days.ago,
+                 finalized_by_teammate: finalized_by)
+          create(:aspiration_check_in,
+                 teammate: teammate,
+                 aspiration: aspiration2,
+                 employee_completed_at: 100.days.ago,
+                 manager_completed_at: 100.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 100.days.ago,
+                 finalized_by_teammate: finalized_by)
+        end
+
+        it 'returns :red' do
+          result = helper.aspirations_check_in_status_indicator(teammate, organization)
+          expect(result).to eq(:red)
+        end
+      end
+
+      context 'when some aspirations have recent check-ins' do
+        before do
+          create(:aspiration_check_in,
+                 teammate: teammate,
+                 aspiration: aspiration1,
+                 employee_completed_at: 30.days.ago,
+                 manager_completed_at: 30.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 30.days.ago,
+                 finalized_by_teammate: finalized_by)
+          create(:aspiration_check_in,
+                 teammate: teammate,
+                 aspiration: aspiration2,
+                 employee_completed_at: 100.days.ago,
+                 manager_completed_at: 100.days.ago,
+                 manager_completed_by_teammate: manager_completed_by,
+                 official_check_in_completed_at: 100.days.ago,
+                 finalized_by_teammate: finalized_by)
+        end
+
+        it 'returns :yellow' do
+          result = helper.aspirations_check_in_status_indicator(teammate, organization)
+          expect(result).to eq(:yellow)
+        end
       end
     end
   end

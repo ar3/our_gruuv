@@ -23,6 +23,17 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
       expect(assigns(:preferences)).to be_a(Hash)
     end
 
+    it 'loads encourage_goal_and_observation preference with default value' do
+      get :edit, params: { organization_id: company.to_param }
+      expect(assigns(:preferences)['encourage_goal_and_observation']).to eq('true')
+    end
+
+    it 'loads existing encourage_goal_and_observation preference' do
+      create(:company_label_preference, company: company, label_key: 'encourage_goal_and_observation', label_value: 'false')
+      get :edit, params: { organization_id: company.to_param }
+      expect(assigns(:preferences)['encourage_goal_and_observation']).to eq('false')
+    end
+
     it 'requires customize_company permission' do
       teammate = CompanyTeammate.find_by(person: person, organization: company)
       teammate.update!(can_customize_company: false)
@@ -74,6 +85,49 @@ RSpec.describe Organizations::CompanyPreferencesController, type: :controller do
         }
         expect(response).to redirect_to(edit_organization_company_preference_path(company))
         expect(flash[:notice]).to eq('Company preferences updated successfully.')
+      end
+
+      it 'creates encourage_goal_and_observation preference when checked' do
+        expect {
+          patch :update, params: {
+            organization_id: company.to_param,
+            preferences: { encourage_goal_and_observation: 'true' }
+          }
+        }.to change { company.reload.company_label_preferences.count }.by(1)
+        
+        preference = company.company_label_preferences.find_by(label_key: 'encourage_goal_and_observation')
+        expect(preference.label_value).to eq('true')
+      end
+
+      it 'creates encourage_goal_and_observation preference when unchecked' do
+        expect {
+          patch :update, params: {
+            organization_id: company.to_param,
+            preferences: { encourage_goal_and_observation: 'false' }
+          }
+        }.to change { company.reload.company_label_preferences.count }.by(1)
+        
+        preference = company.company_label_preferences.find_by(label_key: 'encourage_goal_and_observation')
+        expect(preference.label_value).to eq('false')
+      end
+
+      it 'updates existing encourage_goal_and_observation preference' do
+        create(:company_label_preference, company: company, label_key: 'encourage_goal_and_observation', label_value: 'true')
+        patch :update, params: {
+          organization_id: company.to_param,
+          preferences: { encourage_goal_and_observation: 'false' }
+        }
+        company.reload
+        expect(company.company_label_preferences.find_by(label_key: 'encourage_goal_and_observation').label_value).to eq('false')
+      end
+
+      it 'handles checkbox value "1" as true' do
+        patch :update, params: {
+          organization_id: company.to_param,
+          preferences: { encourage_goal_and_observation: '1' }
+        }
+        preference = company.reload.company_label_preferences.find_by(label_key: 'encourage_goal_and_observation')
+        expect(preference.label_value).to eq('true')
       end
     end
 

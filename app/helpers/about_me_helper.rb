@@ -108,6 +108,10 @@ module AboutMeHelper
   end
 
   def assignments_check_in_status_indicator(teammate, organization)
+    # Check if teammate has ever had any assignment check-in finalized
+    has_any_finalized = AssignmentCheckIn.where(teammate: teammate).closed.exists?
+    return :yellow unless has_any_finalized
+    
     relevant_assignments = relevant_assignments_for_about_me(teammate, organization)
     
     return :yellow if relevant_assignments.empty?
@@ -146,6 +150,10 @@ module AboutMeHelper
   end
 
   def aspirations_check_in_status_indicator(teammate, organization)
+    # Check if teammate has ever had any aspiration check-in finalized
+    has_any_finalized = AspirationCheckIn.where(teammate: teammate).closed.exists?
+    return :yellow unless has_any_finalized
+    
     company_aspirations = Aspiration.within_hierarchy(organization)
     return :yellow if company_aspirations.empty?
     
@@ -347,7 +355,7 @@ module AboutMeHelper
       content_tag(:div) do
         content_tag(:strong, "Assignments/Outcomes Status Conditions:") +
         content_tag(:ul, class: "mb-0 mt-2") do
-          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "No required assignments or active assignments with energy > 0") +
+          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "No assignment check-in has ever been finalized, OR no required assignments or active assignments with energy > 0") +
           content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "None of the relevant assignments (required or active with energy > 0) have check-ins within the last 90 days") +
           content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "All relevant assignments (required or active with energy > 0) have check-ins within the last 90 days")
         end
@@ -356,7 +364,7 @@ module AboutMeHelper
       content_tag(:div) do
         content_tag(:strong, "Aspirational Values Status Conditions:") +
         content_tag(:ul, class: "mb-0 mt-2") do
-          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "No company aspirational values exist") +
+          content_tag(:li, content_tag(:span, "Yellow: ", class: "text-warning") + "No aspiration check-in has ever been finalized, OR no company aspirational values exist") +
           content_tag(:li, content_tag(:span, "Red: ", class: "text-danger") + "None of the company aspirational values have check-ins within the last 90 days") +
           content_tag(:li, content_tag(:span, "Green: ", class: "text-success") + "All company aspirational values have check-ins within the last 90 days")
         end

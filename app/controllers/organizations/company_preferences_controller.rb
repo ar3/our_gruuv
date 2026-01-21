@@ -35,7 +35,8 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
 
   def load_preferences
     {
-      'prompt' => @company.company_label_preferences.find_by(label_key: 'prompt')&.label_value || ''
+      'prompt' => @company.company_label_preferences.find_by(label_key: 'prompt')&.label_value || '',
+      'encourage_goal_and_observation' => @company.company_label_preferences.find_by(label_key: 'encourage_goal_and_observation')&.label_value || 'true'
     }
   end
 
@@ -45,7 +46,14 @@ class Organizations::CompanyPreferencesController < Organizations::OrganizationN
     params[:preferences]&.each do |key, value|
       preference = @company.company_label_preferences.find_or_initialize_by(label_key: key.to_s)
       
-      if value.present?
+      # Handle boolean preferences (checkboxes)
+      # Rails checkboxes send 'true' when checked, 'false' when unchecked (via hidden field)
+      if key.to_s == 'encourage_goal_and_observation'
+        preference.label_value = (value == 'true' || value == '1') ? 'true' : 'false'
+        unless preference.save
+          success = false
+        end
+      elsif value.present?
         preference.label_value = value
         unless preference.save
           success = false

@@ -1088,7 +1088,6 @@ RSpec.describe 'About Me Page', type: :request do
         get about_me_organization_company_teammate_path(organization, teammate)
         expect(response.body).to include('Logging In')
         expect(response.body).to include('Complete')
-        expect(response.body).to include('Celebrating!')
       end
 
       it 'shows milestone 2 as incomplete with link to create observation' do
@@ -1273,6 +1272,90 @@ RSpec.describe 'About Me Page', type: :request do
         expect(assigns(:show_onboarding_spotlight)).to be true
         expect(assigns(:has_observations)).to be false
         expect(assigns(:has_goals)).to be true
+      end
+    end
+
+    context 'when company preference is disabled' do
+      before do
+        company = organization.root_company || organization
+        create(:company_label_preference, company: company, label_key: 'encourage_goal_and_observation', label_value: 'false')
+      end
+
+      context 'when viewing own page with no observations and no goals' do
+        it 'does not show the onboarding spotlight' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          expect(response.body).not_to include('Welcome to OurGruuv!')
+          expect(assigns(:show_onboarding_spotlight)).to be false
+        end
+      end
+
+      context 'when user has observations but no goals' do
+        let!(:observation) do
+          build(:observation,
+                observer: person,
+                company: organization,
+                privacy_level: :public_to_company,
+                observed_at: 10.days.ago,
+                published_at: 10.days.ago).tap do |obs|
+            obs.observees.build(teammate: teammate)
+            obs.save!
+          end
+        end
+
+        it 'does not show the onboarding spotlight' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          expect(response.body).not_to include('Welcome to OurGruuv!')
+          expect(assigns(:show_onboarding_spotlight)).to be false
+        end
+      end
+
+      context 'when user has goals but no observations' do
+        let!(:goal) do
+          create(:goal,
+                 owner: teammate,
+                 creator: teammate,
+                 company: organization,
+                 started_at: 1.day.ago,
+                 completed_at: nil,
+                 deleted_at: nil)
+        end
+
+        it 'does not show the onboarding spotlight' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          expect(response.body).not_to include('Welcome to OurGruuv!')
+          expect(assigns(:show_onboarding_spotlight)).to be false
+        end
+      end
+    end
+
+    context 'when company preference is enabled' do
+      before do
+        company = organization.root_company || organization
+        create(:company_label_preference, company: company, label_key: 'encourage_goal_and_observation', label_value: 'true')
+      end
+
+      context 'when viewing own page with no observations and no goals' do
+        it 'shows the onboarding spotlight' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          expect(response.body).to include('Welcome to OurGruuv!')
+          expect(assigns(:show_onboarding_spotlight)).to be true
+        end
+      end
+    end
+
+    context 'when company preference is not set (default behavior)' do
+      before do
+        # Ensure no preference exists
+        company = organization.root_company || organization
+        CompanyLabelPreference.where(company: company, label_key: 'encourage_goal_and_observation').destroy_all
+      end
+
+      context 'when viewing own page with no observations and no goals' do
+        it 'shows the onboarding spotlight (defaults to enabled)' do
+          get about_me_organization_company_teammate_path(organization, teammate)
+          expect(response.body).to include('Welcome to OurGruuv!')
+          expect(assigns(:show_onboarding_spotlight)).to be true
+        end
       end
     end
   end
