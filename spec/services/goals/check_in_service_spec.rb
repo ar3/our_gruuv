@@ -145,6 +145,8 @@ RSpec.describe Goals::CheckInService, type: :service do
     end
 
     context 'when auto-completing goal' do
+      # Note: 0% and 100% are no longer available in the UI dropdowns,
+      # but the service still supports these values programmatically (e.g., when marking goals as done)
       it 'auto-completes goal when confidence is 0%' do
         result = described_class.call(
           goal: goal,

@@ -85,5 +85,37 @@ RSpec.describe GoalsHelper, type: :helper do
       expect(helper.goal_warning_class(key_result_goal)).to eq('')
     end
   end
+  
+  describe '#confidence_percentage_options' do
+    it 'returns options from 5% to 95% in steps of 5' do
+      options = helper.confidence_percentage_options
+      
+      expect(options).to be_an(Array)
+      expect(options.length).to eq(19) # 5, 10, 15, ..., 95
+      
+      # Check first option
+      expect(options.first).to eq(['5%', 5])
+      
+      # Check last option
+      expect(options.last).to eq(['95%', 95])
+      
+      # Verify all values are multiples of 5
+      values = options.map { |opt| opt[1] }
+      expect(values).to all(be_a(Integer))
+      expect(values).to all(be_between(5, 95))
+      expect(values).to all(satisfy { |v| v % 5 == 0 })
+      
+      # Verify 0% and 100% are NOT included
+      expect(values).not_to include(0)
+      expect(values).not_to include(100)
+    end
+    
+    it 'returns options in ascending order' do
+      options = helper.confidence_percentage_options
+      values = options.map { |opt| opt[1] }
+      
+      expect(values).to eq(values.sort)
+    end
+  end
 end
 

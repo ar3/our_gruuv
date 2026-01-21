@@ -279,11 +279,10 @@ module GoalsHelper
   end
   
   def confidence_percentage_options
-    options = [['Not Done (0%)', 0]]
+    options = []
     (5..95).step(5).each do |percent|
       options << ["#{percent}%", percent]
     end
-    options << ['Done (100%)', 100]
     options
   end
   
