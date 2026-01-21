@@ -404,6 +404,30 @@ RSpec.describe Organizations::EmployeesController, type: :controller do
       get :new_employee, params: { organization_id: company.id }
       expect(response).to render_template(:new_employee)
     end
+
+    it 'sorts positions alphabetically by position_type external_title' do
+      # Create multiple position types with different external titles
+      position_type_z = create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'Zebra Position')
+      position_type_a = create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'Alpha Position')
+      position_type_m = create(:position_type, organization: company, position_major_level: position_major_level, external_title: 'Middle Position')
+      
+      position_level_1 = create(:position_level, position_major_level: position_major_level, level: '1.0')
+      position_level_2 = create(:position_level, position_major_level: position_major_level, level: '2.0')
+      
+      position_z = create(:position, position_type: position_type_z, position_level: position_level_1)
+      position_a = create(:position, position_type: position_type_a, position_level: position_level_2)
+      position_m = create(:position, position_type: position_type_m, position_level: position_level_1)
+      
+      get :new_employee, params: { organization_id: company.id }
+      
+      positions = assigns(:positions).to_a
+      # Filter to only the positions we created for this test
+      test_positions = positions.select { |p| [position_a.id, position_m.id, position_z.id].include?(p.id) }
+      external_titles = test_positions.map { |p| p.position_type.external_title }
+      
+      # Verify positions are sorted alphabetically by external_title
+      expect(external_titles).to eq(['Alpha Position', 'Middle Position', 'Zebra Position'])
+    end
   end
 
   describe 'POST #create_employee' do
