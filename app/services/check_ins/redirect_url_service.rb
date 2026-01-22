@@ -126,6 +126,9 @@ module CheckIns
           return_text: "Check-ins",
           observee_ids: [teammate.id]
         )
+      when /^continue_editing$/
+        # Redirect back to check-ins page to continue editing
+        organization_company_teammate_check_ins_path(@organization, @teammate)
       else
         # Default to finalization page
         organization_company_teammate_finalization_path(@organization, @teammate)

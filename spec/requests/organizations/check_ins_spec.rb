@@ -184,6 +184,92 @@ RSpec.describe "Organizations::CheckIns", type: :request do
           expect(check_in.manager_completed_at).to be_nil # Manager hasn't completed
         end
       end
+
+      context "when clicking 'Save All & Continue Editing' button" do
+        it "saves data and redirects back to check-ins page" do
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
+                params: {
+                  check_ins: {
+                    position_check_in: {
+                      manager_rating: 3,
+                      manager_private_notes: "Continue editing notes",
+                      status: "draft"
+                    }
+                  },
+                  save_and_continue_editing: "Save All & Continue Editing"
+                }
+          
+          check_in = PositionCheckIn.find_by(teammate: employee_teammate)
+          
+          # Assert database state
+          expect(check_in.manager_rating).to eq(3)
+          expect(check_in.manager_private_notes).to eq("Continue editing notes")
+          
+          # Assert response redirects to check-ins page
+          expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, employee_teammate))
+          follow_redirect!
+          expect(response.body).to include("Check-ins saved successfully")
+        end
+
+        it "saves assignment check-ins and redirects back to check-ins page" do
+          assignment = create(:assignment, company: organization, title: 'Test Assignment')
+          assignment_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: assignment, started_at: 6.months.ago)
+          check_in = AssignmentCheckIn.find_or_create_open_for(employee_teammate, assignment)
+          
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
+                params: {
+                  check_ins: {
+                    assignment_check_ins: {
+                      check_in.id.to_s => {
+                        assignment_id: assignment.id,
+                        manager_rating: 'meeting',
+                        manager_private_notes: "Assignment notes",
+                        status: "draft"
+                      }
+                    }
+                  },
+                  save_and_continue_editing: "Save All & Continue Editing"
+                }
+          
+          check_in.reload
+          
+          # Assert database state
+          expect(check_in.manager_rating).to eq('meeting')
+          expect(check_in.manager_private_notes).to eq("Assignment notes")
+          
+          # Assert response redirects to check-ins page
+          expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, employee_teammate))
+        end
+
+        it "saves aspiration check-ins and redirects back to check-ins page" do
+          aspiration = create(:aspiration, organization: organization, name: 'Test Aspiration')
+          check_in = AspirationCheckIn.find_or_create_open_for(employee_teammate, aspiration)
+          
+          patch organization_company_teammate_check_ins_path(organization, employee_teammate),
+                params: {
+                  check_ins: {
+                    aspiration_check_ins: {
+                      check_in.id.to_s => {
+                        aspiration_id: aspiration.id,
+                        manager_rating: 'exceeding',
+                        manager_private_notes: "Aspiration notes",
+                        status: "draft"
+                      }
+                    }
+                  },
+                  save_and_continue_editing: "Save All & Continue Editing"
+                }
+          
+          check_in.reload
+          
+          # Assert database state
+          expect(check_in.manager_rating).to eq('exceeding')
+          expect(check_in.manager_private_notes).to eq("Aspiration notes")
+          
+          # Assert response redirects to check-ins page
+          expect(response).to redirect_to(organization_company_teammate_check_ins_path(organization, employee_teammate))
+        end
+      end
     end
     
     context "authorization" do
@@ -335,6 +421,45 @@ RSpec.describe "Organizations::CheckIns", type: :request do
         expect(html).not_to include('Employee Notes')
       end
       
+    end
+
+    context "button visibility" do
+      before do
+        sign_in_as_teammate_for_request(manager_person, organization)
+      end
+
+      it "shows 'Save All & Continue Editing' button on the check-ins page" do
+        get organization_company_teammate_check_ins_path(organization, employee_teammate)
+        
+        expect(response).to have_http_status(:success)
+        html = response.body
+        
+        # Should see the new "Save All & Continue Editing" button (check for name attribute and text, accounting for HTML escaping)
+        expect(html).to match(/name=["']save_and_continue_editing["']/)
+        # Check for button text with HTML entity encoding
+        expect(html).to match(/Save All (&amp;|&) Continue Editing/)
+        
+        # Should also see the existing "Save All & Proceed to Review Check-Ins" button
+        expect(html).to match(/Save All (&amp;|&) Proceed to Review Check-Ins/)
+      end
+
+      it "shows both buttons in all three sections (position, assignment, aspiration)" do
+        get organization_company_teammate_check_ins_path(organization, employee_teammate)
+        
+        expect(response).to have_http_status(:success)
+        html = response.body
+        
+        # Count occurrences of the continue editing button name attribute - should appear 3 times (once per section)
+        continue_editing_count = html.scan(/name=["']save_and_continue_editing["']/).count
+        
+        # Count submit buttons - the proceed button doesn't have a name attribute, so count submit buttons in button rows
+        # Each section should have 2 submit buttons (continue editing + proceed to review)
+        # We can verify by checking for the button container pattern (.d-flex.gap-2) which should appear 3 times
+        button_container_count = html.scan(/d-flex gap-2/).count
+        
+        expect(continue_editing_count).to eq(3), "Expected 'save_and_continue_editing' button to appear 3 times"
+        expect(button_container_count).to be >= 3, "Expected at least 3 button containers (one per section)"
+      end
     end
   end
 end
