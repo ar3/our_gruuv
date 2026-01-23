@@ -21,7 +21,11 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     
     # Load or build all check-in types (spreadsheet-style)
     @position_check_in = load_or_build_position_check_in
-    @assignment_check_ins = load_or_build_assignment_check_ins
+    assignment_check_ins_data = load_or_build_assignment_check_ins
+    @active_assignment_check_ins = assignment_check_ins_data[:active_tenure_check_ins]
+    @non_active_assignment_check_ins = assignment_check_ins_data[:non_active_tenure_check_ins]
+    # Keep @assignment_check_ins for backward compatibility (combined list)
+    @assignment_check_ins = @active_assignment_check_ins + @non_active_assignment_check_ins
     @aspiration_check_ins = load_or_build_aspiration_check_ins
     @relevant_abilities = load_relevant_abilities || []
   end
@@ -146,6 +150,38 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
     
     check_ins = check_ins.compact
     
+    # Also include assignments that have ever had a check-in (even if no active tenure or position assignment)
+    # This ensures we show all assignments with check-in history
+    assignments_with_check_in_history = AssignmentCheckIn
+      .where(teammate: @teammate)
+      .joins(:assignment)
+      .where(assignments: { company: organization.self_and_descendants })
+      .select(:assignment_id)
+      .distinct
+      .pluck(:assignment_id)
+    
+    assignments_with_check_in_history.each do |assignment_id|
+      # Skip if we already have a check-in for this assignment
+      next if check_ins.any? { |ci| ci.assignment_id == assignment_id }
+      
+      # Find or create an open check-in for this assignment
+      assignment = Assignment.find(assignment_id)
+      open_check_in = AssignmentCheckIn.where(teammate: @teammate, assignment: assignment).open.first
+      if open_check_in.nil?
+        check_in = AssignmentCheckIn.create!(
+          teammate: @teammate,
+          assignment: assignment,
+          check_in_started_on: Date.current,
+          actual_energy_percentage: nil
+        )
+        check_ins << check_in
+      else
+        check_ins << open_check_in
+      end
+    end
+    
+    check_ins = check_ins.compact
+    
     # Separate check-ins into active tenure and non-active tenure groups
     active_tenure_check_ins = []
     non_active_tenure_check_ins = []
@@ -168,8 +204,11 @@ class Organizations::CompanyTeammates::CheckInsController < Organizations::Organ
       energy.nil? ? [1, 0] : [0, -energy]
     end
     
-    # Combine: active tenure check-ins first, then others
-    active_tenure_check_ins + non_active_tenure_check_ins
+    # Return both arrays separately instead of combining
+    {
+      active_tenure_check_ins: active_tenure_check_ins,
+      non_active_tenure_check_ins: non_active_tenure_check_ins
+    }
   end
 
   def load_or_build_aspiration_check_ins

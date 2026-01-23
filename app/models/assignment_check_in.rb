@@ -105,8 +105,21 @@ class AssignmentCheckIn < ApplicationRecord
   end
 
   # Find the associated assignment tenure for this check-in
+  # Prefers active tenure if one exists, otherwise returns most recent tenure
   def assignment_tenure
-    @assignment_tenure ||= AssignmentTenure.most_recent_for(teammate, assignment)
+    return @assignment_tenure if @assignment_tenure
+    
+    # First, try to find an active tenure
+    active_tenure = AssignmentTenure.where(teammate: teammate, assignment: assignment).active.first
+    
+    if active_tenure
+      @assignment_tenure = active_tenure
+    else
+      # Fall back to most recent tenure if no active one exists
+      @assignment_tenure = AssignmentTenure.most_recent_for(teammate, assignment)
+    end
+    
+    @assignment_tenure
   end
 
   # Find or create open check-in for a teammate and assignment

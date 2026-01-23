@@ -197,9 +197,25 @@
            action_link: { url: assignment_selection_organization_company_teammate_path(organization, @teammate), icon: 'bi-plus-circle', text: '', title: 'Manage assignments' }
   
   = render 'assignment_check_ins_table',
-           assignment_check_ins: @assignment_check_ins,
+           assignment_check_ins: @active_assignment_check_ins,
            form: f,
            view_mode: @view_mode
+  
+  -# Collapsible section for non-active assignments
+  - if @non_active_assignment_check_ins&.any?
+    .card.mb-4.mt-4
+      .card-header
+        %button.btn.btn-link.text-start.w-100.p-0.text-decoration-none{type: "button", "data-bs-toggle" => "collapse", "data-bs-target" => "#nonActiveAssignmentsSection", "aria-expanded" => "false", "aria-controls" => "nonActiveAssignmentsSection"}
+          %h5.mb-0
+            %i.bi.bi-chevron-down.me-2
+            Check-in on Assignments #{@teammate.person.casual_name} is starting/started 
+            %p.text-muted.caption-text (check here for newly added Assignments or Assignments they used to have active)
+      .collapse#nonActiveAssignmentsSection
+        .card-body
+          = render 'assignment_check_ins_table',
+                   assignment_check_ins: @non_active_assignment_check_ins,
+                   form: f,
+                   view_mode: @view_mode
   
   .row.mt-4
     .col-12

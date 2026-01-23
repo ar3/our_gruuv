@@ -78,10 +78,10 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
       select '🔵 Meeting', from: "check_ins[aspiration_check_ins][#{aspiration_check_in2.id}][employee_rating]"
       fill_in "check_ins[aspiration_check_ins][#{aspiration_check_in2.id}][employee_private_notes]", with: 'Aspiration 2 notes'
       
-      # Save all at once - button text is "Save All Check-Ins"
+      # Save all at once - button text is "Save All & Proceed to Review Check-Ins"
       # There are multiple buttons (one per section), use first or scope to form
       # Capybara's first() has implicit wait
-      first('input[type="submit"][value="Save All Check-Ins"]', visible: true).click
+      first('input[type="submit"][value="Save All & Proceed to Review Check-Ins"]', visible: true).click
       
       # Verify all check-ins were saved
       expect(page).to have_success_flash('Check-ins saved successfully')
@@ -327,6 +327,95 @@ RSpec.describe 'Check-ins Complete Flow', type: :system do
         # Should NOT see employee headers in table
         expect(page).not_to have_css('th', text: 'Employee Rating')
         expect(page).not_to have_css('th', text: 'Employee Notes')
+      end
+    end
+  end
+
+  describe 'Collapsible section for non-active assignments' do
+    let!(:active_assignment) { create(:assignment, company: company, title: 'Active Assignment') }
+    let!(:inactive_assignment) { create(:assignment, company: company, title: 'Inactive Assignment') }
+    let!(:active_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: active_assignment, started_at: 6.months.ago, ended_at: nil) }
+    let!(:inactive_tenure) { create(:assignment_tenure, teammate: employee_teammate, assignment: inactive_assignment, started_at: 6.months.ago, ended_at: 3.months.ago) }
+
+    before do
+      sign_in_as(employee_person, company)
+      # Ensure check-ins are created for both assignments
+      AssignmentCheckIn.find_or_create_open_for(employee_teammate, active_assignment)
+      AssignmentCheckIn.find_or_create_open_for(employee_teammate, inactive_assignment)
+    end
+
+    it 'shows active assignments in main table' do
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
+      
+      # Active assignment should be visible in main table
+      expect(page).to have_content('Active Assignment')
+      
+      # Should not be in a collapsible section (section might exist but be collapsed)
+      expect(page).not_to have_css('#nonActiveAssignmentsSection.show')
+    end
+
+    it 'shows non-active assignments in collapsible section' do
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
+      
+      # Collapsible section should exist (may be collapsed/hidden)
+      expect(page).to have_css('#nonActiveAssignmentsSection', visible: :all)
+      
+      # Section should be collapsed by default (not have .show class)
+      expect(page).not_to have_css('#nonActiveAssignmentsSection.show', visible: :all)
+      
+      # Title should include teammate's casual name
+      expect(page).to have_content("Check-in on an Assignment #{employee_person.casual_name} is (re)starting")
+    end
+
+    it 'expands and collapses the non-active assignments section' do
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
+      
+      # Initially collapsed - inactive assignment should not be visible in expanded section
+      expect(page).not_to have_css('#nonActiveAssignmentsSection.show', visible: :all)
+      
+      # Click to expand - find the button by its data attribute
+      find('button[data-bs-target="#nonActiveAssignmentsSection"]', visible: :all).click
+      
+      # Wait for section to expand
+      expect(page).to have_css('#nonActiveAssignmentsSection.show', wait: 2)
+      
+      # Now inactive assignment should be visible (assignment titles are in buttons)
+      within('#nonActiveAssignmentsSection') do
+        expect(page.has_button?('Inactive Assignment') || page.has_content?('Inactive Assignment')).to be true
+      end
+      
+      # Click to collapse
+      find('button[data-bs-target="#nonActiveAssignmentsSection"]', visible: :all).click
+      
+      # Wait for section to collapse
+      expect(page).not_to have_css('#nonActiveAssignmentsSection.show', wait: 2)
+    end
+
+    it 'does not show collapsible section when all assignments are active' do
+      # Remove inactive assignment
+      inactive_tenure.destroy
+      AssignmentCheckIn.where(teammate: employee_teammate, assignment: inactive_assignment).destroy_all
+      
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
+      
+      # Collapsible section should not exist
+      expect(page).not_to have_css('#nonActiveAssignmentsSection')
+      expect(page).not_to have_content("Check-in on an Assignment #{employee_person.casual_name} is (re)starting")
+    end
+
+    it 'shows both active and non-active assignments correctly' do
+      visit organization_company_teammate_check_ins_path(company, employee_teammate)
+      
+      # Active assignment should be in main table
+      expect(page).to have_content('Active Assignment')
+      
+      # Expand collapsible section
+      find('button[data-bs-target="#nonActiveAssignmentsSection"]', visible: :all).click
+      expect(page).to have_css('#nonActiveAssignmentsSection.show', wait: 2)
+      
+      # Inactive assignment should be in collapsible section (assignment titles are in buttons)
+      within('#nonActiveAssignmentsSection') do
+        expect(page.has_button?('Inactive Assignment') || page.has_content?('Inactive Assignment')).to be true
       end
     end
   end

@@ -704,6 +704,54 @@ RSpec.describe Organizations::CompanyTeammates::CheckInsController, type: :contr
         expect(assignment_ids).to include(required_assignment.id)
         expect(assignment_ids).to include(suggested_assignment.id)
       end
+
+      it 'separates active and non-active assignment check-ins' do
+        # Create an active tenure
+        active_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: required_assignment, ended_at: nil)
+        # Create an inactive tenure
+        inactive_tenure = create(:assignment_tenure, teammate: employee_teammate, assignment: suggested_assignment, started_at: 3.months.ago, ended_at: 1.month.ago)
+        
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+        
+        active_check_ins = assigns(:active_assignment_check_ins)
+        non_active_check_ins = assigns(:non_active_assignment_check_ins)
+        
+        expect(active_check_ins).to be_present
+        expect(non_active_check_ins).to be_present
+        
+        # Active check-ins should include the one with active tenure
+        active_assignment_ids = active_check_ins.map(&:assignment_id)
+        expect(active_assignment_ids).to include(required_assignment.id)
+        
+        # Non-active check-ins should include the one with inactive tenure
+        non_active_assignment_ids = non_active_check_ins.map(&:assignment_id)
+        expect(non_active_assignment_ids).to include(suggested_assignment.id)
+      end
+
+      it 'places assignments without active tenure in non-active check-ins' do
+        # No tenure created for these assignments (they're position-based only)
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+        
+        active_check_ins = assigns(:active_assignment_check_ins)
+        non_active_check_ins = assigns(:non_active_assignment_check_ins)
+        
+        # Since no active tenures exist, these should be in non-active
+        non_active_assignment_ids = non_active_check_ins.map(&:assignment_id)
+        expect(non_active_assignment_ids).to include(required_assignment.id)
+        expect(non_active_assignment_ids).to include(suggested_assignment.id)
+      end
+
+      it 'maintains backward compatibility with @assignment_check_ins' do
+        get :show, params: { organization_id: organization.id, company_teammate_id: employee_teammate.id }
+        
+        assignment_check_ins = assigns(:assignment_check_ins)
+        active_check_ins = assigns(:active_assignment_check_ins)
+        non_active_check_ins = assigns(:non_active_assignment_check_ins)
+        
+        # @assignment_check_ins should be the combination of both
+        expect(assignment_check_ins.length).to eq(active_check_ins.length + non_active_check_ins.length)
+        expect(assignment_check_ins.map(&:id)).to match_array((active_check_ins.map(&:id) + non_active_check_ins.map(&:id)))
+      end
     end
 
   end
