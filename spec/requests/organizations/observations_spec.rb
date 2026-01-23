@@ -22,8 +22,8 @@ RSpec.describe 'Organizations::Observations', type: :request do
       expect(response.body).to include('Select Observation Type')
       expect(response.body).to include('Kudos')
       expect(response.body).to include('Feedback')
-      expect(response.body).to include('Quick Note')
-      expect(response.body).to include('Generic Observation')
+      expect(response.body).not_to include('Quick Note')
+      expect(response.body).not_to include('Generic Observation')
     end
 
     it 'preserves return_url and return_text params' do
