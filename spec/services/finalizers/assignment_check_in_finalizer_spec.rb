@@ -121,11 +121,11 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         
         expect(data[:check_in]).to eq(assignment_check_in)
         expect(data[:new_tenure]).to be_a(AssignmentTenure)
-      expect(data[:rating_data]).to include(
-        assignment_id: assignment.id,
-        official_rating: 'meeting',
-        rated_at: Time.current.to_s
-      )
+        expect(data[:rating_data]).to include(
+          assignment_id: assignment.id,
+          official_rating: 'meeting',
+          rated_at: Time.current.to_s
+        )
       end
       
       context 'when rating improved' do
@@ -308,6 +308,155 @@ RSpec.describe Finalizers::AssignmentCheckInFinalizer do
         expect(new_tenure.anticipated_energy_percentage).to eq(80)
         expect(new_tenure.started_at).to eq(Date.current)
         expect(new_tenure.ended_at).to be_nil
+      end
+    end
+    
+    context 'when anticipated_energy_percentage is 0%' do
+      context 'when there is an active tenure' do
+        it 'ends the active tenure without creating a new one' do
+          finalizer_with_zero = described_class.new(
+            check_in: assignment_check_in,
+            official_rating: 'meeting',
+            shared_notes: 'Great work',
+            anticipated_energy_percentage: 0,
+            finalized_by: manager_teammate
+          )
+          
+          expect { finalizer_with_zero.finalize }
+            .to change { assignment_tenure.reload.ended_at }
+            .from(nil)
+            .to(Date.current)
+            .and change { AssignmentTenure.count }
+            .by(0)
+          
+          expect(assignment_tenure.reload.official_rating).to eq('meeting')
+          expect(assignment_tenure.ended_at).to eq(Date.current)
+        end
+        
+        it 'returns nil for new_tenure in the result' do
+          finalizer_with_zero = described_class.new(
+            check_in: assignment_check_in,
+            official_rating: 'meeting',
+            shared_notes: 'Great work',
+            anticipated_energy_percentage: 0,
+            finalized_by: manager_teammate
+          )
+          
+          result = finalizer_with_zero.finalize
+          
+          expect(result).to be_ok
+          expect(result.value[:new_tenure]).to be_nil
+        end
+        
+        it 'still finalizes the check-in correctly' do
+          finalizer_with_zero = described_class.new(
+            check_in: assignment_check_in,
+            official_rating: 'meeting',
+            shared_notes: 'Great work',
+            anticipated_energy_percentage: 0,
+            finalized_by: manager_teammate
+          )
+          
+          finalizer_with_zero.finalize
+          
+          assignment_check_in.reload
+          expect(assignment_check_in.official_rating).to eq('meeting')
+          expect(assignment_check_in.shared_notes).to eq('Great work')
+          expect(assignment_check_in.official_check_in_completed_at).to be_present
+          expect(assignment_check_in.finalized_by_teammate).to eq(manager_teammate)
+        end
+      end
+      
+      context 'when there is no active tenure' do
+        before do
+          AssignmentTenure.where(teammate: employee_teammate, assignment: assignment).destroy_all
+        end
+        
+        it 'does not create a new tenure' do
+          finalizer_with_zero = described_class.new(
+            check_in: assignment_check_in,
+            official_rating: 'meeting',
+            shared_notes: 'Great work',
+            anticipated_energy_percentage: 0,
+            finalized_by: manager_teammate
+          )
+          
+          expect { finalizer_with_zero.finalize }
+            .not_to change { AssignmentTenure.count }
+        end
+        
+        it 'returns nil for new_tenure in the result' do
+          finalizer_with_zero = described_class.new(
+            check_in: assignment_check_in,
+            official_rating: 'meeting',
+            shared_notes: 'Great work',
+            anticipated_energy_percentage: 0,
+            finalized_by: manager_teammate
+          )
+          
+          result = finalizer_with_zero.finalize
+          
+          expect(result).to be_ok
+          expect(result.value[:new_tenure]).to be_nil
+        end
+        
+        it 'still finalizes the check-in correctly' do
+          finalizer_with_zero = described_class.new(
+            check_in: assignment_check_in,
+            official_rating: 'meeting',
+            shared_notes: 'Great work',
+            anticipated_energy_percentage: 0,
+            finalized_by: manager_teammate
+          )
+          
+          finalizer_with_zero.finalize
+          
+          assignment_check_in.reload
+          expect(assignment_check_in.official_rating).to eq('meeting')
+          expect(assignment_check_in.shared_notes).to eq('Great work')
+          expect(assignment_check_in.official_check_in_completed_at).to be_present
+          expect(assignment_check_in.finalized_by_teammate).to eq(manager_teammate)
+        end
+      end
+      
+      context 'when old tenure has 0% energy and finalizing with nil/empty' do
+        before do
+          assignment_tenure.update!(anticipated_energy_percentage: 0)
+        end
+        
+        it 'ends the tenure when falling back to 0% from old tenure' do
+          finalizer_with_nil = described_class.new(
+            check_in: assignment_check_in,
+            official_rating: 'meeting',
+            shared_notes: 'Great work',
+            anticipated_energy_percentage: nil,
+            finalized_by: manager_teammate
+          )
+          
+          expect { finalizer_with_nil.finalize }
+            .to change { assignment_tenure.reload.ended_at }
+            .from(nil)
+            .to(Date.current)
+            .and change { AssignmentTenure.count }
+            .by(0)
+        end
+        
+        it 'ends the tenure when falling back to 0% from old tenure with empty string' do
+          finalizer_with_empty = described_class.new(
+            check_in: assignment_check_in,
+            official_rating: 'meeting',
+            shared_notes: 'Great work',
+            anticipated_energy_percentage: '',
+            finalized_by: manager_teammate
+          )
+          
+          expect { finalizer_with_empty.finalize }
+            .to change { assignment_tenure.reload.ended_at }
+            .from(nil)
+            .to(Date.current)
+            .and change { AssignmentTenure.count }
+            .by(0)
+        end
       end
     end
   end

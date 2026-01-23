@@ -19,7 +19,23 @@ module Finalizers
                                      .where(ended_at: nil)
                                      .first
       
-      if active_tenure
+      # Determine the energy percentage value
+      energy_percentage = if @anticipated_energy_percentage.present?
+                            @anticipated_energy_percentage.to_i
+                          elsif active_tenure
+                            active_tenure.anticipated_energy_percentage
+                          else
+                            50
+                          end
+      
+      # If energy is 0% and there's an active tenure, end it without creating a new one
+      if energy_percentage == 0 && active_tenure
+        active_tenure.update!(
+          ended_at: Time.current,
+          official_rating: @official_rating
+        )
+        new_tenure = nil
+      elsif active_tenure
         # Existing tenure: close it and create a new one
         # Close current tenure with official rating
         active_tenure.update!(
@@ -28,9 +44,6 @@ module Finalizers
         )
         
         # Create new tenure (same assignment, fresh rating period)
-        # Use provided anticipated_energy_percentage, or fallback to old tenure's value if nil
-        energy_percentage = @anticipated_energy_percentage.present? ? @anticipated_energy_percentage.to_i : active_tenure.anticipated_energy_percentage
-        
         new_tenure = AssignmentTenure.create!(
           teammate: @teammate,
           assignment: @check_in.assignment,
@@ -40,18 +53,20 @@ module Finalizers
           official_rating: nil
         )
       else
-        # First check-in: create the first tenure
-        # Use provided anticipated_energy_percentage, or default to 50 if not provided
-        energy_percentage = @anticipated_energy_percentage.present? ? @anticipated_energy_percentage.to_i : 50
-        
-        new_tenure = AssignmentTenure.create!(
-          teammate: @teammate,
-          assignment: @check_in.assignment,
-          started_at: Time.current,
-          anticipated_energy_percentage: energy_percentage,
-          ended_at: nil,
-          official_rating: nil
-        )
+        # First check-in: create the first tenure (only if energy is not 0%)
+        # If energy is 0%, don't create a tenure
+        if energy_percentage == 0
+          new_tenure = nil
+        else
+          new_tenure = AssignmentTenure.create!(
+            teammate: @teammate,
+            assignment: @check_in.assignment,
+            started_at: Time.current,
+            anticipated_energy_percentage: energy_percentage,
+            ended_at: nil,
+            official_rating: nil
+          )
+        end
       end
       
       # Finalize the check-in (snapshot will be linked by orchestrator)
