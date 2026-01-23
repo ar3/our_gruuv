@@ -152,6 +152,10 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     visibility_query = ObservationVisibilityQuery.new(current_person, organization)
     observations = visibility_query.visible_observations
     
+    # For filtered_observations, exclude soft-deleted observations (even observer's own)
+    # This is different from index which may show observer's deleted observations
+    observations = observations.where(deleted_at: nil)
+    
     # Filter by observee_ids if provided
     if @observee_ids.any?
       observations = observations.joins(:observees)
@@ -492,8 +496,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
             flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
           end
           
-          redirect_to organization_observation_path(organization, @observation), 
-                      notice: 'Observation was successfully created.'
+          # Redirect to return_url if provided, otherwise to show page
+          redirect_url = params[:return_url].presence || organization_observation_path(organization, @observation)
+          redirect_to redirect_url, notice: 'Observation was successfully created.'
         else
           # Re-populate the form with submitted values for re-rendering
           @assignments = organization.assignments.ordered
@@ -692,8 +697,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
       # Clear wizard data
       session[:observation_wizard_data] = nil
       
-      redirect_to organization_observation_path(organization, @observation), 
-                  notice: 'Observation was successfully created.'
+      # Redirect to return_url if provided, otherwise to show page
+      redirect_url = params[:return_url].presence || organization_observation_path(organization, @observation)
+      redirect_to redirect_url, notice: 'Observation was successfully created.'
     else
       # Re-populate form and show errors
       populate_form_from_wizard_data(@form, wizard_data)
@@ -1468,9 +1474,9 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
         flash[:alert] = "Privacy level was changed from Public to 'For them and their managers' because this observation contains negative ratings."
       end
       
-      # If return_url is provided, use it (from form/new page)
-      # Otherwise, redirect to show page (publish from show page)
-      if params[:return_url].present?
+      # If return_url is provided and is not edit/index, use it (from form/new page)
+      # Otherwise, redirect to show page (publish from show page, edit page, or index)
+      if params[:return_url].present? && !should_redirect_to_show_page?(params[:return_url])
         redirect_url = params[:return_url]
         
         # Add show_observations_for param if provided (only if not already in return_url)
@@ -2194,6 +2200,28 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     return params[:return_url] if params[:return_url].present? && params[:return_url] != organization_observations_path(organization)
     return organization_observation_path(organization, @observation) if @observation.present?
     nil
+  end
+
+  # Check if return_url should redirect to show page instead
+  # Returns true if return_url is nil, edit observation page, or observation index
+  def should_redirect_to_show_page?(return_url)
+    return true if return_url.blank?
+    
+    # Check if it's the observation index
+    return true if return_url == organization_observations_path(organization)
+    
+    # Check if it's an edit observation page (new, new_kudos, new_feedback, new_quick_note)
+    # Extract the path without query params for comparison
+    path_without_params = return_url.split('?').first
+    edit_paths = [
+      new_organization_observation_path(organization),
+      new_kudos_organization_observations_path(organization),
+      new_feedback_organization_observations_path(organization),
+      new_quick_note_organization_observations_path(organization)
+    ]
+    
+    # Check if the path matches any edit path (with or without query params)
+    edit_paths.any? { |edit_path| path_without_params == edit_path.split('?').first }
   end
 
   def apply_preset_if_selected

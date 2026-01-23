@@ -7,23 +7,31 @@ FactoryBot.define do
     
     transient do
       primary_observer_person { nil }
+      skip_primary_observer_setup { false }
     end
     
     after(:build) do |moment, evaluator|
       # Create or find CompanyTeammate for primary_potential_observer
-      if evaluator.primary_observer_person
-        person = evaluator.primary_observer_person
-      else
-        person = moment.created_by
-      end
-      
-      if moment.company && person
-        moment.primary_potential_observer = CompanyTeammate.find_or_create_by!(
-          person: person,
-          organization: moment.company
-        ) do |t|
-          t.first_employed_at = nil
-          t.last_terminated_at = nil
+      # Only set if not already provided and not explicitly skipped
+      unless evaluator.skip_primary_observer_setup || moment.primary_potential_observer
+        if evaluator.primary_observer_person
+          person = evaluator.primary_observer_person
+        else
+          person = moment.created_by
+        end
+        
+        if moment.company && person
+          # Try to find existing teammate first to avoid uniqueness validation errors
+          teammate = CompanyTeammate.find_by(person: person, organization: moment.company)
+          unless teammate
+            teammate = CompanyTeammate.create!(
+              person: person,
+              organization: moment.company,
+              first_employed_at: nil,
+              last_terminated_at: nil
+            )
+          end
+          moment.primary_potential_observer = teammate
         end
       end
     end

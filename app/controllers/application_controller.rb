@@ -208,9 +208,18 @@ class ApplicationController < ActionController::Base
     
     if session[:current_company_teammate_id]
       begin
-        @current_company_teammate = CompanyTeammate
-          .includes(organization: :company_label_preferences)
-          .find(session[:current_company_teammate_id])
+        # Load teammate with organization
+        # Note: company_label_preferences association only exists on Company, not Department/Team
+        # We load it conditionally to avoid association errors for non-Company organizations
+        @current_company_teammate = CompanyTeammate.includes(:organization).find(session[:current_company_teammate_id])
+        # Eager load company_label_preferences only if organization is a Company
+        if @current_company_teammate.organization.company?
+          # Use preload to avoid N+1 queries, but only for Company organizations
+          ActiveRecord::Associations::Preloader.new(
+            records: [@current_company_teammate.organization],
+            associations: :company_label_preferences
+          ).call
+        end
         # Ensure teammate is still active (not terminated)
         if @current_company_teammate.last_terminated_at.present?
           # Teammate was terminated, clear session
