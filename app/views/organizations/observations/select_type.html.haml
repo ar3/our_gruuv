@@ -14,7 +14,12 @@
         .card-body.text-center.p-4
           %i.bi.bi-trophy.display-1.text-success.mb-3
           %h3 Kudos / Recognition
-          %p.text-muted Celebrate wins, shoutouts, and positive behaviors
+          %p.text-muted 
+            Did you Experience something 
+            %strong Note-Worthy?
+          %p.text-muted.caption-text
+            Something you think would be valuable is we saw more of on the team. The best way for that to happen is to share stories like this, so we can celebrate the best of what is today, which will hep us ctoninuously design a continuously better tomorrow! 
+          %p Celebrate wins, shoutouts, and positive behaviors
           %hr.my-3
           %small.text-muted
             %i.bi.bi-unlock.me-1
@@ -28,7 +33,13 @@
         .card-body.text-center.p-4
           %i.bi.bi-chat-left-text.display-1.text-warning.mb-3
           %h3 Feedback
-          %p.text-muted Share actionable feedback using an OG spin on Non-Violent Communication
+          %p.text-muted
+            Did you Experience something 
+            %strong Note-Worthy?
+          %p.text-muted.caption-text
+            Something that is mis-aligned with the team or your personal boundaries. Telling these stories are hard, but if you don't say something and it happens again, who is accountable for that? We must be clear and direct... challenging directly while caring deeply.
+
+          %p Share actionable feedback using an OG spin on Non-Violent Communication
           %hr.my-3
           %small.text-muted
             %i.bi.bi-lock.me-1
@@ -36,4 +47,21 @@
             %br
             %i.bi.bi-file-text.me-1
             MAAP template included
+
+  .row.g-4.mt-2
+    .col-md-12
+      .card.h-100.hover-lift.border-secondary.bg-light{style: "cursor: pointer; opacity: 0.85;", onclick: "window.location='#{new_quick_note_organization_observations_path(@organization, return_params)}'"}
+        .card-body.p-3
+          .row
+            .col-md-9
+              .d-flex
+                %i.bi.bi-sticky.display-1.text-secondary.me-3
+                .flex-grow-1
+                  %h5.text-secondary.mb-1.mt-5 Quick Note
+                  %p.small.text-muted.mb-0 For observations that are neither good or bad, just for things you want to remember
+            .col-md-1.border-start.d-flex.align-items-center.justify-content-center
+            .col-md-2.d-flex.align-items-center
+              %small.text-muted
+                %i.bi.bi-lock.me-1
+                Private by default
 
