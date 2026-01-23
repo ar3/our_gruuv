@@ -182,5 +182,12 @@ module ObservationsHelper
       "created on #{observation.created_at.strftime('%m/%d/%y')}"
     end
   end
+
+  def other_managers_popover_content(other_manager_names)
+    return '' if other_manager_names.empty?
+    
+    list_items = other_manager_names.map { |name| "<li>#{ERB::Util.html_escape(name)}</li>" }.join
+    "The following may not be notified, but they'll be able to view this:<ul class='mb-0 mt-1'>#{list_items}</ul>".html_safe
+  end
 end
 

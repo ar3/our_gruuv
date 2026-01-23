@@ -345,15 +345,40 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     @observee_names = all_observee_teammates.map { |teammate| teammate.person.casual_name }
     
-    # Get manager names for all observees (deduplicated)
-    @manager_names = []
+    # Get direct managers (level 0) and other managers (level > 0) for all observees
+    # Use person_id to deduplicate across observees
+    direct_manager_ids = Set.new
+    other_manager_ids = Set.new
+    manager_id_to_person = {}
+    
     all_observee_teammates.each do |teammate|
       managers = ManagerialHierarchyQuery.new(person: teammate.person, organization: @observation.company).call
       managers.each do |manager_info|
-        manager_name = manager_info[:name]
-        @manager_names << manager_name unless @manager_names.include?(manager_name)
+        manager_id = manager_info[:person_id]
+        manager_person = Person.find_by(id: manager_id)
+        next unless manager_person
+        
+        manager_id_to_person[manager_id] = manager_person
+        
+        if manager_info[:level] == 0
+          direct_manager_ids.add(manager_id)
+        else
+          other_manager_ids.add(manager_id)
+        end
       end
     end
+    
+    # Remove direct managers from other managers list (in case someone is both)
+    other_manager_ids = other_manager_ids - direct_manager_ids
+    
+    # Get casual names for direct managers
+    @direct_manager_names = direct_manager_ids.map { |id| manager_id_to_person[id].casual_name }.sort
+    
+    # Get casual names for other managers (for popover)
+    @other_manager_names = other_manager_ids.map { |id| manager_id_to_person[id].casual_name }.sort
+    
+    # Keep @manager_names for backward compatibility (all managers, display names)
+    @manager_names = (direct_manager_ids + other_manager_ids).map { |id| manager_id_to_person[id].display_name }.sort
     
     # Check if only observee is the observer
     @only_observee_is_observer = all_observee_teammates.any? && 

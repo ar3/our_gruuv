@@ -3,6 +3,8 @@
 - observation_type ||= @observation_type || @observation&.observation_type || 'generic'
 - observee_names ||= @observee_names || []
 - manager_names ||= @manager_names || []
+- direct_manager_names ||= @direct_manager_names || []
+- other_manager_names ||= @other_manager_names || []
 - only_observee_is_observer ||= @only_observee_is_observer || false
 - organization ||= local_assigns[:organization] || @organization
 - company_name = @observation&.company&.name || organization&.name || 'company'
@@ -26,18 +28,26 @@
               🔒 Just for me (Journal)
             - when 'observed_only'
               - if observee_names.any?
-                👤 Just Observees: #{observee_names.join(', ')}
+                👤 Just #{observee_names.join(', ')}
               - else
                 👤 Just for their eyes only
             - when 'managers_only'
-              - if manager_names.any?
-                👔 Just Managers: #{manager_names.join(', ')}
+              - if direct_manager_names.any?
+                👔 Just Managers: #{direct_manager_names.join(', ')}
+                - if other_manager_names.any?
+                  %i.bi.bi-info-circle.ms-1{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => other_managers_popover_content(other_manager_names)}
               - else
                 👔 Just for their manager's eyes only
             - when 'observed_and_managers'
-              - observee_text = observee_names.any? ? "Observees: #{observee_names.join(', ')}" : "Observees"
-              - manager_text = manager_names.any? ? "Managers: #{manager_names.join(', ')}" : "Managers"
-              👥 #{observee_text} AND #{manager_text}
+              - if observee_names.any? || direct_manager_names.any?
+                - stakeholder_parts = []
+                - stakeholder_parts << observee_names.join(', ') if observee_names.any?
+                - stakeholder_parts << direct_manager_names.join(', ') if direct_manager_names.any?
+                👥 Stakeholders: #{stakeholder_parts.join(', ')}
+                - if other_manager_names.any?
+                  %i.bi.bi-info-circle.ms-1{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => other_managers_popover_content(other_manager_names)}
+              - else
+                👥 Stakeholder
             - when 'public_to_company'
               🏢 Public to #{company_name}
             - when 'public_to_world'
@@ -91,18 +101,26 @@
           🔒 Just for me (Journal)
         - when 'observed_only'
           - if observee_names.any?
-            👤 Just Observees: #{observee_names.join(', ')}
+            👤 Just #{observee_names.join(', ')}
           - else
             👤 Just for their eyes only
         - when 'managers_only'
-          - if manager_names.any?
-            👔 Just Managers: #{manager_names.join(', ')}
+          - if direct_manager_names.any?
+            👔 Just Managers: #{direct_manager_names.join(', ')}
+            - if other_manager_names.any?
+              %i.bi.bi-info-circle.ms-1{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => other_managers_popover_content(other_manager_names)}
           - else
             👔 Just for their manager's eyes only
         - when 'observed_and_managers'
-          - observee_text = observee_names.any? ? "Observees: #{observee_names.join(', ')}" : "Observees"
-          - manager_text = manager_names.any? ? "Managers: #{manager_names.join(', ')}" : "Managers"
-          👥 #{observee_text} AND #{manager_text}
+          - if observee_names.any? || direct_manager_names.any?
+            - stakeholder_parts = []
+            - stakeholder_parts << observee_names.join(', ') if observee_names.any?
+            - stakeholder_parts << direct_manager_names.join(', ') if direct_manager_names.any?
+            👥 Stakeholders: #{stakeholder_parts.join(', ')}
+            - if other_manager_names.any?
+              %i.bi.bi-info-circle.ms-1{"data-bs-toggle" => "popover", "data-bs-trigger" => "hover", "data-bs-placement" => "top", "data-bs-html" => "true", "data-bs-content" => other_managers_popover_content(other_manager_names)}
+          - else
+            👥 Stakeholder
         - when 'public_to_company'
           🏢 Public to #{company_name}
         - when 'public_to_world'

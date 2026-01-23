@@ -38,7 +38,7 @@ class Person < ApplicationRecord
   
   # Virtual attribute for full name - getter and setter methods
   def full_name
-    parts = [first_name, middle_name, last_name, suffix].compact
+    parts = [preferred_name || first_name, middle_name, last_name, suffix].compact
     parts.join(' ')
   end
   
@@ -57,7 +57,10 @@ class Person < ApplicationRecord
   end
   # Instance methods
   
-  
+  def to_s
+    preferred_first_then_last_display_name
+  end
+
   def display_name
     preferred_first_then_last_display_name
   end
