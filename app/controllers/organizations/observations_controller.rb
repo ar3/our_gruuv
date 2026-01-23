@@ -418,7 +418,8 @@ class Organizations::ObservationsController < Organizations::OrganizationNamespa
     
     @allowed_privacy_levels = [:observed_only, :observed_and_managers, :public_to_company, :public_to_world]
     @disabled_levels = {
-      observer_only: "Kudos should be shared... if you'd like to make this a journal entry, convert to generic observation"
+      observer_only: "Kudos should be shared... if you'd like to make this a journal entry, convert to generic observation",
+      managers_only: "We should always share kudos with the people we are praising"
     }
     @show_gifs = true
     @show_convert_link = @observation.persisted?

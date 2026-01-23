@@ -1,9 +1,9 @@
 - snapshots_count = @maap_snapshots.count
 - snapshots_indicator = snapshots_count > 0 ? :warning : :success
 = render 'shared/section_header', 
-         title: 'MAAP Snapshots', 
+         title: 'Check-ins Awaiting Acknowledgement', 
          icon: 'bi-clipboard-check', 
-         description: 'Check-ins awaiting your acknowledgement',
+         description: 'Changes in your job that you need to review and acknowledge',
          collapsible: true,
          collapse_target: 'maapSnapshotsSection',
          status_indicator: snapshots_indicator

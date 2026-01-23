@@ -49,9 +49,9 @@
       
       = render 'organizations/observations/form_sections/privacy_selector', form: form, observation: @observation, allowed_levels: @allowed_privacy_levels, disabled_levels: @disabled_levels, organization: organization
       
-      - if @show_convert_link
-        .mb-3
-          = render 'organizations/observations/convert_to_generic_link', form: form, observation: @observation, organization: organization
+      -# - if @show_convert_link
+      -#   .mb-3
+      -#     = render 'organizations/observations/convert_to_generic_link', form: form, observation: @observation, organization: organization
       
       = render 'organizations/observations/form_sections/form_actions', form: form, observation: @observation, return_text: @return_text, organization: organization
 
