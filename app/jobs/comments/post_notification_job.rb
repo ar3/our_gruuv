@@ -168,6 +168,9 @@ class Comments::PostNotificationJob < ApplicationJob
       blocks << {
         type: "divider"
       }
+      
+      # Apply strikethrough to all lines with text in main_text
+      main_text = apply_strikethrough_to_lines(main_text)
     end
     
     # Main message content
@@ -198,6 +201,19 @@ class Comments::PostNotificationJob < ApplicationJob
     end
     
     "#{truncated}..."
+  end
+
+  def apply_strikethrough_to_lines(text)
+    # Split by newlines and apply strikethrough to each line that has text
+    lines = text.split("\n")
+    lines.map do |line|
+      # Only apply strikethrough to lines that have non-whitespace content
+      if line.strip.present?
+        "~#{line}~"
+      else
+        line
+      end
+    end.join("\n")
   end
 
   def time_ago_in_words(time)

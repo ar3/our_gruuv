@@ -106,7 +106,7 @@ RSpec.describe Comments::PostNotificationJob, type: :job do
     end
 
     context 'with resolved comment' do
-      let(:root_comment) { create(:comment, :on_assignment, organization: organization, creator: person, commentable: assignment, resolved_at: Time.current) }
+      let(:root_comment) { create(:comment, :on_assignment, organization: organization, creator: person, commentable: assignment, resolved_at: Time.current, body: "This is a test comment\nwith multiple lines") }
       
       it 'includes resolved indicator when comment is resolved' do
         allow_any_instance_of(SlackService).to receive(:post_message).and_return({ success: true, message_id: '1234567890.123456' })
@@ -135,6 +135,29 @@ RSpec.describe Comments::PostNotificationJob, type: :job do
         # Main content should be in a section block
         main_section = blocks[2]
         expect(main_section['type']).to eq('section')
+      end
+      
+      it 'applies strikethrough to all lines with text in the main content' do
+        allow_any_instance_of(SlackService).to receive(:post_message).and_return({ success: true, message_id: '1234567890.123456' })
+        
+        described_class.new.perform(root_comment.id)
+        
+        notification = root_comment.notifications.last
+        blocks = notification.rich_message
+        main_section = blocks[2]
+        main_text = main_section['text']['text']
+        
+        # Split by newlines and check that each line with text is wrapped in ~
+        lines = main_text.split("\n")
+        lines_with_text = lines.select { |line| line.strip.present? }
+        
+        # All lines with text should be wrapped in strikethrough markers
+        lines_with_text.each do |line|
+          expect(line).to match(/^~.*~$/)
+        end
+        
+        # Verify that the comment body lines are crossed out
+        expect(main_text).to include("~#{root_comment.body.split("\n").first}~")
       end
     end
   end
